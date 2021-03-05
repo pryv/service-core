@@ -347,7 +347,6 @@ class Connection {
     this.methodContext.methodId = apiMethod;
     
     const methodContext = this.methodContext;
-    methodContext.params = params;
 
     // FLOW MethodContext will need to be rewritten as a class...
     const userName = methodContext.username;   
@@ -356,7 +355,7 @@ class Connection {
     methodContext.acceptStreamsQueryNonStringified = true;
     
     const answer = bluebird.fromCallback(
-      (cb) => api.call(methodContext, cb));
+      (cb) => api.call(methodContext, params, cb));
       
     try {
       const result = await answer; 

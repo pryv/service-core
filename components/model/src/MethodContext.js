@@ -54,11 +54,9 @@ class MethodContext {
   callerId: ?string;
   headers: ?object; // used in custom auth function
 
-  params: ?object; // previously api-server#methods params object
-
-  methodId: ?string; // API method id. Ex.: 'events.get'
+  methodId: ?string // API method id. Ex.: 'events.get'
   
-  skipAudit: ?boolean;
+  skipAudit: ?boolean
 
   // Custom auth function, if one was configured. 
   customAuthStepFn: ?CustomAuthFunction;

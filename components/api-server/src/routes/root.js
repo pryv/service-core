@@ -46,8 +46,8 @@ function root(expressApp: express$Application, app: Application) {
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       // FLOW More request.context...
-      req.context.params = req.query;
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, req.query, 
+        methodCallback(res, next, 200));
     });
 
   // Batch request of multiple API method calls.
@@ -57,8 +57,8 @@ function root(expressApp: express$Application, app: Application) {
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       // FLOW More request.context...
-      req.context.params = req.body;
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, req.body, 
+        methodCallback(res, next, 200));
     }
   );
 }

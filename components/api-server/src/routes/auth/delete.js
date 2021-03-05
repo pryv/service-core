@@ -43,7 +43,6 @@ module.exports = function(expressApp: express$Application, app: Application) {
     ) {
       req.context.username = req.params.username;
       req.context.authorizationHeader = req.headers.authorization;
-      req.context.params = req.params;
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, req.params, methodCallback(res, next, 200));
   });
 };

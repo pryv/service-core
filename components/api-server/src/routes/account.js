@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 // @flow
-const _ = require('lodash');
 
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
@@ -24,38 +23,37 @@ module.exports = function (expressApp: express$Application, app: Application) {
     setMethodId('account.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = req.query;
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, req.query, methodCallback(res, next, 200));
     });
 
   expressApp.put(Paths.Account,
     setMethodId('account.update'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = {update: req.body};
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, {update: req.body}, methodCallback(res, next, 200));
     });
 
   expressApp.post(Paths.Account + '/change-password',
     setMethodId('account.changePassword'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = req.body;
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, req.body, methodCallback(res, next, 200));
     });
 
   expressApp.post(Paths.Account + '/request-password-reset',
     setMethodId('account.requestPasswordReset'),
     function (req: express$Request, res, next) {
-      req.context.params = _.merge(req.body, { origin: req.headers.origin });
-      api.call(req.context, methodCallback(res, next, 200));
+      const params = req.body;
+      params.origin = req.headers.origin;
+      api.call(req.context, params, methodCallback(res, next, 200));
   });
 
   expressApp.post(Paths.Account + '/reset-password',
     setMethodId('account.resetPassword'),
     function (req: express$Request, res, next) {
-      req.context.params = _.merge(req.body, { origin: req.headers.origin });
-      api.call(req.context, methodCallback(res, next, 200));
+      var params = req.body;
+      params.origin = req.headers.origin;
+      api.call(req.context, params, methodCallback(res, next, 200));
   });
 
 };

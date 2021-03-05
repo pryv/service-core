@@ -32,8 +32,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
     setMethodId('auth.register'),
     function (req: express$Request, res: express$Response, next: express$NextFunction) {
       req.context.host = req.headers.host;
-      req.context.params = req.body;
-      api.call(req.context, methodCallback(res, next, 201));
+      api.call(req.context, req.body, methodCallback(res, next, 201));
   });
   
   if (isDnsLess) {    
@@ -42,20 +41,17 @@ module.exports = function (expressApp: express$Application, app: Application) {
       function (req: express$Request, res: express$Response, next: express$NextFunction) {
         req.context.host = req.headers.host;
         if (req.body) req.body.appId = req.body.appid;
-        req.context.params = req.body;
-        api.call(req.context, methodCallback(res, next, 201));
+        api.call(req.context, req.body, methodCallback(res, next, 201));
     });
     expressApp.get(path.join(regPath, '/:username/check_username'), 
       setMethodId('auth.usernameCheck'),
       (req: express$Request, res, next) => {
-        req.context.params = req.params;
-        api.call(req.context, methodCallback(res, next, 200));
+        api.call(req.context, req.params, methodCallback(res, next, 200));
     });
     expressApp.get(path.join(regPath, '/:email/check_email'), 
       setMethodId('auth.emailCheck'),
       (req: express$Request, res, next) => {
-        req.context.params = req.params;
-        api.call(req.context, methodCallback(res, next, 200));
+        api.call(req.context, req.params, methodCallback(res, next, 200));
     });
     expressApp.post(path.join(regPath, '/username/check'), (req: express$Request, res, next) => {
       next(errors.goneResource());

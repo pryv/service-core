@@ -57,16 +57,15 @@ module.exports = function system(expressApp: express$Application, app: Applicati
   }
 
   function createUser(req: express$Request, res, next) {
-    const context = mockMethodContext(req);
-    context.params = _.extend({}, req.body); 
-    systemAPI.call(context, methodCallback(res, next, 201));
+    const params = _.extend({}, req.body); 
+    systemAPI.call(mockMethodContext(req), params, methodCallback(res, next, 201));
   }
 
   // Specific routes for managing users pool
   expressApp.post(Paths.System + '/pool/create-user', contentType.json, 
     setMethodId('system.createPoolUser'),
     function (req: express$Request, res, next) {
-      systemAPI.call(_.merge(req.context, { skipAudit: true, params: {} }), methodCallback(res, next, 201));
+      systemAPI.call(_.merge(req.context, { skipAudit: true }), {}, methodCallback(res, next, 201));
   });
 
   
@@ -74,23 +73,22 @@ module.exports = function system(expressApp: express$Application, app: Applicati
   expressApp.get(Paths.System + '/pool/size', 
     setMethodId('system.getUsersPoolSize'),
     function (req: express$Request, res, next) {
-      systemAPI.call(_.merge(req.context, { skipAudit: true, params: {} }), methodCallback(res, next, 200));
+      systemAPI.call(_.merge(req.context, { skipAudit: true }), {}, methodCallback(res, next, 200));
   });
 
   expressApp.get(Paths.System + '/user-info/:username',
     setMethodId('system.getUserInfo'),
     function (req: express$Request, res, next) {
-      const context = mockMethodContext(req);
-      context.params = {
+      const params = {
         username: req.params.username
       };
-      systemAPI.call(context, methodCallback(res, next, 200));
+      systemAPI.call(mockMethodContext(req), params, methodCallback(res, next, 200));
   });
 
   // Checks if `req` contains valid authorization to access the system routes. 
   // 
   function checkAuth(req: express$Request, res, next) {
-    const secret = req.headers.authorization;
+    var secret = req.headers.authorization;
     if (secret==null || secret !== adminAccessKey) {
       logger.warn('Unauthorized attempt to access system route', {
         url: req.url,

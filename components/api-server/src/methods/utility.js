@@ -93,10 +93,9 @@ module.exports = function (api: API, logging, storageLayer: StorageLayer) {
         needRefeshForNextcall = ['streams.create', 'streams.update', 'streams.delete'].includes(call.method);
         
         freshContext.methodId = call.method;
-        freshContext.params = call.params;
         // Perform API call
         const result: Result = await bluebird.fromCallback(
-          (cb) => api.call(freshContext, cb));
+          (cb) => api.call(freshContext, call.params, cb));
         
         return await bluebird.fromCallback(
           (cb) => result.toObject(cb));

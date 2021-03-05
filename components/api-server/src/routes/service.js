@@ -21,8 +21,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   expressApp.get(Paths.Service + '/info', 
     setMethodId('service.info'),
     function (req: express$Request, res, next) {
-      req.context.params = {};
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, req.query, methodCallback(res, next, 200));
   });
 
   // Old route, we keep it for backward compatibility
@@ -30,7 +29,6 @@ module.exports = function(expressApp: express$Application, app: Application) {
   expressApp.get(Paths.Service + '/infos',
     setMethodId('service.info'),
     function (req: express$Request, res, next) {
-      req.context.paramas = {};
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, req.query, methodCallback(res, next, 200));
   });
 };

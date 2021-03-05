@@ -44,8 +44,8 @@ module.exports = function(expressApp: express$Application, app: Application) {
     setMethodId('events.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = _.extend({}, req.query);
-      tryCoerceStringValues(req.context.params, {
+      var params = _.extend({}, req.query);
+      tryCoerceStringValues(params, {
         fromTime: 'number',
         toTime: 'number',
         streams: 'object',
@@ -57,18 +57,18 @@ module.exports = function(expressApp: express$Application, app: Application) {
         modifiedSince: 'number',
         includeDeletions: 'boolean'
       });
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, params, methodCallback(res, next, 200));
     });
 
   events.get('/:id',
     setMethodId('events.getOne'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = _.extend({id: req.params.id}, req.query);
-      tryCoerceStringValues(req.context.params, {
+      var params = _.extend({id: req.params.id}, req.query);
+      tryCoerceStringValues(params, {
         includeHistory: 'boolean'
       });
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, params, methodCallback(res, next, 200));
     });
 
   // Access an events files
@@ -134,11 +134,11 @@ module.exports = function(expressApp: express$Application, app: Application) {
     loadAccessMiddleware,
     hasFileUpload,
     function (req: express$Request, res, next) {
-      req.context.params = req.body;
+      const params = req.body;
       if (req.files) {
-        req.context.params.files = req.files;
+        params.files = req.files;
       }
-      api.call(req.context, methodCallback(res, next, 201));
+      api.call(req.context, params, methodCallback(res, next, 201));
     });
 
   events.post('/start',
@@ -150,8 +150,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
     setMethodId('events.update'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = { id: req.params.id, update: req.body };
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, { id: req.params.id, update: req.body }, methodCallback(res, next, 200));
     });
 
   events.post('/stop',
@@ -165,32 +164,30 @@ module.exports = function(expressApp: express$Application, app: Application) {
     loadAccessMiddleware,
     hasFileUpload,
     function (req: express$Request, res, next) {
-      req.context.params = {
+      const params = {
         id: req.params.id,
         update: {}
       };
       if (req.files) {
-        req.context.params.files = req.files;
+        params.files = req.files;
       } else {
-        delete req.context.params.files; // close possible hole
+        delete params.files; // close possible hole
       }
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, params, methodCallback(res, next, 200));
     });
 
   events.delete('/:id',
     setMethodId('events.delete'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = {id: req.params.id};
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, {id: req.params.id}, methodCallback(res, next, 200));
     });
 
   events.delete('/:id/:fileId',
     setMethodId('events.deleteAttachment'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = {id: req.params.id, fileId: req.params.fileId};
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, {id: req.params.id, fileId: req.params.fileId}, methodCallback(res, next, 200));
     });
 
 };

@@ -24,48 +24,43 @@ module.exports = function (expressApp: express$Application, app: Application) {
     setMethodId('profile.getPublic'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = req.query;
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, req.query, methodCallback(res, next, 200));
   });
 
   expressApp.put(Paths.Profile + '/public',
     setMethodId('profile.update'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = { id: 'public', update: req.body };
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, { id: 'public', update: req.body }, methodCallback(res, next, 200));
   });
 
   expressApp.get(Paths.Profile + '/app', 
     setMethodId('profile.getApp'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = req.query;
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, req.query, methodCallback(res, next, 200));
   });
 
   expressApp.put(Paths.Profile + '/app', 
     setMethodId('profile.updateApp'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = {update: req.body};
-      api.call(req.context, methodCallback(res, next, 200));
+      var params = {update: req.body};
+      api.call(req.context, params, methodCallback(res, next, 200));
   });
 
   expressApp.get(Paths.Profile + '/private',
     setMethodId('profile.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = _.extend(req.query, {id: 'private'});
-      api.call(req.context, methodCallback(res, next, 200));
+    api.call(req.context, _.extend(req.query, {id: 'private'}), methodCallback(res, next, 200));
   });
 
   expressApp.put(Paths.Profile + '/private', 
     setMethodId('profile.update'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      req.context.params = { id: 'private', update: req.body };
-      api.call(req.context, methodCallback(res, next, 200));
+      api.call(req.context, { id: 'private', update: req.body }, methodCallback(res, next, 200));
   });
 
 };
