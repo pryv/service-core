@@ -144,8 +144,8 @@ class Audit {
         event.streamIds = ['auth.login'];
       }
     } else {
-      event.streamIds = ['noAuth']
-      userId = 'noUser';
+      event.streamIds = ['no-auth']
+      userId = 'no-user';
     }
     this.eventForUser(userId, event);
   }
