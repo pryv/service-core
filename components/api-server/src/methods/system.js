@@ -15,6 +15,8 @@ const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
+const { skipAudit, setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+
 /**
  * @param systemAPI
  * @param usersStorage
@@ -35,6 +37,7 @@ module.exports = function (
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
+    setAuditAccessId(AuditAccessIds.ADMIN_TOKEN),
     commonFns.getParamsValidation(methodsSchema.createUser.params),
     registration.prepareUserData,
     registration.createUser.bind(registration),
@@ -43,6 +46,7 @@ module.exports = function (
 
   // ------------------------------------------------------------ createPoolUser
   systemAPI.register('system.createPoolUser',
+    skipAudit,
     registration.prepareUserData,
     registration.createPoolUser.bind(registration),
     registration.createUser.bind(registration),
@@ -50,6 +54,7 @@ module.exports = function (
 
   // ---------------------------------------------------------- getUsersPoolSize
   systemAPI.register('system.getUsersPoolSize',
+    skipAudit,
     countPoolUsers);
 
   async function countPoolUsers(context, params, result, next) {
@@ -70,6 +75,7 @@ module.exports = function (
 
   // --------------------------------------------------------------- getUserInfo
   systemAPI.register('system.getUserInfo',
+    setAuditAccessId(AuditAccessIds.ADMIN_TOKEN),
     commonFns.getParamsValidation(methodsSchema.getUserInfo.params),
     retrieveUser,
     getUserInfoInit,

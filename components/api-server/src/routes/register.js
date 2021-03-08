@@ -18,7 +18,6 @@ module.exports = function(expressApp: express$Application, app: Application) {
   expressApp.get('/reg/service/info', 
     setMethodId('service.info'),
     function (req: express$Request, res, next) {
-      req.context.skipAudit = true;
       api.call(req.context, req.query, methodCallback(res, next, 200));
   });
 }

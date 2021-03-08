@@ -22,9 +22,9 @@ import type { ApiCallback } from 'api-server/src/API';
 
 const { getLogger } = require('@pryv/boiler');
 
-const { addAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
-const addAdminAuditAccessId = addAuditAccessId(AuditAccessIds.ADMIN_TOKEN);
+const setAdminAuditAccessId = setAuditAccessId(AuditAccessIds.ADMIN_TOKEN);
 class Deletion {
   logger: any;
   storageLayer: any;
@@ -56,7 +56,7 @@ class Deletion {
     const canDelete = this.config.get('user-account:delete');
     if (canDelete.includes('adminToken')) {
       if(this.config.get('auth:adminAccessKey') === context.authorizationHeader) {
-        return addAdminAuditAccessId(context, params, result, next);
+        return setAdminAuditAccessId(context, params, result, next);
       }
     }
    

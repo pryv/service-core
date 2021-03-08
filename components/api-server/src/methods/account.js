@@ -11,7 +11,7 @@ var errors = require('errors').factory,
 
 const { getConfig } = require('@pryv/boiler');
 
-const { addAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),
@@ -92,8 +92,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,
     addNewPasswordParameter,
-    updateAccount,
-    addAuditAccessId(AuditAccessIds.VALID_PASSWORD)
+    updateAccount
   );
 
   async function verifyOldPassword (context, params, result, next) {
@@ -117,7 +116,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     requireTrustedAppFn,
     generatePasswordResetRequest,
     sendPasswordResetMail,
-    addAuditAccessId(AuditAccessIds.PASSWORD_RESET_REQUEST));
+    setAuditAccessId(AuditAccessIds.PASSWORD_RESET_REQUEST));
 
   function generatePasswordResetRequest(context, params, result, next) {
     const username = context.user.username;
@@ -163,7 +162,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     checkResetToken,
     addNewPasswordParameter,
     updateAccount,
-    addAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
+    setAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
   );
 
   function checkResetToken(context, params, result, next) {

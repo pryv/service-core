@@ -11,9 +11,8 @@ const methodsSchema = require('api-server/src/schema/authMethods');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
 const UsersRepository = require('business/src/users/repository');
-
-
 const { getConfigUnsafe } = require('@pryv/boiler');
+const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 import type { MethodContext } from 'model';
 import type Result  from '../Result';
@@ -46,6 +45,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
   }
 
   api.register('auth.register',
+    setAuditAccessId(AuditAccessIds.PUBLIC),
     // data validation methods        
     commonFns.getParamsValidation(methodsSchema.register.params),
     registration.prepareUserData,
@@ -53,7 +53,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
     //user registration methods
     ifDnsLess(skip, registration.deletePartiallySavedUserIfAny.bind(registration)),
     registration.createUser.bind(registration),
-    registration.createUserInServiceRegister.bind(registration),
+    ifDnsLess(skip, registration.createUserInServiceRegister.bind(registration)),
     registration.buildResponse.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );
@@ -63,6 +63,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
    * Seem to be use only in dnsLess..  
    */
   api.register('auth.usernameCheck',
+    setAuditAccessId(AuditAccessIds.PUBLIC),
     commonFns.getParamsValidation(methodsSchema.usernameCheck.params),
     ifDnsLess(checkUniqueField, checkUsername)
   );
@@ -73,6 +74,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
    * DNSLess Only
    */
   api.register('auth.emailCheck',
+    setAuditAccessId(AuditAccessIds.PUBLIC),
     commonFns.getParamsValidation(methodsSchema.emailCheck.params),
     checkUniqueField
   );

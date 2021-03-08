@@ -17,5 +17,6 @@ module.exports = {
   override: require('./override'),
   requestTrace: require('./requestTrace'),
   setMethodId: require('./setMethodId'),
+  setMinimalMethodContext: require('./setMinimalMethodContext'),
   subdomainToPath: require('./subdomainToPath')
 };

@@ -13,11 +13,13 @@ import type Result  from '../Result';
 
 const _ = require('lodash');
 const { getConfig } = require('@pryv/boiler');
+const { skipAudit } = require('audit/src/MethodContextUtils');
 
 module.exports = function (api: API) {
   this.serviceInfo = null;
 
   api.register('service.info',
+    skipAudit,
     getServiceInfo
   );
 

@@ -12,7 +12,7 @@ const _ = require('lodash');
 const UsersRepository = require('business/src/users/repository');
 const ErrorIds = require('errors/src/ErrorIds');
 
-const { addAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 /**
  * Auth API methods implementations.
@@ -33,7 +33,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     openSession,
     updateOrCreatePersonalAccess,
     addApiEndpoint,
-    addAuditAccessId(AuditAccessIds.VALID_PASSWORD),
+    setAuditAccessId(AuditAccessIds.VALID_PASSWORD),
     setAdditionalInfo);
 
   function applyPrerequisitesForLogin(context, params, result, next) {
