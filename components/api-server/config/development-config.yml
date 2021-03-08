@@ -2,7 +2,7 @@
 logs:
   console:
     active: true
-    level: debug
+    level: info
 auth:
   adminAccessKey: CHANGE_ME_WITH_SOMETHING
   trustedApps: "*@https://pryv.github.io*, *@https://*.rec.la*"
