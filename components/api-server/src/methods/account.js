@@ -11,6 +11,8 @@ var errors = require('errors').factory,
 
 const { getConfig } = require('@pryv/boiler');
 
+const { addAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+
 const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),
   ErrorIds = require('errors').ErrorIds,
@@ -91,7 +93,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     verifyOldPassword,
     addNewPasswordParameter,
     updateAccount,
-    addAuditAccessId('password')
+    addAuditAccessId(AuditAccessIds.VALID_PASSWORD)
   );
 
   async function verifyOldPassword (context, params, result, next) {
@@ -115,7 +117,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     requireTrustedAppFn,
     generatePasswordResetRequest,
     sendPasswordResetMail,
-    addAuditAccessId('password-reset-request'));
+    addAuditAccessId(AuditAccessIds.PASSWORD_RESET_REQUEST));
 
   function generatePasswordResetRequest(context, params, result, next) {
     const username = context.user.username;
@@ -161,7 +163,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     checkResetToken,
     addNewPasswordParameter,
     updateAccount,
-    addAuditAccessId('password-reset-token')
+    addAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
   );
 
   function checkResetToken(context, params, result, next) {
@@ -230,15 +232,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       ));
     }
     next();
-  }
-
-  function addAuditAccessId(accessId) {
-    return function(context, params, result, next) {
-      if (! context.access)  context.access = {};
-      if (! context.access.id)  context.access.id = accessId;
-      //console.log('XXX>', context.access);
-      next();
-    }
   }
 
   /**

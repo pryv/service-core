@@ -11,6 +11,9 @@ const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
 const UsersRepository = require('business/src/users/repository');
 const ErrorIds = require('errors/src/ErrorIds');
+
+const { addAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+
 /**
  * Auth API methods implementations.
  *
@@ -30,7 +33,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     openSession,
     updateOrCreatePersonalAccess,
     addApiEndpoint,
-    addAuditAccessId,
+    addAuditAccessId(AuditAccessIds.VALID_PASSWORD),
     setAdditionalInfo);
 
   function applyPrerequisitesForLogin(context, params, result, next) {
@@ -129,14 +132,6 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   function addApiEndpoint(context, params, result, next) {
     if (result.token) {
       result.apiEndpoint = context.user.buildApiEndpoint(result.token);
-    }
-    next();
-  }
-
-  function addAuditAccessId(context, params, result, next) {
-    if (result.token) {
-      if (! context.access)  context.access = {};
-      if (! context.access.id)  context.access.id = 'password';
     }
     next();
   }

@@ -17,8 +17,14 @@ const errors = require('errors').factory;
 import type { MethodContext } from 'model';
 import type { ApiCallback } from 'api-server/src/API';
 
+
+
+
 const { getLogger } = require('@pryv/boiler');
 
+const { addAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+
+const addAdminAuditAccessId = addAuditAccessId(AuditAccessIds.ADMIN_TOKEN);
 class Deletion {
   logger: any;
   storageLayer: any;
@@ -34,6 +40,7 @@ class Deletion {
     this.serviceRegisterConn = getServiceRegisterConn();
   }
 
+  
 
   /**
    * Authorization check order: 
@@ -49,9 +56,7 @@ class Deletion {
     const canDelete = this.config.get('user-account:delete');
     if (canDelete.includes('adminToken')) {
       if(this.config.get('auth:adminAccessKey') === context.authorizationHeader) {
-        if (! context.access) context.access = {};
-        if (! context.access.id) context.access.id = 'admin'; // needed by Audit
-        return next();
+        return addAdminAuditAccessId(context, params, result, next);
       }
     }
    
