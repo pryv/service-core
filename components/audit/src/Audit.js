@@ -31,6 +31,12 @@ const METHODS_WITHOUT_ACCESS = [
   'account.resetPassword',
 ];
 
+const UserIds = {
+  NO_USER: 'no-user',
+  UNKNOWN_USER: 'unknown-user',
+}
+
+
 /**
  * EventEmitter interface is just for tests syncing for now
  */
@@ -102,10 +108,10 @@ class Audit {
         event.streamIds = ['auth.login'];
       }
 
-      if (userId == null) userId = 'unknownUser';
+      if (userId == null) userId = UserIds.UNKNOWN_USER;
     } else {
-      event.streamIds = ['noAuth']
-      userId = 'noUser'
+      event.streamIds = ['no-auth']
+      userId = UserIds.NO_USER;
     }
     this.eventForUser(userId, event);
   }
@@ -143,7 +149,7 @@ class Audit {
       }
     } else {
       event.streamIds = ['no-auth']
-      userId = 'no-user';
+      userId = UserIds.NO_USER;
     }
     this.eventForUser(userId, event);
   }
@@ -155,11 +161,16 @@ class Audit {
       throw new Error('Invalid audit eventForUser call : ' + valid, {userId: userId, event: event}); 
     }
 
-    if (this.syslog)
-      this.syslog.eventForUser(userId, event);
     
-    if (this.storage) 
-      this.storage.forUser(userId).createEvent(event); 
+    if (this.syslog && isPartOfSyslog(userId, event)) {
+      this.syslog.eventForUser(userId, event);
+    }
+      
+    
+    if (this.storage && isPartOfStorage(userId, event)) {
+      this.storage.forUser(userId).createEvent(event);
+    }
+      
   }
 
   close() {
@@ -169,6 +180,15 @@ class Audit {
 
 module.exports = Audit;
 
+function isPartOfSyslog(userId, event) {
+  return true;
+}
+
+function isPartOfStorage(userId, event) {
+  if (userId === UserIds.NO_USER) return false;
+  if (userId === UserIds.UNKNOWN_USER) return false;
+  return true;
+}
 
 /**
  * See if the action should expect a userId.

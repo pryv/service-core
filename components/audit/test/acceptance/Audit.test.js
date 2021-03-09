@@ -79,7 +79,10 @@ describe('Audit', function() {
   describe('when making invalid API calls', function() {
     let res, now;
     describe('for an unknown user', function() {
+      let sysLogSpy, storageSpy;
       before(async function() {
+        sysLogSpy = sinon.spy(audit.syslog, 'eventForUser');
+        storageSpy = sinon.spy(audit.storage, 'forUser');
         now = Date.now() / 1000;
         res = await coreRequest
           .get('/unknown-username/events/')
@@ -88,18 +91,12 @@ describe('Audit', function() {
       it('must return 400', function() {
         assert.equal(res.status, 404);
       });
-      it('must return logs when queried', async function() {
-        res = await coreRequest
-          .get(auditPath)
-          .set('Authorization', access.token)
-          .query({ fromTime: now });
-        assert.equal(res.status, 200);
-        const entries = res.body.auditLogs;
-        assert.exists(entries);
-        assert.equal(entries.length, 1);
-        const log = entries[0];
-        assert.exists(log.content.error)
-        assert.equal(log.content.error.id, 'unknown-resource');
+      it('must log it in syslog', function() {
+        assert.isTrue(sysLogSpy.calledOnce);
+      });
+      it('must not save it to storage', function () {
+        assert.isFalse(storageSpy.calledOnce);
+        
       });
     });
     describe('with errorId "invalid-request-structure"', function() {

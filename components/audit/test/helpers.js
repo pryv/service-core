@@ -87,6 +87,7 @@ Object.assign(global, {
   cuid: require('cuid'),
   charlatan: require('charlatan'),
   bluebird: require('bluebird'),
+  sinon: require('sinon'),
 });
 
 
