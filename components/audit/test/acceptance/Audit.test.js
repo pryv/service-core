@@ -15,11 +15,18 @@ describe('Audit', function() {
   let user, username, access, readAccess;
   let eventsPath, auditPath;
   let auditStorage;
+
+  const SYSLOG_METHOD = 'eventForUser';
+  const STORAGE_METHOD = 'forUser';
+
+  let sysLogSpy, storageSpy;
   
   before(async function() {
     await initTests();
     await initCore();
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {});
+    sysLogSpy = sinon.spy(audit.syslog, SYSLOG_METHOD);
+    storageSpy = sinon.spy(audit.storage, STORAGE_METHOD);
 
     username = user.attrs.username;
     await user.stream({id: 'yo', name: 'YO'});
@@ -41,9 +48,18 @@ describe('Audit', function() {
     auditPath =  '/' + username + '/audit/logs/';
   });
 
+  function createUserPath(suffixPath) {
+    return path.join('/', username, suffixPath);
+  }
+
+  function resetSpies() {
+    sysLogSpy.resetHistory();
+    storageSpy.resetHistory();
+  }
+
   after(async function() {
     closeTests();
-    await mongoFixtures.clean()
+    await mongoFixtures.clean();
   });
 
   describe('when making valid API calls', function () {
@@ -73,16 +89,52 @@ describe('Audit', function() {
       assert.approximately(log.created, now, 0.5, 'created timestamp is off');
       assert.approximately(log.modified, now, 0.5, 'modified timestamp is off');
     });
+
+    describe('when making a call that is not audited', function() {
+      before(async function () {
+        assert.isUndefined(apiMethods.AUDITED_METHODS_MAP['service.info']);
+        resetSpies();
+        now = Date.now() / 1000;
+        res = await coreRequest
+          .get(createUserPath('/service/info'));
+      });
+  
+      it('must return 200', function () {
+        assert.equal(res.status, 200);
+      });
+      it('must not log it in syslog', function() {
+        assert.isFalse(sysLogSpy.calledOnce);
+      });
+      it('must not save it to storage', function() {
+        assert.isFalse(storageSpy.calledOnce);
+      });
+    });
+    describe('when making a call that has its own custom accessId', function() {
+      before(async function () {
+        resetSpies();
+        now = Date.now() / 1000;
+        res = await coreRequest
+          .get(createUserPath('/service/info'));
+      });
+  
+      it('must return 200', function () {
+        assert.equal(res.status, 200);
+      });
+      it('must not log it in syslog', function() {
+        assert.isFalse(sysLogSpy.calledOnce);
+      });
+      it('must not save it to storage', function() {
+        assert.isFalse(storageSpy.calledOnce);
+      });
+    });
     
   });
 
   describe('when making invalid API calls', function() {
     let res, now;
     describe('for an unknown user', function() {
-      let sysLogSpy, storageSpy;
       before(async function() {
-        sysLogSpy = sinon.spy(audit.syslog, 'eventForUser');
-        storageSpy = sinon.spy(audit.storage, 'forUser');
+        resetSpies();
         now = Date.now() / 1000;
         res = await coreRequest
           .get('/unknown-username/events/')
@@ -91,8 +143,8 @@ describe('Audit', function() {
       it('must return 400', function() {
         assert.equal(res.status, 404);
       });
-      it('must log it in syslog', function() {
-        assert.isTrue(sysLogSpy.calledOnce);
+      it('must not log it in syslog', function() {
+        assert.isFalse(sysLogSpy.calledOnce);
       });
       it('must not save it to storage', function () {
         assert.isFalse(storageSpy.calledOnce);
@@ -256,6 +308,34 @@ describe('Audit', function() {
       });
     });
     
+  });
+
+  describe('Filtering', function() {
+    describe('when filtering by calledMethods', function() {
+      describe('when allowing all', function() {
+        before(function() {
+          config.injectTestConfig({ audit: { filtering: { allowed: ['all'] } } });
+        });
+        
+      });
+      describe('when allowing all, but a few', function () {
+        before(function() {
+          config.injectTestConfig({ audit: { filtering: { unallowed: ['events.get'] } } });
+        });
+
+      });
+      describe('when only allowing a few', function () {
+        before(function() {
+          config.injectTestConfig({ audit: { filtering: { allowed: ['events.get'] } } });
+        });
+      });
+      describe('when allowing nothing', function () {
+        before(function() {
+          config.injectTestConfig({ audit: { filtering: { unallowed: ['all'] } } });
+        });
+      });
+
+    });
   });
 
 });

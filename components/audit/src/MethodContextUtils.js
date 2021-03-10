@@ -25,15 +25,8 @@ const AuditAccessIds = {
 
 Object.freeze(AuditAccessIds);
 
-function skipAudit(context, params, result, next) {
-  if (context == null) req.context = {};
-  context.skipAudit = true;
-  next();
-}
-
 
 module.exports = {
   setAuditAccessId: setAuditAccessId,
-  skipAudit: skipAudit,
   AuditAccessIds: AuditAccessIds
 }

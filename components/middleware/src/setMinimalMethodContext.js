@@ -10,7 +10,6 @@ class MinimalMethodContext {
   source: ContextSource;
   user: ?User;
   access: ?Access;
-  skipAudit: ?boolean;
 
   constructor(req: express$Request) {
     this.source =  {

@@ -17,6 +17,7 @@ const logger = getLogger('audit');
 
 // for an unkown reason removing ".js" returns an empty object
 const validation = require('./validation.js');
+const { AUDITED_METHODS_MAP } = require('./ApiMethods');
 
 const METHODS_WITHOUT_USER = [
   'auth.register',
@@ -75,9 +76,10 @@ class Audit {
   }
 
   async errorApiCall(context, params, error) {
-    if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize', 'system.createPoolUser', 'service.info'
-    let userId = context.user?.id;
     const methodId = context.methodId;
+    if (! AUDITED_METHODS_MAP[methodId]) return;
+
+    let userId = context.user?.id;
 
     const event = buildDefaultEvent(context, params);
 
@@ -117,10 +119,10 @@ class Audit {
   }
 
   async validApiCall(context, params, result) {
-    if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
+    const methodId = context.methodId;
+    if (! AUDITED_METHODS_MAP[methodId]) return;
 
     let userId = context.user?.id;
-    const methodId = context.methodId;
 
     const event = buildDefaultEvent(context, params);
 
@@ -161,7 +163,6 @@ class Audit {
       throw new Error('Invalid audit eventForUser call : ' + valid, {userId: userId, event: event}); 
     }
 
-    
     if (this.syslog && isPartOfSyslog(userId, event)) {
       this.syslog.eventForUser(userId, event);
     }
@@ -222,53 +223,4 @@ function buildDefaultEvent(context, params) {
       query: params,
     },
   }
-}
-
-function getAllActions() {
-  return [
-    'getAccessInfo',
-    'callBatch',
-    'auth.login',
-    'auth.logout',
-    //'auth.register',
-    //'auth.usernameCheck',
-    //'auth.emailCheck',
-    'auth.delete',
-    'accesses.get',
-    'accesses.create',
-    'accesses.update',
-    'accesses.delete',
-    'accesses.checkApp',
-    //'service.info',
-    'webhooks.get',
-    'webhooks.getOne',
-    'webhooks.create',
-    'webhooks.update',
-    'webhooks.delete',
-    'webhooks.test',
-    'account.get',
-    'account.update',
-    'account.changePassword',
-    'account.requestPasswordReset',
-    //'account.resetPassword',
-    'followedSlices.get',
-    'followedSlices.create',
-    'followedSlices.update',
-    'followedSlices.delete',
-    //'profile.getPublic',
-    'profile.getApp',
-    'profile.get',
-    'profile.updateApp',
-    'profile.update',
-    'streams.get',
-    'streams.create',
-    'streams.update',
-    'streams.delete',
-    'events.get',
-    'events.getOne',
-    'events.create',
-    'events.update',
-    'events.delete',
-    'events.deleteAttachment'
-  ];
 }

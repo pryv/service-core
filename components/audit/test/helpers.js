@@ -70,6 +70,7 @@ async function initCore() {
     app.config.get('updates'),
     app.config.get('openSource'),
     app.config.get('services'));
+  require('api-server/src/methods/service')(app.api);
 
   global.coreRequest = supertest(app.expressApp);
 }
@@ -88,6 +89,8 @@ Object.assign(global, {
   charlatan: require('charlatan'),
   bluebird: require('bluebird'),
   sinon: require('sinon'),
+  path: require('path'),
+  apiMethods: require('audit/src/ApiMethods'),
 });
 
 
