@@ -125,8 +125,7 @@ class Server {
       application.getUpdatesSettings(), 
       application.storageLayer);
 
-    require('./methods/service')(
-      application.api, l('methods/service'));
+    require('./methods/service')(application.api);
 
     if (! this.isOpenSource) {
       require('./methods/webhooks')(
