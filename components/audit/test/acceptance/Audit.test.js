@@ -12,7 +12,7 @@ describe('Audit', function() {
   let userid = cuid();
   let createdBy = cuid();
 
-  let user, username, access, readAccess;
+  let user, username, password, access, readAccess;
   let eventsPath, auditPath;
   let auditStorage;
 
@@ -24,7 +24,10 @@ describe('Audit', function() {
   before(async function() {
     await initTests();
     await initCore();
-    user = await mongoFixtures.user(charlatan.Lorem.characters(7), {});
+    password = cuid();
+    user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
+      password: password,
+    });
     sysLogSpy = sinon.spy(audit.syslog, SYSLOG_METHOD);
     storageSpy = sinon.spy(audit.storage, STORAGE_METHOD);
 
@@ -110,22 +113,40 @@ describe('Audit', function() {
       });
     });
     describe('when making a call that has its own custom accessId', function() {
+      let log;
       before(async function () {
         resetSpies();
         now = Date.now() / 1000;
         res = await coreRequest
-          .get(createUserPath('/service/info'));
+          .post(createUserPath('/auth/login'))
+          .set('Origin', 'https://sw.rec.la')
+          .send({
+            username: username,
+            password: password,
+            appId: 'whatever',
+          });
       });
   
       it('must return 200', function () {
         assert.equal(res.status, 200);
       });
-      it('must not log it in syslog', function() {
-        assert.isFalse(sysLogSpy.calledOnce);
+      it('must log it in syslog', function() {
+        assert.isTrue(sysLogSpy.calledOnce);
       });
-      it('must not save it to storage', function() {
-        assert.isFalse(storageSpy.calledOnce);
+      it('must return logs when queried', async function() {
+        res = await coreRequest
+          .get(auditPath)
+          .set('Authorization', access.token)
+          .query({ fromTime: now });
+        assert.equal(res.status, 200);
+        const entries = res.body.auditLogs;
+        assert.exists(entries);
+        assert.equal(entries.length, 1);
+        log = entries[0];
       });
+      it('must have its custom accessId save to streamIds', function() {
+        assert.include(log.streamIds, 'auth.login');
+      })
     });
     
   });
@@ -148,7 +169,6 @@ describe('Audit', function() {
       });
       it('must not save it to storage', function () {
         assert.isFalse(storageSpy.calledOnce);
-        
       });
     });
     describe('with errorId "invalid-request-structure"', function() {
