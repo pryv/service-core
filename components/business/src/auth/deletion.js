@@ -17,8 +17,14 @@ const errors = require('errors').factory;
 import type { MethodContext } from 'model';
 import type { ApiCallback } from 'api-server/src/API';
 
+
+
+
 const { getLogger } = require('@pryv/boiler');
 
+const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+
+const setAdminAuditAccessId = setAuditAccessId(AuditAccessIds.ADMIN_TOKEN);
 class Deletion {
   logger: any;
   storageLayer: any;
@@ -34,6 +40,7 @@ class Deletion {
     this.serviceRegisterConn = getServiceRegisterConn();
   }
 
+  
 
   /**
    * Authorization check order: 
@@ -49,7 +56,7 @@ class Deletion {
     const canDelete = this.config.get('user-account:delete');
     if (canDelete.includes('adminToken')) {
       if(this.config.get('auth:adminAccessKey') === context.authorizationHeader) {
-        return next();
+        return setAdminAuditAccessId(context, params, result, next);
       }
     }
    
@@ -138,6 +145,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
+    if (this.config.get('openSource:isActive')) return next();
     // dynamic loading , because series functionality does not exist in opensource
     const InfluxConnection = require('business/src/series/influx_connection');
     const host = this.config.get('influxdb:host');
@@ -181,7 +189,7 @@ class Deletion {
 
       await bluebird.fromCallback((cb) =>
         this.storageLayer.sessions.remove(
-          { data: { username: context.user.username } },
+          { 'data.username': { $eq: context.user.username } },
           cb
         )
       );
@@ -189,6 +197,7 @@ class Deletion {
       this.logger.error(error);
       return next(errors.unexpectedError(error));
     }
+    result.userDeletion = { username: context.user.username };
     next();
   }
 
@@ -198,7 +207,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    
+    if (this.config.get('openSource:isActive') || this.config.get('dnsLess:isActive')) return next();
     try {
       const res = await this.serviceRegisterConn.deleteUser(params.username);
       this.logger.debug('on register: ' + params.username, res);

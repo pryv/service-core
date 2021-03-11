@@ -12,6 +12,7 @@ const express = require('express');
 
 const errors = require('errors').factory;
 const middleware = require('middleware');
+const { setMethodId } = require('middleware');
 
 const methodCallback = require('../methodCallback');
 const Paths = require('../Paths');
@@ -78,33 +79,36 @@ module.exports = function (expressApp: express$Application, app: Application) {
     router.get('/who-am-i', function routeWhoAmI(req: express$Request, res, next) {
       return next(errors.goneResource());
     });
-    router.post('/login', function routeLogin(req: RequestWithContext, res, next) {
-      if (typeof req.body !== 'object' || req.body == null ||
-        ! hasProperties(req.body, ['username', 'password', 'appId'])) {
-        return next(errors.invalidOperation('Missing parameters: username, password and appId are required.'));
-      }
-      const body: Object = req.body; 
-      
-      var params = {
-        username: body.username,
-        password: body.password,
-        appId: body.appId,
-        // some browsers provide origin, some provide only referer
-        origin: req.headers.origin || req.headers.referer || ''
-      };
-      
-      api.call('auth.login', req.context, params, function (err, result) {
-        if (err) return next(err);
-        setSSOCookie({ username: req.context.username, token: result.token }, res);
-        methodCallback(res, next, 200)(err, result);
-      });
+    router.post('/login', 
+      setMethodId('auth.login'),
+      function routeLogin(req: RequestWithContext, res, next) {
+        if (typeof req.body !== 'object' || req.body == null ||
+          ! hasProperties(req.body, ['username', 'password', 'appId'])) {
+          return next(errors.invalidOperation('Missing parameters: username, password and appId are required.'));
+        }
+        const body: Object = req.body; 
+        
+        const params = {
+          username: body.username,
+          password: body.password,
+          appId: body.appId,
+          // some browsers provide origin, some provide only referer
+          origin: req.headers.origin || req.headers.referer || ''
+        };
+        
+        api.call(req.context, params, function (err, result) {
+          if (err) return next(err);
+          setSSOCookie({ username: req.context.username, token: result.token }, res);
+          methodCallback(res, next, 200)(err, result);
+        });
 
     });
     router.post('/logout',
+      setMethodId('auth.logout'),
       loadAccessMiddleware,
       function routeLogout(req: RequestWithContext, res, next) {
         clearSSOCookie(res);
-        api.call('auth.logout', req.context, {}, methodCallback(res, next, 200));
+        api.call(req.context, {}, methodCallback(res, next, 200));
       });
   }
   

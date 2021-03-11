@@ -22,8 +22,8 @@ const { getConfigUnsafe } = require('@pryv/boiler').init({
     file: path.resolve(__dirname, '../../api-server/config/test-config.yml')
   },
   {
-    scope: 'defaults-data',
-    file: path.resolve(__dirname, '../../api-server/config/defaults.js')
+    scope: 'defaults-paths',
+    file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
   },
   {
     plugin: require('../../api-server/config/components/systemStreams')

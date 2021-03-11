@@ -1,0 +1,28 @@
+{
+  "name": "audit",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Audit Logic",
+  "homepage": "http://pryv.com",
+  "license": "UNLICENSED",
+  "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
+  "main": "src/index.js",
+  "scripts": {
+    "cover": "nyc --reporter=lcov --reporter=text-summary npm run test",
+    "test": "NODE_ENV=test ../../node_modules/.bin/mocha test/**/*.test.js --exit"
+  },
+  "dependencies": {
+    "@pryv/boiler": "git+https://github.com/pryv/lib-node-boiler.git",
+    "better-sqlite3": "^7.1.1",
+    "cuid": "^2.1.8",
+    "lru-cache": "^6.0.0",
+    "mkdirp": "^1.0.4",
+    "winston": "^3.3.3",
+    "winston-syslog": "^2.4.4"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^8.2.1",
+    "nyc": "^15.1.0"
+  }
+}

@@ -11,6 +11,9 @@ const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
 const UsersRepository = require('business/src/users/repository');
 const ErrorIds = require('errors/src/ErrorIds');
+
+const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+
 /**
  * Auth API methods implementations.
  *
@@ -30,6 +33,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     openSession,
     updateOrCreatePersonalAccess,
     addApiEndpoint,
+    setAuditAccessId(AuditAccessIds.VALID_PASSWORD),
     setAdditionalInfo);
 
   function applyPrerequisitesForLogin(context, params, result, next) {

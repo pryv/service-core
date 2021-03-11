@@ -11,6 +11,8 @@ var errors = require('errors').factory,
 
 const { getConfig } = require('@pryv/boiler');
 
+const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+
 const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),
   ErrorIds = require('errors').ErrorIds,
@@ -114,7 +116,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.requestPasswordReset.params),
     requireTrustedAppFn,
     generatePasswordResetRequest,
-    sendPasswordResetMail);
+    sendPasswordResetMail,
+    setAuditAccessId(AuditAccessIds.PASSWORD_RESET_REQUEST));
 
   function generatePasswordResetRequest(context, params, result, next) {
     const username = context.user.username;
@@ -159,7 +162,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     requireTrustedAppFn,
     checkResetToken,
     addNewPasswordParameter,
-    updateAccount
+    updateAccount,
+    setAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
   );
 
   function checkResetToken(context, params, result, next) {

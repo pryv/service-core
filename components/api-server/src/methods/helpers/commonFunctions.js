@@ -19,14 +19,14 @@ exports.requirePersonalAccess = function requirePersonalAccess(context, params, 
 
 
 /**
- * Basic check for authorized access based on context.calledMethodId
+ * Basic check for authorized access based on context.methodId
  */
 exports.basicAccessAuthorizationCheck = function (context, params, result, next) {
-  const res = context.access.can(context.calledMethodId);
+  const res = context.access.can(context.methodId);
   if (res === true) return next();
 
   const message = (typeof res === "boolean") ? 
-    'You cannot access ' + context.calledMethodId + ' resource using the given access' :
+    'You cannot access ' + context.methodId + ' resource using the given access' :
     '' + res;
   return next(errors.forbidden(message));
 };

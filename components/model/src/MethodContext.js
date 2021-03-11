@@ -22,6 +22,13 @@ import type { StorageLayer } from 'storage';
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
 
+export type ContextSourceName = 'http' | 'socket.io' | 'hf' | 'test';
+export type ContextSource = {
+  name: ContextSourceName,
+  ip?: string
+}
+
+
 export type AuthenticationData = {
   accessToken: string,
   callerId?: string,
@@ -30,9 +37,14 @@ export type AuthenticationData = {
 const AUTH_SEPARATOR = ' ';
 const ACCESS_TYPE_PERSONAL = 'personal';
 
+
+
+
 class MethodContext {
   // Username of the user making the request. 
   username: string;
+
+  source: ContextSource;
 
   user: ?User;
   access: ?Access;
@@ -41,6 +53,8 @@ class MethodContext {
   accessToken: ?string;
   callerId: ?string;
   headers: ?object; // used in custom auth function
+
+  methodId: ?string; // API method id. Ex.: 'events.get'
 
   // Custom auth function, if one was configured. 
   customAuthStepFn: ?CustomAuthFunction;
@@ -51,16 +65,18 @@ class MethodContext {
   streamIdsNotFoundList: ?Array<string>;
   systemStreamsSerializer: object;
 
-  calledMethodId: ?string;
+  methodId: ?string;
   usersRepository: UsersRepository;
 
   constructor(
+    source: ContextSource,
     username: string,
     auth: ?string,
     customAuthStepFn: ?CustomAuthFunction,
     eventsStorage: ?StorageLayer,
     headers: ?{}
   ) {
+    this.source = source;
     this.username = username;
 
     this.user = null;
@@ -75,7 +91,7 @@ class MethodContext {
     this.callerId = null;
     this.headers = headers;
 
-    this.calledMethodId = null;
+    this.methodId = null;
     this.systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
     this.usersRepository = new UsersRepository(eventsStorage);
     if (auth != null) this.parseAuth(auth);

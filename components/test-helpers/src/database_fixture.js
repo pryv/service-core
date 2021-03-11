@@ -113,7 +113,6 @@ class GenericChildHolder<T: ChildResource> {
   // 
   create<U: T>(resource: U, cb?: (U) => mixed): Promise<U> {
     const name = resource.constructor.name;
-    logger.debug('create', name, resource.attrs);
     
     const createdResource = resource.create();
     this.pending.push(createdResource);
@@ -121,9 +120,7 @@ class GenericChildHolder<T: ChildResource> {
     return createdResource
       .then(() => {
         this.push(resource);
-        logger.debug(name, 'entering cb');
         if (cb) cb(resource);
-        logger.debug(name, 'leaving cb, has ', this.pending.length, 'pending.');
           
         return bluebird.all(resource.childs.pending); 
       })

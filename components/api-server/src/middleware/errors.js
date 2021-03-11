@@ -14,6 +14,8 @@ const commonMeta = require('../methods/helpers/setCommonMeta');
 
 const { getLogger, notifyAirbrake } = require('@pryv/boiler');
 
+const audit = require('audit');
+
 (async () => {
   await commonMeta.loadSettings();
 })();
@@ -30,6 +32,8 @@ function produceHandleErrorMiddleware(logging: any) {
       // it should be coming from Express' bodyParser: just wrap the error
       error = errorsFactory.invalidRequestStructure(error.message);
     }
+
+    audit.errorApiCall(req.context, {}, error);
 
     errorHandling.logError(error, req, logger);
 

@@ -15,6 +15,8 @@ const methodsSchema = require('../src/schema/accessesMethods');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const should = require('should');
+const { ApiEndpoint } = require('utils');
+const { getConfig } = require('@pryv/boiler');
 
 import type Request  from './helpers';
 
@@ -23,6 +25,16 @@ describe('accesses (app)', function () {
   let helpers, server, validation, storage, testData;
   let additionalTestAccesses, user, access, basePath, accessesNotifCount;
   let request: ?Request = null; // must be set after server instance started
+
+  function buildApiEndpoint(username, token) {
+    return ApiEndpoint.build(username, token);
+  }
+
+  before(async function() {
+    await getConfig(); // needed for ApiEndpoint.build();
+  });
+
+
   before(() => {
     require('./test-helpers'); 
     helpers = require('./helpers');
@@ -35,7 +47,6 @@ describe('accesses (app)', function () {
       {
         id: 'app_A',
         token: 'app_A_token',
-        apiEndpoint: 'https://app_A_token@userzero.pryv.me/',
         name: 'App access A',
         type: 'app',
         permissions: [
@@ -60,7 +71,6 @@ describe('accesses (app)', function () {
       {
         id: 'app_B',
         token: 'app_B_token',
-        apiEndpoint: 'https://app_B_token@userzero.pryv.me/',
         name: 'App access B (subset of A)',
         type: 'app',
         permissions: [
@@ -81,7 +91,6 @@ describe('accesses (app)', function () {
       {
         id: 'shared_A',
         token: 'shared_A_token',
-        apiEndpoint: 'https://shared_A_token@userzero.pryv.me/',
         name: 'Shared access A (subset of app access A)',
         type: 'shared',
         permissions: [
@@ -101,7 +110,6 @@ describe('accesses (app)', function () {
       },
       {
         id: 'root_A',
-        apiEndpoint: 'https://root_A_token@userzero.pryv.me/',
         token: 'root_A_token',
         name: 'Root token',
         type: 'app',
@@ -119,7 +127,6 @@ describe('accesses (app)', function () {
       {
         id: 'shared_B',
         token: 'shared_B_token',
-        apiEndpoint: 'https://shared_B_token@userzero.pryv.me/',
         name: 'Shared access B (with permission on unexisting stream)',
         type: 'shared',
         permissions: [
@@ -134,8 +141,14 @@ describe('accesses (app)', function () {
         modifiedBy: 'test'
       }
     ];
+   
     user = Object.assign({}, testData.users[0]);
-  
+    
+    additionalTestAccesses.map((a) => {
+      a.apiEndpoint = buildApiEndpoint(user.username, a.token);
+    });
+
+
     access = additionalTestAccesses[0];
     basePath = '/' + user.username + '/accesses';
     
@@ -213,7 +226,7 @@ describe('accesses (app)', function () {
         const expected: {[key: string]: any} = _.cloneDeep(data);
         expected.id = res.body.access.id;
         expected.token = res.body.access.token;
-        expected.apiEndpoint = 'https://' + expected.token + '@userzero.pryv.me/';
+        expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
         expected.type = 'shared';
         delete expected.permissions[0].defaultName;
         delete expected.permissions[0].name;

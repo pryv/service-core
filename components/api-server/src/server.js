@@ -114,22 +114,10 @@ class Server {
       application.storageLayer, 
       config.get('services'));
 
-    require('./methods/auth/register-dnsless')(application.api, 
-      application.logging, 
-      application.storageLayer, 
-      config.get('services'));
-
-    if (this.isOpenSource) {
-      require('./methods/auth/delete-opensource')(application.api,
-        application.logging,
-        application.storageLayer,
-        config);
-    } else {
-      require('./methods/auth/delete')(application.api,
-        application.logging,
-        application.storageLayer,
-        config);
-    }
+    require('./methods/auth/delete')(application.api,
+      application.logging,
+      application.storageLayer,
+      config);
 
     require('./methods/accesses')(
       application.api, 
@@ -137,8 +125,7 @@ class Server {
       application.getUpdatesSettings(), 
       application.storageLayer);
 
-    require('./methods/service')(
-      application.api, l('methods/service'));
+    require('./methods/service')(application.api);
 
     if (! this.isOpenSource) {
       require('./methods/webhooks')(
@@ -173,7 +160,7 @@ class Server {
       application.storageLayer.eventFiles, 
       this.notificationBus, 
       application.logging, 
-      config.get('audit'), 
+      config.get('versioning'), 
       config.get('updates'));
 
     await require('./methods/events')(application.api, 
@@ -183,7 +170,7 @@ class Server {
       config.get('service:eventTypes'), 
       this.notificationBus, 
       application.logging,
-      config.get('audit'),
+      config.get('versioning'),
       config.get('updates'), 
       config.get('openSource'), 
       config.get('services'));

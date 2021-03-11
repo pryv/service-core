@@ -139,8 +139,8 @@ Object.freeze(PermissionLevels);
 
   /** ---------- GENERIC --------------- */
 
-  can(calledMethodId) {
-    switch (calledMethodId) {
+  can(methodId) {
+    switch (methodId) {
       // -- Account
       case 'account.get':
       case 'account.update':
@@ -171,7 +171,7 @@ Object.freeze(PermissionLevels);
         return ! this.isPersonal();
       
       default:
-        throw(new Error('Unkown method.id: ' + calledMethodId));
+        throw(new Error('Unkown method.id: ' + methodId));
     }
   }
 

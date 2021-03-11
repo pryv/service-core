@@ -344,6 +344,7 @@ class Connection {
 
     // Make sure that we have a callback here. 
    
+    this.methodContext.methodId = apiMethod;
     
     const methodContext = this.methodContext;
 
@@ -354,7 +355,7 @@ class Connection {
     methodContext.acceptStreamsQueryNonStringified = true;
     
     const answer = bluebird.fromCallback(
-      (cb) => api.call(apiMethod, methodContext, params, cb));
+      (cb) => api.call(methodContext, params, cb));
       
     try {
       const result = await answer; 

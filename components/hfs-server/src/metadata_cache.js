@@ -14,6 +14,8 @@ const logger = require('@pryv/boiler').getLogger('metadata_cache');
 
 const storage = require('storage');
 const MethodContext = require('model').MethodContext;
+import type {ContextSource} from 'model';
+
 const errors = require('errors').factory;
 const { InfluxRowType } = require('business').types;
 
@@ -208,9 +210,14 @@ class MetadataLoader {
   forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
     const storage = this.storage; 
     
-    // Retrieve Access (including AccessLogic)
+    // Retrieve Access (including accessLogic)
+    const contextSource: ContextSource = {
+      name: 'hf',
+      ip: 'TODO'
+    }
     const customAuthStep = null;
     const methodContext = new MethodContext(
+      contextSource,
       userName,
       accessToken,
       customAuthStep,

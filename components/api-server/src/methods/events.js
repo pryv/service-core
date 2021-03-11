@@ -803,13 +803,22 @@ module.exports = async function (
 
     context.oldContent = _.extend(context.oldContent, {headId: context.oldContent.id});
     delete context.oldContent.id;
-
+    // otherwise the history value will squat
+    context.oldContent = removeUniqueStreamId(context.oldContent);
     userEventsStorage.insertOne(context.user, context.oldContent, function (err) {
       if (err) {
         return next(errors.unexpectedError(err));
       }
       next();
     });
+
+    function removeUniqueStreamId(event) {
+      const index = event.streamIds.indexOf('.unique');
+      if (index > -1) {
+        event.streamIds.splice(index, 1);
+      }
+      return event;
+    }
   }
 
   async function updateAttachments(context, params, result, next) {

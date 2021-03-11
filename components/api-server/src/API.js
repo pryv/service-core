@@ -11,6 +11,7 @@ const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const Result = require('./Result');
 const _ = require('lodash');
+const audit = require('audit');
 
 // When storing full events.get request instead of streaming it, the maximum
 // array size before returning an error.
@@ -162,16 +163,12 @@ class API {
 
   // ------------------------------------------------------------ handling calls
   
-  call(id: string, context: MethodContext, params: mixed, callback: ApiCallback) {
+  call(context: MethodContext, params: mixed, callback: ApiCallback) {
     const methodMap = this.map; 
-    const methodList = methodMap.get(id);
+    const methodList = methodMap.get(context.methodId);
 
     if (methodList == null) 
-      return callback(errors.invalidMethod(id), null);
-    
-    // Instrument the context with the method that was called. 
-    if (context != null)
-      context.calledMethodId = id; 
+      return callback(errors.invalidMethod(context.methodId), null);
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -181,12 +178,13 @@ class API {
         next(err);
       }
     }, function (err) {
+      //TODO make audit failure blocking (maybe upfront) ?
       if (err != null) {
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
       }
-      
+      audit.validApiCall(context, params, result);
       callback(null, result);
     });
   }
