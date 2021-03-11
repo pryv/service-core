@@ -70,7 +70,12 @@ async function initCore() {
     app.config.get('updates'),
     app.config.get('openSource'),
     app.config.get('services'));
-
+  require('api-server/src/methods/service')(app.api);
+  require('api-server/src/methods/auth/login')(app.api, 
+    app.storageLayer.accesses, 
+    app.storageLayer.sessions, 
+    app.storageLayer.events, 
+    config.get('auth'));
   global.coreRequest = supertest(app.expressApp);
 }
 async function stopCore() {
@@ -88,6 +93,8 @@ Object.assign(global, {
   charlatan: require('charlatan'),
   bluebird: require('bluebird'),
   sinon: require('sinon'),
+  path: require('path'),
+  apiMethods: require('audit/src/ApiMethods'),
 });
 
 

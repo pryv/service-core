@@ -3,6 +3,10 @@ audit:
   storage:
     active: true
     path: "./database/"
+    filter:
+      calledMethods:
+        allowed: ['all']
+        unallowed: []
 
   syslog:
     active: true
@@ -23,4 +27,7 @@ audit:
       default:
         template: "{userid} {type} createdBy:{createdBy} {streamIds} {content}"
         level: notice # One of notice, warning, error, critical, alert, emerg
-
+    filter:
+      calledMethods:
+        allowed: ['all']
+        unallowed: []
