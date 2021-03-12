@@ -97,6 +97,7 @@ Object.assign(global, {
   sinon: require('sinon'),
   path: require('path'),
   apiMethods: require('audit/src/ApiMethods'),
+  MethodContextUtils: require('audit/src/MethodContextUtils'),
 });
 
 

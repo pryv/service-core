@@ -145,7 +145,7 @@ describe('Audit', function() {
         log = entries[0];
       });
       it('must have its custom accessId save to streamIds', function() {
-        assert.include(log.streamIds, 'auth.login');
+        assert.include(log.streamIds, MethodContextUtils.AuditAccessIds.VALID_PASSWORD);
       })
     });
     
