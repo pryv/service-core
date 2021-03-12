@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-require('test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 const { getConfig } = require('@pryv/boiler');
 
 const syslogWatch = require('./SyslogWatch');

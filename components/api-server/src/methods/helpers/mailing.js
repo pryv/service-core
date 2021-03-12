@@ -7,7 +7,7 @@
 // @flow
 
 const request = require('superagent');
-const errors = require('../../../../errors').factory;
+const errors = require('errors').factory;
 const URL = require('url');
 
 type Callback = (error: ?Error, res: ?Object) => any;

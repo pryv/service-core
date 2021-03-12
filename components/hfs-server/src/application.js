@@ -17,7 +17,7 @@ const {getConfig, getLogger, boiler} = require('@pryv/boiler').init({
     scope: 'defaults-data',
     file: path.resolve(__dirname, '../config/default-config.yml')
   }, {
-    plugin: require('../../api-server/config/components/systemStreams')
+    plugin: require('api-server/config/components/systemStreams')
   }]
 });
 

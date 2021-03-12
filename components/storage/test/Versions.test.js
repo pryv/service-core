@@ -11,7 +11,7 @@
 /*global describe, it */
 
 const bluebird = require('bluebird');
-require('../../test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const converters = require('../src/converters');
@@ -63,11 +63,11 @@ describe('Versions', function () {
     };
 
     var expected = {
-      accesses: require('../../test-helpers/src/data/migrated/0.3.0/accesses').slice(),
-      events: require('../../test-helpers/src/data/migrated/0.3.0/events')
+      accesses: require('test-helpers/src/data/migrated/0.3.0/accesses').slice(),
+      events: require('test-helpers/src/data/migrated/0.3.0/events')
         .concat(extraEventMigrated),
-      streams: require('../../test-helpers/src/data/migrated/0.3.0/streams').slice(),
-      attachments: require('../../test-helpers/src/data/migrated/0.3.0/attachments').slice()
+      streams: require('test-helpers/src/data/migrated/0.3.0/streams').slice(),
+      attachments: require('test-helpers/src/data/migrated/0.3.0/attachments').slice()
     };
 
     async.series({
@@ -113,7 +113,7 @@ describe('Versions', function () {
         user = {id: 'u_0'};
 
     var expected = {
-      accesses: require('../../test-helpers/src/data/migrated/0.4.0/accesses').slice()
+      accesses: require('test-helpers/src/data/migrated/0.4.0/accesses').slice()
     };
 
     async.series({
@@ -139,7 +139,7 @@ describe('Versions', function () {
         user = {id: 'u_0'};
 
     var expected = {
-      events: require('../../test-helpers/src/data/migrated/0.5.0/events').slice()
+      events: require('test-helpers/src/data/migrated/0.5.0/events').slice()
     };
 
     async.series({

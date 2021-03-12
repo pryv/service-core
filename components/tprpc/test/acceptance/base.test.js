@@ -15,7 +15,7 @@ const chai = require('chai');
 const assert = chai.assert; 
 const sinon = require('sinon');
 
-const rpc = require('../../src/index.js');
+const rpc = require('tprpc');
 
 const { Corpus } = require('../fixtures/base');
 import type { ISearchService }  from '../fixtures/base';

@@ -2,7 +2,6 @@
 audit:
   storage:
     active: true
-    path: "./database/"
     filter:
       calledMethods:
         allowed: ['all']

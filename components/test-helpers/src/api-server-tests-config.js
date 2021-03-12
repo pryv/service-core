@@ -26,6 +26,6 @@ const boiler = require('@pryv/boiler').init({
     scope: 'default-audit-path',
     file: path.resolve(__dirname, '../../audit/config/default-path.js')
   },{
-    plugin: require('../../api-server/config/components/systemStreams')
+    plugin: require('api-server/config/components/systemStreams')
   }]
 });

@@ -50,25 +50,52 @@ const ALL_METHODS = [
   'events.create',
   'events.update',
   'events.delete',
-  'events.deleteAttachment'
+  'events.deleteAttachment',
+  'system.createUser',
+  'system.createPoolUser',
+  'system.getUsersPoolSize',
+  'system.getUserInfo',
 ];
 
 const NOT_AUDITED_METHODS = [
   'service.info',
   'system.createPoolUser',
   'system.getUsersPoolSize',
+  'system.getUserInfo',
+  'auth.usernameCheck',
+  'auth.emailCheck',
 ];
 
 const AUDITED_METHODS = ALL_METHODS.filter(m => {
   return ! NOT_AUDITED_METHODS.includes(m);
 });
 
-const auditedMap = {};
-AUDITED_METHODS.forEach(m => {
-  auditedMap[m] = true;
-});
+// doesnt include non-audited ones
+const WITHOUT_USER_METHODS = [
+  'auth.register',
+  'system.createUser',
+];
+
+const auditedMethodsMap = {};
+AUDITED_METHODS.forEach(m => auditedMethodsMap[m] = true);
+const allMethodsMap = {};
+ALL_METHODS.forEach(m => allMethodsMap[m] = true);
+const withoutUserMethodsMap = {};
+WITHOUT_USER_METHODS.forEach(m => withoutUserMethodsMap[m] = true);
+
+
+function isMethodDeclared(methodId) {
+  if (methodId.includes('*')) return true; // allowing to register for wildcards such as "followedSlices.*", or "*"
+  if (allMethodsMap[methodId]) return true;
+  return false;
+}
 
 module.exports = {
-  AUDITED_METHODS_MAP: auditedMap,
+  AUDITED_METHODS_MAP: auditedMethodsMap,
   AUDITED_METHODS: AUDITED_METHODS,
+  ALL_METHODS: ALL_METHODS,
+  ALL_METHODS_MAP: allMethodsMap,
+  WITHOUT_USER_METHODS: WITHOUT_USER_METHODS,
+  WITHOUT_USER_METHODS_MAP: withoutUserMethodsMap,
+  isMethodDeclared: isMethodDeclared,
 };

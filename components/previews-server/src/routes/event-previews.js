@@ -15,7 +15,7 @@ const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const getAuth = require('../../../middleware/src/getAuth');
+const getAuth = require('middleware/src/getAuth');
 
 const {getLogger} = require('@pryv/boiler');
 

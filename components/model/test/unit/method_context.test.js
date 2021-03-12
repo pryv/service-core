@@ -8,7 +8,7 @@
 
 /* global describe, it, beforeEach */
 
-require('../../../test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 const timestamp = require('unix-timestamp');
 
 const sinon = require('sinon');

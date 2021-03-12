@@ -16,7 +16,7 @@ function setAuditAccessId(accessId) {
 }
 
 const AuditAccessIds = {
-  VALID_PASSWORD: 'password',
+  VALID_PASSWORD: 'valid-password',
   PASSWORD_RESET_REQUEST: 'password-reset-request',
   PASSWORD_RESET_TOKEN: 'password-reset-token',
   ADMIN_TOKEN: 'admin',
@@ -28,5 +28,5 @@ Object.freeze(AuditAccessIds);
 
 module.exports = {
   setAuditAccessId: setAuditAccessId,
-  AuditAccessIds: AuditAccessIds
+  AuditAccessIds: AuditAccessIds,
 }

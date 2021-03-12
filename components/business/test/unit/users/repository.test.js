@@ -8,7 +8,7 @@
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
-require('test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 const helpers = require('api-server/test/helpers');
 const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('test-helpers');

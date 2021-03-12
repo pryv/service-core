@@ -43,6 +43,7 @@ const errorsMiddlewareMod = require('./middleware/errors');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
+const UserLocalDirectory = require('business').users.UserLocalDirectory;
 const audit = require('audit'); // Audit is loaded to be initalized by the Application.
 
 const { Extension, ExtensionLoader } = require('utils').extension;
@@ -96,6 +97,7 @@ class Application {
     }
     this.produceLogSubsystem();
     logger.debug('Init started');
+    await UserLocalDirectory.init();
 
     this.config = await getConfig();
     await audit.init();

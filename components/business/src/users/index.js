@@ -5,9 +5,6 @@
  * Proprietary and confidential
  */
 
-'use strict';
-// @flow
-
-process.env.NODE_ENV = 'test';
-
-require('test-helpers/src/api-server-tests-config');
+module.exports = {
+  UserLocalDirectory: require('./UserLocalDirectory')
+}

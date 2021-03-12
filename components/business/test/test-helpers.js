@@ -14,7 +14,7 @@ const should = require('should');
 const superagent = require('superagent');
 const request = require('supertest');
 
-require('../../test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 
 module.exports = {
   should: should, 
