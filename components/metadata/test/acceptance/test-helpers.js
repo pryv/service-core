@@ -6,7 +6,7 @@
  */
 // @flow
 
-require('../../../test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 const logger = require('@pryv/boiler').getLogger('test-helpers');
 const testHelpers = require('test-helpers');
 

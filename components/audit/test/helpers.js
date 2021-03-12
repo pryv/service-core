@@ -8,7 +8,7 @@
 /**
  * Loaded by .mocharc.js for node tests
  */
-require('test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 const { getConfig } = require('@pryv/boiler');
 
 const audit = require('../src/');

@@ -52,9 +52,7 @@ function PathForUserid(userid, extraPath = '') {
  * This could also handle eventual migrations
  */
 async function init() {
-  if (basePath) {
-    throw( new Error('user local directory already initaliazed'));
-  }
+  if (basePath) return;
   const config = await getConfig();
   const candidateBasePath = config.get('userFiles:path');
   mkdirp.sync(candidateBasePath);
