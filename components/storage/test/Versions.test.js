@@ -11,7 +11,7 @@
 /*global describe, it */
 
 const bluebird = require('bluebird');
-require('../../test-helpers/src/boiler-init');
+require('../../test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const converters = require('../src/converters');

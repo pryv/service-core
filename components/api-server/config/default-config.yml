@@ -23,6 +23,9 @@ database:
   connectTimeoutMS: 60000
   socketTimeoutMS: 60000
 
+userFiles:
+  path: 'REPLACE ME'
+
 eventFiles: 
   attachmentsDirPath: 'REPLACE ME'
   previewsDirPath: 'REPLACE ME'

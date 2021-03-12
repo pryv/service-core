@@ -8,7 +8,7 @@
 /**
  * Loaded by .mocharc.js for node tests
  */
-require('test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 const { getConfig } = require('@pryv/boiler');
 
 const audit = require('../src/');
@@ -21,6 +21,7 @@ const supertest = require('supertest');
 const Application = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
 const Notifications = require('api-server/src/Notifications');
+const UserLocalDirectory = require('business').users.UserLocalDirectory;
 
 /**
  * To be call in before()
@@ -29,6 +30,7 @@ async function initTests() {
   await audit.init();
   global.audit = audit;
   global.config = await getConfig();
+  await UserLocalDirectory.init();
 }
 
 /**

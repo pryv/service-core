@@ -17,7 +17,7 @@ const bluebird = require('bluebird');
 const charlatan = require('charlatan');
 
 
-require('../../../../test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 const storage = require('storage');
 const { databaseFixture } = require('test-helpers');
 
