@@ -12,7 +12,7 @@ const errors = require('errors').factory;
 const Result = require('./Result');
 const _ = require('lodash');
 const audit = require('audit');
-const { ALL_METHODS_MAP } = require('audit/src/ApiMethods');
+const { isMethodDeclared } = require('audit/src/ApiMethods');
 
 // When storing full events.get request instead of streaming it, the maximum
 // array size before returning an error.
@@ -65,7 +65,7 @@ class API {
   // - `api.register('events.start', fn1, 'events.create', ...)`
   // 
   register(id: string, ...fns: Array<ApiFunction>) {
-    if (! ALL_METHODS_MAP[id]) throw new Error('Attempting to add a method not supported in audit, methodId: "' + id + '". Please add it to components/audit/src/ApiMethods.js#ALL_METHODS')
+    if (! isMethodDeclared(id)) throw new Error('Attempting to add a method not declared in audit, methodId: "' + id + '". Please add it to components/audit/src/ApiMethods.js#ALL_METHODS')
 
     const methodMap = this.map; 
     const wildcardAt = id.indexOf(WILDCARD);

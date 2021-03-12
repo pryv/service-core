@@ -55,8 +55,6 @@ const ALL_METHODS = [
   'system.createPoolUser',
   'system.getUsersPoolSize',
   'system.getUserInfo',
-  '*',
-  'followedSlices.*',
 ];
 
 const NOT_AUDITED_METHODS = [
@@ -74,14 +72,21 @@ const auditedMethodsMap = {};
 AUDITED_METHODS.forEach(m => {
   auditedMethodsMap[m] = true;
 });
-const allMethodsMap = {};
+const ALL_METHODS_MAP = {};
 ALL_METHODS.forEach(m => {
-  allMethodsMap[m] = true;
+  ALL_METHODS_MAP[m] = true;
 });
+
+function isMethodDeclared(methodId) {
+  if (methodId.includes('*')) return true; // allowing to register for wildcards such as "followedSlices.*", or "*"
+  if (ALL_METHODS_MAP[methodId]) return true;
+  return false;
+}
 
 module.exports = {
   AUDITED_METHODS_MAP: auditedMethodsMap,
   AUDITED_METHODS: AUDITED_METHODS,
   ALL_METHODS: ALL_METHODS,
-  ALL_METHODS_MAP: allMethodsMap,
+  ALL_METHODS_MAP: ALL_METHODS_MAP,
+  isMethodDeclared: isMethodDeclared,
 };
