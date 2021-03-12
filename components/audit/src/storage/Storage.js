@@ -10,26 +10,20 @@ const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:storage');
+const EnsureUserDirectory = require('business').users.UserLocalDirectory.EnsurePathForUserid;
 
 const MAX_SIZE_CACHE = 500;
 
 class Storage { 
   initialized = false;
   userDBsCache = null;
-  basePath = null;
   options = null;
 
   async init() {
     if (this.initialized) {
       throw('Database already initalized');
     } 
-
     this.config = await getConfig();
-    this.basePath = this.config.get('audit:storage:path');
-    if (! this.basePath) {
-      throw('Mising database:path config setting');
-    }
-    mkdirp(this.basePath);
     logger.debug('Db initalized');
     this.initialized = true;
     return this;
@@ -69,7 +63,7 @@ class Storage {
 
 function open(storage, userid) {
   logger.debug('open: ' + userid);
-  const db = new UserDatabase({dbPath: dbPathForUserid(storage.basePath, userid)});
+  const db = new UserDatabase({dbPath: dbPathForUserid(userid)});
   storage.userDBsCache.set(userid, db);
   return db;
 }
@@ -78,11 +72,9 @@ function open(storage, userid) {
  /**
  * @param {string} uid -- user id (cuid format)
  */
-function dbPathForUserid(basePath, userid) {
-  const dir1 = userid.substr(userid.length - 1, 1); // last character of id
-  const dir2 = userid.substr(userid.length - 2, 1); // before last character of id
-  mkdirp(path.join(basePath, dir2, dir1)); // ensure directory exists
-  return path.join(basePath, dir2, dir1, userid + '.sqlite');
+function dbPathForUserid(userid) {
+  const userPath = EnsureUserDirectory(userid);
+  return path.join(userPath, 'audit.sqlite');
 }
 
 

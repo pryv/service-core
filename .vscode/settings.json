@@ -8,5 +8,6 @@
   "files.watcherExclude": {
     "**/dist/**": true,
     "**/var-pryv/**": true
-  }
+  },
+  "javascript.validate.enable": false
 }

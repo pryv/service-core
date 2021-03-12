@@ -13,6 +13,7 @@ module.exports = {
     Webhook: require('./webhooks/Webhook'),
     Repository: require('./webhooks/repository'),
   },
+  users: require('./users')
 };
 
 import type { Query }  from './series/series';

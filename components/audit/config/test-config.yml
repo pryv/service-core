@@ -15,7 +15,6 @@ logs:
 audit: # set to false to fully deactivate
   storage:
     active: true
-    path: "./test-database/"
 
   syslog:
     active: true
