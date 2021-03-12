@@ -13,7 +13,7 @@ const middleware = require('middleware');
 const commonMeta = require('../methods/helpers/setCommonMeta');
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
-const getAuth = require('../../../middleware/src/getAuth');
+const getAuth = require('middleware/src/getAuth');
 const { setMethodId } = require('middleware');
     
 import type Application  from '../application';

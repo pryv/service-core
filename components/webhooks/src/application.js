@@ -15,7 +15,7 @@ require('@pryv/boiler').init({
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   },{
-    plugin: require('../../api-server/config/components/systemStreams')
+    plugin: require('api-server/config/components/systemStreams')
   }]
 });
 

@@ -20,7 +20,7 @@ const { ProjectVersion } = require('middleware/src/project_version');
 
 
 const controllerFactory = require('./web/controller');
-const getAuth = require('../../middleware/src/getAuth');
+const getAuth = require('middleware/src/getAuth');
 
 const KEY_IP = 'http:ip';
 const KEY_PORT = 'http:port';  

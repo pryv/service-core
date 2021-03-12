@@ -16,8 +16,8 @@ var errors = require('errors').factory,
   treeUtils = utils.treeUtils,
   _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const ErrorMessages = require('../../../errors/src/ErrorMessages');
-const ErrorIds = require('../../../errors/src/ErrorIds');
+const ErrorMessages = require('errors/src/ErrorMessages');
+const ErrorIds = require('errors/src/ErrorIds');
 
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');

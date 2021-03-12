@@ -10,7 +10,7 @@ const path = require('path');
 const fs = require('fs');
 const lodash = require('lodash');
 
-const toplevel = require('../test-helpers');
+const toplevel = require('test-helpers');
 
 module.exports = lodash.merge({}, toplevel, {
   fixturePath: fixturePath, 
