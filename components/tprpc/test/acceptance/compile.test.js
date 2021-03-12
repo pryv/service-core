@@ -15,7 +15,7 @@ const chai = require('chai');
 const assert = chai.assert; 
 const logger = require('@pryv/boiler').getLogger('compile.test');
 
-const rpc = require('../../src/index.js');
+const rpc = require('tprpc');
 
 describe('Type Compilation', function () {
   let tempdir; 
