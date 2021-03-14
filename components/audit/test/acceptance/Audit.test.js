@@ -146,7 +146,34 @@ describe('Audit', function() {
       });
       it('must have its custom accessId save to streamIds', function() {
         assert.include(log.streamIds, MethodContextUtils.AuditAccessIds.VALID_PASSWORD);
-      })
+      });
+    });
+    describe('when making a call that has no userId', function() {
+      let log;
+      before(async function () {
+        resetSpies();
+        now = Date.now() / 1000;
+        res = await coreRequest
+          .post('/users')
+          .send({
+            username: cuid().substring(2, 26),
+            password: cuid(),
+            appId: 'whatever',
+            email: cuid(),
+            insurancenumber: '123'
+          });
+      });
+  
+      it('must return 201', function () {
+        assert.equal(res.status, 201);
+        
+      });
+      it('must log it in syslog', function() {
+        assert.isTrue(sysLogSpy.calledOnce);
+      });
+      it('must not log it to storage', async function() {
+        assert.isFalse(storageSpy.calledOnce);
+      });
     });
     
   });

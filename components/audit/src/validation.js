@@ -35,4 +35,5 @@ function eventWithoutUser(event) {
 
 module.exports = {
   eventForUser: eventForUser,
-}
+  eventWithoutUser: eventWithoutUser,
+};

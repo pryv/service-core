@@ -46,6 +46,11 @@ function closeTests() { 
  * requires initTests()
  */
 async function initCore() {
+  config.injectTestConfig({
+    dnsLess: {
+      isActive: true,
+    },
+  });
   const database = new Database(config.get('database')); 
   
   global.mongoFixtures = databaseFixture(database);
@@ -78,6 +83,10 @@ async function initCore() {
     app.storageLayer.sessions, 
     app.storageLayer.events, 
     config.get('auth'));
+  require('api-server/src/methods/auth/register')(app.api, 
+    app.logging, 
+    app.storageLayer, 
+    config.get('services'));
   global.coreRequest = supertest(app.expressApp);
 }
 async function stopCore() {

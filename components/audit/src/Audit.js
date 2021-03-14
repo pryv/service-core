@@ -86,9 +86,17 @@ class Audit {
 
   async eventForUser(userId, event, methodId) {
     logger.debug('eventForUser: ' + userId + ' ' + logger.inspect(event));
-    const valid = validation.eventForUser(userId, event);
-    if ( valid !== true) {
-      throw new Error('Invalid audit eventForUser call : ' + valid, {userId: userId, event: event}); 
+
+    // replace this with api-server's validation
+    let isValid = false;
+    if (WITHOUT_USER_METHODS_MAP[methodId]) {
+      isValid = validation.eventWithoutUser(userId, event);
+    } else {
+      isValid = validation.eventForUser(userId, event);
+    }
+
+    if (! isValid) {
+      throw new Error('Invalid audit eventForUser call : ' + isValid, {userId: userId, event: event}); 
     }
 
     if (this.syslog && isPartOfSyslog(methodId)) {
@@ -108,16 +116,16 @@ class Audit {
     }
   }
 
+  reloadConfig() {
+    // 
+  }
+
   close() {
     closeStorage();
   }
 }
 
 module.exports = Audit;
-
-
-
-
 
 function buildDefaultEvent(context, params) {
   return {
