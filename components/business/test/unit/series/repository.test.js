@@ -12,7 +12,7 @@
 /* global describe, it */
 const influx = require('influx');
 
-const series = require('../../../src/index.js').series; 
+const series = require('business').series; 
 const userStorage = require('test-helpers').dependencies.storage.user.events;
 const Repository = series.Repository; 
 const DataMatrix = series.DataMatrix; 

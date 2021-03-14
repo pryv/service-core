@@ -9,7 +9,7 @@
 //    bin/compile FILE
 
 const path = require('path');
-const rpc = require('../src/index');
+const rpc = require('tprpc');
 
 async function compile(sourcePath) {
   const source = path.parse(sourcePath);
