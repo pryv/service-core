@@ -65,7 +65,7 @@ class Audit {
   async errorApiCall(context, params, error) {
     const methodId = context.methodId;
     if (! AUDITED_METHODS_MAP[methodId]) return;
-    const userId = context.user.id;
+    const userId = context?.user?.id;
   
     if (context.access?.id == null) {
       context.access = { id: error.id };
@@ -85,7 +85,7 @@ class Audit {
     const methodId = context.methodId;
     if (! AUDITED_METHODS_MAP[methodId]) return;
 
-    const userId = context.user.id;
+    const userId = context?.user?.id;
     const event = buildDefaultEvent(context, params);
     this.eventForUser(userId, event, methodId);
   }
@@ -114,10 +114,12 @@ class Audit {
     }
 
     function isPartOfSyslog(methodId) {
+      //if (! this.filter.syslog.methods[methodId]) return false;
       return true;
     }
     function isPartOfStorage(methodId) {
       if (WITHOUT_USER_METHODS_MAP[methodId]) return false;
+      //if (! this.filter.storage.methods[methodId]) return false;
       return true;
     }
   }
@@ -152,10 +154,31 @@ function initFilter(audit, config) {
   const storageFilter = config.get('audit:storage:filter');
   validation.filter(syslogFilter);
   validation.filter(storageFilter);
+
   this.filter = {
-    syslogFilter: syslogFilter,
-    storageFilter: storageFilter,
+    syslog: {
+      methods: buildMap(syslogFilter.methods.allowed),
+    },
+    storage: {
+      methods: buildMap(storageFilter.methods.allowed),
+    },
   };
+
+  function buildAllowed(allowed, unallowed) {
+    if (allowed.length === 0) return true;
+  }
+}
+
+/**
+ * Builds a map with an { i => true } entry for each array element
+ * @param {Array<*>} array 
+ */
+function buildMap(array) {
+  const map = {};
+  array.forEach(i => {
+    map[i] = true;
+  });
+  return map;
 }
 
 function log(context, userId, validity, id) {

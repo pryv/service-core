@@ -16,9 +16,6 @@ class MinimalMethodContext {
       name: 'http',
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
     }
-    this.user = {
-      id: 'no-user',
-    }
   }
 }
 

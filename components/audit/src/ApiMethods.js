@@ -76,13 +76,7 @@ const WITHOUT_USER_METHODS = [
   'system.createUser',
 ];
 
-const auditedMethodsMap = {};
-AUDITED_METHODS.forEach(m => auditedMethodsMap[m] = true);
-const allMethodsMap = {};
-ALL_METHODS.forEach(m => allMethodsMap[m] = true);
-const withoutUserMethodsMap = {};
-WITHOUT_USER_METHODS.forEach(m => withoutUserMethodsMap[m] = true);
-
+const allMethodsMap = buildMap(ALL_METHODS);
 
 function isMethodDeclared(methodId) {
   if (methodId.includes('*')) return true; // allowing to register for wildcards such as "followedSlices.*", or "*"
@@ -91,11 +85,23 @@ function isMethodDeclared(methodId) {
 }
 
 module.exports = {
-  AUDITED_METHODS_MAP: auditedMethodsMap,
   AUDITED_METHODS: AUDITED_METHODS,
+  AUDITED_METHODS_MAP: buildMap(AUDITED_METHODS),
   ALL_METHODS: ALL_METHODS,
   ALL_METHODS_MAP: allMethodsMap,
   WITHOUT_USER_METHODS: WITHOUT_USER_METHODS,
-  WITHOUT_USER_METHODS_MAP: withoutUserMethodsMap,
+  WITHOUT_USER_METHODS_MAP: buildMap(WITHOUT_USER_METHODS),
   isMethodDeclared: isMethodDeclared,
 };
+
+/**
+ * Builds a map with an { i => true } entry for each array element
+ * @param {Array<*>} array 
+ */
+function buildMap(array) {
+  const map = {};
+  array.forEach(i => {
+    map[i] = true;
+  });
+  return map;
+}
