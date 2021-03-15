@@ -13,6 +13,11 @@ logs:
     filename: test-application.log
 
 audit: # set to false to fully deactivate
+  filter:
+    methods:
+      allowed: ['all']
+      unallowed: []
+
   storage:
     active: true
 

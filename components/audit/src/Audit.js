@@ -15,7 +15,7 @@ const { getConfig, getLogger} = require('@pryv/boiler');
 const logger = getLogger('audit');
 
 // for an unkown reason removing ".js" returns an empty object
-const validation = require('./validation.js');
+const validation = require('./validation');
 const { AUDITED_METHODS_MAP, WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 
 
@@ -25,6 +25,7 @@ const { AUDITED_METHODS_MAP, WITHOUT_USER_METHODS_MAP } = require('./ApiMethods'
 class Audit {
   _storage;
   _syslog;
+  _filter;
 
   /**
    * Requires to call async init() to use
@@ -41,8 +42,12 @@ class Audit {
     return this._syslog;
   }
 
+  get filter() {
+    return this._filter;
+  }
+
   async init() {
-    logger.debug('Init');
+    logger.debug('Audit initiating...');
     const config = await getConfig();
 
     if (config.get('audit:storage:active')) {
@@ -53,7 +58,8 @@ class Audit {
       this._syslog = await getSyslog();
     }
 
-    logger.info('Application started');
+    initFilter(this, config);
+    logger.info('Audit started');
   }
 
   async errorApiCall(context, params, error) {
@@ -116,8 +122,8 @@ class Audit {
     }
   }
 
-  reloadConfig() {
-    // 
+  async reloadConfig() {
+    await this.init();
   }
 
   close() {
@@ -141,6 +147,12 @@ function buildDefaultEvent(context, params) {
   }
 }
 
+function initFilter(audit, config) {
+  const baseFilter = config.get('audit:filter');
+  validation.filter(baseFilter);
+  this.filter = baseFilter;
+}
+
 function log(context, userId, validity, id) {
   const methodId = context.methodId;
   if ( 
@@ -153,5 +165,5 @@ function log(context, userId, validity, id) {
     //const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
     //console.log(stack);
     //console.log('XXXX> Access:', context.access);
-}
+  }
 }

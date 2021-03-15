@@ -358,27 +358,54 @@ describe('Audit', function() {
   });
 
   describe('Filtering', function() {
+
+    function fakeAuditEvent(methodId) {
+      return {
+        createdBy: 'system',
+        streamIds: [cuid()],
+        type: 'log/user-api',
+        content: {
+          source: { name: 'http', ip: charlatan.Internet.IPv4() },
+          action: methodId,
+          status: 200,
+          query: {},
+        },
+      }
+    }
+
     describe('when filtering by calledMethods', function() {
       describe('when allowing all', function() {
-        before(function() {
-          config.injectTestConfig({ audit: { filtering: { allowed: ['all'] } } });
+        before(async function() {
+          config.injectTestConfig({ audit: { filter: { methods: {
+            allowed: ['all'],
+            unallowed: [],
+          }}}});
+          await audit.reloadConfig();
+          resetSpies();
+          audit.eventForUser(cuid(), fakeAuditEvent('events.get'));
+        });
+        it('must log it in syslog', function() {
+          assert.isTrue(sysLogSpy.calledOnce);
+        });
+        it('must save it to storage', function() {
+          assert.isTrue(storageSpy.calledOnce);
         });
         
       });
       describe('when allowing all, but a few', function () {
         before(function() {
-          config.injectTestConfig({ audit: { filtering: { unallowed: ['events.get'] } } });
+          config.injectTestConfig({ audit: { filter: { unallowed: ['events.get'] } } });
         });
 
       });
       describe('when only allowing a few', function () {
         before(function() {
-          config.injectTestConfig({ audit: { filtering: { allowed: ['events.get'] } } });
+          config.injectTestConfig({ audit: { filter: { allowed: ['events.get'] } } });
         });
       });
       describe('when allowing nothing', function () {
         before(function() {
-          config.injectTestConfig({ audit: { filtering: { unallowed: ['all'] } } });
+          config.injectTestConfig({ audit: { filter: { unallowed: ['all'] } } });
         });
       });
 
