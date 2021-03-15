@@ -1,9 +1,10 @@
 ---
 audit:
+
   storage:
     active: true
     filter:
-      calledMethods:
+      methods:
         allowed: ['all']
         unallowed: []
 
@@ -27,6 +28,6 @@ audit:
         template: "{userid} {type} createdBy:{createdBy} {streamIds} {content}"
         level: notice # One of notice, warning, error, critical, alert, emerg
     filter:
-      calledMethods:
+      methods:
         allowed: ['all']
         unallowed: []

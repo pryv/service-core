@@ -13,13 +13,13 @@ logs:
     filename: test-application.log
 
 audit: # set to false to fully deactivate
-  filter:
-    methods:
-      allowed: ['all']
-      unallowed: []
 
   storage:
     active: true
+    filter:
+      methods:
+        allowed: ['all']
+        unallowed: []
 
   syslog:
     active: true
@@ -30,3 +30,7 @@ audit: # set to false to fully deactivate
       test-filtered: # for 'log/filtered' event.type
         plugin: "./config/syslog-plugins/test-filtered.js"
         level: notice # can be overriden by plugin
+    filter:
+      methods:
+        allowed: ['all']
+        unallowed: []

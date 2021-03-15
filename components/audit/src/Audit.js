@@ -148,9 +148,14 @@ function buildDefaultEvent(context, params) {
 }
 
 function initFilter(audit, config) {
-  const baseFilter = config.get('audit:filter');
-  validation.filter(baseFilter);
-  this.filter = baseFilter;
+  const syslogFilter = config.get('audit:syslog:filter');
+  const storageFilter = config.get('audit:storage:filter');
+  validation.filter(syslogFilter);
+  validation.filter(storageFilter);
+  this.filter = {
+    syslogFilter: syslogFilter,
+    storageFilter: storageFilter,
+  };
 }
 
 function log(context, userId, validity, id) {
