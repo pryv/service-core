@@ -376,19 +376,23 @@ describe('Audit', function() {
     describe('when filtering by calledMethods', function() {
       describe('when allowing all', function() {
         before(async function() {
-          config.injectTestConfig({ audit: { filter: { methods: {
-            allowed: ['all'],
-            unallowed: [],
-          }}}});
+          config.injectTestConfig({ audit: { 
+            syslog: { filter: { methods: { allowed: ['all'], unallowed: [] }}},
+            storage: { filter: { methods: { allowed: ['all'], unallowed: [] }}},
+          }});
           await audit.reloadConfig();
           resetSpies();
-          audit.eventForUser(cuid(), fakeAuditEvent('events.get'));
+          apiMethods.ALL_METHODS.forEach(method => {
+            audit.eventForUser(cuid(), fakeAuditEvent(method));
+          });
         });
         it('must log it in syslog', function() {
-          assert.isTrue(sysLogSpy.calledOnce);
+          const numAudited = apiMethods.AUDITED_METHODS.length;
+          assert.equal(sysLogSpy.callCount, numAudited);
         });
         it('must save it to storage', function() {
-          assert.isTrue(storageSpy.calledOnce);
+          const numStored = apiMethods.WITHOUT_USER_METHODS.length;
+          assert.equal(storageSpy.callCount, numStored);
         });
         
       });
