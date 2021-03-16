@@ -5,15 +5,7 @@
  * Proprietary and confidential
  */
 
-describe('FilterX', () => {
-
-  before(async () => {
-    await initTests();
-  });
-
-  after(() => {
-    closeTests();
-  });
+describe('Filter', () => {
 
   function buildFilter(allowed = [], unallowed = []) {
     return {
