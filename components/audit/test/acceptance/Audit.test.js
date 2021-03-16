@@ -359,20 +359,6 @@ describe('Audit', function() {
 
   describe('Filtering', function() {
 
-    function fakeAuditEvent(methodId) {
-      return {
-        createdBy: 'system',
-        streamIds: [cuid()],
-        type: 'log/user-api',
-        content: {
-          source: { name: 'http', ip: charlatan.Internet.IPv4() },
-          action: methodId,
-          status: 200,
-          query: {},
-        },
-      }
-    }
-
     describe('when filtering by calledMethods', function() {
       describe('when allowing all', function() {
         before(async function() {
@@ -391,7 +377,7 @@ describe('Audit', function() {
           assert.equal(sysLogSpy.callCount, numAudited);
         });
         it('must save it to storage', function() {
-          const numStored = apiMethods.WITHOUT_USER_METHODS.length;
+          const numStored = apiMethods.AUDITED_METHODS.length - apiMethods.WITHOUT_USER_METHODS.length;
           assert.equal(storageSpy.callCount, numStored);
         });
         

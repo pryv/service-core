@@ -25,7 +25,7 @@ const { AUDITED_METHODS_MAP, WITHOUT_USER_METHODS_MAP } = require('./ApiMethods'
 class Audit {
   _storage;
   _syslog;
-  _filter;
+  filter;
 
   /**
    * Requires to call async init() to use
@@ -40,10 +40,6 @@ class Audit {
 
   get syslog() {
     return this._syslog;
-  }
-
-  get filter() {
-    return this._filter;
   }
 
   async init() {
@@ -90,8 +86,10 @@ class Audit {
     this.eventForUser(userId, event, methodId);
   }
 
-  async eventForUser(userId, event, methodId) {
+  async eventForUser(userId, event) {
     logger.debug('eventForUser: ' + userId + ' ' + logger.inspect(event));
+
+    const methodId = event.content.action;
 
     // replace this with api-server's validation
     let isValid = false;
@@ -105,21 +103,21 @@ class Audit {
       throw new Error('Invalid audit eventForUser call : ' + isValid, {userId: userId, event: event}); 
     }
 
-    if (this.syslog && isPartOfSyslog(methodId)) {
+    if (this.syslog && isPartOfSyslog.call(this, methodId)) {
       this.syslog.eventForUser(userId, event);
     }
     
-    if (this.storage && isPartOfStorage(methodId)) {
+    if (this.storage && isPartOfStorage.call(this, methodId)) {
       this.storage.forUser(userId).createEvent(event);
     }
 
     function isPartOfSyslog(methodId) {
-      //if (! this.filter.syslog.methods[methodId]) return false;
+      if (! this.filter.syslog.methods[methodId]) return false;
       return true;
     }
     function isPartOfStorage(methodId) {
       if (WITHOUT_USER_METHODS_MAP[methodId]) return false;
-      //if (! this.filter.storage.methods[methodId]) return false;
+      if (! this.filter.storage.methods[methodId]) return false;
       return true;
     }
   }
@@ -155,17 +153,41 @@ function initFilter(audit, config) {
   validation.filter(syslogFilter);
   validation.filter(storageFilter);
 
-  this.filter = {
+  audit.filter = {
     syslog: {
-      methods: buildMap(syslogFilter.methods.allowed),
+      methods: buildAllowedMap(syslogFilter.methods.allowed, syslogFilter.methods.unallowed),
     },
     storage: {
-      methods: buildMap(storageFilter.methods.allowed),
+      methods: buildAllowedMap(storageFilter.methods.allowed, storageFilter.methods.unallowed),
     },
   };
 
-  function buildAllowed(allowed, unallowed) {
-    if (allowed.length === 0) return true;
+  function buildAllowedMap(allowed, unallowed) {
+    // only allowed
+    if (isOnlyAllowedUsed(allowed, unallowed)) {
+      if (hasAll(allowed)) {
+        return AUDITED_METHODS_MAP;
+      } else {
+        throw new Error('not implemented')
+      }
+    // only unallowed
+    } else if (isOnlyUnallowedUsed(allowed, unallowed)) {
+      if (hasAll(unallowed)) {
+        throw new Error('not implemented')
+      } else {
+        throw new Error('not implemented')
+      }
+    }
+  }
+
+  function isOnlyAllowedUsed(allowed, unallowed) {
+    return allowed.length > 0 && unallowed.length === 0;
+  }
+  function isOnlyUnallowedUsed(allowed, unallowed) {
+    return unallowed.length > 0 && allowed.length === 0;
+  }
+  function hasAll(methods) {
+    return methods.includes('all');
   }
 }
 

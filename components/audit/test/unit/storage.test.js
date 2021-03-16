@@ -28,21 +28,22 @@ describe('Storage', () => {
           createdBy: createdBy,
           streamIds: ['.audit-test'],
           content: {
-            message: 'hello'
+            action: 'events.get',
+            message: 'hello',
           }
         }, event);
-      return await audit.eventForUser(userid, e);
+      await audit.eventForUser(userid, e);
+      return e;
     }
     
     it('[KA8B] should have written the action in the user\'s database', async () => {
-      const event = {content: cuid() }
-      await sendAndWait(event);
+      const event = await sendAndWait({});
 
       const userStrorage = audit.storage.forUser(userid);
       const entries = userStrorage.getLogs({createdBy: createdBy});
       assert.equal(entries.length, 1);
       assert.equal(entries[0].createdBy, createdBy);
-      assert.equal(entries[0].content, event.content);
+      assert.deepEqual(entries[0].content, event.content);
     });
   })
 });

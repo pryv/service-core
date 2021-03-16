@@ -93,7 +93,19 @@ async function stopCore() {
   // destroy fixtures
 }
 
-
+function fakeAuditEvent(methodId) {
+  return {
+    createdBy: 'system',
+    streamIds: [cuid()],
+    type: 'log/test',
+    content: {
+      source: { name: 'http', ip: charlatan.Internet.IPv4() },
+      action: methodId,
+      status: 200,
+      query: {},
+    },
+  };
+}
 
 Object.assign(global, {
   initCore: initCore,
@@ -105,8 +117,10 @@ Object.assign(global, {
   bluebird: require('bluebird'),
   sinon: require('sinon'),
   path: require('path'),
+  _: require('lodash'),
   apiMethods: require('audit/src/ApiMethods'),
   MethodContextUtils: require('audit/src/MethodContextUtils'),
+  fakeAuditEvent: fakeAuditEvent,
 });
 
 

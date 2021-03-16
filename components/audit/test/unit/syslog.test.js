@@ -23,16 +23,18 @@ describe('Syslog', () => {
   });
 
   async function send(event) {
-    const e = Object.assign({
+    const e = _.merge({
         type: 'log/test',
         createdBy: createdBy,
         streamIds: ['.audit-test'],
         content: {
-          message: 'hello'
+          action: 'events.get',
+          message: 'hello',
         }
       }, event);
 
-    audit.eventForUser(userid, e);;
+    await audit.eventForUser(userid, e);
+    return e;
   }
 
   describe('receive message and write them to syslog', () => { 
@@ -44,7 +46,7 @@ describe('Syslog', () => {
 
       const logString = userid + 
       ' log/unkown createdBy:' + createdBy +
-      ' [".audit-test"] ' +  JSON.stringify({message: randomString});
+      ' [".audit-test"] ' +  JSON.stringify({action: 'events.get', message: randomString});
 
       syslogWatch(
         function() { // syslog Watch is ready 
