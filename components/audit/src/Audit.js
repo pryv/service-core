@@ -177,7 +177,7 @@ function initFilter(audit, config) {
     // only unallowed
     } else if (isOnlyUnallowedUsed(allowed, unallowed)) {
       if (hasAll(unallowed)) {
-        throw new Error('not implemented')
+        return {};
       } else {
         return buildMap(AUDITED_METHODS.filter(m => ! unallowed.includes(m)));
       }
