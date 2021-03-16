@@ -453,6 +453,25 @@ describe('Audit', function() {
           assert.equal(storageSpy.callCount, 0);
         });
       });
+      describe('when using "events.all"', function() {
+        before(async function() {
+          config.injectTestConfig({ audit: { 
+            syslog: { filter: { methods: { allowed: [], unallowed: ['all'] }}},
+            storage: { filter: { methods: { allowed: [], unallowed: ['all'] }}},
+          }});
+          await audit.reloadConfig();
+          resetSpies();
+          apiMethods.ALL_METHODS.forEach(method => {
+            audit.eventForUser(cuid(), fakeAuditEvent(method));
+          });
+        });
+        it('must log it in syslog', function() {
+          assert.equal(sysLogSpy.callCount, 0);
+        });
+        it('must save it to storage', function() {
+          assert.equal(storageSpy.callCount, 0);
+        });
+      });
 
     });
   });

@@ -121,6 +121,7 @@ Object.assign(global, {
   apiMethods: require('audit/src/ApiMethods'),
   MethodContextUtils: require('audit/src/MethodContextUtils'),
   fakeAuditEvent: fakeAuditEvent,
+  validation: require('audit/src/validation'),
 });
 
 

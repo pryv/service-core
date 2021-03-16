@@ -11,6 +11,9 @@ const logger = require('@pryv/boiler').getLogger('audit:validation');
 
 const helpers = require('api-server/src/schema/helpers');
 const validator = require('api-server/src/schema/validation');
+
+const { ALL_METHODS, ALL_METHODS_MAP } = require('./ApiMethods');
+
 /**
  * Utilities to validate Messages
  */
@@ -55,14 +58,39 @@ function eventWithoutUser(event) {
   return true;
 }
 
-async function filter(filter) {
+function filter(filter) {
   const isValid = validator.validate(filter, filterSchema);
   if (! isValid) {
-    console.log('check', isValid)
     throw new Error('Invalid "audit:filter" configuration parameter: \n'
     + JSON.stringify(filter, null, 2)
     + '\n'
     + JSON.stringify(validator.getLastError(), null, 2));
+  }
+  validateFunctions(filter.methods.allowed);
+  validateFunctions(filter.methods.unallowed);
+  function validateFunctions(methods) {
+    methods.forEach(m => {
+      if (isMethodAggregate(m)) return isValidAggregate(m);
+      return ALL_METHODS_MAP[m];
+    })
+
+    function isMethodAggregate(m) {
+      const parts = m.split('.');
+      if (parts.length !== 2) return false;
+      if (parts[1] !== 'all') return false;
+      return true;
+    }
+
+    function isValidAggregate(m) {
+      const parts = m.split('.');
+      for (let i=0; i<ALL_METHODS.length; i++) {
+        if (ALL_METHODS[i].startsWith(parts[0])) return true;
+      }
+      throw new Error('Invalid "audit:filter" configuration parameter: \n'
+        + 'invalid aggregate method provided: "' + m + '".\n'
+        + JSON.stringify(filter, null, 2)
+      );
+    }
   }
 }
 

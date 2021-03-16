@@ -84,6 +84,16 @@ function isMethodDeclared(methodId) {
   return false;
 }
 
+/**
+ * Changes stuff such as "events.all" into ["events.get", "events.create", ...]
+ * @param {} methodAggregate 
+ */
+function expand(methodAggregate) {
+  const parts = methodAggregate.split('.');
+  if (parts[1] !== 'all') throw new Error ('audi:filter')
+  
+}
+
 module.exports = {
   AUDITED_METHODS: AUDITED_METHODS,
   AUDITED_METHODS_MAP: buildMap(AUDITED_METHODS),
