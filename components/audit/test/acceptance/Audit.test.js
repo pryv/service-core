@@ -407,8 +407,27 @@ describe('Audit', function() {
         });
       });
       describe('when only allowing a few', function () {
-        before(function() {
-          config.injectTestConfig({ audit: { filter: { allowed: ['events.get'] } } });
+        const allowed = ['events.get', 'auth.register', 'streams.create'];
+        before(async function() {
+          config.injectTestConfig({ audit: { 
+            syslog: { filter: { methods: { allowed, unallowed: [] }}},
+            storage: { filter: { methods: { allowed, unallowed: [] }}},
+          }});
+          await audit.reloadConfig();
+          resetSpies();
+          apiMethods.ALL_METHODS.forEach(method => {
+            audit.eventForUser(cuid(), fakeAuditEvent(method));
+          });
+        });
+        it('must log it in syslog', function() {
+          const logged = apiMethods.AUDITED_METHODS.filter(m => allowed.includes(m));
+          assert.equal(sysLogSpy.callCount, logged.length);
+        });
+        it('must save it to storage', function() {
+          const stored = apiMethods.AUDITED_METHODS
+            .filter(m => ! apiMethods.WITHOUT_USER_METHODS.includes(m))
+            .filter(m => allowed.includes(m));
+          assert.equal(storageSpy.callCount, stored.length);
         });
       });
       describe('when allowing nothing', function () {

@@ -172,7 +172,7 @@ function initFilter(audit, config) {
       if (hasAll(allowed)) {
         return AUDITED_METHODS_MAP;
       } else {
-        throw new Error('not implemented')
+        return buildMap(AUDITED_METHODS.filter(m => allowed.includes(m)));
       }
     // only unallowed
     } else if (isOnlyUnallowedUsed(allowed, unallowed)) {
