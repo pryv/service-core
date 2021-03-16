@@ -16,7 +16,11 @@ const logger = getLogger('audit');
 
 // for an unkown reason removing ".js" returns an empty object
 const validation = require('./validation');
-const { AUDITED_METHODS_MAP, WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
+const { 
+  AUDITED_METHODS,
+  AUDITED_METHODS_MAP, 
+  WITHOUT_USER_METHODS_MAP
+} = require('./ApiMethods');
 
 
 /**
@@ -175,7 +179,7 @@ function initFilter(audit, config) {
       if (hasAll(unallowed)) {
         throw new Error('not implemented')
       } else {
-        throw new Error('not implemented')
+        return buildMap(AUDITED_METHODS.filter(m => ! unallowed.includes(m)));
       }
     }
   }
