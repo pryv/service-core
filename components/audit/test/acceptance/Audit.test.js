@@ -360,6 +360,10 @@ describe('Audit', function() {
   describe('Filtering', function() {
 
     describe('when filtering by calledMethods', function() {
+      after(async function() {
+        config.injectTestConfig({});
+        await audit.reloadConfig();
+      })
       describe('when allowing all', function() {
         before(async function() {
           config.injectTestConfig({ audit: { 
