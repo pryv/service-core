@@ -524,6 +524,31 @@ describe('Audit', function() {
           assert.equal(storageSpy.callCount, stored.length);
         });
       });
+      describe('when including and excluding some - with intersection', function () {
+        let stored = [];
+        let logged = [];
+        before(async function() {
+          const included = ['events.all'];
+          const excluded = ['events.get'];
+          config.injectTestConfig({ audit: { 
+            syslog: { filter: { methods: { include: included, exclude: excluded }}},
+            storage: { filter: { methods: { include: included, exclude: excluded }}},
+          }});
+          await audit.reloadConfig();
+          resetSpies();
+          apiMethods.ALL_METHODS.forEach(method => {
+            audit.eventForUser(cuid(), fakeAuditEvent(method));
+          });
+          stored = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') && m !== 'events.get'));
+          logged = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') && m !== 'events.get'));
+        });
+        it('[UK0K] must log it in syslog', function() {
+          assert.equal(sysLogSpy.callCount, logged.length);
+        });
+        it('[UOFZ] must save it to storage', function() {
+          assert.equal(storageSpy.callCount, stored.length);
+        });
+      });
       
 
     });
