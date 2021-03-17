@@ -9,15 +9,8 @@
 /* global describe, before, after, it, assert, cuid, audit, config, initTests, closeTests, initCore, coreRequest, mongoFixtures */
 
 describe('Audit', function() {
-  let userid = cuid();
-  let createdBy = cuid();
-
   let user, username, password, access, readAccess;
   let eventsPath, auditPath;
-  let auditStorage;
-
-  const SYSLOG_METHOD = 'eventForUser';
-  const STORAGE_METHOD = 'forUser';
 
   let sysLogSpy, storageSpy;
   
@@ -28,8 +21,8 @@ describe('Audit', function() {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
       password: password,
     });
-    sysLogSpy = sinon.spy(audit.syslog, SYSLOG_METHOD);
-    storageSpy = sinon.spy(audit.storage, STORAGE_METHOD);
+    sysLogSpy = sinon.spy(audit.syslog, 'eventForUser');
+    storageSpy = sinon.spy(audit.storage, 'forUser');
 
     username = user.attrs.username;
     await user.stream({id: 'yo', name: 'YO'});
@@ -46,7 +39,6 @@ describe('Audit', function() {
     });
     readAccess = readAccess.attrs;
     user = user.attrs;
-    auditStorage = audit.storage.forUser(user.id);
     eventsPath = '/' + username + '/events/';
     auditPath =  '/' + username + '/audit/logs/';
   });
@@ -62,7 +54,7 @@ describe('Audit', function() {
 
   after(async function() {
     closeTests();
-    await mongoFixtures.clean();
+    await closeCore();
   });
 
   describe('when making valid API calls', function () {
@@ -149,10 +141,8 @@ describe('Audit', function() {
       });
     });
     describe('when making a call that has no userId', function() {
-      let log;
       before(async function () {
         resetSpies();
-        now = Date.now() / 1000;
         res = await coreRequest
           .post('/users')
           .send({
@@ -179,11 +169,10 @@ describe('Audit', function() {
   });
 
   describe('when making invalid API calls', function() {
-    let res, now;
+    let res;
     describe('for an unknown user', function() {
       before(async function() {
         resetSpies();
-        now = Date.now() / 1000;
         res = await coreRequest
           .get('/unknown-username/events/')
           .set('Authorization', 'doesnt-matter')
@@ -549,8 +538,6 @@ describe('Audit', function() {
           assert.equal(storageSpy.callCount, stored.length);
         });
       });
-      
-
     });
   });
 

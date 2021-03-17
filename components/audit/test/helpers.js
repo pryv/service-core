@@ -89,8 +89,8 @@ async function initCore() {
     config.get('services'));
   global.coreRequest = supertest(app.expressApp);
 }
-async function stopCore() {
-  // destroy fixtures
+async function closeCore() {
+  await mongoFixtures.clean();
 }
 
 function fakeAuditEvent(methodId) {
@@ -111,6 +111,7 @@ Object.assign(global, {
   initCore: initCore,
   initTests: initTests,
   closeTests: closeTests,
+  closeCore: closeCore,
   assert: require('chai').assert,
   cuid: require('cuid'),
   charlatan: require('charlatan'),
