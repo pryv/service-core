@@ -17,14 +17,14 @@ describe('AuditFilter', () => {
     };
   }
   describe('validation', () => {
-    it('must accept an existing method', () => {
+    it('[3QJJ] must accept an existing method', () => {
       const method = 'events.get';
       assert.isTrue(apiMethods.AUDITED_METHODS_MAP[method]);
       try {
         validation.filter(buildFilter([method]));  
       } catch (e) {assert.isNull(e);}
     });
-    it('must accept a valid method aggregator', () => {
+    it('[YIDZ] must accept a valid method aggregator', () => {
       const method = 'events.all';
       const parts = method.split('.');
       let found = false;
@@ -33,24 +33,24 @@ describe('AuditFilter', () => {
         validation.filter(buildFilter([method]));  
       } catch (e) {assert.isNull(e);}
     });
-    it('must accept "all"', () => {
+    it('[74RS] must accept "all"', () => {
       const method = 'all';
       try {
         validation.filter(buildFilter([method]));  
       } catch (e) {assert.isNull(e);}
     });
-    it('must throw an error when providing a malformed filter', () => {
+    it('[P6WW] must throw an error when providing a malformed filter', () => {
       try { validation.filter({notMethods: { include: [], exclude: [] }}); assert.fail('must throw') } catch(e) {};
       try { validation.filter({methods: { somethign: [], exclude: [] }}); assert.fail('must throw') } catch(e) {};
       try { validation.filter({methods: { include: [12], exclude: [] }}); assert.fail('must throw') } catch(e) {};
     });
-    it('must throw an error when providing an unexisting method', () => {
+    it('[GFCE] must throw an error when providing an unexisting method', () => {
       try {
         validation.filter(buildFilter(['doesntexist']));
         assert.fail('must refuse an unexisting method');
       } catch(e) {assert.exists(e);}
     });
-    it('must throw an error when providing an invalid aggregate method', () => {
+    it('[GY6E] must throw an error when providing an invalid aggregate method', () => {
       try {
         validation.filter(buildFilter(['something.all']));
         assert.fail('must throw an error')
@@ -59,7 +59,7 @@ describe('AuditFilter', () => {
   });
 
   describe('initialization', () => {
-    it('must expand aggregate methods', () => {
+    it('[H8RB] must expand aggregate methods', () => {
       const filter = new AuditFilter({ syslogFilter: buildFilter(), storageFilter: buildFilter(['events.all']) });
       apiMethods.AUDITED_METHODS.forEach(m => {
         const auditChannels = filter.isAudited(m);
