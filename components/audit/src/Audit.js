@@ -21,7 +21,7 @@ const {
   AUDITED_METHODS_MAP, 
   WITHOUT_USER_METHODS_MAP
 } = require('./ApiMethods');
-
+const AuditFilter = require('./AuditFilter');
 
 /**
  * EventEmitter interface is just for tests syncing for now
@@ -58,13 +58,16 @@ class Audit {
       this._syslog = await getSyslog();
     }
 
-    initFilter(this, config);
+    this.filter = new AuditFilter({
+      syslogFilter: config.get('audit:syslog:filter'),
+      storageFilter: config.get('audit:storage:filter'),
+    });
     logger.info('Audit started');
   }
 
   async errorApiCall(context, params, error) {
     const methodId = context.methodId;
-    if (! AUDITED_METHODS_MAP[methodId]) return;
+    if (! this.filter.isAudited(methodId)) return;
     const userId = context?.user?.id;
   
     if (context.access?.id == null) {
@@ -83,7 +86,7 @@ class Audit {
 
   async validApiCall(context, params, result) {
     const methodId = context.methodId;
-    if (! AUDITED_METHODS_MAP[methodId]) return;
+    if (! this.filter.isAudited(methodId)) return;
 
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context, params);
@@ -102,16 +105,17 @@ class Audit {
     } else {
       isValid = validation.eventForUser(userId, event);
     }
-
     if (! isValid) {
       throw new Error('Invalid audit eventForUser call : ' + isValid, {userId: userId, event: event}); 
     }
 
-    if (this.syslog && isPartOfSyslog.call(this, methodId)) {
+    const isAudited = this.filter.isAudited(methodId);
+
+    if (this.syslog && isAudited.syslog) {
       this.syslog.eventForUser(userId, event);
     }
     
-    if (this.storage && isPartOfStorage.call(this, methodId)) {
+    if (this.storage && isAudited.storage) {
       this.storage.forUser(userId).createEvent(event);
     }
 
