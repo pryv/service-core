@@ -14,10 +14,8 @@ const {
 } = require('./ApiMethods');
 
 class AuditFilter {
-  config;
-  storageFilter;
-  syslogFilter;
-  fullFilter;
+
+  filter;
 
   /**
    * Builds the syslogFilter & storageFilter maps used by the filter.
@@ -35,14 +33,14 @@ class AuditFilter {
     validation.filter(syslogFilter);
     validation.filter(storageFilter);
 
-    this.syslogFilter = {
+    const syslogFilter = {
       methods: buildIncludeMap(
         AUDITED_METHODS,
         syslogFilter.methods.include,
         syslogFilter.methods.exclude
       )
     };
-    this.storageFilter = {
+    const torageFilter = {
       methods: buildIncludeMap(
         WITH_USER_METHODS,
         storageFilter.methods.include,
@@ -53,13 +51,13 @@ class AuditFilter {
     for (let i = 0; i < ALL_METHODS.length; i++) {
       const m = ALL_METHODS[i];
       let methodFilter = {};
-      if (this.syslogFilter.methods[m]) methodFilter.syslog = true;
-      if (this.storageFilter.methods[m]) methodFilter.storage = true;
+      if (syslogFilter.methods[m]) methodFilter.syslog = true;
+      if (storageFilter.methods[m]) methodFilter.storage = true;
       if (Object.keys(methodFilter).length === 0) methodFilter = false;
       methodsFullFilter[m] = methodFilter;
     }
 
-    this.fullFilter = { methods: methodsFullFilter };
+    this.filter = { methods: methodsFullFilter };
 
     function buildIncludeMap(baseMethods, include, exclude) {
       include = expandAggregates(include);
@@ -144,7 +142,7 @@ class AuditFilter {
    * @param {*} method - the method name. Ex.: events.get
    */
   isAudited(method) {
-    return this.fullFilter.methods[method];
+    return this.filter.methods[method];
   }
 }
 module.exports = AuditFilter;
