@@ -5,6 +5,8 @@
  * Proprietary and confidential
  */
 
+const validation = require('./validation');
+
 const {
   ALL_METHODS,
   AUDITED_METHODS,

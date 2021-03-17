@@ -16,11 +16,7 @@ const logger = getLogger('audit');
 
 // for an unkown reason removing ".js" returns an empty object
 const validation = require('./validation');
-const { 
-  AUDITED_METHODS,
-  AUDITED_METHODS_MAP, 
-  WITHOUT_USER_METHODS_MAP
-} = require('./ApiMethods');
+const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
 
 /**
@@ -65,6 +61,15 @@ class Audit {
     logger.info('Audit started');
   }
 
+  async validApiCall(context, params, result) {
+    const methodId = context.methodId;
+    if (! this.filter.isAudited(methodId)) return;
+
+    const userId = context?.user?.id;
+    const event = buildDefaultEvent(context, params);
+    this.eventForUser(userId, event, methodId);
+  }
+
   async errorApiCall(context, params, error) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
@@ -84,21 +89,12 @@ class Audit {
     this.eventForUser(userId, event, methodId);
   }
 
-  async validApiCall(context, params, result) {
-    const methodId = context.methodId;
-    if (! this.filter.isAudited(methodId)) return;
-
-    const userId = context?.user?.id;
-    const event = buildDefaultEvent(context, params);
-    this.eventForUser(userId, event, methodId);
-  }
-
   async eventForUser(userId, event) {
     logger.debug('eventForUser: ' + userId + ' ' + logger.inspect(event));
 
     const methodId = event.content.action;
 
-    // replace this with api-server's validation
+    // replace this with api-server's validation or remove completely as we are prpoducing it in house.
     let isValid = false;
     if (WITHOUT_USER_METHODS_MAP[methodId]) {
       isValid = validation.eventWithoutUser(userId, event);
@@ -114,19 +110,8 @@ class Audit {
     if (this.syslog && isAudited.syslog) {
       this.syslog.eventForUser(userId, event);
     }
-    
     if (this.storage && isAudited.storage) {
       this.storage.forUser(userId).createEvent(event);
-    }
-
-    function isPartOfSyslog(methodId) {
-      if (! this.filter.syslog.methods[methodId]) return false;
-      return true;
-    }
-    function isPartOfStorage(methodId) {
-      if (WITHOUT_USER_METHODS_MAP[methodId]) return false;
-      if (! this.filter.storage.methods[methodId]) return false;
-      return true;
     }
   }
 
@@ -153,62 +138,6 @@ function buildDefaultEvent(context, params) {
       query: params,
     },
   }
-}
-
-function initFilter(audit, config) {
-  const syslogFilter = config.get('audit:syslog:filter');
-  const storageFilter = config.get('audit:storage:filter');
-  validation.filter(syslogFilter);
-  validation.filter(storageFilter);
-
-  audit.filter = {
-    syslog: {
-      methods: buildAllowedMap(syslogFilter.methods.allowed, syslogFilter.methods.unallowed),
-    },
-    storage: {
-      methods: buildAllowedMap(storageFilter.methods.allowed, storageFilter.methods.unallowed),
-    },
-  };
-
-  function buildAllowedMap(allowed, unallowed) {
-    // only allowed
-    if (isOnlyAllowedUsed(allowed, unallowed)) {
-      if (hasAll(allowed)) {
-        return AUDITED_METHODS_MAP;
-      } else {
-        return buildMap(AUDITED_METHODS.filter(m => allowed.includes(m)));
-      }
-    // only unallowed
-    } else if (isOnlyUnallowedUsed(allowed, unallowed)) {
-      if (hasAll(unallowed)) {
-        return {};
-      } else {
-        return buildMap(AUDITED_METHODS.filter(m => ! unallowed.includes(m)));
-      }
-    }
-  }
-
-  function isOnlyAllowedUsed(allowed, unallowed) {
-    return allowed.length > 0 && unallowed.length === 0;
-  }
-  function isOnlyUnallowedUsed(allowed, unallowed) {
-    return unallowed.length > 0 && allowed.length === 0;
-  }
-  function hasAll(methods) {
-    return methods.includes('all');
-  }
-}
-
-/**
- * Builds a map with an { i => true } entry for each array element
- * @param {Array<*>} array 
- */
-function buildMap(array) {
-  const map = {};
-  array.forEach(i => {
-    map[i] = true;
-  });
-  return map;
 }
 
 function log(context, userId, validity, id) {
