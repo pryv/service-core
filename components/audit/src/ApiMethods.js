@@ -81,7 +81,7 @@ const WITH_USER_METHODS = AUDITED_METHODS.filter(m => ! WITHOUT_USER_METHODS.inc
 const allMethodsMap = buildMap(ALL_METHODS);
 
 function isMethodDeclared(methodId) {
-  if (methodId.includes('*')) return true; // allowing to register for wildcards such as "followedSlices.*", or "*"
+  if (methodId.includes('*')) return true; // including to register for wildcards such as "followedSlices.*", or "*"
   if (allMethodsMap[methodId]) return true;
   return false;
 }

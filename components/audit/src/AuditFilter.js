@@ -64,20 +64,28 @@ class AuditFilter {
     function buildIncludeMap(baseMethods, include, exclude) {
       include = expandAggregates(include);
       exclude = expandAggregates(exclude);
-      // only include
+      
       if (isOnlyIncludeUsed(include, exclude)) {
+        // only include
         if (hasAll(include)) {
           return buildMap(baseMethods);
         } else {
           return buildMap(baseMethods.filter(m => include.includes(m)));
         }
-        // only exclude
       } else if (isOnlyExcludeUsed(include, exclude)) {
+        // only exclude
         if (hasAll(exclude)) {
           return {};
         } else {
           return buildMap(baseMethods.filter(m => !exclude.includes(m)));
         }
+      } else {
+        // both included and excluded
+        return buildMap(
+          baseMethods
+            .filter(m => include.includes(m))
+            .filter(m => ! exclude.includes(m))
+        );
       }
     }
 

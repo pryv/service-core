@@ -365,7 +365,7 @@ describe('Audit', function() {
         config.injectTestConfig({});
         await audit.reloadConfig();
       })
-      describe('when allowing all', function() {
+      describe('when including all', function() {
         before(async function() {
           config.injectTestConfig({ audit: { 
             syslog: { filter: { methods: { include: ['all'], exclude: [] }}},
@@ -387,7 +387,7 @@ describe('Audit', function() {
         });
         
       });
-      describe('when allowing all, but a few', function () {
+      describe('when including all, but a few', function () {
         const exclude = ['events.get', 'auth.register', 'streams.create'];
         before(async function() {
           config.injectTestConfig({ audit: { 
@@ -411,7 +411,7 @@ describe('Audit', function() {
           assert.equal(storageSpy.callCount, stored.length);
         });
       });
-      describe('when only allowing a few', function () {
+      describe('when only including a few', function () {
         const include = ['events.get', 'auth.register', 'streams.create'];
         before(async function() {
           config.injectTestConfig({ audit: { 
@@ -435,7 +435,7 @@ describe('Audit', function() {
           assert.equal(storageSpy.callCount, stored.length);
         });
       });
-      describe('when allowing nothing', function () {
+      describe('when including nothing', function () {
         before(async function() {
           config.injectTestConfig({ audit: { 
             syslog: { filter: { methods: { include: [], exclude: ['all'] }}},
@@ -475,6 +475,56 @@ describe('Audit', function() {
           assert.equal(storageSpy.callCount, auditedMethods.length);
         });
       });
+      describe('when excluding a few', function () {
+        let stored = [];
+        let logged = [];
+        before(async function() {
+          const excluded = ['events.get', 'auth.login', 'auth.register'];
+          config.injectTestConfig({ audit: { 
+            syslog: { filter: { methods: { include: [], exclude: excluded }}},
+            storage: { filter: { methods: { include: [], exclude: excluded }}},
+          }});
+          await audit.reloadConfig();
+          resetSpies();
+          apiMethods.ALL_METHODS.forEach(method => {
+            audit.eventForUser(cuid(), fakeAuditEvent(method));
+          });
+          stored = apiMethods.WITH_USER_METHODS.filter(m => ! excluded.includes(m));
+          logged = apiMethods.AUDITED_METHODS.filter(m => ! excluded.includes(m));
+        });
+        it('must log it in syslog', function() {
+          assert.equal(sysLogSpy.callCount, logged.length);
+        });
+        it('must save it to storage', function() {
+          assert.equal(storageSpy.callCount, stored.length);
+        });
+      });
+      describe('when including and excluding some - without intersection', function () {
+        let stored = [];
+        let logged = [];
+        before(async function() {
+          const included = ['events.all', 'getAccessInfo'];
+          const excluded = ['streams.all', 'auth.login', 'auth.register'];
+          config.injectTestConfig({ audit: { 
+            syslog: { filter: { methods: { include: included, exclude: excluded }}},
+            storage: { filter: { methods: { include: included, exclude: excluded }}},
+          }});
+          await audit.reloadConfig();
+          resetSpies();
+          apiMethods.ALL_METHODS.forEach(method => {
+            audit.eventForUser(cuid(), fakeAuditEvent(method));
+          });
+          stored = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') || m === 'getAccessInfo'));
+          logged = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') || m === 'getAccessInfo'));
+        });
+        it('must log it in syslog', function() {
+          assert.equal(sysLogSpy.callCount, logged.length);
+        });
+        it('must save it to storage', function() {
+          assert.equal(storageSpy.callCount, stored.length);
+        });
+      });
+      
 
     });
   });
