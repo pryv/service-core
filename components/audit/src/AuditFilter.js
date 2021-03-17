@@ -15,6 +15,11 @@ const {
 
 class AuditFilter {
 
+  /**
+   * Map with items:
+   * method.id => { syslog: true, storage: true } if any of them is audited
+   * method.id => false if none is audited
+   */
   filter;
 
   /**
