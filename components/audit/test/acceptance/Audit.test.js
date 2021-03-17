@@ -299,6 +299,7 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'invalid-access-token');
+        assert.deepEqual(log.streamIds, [log.content.error.id]);
       });
     });
     describe('with errorId "forbidden"', function() {
