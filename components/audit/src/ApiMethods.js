@@ -66,9 +66,7 @@ const NOT_AUDITED_METHODS = [
   'auth.emailCheck',
 ];
 
-const AUDITED_METHODS = ALL_METHODS.filter(m => {
-  return ! NOT_AUDITED_METHODS.includes(m);
-});
+const AUDITED_METHODS = ALL_METHODS.filter(m => ! NOT_AUDITED_METHODS.includes(m));
 
 // doesnt include non-audited ones
 const WITHOUT_USER_METHODS = [
@@ -84,16 +82,6 @@ function isMethodDeclared(methodId) {
   if (methodId.includes('*')) return true; // including to register for wildcards such as "followedSlices.*", or "*"
   if (allMethodsMap[methodId]) return true;
   return false;
-}
-
-/**
- * Changes stuff such as "events.all" into ["events.get", "events.create", ...]
- * @param {} methodAggregate 
- */
-function expand(methodAggregate) {
-  const parts = methodAggregate.split('.');
-  if (parts[1] !== 'all') throw new Error ('audi:filter')
-  
 }
 
 module.exports = {
