@@ -367,8 +367,8 @@ describe('Audit', function() {
       describe('when allowing all', function() {
         before(async function() {
           config.injectTestConfig({ audit: { 
-            syslog: { filter: { methods: { allowed: ['all'], unallowed: [] }}},
-            storage: { filter: { methods: { allowed: ['all'], unallowed: [] }}},
+            syslog: { filter: { methods: { include: ['all'], exclude: [] }}},
+            storage: { filter: { methods: { include: ['all'], exclude: [] }}},
           }});
           await audit.reloadConfig();
           resetSpies();
@@ -387,11 +387,11 @@ describe('Audit', function() {
         
       });
       describe('when allowing all, but a few', function () {
-        const unallowed = ['events.get', 'auth.register', 'streams.create'];
+        const exclude = ['events.get', 'auth.register', 'streams.create'];
         before(async function() {
           config.injectTestConfig({ audit: { 
-            syslog: { filter: { methods: { allowed: [], unallowed: unallowed }}},
-            storage: { filter: { methods: { allowed: [], unallowed: unallowed }}},
+            syslog: { filter: { methods: { include: [], exclude: exclude }}},
+            storage: { filter: { methods: { include: [], exclude: exclude }}},
           }});
           await audit.reloadConfig();
           resetSpies();
@@ -400,22 +400,22 @@ describe('Audit', function() {
           });
         });
         it('must log it in syslog', function() {
-          const logged = apiMethods.AUDITED_METHODS.filter(m => ! unallowed.includes(m));
+          const logged = apiMethods.AUDITED_METHODS.filter(m => ! exclude.includes(m));
           assert.equal(sysLogSpy.callCount, logged.length);
         });
         it('must save it to storage', function() {
           const stored = apiMethods.AUDITED_METHODS
             .filter(m => ! apiMethods.WITHOUT_USER_METHODS.includes(m))
-            .filter(m => ! unallowed.includes(m));
+            .filter(m => ! exclude.includes(m));
           assert.equal(storageSpy.callCount, stored.length);
         });
       });
       describe('when only allowing a few', function () {
-        const allowed = ['events.get', 'auth.register', 'streams.create'];
+        const include = ['events.get', 'auth.register', 'streams.create'];
         before(async function() {
           config.injectTestConfig({ audit: { 
-            syslog: { filter: { methods: { allowed, unallowed: [] }}},
-            storage: { filter: { methods: { allowed, unallowed: [] }}},
+            syslog: { filter: { methods: { include, exclude: [] }}},
+            storage: { filter: { methods: { include, exclude: [] }}},
           }});
           await audit.reloadConfig();
           resetSpies();
@@ -424,21 +424,21 @@ describe('Audit', function() {
           });
         });
         it('must log it in syslog', function() {
-          const logged = apiMethods.AUDITED_METHODS.filter(m => allowed.includes(m));
+          const logged = apiMethods.AUDITED_METHODS.filter(m => include.includes(m));
           assert.equal(sysLogSpy.callCount, logged.length);
         });
         it('must save it to storage', function() {
           const stored = apiMethods.AUDITED_METHODS
             .filter(m => ! apiMethods.WITHOUT_USER_METHODS.includes(m))
-            .filter(m => allowed.includes(m));
+            .filter(m => include.includes(m));
           assert.equal(storageSpy.callCount, stored.length);
         });
       });
       describe('when allowing nothing', function () {
         before(async function() {
           config.injectTestConfig({ audit: { 
-            syslog: { filter: { methods: { allowed: [], unallowed: ['all'] }}},
-            storage: { filter: { methods: { allowed: [], unallowed: ['all'] }}},
+            syslog: { filter: { methods: { include: [], exclude: ['all'] }}},
+            storage: { filter: { methods: { include: [], exclude: ['all'] }}},
           }});
           await audit.reloadConfig();
           resetSpies();
@@ -457,8 +457,8 @@ describe('Audit', function() {
         let auditedMethods = [];
         before(async function() {
           config.injectTestConfig({ audit: { 
-            syslog: { filter: { methods: { allowed: ['events.all'], unallowed: [] }}},
-            storage: { filter: { methods: { allowed: ['events.all'], unallowed: [] }}},
+            syslog: { filter: { methods: { include: ['events.all'], exclude: [] }}},
+            storage: { filter: { methods: { include: ['events.all'], exclude: [] }}},
           }});
           await audit.reloadConfig();
           resetSpies();

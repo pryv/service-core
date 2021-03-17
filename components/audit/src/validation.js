@@ -20,12 +20,12 @@ const { ALL_METHODS, ALL_METHODS_MAP } = require('./ApiMethods');
 
 const filterSchema = helpers.object({
   methods: helpers.object({
-      allowed: helpers.array(helpers.string(), { nullable: false }),
-      unallowed: helpers.array(helpers.string(), { nullable: false }),
+      include: helpers.array(helpers.string(), { nullable: false }),
+      exclude: helpers.array(helpers.string(), { nullable: false }),
     },
     {
       id: 'Audit Filter: methods',
-      required: ['allowed', 'unallowed'],
+      required: ['include', 'exclude'],
       additionalProperties: false,
   }),
   },
@@ -66,8 +66,8 @@ function filter(filter) {
     + '\n'
     + JSON.stringify(validator.getLastError(), null, 2));
   }
-  validateFunctions(filter.methods.allowed);
-  validateFunctions(filter.methods.unallowed);
+  validateFunctions(filter.methods.include);
+  validateFunctions(filter.methods.exclude);
   function validateFunctions(methods) {
     methods.forEach(m => {
       if (isMethodAggregate(m)) return isValidAggregate(m);

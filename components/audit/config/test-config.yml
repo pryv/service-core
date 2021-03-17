@@ -18,8 +18,8 @@ audit: # set to false to fully deactivate
     active: true
     filter:
       methods:
-        allowed: ['all']
-        unallowed: []
+        include: ['all']
+        exclude: []
 
   syslog:
     active: true
@@ -32,5 +32,5 @@ audit: # set to false to fully deactivate
         level: notice # can be overriden by plugin
     filter:
       methods:
-        allowed: ['all']
-        unallowed: []
+        include: ['all']
+        exclude: []

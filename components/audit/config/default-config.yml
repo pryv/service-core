@@ -5,8 +5,8 @@ audit:
     active: true
     filter:
       methods:
-        allowed: ['all']
-        unallowed: []
+        include: ['all']
+        exclude: []
 
   syslog:
     active: true
@@ -29,5 +29,5 @@ audit:
         level: notice # One of notice, warning, error, critical, alert, emerg
     filter:
       methods:
-        allowed: ['all']
-        unallowed: []
+        include: ['all']
+        exclude: []

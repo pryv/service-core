@@ -25,8 +25,8 @@ class AuditFilter {
    */
   constructor(
     params = {
-      syslogFilter: { methods: { allowed: ['all'], unallowed: [] } },
-      storageFilter: { methods: { allowed: ['all'], unallowed: [] } }
+      syslogFilter: { methods: { include: ['all'], exclude: [] } },
+      storageFilter: { methods: { include: ['all'], exclude: [] } }
     }
   ) {
     const syslogFilter = params.syslogFilter;
@@ -36,17 +36,17 @@ class AuditFilter {
     validation.filter(storageFilter);
 
     this.syslogFilter = {
-      methods: buildAllowedMap(
+      methods: buildIncludeMap(
         AUDITED_METHODS,
-        syslogFilter.methods.allowed,
-        syslogFilter.methods.unallowed
+        syslogFilter.methods.include,
+        syslogFilter.methods.exclude
       )
     };
     this.storageFilter = {
-      methods: buildAllowedMap(
+      methods: buildIncludeMap(
         WITH_USER_METHODS,
-        storageFilter.methods.allowed,
-        storageFilter.methods.unallowed
+        storageFilter.methods.include,
+        storageFilter.methods.exclude
       )
     };
     const methodsFullFilter = {};
@@ -61,31 +61,31 @@ class AuditFilter {
 
     this.fullFilter = { methods: methodsFullFilter };
 
-    function buildAllowedMap(baseMethods, allowed, unallowed) {
-      allowed = expandAggregates(allowed);
-      unallowed = expandAggregates(unallowed);
-      // only allowed
-      if (isOnlyAllowedUsed(allowed, unallowed)) {
-        if (hasAll(allowed)) {
+    function buildIncludeMap(baseMethods, include, exclude) {
+      include = expandAggregates(include);
+      exclude = expandAggregates(exclude);
+      // only include
+      if (isOnlyIncludeUsed(include, exclude)) {
+        if (hasAll(include)) {
           return buildMap(baseMethods);
         } else {
-          return buildMap(baseMethods.filter(m => allowed.includes(m)));
+          return buildMap(baseMethods.filter(m => include.includes(m)));
         }
-        // only unallowed
-      } else if (isOnlyUnallowedUsed(allowed, unallowed)) {
-        if (hasAll(unallowed)) {
+        // only exclude
+      } else if (isOnlyExcludeUsed(include, exclude)) {
+        if (hasAll(exclude)) {
           return {};
         } else {
-          return buildMap(baseMethods.filter(m => !unallowed.includes(m)));
+          return buildMap(baseMethods.filter(m => !exclude.includes(m)));
         }
       }
     }
 
-    function isOnlyAllowedUsed(allowed, unallowed) {
-      return allowed.length > 0 && unallowed.length === 0;
+    function isOnlyIncludeUsed(include, exclude) {
+      return include.length > 0 && exclude.length === 0;
     }
-    function isOnlyUnallowedUsed(allowed, unallowed) {
-      return unallowed.length > 0 && allowed.length === 0;
+    function isOnlyExcludeUsed(include, exclude) {
+      return exclude.length > 0 && include.length === 0;
     }
     function hasAll(methods) {
       return methods.includes('all');

@@ -8,11 +8,11 @@
 
 describe('AuditFilter', () => {
 
-  function buildFilter(allowed = ['all'], unallowed = []) {
+  function buildFilter(include = ['all'], exclude = []) {
     return {
       methods: {
-        allowed,
-        unallowed,
+        include,
+        exclude,
       },
     };
   }
@@ -40,9 +40,9 @@ describe('AuditFilter', () => {
       } catch (e) {assert.isNull(e);}
     });
     it('must throw an error when providing a malformed filter', () => {
-      try { validation.filter({notMethods: { allowed: [], unallowed: [] }}); assert.fail('must throw') } catch(e) {};
-      try { validation.filter({methods: { somethign: [], unallowed: [] }}); assert.fail('must throw') } catch(e) {};
-      try { validation.filter({methods: { allowed: [12], unallowed: [] }}); assert.fail('must throw') } catch(e) {};
+      try { validation.filter({notMethods: { include: [], exclude: [] }}); assert.fail('must throw') } catch(e) {};
+      try { validation.filter({methods: { somethign: [], exclude: [] }}); assert.fail('must throw') } catch(e) {};
+      try { validation.filter({methods: { include: [12], exclude: [] }}); assert.fail('must throw') } catch(e) {};
     });
     it('must throw an error when providing an unexisting method', () => {
       try {
