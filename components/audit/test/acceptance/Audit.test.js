@@ -454,7 +454,7 @@ describe('Audit', function() {
           assert.equal(storageSpy.callCount, 0);
         });
       });
-      describe('when using "events.all"', function() {
+      describe('when using a method aggregate (here "events.all")', function() {
         let auditedMethods = [];
         before(async function() {
           config.injectTestConfig({ audit: { 
