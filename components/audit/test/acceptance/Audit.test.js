@@ -454,22 +454,24 @@ describe('Audit', function() {
         });
       });
       describe('when using "events.all"', function() {
+        let auditedMethods = [];
         before(async function() {
           config.injectTestConfig({ audit: { 
-            syslog: { filter: { methods: { allowed: [], unallowed: ['all'] }}},
-            storage: { filter: { methods: { allowed: [], unallowed: ['all'] }}},
+            syslog: { filter: { methods: { allowed: ['events.all'], unallowed: [] }}},
+            storage: { filter: { methods: { allowed: ['events.all'], unallowed: [] }}},
           }});
           await audit.reloadConfig();
           resetSpies();
           apiMethods.ALL_METHODS.forEach(method => {
+            if (method.startsWith('events.')) auditedMethods.push(method);
             audit.eventForUser(cuid(), fakeAuditEvent(method));
           });
         });
         it('must log it in syslog', function() {
-          assert.equal(sysLogSpy.callCount, 0);
+          assert.equal(sysLogSpy.callCount, auditedMethods.length);
         });
         it('must save it to storage', function() {
-          assert.equal(storageSpy.callCount, 0);
+          assert.equal(storageSpy.callCount, auditedMethods.length);
         });
       });
 
