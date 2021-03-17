@@ -76,6 +76,8 @@ const WITHOUT_USER_METHODS = [
   'system.createUser',
 ];
 
+const WITH_USER_METHODS = AUDITED_METHODS.filter(m => ! WITHOUT_USER_METHODS.includes(m));
+
 const allMethodsMap = buildMap(ALL_METHODS);
 
 function isMethodDeclared(methodId) {
@@ -101,6 +103,7 @@ module.exports = {
   ALL_METHODS_MAP: allMethodsMap,
   WITHOUT_USER_METHODS: WITHOUT_USER_METHODS,
   WITHOUT_USER_METHODS_MAP: buildMap(WITHOUT_USER_METHODS),
+  WITH_USER_METHODS: WITH_USER_METHODS,
   isMethodDeclared: isMethodDeclared,
 };
 

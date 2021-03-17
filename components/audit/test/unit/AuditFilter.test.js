@@ -60,12 +60,11 @@ describe('AuditFilter', () => {
 
   describe('initialization', () => {
     it('must expand aggregate methods', () => {
-      const filter = new AuditFilter({ syslog: buildFilter(), storage: buildFilter('events.all') });
-      console.log('filter', filter);
-      apiMethods.ALL_METHODS.forEach(m => {
+      const filter = new AuditFilter({ syslogFilter: buildFilter(), storageFilter: buildFilter(['events.all']) });
+      apiMethods.AUDITED_METHODS.forEach(m => {
         const auditChannels = filter.isAudited(m);
         assert.isTrue(auditChannels.syslog);
-        if (m.startsWith('events.all')) assert.isTrue(auditChannels.storage);
+        if (m.startsWith('events.')) assert.isTrue(auditChannels.storage);
       });
     })
   });

@@ -1,8 +1,14 @@
-
+/**
+ * @license
+ * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 
 const {
+  ALL_METHODS,
   AUDITED_METHODS,
-  WITHOUT_USER_METHODS,
+  WITH_USER_METHODS,
 } = require('./ApiMethods');
 
 class AuditFilter {
@@ -15,14 +21,15 @@ class AuditFilter {
    * Builds the syslogFilter & storageFilter maps used by the filter.
    * Throws an error if the config audit:syslog:filter & audit:storage:filter parameters are invalid
    */
-  contructor(params: { 
-    syslogFilter: { methods: { allowed: ['all'], unallowed: [] }},
-    storageFilter: { methods: { allowed: ['all'], unallowed: [] }},
-  }) {
-    console.log('yo')
+  constructor(
+    params = {
+      syslogFilter: { methods: { allowed: ['all'], unallowed: [] } },
+      storageFilter: { methods: { allowed: ['all'], unallowed: [] } }
+    }
+  ) {
     const syslogFilter = params.syslogFilter;
     const storageFilter = params.storageFilter;
-    
+
     validation.filter(syslogFilter);
     validation.filter(storageFilter);
 
@@ -30,28 +37,27 @@ class AuditFilter {
       methods: buildAllowedMap(
         AUDITED_METHODS,
         syslogFilter.methods.allowed,
-        syslogFilter.methods.unallowed,
-      ),
+        syslogFilter.methods.unallowed
+      )
     };
     this.storageFilter = {
       methods: buildAllowedMap(
-        WITHOUT_USER_METHODS,
+        WITH_USER_METHODS,
         storageFilter.methods.allowed,
-        storageFilter.methods.unallowed,
-      ),
+        storageFilter.methods.unallowed
+      )
     };
     const methodsFullFilter = {};
-    for (let i=0; i<ALL_METHODS.length; i++) {
+    for (let i = 0; i < ALL_METHODS.length; i++) {
       const m = ALL_METHODS[i];
       let methodFilter = {};
       if (this.syslogFilter.methods[m]) methodFilter.syslog = true;
       if (this.storageFilter.methods[m]) methodFilter.storage = true;
       if (Object.keys(methodFilter).length === 0) methodFilter = false;
-      fullFilter[m] = methodFilter;
+      methodsFullFilter[m] = methodFilter;
     }
-    
+
     this.fullFilter = { methods: methodsFullFilter };
-    console.log('got fullfilter', this.fullFilter)
 
     function buildAllowedMap(baseMethods, allowed, unallowed) {
       allowed = expandAggregates(allowed);
@@ -59,7 +65,7 @@ class AuditFilter {
       // only allowed
       if (isOnlyAllowedUsed(allowed, unallowed)) {
         if (hasAll(allowed)) {
-          return baseMethods;
+          return buildMap(baseMethods);
         } else {
           return buildMap(baseMethods.filter(m => allowed.includes(m)));
         }
@@ -83,10 +89,14 @@ class AuditFilter {
       return methods.includes('all');
     }
     function expandAggregates(methods) {
-      const expandedMethods = [];
+      let expandedMethods = [];
       methods.forEach(m => {
-        if (! isAggregate(m)) return expandedMethods.push(m);
-        expandAggregates.concat(expandAggregate(m));
+        if (!isAggregate(m)) {
+          expandedMethods.push(m);
+        } else {
+          expandedMethods = expandedMethods.concat(expandAggregate(m));
+        }
+        
       });
       return expandedMethods;
 
@@ -98,12 +108,23 @@ class AuditFilter {
       }
       function expandAggregate(aggregateMethod) {
         const resource = aggregateMethod.split('.')[0];
-        const methods = [];
+        const expandedMethod = [];
         ALL_METHODS.forEach(m => {
-          if (m.startsWith(resource)) methods.push(m);
+          if (m.startsWith(resource + '.')) expandedMethod.push(m);
         });
-        return methods;
+        return expandedMethod;
       }
+    }
+    /**
+     * Builds a map with an { i => true } entry for each array element
+     * @param {Array<*>} array
+     */
+    function buildMap(array) {
+      const map = {};
+      array.forEach(i => {
+        map[i] = true;
+      });
+      return map;
     }
   }
 
@@ -113,7 +134,7 @@ class AuditFilter {
    * @param {*} method - the method name. Ex.: events.get
    */
   isAudited(method) {
-    return this.fullFilter.methods[m];
+    return this.fullFilter.methods[method];
   }
 }
 module.exports = AuditFilter;
