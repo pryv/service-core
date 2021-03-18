@@ -2,14 +2,12 @@
 audit:
 
   storage:
-    active: true
     filter:
       methods:
         include: ['all']
         exclude: []
 
   syslog:
-    active: true
     options:
       host: localhost #The host running syslogd, defaults to localhost.
       #port: 514 #The port on the host that syslog is running on, defaults to syslogd's default port.

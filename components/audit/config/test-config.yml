@@ -15,14 +15,12 @@ logs:
 audit: # set to false to fully deactivate
 
   storage:
-    active: true
     filter:
       methods:
         include: ['all']
         exclude: []
 
   syslog:
-    active: true
     formats:
       test: # for 'log/test' event.type
         template: "{userid} {type} createdBy:{createdBy} streamIds:{streamIds} {content.message}"

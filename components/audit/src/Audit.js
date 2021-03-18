@@ -45,14 +45,8 @@ class Audit {
   async init() {
     logger.debug('Audit initiating...');
     const config = await getConfig();
-
-    if (config.get('audit:storage:active')) {
-      this._storage = await getStorage();
-    }
-
-    if (config.get('audit:syslog:active')) {
-      this._syslog = await getSyslog();
-    }
+    this._storage = await getStorage();
+    this._syslog = await getSyslog();
 
     this.filter = new AuditFilter({
       syslogFilter: config.get('audit:syslog:filter'),
