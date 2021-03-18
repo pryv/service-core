@@ -32,24 +32,24 @@ class AuditFilter {
       storageFilter: { methods: { include: ['all'], exclude: [] } }
     }
   ) {
-    const syslogFilter = params.syslogFilter;
-    const storageFilter = params.storageFilter;
+    const syslogFilterParam = params.syslogFilter;
+    const storageFilterParam = params.storageFilter;
 
-    validation.filter(syslogFilter);
-    validation.filter(storageFilter);
+    validation.filter(syslogFilterParam);
+    validation.filter(storageFilterParam);
 
     const syslogFilter = {
       methods: buildIncludeMap(
         AUDITED_METHODS,
-        syslogFilter.methods.include,
-        syslogFilter.methods.exclude
+        syslogFilterParam.methods.include,
+        syslogFilterParam.methods.exclude
       )
     };
-    const torageFilter = {
+    const storageFilter = {
       methods: buildIncludeMap(
         WITH_USER_METHODS,
-        storageFilter.methods.include,
-        storageFilter.methods.exclude
+        storageFilterParam.methods.include,
+        storageFilterParam.methods.exclude
       )
     };
     const methodsFullFilter = {};
