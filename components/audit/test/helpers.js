@@ -87,6 +87,11 @@ async function initCore() {
     app.logging, 
     app.storageLayer, 
     config.get('services'));
+  require('api-server/src/methods/accesses')(
+    app.api, 
+    notifications, 
+    app.getUpdatesSettings(), 
+    app.storageLayer);
   global.coreRequest = supertest(app.expressApp);
 }
 async function closeCore() {
