@@ -29,9 +29,12 @@ Object.freeze(PermissionLevels);
  */
 
  class AccessLogic {
+  _access; // Access right from the DB
+  _userId;
 
-  constructor(access) {
-    this.originalAccess = access;
+  constructor(userId, access) {
+    this._access = access;
+    this._userId = userId;
     _.merge(this, access);
   }
   
@@ -58,7 +61,6 @@ Object.freeze(PermissionLevels);
     if (! this.permissions) {
       return;
     }
-
     // cache streams
     this._cachedStreams = streams;
 
@@ -88,6 +90,8 @@ Object.freeze(PermissionLevels);
     if (this.streamPermissions.length === 0 && this.tagPermissions.length > 0) {
       this._registerStreamPermission({ streamId: '*', level: 'read' });
     }
+
+    //console.log('XXXX', this);
   }
 
   _loadStreamPermission (perm) {
@@ -336,7 +340,7 @@ Object.freeze(PermissionLevels);
   
   // Whether the current access can create the given access. 
   // 
-  canCreateAccess (access) {
+  canCreateAccess (candidateAccess) {
     
     //TODO handle tags
     // The account owner can do everything. 
@@ -347,7 +351,7 @@ Object.freeze(PermissionLevels);
     // assert: this.isApp()
 
     // Create a candidate to compare 
-    const candidate = new AccessLogic(access);
+    const candidate = new AccessLogic(this._userId, candidateAccess);
       
     // App accesses can only manage shared accesses.
     if (! candidate.isShared()) return false;

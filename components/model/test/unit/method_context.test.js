@@ -80,14 +80,6 @@ describe('MethodContext', () => {
       
       assert.isTrue(caught);
     });
-    it('[D0RZ] loads the access', async () => {
-      // FLOW storage is a fake
-      const result = await mc.retrieveAccessFromId(storage, 'accessId');
-      
-      assert.strictEqual(mc.accessToken, 'tokenFromAccess');
-      delete mc.access.originalAccess;
-      assert.deepEqual(mc.access, result);
-    });
   });
 });
 

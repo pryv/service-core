@@ -187,8 +187,8 @@ class MethodContext {
     if (access == null)
       throw errors.invalidAccessToken(
         'Cannot find access from token.', 403);
-
-    this.access = new AccessLogic(access);
+      
+    this.access = new AccessLogic(this.user.id, access);
 
     this.checkAccessValid(this.access);
   }
@@ -217,7 +217,7 @@ class MethodContext {
     if (access == null)
       throw errors.invalidAccessToken('Cannot find access matching id.');
 
-    this.access = new AccessLogic(access);
+    this.access = new AccessLogic(this.user.id, access);
     this.accessToken = access.token;
 
     this.checkAccessValid(access);
