@@ -34,7 +34,7 @@ class ApplicationLauncher {
       const app = this.app = Application.get();
       await app.initiate();
 
-      const server = new Server(app); 
+      const server = new Server(); 
       return server.start(); 
 
     } catch (e) { // this is necessary for debug process as Error is not forwarded correctly

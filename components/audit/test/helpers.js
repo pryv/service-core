@@ -16,7 +16,7 @@ const audit = require('../src/');
 /**
  * Core
  */
-const { Database } = require('storage');
+const storage = require('storage');
 const supertest = require('supertest');
 const Application = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
@@ -46,7 +46,7 @@ function closeTests() { 
  * requires initTests()
  */
 async function initCore() {
-  const database = new Database(config.get('database')); 
+  const database = await storage.getDatabase(); 
   
   global.mongoFixtures = databaseFixture(database);
   global.app = Application.get();

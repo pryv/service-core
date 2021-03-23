@@ -62,14 +62,9 @@ async function start() {
 
   const logger = getLogger('server');
 
-  const database = new storage.Database(
-    config.get('database'), getLogger('database'));
+  const database = await storage.getDatabase();
 
-  const storageLayer = new storage.StorageLayer(
-    database, logger,
-    config.get('eventFiles:attachmentsDirPath'),
-    config.get('eventFiles:previewsDirPath'),
-    10, config.get('auth:sessionMaxAge'));
+  const storageLayer = await storage.getStorageLayer();
 
   const initContextMiddleware = middleware.initContext(
     storageLayer,

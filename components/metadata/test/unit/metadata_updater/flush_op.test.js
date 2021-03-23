@@ -199,28 +199,13 @@ type UpdateAttrs = {
 // Produces and returns a connection to MongoDB. 
 // 
 function produceMongoConnection(): storage.Database {
-  const settings = {
-    host: '127.0.0.1', 
-    port: 27017,
-    name: 'pryv-node-test',
-  };
-  const database = new storage.Database(settings); 
-  
-  return database; 
+  return storage.getDatabaseSync(); 
 }
 
 // Produces a StorageLayer instance
 // 
 function produceStorageLayer(connection: storage.Database): storage.StorageLayer {
-  const passwordResetRequestMaxAge = 60*1000;
-  const sessionMaxAge = 60*1000;
-    
-  return new storage.StorageLayer(
-    connection, 
-    getLogger('flush-test'), 
-    'attachmentsDirPath', 'previewsDirPath', 
-    passwordResetRequestMaxAge,
-    sessionMaxAge);
+  return storage.getStorageLayerSync();
 }
 
 function loadEvent(db: storage.StorageLayer, userId: string, eventId: string): Promise<any> {

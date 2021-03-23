@@ -120,7 +120,7 @@ class SpawnContext {
         port: axonPort,
         host: 'localhost'
       }
-    }, customSettings);
+    }, customSettings);    
     
     // Specialize the server we've started using the settings above.
     await process.startServer(settings);

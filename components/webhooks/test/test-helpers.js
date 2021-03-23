@@ -42,15 +42,13 @@ function unhandledRejection(reason, promise) {
     'reason:', reason.stack || reason);
 }
 
-const { Database } = require('storage');
 const storage = require('storage');
 // FLOW __dirname can be undefined when node is run outside of file.
 
 // Produces and returns a connection to MongoDB. 
 // 
 function produceMongoConnection(): Database {
-  const database = new Database(getConfigUnsafe(true).get('database'));
-  return database;
+  return storage.getDatabaseSync(true);
 }
 
 module.exports = {

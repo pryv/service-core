@@ -13,12 +13,13 @@ const EventEmitter = require('events');
 const utils = require('utils');
 
 const Notifications = require('./Notifications');
-const { app } = require('api-server');
+const Application = require('api-server/src/application');
 
 const UsersRepository = require('business/src/users/repository');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 
+let app;
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -45,6 +46,8 @@ class Server {
   async start() {
     this.logger = getLogger('server');
     this.logger.debug('start initiated');
+    
+    app = Application.get();
     await app.initiate();
     
     const config = await getConfig(); 

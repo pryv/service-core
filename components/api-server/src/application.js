@@ -157,18 +157,12 @@ class Application {
   }
 
   produceStorageSubsystem() {
-    const config = this.config;
-    this.database = new storage.Database(config.get('database'));
+   
+    this.database = storage.getDatabaseSync();
 
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models. 
-    this.storageLayer = new storage.StorageLayer(this.database, 
-      getLogger('model'),
-      config.get('eventFiles:attachmentsDirPath'), 
-      config.get('eventFiles:previewsDirPath'), 
-      config.get('auth:passwordResetRequestMaxAge'), 
-      config.get('auth:sessionMaxAge')
-    );
+    this.storageLayer = storage.getStorageLayerSync()
   }
   
   // Returns the settings for updating entities
@@ -232,7 +226,9 @@ let app;
  * @returns 
  */
 function get(forceNewApp) {
-  if (forceNewApp || ! app)  app = new Application();
+  if (forceNewApp || ! app)  {
+    app = new Application();
+  }
   return app;
 }
 

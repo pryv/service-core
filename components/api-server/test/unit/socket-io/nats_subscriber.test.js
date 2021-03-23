@@ -84,7 +84,8 @@ describe('NatsSubscriber', () => {
         assert.deepEqual(arySink.msgs, ['onTestMessage2']);
       });
     });
-    describe('unsubscribe()', () => {
+    describe('unsubscribe()', function () {
+      this.timeout(1000);
       it('[L49E] should unsubscribe from NATS', async () => {
         rawClient.publish('foobar.sok1', encode('onTestMessage1'));
         

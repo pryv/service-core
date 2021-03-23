@@ -19,6 +19,8 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const UsersRepository = require('business/src/users/repository');
 import type { StorageLayer } from 'storage';
 
+const storage = require('storage');
+
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
 
@@ -93,7 +95,7 @@ class MethodContext {
 
     this.methodId = null;
     this.systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
-    this.usersRepository = new UsersRepository(eventsStorage);
+    this.usersRepository = new UsersRepository(storage.getStorageLayerSync().events);
     if (auth != null) this.parseAuth(auth);
   }
 

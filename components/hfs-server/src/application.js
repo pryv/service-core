@@ -49,7 +49,7 @@ async function createContext(
   
   const influx = new business.series.InfluxConnection({host: host, port: port}); 
   
-  const mongo = new storage.Database(config.get('database'));
+  const mongo = await storage.getDatabase();
     
   const tracer = produceTracer(config, getLogger('jaeger'));
   const typeRepoUpdateUrl = config.get('service:eventTypes');
