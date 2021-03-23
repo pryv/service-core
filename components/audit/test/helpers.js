@@ -49,7 +49,7 @@ async function initCore() {
   const database = new Database(config.get('database')); 
   
   global.mongoFixtures = databaseFixture(database);
-  global.app = new Application();
+  global.app = Application.get();
   await global.app.initiate();
 
   // Initialize notifications dependency

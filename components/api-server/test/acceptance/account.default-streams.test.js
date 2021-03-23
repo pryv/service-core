@@ -101,7 +101,7 @@ describe('Account with system streams', function () {
     isDnsLess = config.get('dnsLess:isActive');
     helpers = require('api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    app = new Application();
+    app = Application.get(true);
     await app.initiate();
 
     // Initialize notifications dependency

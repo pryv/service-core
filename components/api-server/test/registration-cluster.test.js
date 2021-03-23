@@ -67,7 +67,7 @@ describe('registration: cluster', function() {
     });
     regUrl = config.get('services:register:url');
 
-    app = new Application();
+    app = Application.get();
     await app.initiate();
 
     require('../src/methods/auth/register')(

@@ -12,7 +12,7 @@ const Repository = require('business/src/users/repository');
   // some values from register via an http-get request.
   
   // Construct application
-  const app = new Application();
+  const app = Application.get();
   await app.initiate();
   logger = getLogger('nightly-tasks');
 

@@ -37,7 +37,7 @@ describe('[BMM2] registration: DNS-less', () => {
   });
   before(async function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    app = new Application();
+    app = Application.get(true);
     await app.initiate();
 
     require('api-server/src/methods/auth/register')(

@@ -48,7 +48,7 @@ describe('DELETE /users/:username', async () => {
 
   before(async function() {
     
-    app = new Application();
+    app = Application.get();
     await app.initiate();
 
     require('../src/methods/auth/delete')(

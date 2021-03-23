@@ -44,7 +44,7 @@ describe("System streams", function () {
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   
-    app = new Application();
+    app = Application.get(true);
     await app.initiate();
 
     // Initialize notifications dependency

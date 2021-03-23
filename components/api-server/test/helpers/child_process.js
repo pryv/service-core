@@ -31,7 +31,7 @@ class ApplicationLauncher {
       // directly inject settings in nconf // to be updated to 
       config.injectTestConfig(injectSettings);
 
-      const app = this.app = new Application();
+      const app = this.app = Application.get();
       await app.initiate();
 
       const server = new Server(app); 

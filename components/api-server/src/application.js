@@ -225,4 +225,17 @@ class Application {
 
 }
 
-module.exports = Application;
+let app;
+/**
+ * get Application Singleton
+ * @param {boolean} forceNewApp - In TEST mode only, return a new Application for fixtures and mocks
+ * @returns 
+ */
+function get(forceNewApp) {
+  if (forceNewApp || ! app)  app = new Application();
+  return app;
+}
+
+module.exports = {
+  get
+}

@@ -14,7 +14,7 @@ let logger;
   process.env.SOCKET_TIMOUT_MS = 1000000;
 
   // Construct application
-  const app = new Application();
+  const app = Application.get();
   await app.initiate();
   logger = getLogger('migration-process');
 

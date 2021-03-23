@@ -93,7 +93,7 @@ describe("Events of system streams", () => {
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
   
-    app = new Application();
+    app = Application.get(true);
     await app.initiate();
 
     // Initialize notifications dependency

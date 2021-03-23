@@ -13,7 +13,7 @@ const EventEmitter = require('events');
 const utils = require('utils');
 
 const Notifications = require('./Notifications');
-const Application = require('./application');
+const { app } = require('api-server');
 
 const UsersRepository = require('business/src/users/repository');
 
@@ -27,7 +27,6 @@ const { getLogger, getConfig } = require('@pryv/boiler');
 //    server.start(); 
 // 
 class Server {
-  application: Application;
   isOpenSource: boolean;
   isDnsLess: Boolean;
   logger; 
@@ -38,8 +37,7 @@ class Server {
     
   // Load config and setup base configuration. 
   //
-  constructor(application: Application) {
-    this.application = application;
+  constructor() {
   }
     
   // Start the server. 
@@ -47,7 +45,7 @@ class Server {
   async start() {
     this.logger = getLogger('server');
     this.logger.debug('start initiated');
-    await this.application.initiate();
+    await app.initiate();
     
     const config = await getConfig(); 
     this.config = config;
@@ -68,7 +66,7 @@ class Server {
     await this.registerApiMethods();
 
     // Setup HTTP and register server; setup Socket.IO.
-    const server: net$Server = http.createServer(this.application.expressApp);
+    const server: net$Server = http.createServer(app.expressApp);
     this.setupSocketIO(server); 
     await this.startListen(server);
 
@@ -90,86 +88,85 @@ class Server {
   // Requires and registers all API methods. 
   // 
   async registerApiMethods() {
-    const application = this.application;
     const l = (topic) => getLogger(topic);
     const config = this.config;
     
-    require('./methods/system')(application.systemAPI,
-      application.storageLayer.accesses, 
+    require('./methods/system')(app.systemAPI,
+      app.storageLayer.accesses, 
       config.get('services'), 
-      application.api, 
-      application.logging, 
-      application.storageLayer);
+      app.api, 
+      app.logging, 
+      app.storageLayer);
     
-    require('./methods/utility')(application.api, application.logging, application.storageLayer);
+    require('./methods/utility')(app.api, app.logging, app.storageLayer);
 
-    require('./methods/auth/login')(application.api, 
-      application.storageLayer.accesses, 
-      application.storageLayer.sessions, 
-      application.storageLayer.events, 
+    require('./methods/auth/login')(app.api, 
+      app.storageLayer.accesses, 
+      app.storageLayer.sessions, 
+      app.storageLayer.events, 
       config.get('auth'));
     
-    require('./methods/auth/register')(application.api, 
-      application.logging, 
-      application.storageLayer, 
+    require('./methods/auth/register')(app.api, 
+      app.logging, 
+      app.storageLayer, 
       config.get('services'));
 
-    require('./methods/auth/delete')(application.api,
-      application.logging,
-      application.storageLayer,
+    require('./methods/auth/delete')(app.api,
+      app.logging,
+      app.storageLayer,
       config);
 
     require('./methods/accesses')(
-      application.api, 
+      app.api, 
       this.notificationBus, 
-      application.getUpdatesSettings(), 
-      application.storageLayer);
+      app.getUpdatesSettings(), 
+      app.storageLayer);
 
-    require('./methods/service')(application.api);
+    require('./methods/service')(app.api);
 
     if (! this.isOpenSource) {
       require('./methods/webhooks')(
-        application.api, l('methods/webhooks'),
-        application.getWebhooksSettings(),
-        application.storageLayer,
+        app.api, l('methods/webhooks'),
+        app.getWebhooksSettings(),
+        app.storageLayer,
       );
     }
 
     require('./methods/trackingFunctions')(
-      application.api,
+      app.api,
       l('methods/trackingFunctions'),
-      application.storageLayer,
+      app.storageLayer,
     );
 
-    require('./methods/account')(application.api, 
-      application.storageLayer.events, 
-      application.storageLayer.passwordResetRequests, 
+    require('./methods/account')(app.api, 
+      app.storageLayer.events, 
+      app.storageLayer.passwordResetRequests, 
       config.get('auth'), 
       config.get('services'), 
       this.notificationBus,
-      application.logging
+      app.logging
     );
 
-    require('./methods/followedSlices')(application.api, application.storageLayer.followedSlices, this.notificationBus);
+    require('./methods/followedSlices')(app.api, app.storageLayer.followedSlices, this.notificationBus);
 
-    require('./methods/profile')(application.api, application.storageLayer.profile);
+    require('./methods/profile')(app.api, app.storageLayer.profile);
 
-    require('./methods/streams')(application.api, 
-      application.storageLayer.streams, 
-      application.storageLayer.events, 
-      application.storageLayer.eventFiles, 
+    require('./methods/streams')(app.api, 
+      app.storageLayer.streams, 
+      app.storageLayer.events, 
+      app.storageLayer.eventFiles, 
       this.notificationBus, 
-      application.logging, 
+      app.logging, 
       config.get('versioning'), 
       config.get('updates'));
 
-    await require('./methods/events')(application.api, 
-      application.storageLayer.events, 
-      application.storageLayer.eventFiles, 
+    await require('./methods/events')(app.api, 
+      app.storageLayer.events, 
+      app.storageLayer.eventFiles, 
       config.get('auth'), 
       config.get('service:eventTypes'), 
       this.notificationBus, 
-      application.logging,
+      app.logging,
       config.get('versioning'),
       config.get('updates'), 
       config.get('openSource'), 
@@ -178,13 +175,12 @@ class Server {
     this.logger.debug('api method registered');
   }
   
-  setupSocketIO(server: net$Server) {
-    const application = this.application; 
+  setupSocketIO(server: net$Server) { 
     const notificationBus = this.notificationBus;
-    const api = application.api; 
-    const storageLayer = application.storageLayer;
+    const api = app.api; 
+    const storageLayer = app.storageLayer;
     const config = this.config; 
-    const customAuthStepFn = application.getCustomAuthFunction('server.js');
+    const customAuthStepFn = app.getCustomAuthFunction('server.js');
     const isOpenSource = this.isOpenSource;
         
     const socketIOsetup = require('./socket-io');
@@ -318,10 +314,10 @@ class Server {
   async getUserCount(): Promise<Number> {
     let numUsers;
     try{
-      let usersRepository = new UsersRepository(this.application.storageLayer.events);
+      let usersRepository = new UsersRepository(app.storageLayer.events);
       numUsers = await usersRepository.count();
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error, error);
       throw error;
     }
     return numUsers;
