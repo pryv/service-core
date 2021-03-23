@@ -1,5 +1,9 @@
 ## 1.6
 
+### 1.6.18
+
+- Fix welcome email: don't wait for welcome email sending before replying to client.
+
 ### 1.6.16
 
 - Fix versioning: update unique system events bug
