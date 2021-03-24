@@ -1042,10 +1042,11 @@ module.exports = async function (
 
     const validator = typeRepo.validator();
     validator.validate(eventType, content)
-      .then((newContent) => {
+      .then(function (newContent) {
         // Store the coerced value. 
         context.content.content = newContent; 
         next();
+        return null;
       })
       .catch(
         (err) => next(errors.invalidParametersFormat(
