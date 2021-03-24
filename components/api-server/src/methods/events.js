@@ -34,8 +34,6 @@ const {TypeRepository, isSeriesType} = require('business').types;
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 
-const { getStore } = require('stores');
-
 const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('utils').messaging
   .NATS_UPDATE_EVENT;
@@ -62,7 +60,6 @@ module.exports = async function (
 
   const usersRepository = new UsersRepository(userEventsStorage);
   const config = await getConfig();
-  const store = await getStore();
 
   // initialize service-register connection
   let serviceRegisterConn = {};
