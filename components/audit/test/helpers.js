@@ -46,7 +46,12 @@ function closeTests() { 
  * requires initTests()
  */
 async function initCore() {
-  const database = await storage.getDatabase(); 
+  config.injectTestConfig({
+    dnsLess: {
+      isActive: true,
+    },
+  });
+  const database = await storage.getDatabase();  
   
   global.mongoFixtures = databaseFixture(database);
   global.app = Application.get();
@@ -78,26 +83,52 @@ async function initCore() {
     app.storageLayer.sessions, 
     app.storageLayer.events, 
     config.get('auth'));
+  require('api-server/src/methods/auth/register')(app.api, 
+    app.logging, 
+    app.storageLayer, 
+    config.get('services'));
+  require('api-server/src/methods/accesses')(
+    app.api, 
+    notifications, 
+    app.getUpdatesSettings(), 
+    app.storageLayer);
   global.coreRequest = supertest(app.expressApp);
 }
-async function stopCore() {
-  // destroy fixtures
+async function closeCore() {
+  await mongoFixtures.clean();
 }
 
-
+function fakeAuditEvent(methodId) {
+  return {
+    createdBy: 'system',
+    streamIds: [cuid()],
+    type: 'log/test',
+    content: {
+      source: { name: 'http', ip: charlatan.Internet.IPv4() },
+      action: methodId,
+      status: 200,
+      query: {},
+    },
+  };
+}
 
 Object.assign(global, {
   initCore: initCore,
   initTests: initTests,
   closeTests: closeTests,
+  closeCore: closeCore,
   assert: require('chai').assert,
   cuid: require('cuid'),
   charlatan: require('charlatan'),
   bluebird: require('bluebird'),
   sinon: require('sinon'),
   path: require('path'),
+  _: require('lodash'),
   apiMethods: require('audit/src/ApiMethods'),
   MethodContextUtils: require('audit/src/MethodContextUtils'),
+  fakeAuditEvent: fakeAuditEvent,
+  validation: require('audit/src/validation'),
+  AuditFilter: require('audit/src/AuditFilter'),
 });
 
 

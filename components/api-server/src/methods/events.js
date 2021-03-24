@@ -285,21 +285,7 @@ module.exports = async function (
     params.streamsQuery = storeQueryMap.local;
     delete storeQueryMap.local;
 
-    //console.log('XXXX', storeQueryMap, params.streamsQuery);
     return next();
-    const Stream = require('stream')
-
-    const readable = new Stream.Readable({objectMode: true});
-    result.addStream('stores', readable);
-
-    const items = [{id: 'a'}, {id: 'b'},{id: 'c'}]
-    items.forEach(item => readable.push(item))
-
-    // no more data
-    readable.push(null)
-
-
-    next();
   }
 
   async function findAccessibleEvents(context, params, result, next) {

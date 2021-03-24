@@ -93,7 +93,7 @@ describe('Flush', () => {
       await op.run();
       const event = await loadEvent(db, userId, eventId);
       assert.strictEqual(event.modifiedBy, 'author123');
-      assert.approximately(event.modified, modifiedTime, 2);
+      assert.approximately(event.modified, modifiedTime, 3);
       assert.strictEqual(event.duration, to); 
     });
   });
