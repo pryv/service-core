@@ -157,9 +157,7 @@ class Application {
   }
 
   produceStorageSubsystem() {
-   
     this.database = storage.getDatabaseSync();
-
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models. 
     this.storageLayer = storage.getStorageLayerSync()
