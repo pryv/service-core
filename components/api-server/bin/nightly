@@ -2,7 +2,7 @@
 
 // Binary for nightly tasks setup. 
 
-const Application = require('../src/application');
+const { getApplication } = require('api-server/src/application');
 const { getLogger } = require('@pryv/boiler');
 let logger;
 const Repository = require('business/src/users/repository');
@@ -12,7 +12,7 @@ const Repository = require('business/src/users/repository');
   // some values from register via an http-get request.
   
   // Construct application
-  const app = Application.get();
+  const app = getApplication();
   await app.initiate();
   logger = getLogger('nightly-tasks');
 

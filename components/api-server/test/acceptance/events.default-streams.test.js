@@ -17,7 +17,7 @@ const charlatan = require('charlatan');
 const { getConfig } = require('@pryv/boiler');
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
-const Application = require('api-server/src/application');
+const { getApplication } = require('api-server/src/application');
 const Notifications = require('api-server/src/Notifications');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { databaseFixture } = require('test-helpers');
@@ -93,7 +93,7 @@ describe("Events of system streams", () => {
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
   
-    app = Application.get(true);
+    app = getApplication(true);
     await app.initiate();
 
     // Initialize notifications dependency

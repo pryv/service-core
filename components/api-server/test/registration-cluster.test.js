@@ -14,7 +14,7 @@ const supertest = require('supertest');
 const assert = require('chai').assert;
 
 const { getConfig } = require('@pryv/boiler');
-const Application = require('../src/application');
+const { getApplication } = require('api-server/src/application');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const User = require('business/src/users/User');
@@ -67,7 +67,7 @@ describe('registration: cluster', function() {
     });
     regUrl = config.get('services:register:url');
 
-    app = Application.get();
+    app = getApplication();
     await app.initiate();
 
     require('../src/methods/auth/register')(

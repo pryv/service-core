@@ -16,7 +16,7 @@ const charlatan = require('charlatan');
 
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
-const Application = require('api-server/src/application');
+const { getApplication } = require('api-server/src/application');
 const Notifications = require('api-server/src/Notifications');
 const AccessLogic = require('model/src/AccessLogic');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -83,7 +83,7 @@ describe("Accesses with account streams", function () {
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
 
-    app = Application.get(true);
+    app = getApplication(true);
     await app.initiate();
 
     // Initialize notifications dependency

@@ -12,7 +12,7 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
-const Application = require('api-server/src/application');
+const { getApplication } = require('api-server/src/application');
 const Notifications = require('api-server/src/Notifications');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
@@ -44,7 +44,7 @@ describe("System streams", function () {
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   
-    app = Application.get(true);
+    app = getApplication(true);
     await app.initiate();
 
     // Initialize notifications dependency

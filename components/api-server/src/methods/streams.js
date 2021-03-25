@@ -129,7 +129,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function applyPrerequisitesForCreation(context, params, result, next) {
-    if (!context.access.canCreateSubStream(params.parentId)) {
+    if (!context.access.canCreateChildOnStream(params.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -233,7 +233,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     }
 
     // check target parent if needed
-    if (params.update.parentId && !context.access.canCreateSubStream(params.update.parentId)) {
+    if (params.update.parentId && !context.access.canCreateChildOnStream(params.update.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 

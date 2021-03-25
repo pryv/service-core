@@ -9,7 +9,7 @@ const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const bluebird = require('bluebird');
-const Application = require('api-server/src/application');
+const { getApplication } = require('api-server/src/application');
 const { getConfig } = require('@pryv/boiler');
 const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
@@ -37,7 +37,7 @@ describe('[BMM2] registration: DNS-less', () => {
   });
   before(async function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    app = Application.get(true);
+    app = getApplication(true);
     await app.initiate();
 
     require('api-server/src/methods/auth/register')(

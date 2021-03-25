@@ -2,7 +2,7 @@
 
 // Binary for launching the db migration process. 
 
-const Application = require('../src/application');
+const { getApplication } = require('api-server/src/application');
 const bluebird = require('bluebird');
 const { getLogger } = require('@pryv/boiler');
 let logger;
@@ -14,7 +14,7 @@ let logger;
   process.env.SOCKET_TIMOUT_MS = 1000000;
 
   // Construct application
-  const app = Application.get();
+  const app = getApplication();
   await app.initiate();
   logger = getLogger('migration-process');
 

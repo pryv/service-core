@@ -24,10 +24,6 @@ var PermissionLevels = {
 
 Object.freeze(PermissionLevels);
 
-/**
- * Usage example: _.extend(plainAccessObject, AccessLogic);
- */
-
  class AccessLogic {
   _access; // Access right from the DB
   _userId;
@@ -220,7 +216,7 @@ Object.freeze(PermissionLevels);
     return level && isHigherOrEqualLevel(level, 'read');
   }
 
-  canCreateSubStream(streamId) {
+  canCreateChildOnStream(streamId) {
     return this._canManageStream(streamId);
   }
 

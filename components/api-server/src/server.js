@@ -13,7 +13,7 @@ const EventEmitter = require('events');
 const utils = require('utils');
 
 const Notifications = require('./Notifications');
-const Application = require('api-server/src/application');
+const { getApplication } = require('api-server/src/application');
 
 const UsersRepository = require('business/src/users/repository');
 
@@ -47,7 +47,7 @@ class Server {
     this.logger = getLogger('server');
     this.logger.debug('start initiated');
     
-    app = Application.get();
+    app = getApplication();
     await app.initiate();
     
     const config = await getConfig(); 

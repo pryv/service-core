@@ -18,7 +18,7 @@ const audit = require('../src/');
  */
 const storage = require('storage');
 const supertest = require('supertest');
-const Application = require('api-server/src/application');
+const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
 const Notifications = require('api-server/src/Notifications');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
@@ -54,7 +54,7 @@ async function initCore() {
   const database = await storage.getDatabase();  
   
   global.mongoFixtures = databaseFixture(database);
-  global.app = Application.get();
+  global.app = getApplication();
   await global.app.initiate();
 
   // Initialize notifications dependency

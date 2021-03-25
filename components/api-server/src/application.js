@@ -223,7 +223,7 @@ let app;
  * @param {boolean} forceNewApp - In TEST mode only, return a new Application for fixtures and mocks
  * @returns 
  */
-function get(forceNewApp) {
+function getApplication(forceNewApp) {
   if (forceNewApp || ! app)  {
     app = new Application();
   }
@@ -231,5 +231,5 @@ function get(forceNewApp) {
 }
 
 module.exports = {
-  get
+  getApplication
 }

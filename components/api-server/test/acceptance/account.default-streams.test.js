@@ -13,7 +13,7 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
-const Application = require('api-server/src/application');
+const { getApplication } = require('api-server/src/application');
 const Notifications = require('api-server/src/Notifications');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfig } = require('@pryv/boiler');
@@ -101,7 +101,7 @@ describe('Account with system streams', function () {
     isDnsLess = config.get('dnsLess:isActive');
     helpers = require('api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    app = Application.get(true);
+    app = getApplication(true);
     await app.initiate();
 
     // Initialize notifications dependency
