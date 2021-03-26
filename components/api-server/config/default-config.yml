@@ -41,8 +41,7 @@ tcpMessaging:
   enabled: false
   host: 'localhost'
   port: 4000
-  pubConnectInsteadOfBind: false
-
+ 
 updates: 
   ignoreProtectedFields: false 
 

@@ -8,11 +8,8 @@
 
 const http = require('http');
 const bluebird = require('bluebird');
-const EventEmitter = require('events');
 
-const utils = require('utils');
-
-const Notifications = require('./Notifications');
+const NotificationBus = require('./Notifications');
 const { getApplication } = require('api-server/src/application');
 
 const UsersRepository = require('business/src/users/repository');
@@ -63,7 +60,7 @@ class Server {
    
     
     // start TCP pub messaging
-    await this.setupNotificationBus();
+    this.notificationBus = await NotificationBus.getNotificationBus();
     
     // register API methods
     await this.registerApiMethods();
@@ -248,49 +245,7 @@ class Server {
     }
   }
   
-  // Opens an axon PUB socket. The socket will be used for three purposes: 
-  //
-  //  a) Internal communication via events, called directly on the notifications 
-  //    instance. 
-  //  b) Communication with the tests. When ran via InstanceManager, this is 
-  //    used to synchronize with the tests. 
-  //  c) For communication with other api-server processes on the same core. 
-  // 
-  // You can turn this off! If you set 'tcpMessaging.enabled' to false, nstno axon
-  // messaging will be performed. This method returns a plain EventEmitter 
-  // instead; allowing a) and c) to work. The power of interfaces. 
-  // 
-  async openNotificationBus(): EventEmitter {
-    const logger = this.logger; 
-    const config = this.config; 
 
-    const enabled = config.get('tcpMessaging:enabled');
-    if (! enabled) return new EventEmitter(); 
-    
-    const tcpMessaging = config.get('tcpMessaging');
-    const host = config.get('tcpMessaging:host');
-    const port = config.get('tcpMessaging:port');
-    
-    try {
-      const socket = await bluebird.fromCallback(
-        (cb) => utils.messaging.openPubSocket(tcpMessaging, cb));
-        
-      logger.debug(`AXON TCP pub socket ready on ${host}:${port}`);
-      logger.info(`TCP pub socket ready on ${host}:${port}`);
-      return socket; 
-    }
-    catch (err) {
-      logger.error('Error setting up TCP pub socket: ' + err);
-      process.exit(1);
-    }
-  }
-  
-  // Sets up `Notifications` bus and registers it for everyone to consume. 
-  // 
-  async setupNotificationBus() {
-    const notificationEvents = await this.openNotificationBus();
-    const bus = this.notificationBus = new Notifications(notificationEvents);
-  }
 
 
   async setupReporting() {

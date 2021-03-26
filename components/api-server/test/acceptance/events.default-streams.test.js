@@ -101,7 +101,7 @@ describe("Events of system streams", () => {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifications = new Notifications(axonSocket);
+    const notifications = await Notifications.getNotificationBus();
     
     notifications.serverReady();
     await require("api-server/src/methods/events")(

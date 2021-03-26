@@ -24,7 +24,7 @@ const R = require('ramda');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
 
-describe('accesses (personal)', function () {
+describe('[UZ9S] accesses (personal)', function () {
 
   const user = Object.assign({}, testData.users[0]);
   const basePath = '/' + user.username + '/accesses';

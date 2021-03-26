@@ -45,7 +45,7 @@ function InstanceManager(settings) {
 
   // setup TCP messaging subscription
 
-  messagingSocket.bind(+settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
+  messagingSocket.bind(settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
     logger.debug('TCP sub socket ready on ' + settings.tcpMessaging.host + ':' +
         settings.tcpMessaging.port);
   });
@@ -119,7 +119,6 @@ function InstanceManager(settings) {
    */
   this.setup = function() {
     // adjust config settings for test instance
-    serverSettings.tcpMessaging.pubConnectInsteadOfBind = true;
 
     this.url = 'http://' + serverSettings.http.ip + ':' + serverSettings.http.port;
   };

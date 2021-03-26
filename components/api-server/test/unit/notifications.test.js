@@ -13,10 +13,16 @@ const assert = require('chai').assert;
 
 const Notifications = require('../../src/Notifications');
 
-describe('Notifications', () => {
+describe('Notifications',() => {
   let axonMsgs = []; 
   let emittedMsgs = []; 
-  
+  let notifications;
+
+  before(async () => {
+    notifications = await Notifications.getNotificationBus(); 
+  });
+
+
   // Clear out received messages before each test. 
   beforeEach(() => {
     axonMsgs = []; 
@@ -28,8 +34,6 @@ describe('Notifications', () => {
     emit: (...args) => axonMsgs.push(args),
   };
   
-  // Class under test
-  const notifications = new Notifications(axonSocket); 
   
   // intercept internal events
   const eventNames = [

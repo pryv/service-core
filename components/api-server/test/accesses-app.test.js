@@ -20,7 +20,7 @@ const { getConfig } = require('@pryv/boiler');
 
 import type Request  from './helpers';
 
-describe('accesses (app)', function () {
+describe('[UF9S] accesses (app)', function () {
 
   let helpers, server, validation, storage, testData;
   let additionalTestAccesses, user, access, basePath, accessesNotifCount;
@@ -177,7 +177,7 @@ describe('accesses (app)', function () {
 
     before(resetAccesses);
 
-    it('[YEHW] must return shared accesses whose permissions are a subset of the current one\'s',
+    it('[YEHW](G2) must return shared accesses whose permissions are a subset of the current one\'s',
       function (done) {
         req().get(basePath, access.token).end(function (res) {
           validation.check(res, {

@@ -29,15 +29,14 @@ describe('[55JP] users pool', () => {
     database = require('test-helpers').dependencies.storage.database;
     server = await context.spawn();
   });
-  after(() => {
-    server.stop(); 
-  });
+
   before(async () => {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.context.cleanEverything();
   });
   after(async () => {
     await mongoFixtures.context.cleanEverything();
+    server.stop(); 
   });
 
   describe('create pool user', () => {
@@ -79,7 +78,7 @@ describe('[55JP] users pool', () => {
     });
   });
 
-  describe('get pool size', () => {
+  describe('[UF9T] get pool size', () => {
     let res;
     let poolSize;
 
@@ -122,7 +121,7 @@ describe('[55JP] users pool', () => {
         assert.notExists(res.body.error, 'response contains an error');
       });
 
-      it('[APQS] has the right number of pool users', () => {
+      it('[APQS](G2) has the right number of pool users', () => {
         assert.exists(poolSize, 'there is not pool size');
         assert.isTrue(poolSize === 3, 'the poolSize number is not as expected');
       });

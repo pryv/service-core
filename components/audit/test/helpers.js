@@ -62,7 +62,7 @@ async function initCore() {
   const axonSocket = {
     emit: (...args) => axonMsgs.push(args),
   };
-  const notifications = new Notifications(axonSocket);
+  const notifications = await Notifications.getNotificationBus();
   notifications.serverReady();
 
   require('api-server/src/methods/events')(

@@ -100,7 +100,7 @@ class SpawnContext {
     // TODO Free ports once done.
     const port = await this.allocatePort(); 
 
-    const axonPort = await this.allocatePort();
+    const axonPort = 4000;
     
     // Obtain a process proxy
     const process = this.getProcess(); 
@@ -116,7 +116,6 @@ class SpawnContext {
         // for spawner, we boot api-servers before their Server holder objects
         // so the api-server needs to listen on a socket before Server facade
         // connects to it. It's the inverse for InstanceManager
-        pubConnectInsteadOfBind: false,
         port: axonPort,
         host: 'localhost'
       }
@@ -410,7 +409,7 @@ class Server extends EventEmitter {
     const host = this.host;
     this.messagingSocket = axon.socket('sub-emitter');
     const mSocket = this.messagingSocket;
-    mSocket.connect(+this.axonPort, host);
+    mSocket.connect(this.axonPort, host);
     
     mSocket.on('*', function (message, data) {
       this.emit(message, data);
