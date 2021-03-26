@@ -45,12 +45,14 @@ function InstanceManager(settings) {
 
   // setup TCP messaging subscription
 
+  console.log('XXXXX IM <<BIND>> ' + settings.tcpMessaging.port);
   messagingSocket.bind(settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
     logger.debug('TCP sub socket ready on ' + settings.tcpMessaging.host + ':' +
         settings.tcpMessaging.port);
   });
 
   messagingSocket.on('*', function (message, data) {
+    console.log('XXXXX >> ', message, data);
     if (message === 'server-ready') {
       serverReady = true;
     }

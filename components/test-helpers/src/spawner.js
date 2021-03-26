@@ -100,7 +100,7 @@ class SpawnContext {
     // TODO Free ports once done.
     const port = await this.allocatePort(); 
 
-    const axonPort = 4000;
+    const axonPort = 4000; // await this.allocatePort();
     
     // Obtain a process proxy
     const process = this.getProcess(); 
@@ -409,9 +409,13 @@ class Server extends EventEmitter {
     const host = this.host;
     this.messagingSocket = axon.socket('sub-emitter');
     const mSocket = this.messagingSocket;
-    mSocket.connect(this.axonPort, host);
+    console.log('XXXXX SP <<CONN>> ' + this.axonPort);
+    mSocket.connect(this.axonPort, host, function () { 
+      console.log('XXXXX SP <<OPEN>> ');
+    });
     
     mSocket.on('*', function (message, data) {
+      console.log('XXXXX SP >> ', message, data);
       this.emit(message, data);
     }.bind(this));
   }

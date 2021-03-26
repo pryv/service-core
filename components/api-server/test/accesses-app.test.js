@@ -180,6 +180,8 @@ describe('[UF9S] accesses (app)', function () {
     it('[YEHW](G2) must return shared accesses whose permissions are a subset of the current one\'s',
       function (done) {
         req().get(basePath, access.token).end(function (res) {
+
+          console.log('XXXX >',basePath, access.token, res.body);
           validation.check(res, {
             status: 200,
             schema: methodsSchema.get.result,
