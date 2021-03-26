@@ -15,7 +15,7 @@ const assert = chai.assert;
 const { getConfig } = require('@pryv/boiler');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-describe('[55JP] users pool', () => {
+describe.skip('[55JP] users pool', () => {
   let produceMongoConnection, context, storage, database;
   let adminKey;
   let server;
@@ -121,7 +121,7 @@ describe('[55JP] users pool', () => {
         assert.notExists(res.body.error, 'response contains an error');
       });
 
-      it('[APQS](G2) has the right number of pool users', () => {
+      it('[APQS] has the right number of pool users', () => {
         assert.exists(poolSize, 'there is not pool size');
         assert.isTrue(poolSize === 3, 'the poolSize number is not as expected');
       });

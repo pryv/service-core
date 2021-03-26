@@ -52,7 +52,7 @@ function InstanceManager(settings) {
   });
 
   messagingSocket.on('*', function (message, data) {
-    console.log('XXXXX >> ', message, data);
+    console.log('XXXXX >> ', message);
     if (message === 'server-ready') {
       serverReady = true;
     }

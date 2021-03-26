@@ -199,7 +199,7 @@ describe("System streams", function () {
         it('[1R35] should return status 400', async () => { 
           assert.equal(res.status, 400);
         });
-        it('[4939] should return the correct error', async () => {
+        it('[4939](G2) should return the correct error', async () => {
           assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
         });
       });
