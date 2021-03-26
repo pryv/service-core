@@ -15,8 +15,8 @@ const { PendingUpdatesMap, PendingUpdate } = require('./pending_updates');
 const { Controller } = require('./controller');
 const { ErrorLogger } = require('./error_logger');
 
-const NatsPublisher = require('api-server/src/socket-io/nats_publisher');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
+const { NatsPublisher } = require('messages');
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 
 import type { IMetadataUpdaterService, IUpdateRequests, IUpdateResponse, 
   IUpdateId, IPendingUpdate } from './interface';

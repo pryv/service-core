@@ -15,7 +15,7 @@ const socketIO = require('socket.io');
 const MethodContext = require('model').MethodContext;
 import type {ContextSource} from 'model';
 
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 
 const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
@@ -95,7 +95,7 @@ function setupSocketIO(
 
   // Setup the chain from notifications -> NATS
   if (! isOpenSource) {
-    const NatsPublisher = require('./nats_publisher');
+    const { NatsPublisher } = require('messages');
     const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
       (userName: string): string => { return `${userName}.sok1`; }
     );

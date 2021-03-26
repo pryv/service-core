@@ -43,11 +43,17 @@ function InstanceManager(settings) {
       logger = getLogger('instance-manager');
 
 
-  // setup TCP messaging subscription
+  // setup TCP axonMessaging subscription
 
   messagingSocket.bind(+settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
     logger.debug('TCP sub socket ready on ' + settings.tcpMessaging.host + ':' +
         settings.tcpMessaging.port);
+  });
+
+  const NATS = require('nats');
+  let nc = NATS.connect({ url: "nats://localhost:4222"});
+  nc.subscribe('*', (msg, reply, subject) => {
+      console.log('got', msg, 'from', subject);
   });
 
   messagingSocket.on('*', function (message, data) {
@@ -78,7 +84,7 @@ function InstanceManager(settings) {
       settings.logs.console.active = false; 
     }
 
-    logger.debug('ensure started', settings);
+    logger.debug('ensure started', settings.http);
     if (deepEqual(settings, serverSettings)) {
       if (isRunning()) {
         // nothing to do

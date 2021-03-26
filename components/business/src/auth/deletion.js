@@ -110,7 +110,7 @@ class Deletion {
       const error = new Error(
         `Directory '${inaccessibleDirectory}' is inaccessible or missing.`
       );
-      this.logger.error(error);
+      this.logger.error(error, error);
       return next(errors.unexpectedError(error));
     }
     next();
@@ -194,7 +194,7 @@ class Deletion {
         )
       );
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error, error);
       return next(errors.unexpectedError(error));
     }
     result.userDeletion = { username: context.user.username };
@@ -212,7 +212,7 @@ class Deletion {
       const res = await this.serviceRegisterConn.deleteUser(params.username);
       this.logger.debug('on register: ' + params.username, res);
     } catch (e) { // user might have been deleted register we do not FW error just log it
-      this.logger.error(e);
+      this.logger.error(e, e);
     }
     next();
   };

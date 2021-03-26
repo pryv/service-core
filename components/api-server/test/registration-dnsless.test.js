@@ -15,7 +15,7 @@ const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
-const Notifications = require('api-server/src/Notifications');
+const { Notifications } = require('messages');
 const ErrorIds = require('errors/src/ErrorIds');
 
 describe('[BMM2] registration: DNS-less', () => {

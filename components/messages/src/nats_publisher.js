@@ -9,7 +9,7 @@
 const NATS = require('nats');
 const { encode } = require('./nats_wire_message');
 
-import type { MessageSink }  from './message_sink';
+import type { MessageSink }  from 'messages';
 
 // Receives messages from ChangeNotifier and publishes them to the NATS pub/sub
 // queue. 

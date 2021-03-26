@@ -7,7 +7,7 @@
 
 // @flow
 
-import type { MessageSink }  from './message_sink';
+import type { MessageSink }  from 'messages';
 
 type User = { username: string };
 

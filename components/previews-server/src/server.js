@@ -30,6 +30,7 @@ const http = require('http');
 const middleware = require('middleware');
 const storage = require('storage');
 const utils = require('utils');
+const { axonMessaging } = require('messages');
 
 const ExtensionLoader = utils.extension.ExtensionLoader;
 
@@ -95,7 +96,7 @@ async function start() {
 
   // Go
 
-  utils.messaging.openPubSocket(config.get('tcpMessaging'), function (err, pubSocket) {
+ axonMessaging.openPubSocket(config.get('tcpMessaging'), function (err, pubSocket) {
     if (err) {
       logger.error('Error setting up TCP pub socket: ' + err);
       process.exit(1);
@@ -136,6 +137,6 @@ const loggerLaunch = getLogger('launch');
 // And now:
 start()
   .catch(err => {
-    loggerLaunch.error(err); // eslint-disable-line no-console
+    loggerLaunch.error(err, err); // eslint-disable-line no-console
   });
 

@@ -56,7 +56,7 @@ class ServiceRegister {
         }
       }
       // do not log validation errors
-      this.logger.error(err);
+      this.logger.error(err, err);
       throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
     }
   }
@@ -73,7 +73,7 @@ class ServiceRegister {
       if (err?.response?.body?.reserved === true) {
         return err.response.body;
       }
-      this.logger.error(err);
+      this.logger.error(err, err);
       throw new Error(err.message || 'Unexpected error.');
     }
   }
@@ -89,7 +89,7 @@ class ServiceRegister {
         .send(user);     
       return res.body;
     } catch (err) {
-      this.logger.error(err);
+      this.logger.error(err, err);
       throw new Error(err.message || 'Unexpected error.');
     }
   }
@@ -104,7 +104,7 @@ class ServiceRegister {
         .set('Authorization', this.config.key);     
       return res.body;
     } catch (err) {
-      this.logger.error(err);
+      this.logger.error(err, err);
       throw new Error(err.message || 'Unexpected error.');
     }
   }
@@ -139,7 +139,7 @@ class ServiceRegister {
         if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
           throw errors.itemAlreadyExists('user', safetyCleanDuplicate(err.response.body.error.data, username, updateParams));
         } else {
-          this.logger.error(err.response.body.error);
+          this.logger.error(err.response.body.error, err);
           throw errors.unexpectedError(err.response.body.error);
         }
       } if (err.status == 400 && err.response.body?.user === null) {
@@ -147,7 +147,7 @@ class ServiceRegister {
         this.logger.error('No data was updated');
       }else{
         // do not log validation errors
-        this.logger.error(err);
+        this.logger.error(err, err);
         throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
       }
     }

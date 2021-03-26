@@ -13,7 +13,7 @@ const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
-const Notifications = require('api-server/src/Notifications');
+const { Notifications } = require('messages');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 

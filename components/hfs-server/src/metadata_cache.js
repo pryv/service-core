@@ -19,17 +19,15 @@ import type {ContextSource} from 'model';
 const errors = require('errors').factory;
 const { InfluxRowType } = require('business').types;
 
-const NatsSubscriber = require('api-server/src/socket-io/nats_subscriber');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('utils').messaging
-  .NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('utils').messaging
-  .NATS_DELETE_EVENT;
+const { NatsSubscriber } = require('messages');
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
+const NATS_UPDATE_EVENT = require('messages').NATS_UPDATE_EVENT;
+const NATS_DELETE_EVENT = require('messages').NATS_DELETE_EVENT;
 
 import type { LRUCache }  from 'lru-cache';
 
 import type { TypeRepository, Repository } from 'business';
-import type { MessageSink }  from './message_sink';
+import type { MessageSink }  from 'messages';
 
 type UsernameEvent = {
   username: string,
@@ -88,7 +86,7 @@ class MetadataCache implements MetadataRepository, MessageSink {
 
   config;
 
-  // nats messaging
+  // nats axonMessaging
   natsUpdateSubscriber: NatsSubscriber;
   natsDeleteSubscriber: NatsSubscriber;
   sink: MessageSink;

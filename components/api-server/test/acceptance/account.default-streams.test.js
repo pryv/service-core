@@ -14,7 +14,7 @@ const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
-const Notifications = require('api-server/src/Notifications');
+const { Notifications } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfig } = require('@pryv/boiler');
 

@@ -11,8 +11,8 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
-const NatsSubscriber = require('api-server/src/socket-io/nats_subscriber');
-import type { MessageSink } from 'api-server/src/socket-io/message_sink';
+const { NatsSubscriber } = require('messages');
+import type { MessageSink } from 'messages';
 import type Repository  from './repository';
 
 export type Run = {
