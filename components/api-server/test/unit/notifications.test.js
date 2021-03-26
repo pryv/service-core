@@ -20,6 +20,16 @@ describe('Notifications',() => {
 
   before(async () => {
     notifications = await Notifications.getNotificationBus(); 
+    // intercept internal events
+    const eventNames = [
+      'server-ready', 'account-changed', 'accesses-changed', 'followed-slices-changed', 
+      'streams-changed', 'events-changed',
+    ];
+    for (const name of eventNames) {
+      notifications.on(name, (...args) => {
+        emittedMsgs.push([name].concat(args));
+      });
+    }
   });
 
 
@@ -35,16 +45,7 @@ describe('Notifications',() => {
   };
   
   
-  // intercept internal events
-  const eventNames = [
-    'server-ready', 'account-changed', 'accesses-changed', 'followed-slices-changed', 
-    'streams-changed', 'events-changed',
-  ];
-  for (const name of eventNames) {
-    notifications.on(name, (...args) => {
-      emittedMsgs.push([name].concat(args));
-    });
-  }
+  
   
   describe('#serverReady', () => {
     beforeEach(() => {
