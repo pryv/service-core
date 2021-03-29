@@ -14,7 +14,7 @@ const _ = require('lodash');
 const { getLogger } = require('@pryv/boiler');
 const { setMinimalMethodContext, setMethodId } = require('middleware');
 
-import type { ContextSource } from 'model';
+import type { ContextSource } from 'business';
 
 import type Application  from '../application';
 

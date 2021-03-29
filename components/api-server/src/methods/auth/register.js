@@ -14,7 +14,7 @@ const UsersRepository = require('business/src/users/repository');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 import type Result  from '../Result';
 import type { ApiCallback }  from '../API';
 

@@ -25,7 +25,7 @@ const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('messages').NATS_WEBHOOKS_ACTIVAT
 const NATS_WEBHOOKS_DELETE_CHANNEL = require('messages').NATS_WEBHOOKS_DELETE;
 
 import type { StorageLayer } from 'storage';
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 
 import type API  from '../API';
 import type { ApiCallback }  from '../API';

@@ -31,7 +31,7 @@ type ApiFunction = string |
 export type ApiCallback = 
   (err: ?Error, result: ?Result) => mixed;
 
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 
 // Maps each API method's implementation as a chain of functions (akin to
 // middleware) to its id. Handles method calls coming from HTTP or web sockets.

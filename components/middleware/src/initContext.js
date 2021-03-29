@@ -6,9 +6,8 @@
  */
 // @flow
 
-const model = require('model');
-const MethodContext = model.MethodContext;
-import type { CustomAuthFunction,  ContextSource} from 'model';
+const { MethodContext } = require('business');
+import type { CustomAuthFunction,  ContextSource} from 'business';
 import type { StorageLayer } from 'storage';
 
 

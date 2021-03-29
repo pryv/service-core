@@ -17,7 +17,7 @@ const chai = require('chai');
 const assert = chai.assert; 
 
 const MethodContext = require('../../src/MethodContext');
-import type { ContextSource } from 'model';
+import type { ContextSource } from 'business';
 
 const contextSource: ContextSource = {
   name: 'test',

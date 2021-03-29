@@ -12,8 +12,8 @@
 
 const socketIO = require('socket.io');
 
-const MethodContext = require('model').MethodContext;
-import type {ContextSource} from 'model';
+const MethodContext = require('business').MethodContext;
+import type {ContextSource} from 'business';
 
 const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 
@@ -23,7 +23,7 @@ const Paths = require('../routes/Paths');
 const ChangeNotifier = require('./change_notifier');
 
 import type { StorageLayer } from 'storage';
-import type { CustomAuthFunction } from 'model';
+import type { CustomAuthFunction } from 'business';
 
 import type API  from '../API';
 import type { SocketIO$Handshake }  from './Manager';

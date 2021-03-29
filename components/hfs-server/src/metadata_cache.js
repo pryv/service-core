@@ -13,8 +13,8 @@ const LRU = require('lru-cache');
 const logger = require('@pryv/boiler').getLogger('metadata_cache');
 
 const storage = require('storage');
-const MethodContext = require('model').MethodContext;
-import type {ContextSource} from 'model';
+const MethodContext = require('business').MethodContext;
+import type {ContextSource} from 'business';
 
 const errors = require('errors').factory;
 const { InfluxRowType } = require('business').types;

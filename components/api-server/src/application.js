@@ -50,7 +50,7 @@ const { Extension, ExtensionLoader } = require('utils').extension;
 
 logger.debug('Loading app');
 
-import type { CustomAuthFunction } from 'model';
+import type { CustomAuthFunction } from 'business';
 import type { WebhooksSettingsHolder }  from './methods/webhooks';
 
 type UpdatesSettingsHolder = {

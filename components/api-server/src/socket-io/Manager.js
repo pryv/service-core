@@ -15,7 +15,7 @@ const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
   await commonMeta.loadSettings();
 })();
 
-const MethodContext = require('model').MethodContext;
+const MethodContext = require('business').MethodContext;
 import type API  from '../API';
 
 import type { MessageSink }  from 'messages';

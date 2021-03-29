@@ -14,7 +14,7 @@ const UsersRepository = require('business/src/users/repository');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const errors = require('errors').factory;
 
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
 
 

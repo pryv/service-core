@@ -11,7 +11,7 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 import type { Access, User, Stream } from 'storage';
 
-const AccessLogic = require('./AccessLogic');
+const AccessLogic = require('./accesses/AccessLogic');
 const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const treeUtils = require('utils').treeUtils;
