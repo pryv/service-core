@@ -17,7 +17,7 @@ const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
 const { getApplication } = require('api-server/src/application');
-const Notifications = require('api-server/src/Notifications');
+const { Notifications } = require('messages');
 const AccessLogic = require('model/src/AccessLogic');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 

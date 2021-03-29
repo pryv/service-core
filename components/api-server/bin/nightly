@@ -47,7 +47,7 @@ const Repository = require('business/src/users/repository');
       process.exit(0);
     })
     .catch(e => {
-      logger.error(e);
+      logger.error(e, e);
       process.exit(1);
     });
 })();

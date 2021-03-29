@@ -20,7 +20,7 @@ const storage = require('storage');
 const supertest = require('supertest');
 const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
-const Notifications = require('api-server/src/Notifications');
+const { Notifications } = require('messages');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
 
 /**

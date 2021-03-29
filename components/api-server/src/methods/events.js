@@ -34,11 +34,9 @@ const {TypeRepository, isSeriesType} = require('business').types;
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('utils').messaging
-  .NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('utils').messaging
-  .NATS_DELETE_EVENT;
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
+const NATS_UPDATE_EVENT = require('messages').NATS_UPDATE_EVENT;
+const NATS_DELETE_EVENT = require('messages').NATS_DELETE_EVENT;
 const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
@@ -79,7 +77,7 @@ module.exports = async function (
   
   let natsPublisher;
   if (!openSourceSettings.isActive) {
-    const NatsPublisher = require('../socket-io/nats_publisher');
+    const { NatsPublisher } = require('messages');
     natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
   }
 

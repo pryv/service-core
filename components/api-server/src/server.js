@@ -11,8 +11,9 @@ const bluebird = require('bluebird');
 const EventEmitter = require('events');
 
 const utils = require('utils');
+const { axonMessaging } = require('messages');
 
-const Notifications = require('./Notifications');
+const { Notifications } = require('messages');
 const { getApplication } = require('api-server/src/application');
 
 const UsersRepository = require('business/src/users/repository');
@@ -33,7 +34,7 @@ class Server {
   logger; 
   config;
   
-  // Axon based internal notification and messaging bus. 
+  // Axon based internal notification and axonMessaging bus. 
   notificationBus: Notifications;
     
   // Load config and setup base configuration. 
@@ -62,7 +63,7 @@ class Server {
     }
    
     
-    // start TCP pub messaging
+    // start TCP pub axonMessaging
     await this.setupNotificationBus();
     
     // register API methods
@@ -257,7 +258,7 @@ class Server {
   //  c) For communication with other api-server processes on the same core. 
   // 
   // You can turn this off! If you set 'tcpMessaging.enabled' to false, nstno axon
-  // messaging will be performed. This method returns a plain EventEmitter 
+  // axonMessaging will be performed. This method returns a plain EventEmitter 
   // instead; allowing a) and c) to work. The power of interfaces. 
   // 
   async openNotificationBus(): EventEmitter {
@@ -273,7 +274,7 @@ class Server {
     
     try {
       const socket = await bluebird.fromCallback(
-        (cb) => utils.messaging.openPubSocket(tcpMessaging, cb));
+        (cb) => axonMessaging.openPubSocket(tcpMessaging, cb));
         
       logger.debug(`AXON TCP pub socket ready on ${host}:${port}`);
       logger.info(`TCP pub socket ready on ${host}:${port}`);

@@ -18,11 +18,11 @@ const methodsSchema = require('../schema/webhooksMethods');
 const Webhook = require('business').webhooks.Webhook;
 const WebhooksRepository = require('business').webhooks.Repository;
 
-const NatsPublisher = require('../socket-io/nats_publisher');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
-const NATS_WEBHOOKS_CREATE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_CREATE;
-const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_ACTIVATE;
-const NATS_WEBHOOKS_DELETE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_DELETE;
+const { NatsPublisher } = require('messages');
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
+const NATS_WEBHOOKS_CREATE_CHANNEL = require('messages').NATS_WEBHOOKS_CREATE;
+const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('messages').NATS_WEBHOOKS_ACTIVATE;
+const NATS_WEBHOOKS_DELETE_CHANNEL = require('messages').NATS_WEBHOOKS_DELETE;
 
 import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'model';
