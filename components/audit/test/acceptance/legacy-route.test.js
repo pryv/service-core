@@ -69,7 +69,7 @@ describe('Audit legacy route', function() {
       .query({streams: ['other']});
   });
 
-  it('must retrieve logs by time range', async () => {
+  it('[QXCH] must retrieve logs by time range', async () => {
     const res = await coreRequest
       .get(auditPath)
       .set('Authorization', appToken)

@@ -55,6 +55,7 @@ const ALL_METHODS = [
   'system.createPoolUser',
   'system.getUsersPoolSize',
   'system.getUserInfo',
+  'audit.getLogs'
 ];
 
 const NOT_AUDITED_METHODS = [

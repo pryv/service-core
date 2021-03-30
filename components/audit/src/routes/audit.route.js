@@ -13,11 +13,9 @@ const methodCallback = require('api-server/src/routes/methodCallback');
 const Paths = require('api-server/src/routes/Paths');
 const middleware = require('middleware');
 const { setMethodId } = require('middleware');
-const audit = require('audit');
+const tryCoerceStringValues = require('api-server/src/schema/validation').tryCoerceStringValues;
 
 import type Application  from 'api-server/src/application';
-
-const auditStorage = audit.storage;
 
 // Event streams route handling.
 module.exports = function (expressApp: express$Application, app: Application) {
@@ -26,21 +24,23 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
   
   expressApp.get(Paths.Audit, 
-    setMethodId('auditLogs.get'),
+    setMethodId('audit.getLogs'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      // TODO filter params
-      const params = req.query;
-      const callback = methodCallback(res, next, 200);
-      try {
-        const userStorage = auditStorage.forUser(req.context.user.id);
-        
-        const result = new Result();
-        result.auditLogs = userStorage.getLogs(params);
-        callback(null, result);
-      } catch (err) {
-        return callback(err);
-      }      
+      const params = _.extend({}, req.query);
+      tryCoerceStringValues(params, { // standard event type
+        fromTime: 'number',
+        toTime: 'number',
+        streams: 'object',
+        tags: 'array',
+        types: 'array',
+        sortAscending: 'boolean',
+        skip: 'number',
+        limit: 'number',
+        modifiedSince: 'number',
+        includeDeletions: 'boolean'
+      });
+      api.call(req.context, params, methodCallback(res, next, 200));
   });
 
 };

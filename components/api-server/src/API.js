@@ -169,7 +169,7 @@ class API {
   call(context: MethodContext, params: mixed, callback: ApiCallback) {
     const methodMap = this.map; 
     const methodList = methodMap.get(context.methodId);
-
+    
     if (methodList == null) 
       return callback(errors.invalidMethod(context.methodId), null);
       

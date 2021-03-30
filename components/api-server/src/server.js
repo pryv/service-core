@@ -175,6 +175,10 @@ class Server {
       config.get('updates'), 
       config.get('openSource'), 
       config.get('services'));
+      
+    if (! this.isOpenSource) {
+      require('audit/src/methods/audit-logs')(app.api)
+    }
 
     this.logger.debug('api method registered');
   }

@@ -92,6 +92,7 @@ async function initCore() {
     notifications, 
     app.getUpdatesSettings(), 
     app.storageLayer);
+  require('audit/src/methods/audit-logs')(app.api);
   global.coreRequest = supertest(app.expressApp);
 }
 async function closeCore() {
