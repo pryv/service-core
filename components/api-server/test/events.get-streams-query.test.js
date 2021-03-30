@@ -12,6 +12,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
+const { StreamsUtils } = require('stores');
 
 /**
  * Structures
@@ -25,6 +26,9 @@ const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
  * 
  * T--t (trashed stream)
  * 
+ * .account
+ *  |.account-email
+ * 
  * A,D => ad, be, fc, a, b, c, d, e, f
  * A,E => ad, be, fc, a, b, c, e
  * A,&B => be, b
@@ -32,7 +36,10 @@ const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
  * T => t
  */
 
-const STREAMS = { A: {}, B: { parentId: 'A' }, C: { parentId: 'A' }, D: {}, E: { parentId: 'D' }, F: { parentId: 'D' }, T: { trashed: true } };
+const STREAMS = { 
+  A: {}, B: { parentId: 'A' }, C: { parentId: 'A' }, D: {}, E: { parentId: 'D' }, F: { parentId: 'D' }, T: { trashed: true }, 
+  '.account': {}, '.account-email': { parentId: '.account'}
+};
 const EVENTS = {
   ad: { streamIds: ['A', 'D'] },
   be: { streamIds: ['B', 'E'] },
@@ -48,6 +55,7 @@ const EVENTS = {
 const EVENT4ID = {};
 
 const ALL_ACCESSIBLE_STREAMS = [];
+const ALL_ACCESSIBLE_STREAMS_LOCAL = [];
 const ALL_AUTHORIZED_STREAMS = Object.keys(STREAMS);
 
 // add childrens to STREAMS, fill ALL_ACCESSIBLE_STREAMS;
@@ -59,6 +67,8 @@ ALL_AUTHORIZED_STREAMS.forEach((streamId) => {
   }
   if (STREAMS[streamId].trashed !== true) {
     ALL_ACCESSIBLE_STREAMS.push(streamId);
+    if (StreamsUtils.sourceIdForStreamId(streamId) === 'local') 
+      ALL_ACCESSIBLE_STREAMS_LOCAL.push(streamId);
   }
 });
 
@@ -82,11 +92,26 @@ describe('events.get streams query', function () {
 
   describe('Internal query helpers', function () {
 
+    function isAuthorizedStream(streamId) {
+      return ALL_AUTHORIZED_STREAMS.includes(streamId);
+    }
+
+    function isAccessibleStream(streamId) {
+      return ALL_ACCESSIBLE_STREAMS.includes(streamId);
+    }
+
+    function allAccessibleStreamsForStore(storeId) {
+      if (storeId !== 'local') {
+        return next(errors.invalidRequestStructure('"*" stream query parameter is only supported by local storage'));
+      }
+      return ALL_ACCESSIBLE_STREAMS_LOCAL;
+    }
+
     function validateQuery(query) {
       if (! Array.isArray(query)) query = [query];
       query = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(query);
       streamsQueryUtils.validateStreamsQuery(query);
-      const { streamQuery } = streamsQueryUtils.checkPermissionsAndApplyToScope(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
+      const { streamQuery } = streamsQueryUtils.checkPermissionsAndApplyToScope(query, customExpand, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
       return streamQuery;
     }
 
@@ -94,17 +119,17 @@ describe('events.get streams query', function () {
 
       it('[D2B5] must convert strings array to expanded array inside [{any: []}]', async function () {
         const res = validateQuery(['A', 'B']);
-        assert.deepEqual(res, [{ any: ['A', 'B', 'C'] }]);
+        assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local' }]);
       });
 
       it('[JZWE] must convert single string "B" to [{any: ["B"]}]', async function () {
         const res = validateQuery('B');
-        assert.deepEqual(res, [{ any: ['B'] }]);
+        assert.deepEqual(res, [{ any: ['B'], storeId: 'local'  }]);
       });
 
       it('[8VV4] must convert streams query with only "any" property to expanded streams query inside array [{any: []}])', async function () {
         const res = validateQuery({ any: ['A', 'B']});
-        assert.deepEqual(res, [{ any: ['A', 'B', 'C']}]);
+        assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local' }]);
       });
 
       it('[HFT2] must convert streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
@@ -114,29 +139,31 @@ describe('events.get streams query', function () {
             and: [
               {any: ['D', 'E', 'F']}, 
               {any: ['F']}
-            ]
+            ], 
+            storeId: 'local' 
           }]);
       });
 
       it('[2W2K] must accept two streams queries expanding them', async function () {
         const res = validateQuery([{ any: ['A'] }, { any: ['D'] }]);
-        assert.deepEqual(res, [{ any: ['A', 'B', 'C'] }, { any: ['D', 'E', 'F'] }]);
+        assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local'  }, { any: ['D', 'E', 'F'], storeId: 'local'  }]);
       });
 
       it('[2EF9] must convert streams query {any: "*"} to [{any: [all accessible streams]}]', async function () {
         const res = validateQuery({ any: '*' });
-        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS }]);
+        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS_LOCAL, storeId: 'local'  }]);
       });
 
       it('[TUZT] must convert streams query {any: [*], not: ["A"]} to [{any: [all accessible streams], [expanded "A"]}]', async function () {
         const res = validateQuery({ any: '*', not: ['A'] });
-        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, and: [ { not: [ 'A', 'B', 'C' ] } ] }]);
+        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS_LOCAL, and: [ { not: [ 'A', 'B', 'C' ] } ], storeId: 'local' }]);
       });
 
       it('[NHGF] must convert streams query {any: [*], all: ["D"], not: ["A"]} to [{any: [all accessible streams], and: [ any: [expanded "D"] , not: [expanded "A"]}]', async function () {
         const res = validateQuery({ any: '*', all: ['D'], not: ['A'] });
         assert.deepEqual(res, [{ 
-          any: ALL_ACCESSIBLE_STREAMS, 
+          storeId: 'local',
+          any: ALL_ACCESSIBLE_STREAMS_LOCAL, 
           and: [ 
             { any: [ 'D', 'E', 'F' ] }, 
             { not: [ 'A', 'B', 'C' ] } 
@@ -147,7 +174,7 @@ describe('events.get streams query', function () {
 
       it('[N3Q6] must convert {any: "*", not: ["A"]} to [{any: [all accessible streams], not: [expanded "A"]}]', async function () {
         const res = validateQuery({ any: '*', not: ['A'] });
-        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, and: [ { not: [ 'A', 'B', 'C' ] } ] }]);
+        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS_LOCAL, and: [ { not: [ 'A', 'B', 'C' ] } ], storeId: 'local'  }]);
       });
 
 
@@ -155,6 +182,30 @@ describe('events.get streams query', function () {
         const res = validateQuery({ any: ['T'], not: ['A'] });
         assert.deepEqual(res, null);
       });
+
+      describe('with multiple stores', function () { 
+        
+        it('[U6GS] group query streamIds per store', async function () {
+          const res = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(['A', '.account']);
+          assert.deepEqual(res, [{ any: ['A']},{ any: ['.account']}]);
+        });
+
+        it('[I7GF] should throw an error if two different store are mixed in a query item', async function () {
+          try {
+            const res = validateQuery([{ any: ['A', '.account'] }]);
+            assert(false);
+          } catch (e) {
+            assert.include(e, 'queries must me grouped by stores');
+          }
+        });
+
+        it('[ZUTR] should expand queries from differnt store', async function () {
+          const res = validateQuery([{ any: ['A']}, { any: ['.account'] }]);
+        });
+
+      });
+
+
     });
 
     describe('exception and errors', function () {
@@ -330,7 +381,8 @@ describe('events.get streams query', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({ streams: 'A' });
+        .query({ streams: ['A'] });
+
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 6);

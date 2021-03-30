@@ -11,14 +11,16 @@ const bluebird = require('bluebird');
 const EventEmitter = require('events');
 
 const utils = require('utils');
+const { axonMessaging } = require('messages');
 
-const Notifications = require('./Notifications');
-const Application = require('./application');
+const { Notifications } = require('messages');
+const { getApplication } = require('api-server/src/application');
 
 const UsersRepository = require('business/src/users/repository');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 
+let app;
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -27,19 +29,17 @@ const { getLogger, getConfig } = require('@pryv/boiler');
 //    server.start(); 
 // 
 class Server {
-  application: Application;
   isOpenSource: boolean;
   isDnsLess: Boolean;
   logger; 
   config;
   
-  // Axon based internal notification and messaging bus. 
+  // Axon based internal notification and axonMessaging bus. 
   notificationBus: Notifications;
     
   // Load config and setup base configuration. 
   //
-  constructor(application: Application) {
-    this.application = application;
+  constructor() {
   }
     
   // Start the server. 
@@ -47,7 +47,9 @@ class Server {
   async start() {
     this.logger = getLogger('server');
     this.logger.debug('start initiated');
-    await this.application.initiate();
+    
+    app = getApplication();
+    await app.initiate();
     
     const config = await getConfig(); 
     this.config = config;
@@ -61,14 +63,14 @@ class Server {
     }
    
     
-    // start TCP pub messaging
+    // start TCP pub axonMessaging
     await this.setupNotificationBus();
     
     // register API methods
-    this.registerApiMethods();
+    await this.registerApiMethods();
 
     // Setup HTTP and register server; setup Socket.IO.
-    const server: net$Server = http.createServer(this.application.expressApp);
+    const server: net$Server = http.createServer(app.expressApp);
     this.setupSocketIO(server); 
     await this.startListen(server);
 
@@ -89,87 +91,86 @@ class Server {
   
   // Requires and registers all API methods. 
   // 
-  registerApiMethods() {
-    const application = this.application;
+  async registerApiMethods() {
     const l = (topic) => getLogger(topic);
     const config = this.config;
     
-    require('./methods/system')(application.systemAPI,
-      application.storageLayer.accesses, 
+    require('./methods/system')(app.systemAPI,
+      app.storageLayer.accesses, 
       config.get('services'), 
-      application.api, 
-      application.logging, 
-      application.storageLayer);
+      app.api, 
+      app.logging, 
+      app.storageLayer);
     
-    require('./methods/utility')(application.api, application.logging, application.storageLayer);
+    require('./methods/utility')(app.api, app.logging, app.storageLayer);
 
-    require('./methods/auth/login')(application.api, 
-      application.storageLayer.accesses, 
-      application.storageLayer.sessions, 
-      application.storageLayer.events, 
+    require('./methods/auth/login')(app.api, 
+      app.storageLayer.accesses, 
+      app.storageLayer.sessions, 
+      app.storageLayer.events, 
       config.get('auth'));
     
-    require('./methods/auth/register')(application.api, 
-      application.logging, 
-      application.storageLayer, 
+    require('./methods/auth/register')(app.api, 
+      app.logging, 
+      app.storageLayer, 
       config.get('services'));
 
-    require('./methods/auth/delete')(application.api,
-      application.logging,
-      application.storageLayer,
+    require('./methods/auth/delete')(app.api,
+      app.logging,
+      app.storageLayer,
       config);
 
     require('./methods/accesses')(
-      application.api, 
+      app.api, 
       this.notificationBus, 
-      application.getUpdatesSettings(), 
-      application.storageLayer);
+      app.getUpdatesSettings(), 
+      app.storageLayer);
 
-    require('./methods/service')(application.api);
+    require('./methods/service')(app.api);
 
     if (! this.isOpenSource) {
       require('./methods/webhooks')(
-        application.api, l('methods/webhooks'),
-        application.getWebhooksSettings(),
-        application.storageLayer,
+        app.api, l('methods/webhooks'),
+        app.getWebhooksSettings(),
+        app.storageLayer,
       );
     }
 
     require('./methods/trackingFunctions')(
-      application.api,
+      app.api,
       l('methods/trackingFunctions'),
-      application.storageLayer,
+      app.storageLayer,
     );
 
-    require('./methods/account')(application.api, 
-      application.storageLayer.events, 
-      application.storageLayer.passwordResetRequests, 
+    require('./methods/account')(app.api, 
+      app.storageLayer.events, 
+      app.storageLayer.passwordResetRequests, 
       config.get('auth'), 
       config.get('services'), 
       this.notificationBus,
-      application.logging
+      app.logging
     );
 
-    require('./methods/followedSlices')(application.api, application.storageLayer.followedSlices, this.notificationBus);
+    require('./methods/followedSlices')(app.api, app.storageLayer.followedSlices, this.notificationBus);
 
-    require('./methods/profile')(application.api, application.storageLayer.profile);
+    require('./methods/profile')(app.api, app.storageLayer.profile);
 
-    require('./methods/streams')(application.api, 
-      application.storageLayer.streams, 
-      application.storageLayer.events, 
-      application.storageLayer.eventFiles, 
+    require('./methods/streams')(app.api, 
+      app.storageLayer.streams, 
+      app.storageLayer.events, 
+      app.storageLayer.eventFiles, 
       this.notificationBus, 
-      application.logging, 
+      app.logging, 
       config.get('versioning'), 
       config.get('updates'));
 
-    require('./methods/events')(application.api, 
-      application.storageLayer.events, 
-      application.storageLayer.eventFiles, 
+    await require('./methods/events')(app.api, 
+      app.storageLayer.events, 
+      app.storageLayer.eventFiles, 
       config.get('auth'), 
       config.get('service:eventTypes'), 
       this.notificationBus, 
-      application.logging,
+      app.logging,
       config.get('versioning'),
       config.get('updates'), 
       config.get('openSource'), 
@@ -178,13 +179,12 @@ class Server {
     this.logger.debug('api method registered');
   }
   
-  setupSocketIO(server: net$Server) {
-    const application = this.application; 
+  setupSocketIO(server: net$Server) { 
     const notificationBus = this.notificationBus;
-    const api = application.api; 
-    const storageLayer = application.storageLayer;
+    const api = app.api; 
+    const storageLayer = app.storageLayer;
     const config = this.config; 
-    const customAuthStepFn = application.getCustomAuthFunction('server.js');
+    const customAuthStepFn = app.getCustomAuthFunction('server.js');
     const isOpenSource = this.isOpenSource;
         
     const socketIOsetup = require('./socket-io');
@@ -258,7 +258,7 @@ class Server {
   //  c) For communication with other api-server processes on the same core. 
   // 
   // You can turn this off! If you set 'tcpMessaging.enabled' to false, nstno axon
-  // messaging will be performed. This method returns a plain EventEmitter 
+  // axonMessaging will be performed. This method returns a plain EventEmitter 
   // instead; allowing a) and c) to work. The power of interfaces. 
   // 
   async openNotificationBus(): EventEmitter {
@@ -274,7 +274,7 @@ class Server {
     
     try {
       const socket = await bluebird.fromCallback(
-        (cb) => utils.messaging.openPubSocket(tcpMessaging, cb));
+        (cb) => axonMessaging.openPubSocket(tcpMessaging, cb));
         
       logger.debug(`AXON TCP pub socket ready on ${host}:${port}`);
       logger.info(`TCP pub socket ready on ${host}:${port}`);
@@ -318,10 +318,10 @@ class Server {
   async getUserCount(): Promise<Number> {
     let numUsers;
     try{
-      let usersRepository = new UsersRepository(this.application.storageLayer.events);
+      let usersRepository = new UsersRepository(app.storageLayer.events);
       numUsers = await usersRepository.count();
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error, error);
       throw error;
     }
     return numUsers;

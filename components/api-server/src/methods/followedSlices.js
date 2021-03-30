@@ -19,23 +19,13 @@ var async = require('async'),
  */
 module.exports = function (api, userFollowedSlicesStorage, notifications){
 
-  // COMMON
-
-  api.register('followedSlices.*',
-    commonFns.requirePersonalAccess);
 
   // RETRIEVAL
 
   api.register('followedSlices.get',
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.get.params),
     function (context, params, result, next) {
-      if (! context.access.isPersonal()) {
-        return process.nextTick(next.bind(null,
-          errors.forbidden(
-            'You cannot access this resource using the given access token.'
-          )));
-      }
-
       userFollowedSlicesStorage.find(context.user, {}, null, function (err, slices) {
         if (err) { return next(errors.unexpectedError(err)); }
         result.followedSlices = slices;
@@ -46,23 +36,13 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
   // CREATION
 
   api.register('followedSlices.create',
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.create.params),
     function (context, params, result, next) {
-
-
-      if (! context.access.isPersonal()) {
-        return process.nextTick(next.bind(null,
-          errors.forbidden(
-            'You cannot access this resource using the given access token.'
-          )
-        ));
-      }
       userFollowedSlicesStorage.insertOne(context.user, params, function (err, newSlice) {
         if (err) {
           return next(getCreationOrUpdateError(err, params));
         }
-
-
         result.followedSlice = newSlice;
         notifications.followedSlicesChanged(context.user);
         next();
@@ -72,16 +52,9 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
   // UPDATE
 
   api.register('followedSlices.update',
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.update.params),
     function (context, params, result, next) {
-      if (! context.access.isPersonal()) {
-        return process.nextTick(next.bind(null,
-          errors.forbidden(
-            'You cannot access this resource using the given access token.'
-          )
-        ));
-      }
-
       async.series([
         function checkSlice(stepDone) {
           userFollowedSlicesStorage.findOne(context.user, {id: params.id}, null,
@@ -132,16 +105,9 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
   // DELETION
 
   api.register('followedSlices.delete',
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.del.params),
     function (context, params, result, next) {
-      if (! context.access.isPersonal()) {
-        return process.nextTick(next.bind(null,
-          errors.forbidden(
-            'You cannot access this resource using the given access token.'
-          )
-        ));
-      }
-
       userFollowedSlicesStorage.findOne(context.user, {id: params.id}, null, function (err, slice) {
         if (err) { return next(errors.unexpectedError(err)); }
 

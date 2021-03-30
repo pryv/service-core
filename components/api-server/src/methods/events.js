@@ -32,13 +32,12 @@ const { ProjectVersion } = require('middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('business').types;
 
-const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('utils').messaging
-  .NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('utils').messaging
-  .NATS_DELETE_EVENT;
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
+const NATS_UPDATE_EVENT = require('messages').NATS_UPDATE_EVENT;
+const NATS_DELETE_EVENT = require('messages').NATS_DELETE_EVENT;
+const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
@@ -50,17 +49,19 @@ const typeRepo = new TypeRepository();
  * Events API methods implementations.
  * @param auditSettings
  */
-module.exports = function (
+module.exports = async function (
   api, userEventsStorage, userEventFilesStorage,
   authSettings, eventTypesUrl, notifications, logging,
   auditSettings, updatesSettings, openSourceSettings
 ) {
 
+
   const usersRepository = new UsersRepository(userEventsStorage);
+  const config = await getConfig();
 
   // initialize service-register connection
   let serviceRegisterConn = {};
-  if (!getConfigUnsafe().get('dnsLess:isActive')) {
+  if (! config.get('dnsLess:isActive')) {
     serviceRegisterConn = getServiceRegisterConn();
   }
   
@@ -76,7 +77,7 @@ module.exports = function (
   
   let natsPublisher;
   if (!openSourceSettings.isActive) {
-    const NatsPublisher = require('../socket-io/nats_publisher');
+    const { NatsPublisher } = require('messages');
     natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
   }
 
@@ -89,6 +90,7 @@ module.exports = function (
     validateStreamsQuery,
     applyDefaultsForRetrieval,
     checkStreamsPermissionsAndApplyToScope,
+    findEventsFromStore,
     findAccessibleEvents,
     includeDeletionsIfRequested);
 
@@ -175,10 +177,8 @@ module.exports = function (
       // limit to 20 items by default
       params.limit = 20;
     }
-    
-  
 
-    if (! context.access.canReadAllTags()) {
+    if (! context.access.canGetEventsWithAnyTag()) {
       var accessibleTags = Object.keys(context.access.tagPermissionsMap);
       params.tags = params.tags 
         ? _.intersection(params.tags, accessibleTags) 
@@ -189,10 +189,9 @@ module.exports = function (
 
   function checkStreamsPermissionsAndApplyToScope(context, params, result, next) {
     // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
-    const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStream), 'id');
-    function isAuthorizedStream(stream) {
-      if (context.access.isPersonal()) return true;
-      return context.access.canReadStream(stream.id);
+    const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStreamFilter), 'id');
+    function isAuthorizedStreamFilter(stream) {
+      return context.access.canGetEventsOnStream(stream.id);
     }
 
     // Accessible streams are the on that authorized && correspond to the "state" param request - ie: if state=default, trashed streams are omitted
@@ -209,29 +208,47 @@ module.exports = function (
     }
 
     if (params.streams === null) { // all streams
-      if (accessibleStreamsIds.length > 0) params.streams = [{ any: accessibleStreamsIds }];
-
+      if (accessibleStreamsIds.length > 0) 
+        params.streams = [{ any: accessibleStreamsIds, storeId: 'local' }];
       return next();
     }
 
     /**
      * Function to be passed to streamQueryFiltering.validateQuery
      * Expand a streamId to [streamId, child1, ...]
-     * @param {Streamid} streamId 
+     * @param {identifier} streamId 
+     * @param {identifier} storeId
      */
-    function expand (streamId) {
+    function expandStream(streamId, storeId) {
+
       return treeUtils.expandIds(context.streams, [streamId]);
     }
 
+    function isAuthorizedStream(streamId) {
+       return authorizedStreamsIds.includes(streamId);
+    }
+
+    function isAccessibleStream(streamId) {
+      return accessibleStreamsIds.includes(streamId);
+    }
+
+    function allAccessibleStreamsForStore(storeId) {
+      if (storeId !== 'local') {
+        return next(errors.invalidRequestStructure('"*" stream query parameter is only supported by local storage'));
+      }
+      return accessibleStreamsIds;
+    }
+
+
     const { streamQuery, nonAuthorizedStreams } =
-      streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
+      streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
 
     params.streams = streamQuery;
 
     if (nonAuthorizedStreams.length > 0) {
       // check if one is create-only and send forbidden
       for (let i = 0; i < nonAuthorizedStreams.length; i++) {
-        if (context.access.isCreateOnlyStream(nonAuthorizedStreams[i])) {
+        if (! context.access.canGetEventsOnStream(nonAuthorizedStreams[i])) {
           return next(errors.forbidden('stream [' + nonAuthorizedStreams[i] + '] has create-only permission and cannot be read'));
         }
       }
@@ -243,6 +260,30 @@ module.exports = function (
     }
 
     next();
+  }
+
+  async function findEventsFromStore(context, params, result, next) {
+    if (params.streams === null) return next();
+
+
+    //console.log(params.streams);
+    const storeQueryMap = {};
+    for (let streamQuery of params.streams) {
+      const storeId = streamQuery.storeId;
+      if (! storeId) {
+        console.error('Missing storeId' + params.streams);
+        throw(new Error("Missing storeId" + params.streams));
+      }
+      if (! storeQueryMap[storeId]) storeQueryMap[storeId] = [];
+      delete streamQuery.storeId;
+      storeQueryMap[storeId].push(streamQuery);
+    }
+
+    // set params.query to "before store states"
+    params.streamsQuery = storeQueryMap.local;
+    delete storeQueryMap.local;
+
+    return next();
   }
 
   async function findAccessibleEvents(context, params, result, next) {
@@ -369,7 +410,7 @@ module.exports = function (
 
       let canReadEvent = false;
       for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
-        if (context.canReadContext(event.streamIds[i], event.tags)) {
+        if (context.access.canGetEventsOnStreamAndWithTags(event.streamIds[i], event.tags)) {
           canReadEvent = true;
           break;
         }
@@ -417,7 +458,7 @@ module.exports = function (
     validateEventContentAndCoerce,
     doesEventBelongToTheAccountStream,
     validateAccountStreamsEventCreation,
-    verifycanContributeToContext,
+    verifycanCreateEventsOnStreamAndWIthTags,
     appendAccountStreamsEventDataForCreation,
     createEvent,
     handleEventsWithActiveStreamId,
@@ -489,9 +530,9 @@ module.exports = function (
   }
 
 
-  function verifycanContributeToContext (context, params, result, next) {
+  function verifycanCreateEventsOnStreamAndWIthTags (context, params, result, next) {
     for (let i = 0; i < context.content.streamIds.length; i++) { // refuse if any context is not accessible
-      if (! context.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
+      if (! context.access.canCreateEventsOnStreamAndWIthTags(context.content.streamIds[i], context.content.tags)) {
         return next(errors.forbidden());
       }
     }
@@ -679,7 +720,7 @@ module.exports = function (
       // 1. check that have contributeContext on at least 1 existing streamId
       let canUpdateEvent = false;
       for (let i = 0; i < event.streamIds.length ; i++) {
-        if (context.canUpdateContext(event.streamIds[i], event.tags)) {
+        if (context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
           canUpdateEvent = true;
           break;
         }
@@ -691,7 +732,7 @@ module.exports = function (
         // 2. check that streams we add have contribute access
         const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
         for (let i=0; i<streamIdsToAdd.length; i++) {
-          if (! context.canUpdateContext(streamIdsToAdd[i], event.tags)) {
+          if (! context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToAdd[i], event.tags)) {
             return next(errors.forbidden());
           }
         }
@@ -701,7 +742,7 @@ module.exports = function (
         const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
 
         for (let i = 0; i < streamIdsToRemove.length ; i++) {
-          if (! context.canUpdateContext(streamIdsToRemove[i], event.tags)) {
+          if (! context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToRemove[i], event.tags)) {
             return next(errors.forbidden());
           }
         }
@@ -1211,7 +1252,7 @@ module.exports = function (
    * @param string accountStreamId - accountStreamId
    */
   async function sendUpdateToServiceRegister (user, event, accountStreamId) {
-    if (getConfigUnsafe().get('dnsLess:isActive')) {
+    if (config.get('dnsLess:isActive')) {
       return;
     }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
@@ -1393,7 +1434,7 @@ module.exports = function (
       let canDeleteEvent = false;
 
       for (let i = 0; i < event.streamIds.length; i++) {
-        if (context.canUpdateContext(event.streamIds[i], event.tags)) {
+        if (context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
           canDeleteEvent = true;
           break;
         }
@@ -1468,7 +1509,7 @@ module.exports = function (
    */
   async function sendDataToServiceRegister (context, creation, editableAccountStreams) {
     // send update to service-register
-    if (getConfigUnsafe().get('dnsLess:isActive')) {
+    if (config.get('dnsLess:isActive')) {
       return;
     }
     let fieldsForUpdate = {};

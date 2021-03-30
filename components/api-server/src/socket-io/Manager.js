@@ -9,16 +9,16 @@
 const errorHandling = require('errors').errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 
 (async () => {
   await commonMeta.loadSettings();
 })();
 
-const MethodContext = require('model').MethodContext;
+const MethodContext = require('business').MethodContext;
 import type API  from '../API';
 
-import type { MessageSink }  from './message_sink';
+import type { MessageSink }  from 'messages';
 import type { StorageLayer } from 'storage';
 
 type SocketIO$SocketId = string; 
@@ -222,7 +222,7 @@ class NamespaceContext {
   async produceNatsSubscriber(): Promise<NatsSubscriber> {
     const sink: MessageSink = this.sink; 
     const userName = this.username;
-    const NatsSubscriber = require('./nats_subscriber');
+    const { NatsSubscriber } = require('messages');
     const natsSubscriber = new NatsSubscriber(
       NATS_CONNECTION_URI, 
       sink,

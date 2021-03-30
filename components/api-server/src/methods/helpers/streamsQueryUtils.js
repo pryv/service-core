@@ -13,6 +13,8 @@
  */
 const util = require('util');
 
+const { StreamsUtils } = require('stores');
+
 /**
  * @typedef {Object} StreamQueryScoped
  * @property {Array.<StreamQuery>} streamQuery - An array of streamQueries 
@@ -46,7 +48,20 @@ function transformArrayOfStringsToStreamsQuery(arrayOfQueries) {
     throw('Error in "streams" parameter: streams queries and streamIds cannot be mixed');
   }
 
-  return [{any: streamIds}];
+  // group streamIds per "store"
+  const map = {};
+  for (let streamId of streamIds) {
+    const store = StreamsUtils.sourceIdForStreamId(streamId);
+    if (! map[store]) map[store] = [];
+    map[store].push(streamId);
+  }
+
+  const res = [];
+  for (let v of Object.values(map)) {
+    res.push({any: v});
+  }
+
+  return res;
 }
 module.exports.transformArrayOfStringsToStreamsQuery = transformArrayOfStringsToStreamsQuery;
 
@@ -65,9 +80,14 @@ function validateStreamsQuery(arrayOfQueries) {
  * @param {StreamQuery} streamQuery 
  */
 function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
-  
+  function checkStore(streamId) {
+    // queries must be grouped by store 
+    const thisStore = StreamsUtils.sourceIdForStreamId(streamId);
+    if (! streamQuery.storeId) streamQuery.storeId = thisStore;
+    if (streamQuery.storeId !== thisStore) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" queries must me grouped by stores.');
+  }
   if (! streamQuery.any && ! streamQuery.all) {
-    throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" must contain at least one of "any" or "all" property');
+    throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" must contain at least one of "any" or "all" property.');
   }
   const res = {};
   for (const [property, arrayOfStreamIds] of Object.entries(streamQuery)) {
@@ -76,6 +96,7 @@ function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
   
     if (! Array.isArray(arrayOfStreamIds)) {
       if (property === 'any' && arrayOfStreamIds === '*') {
+        checkStore('*'); // will be handled as local
         continue; // stop here and go to next property
       } else {
         throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" value of : "' + property +'" must be an array. Found: "' + objectToString(arrayOfStreamIds) + '"' );
@@ -85,19 +106,41 @@ function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
     for (item of arrayOfStreamIds) {
       if (typeof item !== 'string')
         throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) +' must be streamIds. Found: ' + objectToString(item) );
+      checkStore(item);
     }
   }
 }
 exports.validateStreamsQuery = validateStreamsQuery;
 
 /**
+ * @callback CheckStream generic callback to get stream accesibility
+ * @param {identifier} streamId
+ * @return {boolean}
+ */
+
+ /**
+ * @callback AllAccessibleStreamsForStore
+ * @param {identifier} storeId
+ * @return {Array.<StreamId>} allAccessibleStreams for local store
+ */
+
+ /**
+ * @callback ExpandStream
+ * @param {identifier} streamId
+ * @param {identifier} storeId
+ * @return {Array.<StreamId>|string} - returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
+ */
+
+
+/**
  * @param {Array.<StreamQuery>} - array of streamQUeries 
- * @param {Function} expand should return the streamId in argument and its children (or null if does not exist).
- * @param {Array.<StreamId>} allAuthorizedStreams - the list of authorized streams
- * @param {Array.<StreamId>} allAccessibleStreams - the list of "visible" streams (i.e not trashed when state = default)
+ * @param {ExpandStream} expandStream returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
+ * @param {CheckStream} isAuthorizedStream - return true is this stream is Authorized
+ * @param {CheckStream} isAccessibleStream - return true id this stream is Visible
+ * @param {AllAccessibleStreamsForStore} allAccessibleStreamsForStore - the list of "visible" streams (i.e not trashed when state = default)
  * @returns {StreamQuery} 
  */
-function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedStreams, allAccessibleStreams) {
+function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore) {
   
   // registerStream will collect all nonAuthorized streams here during streamQuery inspection
   const nonAuthorizedStreams = [];
@@ -127,15 +170,18 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
   function expandAndTransformStreamQuery(streamQuery) {
     let containsAtLeastOneInclusion = false; 
 
-    const res = { };
+    const res = { storeId: streamQuery.storeId };
 
     // any
     if (streamQuery.any) {
-      if (streamQuery.any === '*' && allAccessibleStreams.length > 0) {
-        res.any = allAccessibleStreams;
-        containsAtLeastOneInclusion = true;
+      if (streamQuery.any === '*') { 
+        const allAccessibleStreams = allAccessibleStreamsForStore(streamQuery.storeId);
+        if (allAccessibleStreams !== null && allAccessibleStreams.length > 0) {
+          res.any = allAccessibleStreams;
+          containsAtLeastOneInclusion = true;
+        }
       } else {
-        const expandedSet = expandSet(streamQuery.any);
+        const expandedSet = expandSet(streamQuery.any, streamQuery.storeId);
         if (expandedSet.length > 0) {
           containsAtLeastOneInclusion = true;
           res.any = expandedSet;
@@ -147,7 +193,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
     for (const property of ['all', 'not']) {
       if (streamQuery[property]) {
         for (let streamId of streamQuery[property]) {
-          const expandedSet = expandSet([streamId]);
+          const expandedSet = expandSet([streamId], streamQuery.storeId);
           if (expandedSet.length > 0) {
             if (! res.and) res.and = [];
             let key = 'not';
@@ -166,8 +212,9 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
 
   /**
    * @param {Array} streamIds - an array of streamids
+   * @param {identifier} storeId - the relative storeId
    */
-  function expandSet(streamIds) {
+  function expandSet(streamIds, storeId) {
     const result = [];
 
     for (let streamId of streamIds) {
@@ -175,7 +222,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
         addToResult(streamId.substr(1));
       } else {
         if (registerStream(streamId)) { 
-          for (let expandedStream of expand(streamId)) { // expand can send "null" values
+          for (let expandedStream of expandStream(streamId, storeId)) { // expand can send "null" values
             if (expandedStream !== null) {
               addToResult(expandedStream)
             }
@@ -194,19 +241,15 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
     }
 
     /**
-     * uses allAuthorizedStreams and allAccessibleStreams to check if it can be used in query
      * @param {string} streamId 
-     * @returns {boolean} - true is streamId Can be used in the query
+     * @returns {boolean} - true if streamId Can be used in the query
      */
     function registerStream(streamId) {
-      const isAuthorized = allAuthorizedStreams.includes(streamId);
-      if (! isAuthorized) { 
+      if (! isAuthorizedStream(streamId)) { 
         nonAuthorizedStreams.push(streamId);
         return false;
       }
-      const isAccessible = allAccessibleStreams.includes(streamId);
-      if (! isAccessible) return false;
-      return true;
+      return isAccessibleStream(streamId);
     }
   }
 }

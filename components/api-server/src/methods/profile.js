@@ -36,7 +36,7 @@ module.exports = function (api, userProfileStorage) {
     getProfile);
 
   api.register('profile.get',
-    commonFns.requirePersonalAccess,
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.get.params),
     getProfile);
 
@@ -56,7 +56,7 @@ module.exports = function (api, userProfileStorage) {
     updateProfile);
 
   api.register('profile.update',
-    commonFns.requirePersonalAccess,
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.update.params),
     updateProfile);
 

@@ -28,7 +28,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getLogger } = require('@pryv/boiler');
 
 import type { StorageLayer } from 'storage';
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 
 import type API  from '../API';
 import type { ApiCallback }  from '../API';
@@ -60,26 +60,10 @@ module.exports = function produceAccessesApiMethods(
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
 
-  // COMMON
-
-  function checkNoSharedAccess(
-    context: MethodContext, params: mixed, result: Result, next: ApiCallback) 
-  {
-    const access = context.access;
-    
-    if (access == null || access.isShared()) {
-      return next(errors.forbidden(
-        'You cannot access this resource using a shared access token.')
-      );
-    }
-    
-    next();
-  }
-
   // RETRIEVAL
 
   api.register('accesses.get',
-    checkNoSharedAccess,
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.get.params),
     findAccessibleAccesses,
     includeDeletionsIfRequested
@@ -93,7 +77,7 @@ module.exports = function produceAccessesApiMethods(
     if (currentAccess == null) 
       return next(new Error('AF: Access cannot be null at this point.'));
     
-    if (! currentAccess.isPersonal()) {
+    if (! currentAccess.canListAnyAccess()) {
       // app -> only access it created
       query.createdBy = currentAccess.id;
     }
@@ -140,7 +124,7 @@ module.exports = function produceAccessesApiMethods(
     const accessesRepository = storageLayer.accesses;
 
     const query = {};
-    if (!currentAccess.isPersonal()) {
+    if (!currentAccess.canListAnyAccess()) {
       // app -> only access it created
       query.createdBy = currentAccess.id;
     }
@@ -160,7 +144,7 @@ module.exports = function produceAccessesApiMethods(
   const visibleAccountStreamsIds = Object.keys(SystemStreamsSerializer.getReadableAccountStreams());
 
   api.register('accesses.create',
-    checkNoSharedAccess,
+    commonFns.basicAccessAuthorizationCheck,
     applyDefaultsForCreation,
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyPrerequisitesForCreation,
@@ -181,16 +165,16 @@ module.exports = function produceAccessesApiMethods(
       ));
     }
     
+    
     const access = context.access;
     if (access == null) 
       return next(errors.unexpectedError('AF: Access must not be null here.'));
-
+      
     if (! access.canCreateAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
         'to create this new access.'));
     }
-
     if (params.token != null) {
       params.token = slugify(params.token);
       if (string.isReservedId(params.token)) {
@@ -259,7 +243,7 @@ module.exports = function produceAccessesApiMethods(
     if (access == null) 
       return next(errors.unexpectedError('AF: Access must not be null here.'));
 
-    if (! access.isPersonal()) return next();
+    if (! access.isPersonal()) return next(); // not needed for personal access
     if (params.permissions == null) return next(); 
 
     async.forEachSeries(params.permissions, ensureStream, next);
@@ -491,20 +475,12 @@ module.exports = function produceAccessesApiMethods(
   // OTHER METHODS
 
   api.register('accesses.checkApp',
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.checkApp.params),
     checkApp);
 
   function checkApp(context, params, result, next) {
-    const currentAccess = context.access;
-    if (currentAccess == null)
-      return next(new Error('AF: currentAccess cannot be null.'));
-
-    if (! currentAccess.isPersonal()) {
-      return next(errors.forbidden(
-        'Your access token has insufficient permissions to access this resource.'
-      ));
-    }
-
+   
     const accessesRepository = storageLayer.accesses;
     const query = {
       type: 'app',

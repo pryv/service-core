@@ -9,13 +9,13 @@ const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const bluebird = require('bluebird');
-const Application = require('api-server/src/application');
+const { getApplication } = require('api-server/src/application');
 const { getConfig } = require('@pryv/boiler');
 const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
-const Notifications = require('api-server/src/Notifications');
+const { Notifications } = require('messages');
 const ErrorIds = require('errors/src/ErrorIds');
 
 describe('[BMM2] registration: DNS-less', () => {
@@ -37,7 +37,7 @@ describe('[BMM2] registration: DNS-less', () => {
   });
   before(async function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    app = new Application();
+    app = getApplication(true);
     await app.initiate();
 
     require('api-server/src/methods/auth/register')(
@@ -54,7 +54,7 @@ describe('[BMM2] registration: DNS-less', () => {
       emit: (...args) => axonMsgs.push(args),
     };
     const notifications = new Notifications(axonSocket);
-    require("api-server/src/methods/events")(
+    await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,

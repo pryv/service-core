@@ -24,25 +24,27 @@ var PermissionLevels = {
 
 Object.freeze(PermissionLevels);
 
-/**
- * Usage example: _.extend(plainAccessObject, accessLogic);
- */
-const accessLogic = module.exports = {
-  PERMISSION_LEVEL_CONTRIBUTE: 'contribute',
-  PERMISSION_LEVEL_MANAGE: 'manage',
-  PERMISSION_LEVEL_READ: 'read',
-  PERMISSION_LEVEL_CREATE_ONLY: 'create-only',
-  isPersonal: function () {
+ class AccessLogic {
+  _access; // Access right from the DB
+  _userId;
+
+  constructor(userId, access) {
+    this._access = access;
+    this._userId = userId;
+    _.merge(this, access);
+  }
+  
+  isPersonal () {
     return this.type === 'personal';
-  },
+  }
 
-  isApp: function () {
+  isApp () {
     return this.type === 'app';
-  },
+  }
 
-  isShared: function () {
+  isShared () {
     return this.type === 'shared';
-  },
+  }
 
   /**
    * Loads permissions from `this.permissions`.
@@ -51,11 +53,10 @@ const accessLogic = module.exports = {
    *   using the given streams tree, filtering out unknown streams
    * - Loads tag permissions into `tagPermissions`/`tagPermissionsMap`.
    */
-  loadPermissions: function (streams) {
+  loadPermissions (streams) {
     if (! this.permissions) {
       return;
     }
-
     // cache streams
     this._cachedStreams = streams;
 
@@ -85,9 +86,11 @@ const accessLogic = module.exports = {
     if (this.streamPermissions.length === 0 && this.tagPermissions.length > 0) {
       this._registerStreamPermission({ streamId: '*', level: 'read' });
     }
-  },
 
-  _loadStreamPermission: function (perm) {
+    //console.log('XXXX', this);
+  }
+
+  _loadStreamPermission (perm) {
     if (perm.streamId === '*') {
       this._registerStreamPermission(perm);
       return;
@@ -104,137 +107,238 @@ const accessLogic = module.exports = {
       var expandedPerm = id === perm.streamId ? perm : _.extend(_.clone(perm), {streamId: id});
       this._registerStreamPermission(expandedPerm);
     }.bind(this));
-  },
+  }
 
-  _registerStreamPermission: function (perm) {
+  _registerStreamPermission (perm) {
     this.streamPermissions.push(perm);
     this.streamPermissionsMap[perm.streamId] = perm;
-  },
+  }
 
-  _loadFeaturePermission: function (perm) {
+  _loadFeaturePermission (perm) {
     // here we might want to check if permission is higher
     this._registerFeaturePermission(perm);
-  },
+  }
 
-  _registerFeaturePermission: function (perm) {
+  _registerFeaturePermission (perm) {
     this.featurePermissions.push(perm);
     this.featurePermissionsMap[perm.feature] = perm;
-  },
+  }
 
-  _loadTagPermission: function (perm) {
+  _loadTagPermission (perm) {
     var existingPerm = this.tagPermissionsMap[perm.tag];
     if (existingPerm && isHigherOrEqualLevel(existingPerm.level, perm.level)) {
       return;
     }
     this._registerTagPermission(perm);
-  },
+  }
 
-  _registerTagPermission: function (perm) {
+  _registerTagPermission (perm) {
     this.tagPermissions.push(perm);
     this.tagPermissionsMap[perm.tag] = perm;
-  },
+  }
 
-  canReadAllStreams: function () {
-    return this.isPersonal() || !! this.getStreamPermissionLevel('*');
-  },
+  /** ---------- GENERIC --------------- */
 
-  canCreateAccessForAccountStream: function (permissionLevel) {
-    return isHigherOrEqualLevel(this.PERMISSION_LEVEL_CONTRIBUTE, permissionLevel);
-  },
+  can(methodId) {
+    switch (methodId) {
+      // -- Account
+      case 'account.get':
+      case 'account.update':
+      case 'account.changePassword':
+        return this.isPersonal();
 
-  canReadAccountStream: function (streamId) {
+      // -- Followed Slice
+      case 'followedSlices.get':
+      case 'followedSlices.create':
+      case 'followedSlices.update':
+      case 'followedSlices.delete':
+        return this.isPersonal();
+
+      // -- Accesses
+      case 'accesses.checkApp':
+        return this.isPersonal();
+      case 'accesses.get':
+      case 'accesses.create':
+        return ! this.isShared();
+
+      // -- Profile
+      case 'profile.get':
+      case 'profile.update':
+        return this.isPersonal();
+      
+      // -- Webhooks
+      case 'webhooks.create':
+        return ! this.isPersonal();
+      
+      default:
+        throw(new Error('Unkown method.id: ' + methodId));
+    }
+  }
+
+  /** ----------- ACCESSES -------------- */
+
+  canCreateAccessForAccountStream (permissionLevel) {
+    return isHigherOrEqualLevel('contribute', permissionLevel);
+  }
+
+  canReadAccountStream (streamId) {
     if (streamId === '*') {
       return false;
     }
-    const level = this.getAccountStreamPermissionLevel(streamId);
+    const level = this._getAccountStreamPermissionLevel(streamId);
     if (level === 'create-only') return false;
     return level && isHigherOrEqualLevel(level, 'read');
-  },
+  }
 
-  canReadStream: function (streamId) {
+  // -- accesses.get
+  canListAnyAccess() {
+    return this.isPersonal();
+  }
+
+
+
+
+  /** ------------ EVENTS --------------- */
+
+  canGetEventsOnStream (streamId) {
+    if (this.isPersonal()) return true;
     if (SystemStreamsSerializer.isAccountStreamId(streamId)) {
       return this.canReadAccountStream(streamId);
     }
-    const level = this.getStreamPermissionLevel(streamId);
+    const level = this._getStreamPermissionLevel(streamId);
     if (level === 'create-only') return false;
     return level && isHigherOrEqualLevel(level, 'read');
-  },
+  }
 
-  canListStream: function (streamId) {
-    const level = this.getStreamPermissionLevel(streamId);
+  canListStream (streamId) {
+    if (this.isPersonal()) return true;
+    const level = this._getStreamPermissionLevel(streamId);
     return level && isHigherOrEqualLevel(level, 'read');
-  },
+  }
 
-  canContributeToStream: function (streamId) {
-    const level = this.getStreamPermissionLevel(streamId);
-    return level && isHigherOrEqualLevel(level, 'contribute');
-  },
+  canCreateChildOnStream(streamId) {
+    return this._canManageStream(streamId);
+  }
 
-  canUpdateStream: function (streamId) {
-    const level = this.getStreamPermissionLevel(streamId);
-    if (level === 'create-only') return false;
-    return this.canContributeToStream(streamId);
-  },
+  canDeleteStream(streamId) {
+    return this._canManageStream(streamId);
+  }
 
-  isCreateOnlyStream: function (streamId) {
-    const level = this.getStreamPermissionLevel(streamId);
-    return (level === 'create-only');
-  },
+  canUpdateStream(streamId) {
+    return this._canManageStream(streamId);
+  }
 
-  canManageStream: function (streamId) {
-    const level = this.getStreamPermissionLevel(streamId || undefined);
+  /** @private internal  */
+  _canManageStream (streamId) {
+    if (this.isPersonal()) return true;
+    const level = this._getStreamPermissionLevel(streamId || undefined);
     if (level === 'create-only') return false;
     return (level != null) && isHigherOrEqualLevel(level, 'manage');
-  },
+  }
 
-  canReadAllTags: function () {
-    return this.isPersonal() || !!this.getTagPermissionLevel('*');
-  },
+  canCreateEventsOnStream (streamId) {
+    if (this.isPersonal()) return true;
+    const level = this._getStreamPermissionLevel(streamId);
+    return level && isHigherOrEqualLevel(level, 'contribute');
+  }
 
-  canReadTag: function (tag) {
-    const level = this.getTagPermissionLevel(tag);
+  canUpdateEventsOnStream (streamId) {
+    if (this.isPersonal()) return true;
+    const level = this._getStreamPermissionLevel(streamId);
+    if (level === 'create-only') return false;
+    return this.canCreateEventsOnStream(streamId);
+  }
+
+  canGetEventsWithAnyTag () {
+    return this.isPersonal() || !!this._getTagPermissionLevel('*');
+  }
+
+  /** kept private as not used elsewhere */
+  _canGetEventsWithTag (tag) {
+    if (this.isPersonal()) return true;
+    const level = this._getTagPermissionLevel(tag);
     if (level === 'create-only') return false;
     return level && isHigherOrEqualLevel(level, 'read');
-  },
+  }
 
-  canContributeToTag: function (tag) {
-    const level = this.getTagPermissionLevel(tag);
+  /** kept private as not used elsewhere */
+  _canCreateEventsWithTag (tag) {
+    if (this.isPersonal()) return true;
+    const level = this._getTagPermissionLevel(tag);
     return level && isHigherOrEqualLevel(level, 'contribute');
-  },
+  }
 
-  canUpdateTag: function (tag) {
-    const level = this.getTagPermissionLevel(tag);
+  /** kept private as not used elsewhere */
+  _canUpdateEventWithTag (tag) {
+    if (this.isPersonal()) return true;
+    const level = this._getTagPermissionLevel(tag);
     if (level === 'create-only') return false;
-    return this.canContributeToTag(tag);
-  },
+    return this._canCreateEventsWithTag(tag);
+  }
 
-  canManageTag: function (tag) {
-    const level = this.getTagPermissionLevel(tag);
-    if (level === 'create-only') return false;
-    return level && isHigherOrEqualLevel(level, 'manage');
-  },
+  /*
+  * Whether events in the given stream and tags context can be read.
+  *
+  * @param streamId
+  * @param tags
+  * @returns {Boolean}
+  */
+ canGetEventsOnStreamAndWithTags(streamId, tags) {
+  if (this.isPersonal()) return true;
+    return this.canGetEventsOnStream(streamId) &&
+      (this.canGetEventsWithAnyTag() ||
+        _.some(tags || [], this._canGetEventsWithTag.bind(this)));
+  }
+
+  /**
+   * Whether events in the given stream and tags context can be updated/deleted.
+   *
+   * @param streamId
+   * @param tags
+   * @returns {Boolean}
+   */
+  canUpdateEventsOnStreamAndWIthTags(streamId, tags) {
+    if (this.isPersonal()) return true;
+    return this.canUpdateEventsOnStream(streamId) ||
+      (this._canUpdateEventWithTag('*') ||
+        _.some(tags || [], this._canUpdateEventWithTag.bind(this)));
+  }
+
+  /**
+   * Whether events in the given stream and tags context can be created/updated/deleted.
+   *
+   * @param streamId
+   * @param tags
+   * @returns {Boolean}
+   */
+  canCreateEventsOnStreamAndWIthTags(streamId, tags) {
+    if (this.isPersonal()) return true;
+    return this.canCreateEventsOnStream(streamId) ||
+      (this._canCreateEventsWithTag('*') ||
+        _.some(tags || [], this._canCreateEventsWithTag.bind(this)));
+  }
 
   // Whether the current access delete manage the given access
-  canDeleteAccess: function (access) {
+  canDeleteAccess (access) {
     // The account owner can do everything. 
     if (this.isPersonal()) return true;
     // App and Shared accesses can delete themselves (selfRevoke)
     if (access.id === this.id) { 
-      return this.canSelfRevoke();
+      return this._canSelfRevoke();
     }
 
     if (this.isShared()) return false;
 
     // App token can delete the one they created
     return this.id === access.createdBy;
-  },
+  }
 
   
   // Whether the current access can create the given access. 
   // 
-  canCreateAccess: function (access) {
-    //TODO handle tags
+  canCreateAccess (candidateAccess) {
     
+    //TODO handle tags
     // The account owner can do everything. 
     if (this.isPersonal()) return true;
     // Shared accesses don't manage anything. 
@@ -242,8 +346,8 @@ const accessLogic = module.exports = {
     
     // assert: this.isApp()
 
-    // Augment the access with some logic.
-    const candidate = _.extend(_.cloneDeep(access), accessLogic);
+    // Create a candidate to compare 
+    const candidate = new AccessLogic(this._userId, candidateAccess);
       
     // App accesses can only manage shared accesses.
     if (! candidate.isShared()) return false;
@@ -251,6 +355,8 @@ const accessLogic = module.exports = {
     // assert: candidate.isShared()
 
     candidate.loadPermissions(this._cachedStreams);
+
+   
 
     if (! hasPermissions(this) || ! hasPermissions(candidate)) {
       // can only manage shared accesses with permissions
@@ -298,12 +404,12 @@ const accessLogic = module.exports = {
     }
 
     return true;
-  },
+  }
 
   /**
    * @returns {String} `null` if no matching permission exists.
    */
-  getStreamPermissionLevel: function (streamId) {
+  _getStreamPermissionLevel (streamId) {
     if (this.isPersonal()) {
       return 'manage';
     } else {
@@ -316,42 +422,51 @@ const accessLogic = module.exports = {
       }
       return permission ? permission.level : null;
     }
-  },
+  }
 
   /**
-   * Identical to getStreamPermissionLevel, just * permissions are not
+   * Identical to _getStreamPermissionLevel, just * permissions are not
    * allowed
    * @param {*} streamId 
    */
-  getAccountStreamPermissionLevel: function (streamId) {
+  _getAccountStreamPermissionLevel (streamId) {
     if (this.isPersonal()) {
       return 'manage';
     } else {
       var permission = this.streamPermissionsMap[streamId];
       return permission ? permission.level : null;
     }
-  },
+  }
   
   /**
    * @returns {String} `null` if no matching permission exists.
    */
-  getTagPermissionLevel: function (tag) {
+  _getTagPermissionLevel (tag) {
     if (this.isPersonal()) {
       return 'manage';
     } else {
       var permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
       return permission ? permission.level : null;
     }
-  },
+  }
 
   /**
    * return true is does not have "feature selfRevoke" permission with level "forbidden"
    */
-  canSelfRevoke: function () {
+  _canSelfRevoke () {
     if (this.featurePermissionsMap.selfRevoke == null) return true; // default allow
     return this.featurePermissionsMap.selfRevoke.setting !== 'forbidden';
-  },
+  }
 };
+
+module.exports = AccessLogic;
+
+AccessLogic.PERMISSION_LEVEL_CONTRIBUTE = 'contribute';
+AccessLogic.PERMISSION_LEVEL_MANAGE = 'manage';
+AccessLogic.PERMISSION_LEVEL_READ = 'read';
+AccessLogic.PERMISSION_LEVEL_CREATE_ONLY = 'create-only';
+
+
 
 function isHigherOrEqualLevel(permissionLevelA, permissionLevelB) {
   return PermissionLevels[permissionLevelA] >= PermissionLevels[permissionLevelB];

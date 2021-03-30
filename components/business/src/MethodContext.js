@@ -11,13 +11,15 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 import type { Access, User, Stream } from 'storage';
 
-const accessLogic = require('./accessLogic');
+const AccessLogic = require('./accesses/AccessLogic');
 const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const treeUtils = require('utils').treeUtils;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const UsersRepository = require('business/src/users/repository');
 import type { StorageLayer } from 'storage';
+
+const storage = require('storage');
 
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
@@ -93,7 +95,7 @@ class MethodContext {
 
     this.methodId = null;
     this.systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
-    this.usersRepository = new UsersRepository(eventsStorage);
+    this.usersRepository = new UsersRepository(storage.getStorageLayerSync().events);
     if (auth != null) this.parseAuth(auth);
   }
 
@@ -151,10 +153,6 @@ class MethodContext {
       if (customAuthStep != null)
         await this.performCustomAuthStep(customAuthStep);
 
-      // Mix in `accessLogic` into our access object. 
-      // TODO refactor to not use a mixin; If this fails, it'll be hard to debug.
-      _.extend(this.access, accessLogic);
-
       // those 2 last are executed in callbatch for each call.
 
       // Load the streams we can access.
@@ -191,8 +189,8 @@ class MethodContext {
     if (access == null)
       throw errors.invalidAccessToken(
         'Cannot find access from token.', 403);
-
-    this.access = access;
+      
+    this.access = new AccessLogic(this.user.id, access);
 
     this.checkAccessValid(this.access);
   }
@@ -221,7 +219,7 @@ class MethodContext {
     if (access == null)
       throw errors.invalidAccessToken('Cannot find access matching id.');
 
-    this.access = access;
+    this.access = new AccessLogic(this.user.id, access);
     this.accessToken = access.token;
 
     this.checkAccessValid(access);
@@ -297,112 +295,6 @@ class MethodContext {
         this.streamIdsNotFoundList.push(streamId);
       }
     }.bind(this));
-  }
-
-  /**
- * Sugar for the corresponding access method.
- */
-  canReadStream(streamId: string) {
-    const access = this.access;
-    if (access == null)
-      throw new Error('Access needs to be retrieved first.');
-    return access.canReadStream(streamId);
-  }
-
-  /**
-  * Sugar for the corresponding access method.
-  */
-  canListStream(streamId: string) {
-    const access = this.access;
-    if (access == null)
-      throw new Error('Access needs to be retrieved first.');
-    return access.canListStream(streamId);
-  }
-
-  /**
-   * Sugar for the corresponding access method.
-   */
-  canManageStream(streamId: string) {
-    const access = this.access;
-    if (access == null)
-      throw new Error('Access needs to be retrieved first.');
-
-    return access.canManageStream(streamId);
-  }
-
-  /**
-   * Sugar for the corresponding access method.
-   */
-  canReadTag(tag: string) {
-    const access = this.access;
-    if (access == null)
-      throw new Error('Access needs to be retrieved first.');
-
-    return access.canReadTag(tag);
-  }
-
-  /**
-   * Sugar for the corresponding access method.
-   */
-  canManageTag(tag: string) {
-    const access = this.access;
-    if (access == null)
-      throw new Error('Access needs to be retrieved first.');
-
-    return access.canManageTag(tag);
-  }
-
-  /**
-   * Whether events in the given stream and tags context can be read.
-   *
-   * @param streamId
-   * @param tags
-   * @returns {Boolean}
-   */
-  canReadContext(streamId: string, tags: ?Array<string>) {
-    const access = this.access;
-    if (access == null)
-      throw new Error('Access needs to be retrieved first.');
-
-    return access.canReadStream(streamId) &&
-      (access.canReadAllTags() ||
-        _.some(tags || [], access.canReadTag.bind(this.access)));
-  }
-
-  /**
-   * Whether events in the given stream and tags context can be updated/deleted.
-   *
-   * @param streamId
-   * @param tags
-   * @returns {Boolean}
-   */
-  canUpdateContext(streamId: string, tags: ?Array<string>) {
-    const access = this.access;
-    if (access == null)
-      throw new Error('Access needs to be retrieved first.');
-
-
-    return access.canUpdateStream(streamId) ||
-      (access.canUpdateTag('*') ||
-        _.some(tags || [], access.canUpdateTag.bind(this.access)));
-  }
-
-  /**
-   * Whether events in the given stream and tags context can be created/updated/deleted.
-   *
-   * @param streamId
-   * @param tags
-   * @returns {Boolean}
-   */
-  canContributeToContext(streamId: string, tags: ?Array<string>) {
-    const access = this.access;
-    if (access == null)
-      throw new Error('Access needs to be retrieved first.');
-
-
-    return access.canContributeToStream(streamId) ||
-      (access.canContributeToTag('*') ||
-        _.some(tags || [], access.canContributeToTag.bind(this.access)));
   }
 
   initTrackingProperties(item: any, authorOverride: ?string) {

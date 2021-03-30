@@ -16,9 +16,9 @@ const charlatan = require('charlatan');
 
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
-const Application = require('api-server/src/application');
-const Notifications = require('api-server/src/Notifications');
-const accessLogic = require('model/src/accessLogic');
+const { getApplication } = require('api-server/src/application');
+const { Notifications } = require('messages');
+const AccessLogic = require('business/src/accesses/AccessLogic');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { databaseFixture } = require('test-helpers');
@@ -83,7 +83,7 @@ describe("Accesses with account streams", function () {
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
 
-    app = new Application();
+    app = getApplication(true);
     await app.initiate();
 
     // Initialize notifications dependency
@@ -99,7 +99,7 @@ describe("Accesses with account streams", function () {
       app.getUpdatesSettings,
       app.storageLayer);
     
-    require("api-server/src/methods/events")(
+    await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
@@ -119,7 +119,7 @@ describe("Accesses with account streams", function () {
       describe('to create an access for visible account streams', () => {
         describe('with a read-level permission', async () => {
           const streamId = SystemStreamsSerializer.addDotToStreamId('email');
-          const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
+          const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
           before(async function () {
             await createUserAndAccess(permissionLevel, streamId);
           });
@@ -137,7 +137,7 @@ describe("Accesses with account streams", function () {
 
           describe('for the “account” stream', async () => {
             const streamId = SystemStreamsSerializer.addDotToStreamId('account');
-            const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
+            const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
               await createUserAndAccess(permissionLevel, streamId);
             });
@@ -155,7 +155,7 @@ describe("Accesses with account streams", function () {
           });
           describe('for the “storageUsed” stream', async () => {
             const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
-            const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
+            const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
               await createUserAndAccess(permissionLevel, streamId);
             });
@@ -181,7 +181,7 @@ describe("Accesses with account streams", function () {
         });
         describe('with a create-only-level permission', async () => {
           const streamId = SystemStreamsSerializer.addDotToStreamId('email');
-          const permissionLevel = accessLogic.PERMISSION_LEVEL_CREATE_ONLY;
+          const permissionLevel = AccessLogic.PERMISSION_LEVEL_CREATE_ONLY;
           before(async function () {
             await createUserAndAccess(permissionLevel, streamId);
           });
@@ -194,7 +194,7 @@ describe("Accesses with account streams", function () {
         });
         describe('with a contribute-level permission', async () => {
           const streamId = SystemStreamsSerializer.addDotToStreamId('email');
-          const permissionLevel = accessLogic.PERMISSION_LEVEL_CONTRIBUTE;
+          const permissionLevel = AccessLogic.PERMISSION_LEVEL_CONTRIBUTE;
           before(async function () {
             await createUserAndAccess(permissionLevel, streamId);
           });
@@ -229,7 +229,7 @@ describe("Accesses with account streams", function () {
         describe('with a manage-level permission', async () => {
           const streamId = SystemStreamsSerializer.addDotToStreamId('email');
           before(async function () {
-            await createUserAndAccess(accessLogic.PERMISSION_LEVEL_MANAGE, streamId);
+            await createUserAndAccess(AccessLogic.PERMISSION_LEVEL_MANAGE, streamId);
           });
           it('[93HO] should return 400', async () => {
             assert.equal(accountAccess.status, 400);
@@ -266,7 +266,7 @@ describe("Accesses with account streams", function () {
     describe('When using a personal access', () => {
       describe('to delete an account stream access', async () => {
         const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
-        const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
+        const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
           res = await request.delete(path.join(basePath, accountAccess.body.access.id))

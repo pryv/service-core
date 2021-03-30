@@ -41,7 +41,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   // RETRIEVAL
 
   api.register('account.get',
-    commonFns.requirePersonalAccess,
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.get.params),
     async function (context, params, result, next) {
       try {
@@ -51,11 +51,12 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
         return next(errors.unexpectedError(err));
       }
     });
+  
 
   // UPDATE
 
   api.register('account.update',
-    commonFns.requirePersonalAccess,
+    commonFns.basicAccessAuthorizationCheck,  
     commonFns.getParamsValidation(methodsSchema.update.params),
     validateThatAllFieldsAreEditable,
     notifyServiceRegister,
@@ -88,7 +89,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   // CHANGE PASSWORD
 
   api.register('account.changePassword',
-    commonFns.requirePersonalAccess,
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,
     addNewPasswordParameter,

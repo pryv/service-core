@@ -9,13 +9,13 @@
 const bluebird = require('bluebird');
 const _ = require('lodash');
 
-const NatsSubscriber = require('api-server/src/socket-io/nats_subscriber');
-const WEBHOOKS_CREATE_CHANNEL: string = require('utils').messaging.NATS_WEBHOOKS_CREATE;
-const WEBHOOKS_ACTIVATE_CHANNEL: string = require('utils').messaging.NATS_WEBHOOKS_ACTIVATE;
-const WEBHOOKS_DELETE_CHANNEL: string = require('utils').messaging.NATS_WEBHOOKS_DELETE;
+const { NatsSubscriber } = require('messages');
+const WEBHOOKS_CREATE_CHANNEL: string = require('messages').NATS_WEBHOOKS_CREATE;
+const WEBHOOKS_ACTIVATE_CHANNEL: string = require('messages').NATS_WEBHOOKS_ACTIVATE;
+const WEBHOOKS_DELETE_CHANNEL: string = require('messages').NATS_WEBHOOKS_DELETE;
 
 
-import type { MessageSink } from 'api-server/src/socket-io/message_sink';
+import type { MessageSink } from 'messages';
 import type { StorageLayer } from 'storage';
 
 const Webhook = require('business/src/webhooks/Webhook');

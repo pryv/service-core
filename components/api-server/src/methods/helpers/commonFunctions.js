@@ -17,6 +17,20 @@ exports.requirePersonalAccess = function requirePersonalAccess(context, params, 
   next();
 };
 
+
+/**
+ * Basic check for authorized access based on context.methodId
+ */
+exports.basicAccessAuthorizationCheck = function (context, params, result, next) {
+  const res = context.access.can(context.methodId);
+  if (res === true) return next();
+
+  const message = (typeof res === "boolean") ? 
+    'You cannot access ' + context.methodId + ' resource using the given access' :
+    '' + res;
+  return next(errors.forbidden(message));
+};
+
 /**
  * Returns a check whether the given app ID / origin pair match a trusted app defined in settings.
  * (Lazy-loads and caches the `trustedApps` setting.)

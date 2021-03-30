@@ -52,7 +52,7 @@ declare module 'utils/src/logging' {
   declare module.exports: any;
 }
 
-declare module 'utils/src/messaging' {
+declare module 'utils/src/axonMessaging' {
   declare module.exports: any;
 }
 
@@ -90,8 +90,8 @@ declare module 'utils/src/index.js' {
 declare module 'utils/src/logging.js' {
   declare module.exports: $Exports<'utils/src/logging'>;
 }
-declare module 'utils/src/messaging.js' {
-  declare module.exports: $Exports<'utils/src/messaging'>;
+declare module 'utils/src/axonMessaging.js' {
+  declare module.exports: $Exports<'utils/src/axonMessaging'>;
 }
 declare module 'utils/src/toString.js' {
   declare module.exports: $Exports<'utils/src/toString'>;

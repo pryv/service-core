@@ -5,9 +5,9 @@
  * Proprietary and confidential
  */
 // @flow
-
-require('../test-helper');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
+require('test-helpers/src/api-server-tests-config');
+require('api-server/test/unit/test-helper');
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 
 const chai = require('chai');
 const assert = chai.assert;
@@ -17,8 +17,8 @@ const NATS = require('nats');
 
 /* global describe, it */
 
-const NatsPublisher = require('../../../src/socket-io/nats_publisher');
-const { decode } = require('../../../src/socket-io/nats_wire_message');
+const { NatsPublisher } = require('messages');
+const { decode } = require('messages/src/nats_wire_message');
 
 describe('NatsPublisher', () => {
   it('[S386] should construct', () => {

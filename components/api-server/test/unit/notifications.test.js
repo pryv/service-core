@@ -11,7 +11,7 @@ require('./test-helper');
 
 const assert = require('chai').assert;
 
-const Notifications = require('../../src/Notifications');
+const { Notifications } = require('messages');
 
 describe('Notifications', () => {
   let axonMsgs = []; 

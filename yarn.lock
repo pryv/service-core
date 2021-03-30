@@ -5341,7 +5341,7 @@ ms@2.1.3, ms@^2.1.1:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-msgpack5@^3.6, msgpack5@^3.6.1:
+msgpack5@^3.6.1:
   version "3.6.1"
   resolved "https://registry.yarnpkg.com/msgpack5/-/msgpack5-3.6.1.tgz#dd3293d9a3b476d0e2639e0681464b825db2c9ed"
   integrity sha512-VoY2AaoowHZLLKyEb5FRzuhdSzXn5quGjcMKJOJHJPxp9baYZx5t6jiHUhp5aNRlqqlt+5GXQGovMLNKsrm1hg==

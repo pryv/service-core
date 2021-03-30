@@ -5,9 +5,9 @@
  * Proprietary and confidential
  */
 // @flow
-
-require('../test-helper');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
+require('test-helpers/src/api-server-tests-config');
+require('api-server/test/unit/test-helper');
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 
 const chai = require('chai');
 const assert = chai.assert;
@@ -18,10 +18,10 @@ const NATS = require('nats');
 
 const { ConditionVariable } = require('test-helpers').syncPrimitives;
 
-const NatsSubscriber = require('../../../src/socket-io/nats_subscriber');
-const { encode } = require('../../../src/socket-io/nats_wire_message');
+const { NatsSubscriber } = require('messages');
+const { encode } = require('messages/src/nats_wire_message');
 
-import type { MessageSink }  from '../../../src/socket-io/message_sink';
+import type { MessageSink } from 'messages';
 
 describe('NatsSubscriber', () => {
   it('[DMMP] should construct', () => {
@@ -84,7 +84,8 @@ describe('NatsSubscriber', () => {
         assert.deepEqual(arySink.msgs, ['onTestMessage2']);
       });
     });
-    describe('unsubscribe()', () => {
+    describe('unsubscribe()', function () {
+      this.timeout(1000);
       it('[L49E] should unsubscribe from NATS', async () => {
         rawClient.publish('foobar.sok1', encode('onTestMessage1'));
         

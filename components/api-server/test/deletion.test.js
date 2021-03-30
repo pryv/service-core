@@ -14,7 +14,7 @@ const assert = require('chai').assert;
 const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
-const Application = require('../src/application');
+const { getApplication } = require('api-server/src/application');
 const InfluxRepository = require('business/src/series/repository');
 const DataMatrix = require('business/src/series/data_matrix');
 const { getConfig } = require('@pryv/boiler');
@@ -48,7 +48,7 @@ describe('DELETE /users/:username', async () => {
 
   before(async function() {
     
-    app = new Application();
+    app = getApplication();
     await app.initiate();
 
     require('../src/methods/auth/delete')(

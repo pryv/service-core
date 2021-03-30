@@ -50,7 +50,7 @@ const { Extension, ExtensionLoader } = require('utils').extension;
 
 logger.debug('Loading app');
 
-import type { CustomAuthFunction } from 'model';
+import type { CustomAuthFunction } from 'business';
 import type { WebhooksSettingsHolder }  from './methods/webhooks';
 
 type UpdatesSettingsHolder = {
@@ -157,18 +157,10 @@ class Application {
   }
 
   produceStorageSubsystem() {
-    const config = this.config;
-    this.database = new storage.Database(config.get('database'));
-
+    this.database = storage.getDatabaseSync();
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models. 
-    this.storageLayer = new storage.StorageLayer(this.database, 
-      getLogger('model'),
-      config.get('eventFiles:attachmentsDirPath'), 
-      config.get('eventFiles:previewsDirPath'), 
-      config.get('auth:passwordResetRequestMaxAge'), 
-      config.get('auth:sessionMaxAge')
-    );
+    this.storageLayer = storage.getStorageLayerSync()
   }
   
   // Returns the settings for updating entities
@@ -225,4 +217,19 @@ class Application {
 
 }
 
-module.exports = Application;
+let app;
+/**
+ * get Application Singleton
+ * @param {boolean} forceNewApp - In TEST mode only, return a new Application for fixtures and mocks
+ * @returns 
+ */
+function getApplication(forceNewApp) {
+  if (forceNewApp || ! app)  {
+    app = new Application();
+  }
+  return app;
+}
+
+module.exports = {
+  getApplication
+}

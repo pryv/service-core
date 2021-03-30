@@ -59,6 +59,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function findAccessibleStreams(context, params, result, next) {
     // can't reuse context streams (they carry extra internal properties)
+    
     userStreamsStorage.find(context.user, {}, null, function (err, streams) {
 
       if (err) { return next(errors.unexpectedError(err)); }
@@ -81,15 +82,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       }
 
-      if (! context.access.isPersonal()) {
-        streams = treeUtils.filterTree(streams, true /*keep orphans*/, function (stream) {
-          return context.canListStream(stream.id);
-        });
-      }
+      streams = treeUtils.filterTree(streams, true /*keep orphans*/, function (stream) {
+        return context.access.canListStream(stream.id);
+      });
 
       // hide inaccessible parent ids
       streams.forEach(function (stream) {
-        if (! context.canListStream(stream.parentId)) {
+        if (! context.access.canListStream(stream.parentId)) {
           delete stream.parentId;
         }
       });
@@ -130,7 +129,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function applyPrerequisitesForCreation(context, params, result, next) {
-    if (!context.canManageStream(params.parentId)) {
+    if (!context.access.canCreateChildOnStream(params.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -229,12 +228,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         )
       ));
     }
-    if (!context.canManageStream(stream.id)) {
+    if (!context.access.canUpdateStream(stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
     // check target parent if needed
-    if (params.update.parentId && !context.canManageStream(params.update.parentId)) {
+    if (params.update.parentId && !context.access.canCreateChildOnStream(params.update.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -287,7 +286,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       return process.nextTick(next.bind(null,
         errors.unknownResource('stream', params.id)));
       }
-    if (! context.canManageStream(context.stream.id)) {
+    if (! context.access.canDeleteStream(context.stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 

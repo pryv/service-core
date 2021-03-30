@@ -19,7 +19,7 @@ const ErrorIds = require('errors').ErrorIds;
 
 const { getLogger } = require('@pryv/boiler');
 
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
 
 /**

@@ -30,6 +30,7 @@ const http = require('http');
 const middleware = require('middleware');
 const storage = require('storage');
 const utils = require('utils');
+const { axonMessaging } = require('messages');
 
 const ExtensionLoader = utils.extension.ExtensionLoader;
 
@@ -62,14 +63,9 @@ async function start() {
 
   const logger = getLogger('server');
 
-  const database = new storage.Database(
-    config.get('database'), getLogger('database'));
+  const database = await storage.getDatabase();
 
-  const storageLayer = new storage.StorageLayer(
-    database, logger,
-    config.get('eventFiles:attachmentsDirPath'),
-    config.get('eventFiles:previewsDirPath'),
-    10, config.get('auth:sessionMaxAge'));
+  const storageLayer = await storage.getStorageLayer();
 
   const initContextMiddleware = middleware.initContext(
     storageLayer,
@@ -100,7 +96,7 @@ async function start() {
 
   // Go
 
-  utils.messaging.openPubSocket(config.get('tcpMessaging'), function (err, pubSocket) {
+ axonMessaging.openPubSocket(config.get('tcpMessaging'), function (err, pubSocket) {
     if (err) {
       logger.error('Error setting up TCP pub socket: ' + err);
       process.exit(1);
@@ -141,6 +137,6 @@ const loggerLaunch = getLogger('launch');
 // And now:
 start()
   .catch(err => {
-    loggerLaunch.error(err); // eslint-disable-line no-console
+    loggerLaunch.error(err, err); // eslint-disable-line no-console
   });
 

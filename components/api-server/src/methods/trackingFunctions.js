@@ -13,7 +13,7 @@ const timestamp = require('unix-timestamp');
 
 import type API  from '../API';
 import type { StorageLayer } from 'storage';
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 import type Result  from '../Result';
 import type { ApiCallback }  from '../API';
 

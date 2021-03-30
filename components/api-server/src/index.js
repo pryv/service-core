@@ -9,4 +9,6 @@
 
 const validation = require('./schema/validation');
 
-module.exports.validation = validation;
+module.exports = {
+  validation
+}

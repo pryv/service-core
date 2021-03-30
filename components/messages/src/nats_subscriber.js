@@ -10,7 +10,7 @@ const awaiting = require('awaiting');
 const NATS = require('nats');
 const { decode } = require('./nats_wire_message');
 
-import type { MessageSink }  from './message_sink';
+import type { MessageSink }  from 'messages';
 
 // Receives messages from a single NATS channel (use #subscribe) and delivers
 // them to a message sink. 

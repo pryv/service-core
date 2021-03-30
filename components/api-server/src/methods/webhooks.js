@@ -18,14 +18,14 @@ const methodsSchema = require('../schema/webhooksMethods');
 const Webhook = require('business').webhooks.Webhook;
 const WebhooksRepository = require('business').webhooks.Repository;
 
-const NatsPublisher = require('../socket-io/nats_publisher');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
-const NATS_WEBHOOKS_CREATE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_CREATE;
-const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_ACTIVATE;
-const NATS_WEBHOOKS_DELETE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_DELETE;
+const { NatsPublisher } = require('messages');
+const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
+const NATS_WEBHOOKS_CREATE_CHANNEL = require('messages').NATS_WEBHOOKS_CREATE;
+const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('messages').NATS_WEBHOOKS_ACTIVATE;
+const NATS_WEBHOOKS_DELETE_CHANNEL = require('messages').NATS_WEBHOOKS_DELETE;
 
 import type { StorageLayer } from 'storage';
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 
 import type API  from '../API';
 import type { ApiCallback }  from '../API';
@@ -41,8 +41,7 @@ export type WebhooksSettingsHolder = {
 
 type Access = {
   id: string,
-  isApp(): boolean,
-  isPersonal(): boolean,
+  isApp(): Boolean
 };
 
 module.exports = function produceWebhooksApiMethods(
@@ -105,25 +104,11 @@ module.exports = function produceWebhooksApiMethods(
   // CREATION
 
   api.register('webhooks.create',
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.create.params),
-    forbidPersonalAccess,
     createWebhook,
     bootWebhook,
   );
-
-  function forbidPersonalAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const currentAccess: Access = context.access;
-
-    if (currentAccess == null) {
-      return next(new Error('AF: Access cannot be null at this point.'));
-    }
-    if (currentAccess.isPersonal()) {
-      return next(errors.forbidden(
-        'Personal Accesses cannot create Webhooks. Please use an App Access.'
-      ));
-    }
-    next();
-  }
 
   async function createWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
     context.initTrackingProperties(params);
