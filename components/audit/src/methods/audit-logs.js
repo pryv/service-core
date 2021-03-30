@@ -16,7 +16,6 @@ const auditStorage = audit.storage;
 * @param api
 */
 module.exports = function (api) {
-  console.log('UUUUUUUUUUUU');
   api.register('audit.getLogs',
     commonFns.getParamsValidation(methodsSchema.get.params),
     getAuditLogs);
@@ -25,8 +24,9 @@ module.exports = function (api) {
 function getAuditLogs(context, params, result, next) {
 
   try {
-    const userStorage = auditStorage.forUser(req.context.user.id);
-    result.auditLogs = userStorage.getLogs(params);
+    const userStorage = auditStorage.forUser(context.user.id);
+    result.addStream('auditLogs', userStorage.getLogsStream(params));
+    //result.auditLogs = userStorage.getLogs(params);
   } catch (err) {
     return next(err);
   }     

@@ -32,14 +32,13 @@ module.exports = function (expressApp: express$Application, app: Application) {
         fromTime: 'number',
         toTime: 'number',
         streams: 'object',
-        tags: 'array',
         types: 'array',
         sortAscending: 'boolean',
         skip: 'number',
         limit: 'number',
-        modifiedSince: 'number',
-        includeDeletions: 'boolean'
+        modifiedSince: 'number'
       });
+      
       api.call(req.context, params, methodCallback(res, next, 200));
   });
 

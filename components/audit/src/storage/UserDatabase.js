@@ -10,6 +10,7 @@ const {createFTSFor } = require('./FullTextSearchDataBase');
 const events = require('./schemas/events');
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:user-database');
+const { Readable } = require('stream');
 
 const DB_OPTIONS = {
 
@@ -78,55 +79,9 @@ class UserDatabase {
     this.create.events.run(eventForDb);
   }
 
-  getLogs(params = {}) {
+  getLogs(params) {
+    const queryString = prepareLogQuery(params);
     
-    const ands = [];
-
-    if (params !== null) {
-      if (params.fromTime == null && params.toTime != null) {
-        params.fromTime = params.toTime - (24 * 60 * 60); // 24 hours before
-        params.limit = 0;
-      }
-      if (params.fromTime != null && params.toTime == null) {
-        params.toTime = Date.now() / 1000;
-        params.limit = 0;
-      }
-      if (params.fromTime == null && params.toTime == null && params.limit == null) {
-        // limit to 20 items by default
-        params.limit = 20;
-      }
-      if (params.fromTime != null) {
-        ands.push('time >= ' + params.fromTime);
-        ands.push('time <= ' + params.toTime);
-      }
-      
-      if (params.createdBy != null) {
-        ands.push('createdBy = \'' + params.createdBy + '\'');
-      }
-    } 
-    
-    if (params.limit == null) {
-      params.limit = 20;
-    }
-    if (params.sortAscending == null) {
-      params.sortAscending = false;
-    }
-    
-    let queryString = 'SELECT * FROM events';
-
-    if (ands.length > 0) {
-      queryString += ' WHERE ' + ands.join(' AND ');
-    }
-
-    if (params.limit > 0) {
-      //queryString += ' LIMIT ' + params.limit;
-    }
-    
-    if (params.sortAscending) {
-      queryString += ' ORDER BY time ASC';
-    } else { 
-      queryString += ' ORDER BY time DESC';
-    }
     logger.debug(queryString);
     const res = this.db.prepare(queryString).all().map(convertFromDB);
     if (res != null) {
@@ -134,6 +89,31 @@ class UserDatabase {
     }
     return null;
   }
+
+  // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
+
+  getLogsStream(params) {
+    const queryString = prepareLogQuery(params);
+    
+    logger.debug(queryString);
+
+    const iterateSource = this.db.prepare(queryString).iterate();
+   
+    const iterateTransform = {
+      next: function() {
+        const res = iterateSource.next();
+        res.value = res.value ? convertFromDB(res.value) : undefined;
+        return res;
+      }
+    };
+
+    iterateTransform[Symbol.iterator] = function() {
+      return iterateTransform;
+    }
+
+    return Readable.from(iterateTransform);
+  }
+
 
   close() { 
     this.db.close();
@@ -146,6 +126,60 @@ function convertFromDB(result) {
   }
   return result;
 }
+
+
+function prepareLogQuery(params = {}) {
+  const ands = [];
+
+  if (params !== null) {
+    if (params.fromTime == null && params.toTime != null) {
+      params.fromTime = params.toTime - (24 * 60 * 60); // 24 hours before
+      params.limit = 0;
+    }
+    if (params.fromTime != null && params.toTime == null) {
+      params.toTime = Date.now() / 1000;
+      params.limit = 0;
+    }
+    if (params.fromTime == null && params.toTime == null && params.limit == null) {
+      // limit to 20 items by default
+      params.limit = 20;
+    }
+    if (params.fromTime != null) {
+      ands.push('time >= ' + params.fromTime);
+      ands.push('time <= ' + params.toTime);
+    }
+    
+    if (params.createdBy != null) {
+      ands.push('createdBy = \'' + params.createdBy + '\'');
+    }
+  } 
+  
+  if (params.limit == null) {
+    params.limit = 20;
+  }
+  if (params.sortAscending == null) {
+    params.sortAscending = false;
+  }
+  
+  let queryString = 'SELECT * FROM events';
+
+  if (ands.length > 0) {
+    queryString += ' WHERE ' + ands.join(' AND ');
+  }
+
+  if (params.limit > 0) {
+    //queryString += ' LIMIT ' + params.limit;
+  }
+  
+  if (params.sortAscending) {
+    queryString += ' ORDER BY time ASC';
+  } else { 
+    queryString += ' ORDER BY time DESC';
+  }
+
+  return queryString;
+}
+
 
 module.exports = UserDatabase;
 

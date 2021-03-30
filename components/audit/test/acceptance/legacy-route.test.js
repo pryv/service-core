@@ -46,11 +46,6 @@ describe('Audit legacy route', function() {
   const complexQuery = {
     fromTime: 1560729600,
     toTime: 1560816000,
-    status: 403,
-    ip: '172.18.0.8',
-    httpVerb: 'GET',
-    resource: '/events',
-    errorId: 'forbidden',
   };
 
   function validGet(path) { return coreRequest.get(path).set('Authorization', appToken);}
@@ -74,17 +69,19 @@ describe('Audit legacy route', function() {
       .get(auditPath)
       .set('Authorization', appToken)
       .query({fromTime: start, toTime: stop});
+    console.log('TEST RESULT:', res.body);
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
     assert.equal(logs.length, 2);
   });
-  it.skip('must retrieve logs by status', async () => {
+
+  it.skip('must retrieve logs by eventType', async () => {
     const res = await coreRequest
       .get(auditPath)
       .set('Authorization', appToken)
       .query({status: 403 });
     assert.equal(res.status, 200);
-    console.log(res.body)
+    
     const logs = res.body.auditLogs;
     assert.equal(logs.length, 1);
     console.log(logs);
