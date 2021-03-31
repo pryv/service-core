@@ -83,7 +83,7 @@ class UserDatabase {
     const queryString = prepareLogQuery(params);
     
     logger.debug(queryString);
-    const res = this.db.prepare(queryString).all().map(convertFromDB);
+    const res = this.db.prepare(queryString).all();
     if (res != null) {
       return res.map(eventSchemas.eventFromDB);
     }
@@ -102,7 +102,9 @@ class UserDatabase {
     const iterateTransform = {
       next: function() {
         const res = iterateSource.next();
-        res.value = res.value ? convertFromDB(res.value) : undefined;
+        if (res && res.value) {
+          res.value = eventSchemas.eventFromDB(res.value);
+        }
         return res;
       }
     };
@@ -119,14 +121,6 @@ class UserDatabase {
     this.db.close();
   }
 }
-
-function convertFromDB(result) {
-  if (result == null) {
-    return null;
-  }
-  return result;
-}
-
 
 function prepareLogQuery(params = {}) {
   const ands = [];

@@ -12,7 +12,7 @@ const DrainStream = require('./methods/streams/DrainStream');
 const ArrayStream = require('./methods/streams/ArrayStream');
 const async = require('async');
 
-const Transform = require('stream').Transform;
+const { Transform, Readable} = require('stream');
 
 import type { Webhook } from 'business/webhooks';
 
@@ -28,6 +28,8 @@ type APIResult =
   {[string]: Array<Object>};
   
 type ToObjectCallback = (err: ?Error, res: ?APIResult) => mixed;
+
+type doneCallBack = () => mixed;
 
 type itemDeletion = {
   id: string,
@@ -63,6 +65,7 @@ class Result {
     init: boolean, first: boolean, 
     arrayLimit: number, 
     isStreamResult: boolean, streamsArray: Array<StreamDescriptor>, 
+    advertiseOnEnd: doneCallBack
   }
   meta: ?Object;
   
@@ -91,6 +94,7 @@ class Result {
   webhookDeletion: itemDeletion;
 
   auditLogs: ?Array<{}>;
+  
 
   constructor(params?: ResultOptions) {
     this._private = { 
@@ -98,6 +102,7 @@ class Result {
       arrayLimit: 10000, 
       isStreamResult: false, 
       streamsArray: [],  
+      advertiseOnEnd: null,
     };
     
     if (params && params.arrayLimit != null && params.arrayLimit > 0) {
@@ -118,13 +123,24 @@ class Result {
     return this._private.isStreamResult;
   }
   
+  // Execute the following when result has been fully sent
+  // If allready sent callback is called right away
+  onEnd(callback: doneCallBack) {
+    this._private.advertiseOnEnd = callback;
+  }
+
   // Sends the content of Result to the HttpResponse stream passed in parameters.
   // 
   writeToHttpResponse(res: express$Response, successCode: number) {
+    const onEndCallBack = this._private.advertiseOnEnd;
     if (this.isStreamResult()) {
-      this.writeStreams(res, successCode);
+      const stream: Readable = this.writeStreams(res, successCode);
+      stream.on('close', function() { 
+       if (onEndCallBack) onEndCallBack()
+      }.bind(this));
     } else {
       this.writeSingle(res, successCode);
+      if (onEndCallBack) onEndCallBack()
     }
   }
   
@@ -156,7 +172,7 @@ class Result {
       streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
     }
 
-    new MultiStream(streams).pipe(new ResultStream()).pipe(res);
+    return new MultiStream(streams).pipe(new ResultStream()).pipe(res);
   }
   
   writeSingle(res: express$Response, successCode: number) {

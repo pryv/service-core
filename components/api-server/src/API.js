@@ -187,7 +187,9 @@ class API {
           err : 
           errors.unexpectedError(err));
       }
-      audit.validApiCall(context, params, result);
+      result.onEnd(function() {
+        audit.validApiCall(context, params, result);
+      });
       callback(null, result);
     });
   }

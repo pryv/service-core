@@ -69,7 +69,6 @@ describe('Audit legacy route', function() {
       .get(auditPath)
       .set('Authorization', appToken)
       .query({fromTime: start, toTime: stop});
-    console.log('TEST RESULT:', res.body);
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
     assert.equal(logs.length, 2);
