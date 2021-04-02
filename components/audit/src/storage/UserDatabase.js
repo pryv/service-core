@@ -12,6 +12,8 @@ const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:user-database');
 const { Readable } = require('stream');
 
+const { toSQLLiteQuery } = require('./sqlliteStreamQueryUtils');
+
 const DB_OPTIONS = {
 
 };
@@ -93,8 +95,7 @@ class UserDatabase {
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
 
   getLogsStream(params) {
-    const queryString = prepareLogQuery(params);
-    
+    const queryString = prepareLogQuery(params, );
     logger.debug(queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
@@ -125,44 +126,25 @@ class UserDatabase {
 function prepareLogQuery(params = {}) {
   const ands = [];
 
-  if (params !== null) {
-    if (params.fromTime == null && params.toTime != null) {
-      params.fromTime = params.toTime - (24 * 60 * 60); // 24 hours before
-      params.limit = 0;
-    }
-    if (params.fromTime != null && params.toTime == null) {
-      params.toTime = Date.now() / 1000;
-      params.limit = 0;
-    }
-    if (params.fromTime == null && params.toTime == null && params.limit == null) {
-      // limit to 20 items by default
-      params.limit = 20;
-    }
-    if (params.fromTime != null) {
-      ands.push('time >= ' + params.fromTime);
-      ands.push('time <= ' + params.toTime);
-    }
-    
-    if (params.createdBy != null) {
-      ands.push('createdBy = \'' + params.createdBy + '\'');
-    }
+  if (params.fromTime != null) {
+    ands.push('time >= ' + params.fromTime);
   } 
-  
-  if (params.limit == null) {
-    params.limit = 20;
+  if (params.toTime != null) {
+    ands.push('time <= ' + params.toTime);
   }
-  if (params.sortAscending == null) {
-    params.sortAscending = false;
+    
+  if (params.createdBy != null) {
+    ands.push('createdBy = \'' + params.createdBy + '\'');
+  }
+
+  if (params.streams != null) {
+    ands.push('streamIds MATCH \'' + toSQLLiteQuery(params.streams) + '\'');
   }
   
-  let queryString = 'SELECT * FROM events';
+  let queryString = 'SELECT * FROM events_fts';
 
   if (ands.length > 0) {
-    queryString += ' WHERE ' + ands.join(' AND ');
-  }
-
-  if (params.limit > 0) {
-    //queryString += ' LIMIT ' + params.limit;
+    queryString += ' WHERE ' + ands.join(' AND ') ;
   }
   
   if (params.sortAscending) {
@@ -171,6 +153,7 @@ function prepareLogQuery(params = {}) {
     queryString += ' ORDER BY time DESC';
   }
 
+  console.log(params, queryString);
   return queryString;
 }
 

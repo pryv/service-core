@@ -7,7 +7,8 @@
 const errors = require('errors').factory,
   async = require('async'),
   commonFns = require('api-server/src/methods/helpers/commonFunctions'),
-  methodsSchema = require('../schema/auditMethods');
+  methodsSchema = require('../schema/auditMethods'),
+  eventsGetUtils = require('api-server/src/methods/helpers/eventsGetUtils');
 
 const audit = require('audit');
 const auditStorage = audit.storage;
@@ -17,12 +18,24 @@ const auditStorage = audit.storage;
 */
 module.exports = function (api) {
   api.register('audit.getLogs',
+    eventsGetUtils.coerceStreamsParam,
     commonFns.getParamsValidation(methodsSchema.get.params),
+    addStreamFromAuthorization,
+    eventsGetUtils.transformArrayOfStringsToStreamsQuery,
     getAuditLogs);
 }
 
-function getAuditLogs(context, params, result, next) {
 
+function addStreamFromAuthorization(context, params, result, next) {
+  if (context.access.isPersonal()) return next();
+  // force stream query to current Authorization
+  params.streams = [context.access.id];
+  next();
+}
+
+
+// From storage
+function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = auditStorage.forUser(context.user.id);
     result.addStream('auditLogs', userStorage.getLogsStream(params));
@@ -30,6 +43,7 @@ function getAuditLogs(context, params, result, next) {
   } catch (err) {
     return next(err);
   }     
-
   next();
 }
+
+

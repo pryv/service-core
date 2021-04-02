@@ -7,12 +7,11 @@
 
 
 describe('Audit legacy route', function() {
-  let user, username, password, access, readAccess;
+  let user, username, password, access, appAccess;
   let personalToken;
   let auditPath;
   
   const streamId = 'yo';
-  const appToken = 'my-app-token';
   before(async function() {
     await initTests();
     await initCore();
@@ -35,7 +34,8 @@ describe('Audit legacy route', function() {
     auditPath =  '/' + username + '/audit/logs/';
     const res = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)
-      .send({ type: 'app', name: 'app access', token: appToken, permissions: [{ streamId: streamId, level: 'manage'}]});
+      .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: streamId, level: 'manage'}]});
+    appAccess = res.body.access;
   });
 
   after(async function() {
@@ -48,8 +48,8 @@ describe('Audit legacy route', function() {
     toTime: 1560816000,
   };
 
-  function validGet(path) { return coreRequest.get(path).set('Authorization', appToken);}
-  function validPost(path) { return coreRequest.post(path).set('Authorization', appToken);}
+  function validGet(path) { return coreRequest.get(path).set('Authorization', appAccess.token);}
+  function validPost(path) { return coreRequest.post(path).set('Authorization', appAccess.token);}
   function forbiddenGet(path) {return coreRequest.get(path).set('Authorization', 'whatever');}
 
   let start, stop;
@@ -67,7 +67,7 @@ describe('Audit legacy route', function() {
   it('[QXCH] must retrieve logs by time range', async () => {
     const res = await coreRequest
       .get(auditPath)
-      .set('Authorization', appToken)
+      .set('Authorization', appAccess.token)
       .query({fromTime: start, toTime: stop});
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
@@ -77,7 +77,7 @@ describe('Audit legacy route', function() {
   it.skip('must retrieve logs by eventType', async () => {
     const res = await coreRequest
       .get(auditPath)
-      .set('Authorization', appToken)
+      .set('Authorization', appAccess.token)
       .query({status: 403 });
     assert.equal(res.status, 200);
     
@@ -86,11 +86,14 @@ describe('Audit legacy route', function() {
     console.log(logs);
   });
 
-  it.skip('[6RP3] must retrieve audit logs by access id (from auth token then converted by service-core)', async () => {
+  it('[6RP3] must retrieve audit logs by access id (from auth token then converted by service-core)', async () => {
     const res = await coreRequest
       .get(auditPath)
-      .set('Authorization', readAccess.token);
+      .set('Authorization', appAccess.token);
     assert.strictEqual(res.status, 200);
+    res.body.auditLogs.forEach((event) => {
+      console.log(event.streamIds, appAccess.id);
+    });
     validateResults(res.body.auditLogs, 54, 'retrievedId', {});
   });
 
@@ -98,7 +101,7 @@ describe('Audit legacy route', function() {
     const res = await coreRequest
       .get(auditPath)
       .query(complexQuery)
-      .set('Authorization', readAccess.token);
+      .set('Authorization', appAccess.token.token);
 
     assert.strictEqual(res.status, 200);
     validateResults(res.body.auditLogs, 2, 'retrievedId', complexQuery);
@@ -110,7 +113,7 @@ describe('Audit legacy route', function() {
       const res = await coreRequest
         .get(auditPath)
         .query({accessId: 'authorized'})
-        .set('Authorization', readAccess.token);
+        .set('Authorization', appAccess.token.token);
 
       assert.strictEqual(res.status, 200);
       validateResults(res.body.auditLogs, 54, 'authorized', {});
@@ -120,7 +123,7 @@ describe('Audit legacy route', function() {
       const res = await coreRequest
         .get(auditPath)
         .query(Object.assign({}, complexQuery, {accessId: 'authorized'}))
-        .set('Authorization', readAccess.token);
+        .set('Authorization', appAccess.token.token);
 
       assert.strictEqual(res.status, 200);
       validateResults(res.body.auditLogs, 2, 'authorized', complexQuery);
