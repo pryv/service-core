@@ -65,7 +65,7 @@ class Result {
     init: boolean, first: boolean, 
     arrayLimit: number, 
     isStreamResult: boolean, streamsArray: Array<StreamDescriptor>, 
-    advertiseOnEnd: doneCallBack
+    advertiseOnEnd: ?doneCallBack
   }
   meta: ?Object;
   
@@ -144,7 +144,7 @@ class Result {
     }
   }
   
-  writeStreams(res: express$Response, successCode: number) {
+  writeStreams(res: express$Response, successCode: number): Readable {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
     res.statusCode = successCode;
