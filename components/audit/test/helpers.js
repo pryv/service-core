@@ -113,6 +113,15 @@ function fakeAuditEvent(methodId) {
   };
 }
 
+
+function addActionStreamIdPrefix(methodId) {
+  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACTION_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + methodId;
+}
+
+function addAccessStreamIdPrefix(accessId) {
+  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACCESS_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + accessId;
+}
+
 Object.assign(global, {
   initCore: initCore,
   initTests: initTests,
@@ -130,6 +139,8 @@ Object.assign(global, {
   fakeAuditEvent: fakeAuditEvent,
   validation: require('audit/src/validation'),
   AuditFilter: require('audit/src/AuditFilter'),
+  addActionStreamIdPrefix,
+  addAccessStreamIdPrefix
 });
 
 

@@ -5,16 +5,8 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, audit, config, initTests, closeTests, initCore, coreRequest, mongoFixtures */
+/* global describe, before, after, it, assert, cuid, audit, config, initTests, closeTests, initCore, coreRequest, mongoFixtures, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
-
-function addActionStreamIdPrefix(methodId) {
-  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACTION_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + methodId;
-}
-
-function addAccessStreamIdPrefix(accessId) {
-  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACCESS_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + accessId;
-}
 
 describe('Audit', function() {
   let user, username, password, access, readAccess;

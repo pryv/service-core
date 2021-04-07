@@ -5,6 +5,8 @@
  * Proprietary and confidential
  */
 
+/* global describe, before, after, it, assert, cuid, audit, config, initTests, closeTests, initCore, coreRequest, mongoFixtures, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+
 
 describe('Audit legacy route', function() {
   let user, username, password, access, appAccess;
@@ -93,10 +95,7 @@ describe('Audit legacy route', function() {
       .get(auditPath)
       .set('Authorization', appAccess.token);
     assert.strictEqual(res.status, 200);
-    res.body.auditLogs.forEach((event) => {
-      console.log(event.streamIds, appAccess.id);
-    });
-    validateResults(res.body.auditLogs, 54, 'retrievedId', {});
+    validateResults(res.body.auditLogs, 4, appAccess.id, null);
   });
 
   it.skip('[TWQC] must retrieve audit logs according to a complex search query', async () => {
@@ -134,46 +133,30 @@ describe('Audit legacy route', function() {
 
 });
 
-function validateResults(auditLogs, expectedLength, expectedAccessId, expectedProperties) {
+function validateResults(auditLogs, expectedLength, expectedAccessId, expectedErrorId) {
   assert.isArray(auditLogs);
   assert.strictEqual(auditLogs.length, expectedLength);
 
-  auditLogs.forEach(auditLog => {
-    assert.strictEqual(auditLog.type, 'audit/core');
-    assert.isString(auditLog.id);
-    assert.isNumber(auditLog.time);
+  auditLogs.forEach(event => {
+    assert.strictEqual(event.type, 'log/user-api');
+    assert.isString(event.id);
+    assert.isNumber(event.time);
 
-    assert.isDefined(auditLog.query);
-    assert.isString(auditLog.action);
-    assert.isNumber(auditLog.status);
-    assert.isString(auditLog.forwardedFor);
+    assert.isDefined(event.content.query);
+    assert.isString(event.content.action);
+    assert.include(event.streamIds, addActionStreamIdPrefix(event.content.action), 'missing Action StreamId');
+    assert.isNumber(event.content.status);
 
-    assert.strictEqual(auditLog.accessId, expectedAccessId);
+    assert.isDefined(event.content.source);
+    assert.isString(event.content.source.name);
+    assert.isString(event.content.source.ip);
 
-    if (expectedProperties.errorId) {
-      assert.strictEqual(auditLog.errorId, expectedProperties.errorId);
-      assert.isString(auditLog.errorMessage);
-    }
-    if (expectedProperties.httpVerb) {
-      assert.include(auditLog.action, expectedProperties.httpVerb);
-    }
-    if (expectedProperties.resource) {
-      assert.include(auditLog.action, expectedProperties.resource);
-    }
-    if (expectedProperties.status) {
-      assert.strictEqual(auditLog.status, expectedProperties.status);
-    }
-    if (expectedProperties.ip) {
-      assert.strictEqual(auditLog.forwardedFor, expectedProperties.ip);
-    }
-    if (expectedProperties.fromTime && auditLog.time) {
-      assert.isAtLeast(auditLog.time, expectedProperties.fromTime);
-    }
-    if (expectedProperties.toTime && auditLog.time) {
-      // Since we ignore the time part of the iso date while filtering logs,
-      // the event time may exceeds the toTime by at most 24 hours.
-      const secondsInOneDay = 86400;
-      assert.isAtMost(auditLog.time, expectedProperties.toTime + secondsInOneDay);
+    assert.include(event.streamIds, addAccessStreamIdPrefix(expectedAccessId), 'missing Access StreamId');
+    
+    if (expectedErrorId) {
+      assert.isDefined(event.content.error);
+      assert.strictEqual(event.content.error.id, expectedErrorId);
+      assert.isString(event.content.error.message);
     }
   }); 
 }

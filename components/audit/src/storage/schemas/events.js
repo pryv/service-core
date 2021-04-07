@@ -75,6 +75,8 @@ function addStorePrefixToStreamIds(streamId) {
  * transform events out of db
  */
 function eventFromDB(event) {
+  event.id = event.eventid;
+  delete event.eventid;
   event.streamIds = event.streamIds.split(' ').map(addStorePrefixToStreamIds);
   event.trashed = (event.trashed === 1);
   if (event.content) {
