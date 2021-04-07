@@ -8,6 +8,12 @@
 // add full text search capabilities 
 // https://kimsereylam.com/sqlite/2020/03/06/full-text-search-with-sqlite.html
 
+// Important notes. 
+// We use the "unicode61" tokenizer to be able to prevent word splitting with the 
+// following characters _-:  
+// see: https://sqlite.org/fts5.html#tokenizers
+
+
 /**
  * Add Full text Search capabilities on a specific table
  * @param {Sqlite3} db 
@@ -32,7 +38,7 @@ function createFTSFor(db, tableName, tableData, columnsToInclude, id) {
   columnsTypes.push(`content_rowid='${itemId}'`);
 
   db.prepare(`CREATE VIRTUAL TABLE IF NOT EXISTS ${tableName}_fts USING fts5(` +
-      columnsTypes.join(', ') +
+      columnsTypes.join(', ') + ', tokenize = "unicode61 remove_diacritics 0 tokenchars \'-_:.\'"' +
     ');').run();
 
   // Triggers to update FTS table 

@@ -14,7 +14,7 @@ const { getSyslog } = require('./syslog');
 const { getConfig, getLogger} = require('@pryv/boiler');
 const logger = getLogger('audit');
 
-// for an unkown reason removing ".js" returns an empty object
+const CONSTANTS = require('./Constants');
 const validation = require('./validation');
 const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
@@ -120,10 +120,13 @@ class Audit {
 
 module.exports = Audit;
 
+const STREAMID_HEADER_ACCESS = CONSTANTS.ACCESS_STREAM_ID + CONSTANTS.SUB_STREAM_SEPARATOR; 
+const STREAMID_HEADER_ACTION = CONSTANTS.ACTION_STREAM_ID + CONSTANTS.SUB_STREAM_SEPARATOR; 
+
 function buildDefaultEvent(context, params) {
   return {
     createdBy: 'system',
-    streamIds: [context.access.id],
+    streamIds: [STREAMID_HEADER_ACCESS + context.access.id, STREAMID_HEADER_ACTION + context.methodId],
     type: 'log/user-api',
     content: {
       source: context.source,

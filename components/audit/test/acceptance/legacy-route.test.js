@@ -36,6 +36,7 @@ describe('Audit legacy route', function() {
       .set('Authorization', personalToken)
       .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: streamId, level: 'manage'}]});
     appAccess = res.body.access;
+    assert.exists(appAccess);
   });
 
   after(async function() {
@@ -71,6 +72,7 @@ describe('Audit legacy route', function() {
       .query({fromTime: start, toTime: stop});
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
+    console.log(logs);
     assert.equal(logs.length, 2);
   });
 
@@ -101,7 +103,7 @@ describe('Audit legacy route', function() {
     const res = await coreRequest
       .get(auditPath)
       .query(complexQuery)
-      .set('Authorization', appAccess.token.token);
+      .set('Authorization', appAccess.token);
 
     assert.strictEqual(res.status, 200);
     validateResults(res.body.auditLogs, 2, 'retrievedId', complexQuery);
@@ -113,7 +115,7 @@ describe('Audit legacy route', function() {
       const res = await coreRequest
         .get(auditPath)
         .query({accessId: 'authorized'})
-        .set('Authorization', appAccess.token.token);
+        .set('Authorization', appAccess.token);
 
       assert.strictEqual(res.status, 200);
       validateResults(res.body.auditLogs, 54, 'authorized', {});
@@ -123,7 +125,7 @@ describe('Audit legacy route', function() {
       const res = await coreRequest
         .get(auditPath)
         .query(Object.assign({}, complexQuery, {accessId: 'authorized'}))
-        .set('Authorization', appAccess.token.token);
+        .set('Authorization', appAccess.token);
 
       assert.strictEqual(res.status, 200);
       validateResults(res.body.auditLogs, 2, 'authorized', complexQuery);

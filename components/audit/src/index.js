@@ -7,6 +7,7 @@
 const Audit = require('./Audit');
 const audit = new Audit();
 
+audit.CONSTANTS = require('./Constants');
 
 
 module.exports = audit;

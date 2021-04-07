@@ -5,8 +5,16 @@
  * Proprietary and confidential
  */
 
-
 /* global describe, before, after, it, assert, cuid, audit, config, initTests, closeTests, initCore, coreRequest, mongoFixtures */
+
+
+function addActionStreamIdPrefix(methodId) {
+  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACTION_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + methodId;
+}
+
+function addAccessStreamIdPrefix(accessId) {
+  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACCESS_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + accessId;
+}
 
 describe('Audit', function() {
   let user, username, password, access, readAccess;
@@ -78,7 +86,7 @@ describe('Audit', function() {
       assert.exists(logs);
       assert.equal(logs.length, 1);
       const log = logs[0];
-      assert.equal(log.streamIds[0], access.id, 'stream Id of audit log is not access Id');
+      assert.deepEqual(log.streamIds, [addAccessStreamIdPrefix(access.id), addActionStreamIdPrefix('events.get')], 'stream Id of audit log is not access Id');
       assert.equal(log.content.source.name, 'http', 'source name is wrong');
       assert.equal(log.content.action, 'events.get', 'action is wrong');
       assert.approximately(log.created, now, 0.5, 'created timestamp is off');
@@ -135,9 +143,7 @@ describe('Audit', function() {
         assert.exists(entries);
         assert.equal(entries.length, 1);
         log = entries[0];
-      });
-      it('[7336] must have its custom accessId save to streamIds', function() {
-        assert.include(log.streamIds, MethodContextUtils.AuditAccessIds.VALID_PASSWORD);
+        assert.include(log.streamIds, addAccessStreamIdPrefix(MethodContextUtils.AuditAccessIds.VALID_PASSWORD), 'custom accessId saved to streamIds');
       });
     });
     describe('when making a call that has no userId', function() {
@@ -288,7 +294,7 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'invalid-access-token');
-        assert.deepEqual(log.streamIds, [log.content.error.id]);
+        assert.deepEqual(log.streamIds, [addAccessStreamIdPrefix(log.content.error.id), addActionStreamIdPrefix('events.get')]);
       });
     });
     describe('with errorId "forbidden"', function() {

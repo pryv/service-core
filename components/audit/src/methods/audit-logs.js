@@ -29,7 +29,7 @@ module.exports = function (api) {
 function addStreamFromAuthorization(context, params, result, next) {
   if (context.access.isPersonal()) return next();
   // force stream query to current Authorization
-  params.streams = [context.access.id];
+  params.streams = [audit.CONSTANTS.ACCESS_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + context.access.id];
   next();
 }
 

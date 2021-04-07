@@ -7,6 +7,7 @@
 
 const cuid = require('cuid');
 const _ = require('lodash');
+const { STORE_PREFIX } = require('../../Constants');
 
 
 const dbSchema = { 
@@ -65,12 +66,17 @@ function nullIfUndefined(value) {
   return  (typeof value != 'undefined') ? value : null ;
 }
 
+
+function addStorePrefixToStreamIds(streamId) {
+  return STORE_PREFIX + streamId;
+}
+
 /**
  * transform events out of db
  */
 function eventFromDB(event) {
-  event.streamIds = event.streamIds.split(' ');
-  event.tashed = (event.trashed === 1);
+  event.streamIds = event.streamIds.split(' ').map(addStorePrefixToStreamIds);
+  event.trashed = (event.trashed === 1);
   if (event.content) {
     event.content = JSON.parse(event.content);
   }
