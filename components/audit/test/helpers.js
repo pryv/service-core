@@ -27,6 +27,7 @@ const UserLocalDirectory = require('business').users.UserLocalDirectory;
  * To be call in before()
  */
 async function initTests() {
+  if (global.audit) return;
   await audit.init();
   global.audit = audit;
   global.config = await getConfig();
@@ -46,6 +47,7 @@ function closeTests() { 
  * requires initTests()
  */
 async function initCore() {
+  if (global.app) return;
   config.injectTestConfig({
     dnsLess: {
       isActive: true,

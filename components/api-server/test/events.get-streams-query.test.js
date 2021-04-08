@@ -296,7 +296,7 @@ describe('events.get streams query', function () {
         });
       });
 
-      it('[1ZJU] must handle array of queries', async function () {
+      it('[0RNW] must handle array of queries', async function () {
         const clean = validateQuery([{any: ['B']},{all: ['D'] , not: ['E']}]);
         const mongo = streamsQueryUtils.toMongoDBQuery(clean);
         const expected = {

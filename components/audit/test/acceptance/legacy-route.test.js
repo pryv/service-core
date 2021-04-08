@@ -34,6 +34,7 @@ describe('Audit legacy route', function() {
     accessesPath = '/' + username + '/accesses/';
     eventsPath = '/' + username + '/events/';
     auditPath =  '/' + username + '/audit/logs/';
+    
     const res = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)
       .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: streamId, level: 'manage'}]});
@@ -45,11 +46,6 @@ describe('Audit legacy route', function() {
     closeTests();
     await closeCore();
   });
-
-  const complexQuery = {
-    fromTime: 1560729600,
-    toTime: 1560816000,
-  };
 
   function validGet(path) { return coreRequest.get(path).set('Authorization', appAccess.token);}
   function validPost(path) { return coreRequest.post(path).set('Authorization', appAccess.token);}
@@ -74,68 +70,53 @@ describe('Audit legacy route', function() {
       .query({fromTime: start, toTime: stop});
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
-    console.log(logs);
-    assert.equal(logs.length, 2);
+    assert.isAtLeast(logs.length, 2);
+    for (let event of logs) {
+      assert.isAtLeast(event.time, start);
+      assert.isAtMost(event.time, stop);
+    }
+    validateResults(logs, appAccess.id);
   });
 
-  it.skip('must retrieve logs by eventType', async () => {
+  it('[4FB8] must retrieve logs by action', async () => {
     const res = await coreRequest
       .get(auditPath)
       .set('Authorization', appAccess.token)
-      .query({status: 403 });
+      .query({streams: ['.audit-action:events.get'] });
     assert.equal(res.status, 200);
-    
     const logs = res.body.auditLogs;
-    assert.equal(logs.length, 1);
-    console.log(logs);
+    assert.isAtLeast(logs.length, 1);
+    for (let event of logs) {
+      assert.exists(event.content);
+      assert.equal(event.content.action, 'events.get');
+    }
+    validateResults(logs, appAccess.id);
   });
 
-  it('[6RP3] must retrieve audit logs by access id (from auth token then converted by service-core)', async () => {
+  it('[U9HQ] personal token must retrieve all audit logs', async () => {
+    const res = await coreRequest
+      .get(auditPath)
+      .set('Authorization', personalToken);
+    assert.strictEqual(res.status, 200);
+    const logs = res.body.auditLogs;
+    assert.isAtLeast(logs.length, 5);
+    validateResults(res.body.auditLogs);
+  });
+
+  it('[6RP3] appAccess must retrieve only audit logs for this access (from auth token then converted by service-core)', async () => {
     const res = await coreRequest
       .get(auditPath)
       .set('Authorization', appAccess.token);
     assert.strictEqual(res.status, 200);
-    validateResults(res.body.auditLogs, 4, appAccess.id, null);
-  });
-
-  it.skip('[TWQC] must retrieve audit logs according to a complex search query', async () => {
-    const res = await coreRequest
-      .get(auditPath)
-      .query(complexQuery)
-      .set('Authorization', appAccess.token);
-
-    assert.strictEqual(res.status, 200);
-    validateResults(res.body.auditLogs, 2, 'retrievedId', complexQuery);
-  });
-
-  describe('when providing a specific access id', function () {
-
-    it.skip('[U9HQ] must retrieve audit logs by access id (from query param)', async () => {
-      const res = await coreRequest
-        .get(auditPath)
-        .query({accessId: 'authorized'})
-        .set('Authorization', appAccess.token);
-
-      assert.strictEqual(res.status, 200);
-      validateResults(res.body.auditLogs, 54, 'authorized', {});
-    });
-
-    it.skip('[P8HM] must retrieve audit logs according to a complex search query', async () => {
-      const res = await coreRequest
-        .get(auditPath)
-        .query(Object.assign({}, complexQuery, {accessId: 'authorized'}))
-        .set('Authorization', appAccess.token);
-
-      assert.strictEqual(res.status, 200);
-      validateResults(res.body.auditLogs, 2, 'authorized', complexQuery);
-    });
+    const logs = res.body.auditLogs;
+    assert.isAtLeast(logs.length, 1);
+    validateResults(logs, appAccess.id);
   });
 
 });
 
-function validateResults(auditLogs, expectedLength, expectedAccessId, expectedErrorId) {
+function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
   assert.isArray(auditLogs);
-  assert.strictEqual(auditLogs.length, expectedLength);
 
   auditLogs.forEach(event => {
     assert.strictEqual(event.type, 'log/user-api');
@@ -151,8 +132,10 @@ function validateResults(auditLogs, expectedLength, expectedAccessId, expectedEr
     assert.isString(event.content.source.name);
     assert.isString(event.content.source.ip);
 
-    assert.include(event.streamIds, addAccessStreamIdPrefix(expectedAccessId), 'missing Access StreamId');
-    
+    if (expectedAccessId) {
+     assert.include(event.streamIds, addAccessStreamIdPrefix(expectedAccessId), 'missing Access StreamId');
+    }
+
     if (expectedErrorId) {
       assert.isDefined(event.content.error);
       assert.strictEqual(event.content.error.id, expectedErrorId);
