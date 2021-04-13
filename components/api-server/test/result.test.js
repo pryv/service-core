@@ -91,9 +91,6 @@ describe('Result', function () {
       res.toObject(expectation);
     });
 
-    it.skip('[H2GC] must return an error when the core pipeline crashes because of size', function () {
-    });
-
   });
 });
 
