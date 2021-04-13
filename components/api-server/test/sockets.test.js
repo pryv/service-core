@@ -35,6 +35,7 @@ const validation = helpers.validation;
 const testData = helpers.data;
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
+const { getConfig } = require('@pryv/boiler');
 
 const { ConditionVariable } = require('test-helpers').syncPrimitives; 
 
@@ -431,8 +432,9 @@ describe('Socket.IO', function () {
     // Servers A and B, length will be 2
     let servers: Array<Server> = []; 
   
-    before(function () {
-      if (! process.env.PRYV_NATS) this.skip();
+    before(async function () {
+      const isOpenSource = (await getConfig()).get('openSource:isActive');
+      if (isOpenSource) this.skip();
     })
 
     // Client connections that we make. If you add your connection here, it 
