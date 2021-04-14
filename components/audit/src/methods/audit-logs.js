@@ -39,7 +39,7 @@ function removeStoreIdFromStreamQuery(context, params, result, next) {
           const streamId = query[item][i];
           if (! streamId.startsWith(audit.CONSTANTS.STORE_PREFIX)) {
             return next(errors.invalidRequestStructure(
-              'Invalid "streams" parameter. It should be an array of streamIds starting with Audit prefix' + audit.STORE_PREFIX, params.streams));
+              'Invalid "streams" parameter. It should be an array of streamIds starting with Audit prefix: "' + audit.CONSTANTS.STORE_PREFIX + '"', params.streams));
           }
           query[item][i] = streamId.substring(audit.CONSTANTS.STORE_PREFIX.length);
         }

@@ -113,6 +113,25 @@ describe('Audit legacy route', function() {
     validateResults(logs, appAccess.id);
   });
 
+  it('[R1ZF] Invalid token should retrun an error', async () => {
+    const res = await coreRequest
+    .get(auditPath)
+    .set('Authorization', 'invalid');
+    assert.strictEqual(res.status, 403);
+    assert.exists(res.body.error);
+    assert.equal(res.body.error.id, 'invalid-access-token')
+  });
+
+  it('[RQUA] StreamId not starting with ".audit-"  should return an error', async () => {
+    const res = await coreRequest
+    .get(auditPath)
+    .set('Authorization', appAccess.token)
+    .query({streams: ['toto'] });
+    assert.strictEqual(res.status, 400);
+    assert.exists(res.body.error);
+    assert.equal(res.body.error.id, 'invalid-request-structure');
+    assert.equal(res.body.error.message, 'Invalid "streams" parameter. It should be an array of streamIds starting with Audit prefix: ".audit-"');
+  });
 });
 
 function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
