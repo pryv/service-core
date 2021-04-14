@@ -40,17 +40,12 @@ fs.readdirSync(componentsPath).forEach(function (name) {
 
   // contains no test script which produces error - makes output unparsable as JSON
   if (name === 'test-helpers' || name === 'errors') return;
-
   const displayName = pad(name);
   console.log(displayName); // eslint-disable-line 
-  const res = childProcess.spawnSync('../../node_modules/.bin/mocha', [
-    '--logs:console:active=false',
-    '--timeout 10000',
-    '--reporter=json',
-    '--exit',
-    'test/**/*.test.js'], {
+  const res = childProcess.spawnSync('yarn test', ['--reporter=json'], {
       env: process.env,
       cwd: subPath,
+      shell: true, // required to use "yarn"
     });
   const output = removeStdout(res.stdout.toString());
   const componentResults = JSON.parse(output);
