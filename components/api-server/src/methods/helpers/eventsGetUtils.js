@@ -12,6 +12,7 @@
 const 
   streamsQueryUtils = require('./streamsQueryUtils'),
   _ = require('lodash'),    
+  timestamp = require('unix-timestamp'),
   errors = require('errors').factory;
 
 function coerceStreamsParam (context, params, result, next) {

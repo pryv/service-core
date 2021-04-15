@@ -153,7 +153,7 @@ function prepareLogQuery(params = {}) {
     queryString += ' ORDER BY time DESC';
   }
 
-  console.log(params, queryString);
+  //console.log(params, queryString);
   return queryString;
 }
 
