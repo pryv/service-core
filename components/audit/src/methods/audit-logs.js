@@ -51,7 +51,7 @@ function removeStoreIdFromStreamQuery(context, params, result, next) {
 
 function limitStreamQueryToAccessToken(context, params, result, next) {
   if (context.access.isPersonal()) return next();
-  if (! params.streams) { params.streams = [{}]; }
+  if (params.streams == null) { params.streams = [{}]; }
 
   // stream corresponding to acces.id exemple: "access:{acces.id}"
   const streamId = audit.CONSTANTS.ACCESS_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + context.access.id;
