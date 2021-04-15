@@ -23,11 +23,13 @@ const { databaseFixture } = require('test-helpers');
 const { Notifications } = require('messages');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
 
+let initTestsDone = false;
 /**
  * To be call in before()
  */
 async function initTests() {
-  if (global.audit) return;
+  if (initTestsDone) return;
+  initTestsDone = true;
   await audit.init();
   global.audit = audit;
   global.config = await getConfig();
@@ -43,11 +45,13 @@ function closeTests() { 
   global.config = null;
 }
 
+let initCoreDone = false;
 /**
  * requires initTests()
  */
 async function initCore() {
-  if (global.app) return;
+  if (initCoreDone) return;
+  initCoreDone = true;
   config.injectTestConfig({
     dnsLess: {
       isActive: true,
