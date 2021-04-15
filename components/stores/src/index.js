@@ -4,9 +4,43 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/**
+ * Data Source aggregator. 
+ * Pack configured datasources into one
+ */
+
+const Store = require('./Store');
+
+// -- DataStores
+const DummyStore = require('../implementations/dummy');
+const FaultyStore = require('../implementations/faulty');
+
+
+let store;
+async function getStore() {
+  if (store) return store;
+  store = new Store();
+  store.addSource(new DummyStore());
+  store.addSource(new FaultyStore());
+  return await store.init();
+};
+
 
 module.exports = {
+  getStore : getStore,
   StreamsUtils: require('./lib/StreamsUtils')
 };
 
 
+// ---- dev mode 
+
+(async () => { 
+  try {
+    const s = await getStore();
+    const streams = await s.streams.get('toto', {parentIds: ['.*']});
+    //const streams = await s.events.get('toto', {streamIds: ['.*']});
+    console.log(require('util').inspect(streams, null, 10));
+  } catch (e) {
+    console.log(e);
+  }
+});
