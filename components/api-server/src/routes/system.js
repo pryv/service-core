@@ -73,6 +73,10 @@ module.exports = function system(expressApp: express$Application, app: Applicati
     systemAPI.call(req.context, params, methodCallback(res, next, 200));
   });
 
+  expressApp.delete(Paths.System + '/users/:username/mfa', function (req: express$Request, res, next) {
+    systemAPI.call('system.deleteMfa', {}, { username: req.params.username }, methodCallback(res, next, 204));
+  });
+
   // Checks if `req` contains valid authorization to access the system routes. 
   // 
   function checkAuth(req: express$Request, res, next) {
