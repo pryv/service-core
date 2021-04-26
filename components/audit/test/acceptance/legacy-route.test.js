@@ -146,7 +146,6 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
     assert.isDefined(event.content.query);
     assert.isString(event.content.action);
     assert.include(event.streamIds, addActionStreamIdPrefix(event.content.action), 'missing Action StreamId');
-    assert.isNumber(event.content.status);
 
     assert.isDefined(event.content.source);
     assert.isString(event.content.source.name);

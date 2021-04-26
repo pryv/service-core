@@ -131,7 +131,6 @@ function buildDefaultEvent(context, params) {
     content: {
       source: context.source,
       action: context.methodId,
-      status: 200,
       query: params,
     },
   }

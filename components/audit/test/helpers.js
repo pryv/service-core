@@ -106,7 +106,6 @@ function fakeAuditEvent(methodId) {
     content: {
       source: { name: 'http', ip: charlatan.Internet.IPv4() },
       action: methodId,
-      status: 200,
       query: {},
     },
   };
