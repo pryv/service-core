@@ -139,14 +139,14 @@ module.exports = function (
     });
   }
 
-  // --------------------------------------------------------------- deleteMfa
-  systemAPI.register('system.deleteMfa',
-    commonFns.getParamsValidation(methodsSchema.deleteMfa.params),
+  // --------------------------------------------------------------- deactivateMfa
+  systemAPI.register('system.deactivateMfa',
+    commonFns.getParamsValidation(methodsSchema.deactivateMfa.params),
     retrieveUser,
-    deleteMfa
+    deactivateMfa
   );
 
-  async function deleteMfa(context, params, result, next) {
+  async function deactivateMfa(context, params, result, next) {
     try {
       await bluebird.fromCallback(cb => userProfileStorage.findOneAndUpdate(
         context.user, 
