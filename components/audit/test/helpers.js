@@ -36,14 +36,6 @@ async function initTests() {
   await UserLocalDirectory.init();
 }
 
-/**
- * To be call in after()
- */
-function closeTests() { 
-  if (global.audit) global.audit.close();
-  global.audit = null;
-  global.config = null;
-}
 
 let initCoreDone = false;
 /**
@@ -59,7 +51,11 @@ async function initCore() {
   });
   const database = await storage.getDatabase();  
   
-  global.mongoFixtures = databaseFixture(database);
+
+  global.getNewFixture = function() {
+    return databaseFixture(database);
+  }
+
   global.app = getApplication();
   await global.app.initiate();
 
@@ -101,9 +97,6 @@ async function initCore() {
   require('audit/src/methods/audit-logs')(app.api);
   global.coreRequest = supertest(app.expressApp);
 }
-async function closeCore() {
-  await mongoFixtures.clean();
-}
 
 function fakeAuditEvent(methodId) {
   return {
@@ -131,8 +124,6 @@ function addAccessStreamIdPrefix(accessId) {
 Object.assign(global, {
   initCore: initCore,
   initTests: initTests,
-  closeTests: closeTests,
-  closeCore: closeCore,
   assert: require('chai').assert,
   cuid: require('cuid'),
   charlatan: require('charlatan'),

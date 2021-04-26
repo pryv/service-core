@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global assert, cuid, app, auditProducer, config, initTests, closeTests */
+/* global assert, cuid, app, auditProducer, config, initTests */
 
 const SyslogWatch = require('../support/SyslogWatch');
 
@@ -16,10 +16,6 @@ describe('Syslog', () => {
   before(async () => {
     await initTests();
     syslogWatch = new SyslogWatch(config.get('audit:syslog:options:app_name'));
-  });
-
-  after(() => {
-    closeTests();
   });
 
   async function send(event) {

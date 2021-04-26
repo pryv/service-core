@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, audit, config, initTests, closeTests, initCore, coreRequest, mongoFixtures, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
 
 describe('Audit', function() {
@@ -13,11 +13,13 @@ describe('Audit', function() {
   let eventsPath, auditPath;
 
   let sysLogSpy, storageSpy;
+  let mongoFixtures;
   
   before(async function() {
     await initTests();
     await initCore();
     password = cuid();
+    mongoFixtures = getNewFixture();
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
       password: password,
     });
@@ -53,8 +55,7 @@ describe('Audit', function() {
   }
 
   after(async function() {
-    closeTests();
-    await closeCore();
+    await mongoFixtures.clean();
   });
 
   describe('when making valid API calls', function () {
