@@ -1,5 +1,9 @@
 ## 1.6
 
+### 1.6.20
+
+- Implement system route to deactivate MFA
+
 ### 1.6.18
 
 - Fix welcome email: don't wait for welcome email sending before replying to client.
