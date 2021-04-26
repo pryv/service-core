@@ -32,6 +32,8 @@ const UsersRepository = require('business/src/users/repository');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const charlatan = require('charlatan');
+const cuid = require('cuid');
+const { getConfig } = require('@pryv/boiler');
 
 require('date-utils');
 
@@ -60,6 +62,47 @@ describe('system route', function () {
       .set('authorization', 'dummy');
     should.exist(res.body.error);
     res.body.error.id.should.eql('invalid-access-token');
+  });
+
+  describe('DELETE /mfa', () => {
+    let username, mfaPath, profilePath, res, profileRes, token, restOfProfile;
+    
+    before(async () => {
+      config = await getConfig();
+      username = charlatan.Lorem.characters(10);
+      token = cuid();
+      mfaPath = `/system/users/${username}/mfa`;
+      profilePath = `/${username}/profile/private`;
+      restOfProfile = {restOfProfile: { something: '123' }};
+      const user = await mongoFixtures.user(username);
+      await user.access({
+        type: 'personal',
+        token: token,
+      });
+      await user.session(token);
+      const res = await server.request()
+        .put(profilePath)
+        .set('authorization', token)
+        .send({ 
+          mfa: { content: { phone: '123' }, recoveryCodes: ['1', '2', '3']},
+          restOfProfile,
+        });
+    });
+    before(async () => {
+      res = await server.request()
+        .delete(mfaPath)
+        .set('authorization', config.get('auth:adminAccessKey'));
+      profileRes = await server.request().get(profilePath).set('authorization', token);
+    });
+    if('should return 204', () => {
+      assert.equal(res.status, 204);
+    });
+    it('should delete the user\'s "mfa" profile property', async () => {
+      assert.isUndefined(profileRes.body.profile.mfa);
+    });
+    it('should not delete anything else in the profile', () => {
+      assert.deepEqual(profileRes.body.profile.restOfProfile, restOfProfile);
+    });
   });
 
 });

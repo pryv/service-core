@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global assert, cuid, audit, config, initTests, closeTests */
+/* global assert, cuid, audit, config, initTests*/
 
 describe('Storage', () => {
   let userid = cuid();
@@ -13,10 +13,6 @@ describe('Storage', () => {
 
   before(async () => {
     await initTests();
-  });
-
-  after(() => {
-    closeTests();
   });
 
   describe('receive message and write it into its own database', () => {

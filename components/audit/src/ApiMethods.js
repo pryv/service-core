@@ -53,6 +53,7 @@ const ALL_METHODS = [
   'events.deleteAttachment',
   'system.createUser',
   'system.createPoolUser',
+  'system.deleteMfa',
   'system.getUsersPoolSize',
   'system.getUserInfo',
   'audit.getLogs'

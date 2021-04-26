@@ -5,19 +5,21 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, audit, config, initTests, closeTests, initCore, coreRequest, mongoFixtures, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
 
 describe('Audit legacy route', function() {
   let user, username, password, access, appAccess;
   let personalToken;
   let auditPath;
+  let mongoFixtures;
   
   const streamId = 'yo';
   before(async function() {
     await initTests();
     await initCore();
     password = cuid();
+    mongoFixtures = getNewFixture();
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
       password: password,
     });
@@ -43,8 +45,7 @@ describe('Audit legacy route', function() {
   });
 
   after(async function() {
-    closeTests();
-    await closeCore();
+    await mongoFixtures.clean();
   });
 
   function validGet(path) { return coreRequest.get(path).set('Authorization', appAccess.token);}
@@ -145,7 +146,6 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
     assert.isDefined(event.content.query);
     assert.isString(event.content.action);
     assert.include(event.streamIds, addActionStreamIdPrefix(event.content.action), 'missing Action StreamId');
-    assert.isNumber(event.content.status);
 
     assert.isDefined(event.content.source);
     assert.isString(event.content.source.name);
