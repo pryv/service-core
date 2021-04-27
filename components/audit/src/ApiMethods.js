@@ -53,7 +53,7 @@ const ALL_METHODS = [
   'events.deleteAttachment',
   'system.createUser',
   'system.createPoolUser',
-  'system.deleteMfa',
+  'system.deactivateMfa',
   'system.getUsersPoolSize',
   'system.getUserInfo',
   'audit.getLogs'
@@ -74,6 +74,7 @@ const AUDITED_METHODS = ALL_METHODS.filter(m => ! NOT_AUDITED_METHODS.includes(m
 const WITHOUT_USER_METHODS = [
   'auth.register',
   'system.createUser',
+  'system.deactivateMfa',
 ];
 
 const WITH_USER_METHODS = AUDITED_METHODS.filter(m => ! WITHOUT_USER_METHODS.includes(m));

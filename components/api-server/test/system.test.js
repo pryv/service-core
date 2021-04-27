@@ -94,13 +94,13 @@ describe('system route', function () {
         .set('authorization', config.get('auth:adminAccessKey'));
       profileRes = await server.request().get(profilePath).set('authorization', token);
     });
-    if('should return 204', () => {
+    it('[1V4D] should return 204', () => {
       assert.equal(res.status, 204);
     });
-    it('should delete the user\'s "mfa" profile property', async () => {
+    it('[3HE9] should delete the user\'s "mfa" profile property', async () => {
       assert.isUndefined(profileRes.body.profile.mfa);
     });
-    it('should not delete anything else in the profile', () => {
+    it('[I2PU] should not delete anything else in the profile', () => {
       assert.deepEqual(profileRes.body.profile.restOfProfile, restOfProfile);
     });
   });
