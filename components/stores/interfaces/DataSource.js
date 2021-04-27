@@ -162,8 +162,9 @@ function _applyDefaults(storeIdNameSpace, streams, parentId) {
 class UserEvents {
 
   /**
-   * Get the stream that will be set as root for all Stream Structure of this Data Source.
+   * Get the events for this user.
    * @param {identifier} uid  
+   * @param {object} params - event query
    * @see https://api.pryv.com/reference/#get-events
    */
   async get(uid, params) { toBeImplemented(); }
