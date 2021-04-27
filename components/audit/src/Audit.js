@@ -120,13 +120,10 @@ class Audit {
 
 module.exports = Audit;
 
-const STREAMID_HEADER_ACCESS = CONSTANTS.ACCESS_STREAM_ID + CONSTANTS.SUB_STREAM_SEPARATOR; 
-const STREAMID_HEADER_ACTION = CONSTANTS.ACTION_STREAM_ID + CONSTANTS.SUB_STREAM_SEPARATOR; 
-
 function buildDefaultEvent(context, params) {
   return {
     createdBy: 'system',
-    streamIds: [STREAMID_HEADER_ACCESS + context.access.id, STREAMID_HEADER_ACTION + context.methodId],
+    streamIds: [CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id, CONSTANTS.ACTION_STREAM_ID_PREFIX + context.methodId],
     type: 'log/user-api',
     content: {
       source: context.source,
