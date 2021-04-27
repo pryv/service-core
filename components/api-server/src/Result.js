@@ -124,7 +124,7 @@ class Result {
   }
   
   // Execute the following when result has been fully sent
-  // If allready sent callback is called right away
+  // If already sent callback is called right away
   onEnd(callback: doneCallBack) {
     this._private.advertiseOnEnd = callback;
   }
