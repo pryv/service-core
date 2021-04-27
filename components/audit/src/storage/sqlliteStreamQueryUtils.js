@@ -6,7 +6,7 @@
  */
 
 /**
- * Transform queries for mongoDB - to be run on 
+ * Transform queries for SQLLight - to be run on 
  * @param {} streamQuery 
  */
 exports.toSQLLiteQuery = function toSQLLiteQuery(streamQuery) {

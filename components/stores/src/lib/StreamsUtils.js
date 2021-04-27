@@ -15,7 +15,6 @@ function sourceIdForStreamId(streamId) {
   return streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
 }
 
-
 module.exports = {
   sourceIdForStreamId: sourceIdForStreamId
 }

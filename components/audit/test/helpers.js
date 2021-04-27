@@ -113,11 +113,11 @@ function fakeAuditEvent(methodId) {
 
 
 function addActionStreamIdPrefix(methodId) {
-  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACTION_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + methodId;
+  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACTION_STREAM_ID_PREFIX + methodId;
 }
 
 function addAccessStreamIdPrefix(accessId) {
-  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACCESS_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + accessId;
+  return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + accessId;
 }
 
 Object.assign(global, {

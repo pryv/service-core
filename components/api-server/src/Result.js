@@ -65,7 +65,7 @@ class Result {
     init: boolean, first: boolean, 
     arrayLimit: number, 
     isStreamResult: boolean, streamsArray: Array<StreamDescriptor>, 
-    advertiseOnEnd: ?doneCallBack
+    onEndCallback: ?doneCallBack
   }
   meta: ?Object;
   
@@ -102,7 +102,7 @@ class Result {
       arrayLimit: 10000, 
       isStreamResult: false, 
       streamsArray: [],  
-      advertiseOnEnd: null,
+      onEndCallback: null,
     };
     
     if (params && params.arrayLimit != null && params.arrayLimit > 0) {
@@ -126,13 +126,13 @@ class Result {
   // Execute the following when result has been fully sent
   // If already sent callback is called right away
   onEnd(callback: doneCallBack) {
-    this._private.advertiseOnEnd = callback;
+    this._private.onEndCallback = callback;
   }
 
   // Sends the content of Result to the HttpResponse stream passed in parameters.
   // 
   writeToHttpResponse(res: express$Response, successCode: number) {
-    const onEndCallBack = this._private.advertiseOnEnd;
+    const onEndCallBack = this._private.onEndCallback;
     if (this.isStreamResult()) {
       const stream: Readable = this.writeStreams(res, successCode);
       stream.on('close', function() { 
