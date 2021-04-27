@@ -5,6 +5,7 @@
  * Proprietary and confidential
  */
 const { DataSource } = require('../../interfaces/DataSource');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const LOCAL_STORE = 'local';
 
 /**
@@ -29,6 +30,7 @@ function sourceToStream(source, extraProperties) {
  */
 function sourceIdForStreamId(streamId) {
   if (streamId.indexOf('.') !== 0) return LOCAL_STORE;
+  if (SystemStreamsSerializer.isSystemStream(streamId)) return LOCAL_STORE; // probably to be changed at some point 
   const dashPos = streamId.indexOf('-');
   return streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
 }
