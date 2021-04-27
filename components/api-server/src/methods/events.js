@@ -142,12 +142,15 @@ module.exports = async function (
      * @param {identifier} storeId
      */
     function expandStream(streamId, storeId) {
-
       return treeUtils.expandIds(context.streams, [streamId]);
     }
 
     function isAuthorizedStream(streamId) {
-       return authorizedStreamsIds.includes(streamId);
+      if (streamId === '.audit-access:' + context.access.id) {
+        console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query');
+        return true;
+      }
+      return authorizedStreamsIds.includes(streamId);
     }
 
     function isAccessibleStream(streamId) {
@@ -161,17 +164,19 @@ module.exports = async function (
       return accessibleStreamsIds;
     }
 
+    console.log('XXXXX A', params.streams);
 
     const { streamQuery, nonAuthorizedStreams } =
       streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
 
     params.streams = streamQuery;
 
+    console.log('XXXXX', nonAuthorizedStreams);
+
     if (nonAuthorizedStreams.length > 0) {
-      // check if one is create-only and send forbidden
       for (let i = 0; i < nonAuthorizedStreams.length; i++) {
         if (! context.access.canGetEventsOnStream(nonAuthorizedStreams[i])) {
-          return next(errors.forbidden('stream [' + nonAuthorizedStreams[i] + '] has create-only permission and cannot be read'));
+          return next(errors.forbidden('stream [' + nonAuthorizedStreams[i] + '] has not sufficent permission to get events'));
         }
       }
 
