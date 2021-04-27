@@ -54,7 +54,7 @@ function limitStreamQueryToAccessToken(context, params, result, next) {
   if (params.streams == null) { params.streams = [{}]; }
 
   // stream corresponding to acces.id exemple: "access:{acces.id}"
-  const streamId = audit.CONSTANTS.ACCESS_STREAM_ID + audit.CONSTANTS.SUB_STREAM_SEPARATOR + context.access.id;
+  const streamId = audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id;
 
   for (const query of params.streams) {
     if (! query.all) { query.all = []}

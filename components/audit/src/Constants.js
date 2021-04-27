@@ -7,9 +7,8 @@
 
 const CONSTANTS = {
   STORE_PREFIX: '.audit-',
-  ACCESS_STREAM_ID: 'access',
-  ACTION_STREAM_ID: 'action',
-  SUB_STREAM_SEPARATOR: ':'
+  ACCESS_STREAM_ID_PREFIX: 'access:',
+  ACTION_STREAM_ID_PREFIX: 'action:',
 }
 
 Object.freeze(CONSTANTS);
