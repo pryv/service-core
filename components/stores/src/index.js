@@ -14,6 +14,7 @@ const Store = require('./Store');
 // -- DataStores
 const DummyStore = require('../implementations/dummy');
 const FaultyStore = require('../implementations/faulty');
+const AuditDataSource = require('audit/src/AuditDataSource');
 
 
 let store;
@@ -22,6 +23,7 @@ async function getStore() {
   store = new Store();
   store.addSource(new DummyStore());
   store.addSource(new FaultyStore());
+  store.addSource(new AuditDataSource());
   return await store.init();
 };
 

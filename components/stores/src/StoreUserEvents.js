@@ -19,7 +19,8 @@ class StoreUserEvents extends UserEvents {
     this.store = store;
   }
 
-  async get(uid, params) {
+  async get(uid, params, streamResult) {
+    console.log('STORE GET UID:',uid, 'PARAMS:', params);
     let res = [];
 
     return res;

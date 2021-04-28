@@ -20,6 +20,7 @@ var cuid = require('cuid'),
   _ = require('lodash'),
   SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
+const { getStore } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
@@ -60,6 +61,7 @@ module.exports = async function (
 
   const usersRepository = new UsersRepository(userEventsStorage);
   const config = await getConfig();
+  const stores = await getStore();
 
   // initialize service-register connection
   let serviceRegisterConn = {};
@@ -94,7 +96,7 @@ module.exports = async function (
     applyTagsDefaultsForRetrieval,
     checkStreamsPermissionsAndApplyToScope,
     findEventsFromStore,
-    findAccessibleEvents,
+    findAccessibleEventsOnLocalStorage,
     includeDeletionsIfRequested);
 
 
@@ -142,6 +144,10 @@ module.exports = async function (
      * @param {identifier} storeId
      */
     function expandStream(streamId, storeId) {
+      if (storeId === 'audit') {
+        console.log('XXXXX TO BE CHANGED > expandStream audit streamId Query');
+        return [streamId];
+      }
       return treeUtils.expandIds(context.streams, [streamId]);
     }
 
@@ -154,6 +160,10 @@ module.exports = async function (
     }
 
     function isAccessibleStream(streamId) {
+      if (streamId === '.audit-access:' + context.access.id) {
+        console.log('XXXXX TO BE CHANGED > Accessible audit streamId Query');
+        return true;
+      }
       return accessibleStreamsIds.includes(streamId);
     }
 
@@ -171,7 +181,7 @@ module.exports = async function (
 
     params.streams = streamQuery;
 
-    console.log('XXXXX', nonAuthorizedStreams);
+    console.log('XXXXX', streamQuery, 'Non Authorized:', nonAuthorizedStreams);
 
     if (nonAuthorizedStreams.length > 0) {
       for (let i = 0; i < nonAuthorizedStreams.length; i++) {
@@ -189,10 +199,20 @@ module.exports = async function (
     next();
   }
 
+  /**
+   * Aggregate streamQueries by store in params.streamsQueryMapByStore
+   * For legacy code, 'local' storage streamQuery is kept in params.streams
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   * @returns 
+   */
   async function findEventsFromStore(context, params, result, next) {
+    console.log('TTT 1', params.streams);
     if (params.streams === null) return next();
 
-
+    
     //console.log(params.streams);
     const storeQueryMap = {};
     for (let streamQuery of params.streams) {
@@ -207,13 +227,20 @@ module.exports = async function (
     }
 
     // set params.query to "before store states"
-    params.streamsQuery = storeQueryMap.local;
+    params.streams = storeQueryMap.local;
     delete storeQueryMap.local;
+
+    params.streamsQueryMapByStore = storeQueryMap;
+    console.log('TTT 2 Streams:', params.streams,  'StreamsQueryMap:', storeQueryMap);
+
+
+    await stores.events.get(context.user.id, params, 'toto');
 
     return next();
   }
 
-  async function findAccessibleEvents(context, params, result, next) {
+  async function findAccessibleEventsOnLocalStorage(context, params, result, next) {
+    
     // build query
     const query = querying.noDeletions(querying.applyState({}, params.state));
   
