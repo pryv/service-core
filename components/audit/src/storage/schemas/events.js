@@ -67,7 +67,7 @@ function nullIfUndefined(value) {
 }
 
 
-function addStorePrefixToStreamIds(streamId) {
+function addStorePrefixToId(streamId) {
   return STORE_PREFIX + streamId;
 }
 
@@ -75,9 +75,9 @@ function addStorePrefixToStreamIds(streamId) {
  * transform events out of db
  */
 function eventFromDB(event) {
-  event.id = event.eventid;
+  event.id = addStorePrefixToId(event.eventid);
   delete event.eventid;
-  event.streamIds = event.streamIds.split(' ').map(addStorePrefixToStreamIds);
+  event.streamIds = event.streamIds.split(' ').map(addStorePrefixToId);
   event.trashed = (event.trashed === 1);
   if (event.content) {
     event.content = JSON.parse(event.content);
