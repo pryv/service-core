@@ -14,7 +14,6 @@ const bluebird = require('bluebird');
 const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
