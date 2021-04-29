@@ -64,8 +64,10 @@ class Result {
   _private: {
     init: boolean, first: boolean, 
     arrayLimit: number, 
-    isStreamResult: boolean, streamsArray: Array<StreamDescriptor>, 
-    onEndCallback: ?doneCallBack
+    isStreamResult: boolean, 
+    streamsArray: Array<StreamDescriptor>, 
+    onEndCallback: ?doneCallBack,
+    streamsConcatArrays: Object
   }
   meta: ?Object;
   
@@ -103,11 +105,36 @@ class Result {
       isStreamResult: false, 
       streamsArray: [],  
       onEndCallback: null,
+      streamsConcatArrays: {}
     };
     
     if (params && params.arrayLimit != null && params.arrayLimit > 0) {
       this._private.arrayLimit = params.arrayLimit;
     }
+  }
+
+  // Array concat stream
+  addToConcatArrayStream(arrayName: string, stream: stream$Readable) {
+    console.log('>>> ADD ', arrayName);
+    if (! this._private.streamsConcatArrays[arrayName]) {
+      //this._private.streamsConcatArrays[arrayName] = new StreamConcatArray();
+      this._private.streamsConcatArrays[arrayName] = [];
+    }
+    //this._private.streamsConcatArrays[arrayName].add(stream);
+    this._private.streamsConcatArrays[arrayName].push(stream);
+      
+    
+  }
+
+  // Close
+  closeConcatArrayStream(arrayName: string) {
+    console.log('>>> CLOSE ', arrayName);
+    if (! this._private.streamsConcatArrays[arrayName]) {
+      return;
+    }
+    this.addStream(arrayName, new MultiStream(this._private.streamsConcatArrays[arrayName]));
+    //this.addStream(arrayName, this._private.streamsConcatArrays[arrayName].getStream());
+    //this._private.streamsConcatArrays[arrayName].close();
   }
   
   // Pushes stream on the streamsArray stack, FIFO.
@@ -136,7 +163,7 @@ class Result {
     if (this.isStreamResult()) {
       const stream: Readable = this.writeStreams(res, successCode);
       stream.on('close', function() { 
-       if (onEndCallBack) onEndCallBack()
+       if (onEndCallBack) onEndCallBack();
       }.bind(this));
     } else {
       this.writeSingle(res, successCode);
@@ -250,3 +277,60 @@ class ResultStream extends Transform {
 }
 
 module.exports = Result;
+
+
+class StreamConcatArray {
+  streamsToAdd: Array<stream$Readable>;
+  nextFactoryCallBack: Function;
+  multistream: MultiStream;
+  isClosed: boolean;
+  
+  constructor() {
+    // holds pending stream not yet taken by
+    this.streamsToAdd = [];
+    this.nextFactoryCallBack = null;
+    this.isClosed = false;
+    const streamConcact = this;
+
+    function factory(callback) {
+      console.log('Factory CB', callback, streamConcact.nextFactoryCallBack);
+      streamConcact.nextFactoryCallBack = callback;
+      streamConcact._next();
+    }
+    this.multistream = new MultiStream(factory, {objectMode: true});
+  }
+
+  /**
+   * @private
+   */
+  _next() {
+    if (! this.nextFactoryCallBack) return;
+    if (this.streamsToAdd.length > 0) {
+      const nextStream = this.streamsToAdd.shift();
+      console.log('XXXXX NEXSTREAM', typeof nextStream);
+      this.nextFactoryCallBack(null, nextStream);
+      this.nextFactoryCallBack = null;
+      return;
+    }
+    if (this.isClosed) {
+      console.log('XXXXX NEXT CLOSED');
+      this.nextFactoryCallBack(null, null);
+      this.nextFactoryCallBack = null;
+    }
+    console.log('XXXXX NEXT SKIP');
+  }
+
+  getStream() {  
+    return this.multistream;
+  }
+
+  add(readableStream: Readable) {
+    console.log('Add to stream');
+    this.streamsToAdd.push(readableStream);
+  }
+
+  close() {
+    this.isClosed = true;
+    this._next();
+  }
+}

@@ -67,7 +67,7 @@ ALL_AUTHORIZED_STREAMS.forEach((streamId) => {
   }
   if (STREAMS[streamId].trashed !== true) {
     ALL_ACCESSIBLE_STREAMS.push(streamId);
-    if (StreamsUtils.sourceIdForStreamId(streamId) === 'local') 
+    if (StreamsUtils.storeIdAndStreamIdForStreamId(streamId)[0] === 'local') 
       ALL_ACCESSIBLE_STREAMS_LOCAL.push(streamId);
   }
 });

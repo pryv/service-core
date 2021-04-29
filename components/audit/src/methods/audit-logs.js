@@ -31,6 +31,7 @@ module.exports = function (api) {
  * @returns 
  */
 function removeStoreIdFromStreamQuery(context, params, result, next) {
+  return next();
   if (! params.streams) return next();
   for (let query of params.streams) {
     for (let item of ['all', 'any', 'not']) {
@@ -68,7 +69,7 @@ function limitStreamQueryToAccessToken(context, params, result, next) {
 function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = auditStorage.forUser(context.user.id);
-    result.addStream('auditLogs', userStorage.getLogsStream(params));
+    result.addStream('auditLogs', userStorage.getLogsStream(params, true));
     //result.auditLogs = userStorage.getLogs(params);
   } catch (err) {
     return next(err);

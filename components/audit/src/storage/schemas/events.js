@@ -74,10 +74,16 @@ function addStorePrefixToId(streamId) {
 /**
  * transform events out of db
  */
-function eventFromDB(event) {
-  event.id = addStorePrefixToId(event.eventid);
+function eventFromDB(event, addStorePrefix) {
+  event.id = event.eventid;
   delete event.eventid;
-  event.streamIds = event.streamIds.split(' ').map(addStorePrefixToId);
+  event.streamIds = event.streamIds.split(' ');
+
+  if (addStorePrefix) {
+    event.id = addStorePrefixToId(event.eventid);
+    event.streamIds = event.streamIds.map(addStorePrefixToId);
+  }
+  
   event.trashed = (event.trashed === 1);
   if (event.content) {
     event.content = JSON.parse(event.content);

@@ -5,6 +5,8 @@
  * Proprietary and confidential
  */
 const {UserEvents}  = require('../interfaces/DataSource');
+const _ = require('lodash');
+const MultiStream = require('multistream');
 
 /**
  * Handle Store.events.* methods
@@ -19,11 +21,25 @@ class StoreUserEvents extends UserEvents {
     this.store = store;
   }
 
-  async get(uid, params, streamResult) {
-    console.log('STORE GET UID:',uid, 'PARAMS:', params);
-    let res = [];
+  async getStreamed(uid, params) {
+    const store = this.store;
+    const streamsQueryMapByStore = params.streamsQueryMapByStore;
+    delete params.streamsQueryMapByStore;
+    const storeList = Object.keys(streamsQueryMapByStore);
+    let count = 0;
+    // @see MultiStream factory 
+    function factory(callback) {
+      if (count >= storeList.length) return callback(null, null);
+      const sourceId = storeList[count];
+      count++;
+      const source = store.sourceForId(sourceId);
+      params.streams = streamsQueryMapByStore[sourceId];
+      source.events.getStreamed(uid, _.cloneDeep(params)).then((eventsStream) => {
+        callback(null, eventsStream);
+      });
+    }
 
-    return res;
+    return new MultiStream(factory);
   }
 
 }

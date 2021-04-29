@@ -13,6 +13,8 @@
 const { ForbiddenNoneditableAccountStreamsEdit } = require('errors/src/ErrorIds');
 const {DataSource, UserStreams, UserEvents}  = require('stores/interfaces/DataSource');
 
+const audit = require('audit');
+
 const STORE_ID = 'audit';
 const STORE_NAME = 'Audit Store';
 
@@ -37,6 +39,10 @@ class AuditDataSource extends DataSource {
 
 
 class AuditUserStreams extends UserStreams {
+
+
+
+
   async get(uid, params) {
     
     let streams = [{
@@ -86,15 +92,9 @@ class AuditUserStreams extends UserStreams {
 }
 
 class AuditUserEvents extends UserEvents {
-  async get(uid, params) {
-    const events = [{
-      id: 'dummyevent0',
-      type: 'note/txt',
-      content: 'hello',
-      time: Date.now() / 1000,
-    }];
-    UserEvents.applyDefaults(STORE_ID, events);
-    return events;
+  async getStreamed(uid, params) {
+    const userStorage = audit.storage.forUser(uid);
+    return userStorage.getLogsStream(params);
   }
 }
 

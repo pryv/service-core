@@ -26,16 +26,18 @@ function sourceToStream(source, extraProperties) {
 }
 
 /**
- * Get the sourceId related to this stream
+ * Get the sourceId related to this stream, and the streamId without the store reference
+ * @returns {object} [storeId: ..., streamIdWithoutStorePrefix]
  */
-function sourceIdForStreamId(streamId) {
-  if (streamId.indexOf('.') !== 0) return LOCAL_STORE;
-  if (SystemStreamsSerializer.isSystemStream(streamId)) return LOCAL_STORE; // probably to be changed at some point 
+function storeIdAndStreamIdForStreamId(streamId) {
+  if (streamId.indexOf('.') !== 0) return [LOCAL_STORE, streamId];
+  if (SystemStreamsSerializer.isSystemStream(streamId)) return [LOCAL_STORE, streamId]; // probably to be changed at some point 
   const dashPos = streamId.indexOf('-');
-  return streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
+  if (dashPos < 1) return [streamId.substr(1), '*'];
+  return [streamId.substr(1, (dashPos - 1)), streamId.substr(dashPos + 1)];
 }
 
 module.exports = {
   sourceToStream: sourceToStream,
-  sourceIdForStreamId: sourceIdForStreamId
+  storeIdAndStreamIdForStreamId: storeIdAndStreamIdForStreamId
 }

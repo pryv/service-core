@@ -165,9 +165,20 @@ class UserEvents {
    * Get the events for this user.
    * @param {identifier} uid  
    * @param {object} params - event query
+   * @returns {Array<Stream>}
    * @see https://api.pryv.com/reference/#get-events
    */
   async get(uid, params) { toBeImplemented(); }
+
+
+  /**
+   * Get the events as a stream for this user.  
+   * @param {identifier} uid  
+   * @param {object} params - event query
+   * @returns {Readable}
+   * @see https://api.pryv.com/reference/#get-events
+   */
+   async getStreamed(uid, params) { toBeImplemented(); }
 
   /**
    * @see https://api.pryv.com/reference/#create-event

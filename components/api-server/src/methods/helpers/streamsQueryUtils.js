@@ -35,6 +35,7 @@ const { StreamsUtils } = require('stores');
 
 /**
  * For retrocompatibility with older streams parameter ['A', 'B'] transform it to streams query [{any: ['A', 'B']}]
+ * Takes care of grouping by store. ['A', 'B', '.audit-xx'] => [{any: ['A', 'B']}, {any: '.audit-xx'}]
  * @param {Array.<StreamQuery>} arrayOfQueries 
  * @throws - Error if mixed strings and other are found in array
  */
@@ -51,7 +52,7 @@ function transformArrayOfStringsToStreamsQuery(arrayOfQueries) {
   // group streamIds per "store"
   const map = {};
   for (let streamId of streamIds) {
-    const store = StreamsUtils.sourceIdForStreamId(streamId);
+    const [store, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     if (! map[store]) map[store] = [];
     map[store].push(streamId);
   }
@@ -71,21 +72,31 @@ module.exports.transformArrayOfStringsToStreamsQuery = transformArrayOfStringsTo
  */
 function validateStreamsQuery(arrayOfQueries) {
   arrayOfQueries.forEach((streamQuery) => { 
-    validateStreamsQuerySchema(arrayOfQueries, streamQuery); 
+    validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery); 
   });
 }
 /**
  * throw an error if streamQuery is not of the form {any: all: not: } with at least one of any or all 
+ * [{any: ['A', 'B', '.email']}, {any: '.audit-xx'}] => [{any: ['A', 'B', '.email'], storeId: 'local'}, {any: 'xx', storeId: 'audit'}]
  * @param {Array.<StreamQuery>} arrayOfQueries - the full request for error message
  * @param {StreamQuery} streamQuery 
  */
-function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
+function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
+
+  /**
+   * Get StoreID, add storeId proerty to query and remove eventual storeId from streamId
+   * @param {string} streamId 
+   * @returns {string} streamId without storeId
+   */
   function checkStore(streamId) {
     // queries must be grouped by store 
-    const thisStore = StreamsUtils.sourceIdForStreamId(streamId);
+    const [thisStore, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    
     if (! streamQuery.storeId) streamQuery.storeId = thisStore;
     if (streamQuery.storeId !== thisStore) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" queries must me grouped by stores.');
+    return cleanStreamId;
   }
+
   if (! streamQuery.any && ! streamQuery.all) {
     throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" must contain at least one of "any" or "all" property.');
   }
@@ -103,11 +114,14 @@ function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
       }
     }
 
+    const arrayOfCleanStreamIds = [];
     for (item of arrayOfStreamIds) {
       if (typeof item !== 'string')
         throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) +' must be streamIds. Found: ' + objectToString(item) );
-      checkStore(item);
+      const cleanStreamid = checkStore(item);
+      arrayOfCleanStreamIds.push(cleanStreamid);
     }
+    streamQuery[property] = arrayOfCleanStreamIds;
   }
 }
 exports.validateStreamsQuery = validateStreamsQuery;

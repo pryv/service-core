@@ -28,6 +28,7 @@ const UsersRepository = require('business/src/users/repository');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const assert = require('assert');
+const MultiStream = require('multistream');
 
 const eventsGetUtil = require('./helpers/eventsGetUtils');
 
@@ -97,7 +98,7 @@ module.exports = async function (
     checkStreamsPermissionsAndApplyToScope,
     findEventsFromStore,
     findAccessibleEventsOnLocalStorage,
-    includeDeletionsIfRequested);
+    includeLocalStorageDeletionsIfRequested);
 
 
 
@@ -212,7 +213,7 @@ module.exports = async function (
     console.log('TTT 1', params.streams);
     if (params.streams === null) return next();
 
-    
+    // --- The following code my be moved directly into store.get()
     //console.log(params.streams);
     const storeQueryMap = {};
     for (let streamQuery of params.streams) {
@@ -226,16 +227,18 @@ module.exports = async function (
       storeQueryMap[storeId].push(streamQuery);
     }
 
-    // set params.query to "before store states"
-    params.streams = storeQueryMap.local;
+    // save "local" query 
+    const localStoreStreamQuery = storeQueryMap.local || [];
     delete storeQueryMap.local;
-
+    delete params.streams;
     params.streamsQueryMapByStore = storeQueryMap;
-    console.log('TTT 2 Streams:', params.streams,  'StreamsQueryMap:', storeQueryMap);
+    console.log('TTT 2 Streams:', localStoreStreamQuery,  'StreamsQueryMap:', storeQueryMap);
 
+    //const eventsStream = await stores.events.getStreamed(context.user.id, params, result);
+    //result.addToConcatArrayStream('events', eventsStream);
 
-    await stores.events.get(context.user.id, params, 'toto');
-
+    // set back local streamQuery for events
+    params.streams = localStoreStreamQuery;
     return next();
   }
 
@@ -302,7 +305,7 @@ module.exports = async function (
       let eventsStream = await bluebird.fromCallback(cb =>
         userEventsStorage.findStreamed(context.user, query, options, cb));
 
-      result.addStream('events', eventsStream
+      result.addToConcatArrayStream('events', eventsStream
         .pipe(new SetFileReadTokenStream(
           {
             access: context.access,
@@ -310,13 +313,14 @@ module.exports = async function (
           }
         ))
       );
+      result.closeConcatArrayStream('events');
       next();
     } catch (err) {
       return next(errors.unexpectedError(err));
     }
   }
 
-  function includeDeletionsIfRequested(context, params, result, next) {
+  function includeLocalStorageDeletionsIfRequested(context, params, result, next) {
 
     if (params.modifiedSince == null || !params.includeDeletions) {
       return next();
