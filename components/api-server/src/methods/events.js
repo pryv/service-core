@@ -147,7 +147,7 @@ module.exports = async function (
     }
 
     function isAuthorizedStream(streamId) {
-       return authorizedStreamsIds.includes(streamId);
+      return authorizedStreamsIds.includes(streamId);
     }
 
     function isAccessibleStream(streamId) {
