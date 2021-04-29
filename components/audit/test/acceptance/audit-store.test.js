@@ -84,9 +84,8 @@ describe('Audit Streams and Events', function() {
       .get(eventsPath)
       .set('Authorization', appAccess.token)
       .query({streams: ['.audit-action:events.get'] });
-    console.log(res.body);
     assert.equal(res.status, 200);
-    const logs = res.body.auditLogs;
+    const logs = res.body.events;
     assert.isAtLeast(logs.length, 1);
     for (let event of logs) {
       assert.exists(event.content);
@@ -98,17 +97,20 @@ describe('Audit Streams and Events', function() {
   it('[0XRA]  personal token must retrieve all audit logs', async () => {
     const res = await coreRequest
       .get(eventsPath)
-      .set('Authorization', personalToken);
+      .set('Authorization', personalToken)
+      .query({streams: ['.audit'] });
     assert.strictEqual(res.status, 200);
     const logs = res.body.events;
+    
     assert.isAtLeast(logs.length, 5);
-    validateResults(res.body.auditLogs);
+    validateResults(logs);
   });
 
   it('[31FM]  appAccess must retrieve only audit logs for this access (from auth token then converted by service-core)', async () => {
     const res = await coreRequest
       .get(eventsPath)
-      .set('Authorization', appAccess.token);
+      .set('Authorization', appAccess.token)
+      .query({streams: ['.audit-access:' +  appAccess.id] });
     assert.strictEqual(res.status, 200);
     const logs = res.body.events;
     assert.isAtLeast(logs.length, 1);
@@ -124,16 +126,6 @@ describe('Audit Streams and Events', function() {
     assert.equal(res.body.error.id, 'invalid-access-token')
   });
 
-  it('[DTBU]  StreamId not starting with ".audit-"  should return an error', async () => {
-    const res = await coreRequest
-    .get(eventsPath)
-    .set('Authorization', appAccess.token)
-    .query({streams: ['toto'] });
-    assert.strictEqual(res.status, 400);
-    assert.exists(res.body.error);
-    assert.equal(res.body.error.id, 'invalid-request-structure');
-    assert.equal(res.body.error.message, 'Invalid "streams" parameter. It should be an array of streamIds starting with Audit prefix: ".audit-"');
-  });
 });
 
 function validateResults(auditLogs, expectedAccessId, expectedErrorId) {

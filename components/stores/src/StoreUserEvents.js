@@ -6,7 +6,6 @@
  */
 const {UserEvents}  = require('../interfaces/DataSource');
 const _ = require('lodash');
-const MultiStream = require('multistream');
 const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
 
 /**
@@ -23,39 +22,22 @@ class StoreUserEvents extends UserEvents {
   }
 
   async generateStreams(uid, params, addEventStreamCB) {
-
     const store = this.store;
     const streamsQueryMapByStore = params.streamsQueryMapByStore;
     delete params.streamsQueryMapByStore;
     for (let sourceId of Object.keys(streamsQueryMapByStore)) {
       const source = store.sourceForId(sourceId);
       params.streams = streamsQueryMapByStore[sourceId];
+
+      // replace '*' by null <-- this should be done upfront
+      if (params.streams && params.streams[0] && params.streams[0].any && params.streams[0].any[0] === '*') {
+        params.streams = null; 
+      }
+
       source.events.getStreamed(uid, _.cloneDeep(params)).then((eventsStream) => {
         addEventStreamCB(eventsStream.pipe(new AddStorePrefixOnEventsStream(sourceId)));
       });
     }
-  }
-
-  // kept for records .. to be deleted
-  async getStreamed(uid, params) {
-    const store = this.store;
-    const streamsQueryMapByStore = params.streamsQueryMapByStore;
-    delete params.streamsQueryMapByStore;
-    const storeList = Object.keys(streamsQueryMapByStore);
-    let count = 0;
-    // @see MultiStream factory 
-    function factory(callback) {
-      if (count >= storeList.length) return callback(null, null);
-      const sourceId = storeList[count];
-      count++;
-      const source = store.sourceForId(sourceId);
-      params.streams = streamsQueryMapByStore[sourceId];
-      source.events.getStreamed(uid, _.cloneDeep(params)).then((eventsStream) => {
-        callback(null, eventsStream);
-      });
-    }
-
-    return new MultiStream(factory);
   }
 
 }

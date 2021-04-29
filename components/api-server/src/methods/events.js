@@ -154,6 +154,7 @@ module.exports = async function (
     function isAuthorizedStream(streamId, storeId) {
       if (storeId === 'audit') {
         console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
+        if (context.access.isPersonal()) return true;
         if (streamId === 'access:' + context.access.id) return true;
         if (streamId.startsWith('action:')) return true;
         console.log('False');

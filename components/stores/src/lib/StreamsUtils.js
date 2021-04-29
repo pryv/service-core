@@ -43,7 +43,7 @@ function storeIdAndStreamIdForStreamId(streamId) {
  */
  function streamIdForStoreId(cleanStreamId, storeId) {
   if (storeId === LOCAL_STORE) return cleanStreamId;
-  if (streamId === '*') return '.' + storeId;
+  if (cleanStreamId === '*') return '.' + storeId;
   return '.' + storeId + '-' + cleanStreamId;
 }
 
