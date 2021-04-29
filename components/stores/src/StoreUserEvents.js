@@ -7,6 +7,7 @@
 const {UserEvents}  = require('../interfaces/DataSource');
 const _ = require('lodash');
 const MultiStream = require('multistream');
+const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
 
 /**
  * Handle Store.events.* methods
@@ -21,6 +22,21 @@ class StoreUserEvents extends UserEvents {
     this.store = store;
   }
 
+  async generateStreams(uid, params, addEventStreamCB) {
+
+    const store = this.store;
+    const streamsQueryMapByStore = params.streamsQueryMapByStore;
+    delete params.streamsQueryMapByStore;
+    for (let sourceId of Object.keys(streamsQueryMapByStore)) {
+      const source = store.sourceForId(sourceId);
+      params.streams = streamsQueryMapByStore[sourceId];
+      source.events.getStreamed(uid, _.cloneDeep(params)).then((eventsStream) => {
+        addEventStreamCB(eventsStream.pipe(new AddStorePrefixOnEventsStream(sourceId)));
+      });
+    }
+  }
+
+  // kept for records .. to be deleted
   async getStreamed(uid, params) {
     const store = this.store;
     const streamsQueryMapByStore = params.streamsQueryMapByStore;

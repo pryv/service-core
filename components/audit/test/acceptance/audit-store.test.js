@@ -69,10 +69,8 @@ describe('Audit Streams and Events', function() {
       .get(eventsPath)
       .set('Authorization', appAccess.token)
       .query({streams: ['.audit-access:' +  appAccess.id], fromTime: start, toTime: stop});
-
-    console.log(res.body);
     assert.equal(res.status, 200);
-    const logs = res.body.auditLogs;
+    const logs = res.body.events;
     assert.isAtLeast(logs.length, 2);
     for (let event of logs) {
       assert.isAtLeast(event.time, start);
@@ -83,9 +81,10 @@ describe('Audit Streams and Events', function() {
 
   it('[8AFA]  must retrieve logs by action', async () => {
     const res = await coreRequest
-      .get(auditPath)
+      .get(eventsPath)
       .set('Authorization', appAccess.token)
       .query({streams: ['.audit-action:events.get'] });
+    console.log(res.body);
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
     assert.isAtLeast(logs.length, 1);
@@ -98,27 +97,27 @@ describe('Audit Streams and Events', function() {
 
   it('[0XRA]  personal token must retrieve all audit logs', async () => {
     const res = await coreRequest
-      .get(auditPath)
+      .get(eventsPath)
       .set('Authorization', personalToken);
     assert.strictEqual(res.status, 200);
-    const logs = res.body.auditLogs;
+    const logs = res.body.events;
     assert.isAtLeast(logs.length, 5);
     validateResults(res.body.auditLogs);
   });
 
   it('[31FM]  appAccess must retrieve only audit logs for this access (from auth token then converted by service-core)', async () => {
     const res = await coreRequest
-      .get(auditPath)
+      .get(eventsPath)
       .set('Authorization', appAccess.token);
     assert.strictEqual(res.status, 200);
-    const logs = res.body.auditLogs;
+    const logs = res.body.events;
     assert.isAtLeast(logs.length, 1);
     validateResults(logs, appAccess.id);
   });
 
   it('[BLR4]  Invalid token should retrun an error', async () => {
     const res = await coreRequest
-    .get(auditPath)
+    .get(eventsPath)
     .set('Authorization', 'invalid');
     assert.strictEqual(res.status, 403);
     assert.exists(res.body.error);
@@ -127,7 +126,7 @@ describe('Audit Streams and Events', function() {
 
   it('[DTBU]  StreamId not starting with ".audit-"  should return an error', async () => {
     const res = await coreRequest
-    .get(auditPath)
+    .get(eventsPath)
     .set('Authorization', appAccess.token)
     .query({streams: ['toto'] });
     assert.strictEqual(res.status, 400);

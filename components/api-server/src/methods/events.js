@@ -131,13 +131,13 @@ module.exports = async function (
       }
       accessibleStreamsIds = _.intersection(authorizedStreamsIds, notTrashedStreamIds);
     }
-
+    
     if (params.streams === null) { // all streams
       if (accessibleStreamsIds.length > 0) 
         params.streams = [{ any: accessibleStreamsIds, storeId: 'local' }];
       return next();
     }
-
+   
     /**
      * Function to be passed to streamQueryFiltering.validateQuery
      * Expand a streamId to [streamId, child1, ...]
@@ -146,23 +146,25 @@ module.exports = async function (
      */
     function expandStream(streamId, storeId) {
       if (storeId === 'audit') {
-        console.log('XXXXX TO BE CHANGED > expandStream audit streamId Query');
         return [streamId];
       }
       return treeUtils.expandIds(context.streams, [streamId]);
     }
 
-    function isAuthorizedStream(streamId) {
-      if (streamId === '.audit-access:' + context.access.id) {
-        console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query');
-        return true;
+    function isAuthorizedStream(streamId, storeId) {
+      if (storeId === 'audit') {
+        console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
+        if (streamId === 'access:' + context.access.id) return true;
+        if (streamId.startsWith('action:')) return true;
+        console.log('False');
       }
+
       return authorizedStreamsIds.includes(streamId);
     }
 
-    function isAccessibleStream(streamId) {
-      if (streamId === '.audit-access:' + context.access.id) {
-        console.log('XXXXX TO BE CHANGED > Accessible audit streamId Query');
+    function isAccessibleStream(streamId, storeId) {
+      if (storeId === 'audit') {
+        console.log('XXXXX TO BE CHANGED > Accessible audit streamId Query', streamId, storeId);
         return true;
       }
       return accessibleStreamsIds.includes(streamId);
@@ -174,15 +176,10 @@ module.exports = async function (
       }
       return accessibleStreamsIds;
     }
-
-    console.log('XXXXX A', params.streams);
-
     const { streamQuery, nonAuthorizedStreams } =
       streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
-
     params.streams = streamQuery;
 
-    console.log('XXXXX', streamQuery, 'Non Authorized:', nonAuthorizedStreams);
 
     if (nonAuthorizedStreams.length > 0) {
       for (let i = 0; i < nonAuthorizedStreams.length; i++) {
@@ -210,11 +207,9 @@ module.exports = async function (
    * @returns 
    */
   async function findEventsFromStore(context, params, result, next) {
-    console.log('TTT 1', params.streams);
     if (params.streams === null) return next();
 
     // --- The following code my be moved directly into store.get()
-    //console.log(params.streams);
     const storeQueryMap = {};
     for (let streamQuery of params.streams) {
       const storeId = streamQuery.storeId;
@@ -232,10 +227,10 @@ module.exports = async function (
     delete storeQueryMap.local;
     delete params.streams;
     params.streamsQueryMapByStore = storeQueryMap;
-    console.log('TTT 2 Streams:', localStoreStreamQuery,  'StreamsQueryMap:', storeQueryMap);
-
-    //const eventsStream = await stores.events.getStreamed(context.user.id, params, result);
-    //result.addToConcatArrayStream('events', eventsStream);
+    await stores.events.generateStreams(context.user.id, params, function (eventsStream) {
+      result.addToConcatArrayStream('events', eventsStream);
+    });
+    
 
     // set back local streamQuery for events
     params.streams = localStoreStreamQuery;

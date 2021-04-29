@@ -155,7 +155,6 @@ exports.validateStreamsQuery = validateStreamsQuery;
  * @returns {StreamQuery} 
  */
 function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore) {
-  
   // registerStream will collect all nonAuthorized streams here during streamQuery inspection
   const nonAuthorizedStreams = [];
 
@@ -183,7 +182,6 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
    */
   function expandAndTransformStreamQuery(streamQuery) {
     let containsAtLeastOneInclusion = false; 
-
     const res = { storeId: streamQuery.storeId };
 
     // any
@@ -233,12 +231,12 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
 
     for (let streamId of streamIds) {
       if (streamId.startsWith('#')) { 
-        addToResult(streamId.substr(1));
+        addToResult(streamId.substr(1), storeId);
       } else {
-        if (registerStream(streamId)) { 
+        if (registerStream(streamId, storeId)) { 
           for (let expandedStream of expandStream(streamId, storeId)) { // expand can send "null" values
             if (expandedStream !== null) {
-              addToResult(expandedStream)
+              addToResult(expandedStream, storeId)
             }
           }
         } 
@@ -246,8 +244,8 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
     }
     return result;
 
-    function addToResult(streamId) {
-      const ok = registerStream(streamId);
+    function addToResult(streamId, storeId) {
+      const ok = registerStream(streamId, storeId);
       if (ok && ! result.includes(streamId)) {
         result.push(streamId);
       }
@@ -258,12 +256,12 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
      * @param {string} streamId 
      * @returns {boolean} - true if streamId Can be used in the query
      */
-    function registerStream(streamId) {
-      if (! isAuthorizedStream(streamId)) { 
-        nonAuthorizedStreams.push(streamId);
+    function registerStream(streamId, storeId) {
+      if (! isAuthorizedStream(streamId, storeId)) { 
+        nonAuthorizedStreams.push(StreamsUtils.streamIdForStoreId(streamId, storeId));
         return false;
       }
-      return isAccessibleStream(streamId);
+      return isAccessibleStream(streamId, storeId);
     }
   }
 }

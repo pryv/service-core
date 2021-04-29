@@ -115,26 +115,19 @@ class Result {
 
   // Array concat stream
   addToConcatArrayStream(arrayName: string, stream: stream$Readable) {
-    console.log('>>> ADD ', arrayName);
     if (! this._private.streamsConcatArrays[arrayName]) {
-      //this._private.streamsConcatArrays[arrayName] = new StreamConcatArray();
-      this._private.streamsConcatArrays[arrayName] = [];
+      this._private.streamsConcatArrays[arrayName] = new StreamConcatArray();
     }
-    //this._private.streamsConcatArrays[arrayName].add(stream);
-    this._private.streamsConcatArrays[arrayName].push(stream);
-      
-    
+    this._private.streamsConcatArrays[arrayName].add(stream);    
   }
 
   // Close
   closeConcatArrayStream(arrayName: string) {
-    console.log('>>> CLOSE ', arrayName);
     if (! this._private.streamsConcatArrays[arrayName]) {
       return;
     }
-    this.addStream(arrayName, new MultiStream(this._private.streamsConcatArrays[arrayName]));
-    //this.addStream(arrayName, this._private.streamsConcatArrays[arrayName].getStream());
-    //this._private.streamsConcatArrays[arrayName].close();
+    this.addStream(arrayName, this._private.streamsConcatArrays[arrayName].getStream());
+    this._private.streamsConcatArrays[arrayName].close();
   }
   
   // Pushes stream on the streamsArray stack, FIFO.
@@ -293,7 +286,6 @@ class StreamConcatArray {
     const streamConcact = this;
 
     function factory(callback) {
-      console.log('Factory CB', callback, streamConcact.nextFactoryCallBack);
       streamConcact.nextFactoryCallBack = callback;
       streamConcact._next();
     }
@@ -307,17 +299,14 @@ class StreamConcatArray {
     if (! this.nextFactoryCallBack) return;
     if (this.streamsToAdd.length > 0) {
       const nextStream = this.streamsToAdd.shift();
-      console.log('XXXXX NEXSTREAM', typeof nextStream);
       this.nextFactoryCallBack(null, nextStream);
       this.nextFactoryCallBack = null;
       return;
     }
     if (this.isClosed) {
-      console.log('XXXXX NEXT CLOSED');
       this.nextFactoryCallBack(null, null);
       this.nextFactoryCallBack = null;
     }
-    console.log('XXXXX NEXT SKIP');
   }
 
   getStream() {  
@@ -325,7 +314,6 @@ class StreamConcatArray {
   }
 
   add(readableStream: Readable) {
-    console.log('Add to stream');
     this.streamsToAdd.push(readableStream);
   }
 

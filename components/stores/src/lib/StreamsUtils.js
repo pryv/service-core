@@ -37,7 +37,19 @@ function storeIdAndStreamIdForStreamId(streamId) {
   return [streamId.substr(1, (dashPos - 1)), streamId.substr(dashPos + 1)];
 }
 
+/**
+ * Get full streamId from source + cleanstreanId
+ * @returns {string} 
+ */
+ function streamIdForStoreId(cleanStreamId, storeId) {
+  if (storeId === LOCAL_STORE) return cleanStreamId;
+  if (streamId === '*') return '.' + storeId;
+  return '.' + storeId + '-' + cleanStreamId;
+}
+
+
 module.exports = {
   sourceToStream: sourceToStream,
-  storeIdAndStreamIdForStreamId: storeIdAndStreamIdForStreamId
+  storeIdAndStreamIdForStreamId: storeIdAndStreamIdForStreamId,
+  streamIdForStoreId: streamIdForStoreId
 }

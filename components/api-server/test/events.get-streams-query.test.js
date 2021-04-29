@@ -92,11 +92,11 @@ describe('events.get streams query', function () {
 
   describe('Internal query helpers', function () {
 
-    function isAuthorizedStream(streamId) {
+    function isAuthorizedStream(streamId, storeId) {
       return ALL_AUTHORIZED_STREAMS.includes(streamId);
     }
 
-    function isAccessibleStream(streamId) {
+    function isAccessibleStream(streamId, storeId) {
       return ALL_ACCESSIBLE_STREAMS.includes(streamId);
     }
 
