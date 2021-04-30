@@ -31,16 +31,15 @@ module.exports = function (api) {
  * @returns 
  */
 function removeStoreIdFromStreamQuery(context, params, result, next) {
-  return next();
-  if (! params.streams) return next();
+  if (params.streams == null) return next();
   for (let query of params.streams) {
     for (let item of ['all', 'any', 'not']) {
-      if (query[item]) {
+      if (query[item] != null) {
         for (let i = 0; i < query[item].length ; i++) {
           const streamId = query[item][i];
           if (! streamId.startsWith(audit.CONSTANTS.STORE_PREFIX)) {
             return next(errors.invalidRequestStructure(
-              'Invalid "streams" parameter. It should be an array of streamIds starting with Audit prefix: "' + audit.CONSTANTS.STORE_PREFIX + '"', params.streams));
+              'Invalid "streams" parameter. It should be an array of streamIds starting with Audit store prefix: "' + audit.CONSTANTS.STORE_PREFIX + '"', params.streams));
           }
           query[item][i] = streamId.substring(audit.CONSTANTS.STORE_PREFIX.length);
         }
@@ -54,7 +53,7 @@ function limitStreamQueryToAccessToken(context, params, result, next) {
   if (context.access.isPersonal()) return next();
   if (params.streams == null) { params.streams = [{}]; }
 
-  // stream corresponding to acces.id exemple: "access:{acces.id}"
+  // stream corresponding to acces.id exemple: "access-{acces.id}"
   const streamId = audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id;
 
   for (const query of params.streams) {

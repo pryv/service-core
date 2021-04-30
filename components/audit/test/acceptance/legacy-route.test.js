@@ -83,7 +83,7 @@ describe('Audit legacy route', function() {
     const res = await coreRequest
       .get(auditPath)
       .set('Authorization', appAccess.token)
-      .query({streams: ['.audit-action:events.get'] });
+      .query({streams: ['.audit-action-events.get'] });
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
     assert.isAtLeast(logs.length, 1);
@@ -131,7 +131,7 @@ describe('Audit legacy route', function() {
     assert.strictEqual(res.status, 400);
     assert.exists(res.body.error);
     assert.equal(res.body.error.id, 'invalid-request-structure');
-    assert.equal(res.body.error.message, 'Invalid "streams" parameter. It should be an array of streamIds starting with Audit prefix: ".audit-"');
+    assert.equal(res.body.error.message, 'Invalid "streams" parameter. It should be an array of streamIds starting with Audit store prefix: ".audit-"');
   });
 });
 

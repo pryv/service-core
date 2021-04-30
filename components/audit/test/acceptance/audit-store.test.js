@@ -68,7 +68,7 @@ describe('Audit Streams and Events', function() {
     const res = await coreRequest
       .get(eventsPath)
       .set('Authorization', appAccess.token)
-      .query({streams: ['.audit-access:' +  appAccess.id], fromTime: start, toTime: stop});
+      .query({streams: ['.audit-access-' +  appAccess.id], fromTime: start, toTime: stop});
     assert.equal(res.status, 200);
     const logs = res.body.events;
     assert.isAtLeast(logs.length, 2);
@@ -83,7 +83,7 @@ describe('Audit Streams and Events', function() {
     const res = await coreRequest
       .get(eventsPath)
       .set('Authorization', appAccess.token)
-      .query({streams: ['.audit-action:events.get'] });
+      .query({streams: ['.audit-action-events.get'] });
     assert.equal(res.status, 200);
     const logs = res.body.events;
     assert.isAtLeast(logs.length, 1);
@@ -110,14 +110,14 @@ describe('Audit Streams and Events', function() {
     const res = await coreRequest
       .get(eventsPath)
       .set('Authorization', appAccess.token)
-      .query({streams: ['.audit-access:' +  appAccess.id] });
+      .query({streams: ['.audit-access-' +  appAccess.id] });
     assert.strictEqual(res.status, 200);
     const logs = res.body.events;
     assert.isAtLeast(logs.length, 1);
     validateResults(logs, appAccess.id);
   });
 
-  it('[BLR4]  Invalid token should retrun an error', async () => {
+  it('[BLR4]  Invalid token should return an error', async () => {
     const res = await coreRequest
     .get(eventsPath)
     .set('Authorization', 'invalid');
