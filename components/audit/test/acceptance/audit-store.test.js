@@ -8,7 +8,7 @@
 /* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
 
-describe('Audit legacy route', function() {
+describe('Audit Streams and Events', function() {
   let user, username, password, access, appAccess;
   let personalToken;
   let auditPath;
@@ -35,11 +35,11 @@ describe('Audit legacy route', function() {
     user = user.attrs;
     accessesPath = '/' + username + '/accesses/';
     eventsPath = '/' + username + '/events/';
-    auditPath =  '/' + username + '/audit/logs/';
     
     const res = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)
-      .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: streamId, level: 'manage'}]});
+      .send({ type: 'app', name: 'app access', token: 'app-token', 
+      permissions: [{ streamId: streamId, level: 'manage'}]});
     appAccess = res.body.access;
     assert.exists(appAccess);
   });
@@ -64,13 +64,13 @@ describe('Audit legacy route', function() {
       .query({streams: ['other']});
   });
 
-  it('[QXCH] must retrieve logs by time range', async () => {
+  it('[TJ8S] must retrieve logs by time range', async () => {
     const res = await coreRequest
-      .get(auditPath)
+      .get(eventsPath)
       .set('Authorization', appAccess.token)
-      .query({fromTime: start, toTime: stop});
+      .query({streams: ['.audit-access-' +  appAccess.id], fromTime: start, toTime: stop});
     assert.equal(res.status, 200);
-    const logs = res.body.auditLogs;
+    const logs = res.body.events;
     assert.isAtLeast(logs.length, 2);
     for (let event of logs) {
       assert.isAtLeast(event.time, start);
@@ -79,13 +79,13 @@ describe('Audit legacy route', function() {
     validateResults(logs, appAccess.id);
   });
 
-  it('[4FB8] must retrieve logs by action', async () => {
+  it('[8AFA]  must retrieve logs by action', async () => {
     const res = await coreRequest
-      .get(auditPath)
+      .get(eventsPath)
       .set('Authorization', appAccess.token)
       .query({streams: ['.audit-action-events.get'] });
     assert.equal(res.status, 200);
-    const logs = res.body.auditLogs;
+    const logs = res.body.events;
     assert.isAtLeast(logs.length, 1);
     for (let event of logs) {
       assert.exists(event.content);
@@ -94,45 +94,38 @@ describe('Audit legacy route', function() {
     validateResults(logs, appAccess.id);
   });
 
-  it('[U9HQ] personal token must retrieve all audit logs', async () => {
+  it('[0XRA]  personal token must retrieve all audit logs', async () => {
     const res = await coreRequest
-      .get(auditPath)
-      .set('Authorization', personalToken);
+      .get(eventsPath)
+      .set('Authorization', personalToken)
+      .query({streams: ['.audit'] });
     assert.strictEqual(res.status, 200);
-    const logs = res.body.auditLogs;
+    const logs = res.body.events;
+    
     assert.isAtLeast(logs.length, 5);
-    validateResults(res.body.auditLogs);
+    validateResults(logs);
   });
 
-  it('[6RP3] appAccess must retrieve only audit logs for this access (from auth token then converted by service-core)', async () => {
+  it('[31FM]  appAccess must retrieve only audit logs for this access (from auth token then converted by service-core)', async () => {
     const res = await coreRequest
-      .get(auditPath)
-      .set('Authorization', appAccess.token);
+      .get(eventsPath)
+      .set('Authorization', appAccess.token)
+      .query({streams: ['.audit-access-' +  appAccess.id] });
     assert.strictEqual(res.status, 200);
-    const logs = res.body.auditLogs;
+    const logs = res.body.events;
     assert.isAtLeast(logs.length, 1);
     validateResults(logs, appAccess.id);
   });
 
-  it('[R1ZF] Invalid token should retrun an error', async () => {
+  it('[BLR4]  Invalid token should return an error', async () => {
     const res = await coreRequest
-    .get(auditPath)
+    .get(eventsPath)
     .set('Authorization', 'invalid');
     assert.strictEqual(res.status, 403);
     assert.exists(res.body.error);
     assert.equal(res.body.error.id, 'invalid-access-token')
   });
 
-  it('[RQUA] StreamId not starting with ".audit-"  should return an error', async () => {
-    const res = await coreRequest
-    .get(auditPath)
-    .set('Authorization', appAccess.token)
-    .query({streams: ['toto'] });
-    assert.strictEqual(res.status, 400);
-    assert.exists(res.body.error);
-    assert.equal(res.body.error.id, 'invalid-request-structure');
-    assert.equal(res.body.error.message, 'Invalid "streams" parameter. It should be an array of streamIds starting with Audit store prefix: ".audit-"');
-  });
 });
 
 function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
