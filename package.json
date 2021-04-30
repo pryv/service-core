@@ -52,7 +52,7 @@
     "**/socket.io": "^2.4.0"
   },
   "dependencies": {
-    "@pryv/boiler": "https://github.com/pryv/lib-node-boiler.git",
+    "@pryv/boiler": "https://github.com/pryv/lib-node-boiler.git#1.0.2",
     "async": "^2.5.0",
     "awaiting": "^3.0.0",
     "axon": "2.0.x",
