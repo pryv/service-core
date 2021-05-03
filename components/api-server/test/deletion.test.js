@@ -144,11 +144,12 @@ describe('DELETE /users/:username', async () => {
 
   isOpenSource = config.get('openSource:isActive');
 
+  // [isDnsLess, isOpenSource]
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
-    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T', '75IW'],
-    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR', '7WMG'],
-    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B']];
+    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T', '75IW', 'MPXH'],
+    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR', '7WMG', 'UWYY'],
+    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B', 'L2Q1']];
   for (let i = 0; i < settingsToTest.length; i++) {
     
 
@@ -218,12 +219,17 @@ describe('DELETE /users/:username', async () => {
           assert(sessions === null || sessions === []);
         });
         it(`[${testIDs[i][2]}] should delete user event files`, async function() {
-          const pathToUserFiles = app.storageLayer.eventFiles.getAttachmentPath(userToDelete.attrs.id);
+          const pathToUserFiles = app.storageLayer.eventFiles.getAttachmentPath(userToDelete.id);
           const userFileExists = fs.existsSync(pathToUserFiles);
           assert.isFalse(userFileExists);
         });
-        it(`[${testIDs[i][8]}] should delete user audit events`, async function() {
-          const pathToUserAuditData = require('business').users.UserLocalDirectory.pathForuserId(userToDelete.attrs.id);
+        it(`[${testIDs[i][8]}] should delete HF data`, async function() {
+          const databases = await influx.getDatabases();
+          const isFound = databases.indexOf(`user.${userToDelete.username}`) >= 0;
+          assert.isFalse(isFound);
+        });
+        it(`[${testIDs[i][9]}] should delete user audit events`, async function() {
+          const pathToUserAuditData = require('business').users.UserLocalDirectory.pathForuserId(userToDelete.id);
           const userFileExists = fs.existsSync(pathToUserAuditData);
           assert.isFalse(userFileExists);
         });
@@ -313,8 +319,8 @@ async function initiateUserWithData(username: string) {
   
   if (! isOpenSource) {
     const usersSeries = await influxRepository.get(
-      `${username}_namespace`,
-      `${username}_name`
+      `user.${username}`,
+      `event.${cuid()}`
     );
     const data = new DataMatrix(
       ['deltaTime', 'value'],
@@ -324,8 +330,9 @@ async function initiateUserWithData(username: string) {
       ]
     );
     usersSeries.append(data);
+    // generate audit trace
     await request.get(`/${username}/events`)
       .set('Authorization', token);
   }
-  return user;
+  return user.attrs;
 }

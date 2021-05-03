@@ -62,6 +62,13 @@ class InfluxConnection {
     
     return this.conn.query(query, options); 
   }
+
+  /**
+   * used for tests, Returns an array of database names
+   */
+  getDatabases(): Promise<Array<string>> {
+    return this.conn.getDatabaseNames();
+  }
 }
 
 module.exports = InfluxConnection; 
