@@ -24,6 +24,7 @@ const {
   produceMongoConnection,
   produceInfluxConnection,
 } = require('api-server/test/test-helpers');
+const { Notifications } = require('messages');
 const bluebird = require('bluebird');
 
 let app;
@@ -57,6 +58,23 @@ describe('DELETE /users/:username', async () => {
       app.storageLayer,
       app.config
     );
+    let axonMsgs = [];
+    const axonSocket = {
+      emit: (...args) => axonMsgs.push(args),
+    };
+    const notifications = new Notifications(axonSocket);
+    require('api-server/src/methods/events')(
+      app.api,
+      app.storageLayer.events,
+      app.storageLayer.eventFiles,
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
+      notifications,
+      app.logging,
+      app.config.get('versioning'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
 
     request = supertest(app.expressApp);
 
@@ -204,7 +222,7 @@ describe('DELETE /users/:username', async () => {
           const userFileExists = fs.existsSync(pathToUserFiles);
           assert.isFalse(userFileExists);
         });
-        it(`[${testIDs[i][8]}] WAOAWA should delete user audit events`, async function() {
+        it(`[${testIDs[i][8]}] should delete user audit events`, async function() {
           const pathToUserAuditData = require('business').users.UserLocalDirectory.pathForuserId(userToDelete.attrs.id);
           const userFileExists = fs.existsSync(pathToUserAuditData);
           assert.isFalse(userFileExists);
@@ -275,9 +293,9 @@ async function initiateUserWithData(username: string) {
     type: 'mass/kg',
     content: charlatan.Number.digit(),
   });
-
-  user.access({ id: charlatan.Lorem.word() });
-  user.session(charlatan.Lorem.word());
+  const token = cuid();
+  await user.access({ id: charlatan.Lorem.word(), token, type: 'app', permissions: [{ streamId: stream.attrs.id, level: 'read' }] });
+  await user.session(charlatan.Lorem.word());
   if (! isOpenSource)
     user.webhook({ id: charlatan.Lorem.word() }, charlatan.Lorem.word());
 
@@ -306,6 +324,8 @@ async function initiateUserWithData(username: string) {
       ]
     );
     usersSeries.append(data);
+    await request.get(`/${username}/events`)
+      .set('Authorization', token);
   }
   return user;
 }

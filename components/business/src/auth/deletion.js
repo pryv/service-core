@@ -161,12 +161,12 @@ class Deletion {
     params: mixed,
     result: Result,
     next: ApiCallback
-  ) {
+  ) { 
     if (this.config.get('openSource:isActive')) return next();
     // dynamic loading , because series functionality does not exist in opensource
     const pathForuserId = require('business/src/users/UserLocalDirectory').pathForuserId;
     const auditFolder = pathForuserId(context.user.id);
-    fs.unlinkSync(auditFolder);
+    await bluebird.fromCallback(cb => rimraf(auditFolder, { disableGlob: true }, cb));
     next();
   }
 
