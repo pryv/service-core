@@ -44,7 +44,6 @@ const errorsMiddlewareMod = require('./middleware/errors');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
-const audit = require('audit'); // Audit is loaded to be initalized by the Application.
 
 const { Extension, ExtensionLoader } = require('utils').extension;
 
@@ -82,6 +81,7 @@ class Application {
 
   constructor() {
     this.initalized = false;
+    this.isOpenSource = false;
     logger.debug('creation');
 
     this.api = new API(); 
@@ -100,7 +100,13 @@ class Application {
     await UserLocalDirectory.init();
 
     this.config = await getConfig();
-    await audit.init();
+    this.isOpenSource = this.config.get('openSource:isActive');
+    
+    if (! this.isOpenSource) {
+      const audit = require('audit');
+      await audit.init();
+    }
+    
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
     this.initiateRoutes();
