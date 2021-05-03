@@ -79,6 +79,8 @@ class Application {
   
   expressApp: express$Application;
 
+  isOpenSource: boolean;
+
   constructor() {
     this.initalized = false;
     this.isOpenSource = false;
@@ -125,7 +127,6 @@ class Application {
   }
 
   initiateRoutes() {
-    const isOpenSource = this.config.get('openSource:isActive');
     
     if (this.config.get('dnsLess:isActive')) {
       require('./routes/register')(this.expressApp, this);
@@ -134,7 +135,7 @@ class Application {
     // system, root, register and delete MUST come first
     require('./routes/auth/delete')(this.expressApp, this);
     require('./routes/auth/register')(this.expressApp, this);
-    if (isOpenSource) {
+    if (this.isOpenSource) {
       require('www')(this.expressApp, this);
       require('register')(this.expressApp, this);
     }
@@ -152,7 +153,7 @@ class Application {
     require('./routes/streams')(this.expressApp, this);
 
     
-    if(!isOpenSource) {
+    if(! this.isOpenSource) {
       require('./routes/webhooks')(this.expressApp, this);
       require('audit/src/routes/audit.route')(this.expressApp, this);
     }
@@ -205,8 +206,8 @@ class Application {
   
     let customAuthStep = null;
     if ( customAuthStepFnPath) {
-       logger.debug('Loading CustomAuthStepFn from ' + customAuthStepFnPath);
-       customAuthStep = loader.loadFrom(customAuthStepFnPath);
+      logger.debug('Loading CustomAuthStepFn from ' + customAuthStepFnPath);
+      customAuthStep = loader.loadFrom(customAuthStepFnPath);
     } else {
       // assert: no path was configured in configuration file, try loading from 
       // default location:

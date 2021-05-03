@@ -7,8 +7,6 @@
 
 const bluebird = require('bluebird');
 
-const logger = require('@pryv/boiler').getLogger('audit:validation');
-
 const helpers = require('api-server/src/schema/helpers');
 const validator = require('api-server/src/schema/validation');
 
@@ -34,7 +32,7 @@ const filterSchema = helpers.object({
     additionalProperties: false,
 });
 
- /**
+/**
   * @param {identifier} userId 
   * @param {PryvEvent} event 
   */
