@@ -22,9 +22,9 @@ let basePath;
  * @param {string} uid -- user id (cuid format)
  * @param {string} [extraPath] -- Optional, extra path 
  */
- function EnsurePathForUserid(userid, extraPath = '') {
-  const resultPath = PathForUserid(userid, extraPath)
-  mkdirp.sync(resultPath); // ensure directory exists
+ function ensureUserDirectory(userId, extraPath = '') {
+  const resultPath = pathForuserId(userId, extraPath)
+  mkdirp.sync(resultPath); // ensures directory exists
   return resultPath;
 }
 
@@ -33,17 +33,17 @@ let basePath;
  * @param {string} uid -- user id (cuid format)
  * @param {string} [extraPath] -- Optional, extra path 
  */
-function PathForUserid(userid, extraPath = '') {
+function pathForuserId(userId, extraPath = '') {
   if (! basePath) {
     throw(new Error('Initialize UserLocalDirectory first'));
   }
-  if (! userid || userid.length < 3) {
-    throw(new Error('Invalid or too short userid: ' + userid));
+  if (! userId || userId.length < 3) {
+    throw(new Error('Invalid or too short userId: ' + userId));
   }
- const dir1 = userid.substr(userid.length - 1, 1); // last character of id
- const dir2 = userid.substr(userid.length - 2, 1); 
- const dir3 = userid.substr(userid.length - 3, 1); 
- const resultPath = path.join(basePath, dir1, dir2, dir3, userid, extraPath);
+ const dir1 = userId.substr(userId.length - 1, 1); // last character of id
+ const dir2 = userId.substr(userId.length - 2, 1); 
+ const dir3 = userId.substr(userId.length - 3, 1); 
+ const resultPath = path.join(basePath, dir1, dir2, dir3, userId, extraPath);
  return resultPath;
 }
 
@@ -62,7 +62,7 @@ async function init() {
 
 
 module.exports = {
-  EnsurePathForUserid,
-  PathForUserid,
-  init
+  ensureUserDirectory,
+  pathForuserId,
+  init,
 }

@@ -31,6 +31,7 @@ module.exports = function(
     deletion.validateUserFilepaths.bind(deletion),
     deletion.deleteUserFiles.bind(deletion),
     deletion.deleteHFData.bind(deletion),
+    deletion.deleteAuditData.bind(deletion),
     deletion.deleteOnRegister.bind(deletion),
     deletion.deleteUser.bind(deletion)
   );

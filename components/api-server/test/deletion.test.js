@@ -28,7 +28,7 @@ const bluebird = require('bluebird');
 
 let app;
 let authKey;
-let username1;
+let username1; // fixtures reuse the username for userId
 let user1;
 let username2;
 let user2;
@@ -128,9 +128,9 @@ describe('DELETE /users/:username', async () => {
 
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
-    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T'],
-    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR'],
-    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J']];
+    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T', '75IW'],
+    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR', '7WMG'],
+    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B']];
   for (let i = 0; i < settingsToTest.length; i++) {
     
 
@@ -202,6 +202,11 @@ describe('DELETE /users/:username', async () => {
         it(`[${testIDs[i][2]}] should delete user event files`, async function() {
           const pathToUserFiles = app.storageLayer.eventFiles.getAttachmentPath(userToDelete.attrs.id);
           const userFileExists = fs.existsSync(pathToUserFiles);
+          assert.isFalse(userFileExists);
+        });
+        it(`[${testIDs[i][8]}] WAOAWA should delete user audit events`, async function() {
+          const pathToUserAuditData = require('business').users.UserLocalDirectory.pathForuserId(userToDelete.attrs.id);
+          const userFileExists = fs.existsSync(pathToUserAuditData);
           assert.isFalse(userFileExists);
         });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {

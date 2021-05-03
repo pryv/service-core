@@ -10,7 +10,7 @@ const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:storage');
-const EnsureUserDirectory = require('business').users.UserLocalDirectory.EnsurePathForUserid;
+const ensureUserDirectory = require('business').users.UserLocalDirectory.ensureUserDirectory;
 
 const MAX_SIZE_CACHE = 500;
 
@@ -73,7 +73,7 @@ function open(storage, userid) {
  * @param {string} uid -- user id (cuid format)
  */
 function dbPathForUserid(userid) {
-  const userPath = EnsureUserDirectory(userid);
+  const userPath = ensureUserDirectory(userid);
   return path.join(userPath, 'audit.sqlite');
 }
 
