@@ -155,17 +155,23 @@ module.exports = async function (
       if (storeId === 'audit') {
         console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
         if (context.access.isPersonal()) return true;
-        if (streamId === 'access:' + context.access.id) return true;
-        if (streamId.startsWith('action:')) return true;
+        if (streamId === 'access-' + context.access.id) return true;
+        if (streamId.startsWith('action-')) return true;
         console.log('False');
       }
 
-      return authorizedStreamsIds.includes(streamId);
+      return context.access.canGetEventsOnStream(stream.id);
     }
 
+    /** Streams passed here have already been flagged as authorized  */
     function isAccessibleStream(streamId, storeId) {
       if (storeId === 'audit') {
         console.log('XXXXX TO BE CHANGED > Accessible audit streamId Query', streamId, storeId);
+        return true;
+      }
+      // check stream exists
+      if (params.)
+      if (params.state === 'all' || params.state === 'trashed') { 
         return true;
       }
       return accessibleStreamsIds.includes(streamId);
@@ -228,9 +234,16 @@ module.exports = async function (
     delete storeQueryMap.local;
     delete params.streams;
     params.streamsQueryMapByStore = storeQueryMap;
-    await stores.events.generateStreams(context.user.id, params, function (eventsStream) {
+
+    /**
+     * Will be called by "stores" for each source of event that need to be streames to result
+     * @param {} eventsStream 
+     */
+    function addnewEventStreamFromSource (eventsStream) {
       result.addToConcatArrayStream('events', eventsStream);
-    });
+    }
+
+    await stores.events.generateStreams(context.user.id, params, addnewEventStreamFromSource);
     
 
     // set back local streamQuery for events
