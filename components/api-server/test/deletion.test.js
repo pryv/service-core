@@ -219,17 +219,17 @@ describe('DELETE /users/:username', async () => {
           assert(sessions === null || sessions === []);
         });
         it(`[${testIDs[i][2]}] should delete user event files`, async function() {
-          const pathToUserFiles = app.storageLayer.eventFiles.getAttachmentPath(userToDelete.id);
+          const pathToUserFiles = app.storageLayer.eventFiles.getAttachmentPath(userToDelete.attrs.id);
           const userFileExists = fs.existsSync(pathToUserFiles);
           assert.isFalse(userFileExists);
         });
         it(`[${testIDs[i][8]}] should delete HF data`, async function() {
           const databases = await influx.getDatabases();
-          const isFound = databases.indexOf(`user.${userToDelete.username}`) >= 0;
+          const isFound = databases.indexOf(`user.${userToDelete.attrs.username}`) >= 0;
           assert.isFalse(isFound);
         });
         it(`[${testIDs[i][9]}] should delete user audit events`, async function() {
-          const pathToUserAuditData = require('business').users.UserLocalDirectory.pathForuserId(userToDelete.id);
+          const pathToUserAuditData = require('business').users.UserLocalDirectory.pathForuserId(userToDelete.attrs.id);
           const userFileExists = fs.existsSync(pathToUserAuditData);
           assert.isFalse(userFileExists);
         });
@@ -334,5 +334,5 @@ async function initiateUserWithData(username: string) {
     await request.get(`/${username}/events`)
       .set('Authorization', token);
   }
-  return user.attrs;
+  return user;
 }
