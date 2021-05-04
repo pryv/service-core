@@ -25,7 +25,6 @@ module.exports = function(expressApp: express$Application, app: Application) {
   const initContextMiddleware = middleware.initContext(app.storageLayer);
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
   
-
   expressApp.delete('/users/:username',
     middleware.getAuth,
     initContextMiddleware,

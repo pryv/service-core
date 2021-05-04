@@ -59,7 +59,7 @@ class Series {
     const toMeasurement = (row) => {
       const struct = row.toStruct(); 
 
-      // FLOW This cannot fail, but somehow flow things we access the deltaTime. 
+      // FLOW This cannot fail, but somehow flow thinks we access the deltaTime. 
       delete struct.deltaTime; 
       
       const deltaTime = row.get('deltaTime');

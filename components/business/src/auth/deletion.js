@@ -156,6 +156,19 @@ class Deletion {
     next();
   }
 
+  async deleteAuditData (
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) { 
+    if (this.config.get('openSource:isActive')) return next();
+    // dynamic loading , because series functionality does not exist in opensource
+    const deleteUserDirectory = require('business/src/users/UserLocalDirectory').deleteUserDirectory;
+    await deleteUserDirectory(context.user.id);
+    next();
+  }
+
   async deleteUser(
     context: MethodContext,
     params: mixed,

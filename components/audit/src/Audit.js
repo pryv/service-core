@@ -105,7 +105,8 @@ class Audit {
       this.syslog.eventForUser(userId, event);
     }
     if (this.storage && isAudited.storage) {
-      this.storage.forUser(userId).createEvent(event);
+      const userStorage = await this.storage.forUser(userId);
+      userStorage.createEvent(event);
     }
   }
 

@@ -65,7 +65,7 @@ function limitStreamQueryToAccessToken(context, params, result, next) {
 
 
 // From storage
-function getAuditLogs(context, params, result, next) {
+async function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = auditStorage.forUser(context.user.id);
     result.addStream('auditLogs', userStorage.getLogsStream(params, true));

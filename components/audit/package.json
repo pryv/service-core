@@ -12,7 +12,6 @@
     "test": "NODE_ENV=test ../../node_modules/.bin/mocha --reporter=dot test/**/*.test.js --exit"
   },
   "dependencies": {
-    "@pryv/boiler": "git+https://github.com/pryv/lib-node-boiler.git",
     "better-sqlite3": "^7.1.1",
     "cuid": "^2.1.8",
     "lru-cache": "^6.0.0",

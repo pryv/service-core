@@ -24,11 +24,12 @@ const {
   produceMongoConnection,
   produceInfluxConnection,
 } = require('api-server/test/test-helpers');
+const { Notifications } = require('messages');
 const bluebird = require('bluebird');
 
 let app;
 let authKey;
-let username1;
+let username1; // fixtures reuse the username for userId
 let user1;
 let username2;
 let user2;
@@ -57,6 +58,23 @@ describe('DELETE /users/:username', async () => {
       app.storageLayer,
       app.config
     );
+    let axonMsgs = [];
+    const axonSocket = {
+      emit: (...args) => axonMsgs.push(args),
+    };
+    const notifications = new Notifications(axonSocket);
+    require('api-server/src/methods/events')(
+      app.api,
+      app.storageLayer.events,
+      app.storageLayer.eventFiles,
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
+      notifications,
+      app.logging,
+      app.config.get('versioning'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
 
     request = supertest(app.expressApp);
 
@@ -126,11 +144,12 @@ describe('DELETE /users/:username', async () => {
 
   isOpenSource = config.get('openSource:isActive');
 
+  // [isDnsLess, isOpenSource]
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
-    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T'],
-    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR'],
-    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J']];
+    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T', '75IW', 'MPXH'],
+    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR', '7WMG', 'UWYY'],
+    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B', 'L2Q1']];
   for (let i = 0; i < settingsToTest.length; i++) {
     
 
@@ -204,6 +223,16 @@ describe('DELETE /users/:username', async () => {
           const userFileExists = fs.existsSync(pathToUserFiles);
           assert.isFalse(userFileExists);
         });
+        it(`[${testIDs[i][8]}] should delete HF data`, async function() {
+          const databases = await influx.getDatabases();
+          const isFound = databases.indexOf(`user.${userToDelete.attrs.username}`) >= 0;
+          assert.isFalse(isFound);
+        });
+        it(`[${testIDs[i][9]}] should delete user audit events`, async function() {
+          const pathToUserAuditData = require('business').users.UserLocalDirectory.pathForuserId(userToDelete.attrs.id);
+          const userFileExists = fs.existsSync(pathToUserAuditData);
+          assert.isFalse(userFileExists);
+        });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
           const user = await usersRepository.getById(username2);
           assert.exists(user);
@@ -270,9 +299,9 @@ async function initiateUserWithData(username: string) {
     type: 'mass/kg',
     content: charlatan.Number.digit(),
   });
-
-  user.access({ id: charlatan.Lorem.word() });
-  user.session(charlatan.Lorem.word());
+  const token = cuid();
+  await user.access({ id: charlatan.Lorem.word(), token, type: 'app', permissions: [{ streamId: stream.attrs.id, level: 'read' }] });
+  await user.session(charlatan.Lorem.word());
   if (! isOpenSource)
     user.webhook({ id: charlatan.Lorem.word() }, charlatan.Lorem.word());
 
@@ -290,8 +319,8 @@ async function initiateUserWithData(username: string) {
   
   if (! isOpenSource) {
     const usersSeries = await influxRepository.get(
-      `${username}_namespace`,
-      `${username}_name`
+      `user.${username}`,
+      `event.${cuid()}`
     );
     const data = new DataMatrix(
       ['deltaTime', 'value'],
@@ -301,6 +330,9 @@ async function initiateUserWithData(username: string) {
       ]
     );
     usersSeries.append(data);
+    // generate audit trace
+    await request.get(`/${username}/events`)
+      .set('Authorization', token);
   }
   return user;
 }

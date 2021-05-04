@@ -35,7 +35,7 @@ describe('Storage', () => {
     it('[KA8B] should have written the action in the user\'s database', async () => {
       const event = await sendAndWait({});
 
-      const userStrorage = audit.storage.forUser(userid);
+      const userStrorage = await audit.storage.forUser(userid);
       const entries = userStrorage.getLogs({createdBy: createdBy});
       assert.equal(entries.length, 1);
       assert.equal(entries[0].createdBy, createdBy);

@@ -14,7 +14,9 @@ const commonMeta = require('../methods/helpers/setCommonMeta');
 
 const { getLogger, notifyAirbrake } = require('@pryv/boiler');
 
-const audit = require('audit');
+const { getConfigUnsafe } = require('@pryv/boiler');
+
+
 
 (async () => {
   await commonMeta.loadSettings();
@@ -24,6 +26,13 @@ const audit = require('audit');
  */
 function produceHandleErrorMiddleware(logging: any) {
   const logger = logging.getLogger('error-middleware');
+
+  const config = getConfigUnsafe();
+  const isOpenSource = config.get('openSource:isActive');
+  let audit;
+  if (! isOpenSource) {
+    audit = require('audit');
+  }
  
   // NOTE next is not used, since the request is terminated on all errors. 
   /*eslint-disable no-unused-vars*/
@@ -33,7 +42,9 @@ function produceHandleErrorMiddleware(logging: any) {
       error = errorsFactory.invalidRequestStructure(error.message);
     }
 
-    audit.errorApiCall(req.context, {}, error);
+    if (! isOpenSource) {
+      audit.errorApiCall(req.context, {}, error);
+    }
 
     errorHandling.logError(error, req, logger);
 
