@@ -10,6 +10,8 @@
 const path = require('path');
 const fs = require('fs');
 
+const rimraf = require('rimraf');
+const bluebird = require('bluebird');
 const mkdirp = require('mkdirp');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
@@ -48,6 +50,16 @@ function pathForuserId(userId, extraPath = '') {
 }
 
 /**
+ * Delete user data folder
+ * 
+ * @param {*} userId -- user id
+ */
+async function deleteUserDirectory(userId) {
+  const userFolder = pathForuserId(userId);
+  await bluebird.fromCallback(cb => rimraf(userFolder, { disableGlob: true }, cb));
+}
+
+/**
  * Load config and make sure baseUserDirectory exists
  * This could also handle eventual migrations
  */
@@ -64,5 +76,6 @@ async function init() {
 module.exports = {
   ensureUserDirectory,
   pathForuserId,
+  deleteUserDirectory,
   init,
 }

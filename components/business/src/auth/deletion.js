@@ -164,9 +164,8 @@ class Deletion {
   ) { 
     if (this.config.get('openSource:isActive')) return next();
     // dynamic loading , because series functionality does not exist in opensource
-    const pathForuserId = require('business/src/users/UserLocalDirectory').pathForuserId;
-    const auditFolder = pathForuserId(context.user.id);
-    await bluebird.fromCallback(cb => rimraf(auditFolder, { disableGlob: true }, cb));
+    const deleteUserDirectory = require('business/src/users/UserLocalDirectory').deleteUserDirectory;
+    await deleteUserDirectory(context.user.id);
     next();
   }
 
