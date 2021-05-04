@@ -40,11 +40,11 @@ function pathForuserId(userId, extraPath = '') {
   if (! userId || userId.length < 3) {
     throw(new Error('Invalid or too short userId: ' + userId));
   }
- const dir1 = userId.substr(userId.length - 1, 1); // last character of id
- const dir2 = userId.substr(userId.length - 2, 1); 
- const dir3 = userId.substr(userId.length - 3, 1); 
- const resultPath = path.join(basePath, dir1, dir2, dir3, userId, extraPath);
- return resultPath;
+  const dir1 = userId.substr(userId.length - 1, 1); // last character of id
+  const dir2 = userId.substr(userId.length - 2, 1); 
+  const dir3 = userId.substr(userId.length - 3, 1); 
+  const resultPath = path.join(basePath, dir1, dir2, dir3, userId, extraPath);
+  return resultPath;
 }
 
 /**
