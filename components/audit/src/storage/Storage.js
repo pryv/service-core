@@ -49,10 +49,10 @@ class Storage {
    * @param {string} userid 
    * @returns {UserDatabase} 
    */
-  forUser(userid) {
+  async forUser(userid) {
     logger.debug('forUser: ' + userid);
     this.checkInititalized();
-    return this.userDBsCache.get(userid) || open(this, userid);
+    return this.userDBsCache.get(userid) || await open(this, userid);
   }
 
   close() {
@@ -61,9 +61,9 @@ class Storage {
   }
 }
 
-function open(storage, userid) {
+async function open(storage, userid) {
   logger.debug('open: ' + userid);
-  const db = new UserDatabase({dbPath: dbPathForUserid(userid)});
+  const db = new UserDatabase({dbPath: await dbPathForUserid(userid)});
   storage.userDBsCache.set(userid, db);
   return db;
 }
@@ -72,8 +72,8 @@ function open(storage, userid) {
  /**
  * @param {string} uid -- user id (cuid format)
  */
-function dbPathForUserid(userid) {
-  const userPath = ensureUserDirectory(userid);
+async function dbPathForUserid(userid) {
+  const userPath = await ensureUserDirectory(userid);
   return path.join(userPath, 'audit.sqlite');
 }
 

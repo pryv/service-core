@@ -22,9 +22,9 @@ let basePath;
  * @param {string} uid -- user id (cuid format)
  * @param {string} [extraPath] -- Optional, extra path 
  */
- function ensureUserDirectory(userId, extraPath = '') {
+async function ensureUserDirectory(userId, extraPath = '') {
   const resultPath = pathForuserId(userId, extraPath)
-  mkdirp.sync(resultPath); // ensures directory exists
+  await mkdirp(resultPath); // ensures directory exists
   return resultPath;
 }
 
