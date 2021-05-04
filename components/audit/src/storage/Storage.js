@@ -12,7 +12,7 @@ const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:storage');
 const ensureUserDirectory = require('business').users.UserLocalDirectory.ensureUserDirectory;
 
-const MAX_SIZE_CACHE = 500;
+const CACHE_SIZE = 500;
 
 class Storage { 
   initialized = false;
@@ -32,7 +32,7 @@ class Storage {
   constructor(options) { 
     this.options = options || {}; 
     this.userDBsCache = new LRU({
-      max: this.options.max || MAX_SIZE_CACHE,
+      max: this.options.max || CACHE_SIZE,
       dispose: function (key, db) { db.close(); }
     });
   }
