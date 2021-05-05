@@ -6,44 +6,44 @@
  */
 const { assert } = require('chai');
 
-const { toSQLLiteQuery } = require('../../src/storage/sqlliteStreamQueryUtils');
+const { toSQLiteQuery } = require('audit/src/storage/sqLiteStreamQueryUtils');
 
 
 describe('toSqliteQuery()', function() {
 
   it('[YS6Y] must convert to SQLLite including expansion', async function () {
     const clean = [{ any: ['A', 'B', 'C']}];
-    const sqllite = toSQLLiteQuery(clean);      
+    const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '("A" OR "B" OR "C")');
   });
 
   it('[R8I5] must convert to SQLLite including with "ALL"', async function () {
     const clean = [{ any: ['B']}];
-    const sqllite = toSQLLiteQuery(clean);      
+    const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '"B"');
   });
 
   it('[EWLK] must convert to SQLLite  streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
     const clean = [{ any: ['A'], all: ['D','F'] }];
-    const sqllite = toSQLLiteQuery(clean);      
+    const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '"A" AND "D" AND "F"');
   });
 
   it('[1FYY] must convert to SQLLite including expansion with "NOT"', async function () {
     const clean = [{any: ['A', 'B'], not: ['E']}];
-    const sqllite = toSQLLiteQuery(clean);      
+    const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '("A" OR "B") NOT "E"');
   });
 
   it('[3TTK] must convert to SQLLite including expansion with "ALL" and "NOT"', async function () {
     const clean = [{any: ['A', 'E'], all: ['D', 'C'], not: ['D', 'F']}];
-    const sqllite = toSQLLiteQuery(clean);      
+    const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '("A" OR "E") AND "D" AND "C" NOT "D" NOT "F"');
   });
 
   it('[1ZJU] must handle array of queries', async function () {
     const clean = [{any: ['B']},{all: ['D'] , not: ['E']}];
-    const sqllite = toSQLLiteQuery(clean);      
+    const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '("B") OR ("D" NOT "E")');
   });
 });

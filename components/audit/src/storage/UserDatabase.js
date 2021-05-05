@@ -12,7 +12,7 @@ const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:user-database');
 const { Readable } = require('stream');
 
-const { toSQLLiteQuery } = require('./sqlliteStreamQueryUtils');
+const { toSQLiteQuery } = require('audit/src/storage/sqLiteStreamQueryUtils');
 
 const DB_OPTIONS = {
 
@@ -138,7 +138,7 @@ function prepareLogQuery(params = {}) {
   }
 
   if (params.streams != null) {
-    ands.push('streamIds MATCH \'' + toSQLLiteQuery(params.streams) + '\'');
+    ands.push('streamIds MATCH \'' + toSQLiteQuery(params.streams) + '\'');
   }
   
   let queryString = 'SELECT * FROM events_fts';

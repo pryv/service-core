@@ -6,10 +6,10 @@
  */
 
 /**
- * Transform queries for SQLLight - to be run on 
+ * Transform queries for SQLite - to be run on 
  * @param {} streamQuery 
  */
-exports.toSQLLiteQuery = function toSQLLiteQuery(streamQuery) {
+exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
   if (!streamQuery) return null;
   
 
