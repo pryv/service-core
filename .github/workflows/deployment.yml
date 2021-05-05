@@ -41,9 +41,6 @@ jobs:
       
     - name: yarn setup
       run: yarn setup
-      
-    - name: yarn release
-      run: yarn release
         
     - name: Build and deploy
       run: ./build/build_workflow
