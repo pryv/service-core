@@ -114,7 +114,7 @@ describe('Audit legacy route', function() {
     validateResults(logs, appAccess.id);
   });
 
-  it('[R1ZF] Invalid token should retrun an error', async () => {
+  it('[R1ZF] Invalid token should return an error', async () => {
     const res = await coreRequest
     .get(auditPath)
     .set('Authorization', 'invalid');
