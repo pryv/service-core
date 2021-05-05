@@ -93,7 +93,7 @@ class AuditUserStreams extends UserStreams {
 
 class AuditUserEvents extends UserEvents {
   async getStreamed(uid, params) {
-    const userStorage = audit.storage.forUser(uid);
+    const userStorage = await audit.storage.forUser(uid);
     return userStorage.getLogsStream(params);
   }
 }

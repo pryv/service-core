@@ -160,7 +160,7 @@ module.exports = async function (
         console.log('False');
       }
 
-      return context.access.canGetEventsOnStream(stream.id);
+      return authorizedStreamsIds.includes(streamId);;
     }
 
     /** Streams passed here have already been flagged as authorized  */
@@ -170,10 +170,6 @@ module.exports = async function (
         return true;
       }
       // check stream exists
-      if (params.)
-      if (params.state === 'all' || params.state === 'trashed') { 
-        return true;
-      }
       return accessibleStreamsIds.includes(streamId);
     }
 
