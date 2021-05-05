@@ -36,11 +36,6 @@ jobs:
         username: ${{ secrets.REGISTRY_PRYV_USERNAME }}
         password: ${{ secrets.REGISTRY_PRYV_PASSWORD }}
 
-    - name: Download base image and change the tag
-      run: |
-        docker pull ${{ secrets.REGISTRY_PRYV_SERVER }}/pryvio/base:1.3.40
-        docker tag "${{ secrets.REGISTRY_PRYV_SERVER }}/pryvio/base:1.3.40" "pryvio/base:1.3.40"
-
     - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install
       run: sudo apt-get install unicode-data
       
