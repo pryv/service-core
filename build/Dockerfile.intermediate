@@ -3,9 +3,6 @@ MAINTAINER "Tech@Pryv" <tech@pryv.com>
 
 # Set main paths that will be reused in this docker file
 ARG TARGET_DIR="/app/bin"
-ARG CONF_DIR="/app/conf"
-ARG LOG_DIR="/app/log"
-ARG DATA_DIR="/app/data"
 
 # pass building name as an argument (like core,previews or other)
 ARG COMPONENT_NAME
@@ -22,6 +19,11 @@ RUN yarn release > /dev/null
 RUN rm -rf components && rm -rf node_modules
 
 FROM core-base
+
+ARG TARGET_DIR="/app/bin"
+ARG CONF_DIR="/app/conf"
+ARG LOG_DIR="/app/log"
+
 # Copy config file
 RUN mkdir -p $CONF_DIR && \
 	cp $TARGET_DIR/build/$COMPONENT_NAME/config/$COMPONENT_NAME.json $CONF_DIR/$COMPONENT_NAME.json
