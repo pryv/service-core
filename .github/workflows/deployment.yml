@@ -45,8 +45,5 @@ jobs:
     - name: yarn release
       run: yarn release
         
-    - name: yarn test
-      run: echo "Pretending that I run tests" 
-        
     - name: Build and deploy
       run: ./build/build_workflow
