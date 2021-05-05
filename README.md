@@ -179,22 +179,6 @@ Those components also accept the following command line options:
 - `--help` displays all available configuration settings as a schema structure (and exits)
 - `--printConfig` prints the configuration settings actually loaded (e.g. for debugging purposes)
 
-
-## Nginx proxy - to verify and probably fix
-
-*Prerequisite:* NGINX
-
-The proxy runs on `https://{username}.rec.la:8080` (`{username}` can be anything and is configured as follows:
-
-- `/api/{path}` proxies for `/{path}` on the API server
-- `/previews/{path}` proxies for `/{path}` on the previews server
-- `/{path}` serves files from `{static.root}` as defined in the Nginx config
-
-The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` in `vars.{environment}.js`. To generate a `nginx.conf`, do `node scripts/compile-proxy-config {variables file}` (this is automatically done for development when running the proxy with `yarn proxy`).
-
-In development, Nginx runs on HTTPS with a "dev" SSL certificate on domain `*.rec.la` (where `*` is whatever Pryv username you like), whose DNS entry points to `127.0.0.1`. This little trick enables HTTPS connections to the local server via wildcard subdomains, without having to rely on additional tools like Dnsmasq.
-
-
 ## Customizing server behaviour
 
 It is possible to extend the API and previews servers with your own code, via the configuration keys defined under `customExtensions`:
