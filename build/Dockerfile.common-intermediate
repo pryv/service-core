@@ -8,8 +8,6 @@ ARG TARGET_DIR="/app/bin"
 COPY . $TARGET_DIR
 WORKDIR $TARGET_DIR
 
-RUN yarn setup
-
 # Perform a release build of the source code. (-> dist)
 RUN yarn release > /dev/null
 
