@@ -48,8 +48,7 @@
   "resolutions": {
     "**/bl": "^2.2.1",
     "**/ini": "^1.3.6",
-    "**/node-fetch": "^2.6.1",
-    "**/socket.io": "^2.4.0"
+    "**/node-fetch": "^2.6.1"
   },
   "dependencies": {
     "@pryv/boiler": "https://github.com/pryv/lib-node-boiler.git",
