@@ -20,11 +20,14 @@ cp ./build_tag ./.api-version
 
 host='eu.gcr.io'
 
+echo "---------------------------- building core base --------------------------------" 
+docker build -f $SCRIPT_FOLDER/Dockerfile.common-intermediate -t pryvio/common-intermediate:latest .
+
 # Builds these images: core hfs webhooks preview 
 for service in core hfs webhooks preview
 do
     echo "---------------------------- building $service --------------------------------"
-    docker build --build-arg COMPONENT_NAME=$service  -f $SCRIPT_FOLDER/Dockerfile.intermediate -t pryvio/intermediate-$service:latest .
+    docker build --build-arg COMPONENT_NAME=$service  -f $SCRIPT_FOLDER/Dockerfile.component-intermediate -t pryvio/intermediate-$service:latest .
     echo $host/pryvio/$service:$version
     docker build -f $SCRIPT_FOLDER/$service/Dockerfile -t $host/pryvio/$service:$version .
     docker push $host/pryvio/$service:$version
