@@ -39,6 +39,7 @@ jobs:
     - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install
       run: sudo apt-get install unicode-data
       
+    # needed to run here, as we are fetching deps from private repos, inside docker builder is not authenticated
     - name: yarn setup
       run: yarn setup
         
