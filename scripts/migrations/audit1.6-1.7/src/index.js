@@ -72,11 +72,22 @@ function listAuditFilesForUser(username) {
 function readFile(username, filename) {
   const file = path.resolve(audiLogsDirs, username, filename);
 
-  return new Promise((resolve) => { 
+  return new Promise((resolve, reject) => { 
     let count = 0;
+    let lineCount = 0;
     lineReader.eachLine(file, function(line, last, cb) {
-      const item = jsonFromLine(line);
-      count++;
+      lineCount++;
+      let item;
+      try {
+         item = eventFromLine(line, username);
+      } catch (e) {
+        cb(false)
+        reject(new Error('Error on file ' + file+':'+lineCount, e.message));
+        return;
+      }
+      if (! item ) {
+        count++;
+      }
       if (last) resolve();
       if (count > 10) { 
         cb(false); 
@@ -88,23 +99,61 @@ function readFile(username, filename) {
   });
 }
 
+const AUTO_ACTIONS = {};
+const ALL_METHODS = require(DistPath + 'components/audit/src/ApiMethods').ALL_METHODS;
 
-const ACTIONS = {
-  'GET /streams': 'streams.get',
-  'GET /events': 'events.get'
+const HTTP = {
+  'create': 'POST',
+  'get': 'GET',
+  'update': 'PUT',
+  'delete': 'DELETE'
 }
+
+for (let a of ALL_METHODS) {
+  const s = a.split('.');
+  const h = HTTP[s[1]];
+  if (! h) continue;
+  AUTO_ACTIONS[h + ' /'+s[0]] = 's';
+}
+
+const ACTIONS = Object.assign(AUTO_ACTIONS,{
+  'POST /{username}/auth/login': 'auth.login',
+  'GET /{username}/profile/private': 'profile.get',
+  'POST /accesses/check-app': 'check.app',
+  'GET /robots.txt': false,
+  'GET /favicon.ico': false,
+  'GET /access-info': 'getAccessInfo',
+  'POST /': 'callBatch',
+  'GET /profile/private': 'profile.getPrivate',
+  'GET /system/user-info/{username}': 'system.getUserInfo',
+  'GET /followed-slices': 'followedSlices.get',
+  'POST /followed-slices': 'followedSlices.create',
+  'UPDATE /followed-slices': 'followedSlices.update',
+  'DELETE /followed-slices': 'followedSlices.delete',
+  'POST /auth/logout': 'auth.logout'
+});
+
+
 function methodIdForAction(action) {
+  const saction = action.split(' ');
+  if (saction[0] === 'OPTIONS') return null;
   const res = ACTIONS[action];
-  if (res) return res;
-  console.log(action);
-  return 'unkown';
+  if (res === false) { return false; }
+  if (res === undefined) {
+    console.log(action);
+    return false;
+  }
+  return res;
 }
 
-function jsonFromLine(line) {
+function eventFromLine(line, username) {
+  if (line.indexOf('message repeated') > 0 && line.indexOf('times: [') > 0) return false;
+
   const detailPos = line.indexOf('Details: ') + 9;
   if (detailPos < 0) {  throw new Error(line); }
   const data = JSON.parse(line.substr(detailPos));
-  const methodId = methodIdForAction(data.action)
+  const methodId = methodIdForAction(data.action.replace(username, '{username}'));
+  if (! methodId) return false;
   const event = {
     createdBy: 'system',
     streamIds: [audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + data.access_id, audit.CONSTANTS.ACTION_STREAM_ID_PREFIX + methodId],
@@ -115,16 +164,24 @@ function jsonFromLine(line) {
       query: data.query,
     }
   }
-  console.log(event);
+  //console.log(event);
+  return event;
 }
 
 async function readLogs(username) {
   const files = await listAuditFilesForUser(username);
+  for (let file of files) {
+    try {
+      await readFile(username, file);
+    } catch (e) {
+      console.log(e);
+      process.exit(1);
+    }
+    console.log(file);
+  }
+  console.log('done');
 
-  await readFile(username, files[0]);
-
-
-  console.log(files);
+  //console.log(files);
 }
 
 
