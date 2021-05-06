@@ -186,7 +186,7 @@ describe('Socket.IO', function () {
       done(new Error('Connecting should have failed'));
     });
   
-    ioCons.con.once('error', function () {
+    ioCons.con.once('connect_error', function () {
       // We expect failure, so we're done here. 
       done();
     });
