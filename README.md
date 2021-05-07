@@ -70,7 +70,6 @@ Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opt
     ├── dist                Once you run 'yarn release', this is created
     ├── docs                Documentation in Markdown format 
     ├── flow-typed           Flow-Type annotations, managed by flow-typed
-    ├── jsdoc.json          JSDoc configuration, `yarn jsdoc`
     ├── node_modules        Package installation, `yarn install`
     ├── package.json        Yarn package file
     ├── proxy               Proxy configuration

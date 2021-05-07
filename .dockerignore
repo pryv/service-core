@@ -22,5 +22,4 @@ var-pryv
 .yarnclean
 application.log
 #babel.config.json
-jsdoc.json
 README.md
