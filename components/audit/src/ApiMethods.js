@@ -38,8 +38,6 @@ const ALL_METHODS = [
   'followedSlices.delete',
   'profile.getPublic',
   'profile.getApp',
-  'profile.getPrivate',
-  'profile.updatePrivate',
   'profile.get',
   'profile.updateApp',
   'profile.update',
