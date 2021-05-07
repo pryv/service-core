@@ -84,12 +84,6 @@ class Application {
   constructor() {
     this.initalized = false;
     this.isOpenSource = false;
-    logger.debug('creation');
-
-    this.api = new API(); 
-    this.systemAPI = new API(); 
-  
-    logger.debug('created');
   }
 
   async initiate() {
@@ -108,6 +102,9 @@ class Application {
       const audit = require('audit');
       await audit.init();
     }
+
+    this.api = new API(); 
+    this.systemAPI = new API(); 
     
     this.produceStorageSubsystem(); 
     await this.createExpressApp();

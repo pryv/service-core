@@ -36,25 +36,12 @@ jobs:
         username: ${{ secrets.REGISTRY_PRYV_USERNAME }}
         password: ${{ secrets.REGISTRY_PRYV_PASSWORD }}
 
-    - name: Download base image and change the tag
-      run: |
-        docker pull ${{ secrets.REGISTRY_PRYV_SERVER }}/pryvio/base:1.3.40
-        docker tag "${{ secrets.REGISTRY_PRYV_SERVER }}/pryvio/base:1.3.40" "pryvio/base:1.3.40"
-
-    - name: Install & run gnatsd, mongodb, influxdb
-      run: sh build/build-dev
-
     - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install
       run: sudo apt-get install unicode-data
       
+    # needed to run here, as we are fetching deps from private repos, inside docker builder is not authenticated
     - name: yarn setup
       run: yarn setup
-      
-    - name: yarn release
-      run: yarn release
-        
-    - name: yarn test
-      run: echo "Pretending that I run tests" 
         
     - name: Build and deploy
       run: ./build/build_workflow
