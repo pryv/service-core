@@ -18,6 +18,7 @@ const CONSTANTS = require('./Constants');
 const validation = require('./validation');
 const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
+const { AuditAccessIds } = require('./MethodContextUtils');
 
 /**
  * EventEmitter interface is just for tests syncing for now
@@ -71,7 +72,7 @@ class Audit {
     const userId = context?.user?.id;
   
     if (context.access?.id == null) {
-      context.access = { id: error.id };
+      context.access = { id: AuditAccessIds.INVALID };
     }
     const event = buildDefaultEvent(context);
     event.type = CONSTANTS.EVENT_TYPE_ERROR;

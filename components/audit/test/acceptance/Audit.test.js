@@ -293,7 +293,7 @@ describe('Audit', function() {
         assert.equal(entries.length, 1);
         const log = entries[0];
         assert.equal(log.content.id, 'invalid-access-token');
-        assert.deepEqual(log.streamIds, [addAccessStreamIdPrefix(log.content.id), addActionStreamIdPrefix('events.get')]);
+        assert.deepEqual(log.streamIds, [addAccessStreamIdPrefix(AuditAccessIds.INVALID), addActionStreamIdPrefix('events.get')]);
         assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });

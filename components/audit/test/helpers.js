@@ -22,6 +22,7 @@ const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
 const { Notifications } = require('messages');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
+const { AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 let initTestsDone = false;
 /**
@@ -138,6 +139,7 @@ Object.assign(global, {
   addActionStreamIdPrefix,
   addAccessStreamIdPrefix,
   CONSTANTS: audit.CONSTANTS,
+  AuditAccessIds: AuditAccessIds,
 });
 
 
