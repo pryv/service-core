@@ -39,12 +39,24 @@ const { getConfig } = require(DistPath + 'node_modules/@pryv/boiler').init({
 const audit = require( DistPath + 'components/audit');
 const UserLocalDirectory = require(DistPath + 'components/business/src/users/UserLocalDirectory');
 
-
+// ---------------- username => ID ---------------//
 
 async function userIdForusername(username) {
   const res = await db.collection('events').findOne({'username__unique': username});
   if (!res) return null;
   return res.userId;
+}
+
+
+function connectToMongo() {
+  const dbconf = config.get('database');
+  const mongoConnectString = `mongodb://${dbconf.host}:${dbconf.port}/`;
+  return new Promise((resolve, reject) => {
+   MongoClient.connect(mongoConnectString, { useUnifiedTopology: true }, (err, client) => {
+      if (err) return reject(err);
+      resolve(client.db(dbconf.name));
+    });
+  });
 }
 
 // -------------- FILES AND DIR (AUDIT) ------------ //
@@ -58,11 +70,11 @@ async function listDirectory(logDiretory) {
   });
 }
 
+// in reverse order !!  
 function listAuditFilesForUser(username) {
   function getLogN(filname) {
     const s = filname.split('.');
-    if (s.lenght < 3) return 0;
-    return parseInt(s[2]);
+    return parseInt(s[2]) || 0;
   }
 
   return new Promise((resolve, reject) => { 
@@ -73,7 +85,7 @@ function listAuditFilesForUser(username) {
         .filter( f => ! f.isDirectory() && f.name.startsWith('audit.log') )
         .map( d => d.name )
         .sort((first, second) => {
-          return getLogN(first) - getLogN(second)
+          return getLogN(second) - getLogN(first)
         }));
     });
   });
@@ -111,6 +123,27 @@ function readFile(username, filename) {
       cb();
     });
   });
+}
+
+
+async function readLogs(username) {
+  const files = await listAuditFilesForUser(username);
+  for (let file of files) {
+    try {
+      await readFile(username, file);
+    } catch (e) {
+      console.log(e);
+      process.exit(1);
+    }
+    console.log(file, userAnchor[username]);
+  }
+  console.log('done', userAnchor[username]);
+
+  //console.log(files);
+}
+
+async function getAuditLogDir() {
+  return path.resolve(__dirname, '../../../../var-pryv/audit-logs/');
 }
 
 // ---------  EVENTS AND CONVERTERS ------------------------//
@@ -172,14 +205,20 @@ function eventFromLine(line, username) {
   }
   const data = JSON.parse(line.substr(detailPos + RESULT_LINE_L));
 
-  const time = (new Date(data.iso_date)).getTime() / 100;
-
+  const time = (new Date(data.iso_date)).getTime() / 1000;
+  if (time <= userAnchor[username].lastSync) {
+    userAnchor[username].skip++;
+    return false;
+  }
+  //console.log('===', time, userAnchor[username].lastSync, time - userAnchor[username].lastSync, userAnchor[username]);
+  userAnchor[username].count++;
+  
   const methodId = methodIdForAction2(data.action, username);
   if (! methodId) {
     return false; // skip
   }
   const event = {
-    createdBy: 'system',
+    createdBy: 'migration',
     streamIds: [audit.CONSTANTS.ACTION_STREAM_ID_PREFIX + methodId],
     type: 'log/user-api',
     time: time,
@@ -207,40 +246,23 @@ function eventFromLine(line, username) {
   return event;
 }
 
-async function readLogs(username) {
-  const files = await listAuditFilesForUser(username);
-  for (let file of files) {
-    try {
-      await readFile(username, file);
-    } catch (e) {
-      console.log(e);
-      process.exit(1);
-    }
-    console.log(file);
+// -----------  Anchor --------- //
+
+function getLastSynchedItem(username) {
+  const res = userStorageByUsername[username].getLogs({limit: 1, sortAscending: false, createdBy: 'migration'});
+  if (res[0] && res[0].time) { 
+    userAnchor[username].lastSync = res[0].time; 
   }
-  console.log('done');
-
-  //console.log(files);
 }
 
+function flagUserFullySynched(username) {
 
-
-function connectToMongo() {
-  const dbconf = config.get('database');
-  const mongoConnectString = `mongodb://${dbconf.host}:${dbconf.port}/`;
-  return new Promise((resolve, reject) => {
-   MongoClient.connect(mongoConnectString, { useUnifiedTopology: true }, (err, client) => {
-      if (err) return reject(err);
-      resolve(client.db(dbconf.name));
-    });
-  });
 }
 
-async function getAuditLogDir() {
-  return path.resolve(__dirname, '../../../../var-pryv/audit-logs/');
-}
+// --- FLOW  
 
-let db, config, audiLogsDirs, userIdMap = {}, userStorageByUsername = {};
+
+let db, config, audiLogsDirs, userIdMap = {}, userStorageByUsername = {}, userAnchor = {};
 async function start() {
   config = await getConfig();
   await audit.init();
@@ -252,7 +274,10 @@ async function start() {
   for (let username of usernames) {
     userIdMap[username] = await userIdForusername(username);
     userStorageByUsername[username] = await audit.storage.forUser(userIdMap[username]);
-    console.log(username, userIdMap[username]);
+    userAnchor[username] = {lastSync: 0, skip: 0, count: 0};
+    getLastSynchedItem(username);
+    const synchInfo = userAnchor[username].lastSync ? (new Date(userAnchor[username].lastSync * 1000)) : '-';
+    console.log('GO>', username, userIdMap[username], synchInfo);
     await readLogs(username);
     delete userStorageByUsername[username];
 

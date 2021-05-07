@@ -153,6 +153,10 @@ function prepareLogQuery(params = {}) {
     queryString += ' ORDER BY time DESC';
   }
 
+  if (params.limit) {
+    queryString += ' LIMIT ' + params.limit;
+  }
+
   //console.log(params, queryString);
   return queryString;
 }
