@@ -136,7 +136,8 @@ Object.assign(global, {
   validation: require('audit/src/validation'),
   AuditFilter: require('audit/src/AuditFilter'),
   addActionStreamIdPrefix,
-  addAccessStreamIdPrefix
+  addAccessStreamIdPrefix,
+  CONSTANTS: audit.CONSTANTS,
 });
 
 

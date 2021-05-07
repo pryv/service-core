@@ -61,6 +61,7 @@ class Audit {
 
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
+    event.type = CONSTANTS.EVENT_TYPE_VALID;
     this.eventForUser(userId, event, methodId);
   }
 
@@ -73,12 +74,10 @@ class Audit {
       context.access = { id: error.id };
     }
     const event = buildDefaultEvent(context);
-
-    event.content.error = {
-      id: error.id,
-      message: error.message,
-      data: error.data,
-    };
+    event.type = CONSTANTS.EVENT_TYPE_ERROR;
+    event.content.id = error.id;
+    event.content.message = error.message;
+    event.content.data = error.data;
 
     this.eventForUser(userId, event, methodId);
   }
@@ -125,7 +124,6 @@ function buildDefaultEvent(context) {
   return {
     createdBy: 'system',
     streamIds: [CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id, CONSTANTS.ACTION_STREAM_ID_PREFIX + context.methodId],
-    type: 'log/user-api',
     content: {
       source: context.source,
       action: context.methodId,
