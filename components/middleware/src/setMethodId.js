@@ -9,8 +9,8 @@
 /**
  * Sets the methodId to the Request.context object of the Express stack
  */
-module.exports = function setMethodId(methodId: string) {
-  return function (
+module.exports = function (methodId: string) {
+  return function setMethodId(
     req: express$Request, res: express$Response, next: express$NextFunction
   ) {
     if (req.context == null) req.context = {};
