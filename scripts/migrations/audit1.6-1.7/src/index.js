@@ -86,11 +86,11 @@ function readFile(username, filename) {
          }
       } catch (e) {
         cb(false)
-        reject(new Error('Error on file ' + file+':'+lineCount, e.message));
+        reject(new Error('Error on file ' + file+':'+lineCount +' >>> '+ e.message + '\n' + line));
         return;
       }
       if (! item ) {
-        count++;
+        //count++;
       }
       if (last) resolve();
       if (count > 10) { 
@@ -108,6 +108,7 @@ function storeEvent(username, event) {
 }
 
 const AUTO_ACTIONS = {};
+const ACTIONS_W_ITEM = {};
 const ALL_METHODS = require(DistPath + 'components/audit/src/ApiMethods').ALL_METHODS;
 
 const HTTP = {
@@ -121,7 +122,8 @@ for (let a of ALL_METHODS) {
   const s = a.split('.');
   const h = HTTP[s[1]];
   if (! h) continue;
-  AUTO_ACTIONS[h + ' /'+s[0]] = 's';
+  AUTO_ACTIONS[h + ' /'+s[0]] = s;
+  ACTIONS_W_ITEM[h + ' /'+s[0]+'/'] = s;
 }
 
 const ACTIONS = Object.assign(AUTO_ACTIONS,{
@@ -130,6 +132,7 @@ const ACTIONS = Object.assign(AUTO_ACTIONS,{
   'POST /accesses/check-app': 'check.app',
   'GET /robots.txt': false,
   'GET /favicon.ico': false,
+  'GET /service/info': false,
   'GET /access-info': 'getAccessInfo',
   'POST /': 'callBatch',
   'GET /profile/private': 'profile.getPrivate',
@@ -138,15 +141,30 @@ const ACTIONS = Object.assign(AUTO_ACTIONS,{
   'POST /followed-slices': 'followedSlices.create',
   'UPDATE /followed-slices': 'followedSlices.update',
   'DELETE /followed-slices': 'followedSlices.delete',
-  'POST /auth/logout': 'auth.logout'
+  'POST /auth/logout': 'auth.logout',
+  'GET /socket.io/': false,
+  'POST /socket.io/': false,
+  'POST /account/request-password-reset': 'account.requestPasswordReset'
 });
+
+const ACTION_WITH_ITEM_KEYS = Object.keys(ACTIONS_W_ITEM);
+function methodIdForActionWithItem(action) {
+  for (let k of ACTION_WITH_ITEM_KEYS) {
+    if (action.startsWith(k)) {
+      return (ACTIONS_W_ITEM[k]);
+    }
+  }
+}
 
 
 function methodIdForAction(action) {
   const saction = action.split(' ');
   if (saction[0] === 'OPTIONS') return null;
-  const res = ACTIONS[action];
+  let res = ACTIONS[action];
   if (res === false) { return false; }
+  if (res === undefined) {
+    res = methodIdForActionWithItem(action);
+  }
   if (res === undefined) {
     console.log(action);
     return false;
@@ -154,24 +172,53 @@ function methodIdForAction(action) {
   return res;
 }
 
+const INCOMING_REQUEST = 'Incoming request. Details: ';
+const RESULT_LINE = ' Details: ';
+const RESULT_LINE_L = RESULT_LINE.length - 1;
 function eventFromLine(line, username) {
+  if (line.indexOf(INCOMING_REQUEST) > 0) { 
+    //console.log(line);
+    return false; // skip
+  }
   if (line.indexOf('message repeated') > 0 && line.indexOf('times: [') > 0) return false;
 
-  const detailPos = line.indexOf('Details: ') + 9;
-  if (detailPos < 0) {  throw new Error(line); }
-  const data = JSON.parse(line.substr(detailPos));
+  const detailPos = line.indexOf(RESULT_LINE);
+  if (detailPos < 0) {  
+    throw new Error('CANNOT FIND DETAILS:'); 
+  }
+  const data = JSON.parse(line.substr(detailPos + RESULT_LINE_L));
+
+  const time = (new Date(data.iso_date)).getTime() / 100;
+
   const methodId = methodIdForAction(data.action.replace(username, '{username}'));
-  if (! methodId) return false;
+  if (! methodId) {
+    return false; // skip
+  }
   const event = {
     createdBy: 'system',
-    streamIds: [audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + data.access_id, audit.CONSTANTS.ACTION_STREAM_ID_PREFIX + methodId],
+    streamIds: [audit.CONSTANTS.ACTION_STREAM_ID_PREFIX + methodId],
     type: 'log/user-api',
+    time: time,
     content: {
-      source: 'http',
+      source: {
+        name: 'http',
+        ip: data.forwarded_for
+      },
       action: methodId,
       query: data.query,
     }
   }
+  if (data.access_id) {
+    event.streamIds.push(audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + data.access_id); 
+  } 
+
+  if (data.error_id) {
+    event.content.error = {
+      id: data.error_id,
+    };
+  }
+
+
   //console.log(event);
   return event;
 }
