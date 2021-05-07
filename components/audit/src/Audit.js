@@ -77,7 +77,6 @@ class Audit {
     event.type = CONSTANTS.EVENT_TYPE_ERROR;
     event.content.id = error.id;
     event.content.message = error.message;
-    event.content.data = error.data;
 
     this.eventForUser(userId, event, methodId);
   }
