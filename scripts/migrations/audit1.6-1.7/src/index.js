@@ -6,12 +6,19 @@
  */
 const MongoClient = require('../../../../dist/node_modules/mongodb').MongoClient;
 
+
+const Router = require('../../../../dist/node_modules/express').Router;
+/// Load all Routes in a fake Express
+const ROUTES = require('./routes');
+
 const fs = require('fs');
 const path = require('path');
 const lineReader = require('line-reader');
 
 const DistPath = '../../../../dist/';
 
+
+// ---------------- CONFIG ----------//
 
 const { getConfig } = require(DistPath + 'node_modules/@pryv/boiler').init({
   appName: 'audit-migration',
@@ -33,11 +40,14 @@ const audit = require( DistPath + 'components/audit');
 const UserLocalDirectory = require(DistPath + 'components/business/src/users/UserLocalDirectory');
 
 
+
 async function userIdForusername(username) {
   const res = await db.collection('events').findOne({'username__unique': username});
   if (!res) return null;
   return res.userId;
 }
+
+// -------------- FILES AND DIR (AUDIT) ------------ //
 
 async function listDirectory(logDiretory) {
   return new Promise((resolve, reject) => { 
@@ -73,7 +83,7 @@ function listAuditFilesForUser(username) {
 function readFile(username, filename) {
   const file = path.resolve(audiLogsDirs, username, filename);
 
-  return new Promise( (resolve, reject) => { 
+  return new Promise((resolve, reject) => { 
     let count = 0;
     let lineCount = 0;
     lineReader.eachLine(file, function(line, last, cb) {
@@ -103,73 +113,47 @@ function readFile(username, filename) {
   });
 }
 
+// ---------  EVENTS AND CONVERTERS ------------------------//
+
+
 function storeEvent(username, event) {
   userStorageByUsername[username].createEvent(event);
 }
 
-const AUTO_ACTIONS = {};
-const ACTIONS_W_ITEM = {};
-const ALL_METHODS = require(DistPath + 'components/audit/src/ApiMethods').ALL_METHODS;
+// Load routes in a fake expressRouter
+router = Router();
 
-const HTTP = {
-  'create': 'POST',
-  'get': 'GET',
-  'update': 'PUT',
-  'delete': 'DELETE'
+const IGNORES = [
+  { methodId: false, path: '/:username/robots.txt', method: 'get' },
+  { methodId: false, path: '/:username/favicon.ico', method: 'get' },
+  { methodId: false, path: '/:username/socket.io', method: 'get' }
+];
+
+for (let r of ROUTES.concat(IGNORES)) {
+  if (r.methodId !== undefined)
+   router[r.method](r.path,  (req, res, next) => { res.methodId = r.methodId;});
 }
 
-for (let a of ALL_METHODS) {
-  const s = a.split('.');
-  const h = HTTP[s[1]];
-  if (! h) continue;
-  AUTO_ACTIONS[h + ' /'+s[0]] = s;
-  ACTIONS_W_ITEM[h + ' /'+s[0]+'/'] = s;
-}
+router.get('/*', (req, res, next) => { console.log('IGNORED>', req.url, req.method); next(); });
 
-const ACTIONS = Object.assign(AUTO_ACTIONS,{
-  'POST /{username}/auth/login': 'auth.login',
-  'GET /{username}/profile/private': 'profile.get',
-  'POST /accesses/check-app': 'check.app',
-  'GET /robots.txt': false,
-  'GET /favicon.ico': false,
-  'GET /service/info': false,
-  'GET /access-info': 'getAccessInfo',
-  'POST /': 'callBatch',
-  'GET /profile/private': 'profile.getPrivate',
-  'GET /system/user-info/{username}': 'system.getUserInfo',
-  'GET /followed-slices': 'followedSlices.get',
-  'POST /followed-slices': 'followedSlices.create',
-  'UPDATE /followed-slices': 'followedSlices.update',
-  'DELETE /followed-slices': 'followedSlices.delete',
-  'POST /auth/logout': 'auth.logout',
-  'GET /socket.io/': false,
-  'POST /socket.io/': false,
-  'POST /account/request-password-reset': 'account.requestPasswordReset'
-});
 
-const ACTION_WITH_ITEM_KEYS = Object.keys(ACTIONS_W_ITEM);
-function methodIdForActionWithItem(action) {
-  for (let k of ACTION_WITH_ITEM_KEYS) {
-    if (action.startsWith(k)) {
-      return (ACTIONS_W_ITEM[k]);
-    }
+const NOUSERNAME = ['/reg/', '/register/', '/system/'];
+function addUserNameIfNeeded(saction, username) {
+  for (let n of NOUSERNAME) {
+    if (saction[1].startsWith( NOUSERNAME)) return;
   }
+  if (! saction[1].startsWith('/' + username)) saction[1] = '/' + username + saction[1];
 }
 
-
-function methodIdForAction(action) {
+function methodIdForAction2(action, username) {
   const saction = action.split(' ');
   if (saction[0] === 'OPTIONS') return null;
-  let res = ACTIONS[action];
-  if (res === false) { return false; }
-  if (res === undefined) {
-    res = methodIdForActionWithItem(action);
-  }
-  if (res === undefined) {
-    console.log(action);
-    return false;
-  }
-  return res;
+  // add username if needed
+  addUserNameIfNeeded(saction, username);
+  const myRes = {};
+  router.handle({ url: saction[1], method: saction[0] }, myRes, function() { });
+  //console.log('******', saction, myRes);
+  return myRes;
 }
 
 const INCOMING_REQUEST = 'Incoming request. Details: ';
@@ -190,7 +174,7 @@ function eventFromLine(line, username) {
 
   const time = (new Date(data.iso_date)).getTime() / 100;
 
-  const methodId = methodIdForAction(data.action.replace(username, '{username}'));
+  const methodId = methodIdForAction2(data.action, username);
   if (! methodId) {
     return false; // skip
   }
