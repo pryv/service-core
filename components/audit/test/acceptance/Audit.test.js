@@ -60,11 +60,13 @@ describe('Audit', function() {
 
   describe('when making valid API calls', function () {
     let res, now;
+    const query = { limit: '1' }; // casting to string as audit saves query before coercion
     before(async function () {
       now = Date.now() / 1000;
       res = await coreRequest
         .get(eventsPath)
-        .set('Authorization', access.token);
+        .set('Authorization', access.token)
+        .query(query);
     });
 
     it('[WTNL] must return 200', function () {
@@ -84,6 +86,8 @@ describe('Audit', function() {
       assert.equal(log.content.action, 'events.get', 'action is wrong');
       assert.approximately(log.created, now, 0.5, 'created timestamp is off');
       assert.approximately(log.modified, now, 0.5, 'modified timestamp is off');
+      assert.deepEqual(log.content.query, query);
+      assert.equal(log.type, CONSTANTS.EVENT_TYPE_VALID);
     });
 
     describe('when making a call that is not audited', function() {
@@ -137,6 +141,7 @@ describe('Audit', function() {
         assert.equal(entries.length, 1);
         log = entries[0];
         assert.include(log.streamIds, addAccessStreamIdPrefix(MethodContextUtils.AuditAccessIds.VALID_PASSWORD), 'custom accessId saved to streamIds');
+        assert.equal(log.type, CONSTANTS.EVENT_TYPE_VALID);
       });
     });
     describe('when making a call that has no userId', function() {
@@ -187,12 +192,13 @@ describe('Audit', function() {
       });
     });
     describe('with errorId "invalid-request-structure"', function() {
+      const query = { streams: JSON.stringify({ any:  ['A', 'Z', true] }) }; // copied from 30NV
       before(async function() {
         now = Date.now() / 1000;
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', access.token)
-          .query({ streams: JSON.stringify({ any:  ['A', 'Z', true] }) }); // copied from 30NV
+          .query(query);
       });
       it('[7SUK] must return 400', function() {
         assert.equal(res.status, 400);
@@ -207,19 +213,19 @@ describe('Audit', function() {
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
-        assert.exists(log.content.error)
-        assert.equal(log.content.error.id, 'invalid-request-structure');
+        assert.equal(log.content.id, 'invalid-request-structure');
+        assert.deepEqual(log.content.query, query);
+        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "invalid-parameters-format"', function() {
+      const query = { fromTime: 'yo' };
       before(async function() {
         now = Date.now() / 1000;
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', access.token)
-          .query({
-            fromTime: 'yo'
-          });
+          .query(query);
       });
       it('[XX4D] must return 400', function() {
         assert.equal(res.status, 400);
@@ -234,19 +240,19 @@ describe('Audit', function() {
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
-        assert.exists(log.content.error)
-        assert.equal(log.content.error.id, 'invalid-parameters-format');
+        assert.equal(log.content.id, 'invalid-parameters-format');
+        assert.deepEqual(log.content.query, query);
+        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "unknown-referenced-resource"', function() {
+      const query = { streams: ['does-not-exist', 'neither'] };
       before(async function() {
         now = Date.now() / 1000;
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', access.token)
-          .query({
-            streams: ['does-not-exist']
-          });
+          .query(query);
       });
       it('[9ZGI] must return 400', function() {
         assert.equal(res.status, 400);
@@ -261,8 +267,9 @@ describe('Audit', function() {
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
-        assert.exists(log.content.error)
-        assert.equal(log.content.error.id, 'unknown-referenced-resource');
+        assert.equal(log.content.id, 'unknown-referenced-resource');
+        assert.deepEqual(log.content.query, query);
+        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "invalid-access-token"', function() {
@@ -285,9 +292,9 @@ describe('Audit', function() {
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
-        assert.exists(log.content.error)
-        assert.equal(log.content.error.id, 'invalid-access-token');
-        assert.deepEqual(log.streamIds, [addAccessStreamIdPrefix(log.content.error.id), addActionStreamIdPrefix('events.get')]);
+        assert.equal(log.content.id, 'invalid-access-token');
+        assert.deepEqual(log.streamIds, [addAccessStreamIdPrefix(AuditAccessIds.INVALID), addActionStreamIdPrefix('events.get')]);
+        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "forbidden"', function() {
@@ -315,8 +322,8 @@ describe('Audit', function() {
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
-        assert.exists(log.content.error)
-        assert.equal(log.content.error.id, 'forbidden');
+        assert.equal(log.content.id, 'forbidden');
+        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "unknown-resource"', function() {
@@ -339,8 +346,8 @@ describe('Audit', function() {
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
-        assert.exists(log.content.error)
-        assert.equal(log.content.error.id, 'unknown-resource');
+        assert.equal(log.content.id, 'unknown-resource');
+        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     

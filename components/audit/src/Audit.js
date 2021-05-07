@@ -18,6 +18,7 @@ const CONSTANTS = require('./Constants');
 const validation = require('./validation');
 const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
+const { AuditAccessIds } = require('./MethodContextUtils');
 
 /**
  * EventEmitter interface is just for tests syncing for now
@@ -55,30 +56,28 @@ class Audit {
     logger.info('Audit started');
   }
 
-  async validApiCall(context, params, result) {
+  async validApiCall(context, result) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
     const userId = context?.user?.id;
-    const event = buildDefaultEvent(context, params);
+    const event = buildDefaultEvent(context);
+    event.type = CONSTANTS.EVENT_TYPE_VALID;
     this.eventForUser(userId, event, methodId);
   }
 
-  async errorApiCall(context, params, error) {
+  async errorApiCall(context, error) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
     const userId = context?.user?.id;
   
     if (context.access?.id == null) {
-      context.access = { id: error.id };
+      context.access = { id: AuditAccessIds.INVALID };
     }
-    const event = buildDefaultEvent(context, params);
-
-    event.content.error = {
-      id: error.id,
-      message: error.message,
-      data: error.data,
-    };
+    const event = buildDefaultEvent(context);
+    event.type = CONSTANTS.EVENT_TYPE_ERROR;
+    event.content.id = error.id;
+    event.content.message = error.message;
 
     this.eventForUser(userId, event, methodId);
   }
@@ -121,15 +120,14 @@ class Audit {
 
 module.exports = Audit;
 
-function buildDefaultEvent(context, params) {
+function buildDefaultEvent(context) {
   return {
     createdBy: 'system',
     streamIds: [CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id, CONSTANTS.ACTION_STREAM_ID_PREFIX + context.methodId],
-    type: 'log/user-api',
     content: {
       source: context.source,
       action: context.methodId,
-      query: params,
+      query: context.originalQuery,
     },
   }
 }

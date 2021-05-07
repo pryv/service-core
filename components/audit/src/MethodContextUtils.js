@@ -20,7 +20,8 @@ const AuditAccessIds = {
   PASSWORD_RESET_REQUEST: 'password-reset-request',
   PASSWORD_RESET_TOKEN: 'password-reset-token',
   ADMIN_TOKEN: 'admin',
-  PUBLIC: 'public'
+  PUBLIC: 'public',
+  INVALID: 'invalid',
 }
 
 Object.freeze(AuditAccessIds);

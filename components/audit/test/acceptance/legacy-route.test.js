@@ -139,7 +139,7 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
   assert.isArray(auditLogs);
 
   auditLogs.forEach(event => {
-    assert.strictEqual(event.type, 'log/user-api');
+    assert.isTrue([CONSTANTS.EVENT_TYPE_VALID, CONSTANTS.EVENT_TYPE_ERROR].includes(event.type));
     assert.isString(event.id);
     assert.isNumber(event.time);
 
