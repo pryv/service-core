@@ -60,11 +60,13 @@ describe('Audit', function() {
 
   describe('when making valid API calls', function () {
     let res, now;
+    const query = { limit: '1' }; // casting to string as audit saves query before coercion
     before(async function () {
       now = Date.now() / 1000;
       res = await coreRequest
         .get(eventsPath)
-        .set('Authorization', access.token);
+        .set('Authorization', access.token)
+        .query(query);
     });
 
     it('[WTNL] must return 200', function () {
@@ -84,6 +86,7 @@ describe('Audit', function() {
       assert.equal(log.content.action, 'events.get', 'action is wrong');
       assert.approximately(log.created, now, 0.5, 'created timestamp is off');
       assert.approximately(log.modified, now, 0.5, 'modified timestamp is off');
+      assert.deepEqual(log.content.query, query);
     });
 
     describe('when making a call that is not audited', function() {
@@ -187,12 +190,13 @@ describe('Audit', function() {
       });
     });
     describe('with errorId "invalid-request-structure"', function() {
+      const query = { streams: JSON.stringify({ any:  ['A', 'Z', true] }) }; // copied from 30NV
       before(async function() {
         now = Date.now() / 1000;
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', access.token)
-          .query({ streams: JSON.stringify({ any:  ['A', 'Z', true] }) }); // copied from 30NV
+          .query(query);
       });
       it('[7SUK] must return 400', function() {
         assert.equal(res.status, 400);
@@ -209,17 +213,17 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'invalid-request-structure');
+        assert.deepEqual(log.content.query, query);
       });
     });
     describe('with errorId "invalid-parameters-format"', function() {
+      const query = { fromTime: 'yo' };
       before(async function() {
         now = Date.now() / 1000;
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', access.token)
-          .query({
-            fromTime: 'yo'
-          });
+          .query(query);
       });
       it('[XX4D] must return 400', function() {
         assert.equal(res.status, 400);
@@ -236,17 +240,17 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'invalid-parameters-format');
+        assert.deepEqual(log.content.query, query);
       });
     });
     describe('with errorId "unknown-referenced-resource"', function() {
+      const query = { streams: ['does-not-exist', 'neither'] };
       before(async function() {
         now = Date.now() / 1000;
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', access.token)
-          .query({
-            streams: ['does-not-exist']
-          });
+          .query(query);
       });
       it('[9ZGI] must return 400', function() {
         assert.equal(res.status, 400);
@@ -263,6 +267,7 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'unknown-referenced-resource');
+        assert.deepEqual(log.content.query, query);
       });
     });
     describe('with errorId "invalid-access-token"', function() {

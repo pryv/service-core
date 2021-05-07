@@ -55,16 +55,16 @@ class Audit {
     logger.info('Audit started');
   }
 
-  async validApiCall(context, params, result) {
+  async validApiCall(context, result) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
     const userId = context?.user?.id;
-    const event = buildDefaultEvent(context, params);
+    const event = buildDefaultEvent(context);
     this.eventForUser(userId, event, methodId);
   }
 
-  async errorApiCall(context, params, error) {
+  async errorApiCall(context, error) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
     const userId = context?.user?.id;
@@ -72,7 +72,7 @@ class Audit {
     if (context.access?.id == null) {
       context.access = { id: error.id };
     }
-    const event = buildDefaultEvent(context, params);
+    const event = buildDefaultEvent(context);
 
     event.content.error = {
       id: error.id,
@@ -121,7 +121,7 @@ class Audit {
 
 module.exports = Audit;
 
-function buildDefaultEvent(context, params) {
+function buildDefaultEvent(context) {
   return {
     createdBy: 'system',
     streamIds: [CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id, CONSTANTS.ACTION_STREAM_ID_PREFIX + context.methodId],
@@ -129,7 +129,7 @@ function buildDefaultEvent(context, params) {
     content: {
       source: context.source,
       action: context.methodId,
-      query: params,
+      query: context.originalQuery,
     },
   }
 }

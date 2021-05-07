@@ -10,12 +10,14 @@ class MinimalMethodContext {
   source: ContextSource;
   user: ?User;
   access: ?Access;
+  originalQuery: ?{};
 
   constructor(req: express$Request) {
     this.source =  {
       name: 'http',
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
     }
+    this.originalQuery = req.query;
   }
 }
 
