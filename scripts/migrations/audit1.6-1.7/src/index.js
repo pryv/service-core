@@ -30,6 +30,7 @@ const { getConfig } = require(DistPath + 'node_modules/@pryv/boiler').init({
 
 
 const audit = require( DistPath + 'components/audit');
+const UserLocalDirectory = require(DistPath + 'components/business/src/users/UserLocalDirectory');
 
 
 async function userIdForusername(username) {
@@ -72,7 +73,7 @@ function listAuditFilesForUser(username) {
 function readFile(username, filename) {
   const file = path.resolve(audiLogsDirs, username, filename);
 
-  return new Promise((resolve, reject) => { 
+  return new Promise( (resolve, reject) => { 
     let count = 0;
     let lineCount = 0;
     lineReader.eachLine(file, function(line, last, cb) {
@@ -80,6 +81,9 @@ function readFile(username, filename) {
       let item;
       try {
          item = eventFromLine(line, username);
+         if (item) {
+           storeEvent(username, item);
+         }
       } catch (e) {
         cb(false)
         reject(new Error('Error on file ' + file+':'+lineCount, e.message));
@@ -97,6 +101,10 @@ function readFile(username, filename) {
       cb();
     });
   });
+}
+
+function storeEvent(username, event) {
+  userStorageByUsername[username].createEvent(event);
 }
 
 const AUTO_ACTIONS = {};
@@ -201,17 +209,21 @@ async function getAuditLogDir() {
   return path.resolve(__dirname, '../../../../var-pryv/audit-logs/');
 }
 
-let db, config, audiLogsDirs, userIdMap = {};
+let db, config, audiLogsDirs, userIdMap = {}, userStorageByUsername = {};
 async function start() {
-  audiLogsDirs = await getAuditLogDir();
   config = await getConfig();
+  await audit.init();
+  await UserLocalDirectory.init();
+  audiLogsDirs = await getAuditLogDir();
+  
   db = await connectToMongo();
   usernames = await listDirectory(audiLogsDirs);
   for (let username of usernames) {
     userIdMap[username] = await userIdForusername(username);
+    userStorageByUsername[username] = await audit.storage.forUser(userIdMap[username]);
     console.log(username, userIdMap[username]);
     await readLogs(username);
-
+    delete userStorageByUsername[username];
 
   }
 }
