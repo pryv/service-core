@@ -142,9 +142,6 @@ async function readLogs(username) {
   //console.log(files);
 }
 
-async function getAuditLogDir() {
-  return path.resolve(__dirname, '../../../../var-pryv/audit-logs/');
-}
 
 // ---------  EVENTS AND CONVERTERS ------------------------//
 
@@ -258,6 +255,21 @@ function getLastSynchedItem(username) {
 function flagUserFullySynched(username) {
 
 }
+
+// --------- Arguments ------ //
+
+
+
+async function getAuditLogDir() {
+  const path = process.argv[2];
+  if (! path || ! fs.lstatSync(path).isDirectory() ) { 
+    console.error('Error: ' + path + ' is not a directory');
+    console.log('Usage: node src/index.js <path to audit log dir (/var/log/pryv/audit/pryvio_core)>')
+    process.exit(1);
+  };
+  return path;
+}
+
 
 // --- FLOW  
 
