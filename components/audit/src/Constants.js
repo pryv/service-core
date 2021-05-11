@@ -6,7 +6,7 @@
  */
 
 const CONSTANTS = {
-  STORE_PREFIX: '.audit-',
+  STORE_PREFIX: ':_audit:',
   ACCESS_STREAM_ID_PREFIX: 'access-',
   ACTION_STREAM_ID_PREFIX: 'action-',
   EVENT_TYPE_VALID: 'audit-log/pryv-api',
