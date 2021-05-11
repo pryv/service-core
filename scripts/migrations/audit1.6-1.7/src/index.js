@@ -217,7 +217,7 @@ function eventFromLine(line, username) {
   const event = {
     createdBy: 'migration',
     streamIds: [audit.CONSTANTS.ACTION_STREAM_ID_PREFIX + methodId],
-    type: 'log/user-api',
+    type: audit.CONSTANTS.EVENT_TYPE_VALID,
     time: time,
     content: {
       source: {
@@ -233,9 +233,9 @@ function eventFromLine(line, username) {
   } 
 
   if (data.error_id) {
-    event.content.error = {
-      id: data.error_id,
-    };
+    event.type = audit.CONSTANTS.EVENT_TYPE_ERROR;
+    event.content.id = data.error_id;
+    event.content.message = '';
   }
 
 
