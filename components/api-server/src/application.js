@@ -84,12 +84,6 @@ class Application {
   constructor() {
     this.initalized = false;
     this.isOpenSource = false;
-    logger.debug('creation');
-
-    this.api = new API(); 
-    this.systemAPI = new API(); 
-  
-    logger.debug('created');
   }
 
   async initiate() {
@@ -108,6 +102,9 @@ class Application {
       const audit = require('audit');
       await audit.init();
     }
+
+    this.api = new API(); 
+    this.systemAPI = new API(); 
     
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
@@ -117,10 +114,42 @@ class Application {
     this.expressApp.use(errorsMiddleware);
     logger.debug('Init done');
     this.initalized = true;
+    if (this.config.get('showRoutes')) this.helperShowRoutes();
+  }
+
+  /**
+   * Helps that display all routes and methodId registered
+   */
+  helperShowRoutes() {
+    let route;
+    const routes = [];
+    function addRoute(route) {
+      if (route) {
+        let methodId;
+        for (let layer of route.stack ) {
+          if (layer.handle.name === 'setMethodId') {
+            const fakeReq = {};
+            layer.handle(fakeReq, null, function() {});
+            methodId = fakeReq.context.methodId;
+          }
+        }
+        let keys = Object.keys(route.methods);
+        if (keys.length > 1) keys = ['all'];
+        routes.push({methodId: methodId, path: route.path, method: keys[0]})
+      }
+    }
+
+    this.expressApp._router.stack.forEach(function(middleware){
+      if(middleware.route){ // routes registered directly on the app
+          addRoute(middleware.route);
+      } else if(middleware.name === 'router'){ // router middleware 
+          middleware.handle.stack.forEach(h => addRoute(h.route));
+      }
+    });
+    console.log(routes);
   }
 
   async createExpressApp(): Promise<express$Application> {
-
     this.expressApp = await expressAppInit( 
       this.config.get('dnsLess:isActive'), 
       this.logging);

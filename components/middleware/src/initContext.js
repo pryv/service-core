@@ -29,7 +29,7 @@ module.exports = function initContext(
     const contextSource: ContextSource = {
       name: 'http',
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
-    }
+    };
     // FLOW We should not do this, but we're doing it.
     req.context = new MethodContext(
       contextSource,
@@ -37,7 +37,8 @@ module.exports = function initContext(
       authorizationHeader, 
       customAuthStepFn,
       storageLayer.events,
-      req.headers
+      req.headers,
+      req.query,
     );
     
     const userRetrieved = req.context.retrieveUser();

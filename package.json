@@ -26,7 +26,6 @@
     "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'components/**/*.js' -t html",
     "influx": "influxd -config /usr/local/etc/influxdb.conf",
     "init-test-results-repo": "scripts/test-results/init_repo.sh",
-    "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json",
     "license": "node_modules/.bin/source-licenser licensing/config.yml licensing/LICENSE.src ./",
     "local": "cd dist/components/api-server && NODE_ENV=development nodemon bin/server",
     "metadata": "cd dist/components/metadata && bin/metadata",
@@ -48,8 +47,9 @@
   "resolutions": {
     "**/bl": "^2.2.1",
     "**/ini": "^1.3.6",
+    "**/lodash": "^4.17.21",
     "**/node-fetch": "^2.6.1",
-    "**/socket.io": "^2.4.0"
+    "**/xmlhttprequest-ssl": "^1.6.2"
   },
   "dependencies": {
     "@pryv/boiler": "https://github.com/pryv/lib-node-boiler.git",
@@ -114,8 +114,6 @@
     "flow-coverage-report": "0.8.0",
     "flow-typed": "^3.2.1",
     "inspect": "^0.0.2",
-    "jsdoc": "^3.4.3",
-    "jsdoc-babel": "^0.5.0",
     "mocha": "^8.1.2",
     "moment": "^2.24.0",
     "nock": "9.4.0",
@@ -123,7 +121,7 @@
     "parallelshell": "^2.0.0",
     "pre-commit": "^1.2.2",
     "should": "^11.2.0",
-    "socket.io-client": "^2.3.0",
+    "socket.io-client": "^3.1.3",
     "source-licenser": "1.0.4",
     "supertest": "^3.0.0",
     "temp": "^0.8.3",

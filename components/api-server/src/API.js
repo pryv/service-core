@@ -196,7 +196,7 @@ class API {
       }
       if (! isOpenSource) {
         result.onEnd(function() {
-          audit.validApiCall(context, params, result);
+          audit.validApiCall(context, result);
         });
       }
       

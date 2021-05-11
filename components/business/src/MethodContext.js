@@ -58,6 +58,8 @@ class MethodContext {
 
   methodId: ?string; // API method id. Ex.: 'events.get'
 
+  originalQuery: ?{};
+
   // Custom auth function, if one was configured. 
   customAuthStepFn: ?CustomAuthFunction;
 
@@ -76,7 +78,8 @@ class MethodContext {
     auth: ?string,
     customAuthStepFn: ?CustomAuthFunction,
     eventsStorage: ?StorageLayer,
-    headers: ?{}
+    headers: ?{},
+    query: ?{},
   ) {
     this.source = source;
     this.username = username;
@@ -97,6 +100,7 @@ class MethodContext {
     this.systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
     this.usersRepository = new UsersRepository(storage.getStorageLayerSync().events);
     if (auth != null) this.parseAuth(auth);
+    this.originalQuery = query;
   }
 
   // Extracts access token and optional caller id from the given auth string, 

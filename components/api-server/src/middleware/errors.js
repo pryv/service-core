@@ -43,7 +43,7 @@ function produceHandleErrorMiddleware(logging: any) {
     }
 
     if (! isOpenSource) {
-      audit.errorApiCall(req.context, {}, error);
+      audit.errorApiCall(req.context, error);
     }
 
     errorHandling.logError(error, req, logger);

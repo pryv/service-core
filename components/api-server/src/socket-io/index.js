@@ -10,7 +10,9 @@
  * Note: Debug tests with: DEBUG=engine,socket.io* yarn test --grep="Socket"
  */
 
-const socketIO = require('socket.io');
+const socketIO = require('socket.io')({
+  allowEIO3: true // for compatibility with v2 clients
+});
 
 const MethodContext = require('business').MethodContext;
 import type {ContextSource} from 'business';

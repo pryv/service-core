@@ -83,7 +83,7 @@ describe('Audit legacy route', function() {
     const res = await coreRequest
       .get(auditPath)
       .set('Authorization', appAccess.token)
-      .query({streams: ['.audit-action-events.get'] });
+      .query({streams: [':_audit:action-events.get'] });
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
     assert.isAtLeast(logs.length, 1);
@@ -114,7 +114,7 @@ describe('Audit legacy route', function() {
     validateResults(logs, appAccess.id);
   });
 
-  it('[R1ZF] Invalid token should retrun an error', async () => {
+  it('[R1ZF] Invalid token should return an error', async () => {
     const res = await coreRequest
     .get(auditPath)
     .set('Authorization', 'invalid');
@@ -123,7 +123,7 @@ describe('Audit legacy route', function() {
     assert.equal(res.body.error.id, 'invalid-access-token')
   });
 
-  it('[RQUA] StreamId not starting with ".audit-"  should return an error', async () => {
+  it('[RQUA] StreamId not starting with ":audit:"  should return an error', async () => {
     const res = await coreRequest
     .get(auditPath)
     .set('Authorization', appAccess.token)
@@ -131,7 +131,7 @@ describe('Audit legacy route', function() {
     assert.strictEqual(res.status, 400);
     assert.exists(res.body.error);
     assert.equal(res.body.error.id, 'invalid-request-structure');
-    assert.equal(res.body.error.message, 'Invalid "streams" parameter. It should be an array of streamIds starting with Audit store prefix: ".audit-"');
+    assert.equal(res.body.error.message, 'Invalid "streams" parameter. It should be an array of streamIds starting with Audit store prefix: ":_audit:"');
   });
 });
 
@@ -139,7 +139,7 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
   assert.isArray(auditLogs);
 
   auditLogs.forEach(event => {
-    assert.strictEqual(event.type, 'log/user-api');
+    assert.isTrue([CONSTANTS.EVENT_TYPE_VALID, CONSTANTS.EVENT_TYPE_ERROR].includes(event.type));
     assert.isString(event.id);
     assert.isNumber(event.time);
 
