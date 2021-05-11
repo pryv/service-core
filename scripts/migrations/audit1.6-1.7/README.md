@@ -19,3 +19,8 @@
 2. restart Pryvio core docker container
 3. Run the following commands:
  `docker exec -ti pryvio_core /app/bin/scripts/migrations/audit1.6-1.7/run_in_container.sh`
+
+# License
+Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+Unauthorized copying of this file, via any medium is strictly prohibited
+Proprietary and confidential
