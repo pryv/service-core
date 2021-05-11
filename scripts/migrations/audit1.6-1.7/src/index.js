@@ -20,7 +20,7 @@ const DistPath = '../../../../dist/';
 
 // ---------------- CONFIG ----------//
 
-const { getConfig } = require(DistPath + 'node_modules/@pryv/boiler').init({
+const { getConfig, getLogger } = require(DistPath + 'node_modules/@pryv/boiler').init({
   appName: 'audit-migration',
   baseConfigDir: path.resolve(__dirname, DistPath + 'components/api-server/config'),
   extraConfigs: [{
@@ -34,6 +34,8 @@ const { getConfig } = require(DistPath + 'node_modules/@pryv/boiler').init({
     file: path.resolve(__dirname,  DistPath + 'components/audit/config/default-path.js')
   }]
 });
+
+const logger = getLogger();
 
 
 const audit = require( DistPath + 'components/audit');
@@ -94,8 +96,13 @@ function listAuditFilesForUser(username) {
 
 function readFile(username, filename) {
   const file = path.resolve(audiLogsDirs, username, filename);
-
+ 
   return new Promise((resolve, reject) => { 
+    if (fs.statSync(file).size === 0) {
+      logger.info(file + ' => is empty');
+      return resolve();
+    }
+
     let count = 0;
     let lineCount = 0;
     lineReader.eachLine(file, function(line, last, cb) {
@@ -132,14 +139,14 @@ async function readLogs(username) {
     try {
       await readFile(username, file);
     } catch (e) {
-      console.log(e);
+      logger.info(e);
       process.exit(1);
     }
-    console.log(file, userAnchor[username]);
+    logger.info(file, userAnchor[username]);
   }
-  console.log('done', userAnchor[username]);
+  logger.info('done', userAnchor[username]);
 
-  //console.log(files);
+  //logger.info(files);
 }
 
 
@@ -164,7 +171,7 @@ for (let r of ROUTES.concat(IGNORES)) {
    router[r.method](r.path,  (req, res, next) => { res.methodId = r.methodId;});
 }
 
-router.get('/*', (req, res, next) => { console.log('IGNORED>', req.url, req.method); next(); });
+router.get('/*', (req, res, next) => { logger.info('IGNORED>', req.url, req.method); next(); });
 
 
 const NOUSERNAME = ['/reg/', '/register/', '/system/'];
@@ -182,7 +189,7 @@ function methodIdForAction2(action, username) {
   addUserNameIfNeeded(saction, username);
   const myRes = {};
   router.handle({ url: saction[1], method: saction[0] }, myRes, function() { });
-  //console.log('******', saction, myRes);
+  //logger.info('******', saction, myRes);
   return myRes;
 }
 
@@ -191,7 +198,7 @@ const RESULT_LINE = ' Details: ';
 const RESULT_LINE_L = RESULT_LINE.length - 1;
 function eventFromLine(line, username) {
   if (line.indexOf(INCOMING_REQUEST) > 0) { 
-    //console.log(line);
+    //logger.info(line);
     return false; // skip
   }
   if (line.indexOf('message repeated') > 0 && line.indexOf('times: [') > 0) return false;
@@ -207,7 +214,7 @@ function eventFromLine(line, username) {
     userAnchor[username].skip++;
     return false;
   }
-  //console.log('===', time, userAnchor[username].lastSync, time - userAnchor[username].lastSync, userAnchor[username]);
+  //logger.info('===', time, userAnchor[username].lastSync, time - userAnchor[username].lastSync, userAnchor[username]);
   userAnchor[username].count++;
   
   const methodId = methodIdForAction2(data.action, username);
@@ -239,7 +246,7 @@ function eventFromLine(line, username) {
   }
 
 
-  //console.log(event);
+  //logger.info(event);
   return event;
 }
 
@@ -263,8 +270,8 @@ function flagUserFullySynched(username) {
 async function getAuditLogDir() {
   const path = process.argv[2];
   if (! path || ! fs.lstatSync(path).isDirectory() ) { 
-    console.error('Error: ' + path + ' is not a directory');
-    console.log('Usage: node src/index.js <path to audit log dir (/var/log/pryv/audit/pryvio_core)>')
+    logger.error('Error: ' + path + ' is not a directory');
+    logger.info('Usage: node src/index.js <path to audit log dir (/var/log/pryv/audit/pryvio_core)>')
     process.exit(1);
   };
   return path;
@@ -284,12 +291,17 @@ async function start() {
   db = await connectToMongo();
   usernames = await listDirectory(audiLogsDirs);
   for (let username of usernames) {
-    userIdMap[username] = await userIdForusername(username);
-    userStorageByUsername[username] = await audit.storage.forUser(userIdMap[username]);
+    const uid = await userIdForusername(username);
+    if (! uid) {
+        logger.error('Cannot find UID for: ' + username);
+        continue;
+    }
+    userIdMap[username] = uid;
+    userStorageByUsername[username] = await audit.storage.forUser(uid);
     userAnchor[username] = {lastSync: 0, skip: 0, count: 0};
     getLastSynchedItem(username);
     const synchInfo = userAnchor[username].lastSync ? (new Date(userAnchor[username].lastSync * 1000)) : '-';
-    console.log('GO>', username, userIdMap[username], synchInfo);
+    logger.info('GO>', username, uid, synchInfo);
     await readLogs(username);
     delete userStorageByUsername[username];
 
