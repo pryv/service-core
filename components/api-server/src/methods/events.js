@@ -164,14 +164,16 @@ module.exports = async function (
     }
 
     /** Streams passed here have already been flagged as authorized  */
-    function isAccessibleStream(streamId, storeId) {
+    async function isAccessibleStream(streamId, storeId) {
       if (storeId === 'audit') {
         console.log('XXXXX TO BE CHANGED > Accessible audit streamId Query', streamId, storeId);
         return true;
       }
-      // check stream exists
-      // check 
-      return accessibleStreamsIds.includes(streamId);
+      if (params.state === 'all' || params.state === 'trashed') { // all streams
+        return true;
+      }
+      const stream = await context.streamForStreamId(streamId);
+      return ! stream.trashed;
     }
 
     function allAccessibleStreamsForStore(storeId) {

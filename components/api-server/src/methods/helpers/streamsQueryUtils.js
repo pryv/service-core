@@ -260,7 +260,7 @@ async function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isA
         nonAuthorizedStreams.push(StreamsUtils.streamIdForStoreId(streamId, storeId));
         return false;
       }
-      return isAccessibleStream(streamId, storeId);
+      return await isAccessibleStream(streamId, storeId);
     }
   }
 }
