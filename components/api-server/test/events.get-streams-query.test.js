@@ -107,33 +107,33 @@ describe('events.get streams query', function () {
       return ALL_ACCESSIBLE_STREAMS_LOCAL;
     }
 
-    function validateQuery(query) {
+    async function validateQuery(query) {
       if (! Array.isArray(query)) query = [query];
       query = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(query);
       streamsQueryUtils.validateStreamsQuery(query);
-      const { streamQuery } = streamsQueryUtils.checkPermissionsAndApplyToScope(query, customExpand, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
+      const { streamQuery } = await streamsQueryUtils.checkPermissionsAndApplyToScope(query, customExpand, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
       return streamQuery;
     }
 
     describe('when transforming streams parameters', function () {
 
       it('[D2B5] must convert strings array to expanded array inside [{any: []}]', async function () {
-        const res = validateQuery(['A', 'B']);
+        const res = await validateQuery(['A', 'B']);
         assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local' }]);
       });
 
       it('[JZWE] must convert single string "B" to [{any: ["B"]}]', async function () {
-        const res = validateQuery('B');
+        const res = await validateQuery('B');
         assert.deepEqual(res, [{ any: ['B'], storeId: 'local'  }]);
       });
 
       it('[8VV4] must convert streams query with only "any" property to expanded streams query inside array [{any: []}])', async function () {
-        const res = validateQuery({ any: ['A', 'B']});
+        const res = await validateQuery({ any: ['A', 'B']});
         assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local' }]);
       });
 
       it('[HFT2] must convert streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
-        const res = validateQuery({ any: ['A'], all: ['D','F'] });
+        const res = await validateQuery({ any: ['A'], all: ['D','F'] });
         assert.deepEqual(res, [
           { any: ['A', 'B', 'C'], 
             and: [
@@ -145,22 +145,22 @@ describe('events.get streams query', function () {
       });
 
       it('[2W2K] must accept two streams queries expanding them', async function () {
-        const res = validateQuery([{ any: ['A'] }, { any: ['D'] }]);
+        const res = await validateQuery([{ any: ['A'] }, { any: ['D'] }]);
         assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local'  }, { any: ['D', 'E', 'F'], storeId: 'local'  }]);
       });
 
       it('[2EF9] must convert streams query {any: "*"} to [{any: [all accessible streams]}]', async function () {
-        const res = validateQuery({ any: '*' });
+        const res = await validateQuery({ any: '*' });
         assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS_LOCAL, storeId: 'local'  }]);
       });
 
       it('[TUZT] must convert streams query {any: [*], not: ["A"]} to [{any: [all accessible streams], [expanded "A"]}]', async function () {
-        const res = validateQuery({ any: '*', not: ['A'] });
+        const res = await validateQuery({ any: '*', not: ['A'] });
         assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS_LOCAL, and: [ { not: [ 'A', 'B', 'C' ] } ], storeId: 'local' }]);
       });
 
       it('[NHGF] must convert streams query {any: [*], all: ["D"], not: ["A"]} to [{any: [all accessible streams], and: [ any: [expanded "D"] , not: [expanded "A"]}]', async function () {
-        const res = validateQuery({ any: '*', all: ['D'], not: ['A'] });
+        const res = await validateQuery({ any: '*', all: ['D'], not: ['A'] });
         assert.deepEqual(res, [{ 
           storeId: 'local',
           any: ALL_ACCESSIBLE_STREAMS_LOCAL, 
@@ -173,13 +173,13 @@ describe('events.get streams query', function () {
 
 
       it('[N3Q6] must convert {any: "*", not: ["A"]} to [{any: [all accessible streams], not: [expanded "A"]}]', async function () {
-        const res = validateQuery({ any: '*', not: ['A'] });
+        const res = await validateQuery({ any: '*', not: ['A'] });
         assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS_LOCAL, and: [ { not: [ 'A', 'B', 'C' ] } ], storeId: 'local'  }]);
       });
 
 
       it('[L89B] must return null if streams query is empty (because containing no accessible streams, here only trashed)', async function () {
-        const res = validateQuery({ any: ['T'], not: ['A'] });
+        const res = await validateQuery({ any: ['T'], not: ['A'] });
         assert.deepEqual(res, null);
       });
 
@@ -192,7 +192,7 @@ describe('events.get streams query', function () {
 
         it('[I7GF] should throw an error if two different store are mixed in a query item', async function () {
           try {
-            const res = validateQuery([{ any: ['A', '.account'] }]);
+            const res = await validateQuery([{ any: ['A', '.account'] }]);
             assert(false);
           } catch (e) {
             assert.include(e, 'queries must me grouped by stores');
@@ -200,7 +200,7 @@ describe('events.get streams query', function () {
         });
 
         it('[ZUTR] should expand queries from differnt store', async function () {
-          const res = validateQuery([{ any: ['A']}, { any: ['.account'] }]);
+          const res = await validateQuery([{ any: ['A']}, { any: ['.account'] }]);
         });
 
       });
@@ -211,7 +211,7 @@ describe('events.get streams query', function () {
     describe('exception and errors', function () {
 
       it('[9907] handles not existent stream {any: ["Z"]}', async function () {
-        const query = validateQuery({ any: ['Z'] });
+        const query = await validateQuery({ any: ['Z'] });
         assert.deepEqual(query, null);
         const mongo = streamsQueryUtils.toMongoDBQuery(query);
         // empty call
@@ -244,16 +244,16 @@ describe('events.get streams query', function () {
         };
 
         for (const [error, streamsQueries] of Object.entries(malformed)) {
-          streamsQueries.map((streamsQuery) => {
+          await Promise.all(streamsQueries.map(async (streamsQuery) => {
             let hasThrown = false;
             try {
-              const query = validateQuery(streamsQuery);
+              const query = await validateQuery(streamsQuery);
             } catch (e) {
               hasThrown = true;
               assert.include(e, error);
             };
             if (!hasThrown) throw ('checkPermissionsAndApplyToScope was expected to throw [' + error + '] with query: <<' + JSON.stringify(streamsQuery) + '>>');
-          });
+          }));
         };
       });
 
@@ -263,19 +263,19 @@ describe('events.get streams query', function () {
     describe('toMongoQuery()', function() {
 
       it('[KKIH] must convert to MongoDB including expansion', async function () {
-        const clean = validateQuery(['A','B']);
+        const clean = await validateQuery(['A','B']);
         const mongo = streamsQueryUtils.toMongoDBQuery(clean);      
         assert.deepEqual(mongo, { streamIds: { '$in': [ 'A', 'B', 'C' ] } });
       });
 
       it('[4QMR] must convert to MongoDB including with "ALL"', async function () {
-        const clean = validateQuery({any: ['A', 'B'], all: ['E']});
+        const clean = await validateQuery({any: ['A', 'B'], all: ['E']});
         const mongo = streamsQueryUtils.toMongoDBQuery(clean);  
         assert.deepEqual(mongo, { streamIds: { '$in': [ 'A', 'B', 'C' ]}, '$and': [ { streamIds: { '$eq': 'E' } } ] });
       });
 
       it('[NG7F] must convert to MongoDB including expansion with "NOT"', async function () {
-        const clean = validateQuery({any: ['A', 'B'], not: ['E']});
+        const clean = await validateQuery({any: ['A', 'B'], not: ['E']});
         const mongo = streamsQueryUtils.toMongoDBQuery(clean);
         assert.deepEqual(mongo, { 
           streamIds: { '$in': [ 'A', 'B', 'C' ]}, 
@@ -283,7 +283,7 @@ describe('events.get streams query', function () {
       });
 
       it('[HC6X] must convert to MongoDB including expansion with "ALL" and "NOT"', async function () {
-        const clean = validateQuery({any: ['A', 'E'], all: ['D', 'C'], not: ['D', 'F']});
+        const clean = await validateQuery({any: ['A', 'E'], all: ['D', 'C'], not: ['D', 'F']});
         const mongo = streamsQueryUtils.toMongoDBQuery(clean);
         assert.deepEqual(mongo, {
           streamIds: { '$in': [ 'A', 'B', 'C', 'E' ] },
@@ -297,7 +297,7 @@ describe('events.get streams query', function () {
       });
 
       it('[0RNW] must handle array of queries', async function () {
-        const clean = validateQuery([{any: ['B']},{all: ['D'] , not: ['E']}]);
+        const clean = await validateQuery([{any: ['B']},{all: ['D'] , not: ['E']}]);
         const mongo = streamsQueryUtils.toMongoDBQuery(clean);
         const expected = {
           '$or': [

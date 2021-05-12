@@ -111,7 +111,7 @@ module.exports = async function (
     next();
   }
 
-  function checkStreamsPermissionsAndApplyToScope(context, params, result, next) {
+  async function checkStreamsPermissionsAndApplyToScope(context, params, result, next) {
     // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
     const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStreamFilter), 'id');
     function isAuthorizedStreamFilter(stream) {
@@ -150,7 +150,7 @@ module.exports = async function (
       return treeUtils.expandIds(context.streams, [streamId]);
     }
 
-    function canGetEventsOnStream(streamId, storeId) {
+    async function streamExistsAndCanGetEventsOnStream(streamId, storeId) {
       if (storeId === 'audit') {
         console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
         if (context.access.isPersonal()) return true;
@@ -158,8 +158,9 @@ module.exports = async function (
         if (streamId.startsWith('action-')) return true;
         console.log('False');
       }
-
-      return authorizedStreamsIds.includes(streamId);;
+      const stream = await context.streamForStreamId(streamId);
+      if (! stream) return false;
+      return context.access.canGetEventsOnStream(streamId);
     }
 
     /** Streams passed here have already been flagged as authorized  */
@@ -180,9 +181,8 @@ module.exports = async function (
       return accessibleStreamsIds;
     }
     const { streamQuery, nonAuthorizedStreams } =
-      streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, canGetEventsOnStream, isAccessibleStream, allAccessibleStreamsForStore);
+      await streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, streamExistsAndCanGetEventsOnStream, isAccessibleStream, allAccessibleStreamsForStore);
     params.streams = streamQuery;
-
 
     if (nonAuthorizedStreams.length > 0) {
       for (let i = 0; i < nonAuthorizedStreams.length; i++) {

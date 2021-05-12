@@ -129,7 +129,7 @@ exports.validateStreamsQuery = validateStreamsQuery;
 /**
  * @callback CheckStream generic callback to get stream accesibility
  * @param {identifier} streamId
- * @return {boolean}
+ * @return {Promise<boolean>}
  */
 
  /**
@@ -154,15 +154,14 @@ exports.validateStreamsQuery = validateStreamsQuery;
  * @param {AllAccessibleStreamsForStore} allAccessibleStreamsForStore - the list of "visible" streams (i.e not trashed when state = default)
  * @returns {StreamQuery} 
  */
-function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore) {
+async function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore) {
   // registerStream will collect all nonAuthorized streams here during streamQuery inspection
   const nonAuthorizedStreams = [];
 
   // inspect each streamQuery and remove enventual null
-  const arrayOfQueriesResult = arrayOfQueries.map(expandAndTransformStreamQuery).filter((streamQuery) => { 
+  const arrayOfQueriesResult = (await Promise.all(arrayOfQueries.map(expandAndTransformStreamQuery))).filter((streamQuery) => { 
     return streamQuery !== null; // some streamQuery can be translated to "null" if no inclusion are found
   });
-
   if (arrayOfQueriesResult.length === 0) {
     return {
       nonAuthorizedStreams: nonAuthorizedStreams,
@@ -180,7 +179,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
    * }
    * @param {Object} streamQuery 
    */
-  function expandAndTransformStreamQuery(streamQuery) {
+  async function expandAndTransformStreamQuery(streamQuery) {
     let containsAtLeastOneInclusion = false; 
     const res = { storeId: streamQuery.storeId };
 
@@ -193,7 +192,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
           containsAtLeastOneInclusion = true;
         }
       } else {
-        const expandedSet = expandSet(streamQuery.any, streamQuery.storeId);
+        const expandedSet = await expandSet(streamQuery.any, streamQuery.storeId);
         if (expandedSet.length > 0) {
           containsAtLeastOneInclusion = true;
           res.any = expandedSet;
@@ -205,7 +204,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
     for (const property of ['all', 'not']) {
       if (streamQuery[property]) {
         for (let streamId of streamQuery[property]) {
-          const expandedSet = expandSet([streamId], streamQuery.storeId);
+          const expandedSet = await expandSet([streamId], streamQuery.storeId);
           if (expandedSet.length > 0) {
             if (! res.and) res.and = [];
             let key = 'not';
@@ -226,17 +225,17 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
    * @param {Array} streamIds - an array of streamids
    * @param {identifier} storeId - the relative storeId
    */
-  function expandSet(streamIds, storeId) {
+  async function expandSet(streamIds, storeId) {
     const result = [];
 
     for (let streamId of streamIds) {
       if (streamId.startsWith('#')) { 
-        addToResult(streamId.substr(1), storeId);
+        await addToResult(streamId.substr(1), storeId);
       } else {
-        if (registerStream(streamId, storeId)) { 
+        if (await registerStream(streamId, storeId)) { 
           for (let expandedStream of expandStream(streamId, storeId)) { // expand can send "null" values
             if (expandedStream !== null) {
-              addToResult(expandedStream, storeId)
+              await addToResult(expandedStream, storeId)
             }
           }
         } 
@@ -244,8 +243,8 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
     }
     return result;
 
-    function addToResult(streamId, storeId) {
-      const ok = registerStream(streamId, storeId);
+    async function addToResult(streamId, storeId) {
+      const ok = await registerStream(streamId, storeId);
       if (ok && ! result.includes(streamId)) {
         result.push(streamId);
       }
@@ -256,8 +255,8 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
      * @param {string} streamId 
      * @returns {boolean} - true if streamId Can be used in the query
      */
-    function registerStream(streamId, storeId) {
-      if (! isAuthorizedStream(streamId, storeId)) { 
+    async function registerStream(streamId, storeId) {
+      if (! await isAuthorizedStream(streamId, storeId)) { 
         nonAuthorizedStreams.push(StreamsUtils.streamIdForStoreId(streamId, storeId));
         return false;
       }
