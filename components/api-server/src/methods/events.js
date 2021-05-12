@@ -13,12 +13,12 @@ var cuid = require('cuid'),
   commonFns = require('./helpers/commonFunctions'),
   methodsSchema = require('../schema/eventsMethods'),
   eventSchema = require('../schema/event'),
-  querying = require('./helpers/querying'),
   timestamp = require('unix-timestamp'),
   treeUtils = utils.treeUtils,
   streamsQueryUtils = require('./helpers/streamsQueryUtils'),
   _ = require('lodash'),
-  SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
+  SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
+  SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
 
 const { getStore } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -97,7 +97,6 @@ module.exports = async function (
     applyTagsDefaultsForRetrieval,
     checkStreamsPermissionsAndApplyToScope,
     findEventsFromStore,
-    findAccessibleEventsOnLocalStorage,
     includeLocalStorageDeletionsIfRequested);
 
 
@@ -210,10 +209,14 @@ module.exports = async function (
    * @returns 
    */
   async function findEventsFromStore(context, params, result, next) {
-    if (params.streams === null) return next();
+    if (params.streams === null)  {
+      result.events = [];
+      return next();
+    }
 
     // --- The following code my be moved directly into store.get()
     const storeQueryMap = {};
+    let count = 0;
     for (let streamQuery of params.streams) {
       const storeId = streamQuery.storeId;
       if (! storeId) {
@@ -223,106 +226,30 @@ module.exports = async function (
       if (! storeQueryMap[storeId]) storeQueryMap[storeId] = [];
       delete streamQuery.storeId;
       storeQueryMap[storeId].push(streamQuery);
+      count++;
     }
 
-    // save "local" query 
-    const localStoreStreamQuery = storeQueryMap.local || [];
-    delete storeQueryMap.local;
     delete params.streams;
     params.streamsQueryMapByStore = storeQueryMap;
+  
 
     /**
      * Will be called by "stores" for each source of event that need to be streames to result
-     * @param {} eventsStream 
+     * @param {Store} store
+     * @param {ReadableStream} eventsStream of "Events"
      */
-    function addnewEventStreamFromSource (eventsStream) {
-      result.addToConcatArrayStream('events', eventsStream);
+    function addnewEventStreamFromSource (store, eventsStream) {
+      let stream = eventsStream.pipe(new SetSingleStreamIdStream());
+      if (store.settings?.attachments?.setFileReadToken) {
+        stream = stream.pipe(new SetFileReadTokenStream({ access: context.access, filesReadTokenSecret: authSettings.filesReadTokenSecret }));
+      }
+      result.addToConcatArrayStream('events', stream);
     }
 
     await stores.events.generateStreams(context.user.id, params, addnewEventStreamFromSource);
-    
+    result.closeConcatArrayStream('events');
 
-    // set back local streamQuery for events
-    params.streams = localStoreStreamQuery;
     return next();
-  }
-
-  async function findAccessibleEventsOnLocalStorage(context, params, result, next) {
-    
-    // build query
-    const query = querying.noDeletions(querying.applyState({}, params.state));
-  
-    const forbiddenStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-    const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams, forbiddenStreamIds);
-    
-    if (streamsQuery.$or) query.$or = streamsQuery.$or;
-    if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
-    if (streamsQuery.$and) query.$and = streamsQuery.$and;
-  
-  
-    if (params.tags && params.tags.length > 0) {
-      query.tags = {$in: params.tags};
-    }
-    if (params.types && params.types.length > 0) {
-      // unofficially accept wildcard for sub-type parts
-      const types = params.types.map(getTypeQueryValue);
-      query.type = {$in: types};
-    }
-    if (params.running) {
-      query.duration = {'$type' : 10}; // matches when duration exists and is null
-    }
-    if (params.fromTime != null) {
-      const timeQuery = [
-        { // Event started before fromTime, but finished inside from->to.
-          time: {$lt: params.fromTime},
-          endTime: {$gte: params.fromTime}
-        },
-        { // Event has started inside the interval.
-          time: { $gte: params.fromTime, $lte: params.toTime }
-        },
-      ];
-
-      if (query.$or) { // mongo support only one $or .. so we nest them into a $and
-        if (! query.$and) query.$and = [];
-        query.$and.push({$or: query.$or});
-        query.$and.push({$or: timeQuery});
-        delete query.$or; // clean; 
-      } else {
-        query.$or = timeQuery;
-      }
-
-    }
-    if (params.toTime != null) {
-      _.defaults(query, {time: {}});
-      query.time.$lte = params.toTime;
-    }
-    if (params.modifiedSince != null) {
-      query.modified = {$gt: params.modifiedSince};
-    }
-
-    const options = {
-      projection: params.returnOnlyIds ? {id: 1} : {},
-      sort: { time: params.sortAscending ? 1 : -1 },
-      skip: params.skip,
-      limit: params.limit
-    };
-    try {
-      let eventsStream = await bluebird.fromCallback(cb =>
-        userEventsStorage.findStreamed(context.user, query, options, cb));
-
-      result.addToConcatArrayStream('events', eventsStream
-        .pipe(new SetFileReadTokenStream(
-          {
-            access: context.access,
-            filesReadTokenSecret: authSettings.filesReadTokenSecret
-          }
-        ))
-      );
-      result.closeConcatArrayStream('events');
-      next();
-    } catch (err) {
-      return next(errors.unexpectedError(err));
-    }
   }
 
   function includeLocalStorageDeletionsIfRequested(context, params, result, next) {
@@ -1370,17 +1297,6 @@ module.exports = async function (
       }
     });
 
-  /**
-   * Returns the query value to use for the given type, handling possible wildcards.
-   *
-   * @param {String} requestedType
-   */
-  function getTypeQueryValue(requestedType) {
-    var wildcardIndex = requestedType.indexOf('/*');
-    return wildcardIndex > 0 ?
-      new RegExp('^' + requestedType.substr(0, wildcardIndex + 1)) : 
-      requestedType;
-  }
 
   function checkEventForDelete (context, params, result, next) {
     const eventId = params.id;

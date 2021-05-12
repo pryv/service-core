@@ -51,34 +51,39 @@ function BaseStorage(database) {
   this.defaultOptions = { sort: {} };
 }
 
+BaseStorage.prototype.getUserIdFromUserOrUserId = function(userOrUserId) {
+  if (typeof userOrUserId === 'string') return userOrUserId;
+  return userOrUserId.id;
+}
+
 /**
  * Retrieves collection information (name and indexes).
  * Must be implemented by storage modules.
  *
- * @param {Object} user The user owning the collection
+ * @param {Object|String} userOrUserId The user owning the collection
  * @return {{name: string, indexes: Array}}
  */
-BaseStorage.prototype.getCollectionInfo = function(user) {
-  return new Error('Not implemented (user: ' + user + ')');
+BaseStorage.prototype.getCollectionInfo = function(userOrUserId) {
+  return new Error('Not implemented (user: ' + userOrUserId + ')');
 };
 
-BaseStorage.prototype.countAll = function(user, callback) {
-  this.database.countAll(this.getCollectionInfo(user), callback);
+BaseStorage.prototype.countAll = function(userOrUserId, callback) {
+  this.database.countAll(this.getCollectionInfo(userOrUserId), callback);
 };
 
-BaseStorage.prototype.initCollection = function (user, callback) {
-  this.database.getCollection(this.getCollectionInfo(user), callback);
+BaseStorage.prototype.initCollection = function (userOrUserId, callback) {
+  this.database.getCollection(this.getCollectionInfo(userOrUserId), callback);
 };
 
 /// Returns the number of documents in the collection, minus those that are 
 /// either `deleted` or have a `headId`, aka the number of live / trashed 
 /// documents. 
 /// 
-BaseStorage.prototype.count = function(user, query, callback) {
+BaseStorage.prototype.count = function(userOrUserId, query, callback) {
   query.deleted = null;
   query.headId = null;
   this.database.count(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     callback
   );
@@ -89,11 +94,11 @@ BaseStorage.prototype.count = function(user, query, callback) {
  * history items (i.e. documents with `headId` field)
  * @see `findDeletions()`
  */
-BaseStorage.prototype.find = function(user, query, options, callback) {
+BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
   query.deleted = null;
   query.headId = null;
   this.database.find(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     this.applyOptionsToDB(options),
     function(err, dbItems) {
@@ -130,7 +135,7 @@ BaseStorage.prototype.findHistory = function(user, headId, options, callback) {
 };
 
 BaseStorage.prototype.findDeletions = function(
-  user,
+  userOrUserId,
   deletedSince,
   options,
   callback
@@ -138,7 +143,7 @@ BaseStorage.prototype.findDeletions = function(
   const query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
   query.headId = null;
   this.database.find(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     query,
     this.applyOptionsToDB(options),
     function(err, dbItems) {
@@ -163,11 +168,11 @@ BaseStorage.prototype.findDeletionsStreamed = function(
   // Implemented for Events only.
 };
 
-BaseStorage.prototype.findOne = function(user, query, options, callback) {
+BaseStorage.prototype.findOne = function(userOrUserId, query, options, callback) {
   query.deleted = null;
   
   this.database.findOne(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     this.applyOptionsToDB(options),
     function(err, dbItem) {
@@ -179,10 +184,10 @@ BaseStorage.prototype.findOne = function(user, query, options, callback) {
   );
 };
 
-BaseStorage.prototype.findDeletion = function(user, query, options, callback) {
+BaseStorage.prototype.findDeletion = function(userOrUserId, query, options, callback) {
   query.deleted = { $ne: null };
   this.database.findOne(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     this.applyOptionsToDB(options),
     function(err, dbItem) {
@@ -195,7 +200,7 @@ BaseStorage.prototype.findDeletion = function(user, query, options, callback) {
 };
 
 BaseStorage.prototype.aggregate = function(
-  user,
+  userOrUserId,
   query,
   projectExpression,
   groupExpression,
@@ -203,7 +208,7 @@ BaseStorage.prototype.aggregate = function(
   callback
 ) {
   this.database.aggregate(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     this.applyQueryToDB(projectExpression),
     this.applyQueryToDB(groupExpression),
@@ -217,9 +222,9 @@ BaseStorage.prototype.aggregate = function(
   );
 };
 
-BaseStorage.prototype.insertOne = function (user, item, callback) {
+BaseStorage.prototype.insertOne = function (userOrUserId, item, callback) {
   this.database.insertOne(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyItemToDB(this.applyItemDefaults(item)),
     function(err) {
       if (err) {
@@ -251,9 +256,9 @@ BaseStorage.prototype.minimizeEventsHistory = function(user, headId, callback) {
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.findOneAndUpdate = function(user, query, updatedData, callback) {
+BaseStorage.prototype.findOneAndUpdate = function(userOrUserId, query, updatedData, callback) {
   this.database.findOneAndUpdate(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     this.applyUpdateToDB(updatedData),
     function(err, dbItem) {
@@ -273,9 +278,9 @@ BaseStorage.prototype.findOneAndUpdate = function(user, query, updatedData, call
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.updateOne = function (user, query, updatedData, callback) {
+BaseStorage.prototype.updateOne = function (userOrUserId, query, updatedData, callback) {
   this.database.findOneAndUpdate(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     this.applyUpdateToDB(updatedData),
     function(err, dbItem) {
@@ -296,13 +301,13 @@ BaseStorage.prototype.updateOne = function (user, query, updatedData, callback) 
  * @param callback
  */
 BaseStorage.prototype.updateMany = function(
-  user,
+  userOrUserId,
   query,
   updatedData,
   callback
 ) {
   this.database.updateMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     this.applyUpdateToDB(updatedData),
     callback
@@ -323,39 +328,39 @@ BaseStorage.prototype.updateMany = function(
  * @param query
  * @param callback
  */
-BaseStorage.prototype.delete = function(user, query, callback) {
-  callback( new Error('Not implemented (user: ' + user + ')') );
+BaseStorage.prototype.delete = function(userOrUserId, query, callback) {
+  callback( new Error('Not implemented (user: ' + userOrUserId + ')') );
   // a line like this could work when/if Mongo ever supports "replacement" update on multiple docs:
   //this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query),
   //    {deleted: new Date()}, callback);
 };
 
-BaseStorage.prototype.removeOne = function(user, query, callback) {
+BaseStorage.prototype.removeOne = function(userOrUserId, query, callback) {
   this.database.deleteOne(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     callback
   );
 };
 
-BaseStorage.prototype.removeMany = function (user, query, callback) {
+BaseStorage.prototype.removeMany = function (userOrUserId, query, callback) {
   this.database.deleteMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     callback
   );
 };
 
-BaseStorage.prototype.removeAll = function (user, callback) {
+BaseStorage.prototype.removeAll = function (userOrUserId, callback) {
   this.database.deleteMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB({}),
     callback
   );
 };
 
-BaseStorage.prototype.dropCollection = function(user, callback) {
-  this.database.dropCollection(this.getCollectionInfo(user), callback);
+BaseStorage.prototype.dropCollection = function(userOrUserId, callback) {
+  this.database.dropCollection(this.getCollectionInfo(userOrUserId), callback);
 };
 
 // for tests only (at the moment)
@@ -363,9 +368,9 @@ BaseStorage.prototype.dropCollection = function(user, callback) {
 /**
  * For tests only.
  */
-BaseStorage.prototype.findAll = function(user, options, callback) {
+BaseStorage.prototype.findAll = function(userOrUserId, options, callback) {
   this.database.find(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB({}),
     this.applyOptionsToDB(options),
     function(err, dbItems) {
@@ -380,9 +385,9 @@ BaseStorage.prototype.findAll = function(user, options, callback) {
 /**
  * Inserts an array of items; each item must have a valid id and data already. For tests only.
  */
-BaseStorage.prototype.insertMany = function(user, items, callback) {
+BaseStorage.prototype.insertMany = function(userOrUserId, items, callback) {
   this.database.insertMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyItemsToDB(items),
     callback
   );
@@ -391,11 +396,11 @@ BaseStorage.prototype.insertMany = function(user, items, callback) {
 /**
  * Gets the total size of the collection, in bytes.
  *
- * @param {Object} user
+ * @param {Object} userOrUserId
  * @param {Function} callback
  */
-BaseStorage.prototype.getTotalSize = function(user, callback) {
-  this.database.totalSize(this.getCollectionInfo(user), callback);
+BaseStorage.prototype.getTotalSize = function(userOrUserId, callback) {
+  this.database.totalSize(this.getCollectionInfo(userOrUserId), callback);
 };
 
 /**
@@ -405,8 +410,8 @@ BaseStorage.prototype.getTotalSize = function(user, callback) {
  * @param {Object} options
  * @param {Function} callback
  */
-BaseStorage.prototype.listIndexes = function(user, options, callback) {
-  this.database.listIndexes(this.getCollectionInfo(user), options, callback);
+BaseStorage.prototype.listIndexes = function(userOrUserId, options, callback) {
+  this.database.listIndexes(this.getCollectionInfo(userOrUserId), options, callback);
 };
 
 // converters application functions

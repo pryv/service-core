@@ -34,8 +34,12 @@ class StoreUserEvents extends UserEvents {
         params.streams = null; 
       }
 
-      source.events.getStreamed(uid, _.cloneDeep(params)).then((eventsStream) => {
-        addEventStreamCB(eventsStream.pipe(new AddStorePrefixOnEventsStream(sourceId)));
+      await source.events.getStreamed(uid, _.cloneDeep(params)).then((eventsStream) => {
+        if (sourceId == 'local') {
+          addEventStreamCB(source, eventsStream);
+        } else {
+          addEventStreamCB(source, eventsStream.pipe(new AddStorePrefixOnEventsStream(sourceId)));
+        }
       });
     }
   }
