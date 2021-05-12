@@ -180,8 +180,16 @@ module.exports = async function (
       if (storeId !== 'local') {
         return next(errors.invalidRequestStructure('"*" stream query parameter is only supported by local storage'));
       }
+      const accessibleStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, false, isAccessibleFilter), 'id');
+      function isRequestedStateStreams(isAccessibleFilter) {
+        if (stream.trashed && (params.state === 'all' || params.state === 'trashed')) {
+          return false;
+        }
+        return context.access.canGetEventsOnStream(streamId);
+      }
       return accessibleStreamsIds;
     }
+    
     const { streamQuery, nonAuthorizedStreams } =
       await streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, streamExistsAndCanGetEventsOnStream, isAccessibleStream, allAccessibleStreamsForStore);
     params.streams = streamQuery;
