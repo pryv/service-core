@@ -63,10 +63,6 @@ class MethodContext {
   // Custom auth function, if one was configured. 
   customAuthStepFn: ?CustomAuthFunction;
 
-  // will contain the list of "found" streams 
-  streamList: ?Array<Stream>;
-  // during an event.create action for multiple streams event, some streamIds might not exists. They will be listed here
-  streamIdsNotFoundList: ?Array<string>;
   systemStreamsSerializer: object;
 
   methodId: ?string;
@@ -88,8 +84,6 @@ class MethodContext {
     this.access = null;
     this.streams = null;
 
-    this.streamList = null;
-    this.streamIdsNotFoundList = [];
     this.customAuthStepFn = customAuthStepFn;
 
     this.accessToken = null;
@@ -284,21 +278,9 @@ class MethodContext {
     this.streams = streams.concat(userAccountStreams);
   }
 
-  // Set this contexts stream by looking in this.streams. DEPRECATED.
-  // used only in the events creation and update
-  setStreamList(streamIds: array) {
-    if (!streamIds || streamIds.length === 0) return;
-
-    streamIds.forEach(function (streamId) {
-      let stream = treeUtils.findById(this.streams, streamId);
-
-      if (stream) {
-        if (!this.streamList) this.streamList = [];
-        this.streamList.push(stream);
-      } else {
-        this.streamIdsNotFoundList.push(streamId);
-      }
-    }.bind(this));
+  async streamForStreamId(streamId: string) {
+    if (! this.streams) return null;
+    return treeUtils.findById(this.streams, streamId);
   }
 
   initTrackingProperties(item: any, authorOverride: ?string) {

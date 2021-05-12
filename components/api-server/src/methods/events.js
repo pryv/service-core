@@ -150,7 +150,7 @@ module.exports = async function (
       return treeUtils.expandIds(context.streams, [streamId]);
     }
 
-    function isAuthorizedStream(streamId, storeId) {
+    function canGetEventsOnStream(streamId, storeId) {
       if (storeId === 'audit') {
         console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
         if (context.access.isPersonal()) return true;
@@ -169,6 +169,7 @@ module.exports = async function (
         return true;
       }
       // check stream exists
+      // check 
       return accessibleStreamsIds.includes(streamId);
     }
 
@@ -179,7 +180,7 @@ module.exports = async function (
       return accessibleStreamsIds;
     }
     const { streamQuery, nonAuthorizedStreams } =
-      streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
+      streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, canGetEventsOnStream, isAccessibleStream, allAccessibleStreamsForStore);
     params.streams = streamQuery;
 
 
@@ -858,7 +859,7 @@ module.exports = async function (
     return result;
   }
 
-  function normalizeStreamIdAndStreamIds(context, params, result, next) {
+  async function normalizeStreamIdAndStreamIds(context, params, result, next) {
     const event = isEventsUpdateMethod() ? params.update : params;
 
     // forbid providing both streamId and streamIds
@@ -880,10 +881,32 @@ module.exports = async function (
     // using context.content now - not params
     context.content = event;
 
-    // check that streamIds are known
-    context.setStreamList(context.content.streamIds);
+    
+    // used only in the events creation and update
+    if (event.streamIds != null && event.streamIds.length > 0) {
+      const streamIdsNotFoundList = [];
+      const streamIdsTrashed = [];
+      for (streamId of event.streamIds) {
+        const stream = await context.streamForStreamId(streamId);
+        if (! stream) {
+          streamIdsNotFoundList.push(streamId);
+        } else if (stream.trashed) {
+          streamIdsTrashed.push(streamId);
+        } 
+      };
 
-    if (event.streamIds != null && ! checkStreams(context, next)) return;
+      if (streamIdsNotFoundList.length > 0 ) {
+        return next(errors.unknownReferencedResource(
+          'stream', 'streamIds', streamIdsNotFoundList
+        ));
+      }
+      if (streamIdsTrashed.length > 0 ) {
+        return next(errors.invalidOperation(
+          'The referenced streams "' + streamIdsTrashed + '" are trashed.',
+          {trashedReference: 'streamIds'}
+        ));
+      }
+    }
     
     next();
 
@@ -1046,35 +1069,6 @@ module.exports = async function (
       } 
       return tag.trim();
     }).filter(function (tag) { return tag.length > 0; });
-  }
-
-  /**
-   * Checks that the context's stream exists and isn't trashed.
-   * `context.setStream` must be called beforehand.
-   *
-   * @param {Object} context
-   * @param {Function} errorCallback Called with the appropriate error if any
-   * @return `true` if OK, `false` if an error was found.
-   */
-  function checkStreams (context, errorCallback) {
-    if (context.streamIdsNotFoundList.length > 0 ) {
-      errorCallback(errors.unknownReferencedResource(
-        'stream', 'streamIds', context.streamIdsNotFoundList
-      ));
-      return false;
-    }
-    
-    for (let i = 0; i < context.streamList.length; i++) {
-      if (context.streamList[i].trashed) {
-        errorCallback(errors.invalidOperation(
-          'The referenced stream "' + context.streamList[i].id + '" is trashed.',
-          {trashedReference: 'streamIds'}
-        ));
-        return false;
-      }
-    }
-
-    return true;
   }
 
   /**
