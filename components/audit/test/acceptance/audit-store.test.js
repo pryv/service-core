@@ -132,7 +132,8 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
   assert.isArray(auditLogs);
 
   auditLogs.forEach(event => {
-    assert.strictEqual(event.type, 'log/user-api');
+    asset.include(['audit-log/pryv-api', 'audit-log/pryv-api-error'], event.type, 'wrong event type')
+ 
     assert.isString(event.id);
     assert.isNumber(event.time);
 
@@ -148,10 +149,9 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
      assert.include(event.streamIds, addAccessStreamIdPrefix(expectedAccessId), 'missing Access StreamId');
     }
 
-    if (expectedErrorId) {
-      assert.isDefined(event.content.error);
-      assert.strictEqual(event.content.error.id, expectedErrorId);
-      assert.isString(event.content.error.message);
+    if (event.type === 'audit-log/pryv-api-error') {
+      assert.strictEqual(event.content.id, expectedErrorId);
+      assert.isString(event.content.message);
     }
   }); 
 }
