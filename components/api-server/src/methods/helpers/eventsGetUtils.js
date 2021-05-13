@@ -17,7 +17,7 @@ const
 
 function coerceStreamsParam (context, params, result, next) {
   if (! params.streams)  {
-    params.streams = null;
+    params.streams = [{any: ['*']}];
     return next();
   }
   // Streams query can also be sent as a JSON string or string of Array

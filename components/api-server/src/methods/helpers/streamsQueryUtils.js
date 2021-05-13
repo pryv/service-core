@@ -91,7 +91,6 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
   function checkStore(streamId) {
     // queries must be grouped by store 
     const [thisStore, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
-    
     if (! streamQuery.storeId) streamQuery.storeId = thisStore;
     if (streamQuery.storeId !== thisStore) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" queries must me grouped by stores.');
     return cleanStreamId;
@@ -185,18 +184,16 @@ async function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isA
 
     // any
     if (streamQuery.any) {
+      console.log('XXXX EXPANDAND:..', streamQuery.any);
       if (streamQuery.any === '*') { 
-        const allAccessibleStreams = allAccessibleStreamsForStore(streamQuery.storeId);
-        if (allAccessibleStreams !== null && allAccessibleStreams.length > 0) {
-          res.any = allAccessibleStreams;
-          containsAtLeastOneInclusion = true;
-        }
-      } else {
-        const expandedSet = await expandSet(streamQuery.any, streamQuery.storeId);
-        if (expandedSet.length > 0) {
-          containsAtLeastOneInclusion = true;
-          res.any = expandedSet;
-        }
+        streamQuery.any = ['*'];
+      }
+    
+      // Expand 
+      const expandedSet = await expandSet(streamQuery.any, streamQuery.storeId);
+      if (expandedSet.length > 0) {
+        containsAtLeastOneInclusion = true;
+        res.any = expandedSet;
       }
     }
 
@@ -217,7 +214,6 @@ async function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isA
         }
       }
     }
-  
     return (containsAtLeastOneInclusion) ? res : null;
   }
 

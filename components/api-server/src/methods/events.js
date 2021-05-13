@@ -95,6 +95,7 @@ module.exports = async function (
     eventsGetUtil.validateStreamsQuery,
     eventsGetUtil.applyDefaultsForRetrieval,
     applyTagsDefaultsForRetrieval,
+    streamQueryReplaceStarsByPermissions,
     checkStreamsPermissionsAndApplyToScope,
     findEventsFromStore,
     includeLocalStorageDeletionsIfRequested);
@@ -111,7 +112,28 @@ module.exports = async function (
     next();
   }
 
+  async function streamQueryReplaceStarsByPermissions(context, params, result, next) {
+    for (let streamQuery of params.streams) {
+      if (streamQuery.any && streamQuery.any.includes('*')) {
+        if (streamQuery.any.length > 1) {
+          return next(errors.invalidRequestStructure(
+            'Invalid "streams" parameter. any: can only have one "*" item : ['+ streamQuery.any + ']', params.streams));
+        }
+        if (context.access.isPersonal() || context.access.canGetEventsOnStream('*')) continue; // We can keep star
+      
+        // replace any by allowed streams for reading
+        streamQuery.any = context.access.streamPermissions
+          .filter(streamPermission => streamPermission.level != 'create-only')
+          .map(streamPermission => { 
+            return streamPermission.streamId; 
+          });
+      }
+    }
+    next();
+  }
+
   async function checkStreamsPermissionsAndApplyToScope(context, params, result, next) {
+    console.log('XXXXX checkStreamsPermissionsAndApplyToScope', params.streams);
     // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
     const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStreamFilter), 'id');
     function isAuthorizedStreamFilter(stream) {
@@ -144,6 +166,9 @@ module.exports = async function (
      * @param {identifier} storeId
      */
     function expandStream(streamId, storeId) {
+      if (streamId === '*') {
+        return accessibleStreamsIds;
+      }
       if (storeId === 'audit') {
         return [streamId];
       }
@@ -158,13 +183,16 @@ module.exports = async function (
         if (streamId.startsWith('action-')) return true;
         console.log('False');
       }
-      const stream = await context.streamForStreamId(streamId);
-      if (! stream) return false;
+      if (streamId !== '*') { // do not check exitence of '*' stream
+        const stream = await context.streamForStreamId(streamId);
+        if (! stream) return false;
+      }
       return context.access.canGetEventsOnStream(streamId);
     }
 
     /** Streams passed here have already been flagged as authorized  */
     async function isAccessibleStream(streamId, storeId) {
+      if (streamId === '*') return true;
       if (storeId === 'audit') {
         console.log('XXXXX TO BE CHANGED > Accessible audit streamId Query', streamId, storeId);
         return true;
@@ -181,15 +209,16 @@ module.exports = async function (
         return next(errors.invalidRequestStructure('"*" stream query parameter is only supported by local storage'));
       }
       const accessibleStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, false, isAccessibleFilter), 'id');
-      function isRequestedStateStreams(isAccessibleFilter) {
-        if (stream.trashed && (params.state === 'all' || params.state === 'trashed')) {
+      function isAccessibleFilter(stream) {
+        if (stream.trashed && (params.state !== 'all' || params.state !== 'trashed')) {
           return false;
         }
-        return context.access.canGetEventsOnStream(streamId);
+        return context.access.canGetEventsOnStream(stream.id);
       }
       return accessibleStreamsIds;
     }
     
+    console.log('XXXXX> streamQuery 1', params.streams);
     const { streamQuery, nonAuthorizedStreams } =
       await streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, streamExistsAndCanGetEventsOnStream, isAccessibleStream, allAccessibleStreamsForStore);
     params.streams = streamQuery;
@@ -206,7 +235,7 @@ module.exports = async function (
         'streams',
         nonAuthorizedStreams));
     }
-
+    console.log('XXXXX> streamQuery 2', streamQuery);
     next();
   }
 

@@ -205,6 +205,7 @@ Object.freeze(PermissionLevels);
     if (SystemStreamsSerializer.isAccountStreamId(streamId)) {
       return this.canReadAccountStream(streamId);
     }
+    console.log('PPPPPPP', streamId, this._getStreamPermissionLevel(streamId));
     const level = this._getStreamPermissionLevel(streamId);
     if (level === 'create-only') return false;
     return level && isHigherOrEqualLevel(level, 'read');
