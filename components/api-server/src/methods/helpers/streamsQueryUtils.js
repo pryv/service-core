@@ -117,6 +117,10 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
     for (item of arrayOfStreamIds) {
       if (typeof item !== 'string')
         throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) +' must be streamIds. Found: ' + objectToString(item) );
+      
+      if (property !== 'any' && item === '*') {
+        throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] only "any" can contains "*" : ' + objectToString(arrayOfStreamIds));
+      
       const cleanStreamid = checkStore(item);
       arrayOfCleanStreamIds.push(cleanStreamid);
     }
@@ -128,6 +132,7 @@ exports.validateStreamsQuery = validateStreamsQuery;
 /**
  * @callback CheckStream generic callback to get stream accesibility
  * @param {identifier} streamId
+ * @param {identifier} storeId
  * @return {Promise<boolean>}
  */
 
@@ -146,12 +151,47 @@ exports.validateStreamsQuery = validateStreamsQuery;
 
 
 /**
+ * Execute a function on all items of a streamQuery
+ * @param {Array.<StreamQuery>} - array of streamQUeries 
+ * @param {CheckStream} checkStream - return false to break
+ */
+ async function runOnAllStreamIdOfQuery(arrayOfQueries, checkStream) {
+  for (let streamQuery of arrayOfQueries) {
+    for (const key of ['any', 'all', 'not']) {
+      for (let streamId of streamQuery[key]) {
+        if (! await checkStream(streamId, streamQuery.storeId)) return;
+      };
+    };
+  };
+ }
+
+
+async function checkPermissions(arrayOfQueries, isAuthorizedStream, isAccessibleStream) {
+  const unAuthorizedStreams = [];
+  const unAccessibleStreams = [];
+  async function checkAuthorized(streamId, storeId) {
+    if (! await isAccessibleStream(streamId, storeId)) {
+      unAccessibleStreams.push(streamId);
+      return true;
+    } 
+    if (! await isAuthorizedStream(streamId, storeId)) {
+      unAuthorizedStreams.push(streamId);
+    }
+    return true;
+  }
+
+  await runOnAllStreamIdOfQuery(arrayOfQueries, check);
+  return {unAuthorizedStreams, unAccessibleStreams};
+} 
+exports.checkPermissions = checkPermissions;
+
+/**
  * @param {Array.<StreamQuery>} - array of streamQUeries 
  * @param {ExpandStream} expandStream returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
  * @param {CheckStream} isAuthorizedStream - return true is this stream is Authorized
  * @param {CheckStream} isAccessibleStream - return true id this stream is Visible
  * @param {AllAccessibleStreamsForStore} allAccessibleStreamsForStore - the list of "visible" streams (i.e not trashed when state = default)
- * @returns {StreamQuery} 
+ * @returns {nonAuthorizedStreams, streamQuery} 
  */
 async function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore) {
   // registerStream will collect all nonAuthorized streams here during streamQuery inspection

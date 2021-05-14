@@ -95,7 +95,7 @@ module.exports = async function (
     eventsGetUtil.validateStreamsQuery,
     eventsGetUtil.applyDefaultsForRetrieval,
     applyTagsDefaultsForRetrieval,
-    streamQueryReplaceStarsByPermissions,
+    streamQueryCheckPermissionsAndReplaceStars,
     checkStreamsPermissionsAndApplyToScope,
     findEventsFromStore,
     includeLocalStorageDeletionsIfRequested);
@@ -112,8 +112,36 @@ module.exports = async function (
     next();
   }
 
-  async function streamQueryReplaceStarsByPermissions(context, params, result, next) {
+  // the two tasks are joined as '*' replaced have their permission checked 
+  async function streamQueryCheckPermissionsAndReplaceStars(context, params, result, next) {
+    const unAuthorizedStreams = [];
+    const unAccessibleStreams = [];
+
+    async function streamExistsAndCanGetEventsOnStream(streamId, storeId) {
+      if (storeId === 'audit') {
+        console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
+        if (context.access.isPersonal()) return true;
+        if (streamId === 'access-' + context.access.id) return true;
+        if (streamId.startsWith('action-')) return true;
+        console.log('False');
+      }
+
+      // remove eventual '#' in streamQuery
+      const cleanStreamId = streamId.startsWith('#') ? streamId.substr(1) : streamId;
+      
+      const stream = await context.streamForStreamId(cleanStreamId);
+      if (! stream) {
+        unAccessibleStreams.push(cleanStreamId); 
+        return ;
+      }
+      if (! context.access.canGetEventsOnStream(cleanStreamId)) {
+        unAuthorizedStreams.push(cleanStreamId);
+      }
+    }
+
+    console.log('XXXXXX streamQueryCheckPermissionsAndReplaceStars', params.streams);
     for (let streamQuery of params.streams) {
+      // ------------ "*" case 
       if (streamQuery.any && streamQuery.any.includes('*')) {
         if (streamQuery.any.length > 1) {
           return next(errors.invalidRequestStructure(
@@ -122,15 +150,37 @@ module.exports = async function (
         if (context.access.isPersonal() || context.access.canGetEventsOnStream('*')) continue; // We can keep star
       
         // replace any by allowed streams for reading
+        // This could be replaced by access.getStreamParentsWithReadPermission
         streamQuery.any = context.access.streamPermissions
-          .filter(streamPermission => streamPermission.level != 'create-only')
+          .filter(streamPermission => { 
+            return context.access.canGetEventsOnStream(streamPermission.streamId)
+          })
           .map(streamPermission => { 
             return streamPermission.streamId; 
           });
+      } else { // ------------ All other cases
+        for (const key of ['any', 'all', 'not']) {
+          if (streamQuery[key]) {
+            for (let streamId of streamQuery[key]) {
+              await streamExistsAndCanGetEventsOnStream(streamId, streamQuery.storeId);
+            };
+          }
+        };
       }
+    }
+
+    if (unAuthorizedStreams.length > 0) {
+      return next(errors.forbidden('stream [' + unAuthorizedStreams[0] + '] has not sufficent permission to get events'));
+    }
+    if (unAccessibleStreams.length > 0) {
+      return next(errors.unknownReferencedResource(
+        'stream' + (unAccessibleStreams.length > 1 ? 's' : ''),
+        'streams',
+        unAccessibleStreams));
     }
     next();
   }
+
 
   async function checkStreamsPermissionsAndApplyToScope(context, params, result, next) {
     console.log('XXXXX checkStreamsPermissionsAndApplyToScope', params.streams);
@@ -223,7 +273,7 @@ module.exports = async function (
       await streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, streamExistsAndCanGetEventsOnStream, isAccessibleStream, allAccessibleStreamsForStore);
     params.streams = streamQuery;
 
-    if (nonAuthorizedStreams.length > 0) {
+    if (false && nonAuthorizedStreams.length > 0) {
       for (let i = 0; i < nonAuthorizedStreams.length; i++) {
         if (! context.access.canGetEventsOnStream(nonAuthorizedStreams[i])) {
           return next(errors.forbidden('stream [' + nonAuthorizedStreams[i] + '] has not sufficent permission to get events'));
