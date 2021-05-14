@@ -30,10 +30,9 @@ function sourceToStream(source, extraProperties) {
  * @returns {object} [storeId: ..., streamIdWithoutStorePrefix]
  */
 function storeIdAndStreamIdForStreamId(streamId) {
-  if (streamId.indexOf('.') !== 0) return [LOCAL_STORE, streamId];
-  if (SystemStreamsSerializer.isSystemStream(streamId)) return [LOCAL_STORE, streamId]; // probably to be changed at some point 
-  const dashPos = streamId.indexOf('-');
-  if (dashPos < 1) return [streamId.substr(1), '*'];
+  if (streamId.indexOf(':') !== 0) return [LOCAL_STORE, streamId];
+  const dashPos = streamId.indexOf(':', 1);
+  if (dashPos === (streamId.length -1 )) return [streamId.substr(1,dashPos -1), '*'];
   return [streamId.substr(1, (dashPos - 1)), streamId.substr(dashPos + 1)];
 }
 
@@ -43,8 +42,8 @@ function storeIdAndStreamIdForStreamId(streamId) {
  */
  function streamIdForStoreId(cleanStreamId, storeId) {
   if (storeId === LOCAL_STORE) return cleanStreamId;
-  if (cleanStreamId === '*') return '.' + storeId;
-  return '.' + storeId + '-' + cleanStreamId;
+  if (cleanStreamId === '*') return ':' + storeId + ':';
+  return ':' + storeId + ':' + cleanStreamId;
 }
 
 

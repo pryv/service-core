@@ -200,15 +200,21 @@ Object.freeze(PermissionLevels);
 
   /** ------------ EVENTS --------------- */
 
-  canGetEventsOnStream (streamId) {
+  canGetEventsOnStream (streamId, storeId) {
     if (this.isPersonal()) return true;
     if (SystemStreamsSerializer.isAccountStreamId(streamId)) {
       return this.canReadAccountStream(streamId);
     }
-    console.log('PPPPPPP', streamId, this._getStreamPermissionLevel(streamId));
+    if (storeId === '_audit') {
+      console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
+      if (streamId === 'access-' + this.id) return true;
+      if (streamId.startsWith('action-')) return true;
+      return false;
+    }
+    
     const level = this._getStreamPermissionLevel(streamId);
-    if (level === 'create-only') return false;
-    return level && isHigherOrEqualLevel(level, 'read');
+    if (level === null || level === 'create-only') return false;
+    return isHigherOrEqualLevel(level, 'read');
   }
 
   canListStream (streamId) {
@@ -286,7 +292,7 @@ Object.freeze(PermissionLevels);
   */
  canGetEventsOnStreamAndWithTags(streamId, tags) {
   if (this.isPersonal()) return true;
-    return this.canGetEventsOnStream(streamId) &&
+    return this.canGetEventsOnStream(streamId, 'local') &&
       (this.canGetEventsWithAnyTag() ||
         _.some(tags || [], this._canGetEventsWithTag.bind(this)));
   }

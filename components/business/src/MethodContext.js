@@ -278,9 +278,18 @@ class MethodContext {
     this.streams = streams.concat(userAccountStreams);
   }
 
-  async streamForStreamId(streamId: string) {
-    if (! this.streams) return null;
-    return treeUtils.findById(this.streams, streamId);
+  async streamForStreamId(streamId: string, storeId: string) {
+    const { getStore } = require('stores');
+    if (storeId === 'local') {
+      if (! this.streams) return null;
+      return treeUtils.findById(this.streams, streamId);
+    }
+    const store = (await getStore()).sourceForId(storeId);
+    if (! store) return null;
+    const streams = await store.streams.get(this.user.id, {id: streamId});
+    console.log('OOOOOOOO ', streams);
+    if (streams && streams.length === 1) return streams[0];
+    return null;
   }
 
   initTrackingProperties(item: any, authorOverride: ?string) {

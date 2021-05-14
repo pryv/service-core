@@ -89,6 +89,7 @@ class UserStreams {
    * @see https://api.pryv.com/reference/#get-streams
    * @param {identifier} uid
    * @param {Object} params
+   * @param {identifier} params.id
    * @param {identifier} params.parentId
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @param {timestamp} [params.includeDeletionsSince] 
@@ -133,7 +134,7 @@ class UserStreams {
    * @returns null;
    */
   static applyDefaults(storeId, streams) {
-    const rootId = storeId ? '.' + storeId : null;
+    const rootId = storeId ? ':' + storeId + ':' : null;
     _applyDefaults(rootId, streams, rootId);
   }
 }
@@ -146,7 +147,7 @@ class UserStreams {
  */
 function _applyDefaults(storeIdNameSpace, streams, parentId) {
   for (let stream of streams) {
-    if (storeIdNameSpace) stream.id = storeIdNameSpace + '-' + stream.id;
+    if (storeIdNameSpace) stream.id = storeIdNameSpace + stream.id;
     if (typeof stream.created === 'undefined') stream.created = DataSource.UNKOWN_DATE;
     if (typeof stream.modified === 'undefined') stream.modified = DataSource.UNKOWN_DATE;
     if (typeof stream.createdBy === 'undefined') stream.createdBy = DataSource.BY_UNKOWN;

@@ -115,9 +115,9 @@ describe('events.get streams query', function () {
     async function validateQuery(query) {
       if (! Array.isArray(query)) query = [query];
       query = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(query);
-      streamsQueryUtils.validateStreamsQuery(query);
-      const { streamQuery } = await streamsQueryUtils.checkPermissionsAndApplyToScope(query, customExpand, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
-      return streamQuery;
+      streamsQueryUtils.validateStreamsQueriesAndSetStore(query);
+
+      return await streamsQueryUtils.expandAndTransformStreamQueries(query, customExpand);
     }
 
     describe('when transforming streams parameters', function () {
@@ -184,21 +184,16 @@ describe('events.get streams query', function () {
       });
 
 
-      it('[L89B] must return null if streams query is empty (because containing no accessible streams, here only trashed)', async function () {
-        const res = await validateQuery({ any: ['T'], not: ['A'] });
-        assert.deepEqual(res, null);
-      });
-
       describe('with multiple stores', function () { 
         
         it('[U6GS] group query streamIds per store', async function () {
-          const res = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(['A', '.account']);
-          assert.deepEqual(res, [{ any: ['A']},{ any: ['.account']}]);
+          const res = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(['A', ':_audit:test']);
+          assert.deepEqual(res, [{ any: ['A']},{ any: [':_audit:test']}]);
         });
 
         it('[I7GF] should throw an error if two different store are mixed in a query item', async function () {
           try {
-            const res = await validateQuery([{ any: ['A', '.account'] }]);
+            const res = await validateQuery([{ any: ['A', ':_audit:test'] }]);
             assert(false);
           } catch (e) {
             assert.include(e, 'queries must me grouped by stores');
@@ -206,7 +201,7 @@ describe('events.get streams query', function () {
         });
 
         it('[ZUTR] should expand queries from differnt store', async function () {
-          const res = await validateQuery([{ any: ['A']}, { any: ['.account'] }]);
+          const res = await validateQuery([{ any: ['A']}, { any: [':_audit:test'] }]);
         });
 
       });
@@ -216,13 +211,6 @@ describe('events.get streams query', function () {
 
     describe('exception and errors', function () {
 
-      it('[9907] handles not existent stream {any: ["Z"]}', async function () {
-        const query = await validateQuery({ any: ['Z'] });
-        assert.deepEqual(query, null);
-        const mongo = streamsQueryUtils.toMongoDBQuery(query);
-        // empty call
-        assert.deepEqual(mongo, { streamIds: { '$in': [] } });
-      });
 
       it('[IOLA] must throw on malformed expressions', async function () {
         const malformed = {

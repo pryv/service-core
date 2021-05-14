@@ -176,6 +176,18 @@ var findInTree = exports.findInTree = function (array, iterator) {
 };
 
 /**
+ * Iterate on Tree, if iterator returns false, do not inspect children
+ * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
+ */
+const iterateOnPromise = exports.iterateOnPromise = async function(array, iterator) {
+  if (! array) return;
+  for (let stream of array) {
+    if ((await iterator(stream)) && stream.children) 
+      await iterateOnPromise(stream.children, iterator);
+  }
+}
+
+/**
  * @param {Boolean} keepOrphans Whether to take into account the children of filtered-out items
  *                              (if yes, the tree structure may be modified)
  * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
@@ -264,3 +276,26 @@ exports.expandIds = function (array, ids) {
   });
   return expandedIds;
 };
+
+
+/**
+ * Display in the console
+ * @param {<Streams>} array 
+ * @param {Array} properties to display ['id', ..]
+ * @param {*} depth  - private
+ */
+exports.debug = function debug(streams, properties, depth) {
+  const myddepth = depth ? (depth + 1) : 1;
+  if (! properties) properties = [];
+  const base = '-'.padStart(myddepth * 2, ' ');
+  for (let stream of streams) { 
+    let line = base + stream.id;
+    for (let p of properties) {
+      line += ' | ' + p + ': ' + stream[p];
+    }
+    console.log(line);
+    if (stream.children) {
+      debug(stream.children, properties, myddepth);
+    }
+  }
+}
