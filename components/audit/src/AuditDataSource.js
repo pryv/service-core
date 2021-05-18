@@ -15,7 +15,7 @@ const {DataSource, UserStreams, UserEvents}  = require('stores/interfaces/DataSo
 
 const audit = require('audit');
 
-const STORE_ID = 'audit';
+const STORE_ID = '_audit';
 const STORE_NAME = 'Audit Store';
 
 class AuditDataSource extends DataSource {
@@ -44,49 +44,18 @@ class AuditUserStreams extends UserStreams {
 
 
   async get(uid, params) {
-    
-    let streams = [{
-      id: 'uid',
-      name: uid,
-    }, {
-      id: 'tom',
-      name: 'Tom',
-      children: [
-        {
-          id: 'mariana',
-          name: 'Mariana'
-        },{
-          id: 'antonia',
-          name: 'Antonia'
-        }
-      ]
-    }];
-
-    
-
-    UserStreams.applyDefaults(STORE_ID, streams);
-    
-    function findStream(streamId, arrayOfStreams) {
-      for (let stream of arrayOfStreams) {
-        if (stream.id === streamId) return stream;
-        if (stream.children) {
-         const found = findStream(streamId, stream.children);
-         if (found) return found;
-        }
-      }
-      return null;
+    const streams = [];
+    if (params.id) {
+      streams.push({
+        id: params.id,
+        name: params.id,
+        parentId: null,
+        children: [],
+        trashed: false,
+      });
+    } else {
+      throw(new Error('Audit stream query not supported :' + params));
     }
-
-    if (params.parentId) { // filter tree
-      const found = findStream('.' + STORE_ID + '-' + params.parentId, streams);
-      if (found) {
-        streams = found.children;
-      } else {
-        streams = [];
-      }
-    }
-
-    
     return streams;
   }
 }

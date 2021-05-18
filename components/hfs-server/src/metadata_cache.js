@@ -272,7 +272,7 @@ class MetadataLoader {
 
 type AccessModel = {
   canCreateEventsOnStream(streamId: string): boolean; 
-  canGetEventsOnStream(streamId: string): boolean; 
+  canGetEventsOnStream(streamId: string, storeId: string): boolean; 
 };
 type EventModel = {
   id: string, 
@@ -361,7 +361,7 @@ function definePermissions(access: AccessModel, event: EventModel): {write: bool
   const streamIdsLength = streamIds.length;
   for(let i=0; i<streamIdsLength && ! readAndWriteTrue(permissions); i++) {
     if (access.canCreateEventsOnStream(streamIds[i])) permissions.write = true;
-    if (access.canGetEventsOnStream(streamIds[i])) permissions.read = true;
+    if (access.canGetEventsOnStream(streamIds[i], 'local')) permissions.read = true;
   }
   return permissions;
 

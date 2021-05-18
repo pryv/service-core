@@ -92,11 +92,11 @@ module.exports = async function (
     eventsGetUtil.coerceStreamsParam,
     commonFns.getParamsValidation(methodsSchema.get.params),
     eventsGetUtil.transformArrayOfStringsToStreamsQuery,
-    eventsGetUtil.validateStreamsQuery,
+    eventsGetUtil.validateStreamsQueriesAndSetStore,
     eventsGetUtil.applyDefaultsForRetrieval,
     applyTagsDefaultsForRetrieval,
     streamQueryCheckPermissionsAndReplaceStars,
-    checkStreamsPermissionsAndApplyToScope,
+    streamQueryExpandStreams,
     findEventsFromStore,
     includeLocalStorageDeletionsIfRequested);
 
@@ -112,29 +112,23 @@ module.exports = async function (
     next();
   }
 
-  // the two tasks are joined as '*' replaced have their permission checked 
+  // the two tasks are joined as '*' replaced have their permissions checked 
   async function streamQueryCheckPermissionsAndReplaceStars(context, params, result, next) {
     const unAuthorizedStreams = [];
     const unAccessibleStreams = [];
 
     async function streamExistsAndCanGetEventsOnStream(streamId, storeId) {
-      if (storeId === 'audit') {
-        console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
-        if (context.access.isPersonal()) return true;
-        if (streamId === 'access-' + context.access.id) return true;
-        if (streamId.startsWith('action-')) return true;
-        console.log('False');
-      }
+      
 
       // remove eventual '#' in streamQuery
       const cleanStreamId = streamId.startsWith('#') ? streamId.substr(1) : streamId;
       
-      const stream = await context.streamForStreamId(cleanStreamId);
+      const stream = await context.streamForStreamId(cleanStreamId, storeId);
       if (! stream) {
         unAccessibleStreams.push(cleanStreamId); 
         return ;
       }
-      if (! context.access.canGetEventsOnStream(cleanStreamId)) {
+      if (! context.access.canGetEventsOnStream(cleanStreamId, storeId)) {
         unAuthorizedStreams.push(cleanStreamId);
       }
     }
@@ -143,17 +137,13 @@ module.exports = async function (
     for (let streamQuery of params.streams) {
       // ------------ "*" case 
       if (streamQuery.any && streamQuery.any.includes('*')) {
-        if (streamQuery.any.length > 1) {
-          return next(errors.invalidRequestStructure(
-            'Invalid "streams" parameter. any: can only have one "*" item : ['+ streamQuery.any + ']', params.streams));
-        }
-        if (context.access.isPersonal() || context.access.canGetEventsOnStream('*')) continue; // We can keep star
+        if (context.access.isPersonal() || context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
       
         // replace any by allowed streams for reading
         // This could be replaced by access.getStreamParentsWithReadPermission
         streamQuery.any = context.access.streamPermissions
           .filter(streamPermission => { 
-            return context.access.canGetEventsOnStream(streamPermission.streamId)
+            return context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)
           })
           .map(streamPermission => { 
             return streamPermission.streamId; 
@@ -182,110 +172,106 @@ module.exports = async function (
   }
 
 
-  async function checkStreamsPermissionsAndApplyToScope(context, params, result, next) {
-    console.log('XXXXX checkStreamsPermissionsAndApplyToScope', params.streams);
-    // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
-    const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStreamFilter), 'id');
-    function isAuthorizedStreamFilter(stream) {
-      return context.access.canGetEventsOnStream(stream.id);
-    }
-
-    // Accessible streams are the on that authorized && correspond to the "state" param request - ie: if state=default, trashed streams are omitted
-    let accessibleStreamsIds = [];
-
-    if (params.state === 'all' || params.state === 'trashed') { // all streams
-      accessibleStreamsIds = authorizedStreamsIds;
-    } else { // Get all streams compatible with state request - Stops when a stream is not matching to exclude childrens
-      const notTrashedStreamIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, false, isRequestedStateStreams), 'id');
-      function isRequestedStateStreams(stream) {
-        return !stream.trashed;
-      }
-      accessibleStreamsIds = _.intersection(authorizedStreamsIds, notTrashedStreamIds);
-    }
+  async function streamQueryExpandStreams(context, params, result, next) {
     
-    if (params.streams === null) { // all streams
-      if (accessibleStreamsIds.length > 0) 
-        params.streams = [{ any: accessibleStreamsIds, storeId: 'local' }];
-      return next();
-    }
-   
-    /**
-     * Function to be passed to streamQueryFiltering.validateQuery
-     * Expand a streamId to [streamId, child1, ...]
-     * @param {identifier} streamId 
-     * @param {identifier} storeId
-     */
-    function expandStream(streamId, storeId) {
-      if (streamId === '*') {
-        return accessibleStreamsIds;
-      }
-      if (storeId === 'audit') {
-        return [streamId];
-      }
-      return treeUtils.expandIds(context.streams, [streamId]);
-    }
+    
 
-    async function streamExistsAndCanGetEventsOnStream(streamId, storeId) {
-      if (storeId === 'audit') {
-        console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
-        if (context.access.isPersonal()) return true;
-        if (streamId === 'access-' + context.access.id) return true;
-        if (streamId.startsWith('action-')) return true;
-        console.log('False');
-      }
-      if (streamId !== '*') { // do not check exitence of '*' stream
-        const stream = await context.streamForStreamId(streamId);
-        if (! stream) return false;
-      }
-      return context.access.canGetEventsOnStream(streamId);
-    }
+    async function expandStreamInLocal(streamId) {
+      // set tree to "root" or stream
+      let tree = []
+      if (streamId === '*') { // <== can be obptimized here .. if includes trashed or no trashed stream then no streamQuery
+        
+        // All streams that are not accound stream unless permission is explicit
+        tree = context.streams; 
 
-    /** Streams passed here have already been flagged as authorized  */
-    async function isAccessibleStream(streamId, storeId) {
-      if (streamId === '*') return true;
-      if (storeId === 'audit') {
-        console.log('XXXXX TO BE CHANGED > Accessible audit streamId Query', streamId, storeId);
+        if (! context.access.isPersonal()) { // remove all account streamIds
+          // 1. remove all account stream
+          tree = tree.filter(stream => ! SystemStreamsSerializer.isAccountStreamId(stream.id));
+          // 2. add account streams from permission set
+          for (let authorizedStreamId of Object.keys(context.access.streamPermissionsMap)) {
+            if (SystemStreamsSerializer.isAccountStreamId(authorizedStreamId)) {
+              tree.push(await context.streamForStreamId(authorizedStreamId, 'local'));
+            }
+          };
+        }
+
+      } else {
+        const stream = await context.streamForStreamId(streamId, 'local');
+        if (stream) tree = [stream];
+      }
+
+      console.log('XXXXX Tree:', tree);
+
+      const result = [];
+      async function filterAndCollectStreamIds(stream) {
+        console.log('XXXXX Params:', params.state, stream.id, stream.trashed);
+        if (stream.trashed && (params.state !== 'all') && (params.state !== 'trashed')) return false; // break if trashed
+        // todo handle exculdes
+        result.push(stream.id);
         return true;
       }
-      if (params.state === 'all' || params.state === 'trashed') { // all streams
-        return true;
-      }
-      const stream = await context.streamForStreamId(streamId);
-      return ! stream.trashed;
+      await treeUtils.iterateOnPromise(tree, filterAndCollectStreamIds);
+      return result;
     }
 
-    function allAccessibleStreamsForStore(storeId) {
-      if (storeId !== 'local') {
-        return next(errors.invalidRequestStructure('"*" stream query parameter is only supported by local storage'));
+    async function expandStreamInContext(streamId, storeId) {
+      console.log('XXXXX expandStreams', streamId, storeId, 'isPersonal: ' + context.access.isPersonal());
+      // remove eventual '#' in streamQuery
+      if (streamId.startsWith('#')) {
+        return [streamId.substr(1)];
       }
-      const accessibleStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, false, isAccessibleFilter), 'id');
-      function isAccessibleFilter(stream) {
-        if (stream.trashed && (params.state !== 'all' || params.state !== 'trashed')) {
-          return false;
-        }
-        return context.access.canGetEventsOnStream(stream.id);
+
+      if (storeId === 'local') {
+        return await expandStreamInLocal(streamId, storeId);
       }
-      return accessibleStreamsIds;
+      return [streamId]; // TODO 
     }
+
+    try {
+      console.log('XXXXX> streamQuery 1', JSON.stringify(params.streams));
+      params.streams = await streamsQueryUtils.expandAndTransformStreamQueries(params.streams, expandStreamInContext);
+    } catch (e) {
+      console.log(e);
+      return next(e);
+    }
+    /** 
+    for (let streamQuery of params.streams) {
+      for (let key of ['any', 'all', 'not']) {
+        if (streamQuery[key]) {
+          const expandedRes = [];
+          for (let streamId of streamQuery[key]) {
+            const expandedSet = await expandStreamInContext(streamId, streamQuery.storeId, (key !== 'not') ? streamQuery.not : null);
+            if (expandedSet.length === 0) continue;
+
+            console.log('XXXX newexpand:', streamId, res);
+            if (key !== 'any') { // pack all or not into a '{and: [{any: ..}, ...]}
+              expandedRes.push({any: res});
+            } else {
+              expandedRes.push(...res);
+            }
+          };
+
+          let mkey =  (key === 'all') ? 'and' : key; // replace 'all' by and
+          
+          if (expandedRes.length > 0) {
+            streamQuery[mkey] = expandedRes;
+          } else {
+            delete streamQuery[mkey];
+          }
+        }   
+      };
+    }*/
+    console.log('XXXXX> streamQuery 2', JSON.stringify(params.streams));
+
+    // delete streamQueries with no inclusions 
+    params.streams = params.streams.filter(streamQuery => streamQuery.any || streamQuery.and);
+
     
-    console.log('XXXXX> streamQuery 1', params.streams);
-    const { streamQuery, nonAuthorizedStreams } =
-      await streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, streamExistsAndCanGetEventsOnStream, isAccessibleStream, allAccessibleStreamsForStore);
-    params.streams = streamQuery;
+    //params.streams = streamsQueryUtils.prepareDBQuery(params.streams);
 
-    if (false && nonAuthorizedStreams.length > 0) {
-      for (let i = 0; i < nonAuthorizedStreams.length; i++) {
-        if (! context.access.canGetEventsOnStream(nonAuthorizedStreams[i])) {
-          return next(errors.forbidden('stream [' + nonAuthorizedStreams[i] + '] has not sufficent permission to get events'));
-        }
-      }
-
-      return next(errors.unknownReferencedResource(
-        'stream' + (nonAuthorizedStreams.length > 1 ? 's' : ''),
-        'streams',
-        nonAuthorizedStreams));
-    }
-    console.log('XXXXX> streamQuery 2', streamQuery);
+    console.log('XXXXX> streamQuery 3', JSON.stringify(params.streams));
+    treeUtils.debug(context.streams, ['trashed']);
+    console.log(context.access.permissions);
     next();
   }
 
@@ -299,7 +285,7 @@ module.exports = async function (
    * @returns 
    */
   async function findEventsFromStore(context, params, result, next) {
-    if (params.streams === null)  {
+    if (params.streams === null || params.streams.length === 0)  {
       result.events = [];
       return next();
     }
@@ -976,7 +962,7 @@ module.exports = async function (
       const streamIdsNotFoundList = [];
       const streamIdsTrashed = [];
       for (streamId of event.streamIds) {
-        const stream = await context.streamForStreamId(streamId);
+        const stream = await context.streamForStreamId(streamId, 'local');
         if (! stream) {
           streamIdsNotFoundList.push(streamId);
         } else if (stream.trashed) {
