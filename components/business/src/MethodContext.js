@@ -20,6 +20,7 @@ const UsersRepository = require('business/src/users/repository');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
+const { getStore } = require('stores');
 
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
@@ -277,9 +278,9 @@ class MethodContext {
     const userAccountStreams = this.systemStreamsSerializer.getSystemStreamsList();
     this.streams = streams.concat(userAccountStreams);
   }
-
+  
   async streamForStreamId(streamId: string, storeId: string) {
-    const { getStore } = require('stores');
+    
     if (storeId === 'local') {
       if (! this.streams) return null;
       return treeUtils.findById(this.streams, streamId);

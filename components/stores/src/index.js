@@ -9,18 +9,18 @@
  * Pack configured datasources into one
  */
 
-const Store = require('./Store');
-
-// -- DataStores
-const DummyStore = require('../implementations/dummy');
-const FaultyStore = require('../implementations/faulty');
-const LocalStore = require('../implementations/local');
-const AuditDataSource = require('audit/src/AuditDataSource');
 
 
 let store;
 async function getStore() {
   if (store) return store;
+  const Store = require('./Store');
+  // -- DataStores (Imported After to avoid cycles);
+  const DummyStore = require('../implementations/dummy');
+  const FaultyStore = require('../implementations/faulty');
+  const LocalStore = require('../implementations/local');
+  const AuditDataSource = require('audit/src/AuditDataSource');
+
   store = new Store();
   store.addSource(new DummyStore());
   store.addSource(new FaultyStore());
@@ -34,6 +34,7 @@ module.exports = {
   getStore : getStore,
   StreamsUtils: require('./lib/StreamsUtils')
 };
+
 
 
 // ---- dev mode 
