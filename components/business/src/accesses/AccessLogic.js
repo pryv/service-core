@@ -12,6 +12,16 @@ var treeUtils = require('utils').treeUtils,
     _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
+const { getConfigUnsafe } = require('@pryv/boiler');
+const { StreamsUtils } = require('stores');
+
+let auditIsActive = null;
+function addAuditStreams() {
+  if (auditIsActive !== null) return  auditIsActive;
+  auditIsActive = getConfigUnsafe().get('audit:active');
+  return auditIsActive;
+}
+
 /**
  * Lists permission levels ordered by ascending level to help with permission assessment.
  */
@@ -32,6 +42,24 @@ Object.freeze(PermissionLevels);
     this._access = access;
     this._userId = userId;
     _.merge(this, access);
+
+
+    // add audit permissions
+    if (! addAuditStreams()) return;
+    if (this.isPersonal()) return;
+    if (! this.id) return; // this is an access "in" creation process  
+    
+    if (! this.permissions) this.permissions = [];
+    let selfAudit = true;
+    for (let permission of this.permissions) {
+      if (permission.feature === 'selfAudit' && permission.setting === 'forbidden') {
+        selfAudit = false;
+        break;
+      }
+    }
+    if (selfAudit) {
+      this.permissions.push({streamId: ':_audit:access-' + this.id , level: 'read'});
+    }
   }
   
   isPersonal () {
@@ -91,12 +119,24 @@ Object.freeze(PermissionLevels);
   }
 
   _loadStreamPermission (perm) {
+    
     if (perm.streamId === '*') {
       this._registerStreamPermission(perm);
       return;
     }
+    
+    //this._registerStreamPermission(perm);
+    //return; 
+    const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
+    if (storeId !== 'local') {
+      console.log('XXXX TRANSITIONAL TO BE RE-CODED', perm);
+      this._registerStreamPermission(perm);
+      return;
+    }
+
 
     var expandedIds = treeUtils.expandIds(this._cachedStreams, [perm.streamId]);
+    console.log('XXXXX  _loadStreamPermission', perm, expandedIds);
 
     expandedIds.forEach(function (id) {
       var existingPerm = this.streamPermissionsMap[id];
@@ -107,6 +147,7 @@ Object.freeze(PermissionLevels);
       var expandedPerm = id === perm.streamId ? perm : _.extend(_.clone(perm), {streamId: id});
       this._registerStreamPermission(expandedPerm);
     }.bind(this));
+    
   }
 
   _registerStreamPermission (perm) {
@@ -200,19 +241,24 @@ Object.freeze(PermissionLevels);
 
   /** ------------ EVENTS --------------- */
 
-  canGetEventsOnStream (streamId, storeId) {
+  async canGetEventsOnStream (streamId, storeId) {
     if (this.isPersonal()) return true;
     if (SystemStreamsSerializer.isAccountStreamId(streamId)) {
       return this.canReadAccountStream(streamId);
     }
-    if (storeId === '_audit') {
+
+    const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
+    
+    if (storeId === 'X_audit') {
       console.log('XXXXX TO BE CHANGED > Authorizing audit streamId Query', streamId, storeId);
       if (streamId === 'access-' + this.id) return true;
       if (streamId.startsWith('action-')) return true;
       return false;
     }
     
-    const level = this._getStreamPermissionLevel(streamId);
+    const level = this._getStreamPermissionLevel(fullStreamId);
+    console.log('XXXXX permissions',this.permissions, this.streamPermissionsMap);
+    console.log('XXXXX canGetEventsOnStream', streamId, storeId, fullStreamId, level);
     if (level === null || level === 'create-only') return false;
     return isHigherOrEqualLevel(level, 'read');
   }
@@ -290,9 +336,9 @@ Object.freeze(PermissionLevels);
   * @param tags
   * @returns {Boolean}
   */
- canGetEventsOnStreamAndWithTags(streamId, tags) {
+ async canGetEventsOnStreamAndWithTags(streamId, tags) {
   if (this.isPersonal()) return true;
-    return this.canGetEventsOnStream(streamId, 'local') &&
+    return await this.canGetEventsOnStream(streamId, 'local') &&
       (this.canGetEventsWithAnyTag() ||
         _.some(tags || [], this._canGetEventsWithTag.bind(this)));
   }
@@ -353,6 +399,7 @@ Object.freeze(PermissionLevels);
     
     // assert: this.isApp()
 
+    
     // Create a candidate to compare 
     const candidate = new AccessLogic(this._userId, candidateAccess);
       

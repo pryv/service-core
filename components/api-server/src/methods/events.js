@@ -128,7 +128,7 @@ module.exports = async function (
         unAccessibleStreams.push(cleanStreamId); 
         return ;
       }
-      if (! context.access.canGetEventsOnStream(cleanStreamId, storeId)) {
+      if (! await context.access.canGetEventsOnStream(cleanStreamId, storeId)) {
         unAuthorizedStreams.push(cleanStreamId);
       }
     }
@@ -137,17 +137,17 @@ module.exports = async function (
     for (let streamQuery of params.streams) {
       // ------------ "*" case 
       if (streamQuery.any && streamQuery.any.includes('*')) {
-        if (context.access.isPersonal() || context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
+        if (context.access.isPersonal() || await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
       
         // replace any by allowed streams for reading
         // This could be replaced by access.getStreamParentsWithReadPermission
-        streamQuery.any = context.access.streamPermissions
-          .filter(streamPermission => { 
-            return context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)
-          })
-          .map(streamPermission => { 
-            return streamPermission.streamId; 
-          });
+        const res = [];
+        for (const streamPermission of context.access.streamPermissions) {
+          if (await context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)) {
+            res.push(streamPermission.streamId);
+          }
+        }
+        streamQuery.any = res;
       } else { // ------------ All other cases
         for (const key of ['any', 'all', 'not']) {
           if (streamQuery[key]) {
@@ -222,8 +222,9 @@ module.exports = async function (
       }
 
       if (storeId === 'local') {
-        return await expandStreamInLocal(streamId, storeId);
+        return await expandStreamInLocal(streamId);
       }
+
       return [streamId]; // TODO 
     }
 
@@ -234,33 +235,7 @@ module.exports = async function (
       console.log(e);
       return next(e);
     }
-    /** 
-    for (let streamQuery of params.streams) {
-      for (let key of ['any', 'all', 'not']) {
-        if (streamQuery[key]) {
-          const expandedRes = [];
-          for (let streamId of streamQuery[key]) {
-            const expandedSet = await expandStreamInContext(streamId, streamQuery.storeId, (key !== 'not') ? streamQuery.not : null);
-            if (expandedSet.length === 0) continue;
-
-            console.log('XXXX newexpand:', streamId, res);
-            if (key !== 'any') { // pack all or not into a '{and: [{any: ..}, ...]}
-              expandedRes.push({any: res});
-            } else {
-              expandedRes.push(...res);
-            }
-          };
-
-          let mkey =  (key === 'all') ? 'and' : key; // replace 'all' by and
-          
-          if (expandedRes.length > 0) {
-            streamQuery[mkey] = expandedRes;
-          } else {
-            delete streamQuery[mkey];
-          }
-        }   
-      };
-    }*/
+   
     console.log('XXXXX> streamQuery 2', JSON.stringify(params.streams));
 
     // delete streamQueries with no inclusions 
@@ -354,10 +329,11 @@ module.exports = async function (
   api.register('events.getOne',
     commonFns.getParamsValidation(methodsSchema.getOne.params),
     findEvent,
+    checkIfAuthorized,
     includeHistoryIfRequested
   );
 
-  function findEvent (context, params, result, next) {
+  async function findEvent (context, params, result, next) {
     const query = { 
       streamIds: {
         // forbid account stream ids
@@ -373,24 +349,33 @@ module.exports = async function (
       if (! event) {
         return next(errors.unknownResource('event', params.id));
       }
-
-      let canReadEvent = false;
-      for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
-        if (context.access.canGetEventsOnStreamAndWithTags(event.streamIds[i], event.tags)) {
-          canReadEvent = true;
-          break;
-        }
-      }
-      if (! canReadEvent) return next(errors.forbidden());
-
-      setFileReadToken(context.access, event);
-
-      // To remove when streamId not necessary
-      event.streamId = event.streamIds[0];     
-      result.event = event;
-      return next();
+      context.event = event; // keep for next stage
+     
+      next();
     });
   }
+
+  async function checkIfAuthorized(context, params, result, next) {
+    if (! context.event) return next();
+    event = context.event;
+    delete context.event;
+
+    let canReadEvent = false;
+    for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
+      if (await context.access.canGetEventsOnStreamAndWithTags(event.streamIds[i], event.tags)) {
+        canReadEvent = true;
+        break;
+      }
+    }
+    if (! canReadEvent) return next(errors.forbidden());
+
+    setFileReadToken(context.access, event);
+
+    // To remove when streamId not necessary
+    event.streamId = event.streamIds[0];     
+    result.event = event;
+    return next();
+}
 
   function includeHistoryIfRequested(context, params, result, next) {
     if (!params.includeHistory) {

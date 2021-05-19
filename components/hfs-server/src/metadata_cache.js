@@ -250,8 +250,10 @@ class MetadataLoader {
           
           if (event === null) return returnValueCallback(errors.unknownResource('event', eventId));
 
-          returnValueCallback(null,
-            new SeriesMetadataImpl(access, user, event));
+          const serieMetadata = new SeriesMetadataImpl(access, user, event);
+          serieMetadata.init().then(
+            () => { returnValueCallback(null,serieMetadata); },
+            (error) => { returnValueCallback(error,serieMetadata); });
         }
       );
     });
@@ -306,15 +308,22 @@ class SeriesMetadataImpl implements SeriesMetadata {
   time: number; 
   trashed: boolean;
   deleted: number;
+  _access: AccessModel;
+  _event: EventModel;
   
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
-    this.permissions = definePermissions(access, event);
+    this._access = access;
+    this._event = event;
     this.userName = user.username; 
     this.eventId = event.id; 
     this.time = event.time;
     this.eventType = event.type; 
     this.trashed = event.trashed;
     this.deleted = event.deleted;
+  }
+
+  async init() {
+    this.permissions = await definePermissions(this._access, this._event);
   }
 
   isTrashedOrDeleted(): boolean {
@@ -352,7 +361,7 @@ class SeriesMetadataImpl implements SeriesMetadata {
   }
 }
 
-function definePermissions(access: AccessModel, event: EventModel): {write: boolean, read: boolean} {
+async function definePermissions(access: AccessModel, event: EventModel): {write: boolean, read: boolean} {
   const streamIds = event.streamIds; 
   const permissions = {
     write: false,
@@ -361,7 +370,7 @@ function definePermissions(access: AccessModel, event: EventModel): {write: bool
   const streamIdsLength = streamIds.length;
   for(let i=0; i<streamIdsLength && ! readAndWriteTrue(permissions); i++) {
     if (access.canCreateEventsOnStream(streamIds[i])) permissions.write = true;
-    if (access.canGetEventsOnStream(streamIds[i], 'local')) permissions.read = true;
+    if (await access.canGetEventsOnStream(streamIds[i], 'local')) permissions.read = true;
   }
   return permissions;
 

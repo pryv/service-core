@@ -45,7 +45,7 @@ module.exports = function (
 
   expressApp.all('/:username/events/*', initContextMiddleware, loadAccessMiddleware);
 
-  expressApp.get('/:username/events/:id:extension(.jpg|.jpeg|)', async function (req, res, next) {
+  expressApp.get('/:username/events/:id:extension(.jpg|.jpeg|)',async function (req, res, next) {
     let originalSize, previewPath;
     let cached = false;
     const context = req.context;
@@ -61,7 +61,7 @@ module.exports = function (
       
       let canReadEvent = false;
       for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
-        if (context.access.canGetEventsOnStreamAndWithTags(event.streamIds[i], event.tags)) {
+        if (await context.access.canGetEventsOnStreamAndWithTags(event.streamIds[i], event.tags)) {
           canReadEvent = true;
           break;
         }
