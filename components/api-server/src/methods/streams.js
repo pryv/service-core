@@ -15,6 +15,8 @@ var errors = require('errors').factory,
   utils = require('utils'),
   treeUtils = utils.treeUtils,
   _ = require('lodash');
+
+const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const ErrorIds = require('errors/src/ErrorIds');
@@ -57,45 +59,48 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     next();
   }
 
-  function findAccessibleStreams(context, params, result, next) {
+  async function findAccessibleStreams(context, params, result, next) {
+    try { 
     // can't reuse context streams (they carry extra internal properties)
+    let streams = await bluebird.fromCallback(cb => userStreamsStorage.find(context.user, {}, null, cb));
+   
+
+    const systemStreams = systemStreamsSerializer.getSystemStreamsList();
+    streams = streams.concat(systemStreams);
     
-    userStreamsStorage.find(context.user, {}, null, function (err, streams) {
-
-      if (err) { return next(errors.unexpectedError(err)); }
-
-      const systemStreams = systemStreamsSerializer.getSystemStreamsList();
-      streams = streams.concat(systemStreams);
-
-      if (params.parentId) {
-        var parent = treeUtils.findById(streams, params.parentId);
-        if (!parent) {
-          return next(errors.unknownReferencedResource('parent stream',
-            'parentId', params.parentId, err));
-        }
-        streams = parent.children;
+    if (params.parentId) {
+      var parent = treeUtils.findById(streams, params.parentId);
+      if (!parent) {
+        
+        return next(errors.unknownReferencedResource('parent stream',
+          'parentId', params.parentId, null));
       }
-
-      if (params.state !== 'all') { // i.e. === 'default' (return non-trashed items)
-        streams = treeUtils.filterTree(streams, false /*no orphans*/, function (item) {
-          return !item.trashed;
-        });
-      }
-
-      streams = treeUtils.filterTree(streams, true /*keep orphans*/, function (stream) {
-        return context.access.canListStream(stream.id);
+      streams = parent.children;
+    }
+   
+    if (params.state !== 'all') { // i.e. === 'default' (return non-trashed items)
+      streams = treeUtils.filterTree(streams, false /*no orphans*/, function (item) {
+        return !item.trashed;
       });
-
-      // hide inaccessible parent ids
-      streams.forEach(function (stream) {
-        if (! context.access.canListStream(stream.parentId)) {
-          delete stream.parentId;
-        }
-      });
-
-      result.streams = streams;
-      next();
+    }
+   
+    streams = await treeUtils.filterTreeOnPromise(streams, true /*keep orphans*/, async function (stream) {
+      return await context.access.canListStream(stream.id);
     });
+    console.log(streams);
+    // hide inaccessible parent ids
+    for (let stream of streams) {
+      if (! await context.access.canListStream(stream.parentId)) {
+        delete stream.parentId;
+      }
+    }
+
+    result.streams = streams;
+    next();
+    } catch (e) {
+      console.log(e);
+      return next(errors.unexpectedError(e)); 
+    } 
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {

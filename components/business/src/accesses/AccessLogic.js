@@ -263,7 +263,7 @@ Object.freeze(PermissionLevels);
     return isHigherOrEqualLevel(level, 'read');
   }
 
-  canListStream (streamId) {
+  async canListStream (streamId) {
     if (this.isPersonal()) return true;
     const level = this._getStreamPermissionLevel(streamId);
     return level && isHigherOrEqualLevel(level, 'read');

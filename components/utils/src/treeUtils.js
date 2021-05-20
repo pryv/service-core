@@ -188,6 +188,32 @@ const iterateOnPromise = exports.iterateOnPromise = async function(array, iterat
 }
 
 /**
+ * @async 
+ * @param {Boolean} keepOrphans Whether to take into account the children of filtered-out items
+ *                              (if yes, the tree structure may be modified)
+ * @callback {Promise<boolean>} iterator Arguments: ({Object}), return value: {Boolean}
+ */
+ var filterTreeOnPromise = exports.filterTreeOnPromise = async function (array, keepOrphans, iterator) {
+  var filteredArray = [];
+
+  for (var i = 0, n = array.length; i < n; i++) {
+    var item = array[i];
+    if (await iterator(item)) {
+      var clone = _.clone(item);
+      filteredArray.push(clone);
+      if (clone.hasOwnProperty('children')) {
+        clone.children = await filterTreeOnPromise(clone.children, keepOrphans, iterator);
+      }
+    } else if (item.hasOwnProperty('children') && keepOrphans) {
+      const res = await filterTreeOnPromise(item.children, keepOrphans, iterator);
+      filteredArray.push(...res);
+    }
+  }
+
+  return filteredArray;
+};
+
+/**
  * @param {Boolean} keepOrphans Whether to take into account the children of filtered-out items
  *                              (if yes, the tree structure may be modified)
  * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
