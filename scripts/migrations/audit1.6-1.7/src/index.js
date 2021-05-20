@@ -284,6 +284,9 @@ async function getAuditLogDir() {
 let db, config, audiLogsDirs, userIdMap = {}, userStorageByUsername = {}, userAnchor = {};
 async function start() {
   config = await getConfig();
+  if (config.get('openSource:isActive') || (! config.get('audit:active'))) {
+    logger.info('Skipping Migration Audit is not active');
+  };
   await audit.init();
   await UserLocalDirectory.init();
   audiLogsDirs = await getAuditLogDir();

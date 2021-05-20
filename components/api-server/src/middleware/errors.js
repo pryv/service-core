@@ -28,9 +28,10 @@ function produceHandleErrorMiddleware(logging: any) {
   const logger = logging.getLogger('error-middleware');
 
   const config = getConfigUnsafe();
-  const isOpenSource = config.get('openSource:isActive');
+  const isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
+  
   let audit;
-  if (! isOpenSource) {
+  if (isAuditActive) {
     audit = require('audit');
   }
  
@@ -42,7 +43,7 @@ function produceHandleErrorMiddleware(logging: any) {
       error = errorsFactory.invalidRequestStructure(error.message);
     }
 
-    if (! isOpenSource) {
+    if (isAuditActive) {
       audit.errorApiCall(req.context, error);
     }
 

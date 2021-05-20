@@ -80,10 +80,12 @@ class Application {
   expressApp: express$Application;
 
   isOpenSource: boolean;
+  isAuditActive: boolean;
 
   constructor() {
     this.initalized = false;
     this.isOpenSource = false;
+    this.isAuditActive = false;
   }
 
   async initiate() {
@@ -97,8 +99,9 @@ class Application {
 
     this.config = await getConfig();
     this.isOpenSource = this.config.get('openSource:isActive');
+    this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active')
     
-    if (! this.isOpenSource) {
+    if (this.isAuditActive) {
       const audit = require('audit');
       await audit.init();
     }
@@ -184,6 +187,8 @@ class Application {
     
     if(! this.isOpenSource) {
       require('./routes/webhooks')(this.expressApp, this);
+    }
+    if(this.isAuditActive) {
       require('audit/src/routes/audit.route')(this.expressApp, this);
     }
   }

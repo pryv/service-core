@@ -87,7 +87,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     streams = await treeUtils.filterTreeOnPromise(streams, true /*keep orphans*/, async function (stream) {
       return await context.access.canListStream(stream.id);
     });
-    console.log(streams);
+    
     // hide inaccessible parent ids
     for (let stream of streams) {
       if (! await context.access.canListStream(stream.parentId)) {

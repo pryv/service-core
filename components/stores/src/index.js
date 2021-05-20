@@ -9,23 +9,33 @@
  * Pack configured datasources into one
  */
 
+const { getConfig } = require('@pryv/boiler');
+
 
 
 let store;
 async function getStore() {
   if (store) return store;
+  const config = await getConfig();
+
   const Store = require('./Store');
+  store = new Store();
+
   // -- DataStores (Imported After to avoid cycles);
   const DummyStore = require('../implementations/dummy');
-  const FaultyStore = require('../implementations/faulty');
-  const LocalStore = require('../implementations/local');
-  const AuditDataSource = require('audit/src/AuditDataSource');
-
-  store = new Store();
   store.addSource(new DummyStore());
+
+  const FaultyStore = require('../implementations/faulty');
   store.addSource(new FaultyStore());
+
+  const LocalStore = require('../implementations/local');
   store.addSource(new LocalStore());
-  store.addSource(new AuditDataSource());
+
+  if ( (! config.get('openSource:isActive')) && config.get('audit:active')) {
+    const AuditDataSource = require('audit/src/AuditDataSource');
+    store.addSource(new AuditDataSource());
+  }
+
   return await store.init();
 };
 
