@@ -12,13 +12,13 @@
     "test": "NODE_ENV=test ../../node_modules/.bin/mocha --reporter=dot test/**/*.test.js --exit"
   },
   "dependencies": {
+    "@pryv/stable-object-representation": "git+ssh://git@github.com:pryv/lib-js-stable-object-representation.git#0.0.4",
     "better-sqlite3": "^7.1.1",
     "cuid": "^2.1.8",
     "lru-cache": "^6.0.0",
     "mkdirp": "^1.0.4",
     "winston": "^3.3.3",
-    "winston-syslog": "^2.4.4",
-    "@pryv/stable-object-representation": "git+ssh://git@github.com:pryv/lib-js-stable-object-representation.git#0.0.4"
+    "winston-syslog": "^2.4.4"
   },
   "devDependencies": {
     "chai": "^4.2.0",
