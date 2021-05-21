@@ -1153,6 +1153,10 @@
     superagent "^6.1.0"
     winston "^3.3.3"
 
+"@pryv/stable-object-representation@git+ssh://git@github.com:pryv/lib-js-stable-object-representation.git#0.0.4":
+  version "0.0.4"
+  resolved "git+ssh://git@github.com:pryv/lib-js-stable-object-representation.git#2b71bbee990624e12ecf7158e9a301a53db02caa"
+
 "@rpl/badge-up@^2.2.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@rpl/badge-up/-/badge-up-2.2.0.tgz#79a5ccf72bdb1777390bb7e4caa08dc42d57dd9a"

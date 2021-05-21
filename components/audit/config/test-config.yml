@@ -12,8 +12,8 @@ logs:
     active: true
     filename: test-application.log
 
-audit: # set to false to fully deactivate
-
+audit: 
+  active: true
   storage:
     filter:
       methods:

@@ -62,6 +62,9 @@ class Audit {
 
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
+    if (context.auditHash) {
+      _.merge(event.content, context.auditHash);
+    }
     event.type = CONSTANTS.EVENT_TYPE_VALID;
     this.eventForUser(userId, event, methodId);
   }

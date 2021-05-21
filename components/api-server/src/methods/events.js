@@ -47,6 +47,8 @@ const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId
 // for events. 
 const typeRepo = new TypeRepository(); 
 
+let stableRepresentation; // will be loaded depending on conf
+
 /**
  * Events API methods implementations.
  * @param auditSettings
@@ -65,6 +67,10 @@ module.exports = async function (
   let serviceRegisterConn = {};
   if (! config.get('dnsLess:isActive')) {
     serviceRegisterConn = getServiceRegisterConn();
+  }
+
+  if ((! config.get('openSource:isActive')) && config.get('audit:active')) {
+    stableRepresentation = require('audit').stableRepresentation;
   }
   
   // Initialise the project version as soon as we can. 
@@ -385,6 +391,7 @@ module.exports = async function (
     createEvent,
     handleEventsWithActiveStreamId,
     createAttachments,
+    addEventHash,
     notify);
 
   function applyPrerequisitesForCreation(context, params, result, next) {
@@ -603,6 +610,16 @@ module.exports = async function (
     } catch (err) {
       next(err);
     }
+  }
+
+  function addEventHash(context, params, result, next) {
+    if (! stableRepresentation && ! result.event) return next();
+    console.log(result.event, params);
+    context.eventHashAndKey = stableRepresentation.event.compute(result.event);
+    if (context.includesHash) { 
+      result.event.hash = context.eventHashAndKey.payload;
+    }
+    next();
   }
 
   // -------------------------------------------------------------------- UPDATE
@@ -933,6 +950,10 @@ module.exports = async function (
    */
   function validateEventContentAndCoerce(context, params, result, next) {
     const type = context.content.type;
+
+    // remove eventHashAndKeysumRequest and keep it in context
+    context.includesHash = params.includesHash;
+    delete params.includesHash;
 
     // Unknown types can just be created as normal events. 
     if (! typeRepo.isKnown(type)) {

@@ -7,6 +7,7 @@
 const Audit = require('./Audit');
 const audit = new Audit();
 
+audit.stableRepresentation = require('@pryv/stable-object-representation');
 audit.CONSTANTS = require('./Constants');
 
 module.exports = audit;

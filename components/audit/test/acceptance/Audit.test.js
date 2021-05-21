@@ -76,7 +76,6 @@ describe('Audit', function() {
       res = await coreRequest
         .get(auditPath)
         .set('Authorization', access.token);
-      assert.equal(res.status, 200);
       const logs = res.body.auditLogs;
       assert.exists(logs);
       assert.equal(logs.length, 1);

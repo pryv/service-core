@@ -17,7 +17,8 @@
     "lru-cache": "^6.0.0",
     "mkdirp": "^1.0.4",
     "winston": "^3.3.3",
-    "winston-syslog": "^2.4.4"
+    "winston-syslog": "^2.4.4",
+    "@pryv/stable-object-representation": "git+ssh://git@github.com:pryv/lib-js-stable-object-representation.git#0.0.4"
   },
   "devDependencies": {
     "chai": "^4.2.0",
