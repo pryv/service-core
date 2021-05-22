@@ -178,8 +178,8 @@ class Parser {
 
     try {
       out.transform((columnName, cellValue) => {
+        if (type.isOptionalField(columnName) && cellValue === null) return null;
         const cellType = type.forField(columnName);
-    
         const coercedValue = cellType.coerce(cellValue);
         return coercedValue; 
       });

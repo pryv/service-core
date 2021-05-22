@@ -187,6 +187,11 @@ class InfluxRowType implements EventType {
     return this.eventType.optionalFields();
   }
   
+  // check if a field is required
+  isOptionalField(name: string): Boolean {
+    return this.optionalFields().includes(name);
+  }
+
   // What fields MUST be present? 
   // 
   requiredFields(): Array<string> {

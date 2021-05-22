@@ -130,6 +130,7 @@ describe('Storing data in a HF series', function() {
           R.map(R.prop(R.__, data), Object.keys(data)),
         ]
       };
+      console.log(postData);
       const request = server.request(); 
       return request
         .post(`/${userId}/events/${eventId}/series`)
@@ -235,8 +236,10 @@ describe('Storing data in a HF series', function() {
       }
     });
 
+
     it('[YALY] should accept a request when the authorized permission is on the event\'s 2nd streamId', async () => {
-      await storeData({ deltaTime: 10, value: 54}, secondStreamToken);
+      const res = await storeData({ deltaTime: 10, value: 54}, secondStreamToken);
+      console.log(res.body);
     });
   });
 
@@ -385,6 +388,7 @@ describe('Storing data in a HF series', function() {
            [ 6, 6]);
         });
     });
+
 
     it('[UD2C] trashed event cannot be written to', async () => {
       // This is visible if after moving the "timestamp" sugar is valid
@@ -923,19 +927,22 @@ describe('Storing data in a HF series', function() {
 
       // Database fixture: `eventId` will contain the event that has a type 
       // 'series:ratio/generic'
-      let userId, parentStreamId, eventId, accessToken; 
+      let userId, parentStreamId, ratioEventId, positionEventId, accessToken; 
       before(() => {
         userId = cuid(); 
         parentStreamId = cuid(); 
-        eventId = cuid(); 
+        ratioEventId = cuid(); 
+        positionEventId = cuid();
         accessToken = cuid(); 
         
-        logger.debug('build fixture');
         return pryv.user(userId, {}, function (user) {
           user.stream({id: parentStreamId}, function (stream) {
             stream.event({
-              id: eventId, 
+              id: ratioEventId, 
               type: 'series:ratio/generic'});
+            stream.event({
+              id: positionEventId, 
+              type: 'series:position/wgs84'});
           });
 
           user.access({token: accessToken, type: 'personal'});
@@ -945,15 +952,15 @@ describe('Storing data in a HF series', function() {
       
       // Tries to store complex `data` in the event identified by `eventId`.
       // 
-      async function tryStore(header: Header, data: Rows): Promise<boolean> {
-        const response = await storeOp(header, data);
+      async function tryStore(header: Header, data: Rows, eventId: string): Promise<boolean> {
+        const response = await storeOp(header, data, eventId);
         
         return response.statusCode === 200;
       }
       // Attempts a store operation and expects to fail. Returns details on
       // the error.
-      async function failStore(header: Header, data: Rows): Promise<ErrorDocument> {
-        const response = await storeOp(header, data);
+      async function failStore(header: Header, data: Rows, eventId: string): Promise<ErrorDocument> {
+        const response = await storeOp(header, data, eventId);
         
         assert.notStrictEqual(response.statusCode, 200);
               
@@ -965,7 +972,8 @@ describe('Storing data in a HF series', function() {
           message: error.message,
         };
       }
-      async function storeOp(header: Header, data: Rows): Promise<any> {
+      async function storeOp(header: Header, data: Rows, eventId: string): Promise<any> {
+        eventId = eventId || ratioEventId;
         const requestData = {
           format: 'flatJSON',
           fields: header, 
@@ -980,6 +988,15 @@ describe('Storing data in a HF series', function() {
         
         return response;
       }
+
+      describe('null fields', () => { 
+        it('[7UZT] accept null fields', async () => {
+          const headers = ['deltaTime', 'latitude', 'longitude', 'speed'];
+          const data = [[1,2,3,4], [2,2,3,null], [3,2,3,4]];
+          const res = await storeOp(headers, data, positionEventId);
+          console.log(res.body);
+        });
+      });
       
       describe('when not all required fields are given', () => {
         let now = 6;
