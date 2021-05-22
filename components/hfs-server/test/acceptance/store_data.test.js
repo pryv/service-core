@@ -130,7 +130,6 @@ describe('Storing data in a HF series', function() {
           R.map(R.prop(R.__, data), Object.keys(data)),
         ]
       };
-      console.log(postData);
       const request = server.request(); 
       return request
         .post(`/${userId}/events/${eventId}/series`)
@@ -239,7 +238,6 @@ describe('Storing data in a HF series', function() {
 
     it('[YALY] should accept a request when the authorized permission is on the event\'s 2nd streamId', async () => {
       const res = await storeData({ deltaTime: 10, value: 54}, secondStreamToken);
-      console.log(res.body);
     });
   });
 
@@ -994,7 +992,15 @@ describe('Storing data in a HF series', function() {
           const headers = ['deltaTime', 'latitude', 'longitude', 'speed'];
           const data = [[1,2,3,4], [2,2,3,null], [3,2,3,4]];
           const res = await storeOp(headers, data, positionEventId);
-          console.log(res.body);
+          assert.equal(res.body.status,'ok');
+        });
+
+        it('[7UTT] do not accept null for required fields', async () => {
+          const headers = ['deltaTime', 'latitude', 'longitude', 'speed'];
+          const data = [[1, 2, 3, 4], [2, 2, null, 5], [3, 2, 3, 4]];
+          const res = await storeOp(headers, data, positionEventId);
+          assert.exists(res.body.error);
+          assert.equal(res.body.error.id,'invalid-request-structure');
         });
       });
       
