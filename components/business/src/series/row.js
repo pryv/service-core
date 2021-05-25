@@ -27,7 +27,7 @@ class Row {
   }
   
   /** Turns this row into an object that has the columns as keys and the row
-   * values as values. 
+   * values as values. Remove columns with null values;
    * 
    * @example 
    *    row.toStruct() # => { col1: 'value1', col2: 'value2' }
@@ -38,8 +38,8 @@ class Row {
     const s = Object.create(null); // Avoid key collisions with Javascript base object. 
     const assoc = (s, [k, v]) => R.assoc(k, v, s);
     const createObj = R.reduce(assoc, s); 
-    
-    return createObj(R.zip(this.columnNames, this.values));
+    const isNonNull = v => v !== null;
+    return R.filter(isNonNull, createObj(R.zip(this.columnNames, this.values)));
   }
   
   /** Returns a single field value. 
