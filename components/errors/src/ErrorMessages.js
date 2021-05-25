@@ -6,6 +6,7 @@
  */
 // @flow
 const ErrorIds = require('./ErrorIds');
+const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers');
 /**
  * Identifier constants for API errors' messages.
  */
@@ -16,7 +17,7 @@ const ErrorMessages = {
    */
   // ErrorIds.
   [ErrorIds.InvalidInvitationToken]: 'Invalid invitation',
-  [ErrorIds.InvalidUsername]: 'Username should have from 5 to 23 characters and contain lowercase letters or numbers or dashes',
+  [ErrorIds.InvalidUsername]: 'Username should have from ' + USERNAME_MIN_LENGTH + ' to ' + USERNAME_MAX_LENGTH + ' characters and contain lowercase letters or numbers or dashes',
   [ErrorIds.UsernameRequired]: 'Username is required',
   [ErrorIds.InvalidEmail]: 'Invalid email',
   [ErrorIds.InvalidLanguage]: 'Invalid language',

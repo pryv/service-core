@@ -10,6 +10,7 @@ const errorHandling = require('errors').errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
 const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
+const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('../schema/helpers');
 
 (async () => {
   await commonMeta.loadSettings();
@@ -80,7 +81,7 @@ class Manager implements MessageSink {
   // Returns true if the `candidate` could be a username on a lexical level. 
   // 
   looksLikeUsername(candidate: string): boolean {
-    const reUsername = /^([a-zA-Z0-9])(([a-zA-Z0-9-]){3,21})[a-zA-Z0-9]$/; 
+    const reUsername = new RegExp('^([a-zA-Z0-9])(([a-zA-Z0-9-]){' + (USERNAME_MIN_LENGTH - 2) + ',' + (USERNAME_MAX_LENGTH - 2) + '})[a-zA-Z0-9]$'); 
     return reUsername.test(candidate);
   }
 
