@@ -183,7 +183,6 @@ describe('root', function() {
         .get('/events')
         .set('Authorization', appAccessToken1)
         .set('Host', username + '.pryv.local');
-        console.log(res.body, username);
       assert.equal(res.status, 200);
     });
 
