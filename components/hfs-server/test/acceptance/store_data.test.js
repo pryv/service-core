@@ -237,7 +237,7 @@ describe('Storing data in a HF series', function() {
 
 
     it('[YALY] should accept a request when the authorized permission is on the event\'s 2nd streamId', async () => {
-      const res = await storeData({ deltaTime: 10, value: 54}, secondStreamToken);
+      await storeData({ deltaTime: 10, value: 54}, secondStreamToken);
     });
   });
 
