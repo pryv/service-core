@@ -50,6 +50,6 @@ module.exports = function (ignoredPaths: Array<string>) {
 
 function looksLikeUsername(candidate: string): boolean {
   const reUsername = new RegExp(USERNAME_REGEXP_STR); 
-  
-  return reUsername.test(candidate);
+  const lowercasedUsername = candidate.toLowerCase(); // for retro-compatibility
+  return reUsername.test(lowercasedUsername);
 }

@@ -82,7 +82,8 @@ class Manager implements MessageSink {
   // 
   looksLikeUsername(candidate: string): boolean {
     const reUsername = new RegExp(USERNAME_REGEXP_STR); 
-    return reUsername.test(candidate);
+    const lowercasedUsername = candidate.toLowerCase(); // for retro-compatibility
+    return reUsername.test(lowercasedUsername);
   }
 
   // Extracts the username from the given valid namespace name.

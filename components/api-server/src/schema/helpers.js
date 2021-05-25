@@ -12,9 +12,9 @@ var _ = require('lodash');
 
 const USERNAME_MIN_LENGTH = 5;
 const USERNAME_MAX_LENGTH = 60;
-const USERNAME_REGEXP_STR = '^[a-zA-Z0-9]' +
-                            '[a-zA-Z0-9-]{' + (USERNAME_MIN_LENGTH - 2) + ',' + (USERNAME_MAX_LENGTH - 2) + '}' + 
-                            '[a-zA-Z0-9]$';
+const USERNAME_REGEXP_STR = '^[a-z0-9]' +
+                            '[a-z0-9-]{' + (USERNAME_MIN_LENGTH - 2) + ',' + (USERNAME_MAX_LENGTH - 2) + '}' + 
+                            '[a-z0-9]$';
 
 exports.USERNAME_MIN_LENGTH = USERNAME_MIN_LENGTH;
 exports.USERNAME_MAX_LENGTH = USERNAME_MAX_LENGTH;
