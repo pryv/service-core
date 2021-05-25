@@ -114,10 +114,10 @@ exports.getParamsValidation = function getParamsValidation (paramsSchema) {
             {
                 "code": "PATTERN",
                 "params": [
-                    "^[a-z0-9][a-z0-9\\-]{3,60}[a-z0-9]$",
+                    "^[a-z0-9][a-z0-9\\-]{3,58}[a-z0-9]$",
                     "ga"
                 ],
-                "message": "String does not match pattern ^[a-z0-9][a-z0-9\\-]{3,60}[a-z0-9]$: ga",
+                "message": "String does not match pattern ^[a-z0-9][a-z0-9\\-]{3,58}[a-z0-9]$: ga",
                 "path": "#/username"
             }
         ]
