@@ -181,6 +181,7 @@ describe('root', function() {
     it('[P06Y] should properly translate the Host header\'s username (i.e. subdomain)', async function() {
       const res = await server.request()
         .get('/events')
+        .set('Authorization', appAccessToken1)
         .set('Host', username + '.pryv.local');
       assert.equal(res.status, 200);
     });
