@@ -7,7 +7,7 @@
 // @flow
 
 const errors = require('errors').factory;
-const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers'); 
+const { USERNAME_REGEXP_STR } = require('api-server/src/schema/helpers'); 
 
 /**
  * Middleware to translate the subdomain (i.e. username) in requests (if any) into the URL path,
@@ -49,7 +49,7 @@ module.exports = function (ignoredPaths: Array<string>) {
 };
 
 function looksLikeUsername(candidate: string): boolean {
-  const reUsername = new RegExp('^([a-zA-Z0-9])(([a-zA-Z0-9-]){' + (USERNAME_MIN_LENGTH - 2)  + ',' + (USERNAME_MAX_LENGTH - 2) + '})[a-zA-Z0-9]$'); 
+  const reUsername = new RegExp(USERNAME_REGEXP_STR); 
   
   return reUsername.test(candidate);
 }
