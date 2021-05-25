@@ -38,8 +38,8 @@ class Row {
     const s = Object.create(null); // Avoid key collisions with Javascript base object. 
     const assoc = (s, [k, v]) => R.assoc(k, v, s);
     const createObj = R.reduce(assoc, s); 
-    const nonNull = v => v !== null;
-    return R.filter(nonNull, createObj(R.zip(this.columnNames, this.values)));
+    const isNonNull = v => v !== null;
+    return R.filter(isNonNull, createObj(R.zip(this.columnNames, this.values)));
   }
   
   /** Returns a single field value. 
