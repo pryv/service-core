@@ -15,6 +15,7 @@ const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
+const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers');
 const Notifications = require('api-server/src/Notifications');
 const ErrorIds = require('errors/src/ErrorIds');
 
@@ -119,8 +120,8 @@ describe('[BMM2] registration: DNS-less', () => {
         testInvalidParameterValidation(
           'username', 
           {
-            minLength: 5,
-            maxLength: 23,
+            minLength: USERNAME_MIN_LENGTH,
+            maxLength: USERNAME_MAX_LENGTH,
             lettersAndDashesOnly: true,
             type: 'string',
           }, 
@@ -358,7 +359,7 @@ describe('[BMM2] registration: DNS-less', () => {
     });
 
     it('[H09H] when checking a too short username, it should respond with status 400 and the correct error', async () => {
-      const res = await request.get(path('a'.repeat(4)));
+      const res = await request.get(path('a'.repeat(USERNAME_MIN_LENGTH - 1)));
 
       const body = res.body;
       assert.equal(res.status, 400);
@@ -366,7 +367,7 @@ describe('[BMM2] registration: DNS-less', () => {
       assert.isTrue(body.error.data[0].code.includes('username'));
     });
     it('[VFE1] when checking a too long username, it should respond with status 400 and the correct error', async () => {
-      const res = await request.get(path('a'.repeat(24)));
+      const res = await request.get(path('a'.repeat(USERNAME_MAX_LENGTH + 1)));
 
       const body = res.body;
       assert.equal(res.status, 400);

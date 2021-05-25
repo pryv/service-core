@@ -7,6 +7,7 @@
 // @flow
 
 const errors = require('errors').factory;
+const { USERNAME_REGEXP_STR } = require('api-server/src/schema/helpers'); 
 
 /**
  * Middleware to translate the subdomain (i.e. username) in requests (if any) into the URL path,
@@ -48,7 +49,7 @@ module.exports = function (ignoredPaths: Array<string>) {
 };
 
 function looksLikeUsername(candidate: string): boolean {
-  const reUsername = /^([a-zA-Z0-9])(([a-zA-Z0-9-]){3,21})[a-zA-Z0-9]$/; 
-  
-  return reUsername.test(candidate);
+  const reUsername = new RegExp(USERNAME_REGEXP_STR); 
+  const lowercasedUsername = candidate.toLowerCase(); // for retro-compatibility
+  return reUsername.test(lowercasedUsername);
 }
