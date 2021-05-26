@@ -175,18 +175,17 @@ class Parser {
 
     out.columns = fields; 
     out.setData(points); 
-
-    try {
-      out.transform((columnName, cellValue) => {
+    out.transform((columnName, cellValue) => {
+      try {
+        if (type.isOptionalField(columnName) && cellValue === null) return null;
         const cellType = type.forField(columnName);
-    
         const coercedValue = cellType.coerce(cellValue);
         return coercedValue; 
-      });
-    }
-    catch (e) {
-      throw error(`Error during field coercion: ${e}`);
-    }
+      }
+      catch (e) {
+        throw error(`Error during field coercion of [${columnName}] => [${cellValue}]: ${e}`);
+      }
+    });
   }
   
   checkFields(val: any): Array<string> {

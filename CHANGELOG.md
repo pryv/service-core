@@ -1,5 +1,16 @@
 ## 1.6
 
+### 1.6.21
+
+Fixes:
+
+- fix boolean/bool event type that was not allowed
+- fix HF null values for optional values that was not fully working
+
+Changes:
+
+- increase username characters limit to 60
+
 ### 1.6.20
 
 - Implement system route to deactivate MFA

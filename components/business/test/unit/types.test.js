@@ -76,6 +76,33 @@ describe('business.types.TypeRepository', function () {
         .then((val) => should(val).be.eql(123));
     });
   });
+  describe('boolean type boolean/bool', function () {
+    it('[E2Y1] should be known', function () {
+      should(
+        repository.isKnown('boolean/bool')
+      ).be.true(); 
+    });
+    it('[8FHU] should return a type instance allowing conversion', function () {
+      const eventType = repository.lookup('boolean/bool');
+      
+      should(eventType.requiredFields()).be.eql(['value']);
+      should(eventType.optionalFields()).be.eql([]);
+      should(eventType.fields()).be.eql(['value']);
+      
+      const fieldType = eventType.forField('value'); 
+      should(fieldType.coerce('true')).be.eql(true); 
+      should(fieldType.coerce(true)).be.eql(true); 
+      should(fieldType.coerce('false')).be.eql(false); 
+      should(fieldType.coerce(false)).be.eql(false); 
+    });
+    it('[8U3U] should coerce to boolean during validation', function () {
+      const eventType = repository.lookup('boolean/bool');
+      const validator = repository.validator();
+      
+      return eventType.callValidator(validator, 'true')
+        .then((val) => should(val).be.eql(true));
+    });
+  });
   describe('complex types like position/wgs84', function () {
     it('[05LA] should be known', function () {
       should(
