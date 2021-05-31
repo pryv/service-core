@@ -651,7 +651,7 @@ module.exports = async function (
     handleEventsWithActiveStreamId,
     notify);
 
-  function applyPrerequisitesForUpdate(context, params, result, next) {
+  async function applyPrerequisitesForUpdate(context, params, result, next) {
 
     const eventUpdate = context.content;
     
@@ -659,70 +659,69 @@ module.exports = async function (
 
     context.updateTrackingProperties(eventUpdate);
 
-    userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
-      if (err) {
-        return next(errors.unexpectedError(err));
+    let event;
+    try {
+      event = await bluebird.fromCallback(cb => userEventsStorage.findOne(context.user, {id: params.id}, null, cb));
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
+    if (! event) {
+      return next(errors.unknownResource('event', params.id));
+    }
+
+    // 1. check that have contributeContext on at least 1 existing streamId
+    let canUpdateEvent = false;
+    for (let i = 0; i < event.streamIds.length ; i++) {
+      if (await context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
+        canUpdateEvent = true;
+        break;
       }
+    }
+    if (! canUpdateEvent) return next(errors.forbidden());
+    
+    if (hasStreamIdsModification(eventUpdate)) {
 
-      if (! event) {
-        return next(errors.unknownResource('event', params.id));
-      }
-
-      // 1. check that have contributeContext on at least 1 existing streamId
-      let canUpdateEvent = false;
-      for (let i = 0; i < event.streamIds.length ; i++) {
-        if (context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
-          canUpdateEvent = true;
-          break;
-        }
-      }
-      if (! canUpdateEvent) return next(errors.forbidden());
-      
-      if (hasStreamIdsModification(eventUpdate)) {
-
-        // 2. check that streams we add have contribute access
-        const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
-        for (let i=0; i<streamIdsToAdd.length; i++) {
-          if (! context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToAdd[i], event.tags)) {
-            return next(errors.forbidden());
-          }
-        }
-
-        // 3. check that streams we remove have contribute access        
-        // streamsToRemove = event.streamIds - eventUpdate.streamIds
-        const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
-
-        for (let i = 0; i < streamIdsToRemove.length ; i++) {
-          if (! context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToRemove[i], event.tags)) {
-            return next(errors.forbidden());
-          }
+      // 2. check that streams we add have contribute access
+      const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
+      for (let i=0; i<streamIdsToAdd.length; i++) {
+        if (! await context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToAdd[i], event.tags)) {
+          return next(errors.forbidden());
         }
       }
 
-      const updatedEventType = eventUpdate.type;
-      if(updatedEventType != null) {
-        const currentEventType = event.type;
-        const isCurrentEventTypeSeries = isSeriesType(currentEventType);
-        const isUpdatedEventTypeSeries = isSeriesType(updatedEventType);
-        if (! typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
-          return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types. 
-        }
+      // 3. check that streams we remove have contribute access        
+      // streamsToRemove = event.streamIds - eventUpdate.streamIds
+      const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
 
-        if((isCurrentEventTypeSeries && ! isUpdatedEventTypeSeries) || 
-          (! isCurrentEventTypeSeries && isUpdatedEventTypeSeries)) {
-          return next(errors.invalidOperation('Normal events cannot be updated to HF-events and vice versa.'));
+      for (let i = 0; i < streamIdsToRemove.length ; i++) {
+        if (! await context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToRemove[i], event.tags)) {
+          return next(errors.forbidden());
         }
       }
+    }
 
-      context.oldContent = _.cloneDeep(event);
-      context.content = _.extend(event, eventUpdate);
-      next();
-
-      function hasStreamIdsModification(event) {
-        return event.streamIds != null;
+    const updatedEventType = eventUpdate.type;
+    if(updatedEventType != null) {
+      const currentEventType = event.type;
+      const isCurrentEventTypeSeries = isSeriesType(currentEventType);
+      const isUpdatedEventTypeSeries = isSeriesType(updatedEventType);
+      if (! typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
+        return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types. 
       }
-    });
 
+      if((isCurrentEventTypeSeries && ! isUpdatedEventTypeSeries) || 
+        (! isCurrentEventTypeSeries && isUpdatedEventTypeSeries)) {
+        return next(errors.invalidOperation('Normal events cannot be updated to HF-events and vice versa.'));
+      }
+    }
+
+    context.oldContent = _.cloneDeep(event);
+    context.content = _.extend(event, eventUpdate);
+    next();
+
+    function hasStreamIdsModification(event) {
+      return event.streamIds != null;
+    }
   }
 
   /**
@@ -1352,34 +1351,36 @@ module.exports = async function (
     });
 
 
-  function checkEventForDelete (context, params, result, next) {
+  async function checkEventForDelete (context, params, result, next) {
     const eventId = params.id;
-    userEventsStorage.findOne(context.user, { id: eventId }, null, function (err, event) {
-      if (err) {
-        return next(errors.unexpectedError(err));
-      }
-      if (! event) {
-        return next(errors.unknownResource(
-          'event', eventId
-        ));
-      }
+    
+    let event;
+    try {
+      event = await bluebird.fromCallback(cb => userEventsStorage.findOne(context.user, { id: eventId }, null, cb));
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
+    if (! event) {
+      return next(errors.unknownResource(
+        'event', eventId
+      ));
+    }
       
-      let canDeleteEvent = false;
+    let canDeleteEvent = false;
 
-      for (let i = 0; i < event.streamIds.length; i++) {
-        if (context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
-          canDeleteEvent = true;
-          break;
-        }
+    for (let i = 0; i < event.streamIds.length; i++) {
+      if (await context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
+        canDeleteEvent = true;
+        break;
       }
-      if (!canDeleteEvent) return next(errors.forbidden());
-      // save event from the database as an oldContent
-      context.oldContent = event;
+    }
+    if (!canDeleteEvent) return next(errors.forbidden());
+    // save event from the database as an oldContent
+    context.oldContent = event;
 
-      // create an event object that could be modified
-      context.event = Object.assign({}, event);
-      next();
-    });
+    // create an event object that could be modified
+    context.event = Object.assign({}, event);
+    next();
   }
 
   /**

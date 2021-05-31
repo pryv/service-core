@@ -269,20 +269,20 @@ Object.freeze(PermissionLevels);
     return level && isHigherOrEqualLevel(level, 'read');
   }
 
-  canCreateChildOnStream(streamId) {
-    return this._canManageStream(streamId);
+  async canCreateChildOnStream(streamId) {
+    return await this._canManageStream(streamId);
   }
 
-  canDeleteStream(streamId) {
-    return this._canManageStream(streamId);
+  async canDeleteStream(streamId) {
+    return await this._canManageStream(streamId);
   }
 
-  canUpdateStream(streamId) {
-    return this._canManageStream(streamId);
+  async canUpdateStream(streamId) {
+    return await this._canManageStream(streamId);
   }
 
   /** @private internal  */
-  _canManageStream (streamId) {
+  async _canManageStream (streamId) {
     if (this.isPersonal()) return true;
     const level = this._getStreamPermissionLevel(streamId || undefined);
     if (level === 'create-only') return false;
@@ -295,7 +295,7 @@ Object.freeze(PermissionLevels);
     return level && isHigherOrEqualLevel(level, 'contribute');
   }
 
-  canUpdateEventsOnStream (streamId) {
+  async canUpdateEventsOnStream (streamId) {
     if (this.isPersonal()) return true;
     const level = this._getStreamPermissionLevel(streamId);
     if (level === 'create-only') return false;
@@ -350,9 +350,9 @@ Object.freeze(PermissionLevels);
    * @param tags
    * @returns {Boolean}
    */
-  canUpdateEventsOnStreamAndWIthTags(streamId, tags) {
+  async canUpdateEventsOnStreamAndWIthTags(streamId, tags) {
     if (this.isPersonal()) return true;
-    return this.canUpdateEventsOnStream(streamId) ||
+    return await this.canUpdateEventsOnStream(streamId) ||
       (this._canUpdateEventWithTag('*') ||
         _.some(tags || [], this._canUpdateEventWithTag.bind(this)));
   }
