@@ -377,28 +377,19 @@ Object.freeze(PermissionLevels);
   
   // Whether the current access can create the given access. 
   // 
-  canCreateAccess (candidateAccess) {
-    
-    //TODO handle tags
+  async canCreateAccess (candidateAccess) {
     // The account owner can do everything. 
     if (this.isPersonal()) return true;
     // Shared accesses don't manage anything. 
     if (this.isShared()) return false;
-    
-    // assert: this.isApp()
-
-    
+   
     // Create a candidate to compare 
     const candidate = new AccessLogic(this._userId, candidateAccess);
       
     // App accesses can only manage shared accesses.
     if (! candidate.isShared()) return false;
     
-    // assert: candidate.isShared()
-
     candidate.loadPermissions(this._cachedStreams);
-
-   
 
     if (! hasPermissions(this) || ! hasPermissions(candidate)) {
       // can only manage shared accesses with permissions
@@ -410,23 +401,16 @@ Object.freeze(PermissionLevels);
     for (const candidateStreamPermission of candidate.streamPermissions) {
       const candidateStreamId = candidateStreamPermission.streamId;
 
-      // Check if `this` contains a permission on the candidate streamId.
-      // A permission on the root stream (*) matches any candidate streamId and takes precedence.
-      const rootPermission = this.streamPermissionsMap['*'];
-      const myStreamPermission = rootPermission || this.streamPermissionsMap[candidateStreamId];
-        
+      const myLevel = await this._getStreamPermissionLevel(candidateStreamId);
+
       // If `this` cannot access the candidate stream, then don't give access.
-      if (myStreamPermission == null) return false; 
+      if (myLevel == null) return false; 
       
       // The level of `this` must >= the level of candidate streams.
-      const myLevel = myStreamPermission.level; 
       const candidateLevel = candidateStreamPermission.level; 
-
       if (isLowerLevel(myLevel, candidateLevel) || myLevel === 'create-only') {
         return false; 
       }
-
-      // continue looking for problems...
     }
 
     // Can candidate access tags that `this` cannot? Does it elevate the 

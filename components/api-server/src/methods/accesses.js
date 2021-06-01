@@ -158,7 +158,7 @@ module.exports = function produceAccessesApiMethods(
     next();
   }
 
-  function applyPrerequisitesForCreation(context, params, result, next) {
+  async function applyPrerequisitesForCreation(context, params, result, next) {
     if (params.type === 'personal') {
       return next(errors.forbidden(
         'Personal accesses are created automatically on login.'
@@ -170,7 +170,7 @@ module.exports = function produceAccessesApiMethods(
     if (access == null) 
       return next(errors.unexpectedError('AF: Access must not be null here.'));
       
-    if (! access.canCreateAccess(params)) {
+    if (! await access.canCreateAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
         'to create this new access.'));
