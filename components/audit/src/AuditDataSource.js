@@ -37,25 +37,44 @@ class AuditDataSource extends DataSource {
 
 }
 
+/**
+ * 
+ * Stream structure
+ * accesses:
+ *    access-{accessid}
+ * 
+ * actions:
+ *    action-{actionId}
+ * 
+ */
+
+
 
 class AuditUserStreams extends UserStreams {
 
-
-
-
   async get(uid, params) {
     const streams = [];
+
     if (params.id) {
+      const parentId = null;
+      if (params.id.startsWith('access-')) {
+        parentId = 'accesses';
+      } else if (params.id.startsWith('actions-')) {
+        parentId = 'actions';
+      }
+
       streams.push({
         id: params.id,
         name: params.id,
-        parentId: null,
+        parentId: parentId,
         children: [],
+        childrenHidden: true,
         trashed: false,
       });
     } else {
       throw(new Error('Audit stream query not supported :' + params));
     }
+
     return streams;
   }
 }

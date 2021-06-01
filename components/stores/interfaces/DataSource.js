@@ -89,8 +89,8 @@ class UserStreams {
    * @see https://api.pryv.com/reference/#get-streams
    * @param {identifier} uid
    * @param {Object} params
-   * @param {identifier} params.id
-   * @param {identifier} params.parentId
+   * @param {identifier} [params.id] null, means all. return this stream and it's children ! Notice parentId is not implemented by Stores 
+   * @param {identifier} [params.hideChildren] default false
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @param {timestamp} [params.includeDeletionsSince] 
    * @param {identifier} [streamId] - the streamId to ge or null to get the root of this volume
