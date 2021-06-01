@@ -256,7 +256,7 @@ Object.freeze(PermissionLevels);
       return false;
     }
     
-    const level = this._getStreamPermissionLevel(fullStreamId);
+    const level = await this._getStreamPermissionLevel(fullStreamId);
     console.log('XXXXX permissions',this.permissions, this.streamPermissionsMap);
     console.log('XXXXX canGetEventsOnStream', streamId, storeId, fullStreamId, level);
     if (level === null || level === 'create-only') return false;
@@ -265,7 +265,7 @@ Object.freeze(PermissionLevels);
 
   async canListStream (streamId) {
     if (this.isPersonal()) return true;
-    const level = this._getStreamPermissionLevel(streamId);
+    const level = await this._getStreamPermissionLevel(streamId);
     return level && isHigherOrEqualLevel(level, 'read');
   }
 
@@ -284,22 +284,22 @@ Object.freeze(PermissionLevels);
   /** @private internal  */
   async _canManageStream (streamId) {
     if (this.isPersonal()) return true;
-    const level = this._getStreamPermissionLevel(streamId || undefined);
+    const level = await this._getStreamPermissionLevel(streamId || undefined);
     if (level === 'create-only') return false;
     return (level != null) && isHigherOrEqualLevel(level, 'manage');
   }
 
-  canCreateEventsOnStream (streamId) {
+  async canCreateEventsOnStream (streamId) {
     if (this.isPersonal()) return true;
-    const level = this._getStreamPermissionLevel(streamId);
+    const level = await this._getStreamPermissionLevel(streamId);
     return level && isHigherOrEqualLevel(level, 'contribute');
   }
 
   async canUpdateEventsOnStream (streamId) {
     if (this.isPersonal()) return true;
-    const level = this._getStreamPermissionLevel(streamId);
+    const level = await this._getStreamPermissionLevel(streamId);
     if (level === 'create-only') return false;
-    return this.canCreateEventsOnStream(streamId);
+    return await this.canCreateEventsOnStream(streamId);
   }
 
   canGetEventsWithAnyTag () {
@@ -364,15 +364,15 @@ Object.freeze(PermissionLevels);
    * @param tags
    * @returns {Boolean}
    */
-  canCreateEventsOnStreamAndWIthTags(streamId, tags) {
+  async canCreateEventsOnStreamAndWIthTags(streamId, tags) {
     if (this.isPersonal()) return true;
-    return this.canCreateEventsOnStream(streamId) ||
+    return await this.canCreateEventsOnStream(streamId) ||
       (this._canCreateEventsWithTag('*') ||
         _.some(tags || [], this._canCreateEventsWithTag.bind(this)));
   }
 
   // Whether the current access delete manage the given access
-  canDeleteAccess (access) {
+  async canDeleteAccess (access) {
     // The account owner can do everything. 
     if (this.isPersonal()) return true;
     // App and Shared accesses can delete themselves (selfRevoke)
@@ -463,7 +463,7 @@ Object.freeze(PermissionLevels);
   /**
    * @returns {String} `null` if no matching permission exists.
    */
-  _getStreamPermissionLevel (streamId) {
+  async _getStreamPermissionLevel (streamId) {
     if (this.isPersonal()) {
       return 'manage';
     } else {

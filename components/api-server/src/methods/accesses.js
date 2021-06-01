@@ -407,7 +407,7 @@ module.exports = function produceAccessesApiMethods(
     if (access == null)
       return next(errors.unknownResource('access', params.id));
           
-      if (! currentAccess.canDeleteAccess(access)) {
+      if (! await currentAccess.canDeleteAccess(access)) {
         return next(
           errors.forbidden(
             'Your access token has insufficient permissions to ' +

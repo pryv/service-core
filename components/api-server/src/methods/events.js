@@ -481,9 +481,9 @@ module.exports = async function (
   }
 
 
-  function verifycanCreateEventsOnStreamAndWIthTags (context, params, result, next) {
+  async function verifycanCreateEventsOnStreamAndWIthTags (context, params, result, next) {
     for (let i = 0; i < context.content.streamIds.length; i++) { // refuse if any context is not accessible
-      if (! context.access.canCreateEventsOnStreamAndWIthTags(context.content.streamIds[i], context.content.tags)) {
+      if (! await context.access.canCreateEventsOnStreamAndWIthTags(context.content.streamIds[i], context.content.tags)) {
         return next(errors.forbidden());
       }
     }
