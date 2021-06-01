@@ -655,7 +655,11 @@ module.exports = async function (
 
     const eventUpdate = context.content;
     
-    cleanupEventTags(eventUpdate);
+    try {
+      cleanupEventTags(eventUpdate);
+    } catch (err) {
+      return next(err);
+    }
 
     context.updateTrackingProperties(eventUpdate);
 
