@@ -133,7 +133,6 @@ module.exports = async function (
       }
     }
 
-    console.log('XXXXXX streamQueryCheckPermissionsAndReplaceStars', params.streams);
     for (let streamQuery of params.streams) {
       // ------------ "*" case 
       if (streamQuery.any && streamQuery.any.includes('*')) {
@@ -200,11 +199,8 @@ module.exports = async function (
         if (stream) tree = [stream];
       }
 
-      console.log('XXXXX Tree:', tree);
-
       const result = [];
       async function filterAndCollectStreamIds(stream) {
-        console.log('XXXXX Params:', params.state, stream.id, stream.trashed);
         if (stream.trashed && (params.state !== 'all') && (params.state !== 'trashed')) return false; // break if trashed
         // todo handle exculdes
         result.push(stream.id);
@@ -215,7 +211,6 @@ module.exports = async function (
     }
 
     async function expandStreamInContext(streamId, storeId) {
-      console.log('XXXXX expandStreams', streamId, storeId, 'isPersonal: ' + context.access.isPersonal());
       // remove eventual '#' in streamQuery
       if (streamId.startsWith('#')) {
         return [streamId.substr(1)];
@@ -229,24 +224,15 @@ module.exports = async function (
     }
 
     try {
-      console.log('XXXXX> streamQuery 1', JSON.stringify(params.streams));
       params.streams = await streamsQueryUtils.expandAndTransformStreamQueries(params.streams, expandStreamInContext);
     } catch (e) {
       console.log(e);
       return next(e);
     }
-   
-    console.log('XXXXX> streamQuery 2', JSON.stringify(params.streams));
 
     // delete streamQueries with no inclusions 
     params.streams = params.streams.filter(streamQuery => streamQuery.any || streamQuery.and);
 
-    
-    //params.streams = streamsQueryUtils.prepareDBQuery(params.streams);
-
-    console.log('XXXXX> streamQuery 3', JSON.stringify(params.streams));
-    treeUtils.debug(context.streams, ['trashed']);
-    console.log(context.access.permissions);
     next();
   }
 

@@ -288,7 +288,6 @@ class MethodContext {
     const store = (await getStore()).sourceForId(storeId);
     if (! store) return null;
     const streams = await store.streams.get(this.user.id, {id: streamId});
-    console.log('OOOOOOOO ', streams);
     if (streams && streams.length === 1) return streams[0];
     return null;
   }

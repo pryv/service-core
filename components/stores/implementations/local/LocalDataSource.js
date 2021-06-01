@@ -60,8 +60,6 @@ class LocalDataSource extends DataSource {
 
 class LocalUserStreams extends UserStreams {
   async get(uid, params) {
-
-    console.log('******** A>', params);
     let streams = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
   
     streams = streams.concat(systemStreams);
@@ -84,8 +82,6 @@ class LocalUserStreams extends UserStreams {
         return !item.trashed;
       });
     }
-
-    console.log('******** B>', JSON.stringify(streams, null, 2));
     return streams;
   }
 }

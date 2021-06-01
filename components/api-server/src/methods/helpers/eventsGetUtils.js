@@ -59,7 +59,6 @@ function transformArrayOfStringsToStreamsQuery (context, params, result, next) {
   try {
     params.streams = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(params.streams);
   } catch (e) {
-    console.log('XXXXXXXX E', e);
     return next(errors.invalidRequestStructure(e, params.streams));
   }
   next();

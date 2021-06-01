@@ -364,8 +364,7 @@ describe('Access permissions', function () {
     it.skip('[ZGK0] must allow access to all streams when only tag permissions are defined', function (done) {
       request.get(basePath, token(5)).query({state: 'all'}).end(function (res) {
         res.body.streams = validation.removeAccountStreams(res.body.streams);
-        console.log(res.body.streams);
-        //res.body.streams.should.eql(validation.removeDeletionsAndHistory(testData.streams));
+        res.body.streams.should.eql(validation.removeDeletionsAndHistory(testData.streams));
         done();
       });
     });

@@ -179,7 +179,6 @@ describe('events.get streams query', function () {
 
       it('[N3Q6] must convert {any: "*", not: ["A"]} to [{any: [all accessible streams], not: [expanded "A"]}]', async function () {
         const res = await validateQuery({ any: ['*'], not: ['A'] });
-        console.log(res);
         assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS_LOCAL, and: [ { not: [ 'A', 'B', 'C' ] } ], storeId: 'local'  }]);
       });
 

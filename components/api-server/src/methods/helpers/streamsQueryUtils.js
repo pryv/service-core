@@ -247,12 +247,10 @@ function uniqueStreamIds(arrayOfStreamiIs) {
 exports.expandAndTransformStreamQueries = async function(streamQueries, expandStream) {
 
   async function expandSet(streamIds, storeId) {
-    console.log('XXXXX expandSet 1', streamIds, storeId);
     const expandedSet = new Set(); // use a Set to avoid duplicate entries;
     for (let streamId of streamIds) {
       (await expandStream(streamId, storeId)).forEach(item => expandedSet.add(item));
     }
-    console.log('XXXXX expandSet 2', expandedSet);
     return Array.from(expandedSet);
   }
 
@@ -265,15 +263,12 @@ exports.expandAndTransformStreamQueries = async function(streamQueries, expandSt
 }
 
 async function expandAndTransformStreamQuery(streamQuery, expandSet) {
-  console.log('XXXXX expandAndTransformStreamQuery 1', streamQuery);
   let containsAtLeastOneInclusion = false; 
   const res = { storeId: streamQuery.storeId };
 
   // any
   if (streamQuery.any) {
-    console.log('******? 1');
     const expandedSet = await expandSet(streamQuery.any, streamQuery.storeId);
-    console.log('******? 2', expandedSet);
     if (expandedSet.length > 0) {
       containsAtLeastOneInclusion = true;
       res.any = expandedSet;
@@ -297,7 +292,6 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
       }
     }
   }
-  console.log('XXXXX: ', containsAtLeastOneInclusion, res);
   return (containsAtLeastOneInclusion) ? res : null;
 }
 

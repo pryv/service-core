@@ -141,13 +141,12 @@ Object.freeze(PermissionLevels);
     
     const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
     if (storeId !== 'local') {
-      console.log('XXXX TRANSITIONAL TO BE RE-CODED', perm);
+      //console.log('XXXX TRANSITIONAL TO BE RE-CODED', perm);
       this._registerStreamPermission(perm);
       return;
     }
 
     var expandedIds = treeUtils.expandIds(this._cachedStreams, [perm.streamId]);
-    console.log('XXXXX  _loadStreamPermission', perm, expandedIds);
 
     expandedIds.forEach(function (id) {
       var existingPerm = this.streamPermissionsMap[id];
@@ -232,15 +231,6 @@ Object.freeze(PermissionLevels);
     return isHigherOrEqualLevel('contribute', permissionLevel);
   }
 
-  canReadAccountStream (streamId) {
-    if (streamId === '*') {
-      return false;
-    }
-    const level = this._getAccountStreamPermissionLevel(streamId);
-    if (level === 'create-only') return false;
-    return level && isHigherOrEqualLevel(level, 'read');
-  }
-
   // -- accesses.get
   canListAnyAccess() {
     return this.isPersonal();
@@ -253,10 +243,7 @@ Object.freeze(PermissionLevels);
 
   async canGetEventsOnStream (streamId, storeId) {
     if (this.isPersonal()) return true;
-    if (SystemStreamsSerializer.isAccountStreamId(streamId)) {
-      return this.canReadAccountStream(streamId);
-    }
-
+   
     const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
     
     const level = await this._getStreamPermissionLevel(fullStreamId);
@@ -479,7 +466,6 @@ Object.freeze(PermissionLevels);
 
     while (currentStream) {
       const permissions = this.newStreamPermissionMapGet(storeId, currentStream);
-      console.log('XXXX _newGetStreamPermissionLevel DO StreamId', storeId, currentStream, permissions);
       if (permissions) return permissions.level; // found
       
       // not found, look for parent
@@ -495,47 +481,6 @@ Object.freeze(PermissionLevels);
     return permissions ? permissions.level : null;
   }
 
-  /**
-   * @returns {String} `null` if no matching permission exists.
-   */
-  async _oldGetStreamPermissionLevel (streamId) {
-    
-    if (this.isPersonal()) {
-      return 'manage';
-    } else {
-      // do not allow star permissions for account streams
-      let permission;
-      if (SystemStreamsSerializer.isAccountStreamId(streamId)) {
-        permission = this.streamPermissionsMap[streamId];
-      } else {
-        permission = this.streamPermissionsMap[streamId] || this.streamPermissionsMap['*'];
-      }
-      const newPermissionLevel = await this._newGetStreamPermissionLevel(streamId);
-      if (permission) {
-        if (permission?.level != newPermissionLevel) {
-          console.log('XXXX SHOT ON: ', this._newStreamPermissionsMap, 'streamId:', streamId, 'P:', permission?.level, 'NP:', newPermissionLevel);
-          throw(new Error('Permissions do not match '));
-        }
-      }
-      console.log('XXXXXXX +++', permission, newPermissionLevel);
-      return permission ? permission.level : null;
-    }
-  }
-
-  /**
-   * Identical to _getStreamPermissionLevel, just * permissions are not
-   * allowed
-   * @param {*} streamId 
-   */
-  _getAccountStreamPermissionLevel (streamId) {
-    if (this.isPersonal()) {
-      return 'manage';
-    } else {
-      var permission = this.streamPermissionsMap[streamId];
-      return permission ? permission.level : null;
-    }
-  }
-  
   /**
    * @returns {String} `null` if no matching permission exists.
    */
