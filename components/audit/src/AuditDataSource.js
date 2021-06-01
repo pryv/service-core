@@ -53,7 +53,7 @@ class AuditDataSource extends DataSource {
 class AuditUserStreams extends UserStreams {
 
   async get(uid, params) {
-    const streams = [];
+    let streams = [];
 
     if (params.id) {
       let parentId = null;
