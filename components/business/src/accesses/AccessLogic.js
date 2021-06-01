@@ -76,55 +76,40 @@ Object.freeze(PermissionLevels);
 
   /**
    * Loads permissions from `this.permissions`.
-   *
-   * - Loads expanded streams permissions into `streamPermissions`/`streamPermissionsMap`
-   *   using the given streams tree, filtering out unknown streams
    * - Loads tag permissions into `tagPermissions`/`tagPermissionsMap`.
    */
-  loadPermissions (streams) {
+  loadPermissions () {
     if (! this.permissions) {
       return;
     }
-    // cache streams
-    this._cachedStreams = streams;
 
-    this.streamPermissions = [];
-    this.streamPermissionsMap = {};
     this.tagPermissions = [];
     this.tagPermissionsMap = {};
     this.featurePermissions = [];
     this.featurePermissionsMap = {};
+    this._streamByStorePermissionsMap = {};
 
-    // new permissionsMap[storeId][streamId]
-    this._newStreamPermissionsMap = {};
-
-
-    this.permissions.forEach(function (perm) {
+    for (let perm of this.permissions) {
       if (perm.streamId) {
         this._loadStreamPermission(perm);
-        this._newLoadStreamPermission(perm);
       } else if (perm.tag) {
         this._loadTagPermission(perm);
       } else if (perm.feature) {
         this._loadFeaturePermission(perm);
       }
-    }.bind(this));
+    };
 
     // allow to read all tags if only stream permissions defined
     if (! this.hasTagPermissions() && this.hasStreamPermissions()) {
       this._registerTagPermission({ tag: '*', level: 'read' });
     }
-    // allow to read all streams if only tag permissions defined
-    if (this.hasStreamPermissions() && ! this.hasTagPermissions()) {
-      this._registerStreamPermission({ streamId: '*', level: 'read' });
-    }
 
   }
 
-  _newLoadStreamPermission (perm) {
+  _loadStreamPermission (perm) {
     const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
-    if (! this._newStreamPermissionsMap[storeId]) this._newStreamPermissionsMap[storeId] = {}
-    this._newStreamPermissionsMap[storeId][streamId] = {streamId: streamId, level: perm.level};
+    if (! this._streamByStorePermissionsMap[storeId]) this._streamByStorePermissionsMap[storeId] = {}
+    this._streamByStorePermissionsMap[storeId][streamId] = {streamId: streamId, level: perm.level};
   }
   /**
    * returns the permissions for this store if it exists
@@ -132,7 +117,7 @@ Object.freeze(PermissionLevels);
    * @returns {Array<permission>}
    */
    getStorePermissions(storeId) {
-    const storeStreamPermissionMap = this._newStreamPermissionsMap[storeId];
+    const storeStreamPermissionMap = this._streamByStorePermissionsMap[storeId];
     if (! storeStreamPermissionMap) return [];
     return Object.values(storeStreamPermissionMap);
   }
@@ -143,7 +128,7 @@ Object.freeze(PermissionLevels);
    * @returns {permission}
    */
   getStreamPermission(storeId, streamId) {
-    const storeStreamPermissionMap = this._newStreamPermissionsMap[storeId];
+    const storeStreamPermissionMap = this._streamByStorePermissionsMap[storeId];
     if (! storeStreamPermissionMap) return null;
     return storeStreamPermissionMap[streamId];
   }
@@ -152,41 +137,9 @@ Object.freeze(PermissionLevels);
    * @returns {Array<permission>}
    */
   getAccountStreamPermissions() {
-    const localPerms = this._newStreamPermissionsMap['local'];
+    const localPerms = this._streamByStorePermissionsMap['local'];
     if (! localPerms) return [];
     return Object.values(localPerms).filter(perm => SystemStreamsSerializer.isAccountStreamId(perm.streamId));
-  }
-
-  _loadStreamPermission (perm) {
-    
-    if (perm.streamId === '*') {
-      this._registerStreamPermission(perm);
-      return;
-    }
-    
-    const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
-    if (storeId !== 'local') {
-      //console.log('XXXX TRANSITIONAL TO BE RE-CODED', perm);
-      this._registerStreamPermission(perm);
-      return;
-    }
-
-    var expandedIds = treeUtils.expandIds(this._cachedStreams, [perm.streamId]);
-
-    expandedIds.forEach(function (id) {
-      var existingPerm = this.streamPermissionsMap[id];
-      if (existingPerm && isHigherOrEqualLevel(existingPerm.level, perm.level)) {
-        return;
-      }
-
-      var expandedPerm = id === perm.streamId ? perm : _.extend(_.clone(perm), {streamId: id});
-      this._registerStreamPermission(expandedPerm);
-    }.bind(this));
-  }
-
-  _registerStreamPermission (perm) {
-    this.streamPermissions.push(perm);
-    this.streamPermissionsMap[perm.streamId] = perm;
   }
 
   _loadFeaturePermission (perm) {
@@ -260,9 +213,6 @@ Object.freeze(PermissionLevels);
   canListAnyAccess() {
     return this.isPersonal();
   }
-
-
-
 
   /** ------------ EVENTS --------------- */
 
@@ -492,7 +442,7 @@ Object.freeze(PermissionLevels);
   }
 
   hasStreamPermissions() {
-    return Object.keys(this._newStreamPermissionsMap).length > 0;
+    return Object.keys(this._streamByStorePermissionsMap).length > 0;
   }
 
   hasTagPermissions() {
