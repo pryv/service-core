@@ -139,9 +139,8 @@ module.exports = async function (
         if (context.access.isPersonal() || await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
       
         // replace any by allowed streams for reading
-        // This could be replaced by access.getStreamParentsWithReadPermission
         const res = [];
-        for (const streamPermission of context.access.streamPermissions) {
+        for (const streamPermission of context.access.getStorePermissions(streamQuery.storeId)) {
           if (await context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)) {
             res.push(streamPermission.streamId);
           }
@@ -187,10 +186,8 @@ module.exports = async function (
           // 1. remove all account stream
           tree = tree.filter(stream => ! SystemStreamsSerializer.isAccountStreamId(stream.id));
           // 2. add account streams from permission set
-          for (let authorizedStreamId of Object.keys(context.access.streamPermissionsMap)) {
-            if (SystemStreamsSerializer.isAccountStreamId(authorizedStreamId)) {
-              tree.push(await context.streamForStreamId(authorizedStreamId, 'local'));
-            }
+          for (let authorizedAccountPerm of context.access.getAccountStreamPermissions()) {
+            tree.push(await context.streamForStreamId(authorizedAccountPerm.streamId, 'local'));
           };
         }
 

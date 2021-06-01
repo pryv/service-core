@@ -111,11 +111,11 @@ Object.freeze(PermissionLevels);
     }.bind(this));
 
     // allow to read all tags if only stream permissions defined
-    if (this.tagPermissions.length === 0 && this.streamPermissions.length > 0) {
+    if (! this.hasTagPermissions() && this.hasStreamPermissions()) {
       this._registerTagPermission({ tag: '*', level: 'read' });
     }
     // allow to read all streams if only tag permissions defined
-    if (this.streamPermissions.length === 0 && this.tagPermissions.length > 0) {
+    if (this.hasStreamPermissions() && ! this.hasTagPermissions()) {
       this._registerStreamPermission({ streamId: '*', level: 'read' });
     }
 
@@ -124,12 +124,37 @@ Object.freeze(PermissionLevels);
   _newLoadStreamPermission (perm) {
     const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
     if (! this._newStreamPermissionsMap[storeId]) this._newStreamPermissionsMap[storeId] = {}
-    this._newStreamPermissionsMap[storeId][streamId] = perm;
+    this._newStreamPermissionsMap[storeId][streamId] = {streamId: streamId, level: perm.level};
   }
-  newStreamPermissionMapGet(storeId, streamId) {
+  /**
+   * returns the permissions for this store if it exists
+   * @param {identifier} storeId 
+   * @returns {Array<permission>}
+   */
+   getStorePermissions(storeId) {
+    const storeStreamPermissionMap = this._newStreamPermissionsMap[storeId];
+    if (! storeStreamPermissionMap) return [];
+    return Object.values(storeStreamPermissionMap);
+  }
+  /**
+   * returns the permission for this stream if it exists
+   * @param {identifier} storeId 
+   * @param {identifier} streamId 
+   * @returns {permission}
+   */
+  getStreamPermission(storeId, streamId) {
     const storeStreamPermissionMap = this._newStreamPermissionsMap[storeId];
     if (! storeStreamPermissionMap) return null;
     return storeStreamPermissionMap[streamId];
+  }
+  /**
+   * returns the account streams with Authorizations
+   * @returns {Array<permission>}
+   */
+  getAccountStreamPermissions() {
+    const localPerms = this._newStreamPermissionsMap['local'];
+    if (! localPerms) return [];
+    return Object.values(localPerms).filter(perm => SystemStreamsSerializer.isAccountStreamId(perm.streamId));
   }
 
   _loadStreamPermission (perm) {
@@ -388,10 +413,11 @@ Object.freeze(PermissionLevels);
       
     // App accesses can only manage shared accesses.
     if (! candidate.isShared()) return false;
-    
+
+
     candidate.loadPermissions(this._cachedStreams);
 
-    if (! hasPermissions(this) || ! hasPermissions(candidate)) {
+    if (! this.hasTagOrStreamPermissions() || ! candidate.hasTagOrStreamPermissions()) {
       // can only manage shared accesses with permissions
       return false;
     }
@@ -449,7 +475,7 @@ Object.freeze(PermissionLevels);
     let currentStream = (streamId !== '*') ? streamId : null; 
 
     while (currentStream) {
-      const permissions = this.newStreamPermissionMapGet(storeId, currentStream);
+      const permissions = this.getStreamPermission(storeId, currentStream);
       if (permissions) return permissions.level; // found
       
       // not found, look for parent
@@ -461,7 +487,7 @@ Object.freeze(PermissionLevels);
     // do not allow star permissions for account streams
     if (SystemStreamsSerializer.isAccountStreamId(streamId)) return null;
     
-    const permissions = this.newStreamPermissionMapGet(storeId, '*'); // found nothing finaly.. look for global access level if any
+    const permissions = this.getStreamPermission(storeId, '*'); // found nothing finaly.. look for global access level if any
     return permissions ? permissions.level : null;
   }
 
@@ -484,6 +510,18 @@ Object.freeze(PermissionLevels);
     if (this.featurePermissionsMap.selfRevoke == null) return true; // default allow
     return this.featurePermissionsMap.selfRevoke.setting !== 'forbidden';
   }
+
+  hasStreamPermissions() {
+    return Object.keys(this._newStreamPermissionsMap).length > 0;
+  }
+
+  hasTagPermissions() {
+    return (this.tagPermissions && this.tagPermissions.length > 0);
+  }
+
+  hasTagOrStreamPermissions() {
+    return this.hasStreamPermissions() || this.hasTagPermissions();
+  }
 };
 
 module.exports = AccessLogic;
@@ -500,12 +538,5 @@ function isHigherOrEqualLevel(permissionLevelA, permissionLevelB) {
 }
 function isLowerLevel(permissionLevelA, permissionLevelB) {
   return ! isHigherOrEqualLevel(permissionLevelA, permissionLevelB);
-}
-
-function hasPermissions(access) {
-
-  return access.permissions && access.permissions.length > 0 &&
-    ((access.streamPermissions && access.streamPermissions.length > 0)
-      || (access.tagPermissions && access.tagPermissions.length > 0));
 }
 
