@@ -402,59 +402,39 @@ Object.freeze(PermissionLevels);
   
   // Whether the current access can create the given access. 
   // 
-  async canCreateAccess (candidateAccess) {
+  async canCreateAccess (candidate) {
     // The account owner can do everything. 
     if (this.isPersonal()) return true;
     // Shared accesses don't manage anything. 
     if (this.isShared()) return false;
    
-    // Create a candidate to compare 
-    const candidate = new AccessLogic(this._userId, candidateAccess);
-      
     // App accesses can only manage shared accesses.
-    if (! candidate.isShared()) return false;
+    if (candidate.type !== 'shared') return false;
 
+    let hasStreamPermissions = false;
+    for (let perm of candidate.permissions) {
+      if (perm.streamId) {
+        hasStreamPermissions = true;
+        const myLevel = await this._getStreamPermissionLevel(perm.streamId);
+        if (! myLevel || isLowerLevel(myLevel, perm.level) || myLevel === 'create-only') {
+          return false; 
+        }
 
-    candidate.loadPermissions(this._cachedStreams);
+      } else if (perm.tag) {
+        const myTagPermission = this.tagPermissionsMap[perm.tag];
+        const myLevel = myTagPermission?.level;
+        if (! myLevel || isLowerLevel(myLevel, perm.level)) return false; 
 
-    if (! this.hasTagOrStreamPermissions() || ! candidate.hasTagOrStreamPermissions()) {
-      // can only manage shared accesses with permissions
-      return false;
-    }
-
-    // Can candidate access streams that `this` cannot? Does it elevate the 
-    // permissions on common streams? If yes, abort. 
-    for (const candidateStreamPermission of candidate.streamPermissions) {
-      const candidateStreamId = candidateStreamPermission.streamId;
-
-      const myLevel = await this._getStreamPermissionLevel(candidateStreamId);
-
-      // If `this` cannot access the candidate stream, then don't give access.
-      if (myLevel == null) return false; 
-      
-      // The level of `this` must >= the level of candidate streams.
-      const candidateLevel = candidateStreamPermission.level; 
-      if (isLowerLevel(myLevel, candidateLevel) || myLevel === 'create-only') {
-        return false; 
+      } else if (perm.feature) {
+        const myFeaturePermission = this.featurePermissionsMap[perm.feature];
+        const myValue = myFeaturePermission?.level;
+        if (! myValue || myValue != perm.feature) return false;
       }
     }
+    // can only manage shared accesses with permissions
+    if (! hasStreamPermissions) return false;
 
-    // Can candidate access tags that `this` cannot? Does it elevate the 
-    // permissions on common tags? If yes, abort. 
-    for (const candidateTagPermission of candidate.tagPermissions) {
-      const myTagPermission = this.tagPermissionsMap[candidateTagPermission.tag];
-      
-      // If `this` has no permission on tag, so doesn't candidate.
-      if (myTagPermission == null) return false; 
-
-      // The level of `this` must >= the level of candidate tags.
-      const myLevel = myTagPermission.level; 
-      const candidateLevel = candidateTagPermission.level; 
-      if (isLowerLevel(myLevel, candidateLevel)) return false; 
-      
-      // continue looking for problems...
-    }
-
+    // all OK
     return true;
   }
 
@@ -517,10 +497,6 @@ Object.freeze(PermissionLevels);
 
   hasTagPermissions() {
     return (this.tagPermissions && this.tagPermissions.length > 0);
-  }
-
-  hasTagOrStreamPermissions() {
-    return this.hasStreamPermissions() || this.hasTagPermissions();
   }
 };
 
