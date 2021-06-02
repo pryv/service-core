@@ -22,8 +22,7 @@ class StoreUserStreams extends UserStreams {
   }
 
   async get(uid, params) {
-    let res = [];
-
+    
     if (params.parentId && params.id) {
       DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request')
     }
@@ -32,6 +31,7 @@ class StoreUserStreams extends UserStreams {
 
     // *** root query we just expose stores handles
     if (! fullStreamId) { 
+      const res = [];
       for (let source of this.store.sources) {
         res.push([StreamsUtils.sourceToStream(source, {
           children: [],
@@ -42,14 +42,20 @@ class StoreUserStreams extends UserStreams {
       return res;
     }
 
-    const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
+    const [sourceId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
     const myParams = {
-      parentId: streamId,
+      id: streamId,
       includeDeletionsSince: params.includeDeletionsSince,
       state: params.state,
-      hideChildren
+      hideChildren: params.hideChildren
     }
-
+    const source = this.store.sourceForId(sourceId);
+    const res = await source.streams.get(uid, myParams);
+    // if request was made on parentId .. return only the children
+    if (params.parentId && res.length === 1) {
+      return res[0].children;
+    } 
+    return res;
   }
 
 

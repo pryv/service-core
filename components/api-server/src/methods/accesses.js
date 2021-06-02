@@ -262,7 +262,8 @@ module.exports = async function produceAccessesApiMethods(
 
 
       const streamsRepository = storageLayer.streams;
-      const existingStream = treeUtils.findById(context.streams, permission.streamId);
+  
+      const existingStream = await context.streamForStreamId(permission.streamId);
 
       if (existingStream) {
         if (! existingStream.trashed) return ; 

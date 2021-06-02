@@ -20,7 +20,7 @@ const UsersRepository = require('business/src/users/repository');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getStore } = require('stores');
+const { getStore, StreamsUtils } = require('stores');
 
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
@@ -279,7 +279,14 @@ class MethodContext {
     this.streams = streams.concat(userAccountStreams);
   }
   
+  /**
+   * Get a Stream for StreamId
+   * @param {identifier} streamId 
+   * @param {identifier} [storeId] - If storeId is null streamId should be fully scoped 
+   * @returns 
+   */
   async streamForStreamId(streamId: string, storeId: string) {
+    if (! storeId) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
     const store = (await getStore()).sourceForId(storeId);
     if (! store) return null;
     const streams = await store.streams.get(this.user.id, {id: streamId, state: 'all'});
