@@ -52,12 +52,16 @@ class DataSource {
   get streams() { toBeImplemented(); } 
   get events() { toBeImplemented(); } 
 
-  static errorUnkownRessource(message, data) { // APIError.UnknownResource 
-    console.error('unkownRessource', message, data);
+  // -- will be overriden by the system to throw appropriate error
+  static throwUnkownRessource(resourceType, id, innerError) { // APIError.UnknownResource 
+    console.error('unkownRessource', resourceType, id, innerError);
+    throw(new Error('unkownRessource ' + resourceType + ' id: '+  id));
   } 
 
-  static errorInvalidRequestStructure(message, data) { // APIError.InvalidRequestStructure 
+  // -- will be overriden by the system to throw appropriate error
+  static throwInvalidRequestStructure(message, data) { // APIError.InvalidRequestStructure 
     console.error('invalidRequestStructure', message, data);
+    throw(new Error('invalidRequestStructure ' + message + ' ' + data));
   } 
 
 
