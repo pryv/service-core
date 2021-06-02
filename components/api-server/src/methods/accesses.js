@@ -26,6 +26,7 @@ const string = require('./helpers/string');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getLogger } = require('@pryv/boiler');
+const { getStore } = require('stores');
 
 import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'business';
@@ -50,7 +51,7 @@ type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
 }
 
-module.exports = function produceAccessesApiMethods(
+module.exports = async function produceAccessesApiMethods(
   api: API, 
   notifications: Notifications, 
   updatesSettings: UpdatesSettingsHolder, 
@@ -59,6 +60,7 @@ module.exports = function produceAccessesApiMethods(
   const logger = getLogger('methods:accesses');
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
+  const stores = await getStore();
 
   // RETRIEVAL
 
@@ -238,7 +240,7 @@ module.exports = function produceAccessesApiMethods(
   // Creates default data structure from permissions if needed, for app
   // authorization. 
   // 
-  function createDataStructureFromPermissions(context, params, result, next) {
+  async function createDataStructureFromPermissions(context, params, result, next) {
     const access = context.access;
     if (access == null) 
       return next(errors.unexpectedError('AF: Access must not be null here.'));
@@ -246,51 +248,58 @@ module.exports = function produceAccessesApiMethods(
     if (! access.isPersonal()) return next(); // not needed for personal access
     if (params.permissions == null) return next(); 
 
-    async.forEachSeries(params.permissions, ensureStream, next);
-    function ensureStream (permission, streamCallback) {
-      if (! permission.defaultName) return streamCallback();
+    for (let permission of params.permissions) {
+      try {
+       await ensureStream(permission);
+      } catch (e) {
+        return next(e);
+      }
+    }
+    return next();
+
+    async function ensureStream (permission) {
+      if (! permission.streamId) return ;
+
 
       const streamsRepository = storageLayer.streams;
       const existingStream = treeUtils.findById(context.streams, permission.streamId);
-      if (existingStream) {
-        if (! existingStream.trashed) { return streamCallback(); }
 
+      if (existingStream) {
+        if (! existingStream.trashed) return ; 
+
+        // untrash stream
         const update = {trashed: false};
-        
-        streamsRepository.updateOne(context.user, {id: existingStream.id}, update, function (err) {
-          if (err) { return streamCallback(errors.unexpectedError(err)); }
-          streamCallback();
-        });
-      } else {
-        // create new stream
-        const newStream = {
-          id: permission.streamId,
-          name: permission.defaultName,
-          parentId: null
-        };
-        context.initTrackingProperties(newStream);
-        
-        streamsRepository.insertOne(context.user, newStream, function (err) {
-          if (err != null) {
-            // Duplicate errors
-            if (err.isDuplicateIndex('id')) {
-              // Stream already exists, log & proceed
-              logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
-                  err.message);
-            }
-            else if (err.isDuplicateIndex('name')) {
-              // Not OK: stream exists with same unique key but different id
-              return streamCallback(errors.itemAlreadyExists(
-                'stream', {name: newStream.name}, err
-              ));
-            }
-            else {
-              // Any other error
-              return streamCallback(errors.unexpectedError(err));
-            }
+        try { 
+          await bluebird.fromCallback(cb =>  streamsRepository.updateOne(context.user, {id: existingStream.id}, update, cb));
+        } catch (err) {
+          throw(errors.unexpectedError(err));
+        }
+        return ;
+      } 
+
+      // create new stream
+      const newStream = {
+        id: permission.streamId,
+        name: permission.defaultName,
+        parentId: null
+      };
+      context.initTrackingProperties(newStream);
+      
+      try {
+        await bluebird.fromCallback(cb =>  streamsRepository.insertOne(context.user, newStream, cb));
+      } catch (err) {
+          // Duplicate errors
+          if (err.isDuplicateIndex('id')) {
+            // Stream already exists, log & proceed
+            logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' + err.message);
           }
-          streamCallback();
-        });
+          else if (err.isDuplicateIndex('name')) {
+            // Not OK: stream exists with same unique key but different id
+            throw(errors.itemAlreadyExists('stream', {name: newStream.name}, err));
+          } else {
+            // Any other error
+           throw(errors.unexpectedError(err));
+          }
       }
     }
   }

@@ -81,7 +81,7 @@ module.exports = function (api: API, logging, storageLayer: StorageLayer) {
       freshContext.acceptStreamsQueryNonStringified = true;
       const access = freshContext.access;
       await freshContext.retrieveStreams(storageLayer);
-      if (! access.isPersonal()) access.loadPermissions(freshContext.streams);
+      if (! access.isPersonal()) access.loadPermissions();
     }
 
     async function executeCall(call: ApiCall) {

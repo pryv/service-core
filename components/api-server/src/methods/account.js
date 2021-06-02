@@ -28,7 +28,7 @@ const Registration = require('business/src/auth/registration'),
  * @param servicesSettings Must contain `email` and `register`
  * @param notifications
  */
-module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
+module.exports = async function (api, userEventsStorage, passwordResetRequestsStorage,
   authSettings, servicesSettings, notifications, logging) {
 
   var emailSettings = servicesSettings.email,
@@ -37,6 +37,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   // initialize service-register connection
   const serviceRegisterConn = getServiceRegisterConn();
   const usersRepository = new UsersRepository(userEventsStorage);
+
+  const isDnsLess = (await getConfig()).get('dnsLess:isActive') === true;
 
   // RETRIEVAL
 
@@ -195,7 +197,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   async function notifyServiceRegister (context, params, result, next) {
     // no need to update service register if it is single node setup
-    if ((await getConfig()).get('dnsLess:isActive') === true) {
+    if (isDnsLess) {
       return next();
     }
     try {

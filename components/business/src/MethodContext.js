@@ -159,7 +159,7 @@ class MethodContext {
 
       // And finally, load permissions for non-personal accesses.
       const streams = this.streams;
-      if (!access.isPersonal()) access.loadPermissions(streams);
+      if (!access.isPersonal()) access.loadPermissions();
     }
     catch (err) {
       if (err != null && !(err instanceof APIError)) {
@@ -280,14 +280,9 @@ class MethodContext {
   }
   
   async streamForStreamId(streamId: string, storeId: string) {
-    
-    if (storeId === 'local') {
-      if (! this.streams) return null;
-      return treeUtils.findById(this.streams, streamId);
-    }
     const store = (await getStore()).sourceForId(storeId);
     if (! store) return null;
-    const streams = await store.streams.get(this.user.id, {id: streamId});
+    const streams = await store.streams.get(this.user.id, {id: streamId, state: 'all'});
     if (streams && streams.length === 1) return streams[0];
     return null;
   }

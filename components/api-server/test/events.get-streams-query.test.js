@@ -618,7 +618,6 @@ describe('events.get streams query', function () {
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: ['T'] });
-
         assert.equal(res.body.events.length, 0);
       });
 
