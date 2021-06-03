@@ -171,59 +171,28 @@ module.exports = async function (
 
 
   async function streamQueryExpandStreams(context, params, result, next) {
-    
-    
-
-    async function expandStreamInLocal(streamId) {
-
-      // set tree to "root" or stream
-      let tree = []
-      if (streamId === '*') { // <== can be optimized here .. if includes trashed or no trashed stream then no streamQuery
-        
-        // All streams that are not accound stream unless permission is explicit
-        tree = context.streams; 
-
-        if (! context.access.isPersonal()) { // remove all account streamIds
-          // 1. remove all account stream
-          tree = tree.filter(stream => ! SystemStreamsSerializer.isAccountStreamId(stream.id));
-          // 2. add account streams from permission set
-          for (let authorizedAccountPerm of context.access.getAccountStreamPermissions()) {
-            tree.push(await context.streamForStreamId(authorizedAccountPerm.streamId, 'local'));
-          };
-        }
-
-      } else {
-        const stream = await context.streamForStreamId(streamId, 'local');
-        if (stream) tree = [stream];
-      }
-
-      const result = [];
-      async function filterAndCollectStreamIds(stream) {
-        if (stream.trashed && (params.state !== 'all') && (params.state !== 'trashed')) return false; // break if trashed
-        // todo handle exculdes
-        result.push(stream.id);
-        return true;
-      }
-      await treeUtils.iterateOnPromise(tree, filterAndCollectStreamIds);
-      return result;
-    }
 
     async function expandStreamInContext(streamId, storeId) {
-
-      if (streamId === '*') {
-        
-      }
-
       // remove eventual '#' in streamQuery
       if (streamId.startsWith('#')) {
-        return [streamId.substr(1)];
+        if (streamId === '#*') { // fence against '#*' request that could lead to expose system streams content
+          streamId = '*';
+        } else {
+          return [streamId.substr(1)]; // do not expand Stream
+        }
       }
 
-      if (storeId === 'local') {
-        return await expandStreamInLocal(streamId);
+      const query =  {id: streamId, state: params.state};
+
+      // do not expand SystemStreams for non-personal tokens
+      if (streamId === '*' && storeId === 'local' && ! context.access.isPersonal()) {
+        query.hideSystemStreams = true;
       }
 
-      return [streamId]; // TODO 
+      const store = (await getStore()).sourceForId(storeId);
+      const tree = await store.streams.get(context.user.id, query);
+      const result = treeUtils.collectPluck(tree, 'id');
+      return result;
     }
 
     try {
