@@ -126,8 +126,7 @@ class MethodContext {
   }
 
   // Retrieves the context's access from its token (auth in constructor) and
-  // expand its permissions (e.g. to include child streams). Also sets
-  // `context.streams`.
+  // expand its permissions (e.g. to include child streams). 
   //
   // If the context's access is already set, the initial step is skipped. This
   // allows callers to implement custom retrieval logic if needed (e.g. using a
@@ -156,9 +155,6 @@ class MethodContext {
 
       // Load the streams we can access.
       await this.retrieveStreams(storage);
-
-      // And finally, load permissions for non-personal accesses.
-      const streams = this.streams;
       if (!access.isPersonal()) access.loadPermissions();
     }
     catch (err) {

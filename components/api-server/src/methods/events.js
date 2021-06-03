@@ -175,9 +175,10 @@ module.exports = async function (
     
 
     async function expandStreamInLocal(streamId) {
+
       // set tree to "root" or stream
       let tree = []
-      if (streamId === '*') { // <== can be obptimized here .. if includes trashed or no trashed stream then no streamQuery
+      if (streamId === '*') { // <== can be optimized here .. if includes trashed or no trashed stream then no streamQuery
         
         // All streams that are not accound stream unless permission is explicit
         tree = context.streams; 
@@ -208,6 +209,11 @@ module.exports = async function (
     }
 
     async function expandStreamInContext(streamId, storeId) {
+
+      if (streamId === '*') {
+        
+      }
+
       // remove eventual '#' in streamQuery
       if (streamId.startsWith('#')) {
         return [streamId.substr(1)];

@@ -225,7 +225,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   async function applyPrerequisitesForUpdate(context, params, result, next) {
     // check stream
-    var stream = treeUtils.findById(context.streams, params.id);
+    var stream = await context.streamForStreamId(params.id);
     if (!stream) {
       return process.nextTick(next.bind(null,
         errors.unknownResource(
@@ -286,7 +286,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   async function verifyStreamExistenceAndPermissions(context, params, result, next) {
     _.defaults(params, { mergeEventsWithParent: null });
 
-    context.stream = treeUtils.findById(context.streams, params.id);
+    context.stream = await context.streamForStreamId(params.id); 
     if (context.stream == null) {
       return process.nextTick(next.bind(null,
         errors.unknownResource('stream', params.id)));
