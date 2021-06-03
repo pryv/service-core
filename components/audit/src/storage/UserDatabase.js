@@ -94,7 +94,7 @@ class UserDatabase {
 
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
 
-  getLogsStream(params) {
+  getLogsStream(params, addStorePrefix) {
     const queryString = prepareLogQuery(params, );
     logger.debug(queryString);
 
@@ -104,7 +104,7 @@ class UserDatabase {
       next: function() {
         const res = iterateSource.next();
         if (res && res.value) {
-          res.value = eventSchemas.eventFromDB(res.value);
+          res.value = eventSchemas.eventFromDB(res.value, addStorePrefix);
         }
         return res;
       }

@@ -13,7 +13,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-let audit, isMethodDeclared, isOpenSource;
+let audit, isMethodDeclared, isOpenSource, isAuditActive;
 
 // When storing full events.get request instead of streaming it, the maximum
 // array size before returning an error.
@@ -50,7 +50,8 @@ class API {
     this.filters = []; 
     const config = getConfigUnsafe();
     isOpenSource = config.get('openSource:isActive');
-    if (! isOpenSource) {
+    isAuditActive = (! isOpenSource) && config.get('audit:active');
+    if (isAuditActive) {
       audit = require('audit');
       isMethodDeclared = require('audit/src/ApiMethods').isMethodDeclared;
     }
@@ -194,12 +195,12 @@ class API {
           err : 
           errors.unexpectedError(err));
       }
-      if (! isOpenSource) {
+      if (isAuditActive) {
         result.onEnd(function() {
           audit.validApiCall(context, result);
         });
       }
-      
+
       callback(null, result);
     });
   }

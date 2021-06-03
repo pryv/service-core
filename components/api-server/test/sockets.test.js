@@ -206,6 +206,7 @@ describe('Socket.IO', function () {
       ioCons.con.emit('events.get', params, async function (err, result) {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(result.events);
         result.events = separatedEvents.events;
+      
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
         const testEvents = _.clone(testData.events);
@@ -219,7 +220,6 @@ describe('Socket.IO', function () {
         validation.validateAccountEvents(actualAccountStreamsEvents);
         
         result.events.should.eql(expectedEvents);
-        
         // check deletions
         let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
         for (let el of deleted) {

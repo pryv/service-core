@@ -341,6 +341,14 @@ class SystemStreamsSerializer {
   }
 
   /**
+   * Return true is this streamId is referenced as a system stream
+   * @returns {boolean}
+   */
+  static isSystemStream(streamId) {
+    return SystemStreamsSerializer.getFlatAccountStreamSettings().hasOwnProperty(streamId);
+  }
+
+  /**
    * Get all ids of all system streams
    */
   static getAllSystemStreamsIds () {

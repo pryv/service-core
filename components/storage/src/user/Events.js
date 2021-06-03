@@ -150,11 +150,12 @@ function getDbIndexes (systemStreamsFlatList) {
 /**
  * Implementation.
  */
-Events.prototype.getCollectionInfo = function (user) {
+Events.prototype.getCollectionInfo = function (userOrUserId) {
+  const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'events',
     indexes: getDbIndexes(this.systemStreamsFlatList),
-    useUserId: user.id
+    useUserId: userId
   };
 };
 
@@ -168,13 +169,13 @@ Events.prototype.getCollectionInfoWithoutUserId = function () {
 /**
  * Implementation
  */
-Events.prototype.findStreamed = function (user, query, options, callback) {
+Events.prototype.findStreamed = function (userOrUserId, query, options, callback) {
   query.deleted = null;
   // Ignore history of events for normal find.
   query.headId = null;
 
   this.database.findStreamed(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     this.applyOptionsToDB(options),
     function (err, dbStreamedItems) {
@@ -192,9 +193,9 @@ Events.prototype.findStreamed = function (user, query, options, callback) {
 /**
  * Implementation
  */
-Events.prototype.findHistory = function (user, headId, options, callback) {
+Events.prototype.findHistory = function (userOrUserId, headId, options, callback) {
   this.database.find(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB({ headId: headId }),
     this.applyOptionsToDB(options),
     function (err, dbItems) {
@@ -210,14 +211,14 @@ Events.prototype.findHistory = function (user, headId, options, callback) {
  * Implementation
  */
 Events.prototype.findDeletionsStreamed = function (
-  user,
+  userOrUserId,
   deletedSince,
   options,
   callback
 ) {
   var query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
   this.database.findStreamed(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     query,
     this.applyOptionsToDB(options),
     function (err, dbStreamedItems) {
@@ -236,7 +237,7 @@ Events.prototype.countAll = function (user, callback) {
 /**
  * Implementation
  */
-Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
+Events.prototype.minimizeEventsHistory = function (userOrUserId, headId, callback) {
   var update = {
     $unset: {
       streamIds: 1,
@@ -259,7 +260,7 @@ Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
   });
 
   this.database.updateMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB({ headId: headId }),
     update,
     callback
@@ -270,7 +271,7 @@ Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
 /**
  * Implementation.
  */
-Events.prototype.delete = function (user, query, deletionMode, callback) {
+Events.prototype.delete = function (userOrUserId, query, deletionMode, callback) {
   // default
   var update = {
     $set: { deleted: new Date() },
@@ -322,7 +323,7 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
   }
 
   this.database.updateMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     update,
     callback

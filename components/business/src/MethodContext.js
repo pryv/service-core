@@ -20,6 +20,7 @@ const UsersRepository = require('business/src/users/repository');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
+const { getStore } = require('stores');
 
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
@@ -63,11 +64,6 @@ class MethodContext {
   // Custom auth function, if one was configured. 
   customAuthStepFn: ?CustomAuthFunction;
 
-  // will contain the list of "found" streams 
-  streamList: ?Array<Stream>;
-  // during an event.create action for multiple streams event, some streamIds might not exists. They will be listed here
-  streamIdsNotFoundList: ?Array<string>;
-
   methodId: ?string;
   usersRepository: UsersRepository;
 
@@ -87,8 +83,6 @@ class MethodContext {
     this.access = null;
     this.streams = null;
 
-    this.streamList = null;
-    this.streamIdsNotFoundList = [];
     this.customAuthStepFn = customAuthStepFn;
 
     this.accessToken = null;
@@ -282,22 +276,19 @@ class MethodContext {
     const userAccountStreams = SystemStreamsSerializer.getReadable();
     this.streams = streams.concat(userAccountStreams);
   }
-
-  // Set this contexts stream by looking in this.streams. DEPRECATED.
-  // used only in the events creation and update
-  setStreamList(streamIds: array) {
-    if (!streamIds || streamIds.length === 0) return;
-
-    streamIds.forEach(function (streamId) {
-      let stream = treeUtils.findById(this.streams, streamId);
-
-      if (stream) {
-        if (!this.streamList) this.streamList = [];
-        this.streamList.push(stream);
-      } else {
-        this.streamIdsNotFoundList.push(streamId);
-      }
-    }.bind(this));
+  
+  async streamForStreamId(streamId: string, storeId: string) {
+    
+    if (storeId === 'local') {
+      if (! this.streams) return null;
+      return treeUtils.findById(this.streams, streamId);
+    }
+    const store = (await getStore()).sourceForId(storeId);
+    if (! store) return null;
+    const streams = await store.streams.get(this.user.id, {id: streamId});
+    console.log('OOOOOOOO ', streams);
+    if (streams && streams.length === 1) return streams[0];
+    return null;
   }
 
   initTrackingProperties(item: any, authorOverride: ?string) {

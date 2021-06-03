@@ -1,6 +1,6 @@
 ---
 audit:
-
+  active: true
   storage:
     filter:
       methods:

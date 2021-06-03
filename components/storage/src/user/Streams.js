@@ -83,11 +83,12 @@ var indexes = [
 /**
  * Implementation.
  */
-Streams.prototype.getCollectionInfo = function (user) {
+Streams.prototype.getCollectionInfo = function (userOrUserId) {
+  const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'streams',
     indexes: indexes,
-    useUserId: user.id
+    useUserId: userId
   };
 };
 
@@ -150,7 +151,7 @@ function checkParentExists(user, parentId, callback) {
 /**
  * Implementation.
  */
-Streams.prototype.delete = function (user, query, callback) {
+Streams.prototype.delete = function (userOrUserId, query, callback) {
   var update = {
     $set: {deleted: new Date()},
     $unset: {
@@ -165,7 +166,7 @@ Streams.prototype.delete = function (user, query, callback) {
       modifiedBy: 1
     }
   };
-  this.database.updateMany(this.getCollectionInfo(user),
+  this.database.updateMany(this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query), update, callback);
 };
 

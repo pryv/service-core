@@ -310,6 +310,9 @@ describe('root', function() {
       const res = await server.request()
         .get('/' + username + '/access-info')
         .set('Authorization', sharedAccessToken);
+      
+      // extend sharedAccess with audit rights
+      sharedAccess.permissions.push({streamId: ':_audit:access-' + sharedAccess.id, level: 'read'});
       validation.check(
         res,
         {

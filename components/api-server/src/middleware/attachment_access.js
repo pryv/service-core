@@ -20,8 +20,8 @@ module.exports = middlewareFactory;
 // translates the request's resource path to match the actual physical path for
 // static-serving the file.
 // 
-function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
-  userEventsStorage.findOne(req.context.user, {id: req.params.id}, null, function (err, event) {
+async function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
+  userEventsStorage.findOne(req.context.user, {id: req.params.id}, null, async function (err, event) {
     const _ = lodash; 
     
     if (err) {
@@ -32,7 +32,7 @@ function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
     }
     let canReadEvent = false;
     for (let i = 0; i < event.streamIds.length ; i++) {
-      if (req.context.access.canGetEventsOnStream(event.streamIds[i])) {
+      if (await req.context.access.canGetEventsOnStream(event.streamIds[i], 'local')) {
         canReadEvent = true;
         break;
       }

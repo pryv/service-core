@@ -21,10 +21,23 @@ module.exports = function (api) {
     eventsGetUtils.coerceStreamsParam,
     commonFns.getParamsValidation(methodsSchema.get.params),
     eventsGetUtils.transformArrayOfStringsToStreamsQuery,
+    anyStarStreamQueryIsNullQUery,
     removeStoreIdFromStreamQuery,
     limitStreamQueryToAccessToken,
     getAuditLogs);
 }
+
+function anyStarStreamQueryIsNullQUery(context, params, result, next) {
+  if (params.streams &&
+    params.streams.length === 1 && 
+    params.streams[0].any && 
+    params.streams[0].any.length === 1 && 
+    params.streams[0].any[0] === '*') {
+      params.streams = null;
+    }
+  return next();
+}
+
 
 /**
  * Remove '.audit-' from stream query;
@@ -68,7 +81,7 @@ function limitStreamQueryToAccessToken(context, params, result, next) {
 async function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = await auditStorage.forUser(context.user.id);
-    result.addStream('auditLogs', userStorage.getLogsStream(params));
+    result.addStream('auditLogs', userStorage.getLogsStream(params, true));
     //result.auditLogs = userStorage.getLogs(params);
   } catch (err) {
     return next(err);

@@ -8,7 +8,7 @@
 /* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
 
-describe.skip('Audit Streams and Events', function() {
+describe('Audit Streams and Events', function() {
   let user, username, password, access, appAccess;
   let personalToken;
   let auditPath;
@@ -68,7 +68,7 @@ describe.skip('Audit Streams and Events', function() {
     const res = await coreRequest
       .get(eventsPath)
       .set('Authorization', appAccess.token)
-      .query({streams: ['.audit-access-' +  appAccess.id], fromTime: start, toTime: stop});
+      .query({streams: [':_audit:access-' +  appAccess.id], fromTime: start, toTime: stop});
     assert.equal(res.status, 200);
     const logs = res.body.events;
     assert.isAtLeast(logs.length, 2);
@@ -83,7 +83,7 @@ describe.skip('Audit Streams and Events', function() {
     const res = await coreRequest
       .get(eventsPath)
       .set('Authorization', appAccess.token)
-      .query({streams: ['.audit-action-events.get'] });
+      .query({streams: [':_audit:action-events.get'] });
     assert.equal(res.status, 200);
     const logs = res.body.events;
     assert.isAtLeast(logs.length, 1);
@@ -98,7 +98,7 @@ describe.skip('Audit Streams and Events', function() {
     const res = await coreRequest
       .get(eventsPath)
       .set('Authorization', personalToken)
-      .query({streams: ['.audit'] });
+      .query({streams: [':_audit:'] });
     assert.strictEqual(res.status, 200);
     const logs = res.body.events;
     
@@ -110,7 +110,7 @@ describe.skip('Audit Streams and Events', function() {
     const res = await coreRequest
       .get(eventsPath)
       .set('Authorization', appAccess.token)
-      .query({streams: ['.audit-access-' +  appAccess.id] });
+      .query({streams: [':_audit:access-' +  appAccess.id] });
     assert.strictEqual(res.status, 200);
     const logs = res.body.events;
     assert.isAtLeast(logs.length, 1);
@@ -132,7 +132,7 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
   assert.isArray(auditLogs);
 
   auditLogs.forEach(event => {
-    asset.include(['audit-log/pryv-api', 'audit-log/pryv-api-error'], event.type, 'wrong event type')
+    assert.include(['audit-log/pryv-api', 'audit-log/pryv-api-error'], event.type, 'wrong event type')
  
     assert.isString(event.id);
     assert.isNumber(event.time);
@@ -150,7 +150,11 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
     }
 
     if (event.type === 'audit-log/pryv-api-error') {
-      assert.strictEqual(event.content.id, expectedErrorId);
+      if (expectedErrorId) {
+        assert.strictEqual(event.content.id, expectedErrorId);
+      } else {
+        assert.isString(event.content.id);
+      }
       assert.isString(event.content.message);
     }
   }); 
