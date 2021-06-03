@@ -368,12 +368,12 @@ exports.removeDeletionsAndHistory = function (items) {
 
 exports.removeAccountStreamsEvents = function (items) {
   // get streams ids from the config that should be retrieved
-  const expectedAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
+  const expectedAccountStreams = SystemStreamsSerializer.getAccountMap();
   return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedAccountStreams).indexOf(streamId) >= 0)); });
 };
 
 exports.separateAccountStreamsAndOtherEvents = function (items) {
-  const readableAccountStreams = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+  const readableAccountStreams = Object.keys(SystemStreamsSerializer.getAccountMap());
   const normalEvents = items.filter(function (e) {
     return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
@@ -434,7 +434,7 @@ exports.validateAccountEvents = function (actualAccountEvents) {
       if (event.streamIds.includes(streamId)) {
         foundEvent = true;
         // validate that event is indexed/unique if needed
-        if (expectedAccountStreams[streamId].isUnique === true) {
+        if (expectedAccountStreams[streamId].isUnique) {
           assert.isTrue(event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE), `.unique streamId not found in ${event} for ${streamId}`);
         }
         // validate type

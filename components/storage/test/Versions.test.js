@@ -510,7 +510,7 @@ describe('Versions', function () {
     const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
 
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeaves(); 
+    const userAccountStreams = SystemStreamsSerializer.getAccountLeavesMap(); 
     const userAccountStreamIds = Object.keys(userAccountStreams); 
 
     // perform migration
@@ -529,7 +529,7 @@ describe('Versions', function () {
           streamIds: {$in: userAccountStreamIds},
           userId: { $eq: u._id }, // we've accessed users through the raw collection
         }, cb));
-     
+      
       const events = await eventsCursor.toArray();
       // extra custom account streamIds not present in db dump
       const streamsToIgnore = [ '.insurancenumber', '.phoneNumber']

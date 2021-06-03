@@ -6,20 +6,23 @@
  */
 // @flow
 const _ = require('lodash');
+
+const Stream = require('business/src/streams/Stream');
+const SystemStream = require('business/src/system-streams/SystemStream');
 const treeUtils = require('utils').treeUtils;
-
-
 const { getConfigUnsafe } = require('@pryv/boiler');
 
+const PRYV_PREFIX = ':_system:';
+const CUSTOMER_PREFIX = ':system:';
 
-const readable = 'readable-default-streams';
-const allAccountStreams = 'all-default-streams';
-const editableAccountStreams = 'editable-default-streams';
-const indexedStreams = 'indexed-default-streams';
-const uniqueStreams = 'unique-default-streams';
+const IS_SHOWN = 'isShown';
+const IS_INDEXED = 'isIndexed';
+const IS_EDITABLE = 'isEditable';
+const IS_UNIQUE = 'isUnique';
 
-const accountStreamsConfigPath = 'systemStreams:account';
+const ALL = 'all';
 
+const CONFIG_ACCOUNT_STREAMS = 'systemStreams:account';
 
 let singleton = null;
 
@@ -29,38 +32,52 @@ let singleton = null;
  * structure of the account info
  */
 class SystemStreamsSerializer {
-  systemStreamsSettings;
 
-  // singleton calcualted values
+  // Nomenclature
+  // no suffix: tree
+  // array/flat: flattened tree
+  // map (id as key)
+
+  /**
+   * "systemStreams" object in config
+   */
+  systemStreamsSettings: {};
+
   // static
-  readableAccountStreams: Array<object>;
-  readableAccountStreamsForTests: Array<object>;
-  editableAccountStreams: Array<object>;
-  allAccountStreams: Array<object>;
-  allAccountStreamsIdsForAccess: Array<String>;
-  allAccountStreamsLeaves: Array<object>;
-  indexedAccountStreamsIdsWithoutDot: Array<String>;
-  uniqueAccountStreamsIdsWithoutDot: Array<String>;
-  accountStreamsIdsForbiddenForEditing: Array<String>;
-  accountStreamsIdsForbiddenForReading: Array<String>;
-  flatAccountStreamSettings: Array<object>;
-  accountStreamsConfig;
+  allAsTree: Array<SystemStream>;
+  allStreamIds: Array<string>;
 
-  // not static
-  allSystemStreamsIds: Array<String>;
-  systemStreamsList: Array<object>;
-  
+  readable: Array<SystemStream>;
+
+  readableAccountStreams: Array<{}>;
+  readableAccountStreamsForTests: Array<{}>;
+  editableAccountStreams: Array<{}>;
+  accountMap: Map<string, Array<string>>;
+  allAccountStreamsIdsForAccess: Array<string>;
+  allAccountStreamsLeaves: Array<{}>;
+  indexedAccountStreamsIdsWithoutPrefix: Array<string>;
+  uniqueAccountStreamsIdsWithoutPrefix: Array<string>;
+  accountStreamsIdsForbiddenForEditing: Array<string>;
+  accountStreamsIdsForbiddenForReading: Array<string>;
+  flatAccountStreamSettings: Array<{}>;
+  accountStreamsConfig: {};
+
+  // Maps used for quick translation from without prefix to with
+  streamIdWithPrefixToWithout: Map<string, string>;
+  streamIdWithoutPrefixToWith: Map<string, string>;
+  options: Map<string, string>;
 
   static getSerializer() {
     if (singleton) return singleton;
     singleton = new SystemStreamsSerializer();
+    initializeSerializer(singleton);
     return singleton;
   }
 
   constructor () {
     this.systemStreamsSettings = getConfigUnsafe(true).get('systemStreams');
     if (this.systemStreamsSettings == null) {
-      throw Error("Not valid system streams settings.");
+      throw Error('Invalid system streams settings');
     }
   }
 
@@ -69,9 +86,9 @@ class SystemStreamsSerializer {
    * cached,
    */
   static getAccountStreamsConfig () {
-    if (! SystemStreamsSerializer.accountStreamsConfig){
-      SystemStreamsSerializer.accountStreamsConfig =  getConfigUnsafe(true).get(accountStreamsConfigPath);
-    }
+    if ( SystemStreamsSerializer.accountStreamsConfig != null ) return SystemStreamsSerializer.accountStreamsConfig;
+    
+    SystemStreamsSerializer.accountStreamsConfig = treeUtils.findById(this.allAsTree, PRYV_PREFIX + 'account').children;
     return SystemStreamsSerializer.accountStreamsConfig;
   }
 
@@ -80,12 +97,13 @@ class SystemStreamsSerializer {
    * and could be returned to the user
    */
   static getReadableAccountStreams () {
-    if (!SystemStreamsSerializer.readableAccountStreams){
-      SystemStreamsSerializer.readableAccountStreams = getStreamsNames(
-        SystemStreamsSerializer.getAccountStreamsConfig(),
-        readable
-      );
-    }
+    if ( SystemStreamsSerializer.readableAccountStreams != null ) return SystemStreamsSerializer.readableAccountStreams;
+    
+    SystemStreamsSerializer.readableAccountStreams = filterMapStreams(
+      SystemStreamsSerializer.getAccountStreamsConfig(),
+      IS_SHOWN
+    );
+    
     return SystemStreamsSerializer.readableAccountStreams;
   }
 
@@ -94,11 +112,12 @@ class SystemStreamsSerializer {
    * a parent and no events are created by default for it directly.
    */
   static getReadableAccountStreamsForTests () {
-    if (!SystemStreamsSerializer.readableAccountStreamsForTests) {
-      let streams = getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), readable);
-      delete streams[SystemStreamsSerializer.addDotToStreamId('storageUsed')];
-      SystemStreamsSerializer.readableAccountStreamsForTests = streams;
-    }
+    if ( SystemStreamsSerializer.readableAccountStreamsForTests != null ) return SystemStreamsSerializer.readableAccountStreamsForTests;
+    
+    const streams = filterMapStreams(SystemStreamsSerializer.getAccountStreamsConfig(), IS_SHOWN);
+    delete streams[SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed')];
+    SystemStreamsSerializer.readableAccountStreamsForTests = streams;
+    
     return SystemStreamsSerializer.readableAccountStreamsForTests;
   }
 
@@ -106,38 +125,74 @@ class SystemStreamsSerializer {
    * Get only those streams that user is allowed to edit 
    */
   static getEditableAccountStreams () {
-    if (!SystemStreamsSerializer.editableAccountStreams) {
-      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), editableAccountStreams);
-      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), editableAccountStreams);
-    }
+    if ( SystemStreamsSerializer.editableAccountStreams != null ) return SystemStreamsSerializer.editableAccountStreams;
+    
+    SystemStreamsSerializer.editableAccountStreams = filterMapStreams(SystemStreamsSerializer.getAccountStreamsConfig(), IS_EDITABLE);
+    SystemStreamsSerializer.editableAccountStreams = filterMapStreams(SystemStreamsSerializer.getAccountStreamsConfig(), IS_EDITABLE);
+
     return SystemStreamsSerializer.editableAccountStreams;
   }
 
   /**
-   * Get the names of all streams that belongs to the system->account stream
+   * Returns account system streams
+   * streamId -> stream
+   * 
    * should be used only for internal usage because contains fields that 
    * should not be returned to the user
    */
-  static getAllAccountStreams () {
-    if (!SystemStreamsSerializer.allAccountStreams) {
-      SystemStreamsSerializer.allAccountStreams = getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), allAccountStreams);
-    }
-    return SystemStreamsSerializer.allAccountStreams;
+  static getAccountMap (): Map<string, {}> {
+    if ( SystemStreamsSerializer.accountMap != null ) return SystemStreamsSerializer.accountMap;
+    
+    SystemStreamsSerializer.accountMap = filterMapStreams(SystemStreamsSerializer.getAccountStreamsConfig(), ALL);
+
+    return SystemStreamsSerializer.accountMap;
+  }
+
+  /**
+   * Similar to getAccountMap, but the result gets organized into categories:
+   * 
+   */
+  static getAccountStreamIdsForUser(): Map<string, Array<string>> {
+    if ( SystemStreamsSerializer.allAccountStreamIdsForUser != null ) return SystemStreamsSerializer.allAccountStreamIdsForUser;
+    
+    const returnObject = new Map();
+    returnObject.uniqueAccountFields = [];
+    returnObject.readableAccountFields = [];
+    returnObject.accountFields = [];
+    returnObject.accountFieldsWithPrefix = [];
+
+    const accountStreams = SystemStreamsSerializer.getAccountMap();
+    
+    Object.keys(accountStreams).forEach(streamId => {
+      returnObject.accountFieldsWithPrefix.push(streamId);
+      const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamId);
+      if (accountStreams[streamId].isUnique == true) {
+        returnObject.uniqueAccountFields.push(streamIdWithoutPrefix);
+      }
+      if (accountStreams[streamId].isShown == true) {
+        returnObject.readableAccountFields.push(streamIdWithoutPrefix);
+      }    
+      returnObject.accountFields.push(streamIdWithoutPrefix);
+    });
+    SystemStreamsSerializer.allAccountStreamIdsForUser = returnObject;
+    
+    return SystemStreamsSerializer.allAccountStreamIdsForUser;
   }
 
   /**
    * Return not only account stream but also helper streams
    * @returns {array} of StreamIds
    */
-  static getAllAccountStreamsIdsForAccess () {
-    if (!SystemStreamsSerializer.allAccountStreamsIdsForAccess) {
-      let allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
-      allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_ACCOUNT);
-      allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_ACTIVE);
-      allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
-      allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_HELPERS);
-      SystemStreamsSerializer.allAccountStreamsIdsForAccess = allAccountStreamsIds;
-    }
+  static getAccountMapIdsForAccess () {
+    if ( SystemStreamsSerializer.allAccountStreamsIdsForAccess != null ) return SystemStreamsSerializer.allAccountStreamsIdsForAccess;
+    
+    const allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
+    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_ACCOUNT);
+    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_ACTIVE);
+    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
+    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_HELPERS);
+    SystemStreamsSerializer.allAccountStreamsIdsForAccess = allAccountStreamsIds;
+
     return SystemStreamsSerializer.allAccountStreamsIdsForAccess;
   }
 
@@ -147,22 +202,22 @@ class SystemStreamsSerializer {
    * @returns {boolean} 
    */
   static isAccountStreamId(streamId) {
-    return SystemStreamsSerializer.getAllAccountStreamsIdsForAccess().includes(streamId);
+    return SystemStreamsSerializer.getAccountMapIdsForAccess().includes(streamId);
   }
 
   /**
-   * The same as getAllAccountStreams () but returnes only streams leaves (not parents)
+   * The same as getAccountMap () but returnes only streams leaves (not parents)
    */
-  static getAllAccountStreamsLeaves () {
-    if (!SystemStreamsSerializer.allAccountStreamsLeaves) {
+  static getAccountLeavesMap() {
+    if (! SystemStreamsSerializer.allAccountStreamsLeaves) {
       
       const flatStreamsList = treeUtils.flattenTreeWithoutParents(SystemStreamsSerializer.getAccountStreamsConfig());
-      let flatStreamsListObj = {};
-      let i;
-      for (i = 0; i < flatStreamsList.length; i++) {
-        flatStreamsListObj[flatStreamsList[i].id] = flatStreamsList[i];
+      let streamsMap = {};
+
+      for (let i = 0; i < flatStreamsList.length; i++) {
+        streamsMap[flatStreamsList[i].id] = flatStreamsList[i];
       }
-      SystemStreamsSerializer.allAccountStreamsLeaves = flatStreamsListObj;
+      SystemStreamsSerializer.allAccountStreamsLeaves = streamsMap;
     }
     return SystemStreamsSerializer.allAccountStreamsLeaves;
   }
@@ -170,30 +225,30 @@ class SystemStreamsSerializer {
 /**
  * Get streamIds of fields that should be indexed
  */
-  static getIndexedAccountStreamsIdsWithoutDot () {
-    if (!SystemStreamsSerializer.indexedAccountStreamsIdsWithoutDot) {
-      let indexedStreamIds = Object.keys(getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), indexedStreams));
-      SystemStreamsSerializer.indexedAccountStreamsIdsWithoutDot = indexedStreamIds.map(
+  static getIndexedAccountStreamsIdsWithoutPrefix(): Array<string> {
+    if (!SystemStreamsSerializer.indexedAccountStreamsIdsWithoutPrefix) {
+      let indexedStreamIds = Object.keys(filterMapStreams(SystemStreamsSerializer.getAccountStreamsConfig(), IS_INDEXED));
+      SystemStreamsSerializer.indexedAccountStreamsIdsWithoutPrefix = indexedStreamIds.map(
         streamId => {
-          return SystemStreamsSerializer.removeDotFromStreamId(streamId)
+          return SystemStreamsSerializer.removePrefixFromStreamId(streamId)
         }
       );
     }
-    return SystemStreamsSerializer.indexedAccountStreamsIdsWithoutDot;
+    return SystemStreamsSerializer.indexedAccountStreamsIdsWithoutPrefix;
   }
 
 /**
  * Get streamIds of fields that should be unique
  */
-  static getUniqueAccountStreamsIdsWithoutDot () {
-    if (!SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutDot) {
-      let uniqueStreamIds = Object.keys(getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), uniqueStreams));
-      SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutDot =
+  static getUniqueAccountStreamsIdsWithoutPrefix() {
+    if (!SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutPrefix) {
+      let uniqueStreamIds = Object.keys(filterMapStreams(SystemStreamsSerializer.getAccountStreamsConfig(), IS_UNIQUE));
+      SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutPrefix =
         uniqueStreamIds.map(streamId => {
-          return SystemStreamsSerializer.removeDotFromStreamId(streamId)
+          return SystemStreamsSerializer.removePrefixFromStreamId(streamId)
         });
     }
-    return SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutDot;
+    return SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutPrefix;
   }
 
   /**
@@ -202,7 +257,7 @@ class SystemStreamsSerializer {
    */
   static getAccountStreamsIdsForbiddenForEditing () {
     if (!SystemStreamsSerializer.accountStreamsIdsForbiddenForEditing) {
-      let allStreams = SystemStreamsSerializer.getAllAccountStreams();
+      let allStreams = SystemStreamsSerializer.getAccountMap();
       let editableStreams = SystemStreamsSerializer.getEditableAccountStreams();
 
       SystemStreamsSerializer.accountStreamsIdsForbiddenForEditing = _.difference(
@@ -217,9 +272,9 @@ class SystemStreamsSerializer {
    * Get steams that are NOT allowed to view for the user
    * this function will be used to exclude streamIds from queries
    */
-  static getAccountStreamsIdsForbiddenForReading () {
+  static getAccountStreamsIdsForbiddenForReading() {
     if (!SystemStreamsSerializer.accountStreamsIdsForbiddenForReading) {
-      let allStreams = SystemStreamsSerializer.getAllAccountStreams();
+      let allStreams = SystemStreamsSerializer.getAccountMap();
       let readableStreams = SystemStreamsSerializer.getReadableAccountStreams();
       SystemStreamsSerializer.accountStreamsIdsForbiddenForReading = _.difference(
         _.keys(allStreams),
@@ -240,16 +295,33 @@ class SystemStreamsSerializer {
     return streamIdWithDot;
   }
 
- /**
-  * Reverse modification that is done for each systemStreamId
-  * @param string streamIdWithDot
-  */
-  static addDotToStreamId (streamIdWithoutDot: string): string {
-    if (! streamIdWithoutDot.startsWith('.')) {
-      streamIdWithoutDot = '.' + streamIdWithoutDot;
-    }
-    return streamIdWithoutDot;
+  /**
+   * Removes the system stream prefix, if any
+   * @param string streamIdWithPrefix
+   */
+  static removePrefixFromStreamId(streamIdWithPrefix: string): string {
+    const streamIdWithoutPrefix = SystemStreamsSerializer.streamIdWithPrefixToWithout[streamIdWithPrefix];
+    return streamIdWithoutPrefix ? streamIdWithoutPrefix : streamIdWithPrefix;
   }
+
+  /**
+  * Adds private systeam stream prefix to stream id, if needed
+  * @param string streamId
+  */
+  static addPrivatePrefixToStreamId(streamId: string): string {
+    const streamIdWithPrefix = SystemStreamsSerializer.streamIdWithoutPrefixToWith[streamId];
+    return streamIdWithPrefix ? streamIdWithPrefix : streamId;
+  }
+
+  /**
+  * Adds customer systeam stream prefix to stream id, if needed
+  * @param string streamId
+  */
+  static addCustomerPrefixToStreamId (streamId: string): string {
+    const streamIdWithPrefix = SystemStreamsSerializer.streamIdWithoutPrefixToWith[streamId];
+    return streamIdWithPrefix ? streamIdWithPrefix : streamId;
+  }
+  
   /**
    * Build flattened account stream settings and converted from an array to object
    */
@@ -271,136 +343,115 @@ class SystemStreamsSerializer {
   /**
    * Get all ids of all system streams
    */
-  getAllSystemStreamsIds () {
-    if (!SystemStreamsSerializer.allSystemStreamsIds) {
-      let systemStreams = [];
-      let i;
-      const streamKeys = Object.keys(this.systemStreamsSettings);
-
-      for (i = 0; i < streamKeys.length; i++) {
-        systemStreams.push(SystemStreamsSerializer.addDotToStreamId(streamKeys[i]));
-        _.merge(systemStreams,
-          Object.keys(getStreamsNames(this.systemStreamsSettings[streamKeys[i]])))
-      }
-      SystemStreamsSerializer.allSystemStreamsIds = systemStreams;
-    }
-    return SystemStreamsSerializer.allSystemStreamsIds;
+  static getAllSystemStreamsIds () {
+    return this.allIds;
   }
 
   /**
-   * Build streams from systemStreams settings
-   * parent is formed just providing hte name, id, parentId null and children
+   * Builds allAsTree
+   * Returns a streams tree of all system streams
    */
-  getSystemStreamsList () {
-    if (!SystemStreamsSerializer.systemStreamsList) {
-      let systemStreams = [];
-      let i;
-      const streamKeys = Object.keys(this.systemStreamsSettings);
+  static getAll (): Array<SystemStream> {
+    if ( SystemStreamsSerializer.allAsTree != null ) return SystemStreamsSerializer.allAsTree;
 
-      for (i = 0; i < streamKeys.length; i++) {
-        systemStreams.push({
-          name: streamKeys[i],
-          id: SystemStreamsSerializer.addDotToStreamId(streamKeys[i]),
-          parentId: null,
-          children: buildSystemStreamsFromSettings(
-            this.systemStreamsSettings[streamKeys[i]],
-            [],
-            SystemStreamsSerializer.addDotToStreamId(streamKeys[i])
-          )
-        });
-      }
-      SystemStreamsSerializer.systemStreamsList = systemStreams;
-    }
-    return SystemStreamsSerializer.systemStreamsList;
+    SystemStreamsSerializer.allAsTree = this.systemStreamsSettings;
+    return SystemStreamsSerializer.allAsTree;
+  }
+
+  /**
+   * Return all readable system streams
+   */
+  static getReadable(): Array<SystemStreams> {
+    if (SystemStreamsSerializer.readable) return SystemStreamsSerializer.readable;
+
+    SystemStreamsSerializer.readable = treeUtils.filterTree(this.allAsTree, false, s => s[IS_SHOWN]);
+    SystemStreamsSerializer.readable = treeUtils.apply(this.readable, s => _.pick(s, Stream.properties));
+    return SystemStreamsSerializer.readable;
   }
 }
 
 /**
- * Converts systemStreams settings to the actual simple streams objects
- * @param object settings 
- * @param array systemStreams 
- * @param string parentName 
+ * Filters streams and returns them as a Map:
+ * streamId -> stream
+ * 
+ * @param Array<SysteamStream> streams - tree of system streams
+ * @param string filter - boolean value used for filtering
  */
-function buildSystemStreamsFromSettings (settings, systemStreams, parentName: string): [] {
-  let streamIndex;
+function filterMapStreams (streams: Array<SystemStream>, filter: string = IS_SHOWN): Map<string, SystemStream> {
+  let streamsMap: Map<string, SystemStream> = new Map();
   
-  settings.forEach(stream => {
-    if (stream.isShown) {
-      systemStreams.push({
-        name: stream.name ? stream.name : stream.id ,
-        id: stream.id,
-        parentId: parentName,
-        children: []
-      });
-      if (stream.children != null) {
-        systemStreams[systemStreams.length - 1].children = buildSystemStreamsFromSettings(stream.children, systemStreams[systemStreams.length - 1].children, stream.id)
-      }
-    }
-  });
-  
-  return systemStreams;
-}
-
-/**
- * Iterate throught the tree and add keys to the flat list streamsNames
- * @param {*} streams - tree structure object
- * @param enum string whatToReturn - enum values should be retrieved with 
- *  getReadableAccountStreams(), getAllAccountStreams (), getEditableAccountStreams;
- * if they are equal to false or true
- */
-function getStreamsNames (streams, whatToReturn) {
-  let flatStreamsListObj = {};
-  
-  if (Array.isArray(streams) === false) {
-    return flatStreamsListObj;
+  if (! Array.isArray(streams)) {
+    return streamsMap;
   }
   const flatStreamsList = treeUtils.flattenTree(streams);
 
   // convert list to objects
-  let i;
-  for (i = 0; i < flatStreamsList.length; i++){
-    // if the stream value is equal to false, it should be not visible 
-    // (except when all account streams should be returned)
-    switch (whatToReturn) {
-      case readable:
-        if (!flatStreamsList[i].isShown) {
-          continue;
-        }
-        break;
-      case allAccountStreams:
-        break;
-      case indexedStreams:
-        if (!flatStreamsList[i].isIndexed) {
-          continue;
-        }
-        break;
-      case uniqueStreams:
-        if (!flatStreamsList[i].isUnique) {
-          continue;
-        }
-        break;
-      case editableAccountStreams:
-        if (!flatStreamsList[i].isEditable) {
-          continue;
-        }
-        break;
-      default:
-        if (!flatStreamsList[i].isShown) {
-          continue;
-        }
-        break;
+  for (let i = 0; i < flatStreamsList.length; i++){
+    
+    if (filter === ALL || flatStreamsList[i][filter]) {
+      streamsMap[flatStreamsList[i].id] = flatStreamsList[i]
+    } else {
+      // escape it
     }
-    flatStreamsListObj[flatStreamsList[i].id] = flatStreamsList[i]
   }
-  return flatStreamsListObj;
+  return streamsMap;
 }
 
-SystemStreamsSerializer.options = {
-  STREAM_ID_ACTIVE: '.active',
-  STREAM_ID_UNIQUE: '.unique',
-  STREAM_ID_USERNAME: '.username',
-  STREAM_ID_PASSWORDHASH: '.passwordHash',
-  STREAM_ID_HELPERS: '.helpers',
-  STREAM_ID_ACCOUNT: '.account',
-}
 module.exports = SystemStreamsSerializer;
+
+function initializeSerializer(serializer) {
+  SystemStreamsSerializer.getAll.call(serializer);
+
+  const allAsArray: Array<SystemStream> = treeUtils.flattenTree(SystemStreamsSerializer.allAsTree);
+  const allIds: Array<string> = allAsArray.map(s => s.id);
+
+  initializeTranslationMaps(allIds);
+
+  SystemStreamsSerializer.allAsArray = allAsArray;
+  SystemStreamsSerializer.allIds = allIds;
+
+  const options = {
+    STREAM_ID_ACTIVE: 'active',
+    STREAM_ID_UNIQUE: 'unique',
+    STREAM_ID_USERNAME: 'username',
+    STREAM_ID_PASSWORDHASH: 'passwordHash',
+    STREAM_ID_HELPERS: 'helpers',
+    STREAM_ID_ACCOUNT: 'account',
+  };
+  Object.keys(options).forEach(k => {
+    options[k] = SystemStreamsSerializer.addPrivatePrefixToStreamId(options[k]);
+  });
+  SystemStreamsSerializer.options = options;
+
+  function initializeTranslationMaps(streamIdsWithPrefix: Array<string>) {
+    SystemStreamsSerializer.streamIdWithoutPrefixToWith = new Map();
+    SystemStreamsSerializer.streamIdWithPrefixToWithout = new Map();
+    streamIdsWithPrefix.forEach(streamIdWithPrefix => {
+      const streamIdWithoutPrefix = _removePrefixFromStreamId(streamIdWithPrefix);
+      SystemStreamsSerializer.streamIdWithPrefixToWithout[streamIdWithPrefix] = streamIdWithoutPrefix;
+      SystemStreamsSerializer.streamIdWithoutPrefixToWith[streamIdWithoutPrefix] = streamIdWithPrefix;
+    });
+  }
+}
+
+/**
+ * adds private prefix to streamId
+ * Only to be used at initialization!
+ * 
+ * @param streamId 
+ */
+function _addPrivatePrefixToStreamId(streamId: string): string {
+  return PRYV_PREFIX + streamId;
+}
+
+/**
+ * Removes the prefix from the streamId
+ * Only to be used at initialization!
+ * 
+ * @param streamId 
+ */
+function _removePrefixFromStreamId(streamId: string): string {
+  if (streamId.startsWith(PRYV_PREFIX)) return streamId.substr(PRYV_PREFIX.length);
+  if (streamId.startsWith(CUSTOMER_PREFIX)) return streamId.substr(CUSTOMER_PREFIX.length);
+  throw new Error('serializer initialization: removePrefixFromStreamId(streamId) should be called with a prefixed streamId');
+}

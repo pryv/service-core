@@ -22,7 +22,7 @@ const ErrorIds = require('errors/src/ErrorIds');
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
 
-const systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
+SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 
 /**
  * Event streams API methods implementation.
@@ -47,7 +47,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     applyDefaultsForRetrieval,
     findAccessibleStreams,
     includeDeletionsIfRequested
-   );
+  );
 
   function applyDefaultsForRetrieval(context, params, result, next) {
     _.defaults(params, {
@@ -64,7 +64,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
       if (err) { return next(errors.unexpectedError(err)); }
 
-      const systemStreams = systemStreamsSerializer.getSystemStreamsList();
+      const systemStreams = SystemStreamsSerializer.getReadable();
       streams = streams.concat(systemStreams);
 
       if (params.parentId) {
@@ -199,16 +199,16 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
    * @param {*} next 
    */
   function forbidSystemStreamsActions (context, params, result, next) {
-    let accountStreamIds = systemStreamsSerializer.getAllSystemStreamsIds();
+    let accountStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds();
     if (params.id != null) {
-      if (accountStreamIds.includes(SystemStreamsSerializer.addDotToStreamId(params.id))) {
+      if (accountStreamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(params.id))) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsActions])
         );
       }
     }
     if (params.parentId != null) {
-      if (accountStreamIds.includes(SystemStreamsSerializer.addDotToStreamId(params.parentId))) {
+      if (accountStreamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(params.parentId))) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsActions])
         );

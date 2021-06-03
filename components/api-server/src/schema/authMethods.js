@@ -218,7 +218,7 @@ function loadCustomValidationSettings (validationSchema) {
   const accountStreamsSettings = SystemStreamsSerializer.getFlatAccountStreamSettings()
   for (const [streamIdWithDot, value] of Object.entries(accountStreamsSettings)) {
     // if streamIdWithDot is set as required - add required validation
-    let streamId = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot);
+    let streamId = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithDot);
     if (
       value?.isRequiredInValidation == true &&
       !validationSchema.required.includes(streamIdWithDot)

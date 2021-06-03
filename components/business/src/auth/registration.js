@@ -75,8 +75,8 @@ class Registration {
       let uniqueFields = {};
       for (const [streamIdWithDot, streamSettings] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
-        if (streamSettings?.isUnique === true) {
-          let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot)
+        if (streamSettings?.isUnique) {
+          let streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithDot)
           uniqueFields[streamIdWithoutDot] = context.user[streamIdWithoutDot];
         }
       }
@@ -207,7 +207,7 @@ class Registration {
   ) {
     try {
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutDot();
+      const userStreamsIds = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix();
 
       // build data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
@@ -216,7 +216,7 @@ class Registration {
           id: context.user.id
         },
         host: { name: context.host },
-        unique: SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot()
+        unique: SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()
       };
       userStreamsIds.forEach(streamId => {
         if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];

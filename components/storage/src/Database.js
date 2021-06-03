@@ -122,7 +122,7 @@ class Database {
     });
   }
 
-   addUserIdToIndexIfNeeded(collectionInfo) {
+  addUserIdToIndexIfNeeded(collectionInfo) {
     // force all indexes to have userId -- ! Order is important
     if (collectionInfo.useUserId) {
       const newIndexes = [{index: { userId : 1}, options: {}}];

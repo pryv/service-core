@@ -36,8 +36,6 @@ describe('Account with system streams', function () {
   let config;
   let isDnsLess;
 
-  
-
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
       insurancenumber: charlatan.Number.number(4),
@@ -56,7 +54,7 @@ describe('Account with system streams', function () {
   }
 
   async function getActiveEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
+    let streamIdWithDot = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
@@ -70,7 +68,7 @@ describe('Account with system streams', function () {
   }
 
   async function getNotActiveEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
+    let streamIdWithDot = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
@@ -85,7 +83,7 @@ describe('Account with system streams', function () {
    * @param string streamId 
    */
   async function createAdditionalEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
+    let streamIdWithDot = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
     eventDataForadditionalEvent = {
       streamIds: [streamIdWithDot],
       content: charlatan.Lorem.characters(7),
@@ -153,8 +151,8 @@ describe('Account with system streams', function () {
             serviceRegisterRequest = body;
             return true;
           }).times(4).reply(200, { errors: [] });
-        const editableStreamsIds = ['.email', '.language', '.phoneNumber', '.insurancenumber'];
-        const visibleStreamsIds = ['.username', '.email', '.language', '.phoneNumber', '.insurancenumber', '.dbDocuments', '.attachedFiles'];
+        const editableStreamsIds = ['email', 'language', 'phoneNumber', 'insurancenumber'].map(SystemStreamsSerializer.addPrivatePrefixToStreamId);
+        const visibleStreamsIds = ['username', 'email', 'language', 'phoneNumber', 'insurancenumber', 'dbDocuments', 'attachedFiles'].map(SystemStreamsSerializer.addPrivatePrefixToStreamId);
 
         let i;
         for (i = 0; i < editableStreamsIds.length; i++){
@@ -176,19 +174,19 @@ describe('Account with system streams', function () {
       });
       it('[JUHR] should return account information in the structure that is defined in system streams and only active values', async () => {
         const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes(
-          SystemStreamsSerializer.addDotToStreamId('username')))[0];
+          SystemStreamsSerializer.addPrivatePrefixToStreamId('username')))[0];
         const emailAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('email')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('email')))[0];
         const languageAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('language')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))[0];
         const dbDocumentsAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('dbDocuments')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')))[0];
         const attachedFilesAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('attachedFiles')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles')))[0];
         const insurancenumberAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('insurancenumber')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('insurancenumber')))[0];
         const phoneNumberAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('phoneNumber')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('phoneNumber')))[0];
 
         assert.equal(res.body.account.username, usernameAccountEvent.content);
         assert.equal(res.body.account.email, emailAccountEvent.content);
@@ -234,7 +232,7 @@ describe('Account with system streams', function () {
         await bluebird.fromCallback(
           (cb) => user.db.events.removeOne({ id: user.attrs.id },
             {
-              streamIds: SystemStreamsSerializer.addDotToStreamId('passwordHash')
+              streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')
             }, cb));
         
         // make sure the event was deleted
@@ -271,7 +269,7 @@ describe('Account with system streams', function () {
         await bluebird.fromCallback(
           (cb) => user.db.events.removeOne({ id: user.attrs.id },
             {
-              streamIds: SystemStreamsSerializer.addDotToStreamId('passwordHash')
+              streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')
             }, cb));
 
         // make sure the event was deleted
@@ -339,7 +337,7 @@ describe('Account with system streams', function () {
             user2 = await createUser();
             await createUser();
             const settings = _.cloneDeep(helpers.dependencies.settings);
-            scope = nock(settings.services.register.url)
+            scope = nock(settings.services.register.url);
             scope.put(`/users`)
               .reply(200, {});
   

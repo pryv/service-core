@@ -39,7 +39,7 @@ exports.resetUsers = async () => {
     { name: 'events' },
     {
       streamIds: {
-        $in: Object.keys(SystemStreamsSerializer.getAllAccountStreams())
+        $in: Object.keys(SystemStreamsSerializer.getAccountMap())
       }
     }, cb));
   const usersRepository = new UsersRepository(storage.user.events);
@@ -100,7 +100,7 @@ const events = exports.events = require('./data/events');
 exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
-  const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+  const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAccountMap());
 
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 
@@ -302,7 +302,7 @@ function buildCustomAccountProperties() {
   
   const customProperties = {};
   accountStreams.forEach(stream => {
-    customProperties[SystemStreamsSerializer.removeDotFromStreamId(stream.id)] = charlatan.Number.number(3);
+    customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);
   });
   return customProperties;
 }

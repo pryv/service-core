@@ -27,8 +27,9 @@ function Events (database) {
   // TODO - maybe I should retrieve all and not only account streams here?
   // So that unicity, indexing would be broader functionality?
   // get streams ids of account streams from the config
-  this.systemStreamsFlatList = SystemStreamsSerializer.getAllAccountStreams();
-  this.uniqueStreamIdsList = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
+  SystemStreamsSerializer.getSerializer();
+  this.systemStreamsFlatList = SystemStreamsSerializer.getAccountMap();
+  this.uniqueStreamIdsList = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
 
   Events.super_.call(this, database);
 
@@ -98,7 +99,7 @@ function clearEndTime (event) {
 
 function getDbIndexes (systemStreamsFlatList) {
   // TODO: review indexes against 1) real usage and 2) how Mongo actually uses them
-  let indexes = [
+  const indexes = [
     {
       index: { time: 1 },
       options: {},
@@ -128,9 +129,9 @@ function getDbIndexes (systemStreamsFlatList) {
 
   // for each event group that has to be unique add a rule
   if (systemStreamsFlatList) {
-    Object.keys(systemStreamsFlatList).forEach(streamIdWithDot => {
-      let streamId = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot);
-      if (systemStreamsFlatList[streamIdWithDot].isUnique === true) {
+    Object.keys(systemStreamsFlatList).forEach(streamIdWithPrefix => {
+      const streamId = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
+      if (systemStreamsFlatList[streamIdWithPrefix].isUnique) {
         indexes.push({
           index: { [`${streamId}__unique`]: 1 },
           options: {

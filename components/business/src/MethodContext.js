@@ -67,7 +67,6 @@ class MethodContext {
   streamList: ?Array<Stream>;
   // during an event.create action for multiple streams event, some streamIds might not exists. They will be listed here
   streamIdsNotFoundList: ?Array<string>;
-  systemStreamsSerializer: object;
 
   methodId: ?string;
   usersRepository: UsersRepository;
@@ -97,7 +96,7 @@ class MethodContext {
     this.headers = headers;
 
     this.methodId = null;
-    this.systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
+    SystemStreamsSerializer.getSerializer(); // ensure it's loaded
     this.usersRepository = new UsersRepository(storage.getStorageLayerSync().events);
     if (auth != null) this.parseAuth(auth);
     this.originalQuery = query;
@@ -280,7 +279,7 @@ class MethodContext {
       cb => storage.streams.find(user, {}, null, cb));
 
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = this.systemStreamsSerializer.getSystemStreamsList();
+    const userAccountStreams = SystemStreamsSerializer.getReadable();
     this.streams = streams.concat(userAccountStreams);
   }
 

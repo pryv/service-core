@@ -212,7 +212,7 @@ describe('system (ex-register)', function () {
         validation.checkStoredItem(actual.getAccountWithId(), 'user');
         // password hash is not retrieved with getAll
         delete expected.passwordHash;
-        actual.getAccount().should.eql(expected);
+        actual.getReadableAccount().should.eql(expected);
       });
     });
     

@@ -416,7 +416,7 @@ module.exports = async function (
    * @param {*} next 
    */
   function doesEventBelongToTheAccountStream (context, params, result, next) {
-    const allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+    const allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
     // check streamIds intersection with old event streamIds 
     // for new event it should be current context
     context.oldContentStreamIds = (context.oldContent != null) ? context.oldContent.streamIds : context.content.streamIds;
@@ -534,7 +534,7 @@ module.exports = async function (
             return next(Registration.handleUniquenessErrors(
               err,
               ErrorMessages[ErrorIds.UnexpectedError],
-              { [SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId)]: context.content.content }));
+              { [SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId)]: context.content.content }));
           }
           // Any other error
           return next(errors.unexpectedError(err));
@@ -813,7 +813,7 @@ module.exports = async function (
       return next(Registration.handleUniquenessErrors(
         err,
         ErrorMessages[ErrorIds.UnexpectedError],
-        { [SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId)]: context.content.content }));
+        { [SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId)]: context.content.content }));
     };
     next();
   }
@@ -1030,7 +1030,7 @@ module.exports = async function (
     }
 
     // previously we have validated with old config streamIds, now with new streamIds
-    const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+    const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAccountMap());
     const matchingAccountStreams = _.intersection(
       context.content.streamIds,
       allAccountStreamIds
@@ -1074,7 +1074,7 @@ module.exports = async function (
       if(tag.length > limit) {
         throw errors.invalidParametersFormat(
           'The event contains a tag that exceeds the size limit of ' +
-           limit + ' characters.', tag);
+          limit + ' characters.', tag);
       } 
       return tag.trim();
     }).filter(function (tag) { return tag.length > 0; });
@@ -1178,7 +1178,7 @@ module.exports = async function (
       return;
     }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
-    const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(accountStreamId);
+    const streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(accountStreamId);
     if (editableAccountStreams[accountStreamId].isUnique) {
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(
@@ -1435,7 +1435,7 @@ module.exports = async function (
       return;
     }
     let fieldsForUpdate = {};
-    let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId);
+    let streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
 
     // for isActive "context.removeActiveEvents" is not enought because it would be set 
     // to false if old event was active and is still active (no change)

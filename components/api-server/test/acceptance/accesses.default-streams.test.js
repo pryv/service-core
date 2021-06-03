@@ -118,9 +118,10 @@ describe("Accesses with account streams", function () {
     describe('When using a personal access', () => {
       describe('to create an access for visible account streams', () => {
         describe('with a read-level permission', async () => {
-          const streamId = SystemStreamsSerializer.addDotToStreamId('email');
+          let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
           before(async function () {
+            streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[UE9G] should return 201', async () => {
@@ -136,9 +137,10 @@ describe("Accesses with account streams", function () {
           });
 
           describe('for the “account” stream', async () => {
-            const streamId = SystemStreamsSerializer.addDotToStreamId('account');
+            let streamId;
             const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
+              streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('account');
               await createUserAndAccess(permissionLevel, streamId);
             });
             it('[XEAK] should return 201', async () => {
@@ -154,9 +156,10 @@ describe("Accesses with account streams", function () {
             });
           });
           describe('for the “storageUsed” stream', async () => {
-            const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
+            let streamId;
             const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
+              streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed');
               await createUserAndAccess(permissionLevel, streamId);
             });
             it('[EPEP] should return 201', async () => {
@@ -169,20 +172,21 @@ describe("Accesses with account streams", function () {
               res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
               assert.equal(res.body.events.length, 2);
               assert.isTrue([
-                SystemStreamsSerializer.addDotToStreamId('attachedFiles'),
-                SystemStreamsSerializer.addDotToStreamId('dbDocuments')
+                SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles'),
+                SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')
               ].includes(res.body.events[0].streamId));
               assert.isTrue([
-                SystemStreamsSerializer.addDotToStreamId('attachedFiles'),
-                SystemStreamsSerializer.addDotToStreamId('dbDocuments')
+                SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles'),
+                SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')
               ].includes(res.body.events[1].streamId));
             });
           });
         });
         describe('with a create-only-level permission', async () => {
-          const streamId = SystemStreamsSerializer.addDotToStreamId('email');
+          let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CREATE_ONLY;
           before(async function () {
+            streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[IWMQ] should return 201', async () => {
@@ -193,9 +197,10 @@ describe("Accesses with account streams", function () {
           });
         });
         describe('with a contribute-level permission', async () => {
-          const streamId = SystemStreamsSerializer.addDotToStreamId('email');
+          let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CONTRIBUTE;
           before(async function () {
+            streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[R0M1] should return 201', async () => {
@@ -212,7 +217,7 @@ describe("Accesses with account streams", function () {
                 return true;
               }).reply(200, { errors: [] });
   
-            const newEvent = await request.post(eventsBasePath)
+            const response = await request.post(eventsBasePath)
               .send({
                 streamIds: [streamId],
                 content: charlatan.Lorem.characters(7),
@@ -220,15 +225,16 @@ describe("Accesses with account streams", function () {
               })
               .set('authorization', accountAccessData.token);
   
-            assert.equal(newEvent.status, 201);
-            assert.equal(newEvent.body.hasOwnProperty('event'), true);
-            assert.equal(newEvent.body.event.streamId, streamId);
+            assert.equal(response.status, 201);
+            assert.exists(response.body.event);
+            assert.equal(response.body.event.streamId, streamId);
           });
         });
 
         describe('with a manage-level permission', async () => {
-          const streamId = SystemStreamsSerializer.addDotToStreamId('email');
+          let streamId;
           before(async function () {
+            streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
             await createUserAndAccess(AccessLogic.PERMISSION_LEVEL_MANAGE, streamId);
           });
           it('[93HO] should return 400', async () => {
@@ -244,8 +250,9 @@ describe("Accesses with account streams", function () {
         });
       });
       describe('to create an access for not visible account streams', async () => {
-        const streamId = SystemStreamsSerializer.addDotToStreamId('passwordHash');
+        let streamId;
         before(async function () {
+          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash');
           await createUserAndAccess('read', streamId);
         });
         it('[ATGU] should return 400', async () => {
@@ -265,9 +272,10 @@ describe("Accesses with account streams", function () {
   describe('DELETE /accesses', async () => {
     describe('When using a personal access', () => {
       describe('to delete an account stream access', async () => {
-        const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
+        let streamId;
         const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
         before(async function () {
+          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed');
           await createUserAndAccess(permissionLevel, streamId);
           res = await request.delete(path.join(basePath, accountAccess.body.access.id))
             .set('authorization', access.token);

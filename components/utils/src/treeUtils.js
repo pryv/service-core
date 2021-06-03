@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Helper methods for handling tree object structures.
  * Here 'tree' means a recursive array of objects with a 'children' property.
@@ -67,19 +68,20 @@ exports.flattenTreeWithoutParents = function (array) {
     throw new Error('Invalid argument: expected an array');
   }
 
-  var result = [];
+  const result = [];
   flattenRecursiveWithoutParents(array, null, result);
   return result;
 };
 
 function flattenRecursiveWithoutParents (originalArray, parentId, resultArray) {
   originalArray.forEach(function (item) {
-    var clone = _.clone(item);
+    const clone = _.clone(item);
 
-    clone.parentId = parentId;
-    if (clone.hasOwnProperty('children')) {
+    clone.parentId = parentId; // WTF
+    const children = clone.children;
+    if (Array.isArray(children) && children.length > 0) {
       flattenRecursive(clone.children, clone.id, resultArray);
-      delete clone.children;
+      delete clone.children; // WTF #2
     } else {
       resultArray.push(clone);
     }
@@ -263,4 +265,25 @@ exports.expandIds = function (array, ids) {
     expandedIds.push.apply(expandedIds, currentExpIds);
   });
   return expandedIds;
+};
+
+/**
+ * Applies "iterator" function to all elements of the array and its children
+ */
+exports.apply = function (array, iterator) {
+  const result = [];
+  array.forEach(item => {
+    result.push(applyRecursive(iterator(item), iterator));
+  });
+  return result;
+
+  function applyRecursive(item, iterator) {
+    if (item.children == null || item.children.length === 0) return item;
+    const result = [];
+    item.children.forEach(child => {
+      result.push(applyRecursive(iterator(child), iterator));
+    });
+    item.children = result;
+    return item;
+  }
 };

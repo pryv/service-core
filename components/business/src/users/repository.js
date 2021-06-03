@@ -105,7 +105,7 @@ class Repository {
     // get streams ids from the config that should be retrieved
     let userAccountStreamsIds;
     if (getAll) {
-      userAccountStreamsIds = SystemStreamsSerializer.getAllAccountStreams();
+      userAccountStreamsIds = SystemStreamsSerializer.getAccountMap();
     } else {
       userAccountStreamsIds = SystemStreamsSerializer.getReadableAccountStreams();
     }
@@ -157,7 +157,7 @@ class Repository {
       query['$or'].push({
         $and:
           [
-            { streamIds: SystemStreamsSerializer.addDotToStreamId(key) },
+            { streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(key) },
             { [`${key}__unique`]: fields[key] }
           ]
       });
@@ -292,7 +292,7 @@ class Repository {
    * @param string userId 
    */
   async deleteOne (userId: string): Promise<void> {
-    const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+    const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
     await bluebird.fromCallback(cb => this.storage.database.deleteMany(
       this.storage.getCollectionInfo({ id: userId }),
       { streamIds: { $in: userAccountStreamsIds } }, cb));

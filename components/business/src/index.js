@@ -15,7 +15,7 @@ module.exports = {
     Repository: require('./webhooks/repository'),
   },
   users: require('./users'),
-  MethodContext: require('./MethodContext')
+  MethodContext: require('./MethodContext'),
 };
 
 

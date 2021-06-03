@@ -21,7 +21,7 @@ module.exports = async function (context, callback) {
 
   const UserEventsStorage = new (require('../user/Events'))(context.database);
   // get streams ids from the config that should be retrieved
-  const userAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
+  const userAccountStreams = SystemStreamsSerializer.getAccountMap();
   const userAccountStreamIds = Object.keys(userAccountStreams);
   let usersRepository = new UsersRepository(UserEventsStorage);
 

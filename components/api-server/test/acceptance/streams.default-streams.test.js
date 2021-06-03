@@ -16,6 +16,7 @@ const { getApplication } = require('api-server/src/application');
 const { Notifications } = require('messages');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe("System streams", function () {
   let app;
@@ -75,65 +76,70 @@ describe("System streams", function () {
         res = await request.get(basePath).set('authorization', access.token);
         assert.deepEqual(res.body.streams, [
           {
-            name: 'account',
-            id: '.account',
+            name: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+            id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
             parentId: null,
             children: [
               {
                 name: 'Username',
-                id: '.username',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('username'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'Language',
-                id: '.language',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('language'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'Storage used',
-                id: '.storageUsed',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: [
                   {
                     name: 'Db Documents',
-                    id: '.dbDocuments',
-                    parentId: '.storageUsed',
+                    id: SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments'),
+                    parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
                     children: []
                   },
                   {
                     name: 'Attached files',
-                    id: '.attachedFiles',
-                    parentId: '.storageUsed',
+                    id: SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles'),
+                    parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
                     children: []
                   }
                 ]
               },
               {
                 name: 'insurancenumber',
-                id: '.insurancenumber',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('insurancenumber'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'phoneNumber',
-                id: '.phoneNumber',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('phoneNumber'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
-              { name: 'Email', id: '.email', parentId: '.account', children: [] },
+              { 
+                name: 'Email',
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('email'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+                children: []
+              },
             ]
           },
           {
-            id: ".helpers",
-            name: "helpers",
+            id: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
+            name: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
             parentId: null,
             children: [
               {
-                id: ".active",
-                name: "Active",
-                parentId: ".helpers",
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('active'),
+                name: 'Active',
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
                 children: []
               }
             ] 
@@ -151,7 +157,7 @@ describe("System streams", function () {
           res = await request.post(basePath)
             .send({
               name: charlatan.Lorem.characters(7),
-              parentId: '.language',
+              parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('language'),
             })
             .set('authorization', access.token);
         });

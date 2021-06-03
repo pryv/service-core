@@ -71,7 +71,7 @@ class User {
   /**
    * Get only readable account information
    */
-  getAccount (): {} {
+  getReadableAccount (): {} {
     return _.pick(this, this.readableAccountFields);
   }
 
@@ -138,7 +138,7 @@ class User {
     updateKeys.forEach(streamIdWithoutDot => {
       // check if field value was changed
       if (updateData[streamIdWithoutDot] !== this[streamIdWithoutDot]){
-        let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamIdWithoutDot);
+        let streamIdWithDot = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutDot);
         updateRequest[streamIdWithoutDot] = [{
           value: updateData[streamIdWithoutDot],
           isUnique: editableAccountStreams[streamIdWithDot].isUnique,
@@ -154,7 +154,7 @@ class User {
    * @param {*} update
    */
   async getEventsDataForUpdate (update: {}, accessId: string) {
-    const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
+    const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
 
     // change password into hash if it exists
     if (update.password) {
@@ -182,7 +182,7 @@ class User {
       }
       events.push({
         updateData: updateData,
-        streamId: SystemStreamsSerializer.addDotToStreamId(streamIdWithoutDot)
+        streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutDot)
       });
     }
     return events;
@@ -190,19 +190,11 @@ class User {
 }
 
 function buildAccountFields (user: User): void {
-  const userAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
-  
-  Object.keys(userAccountStreams).forEach(streamId => {
-    user.accountFieldsWithDot.push(streamId);
-    let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
-    if (userAccountStreams[streamId].isUnique == true) {
-      user.uniqueAccountFields.push(streamIdWithoutDot);
-    }
-    if (userAccountStreams[streamId].isShown == true) {
-      user.readableAccountFields.push(streamIdWithoutDot);
-    }    
-    user.accountFields.push(streamIdWithoutDot);
-  });
+  const userAccountStreamIds = SystemStreamsSerializer.getAccountStreamIdsForUser();
+  user.accountFieldsWithDot = userAccountStreamIds.accountFieldsWithPrefix;
+  user.uniqueAccountFields = userAccountStreamIds.uniqueAccountFields;
+  user.readableAccountFields = userAccountStreamIds.readableAccountFields;
+  user.accountFields = userAccountStreamIds.accountFields;
 }
 
 function loadAccountData (user: User, params): void {
@@ -219,68 +211,55 @@ function loadAccountData (user: User, params): void {
   }
 }
 
-async function buildEventsFromAccount (user: User): Array<{}> {
-  const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeaves();
+async function buildEventsFromAccount (user: User): Promise<void> {
+  const accountLeavesMap: {} = SystemStreamsSerializer.getAccountLeavesMap();
   
   // convert to events
   let account = user.getFullAccount();
 
   // change password into hash (also allow for tests to pass passwordHash directly)
-  if (user.password && !user.passwordHash) {
+  if (user.password != null && user.passwordHash == null) {
     account.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(user.password, cb));
   }
   delete user.password;
 
   // flatten account information
-  account = treeUtils.flattenSimpleObject(account);
+  account = treeUtils.flattenSimpleObject(account); // prolly useless
   const events = [];
-  Object.keys(userAccountStreams).forEach(streamId => {
-    let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
-    if (
-      account[streamIdWithoutDot] ||
-      typeof userAccountStreams[streamId].default != 'undefined'
-    ) {
-      let parameter = userAccountStreams[streamId].default;
 
-      // set default value if undefined
-      if (typeof account[streamIdWithoutDot] !== 'undefined') {
-        parameter = account[streamIdWithoutDot];
-      }
+  for (const [streamId, stream] of Object.entries(accountLeavesMap)) {
 
-      let accessId = (user.accessId) ? user.accessId : UsersRepository.options.SYSTEM_USER_ACCESS_ID;
+    const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(streamId);
+    const content: any = account[streamIdWithoutPrefix] ? account[streamIdWithoutPrefix] : stream.default;
+
+    if (content != null) {
       const event = createEvent(
         streamId,
-        parameter,
-        userAccountStreams,
-        accessId
+        stream.type,
+        stream.isUnique,
+        content,
+        user.accessId ? user.accessId : UsersRepository.options.SYSTEM_USER_ACCESS_ID,
       );
 
       events.push(event);
     }
-  });
-  // flatten them
+  }
+
   user.events = events;
 }
 
 function createEvent (
   streamId: string,
-  accountParameter: string,
-  userAccountStreams: array,
+  type: string,
+  isUnique: boolean,
+  content: string,
   accessId: string
 ) {
-  // get type for the event from the config
-  let eventType = 'string';
-  if (userAccountStreams[streamId].type) {
-    eventType = userAccountStreams[streamId].type;
-  }
-
-  // create the event
   const event = {
-    // add active stream id by default
     id: cuid(),
-    streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
-    type: eventType,
-    content: accountParameter,
+    streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE], // add active stream id by default
+    type,
+    content,
     created: timestamp.now(),
     modified: timestamp.now(),
     time: timestamp.now(),
@@ -290,8 +269,7 @@ function createEvent (
     tags: []
   };
 
-  // if fields has to be unique , add stream id and the field that enforces uniqueness
-  if (userAccountStreams[streamId].isUnique === true) {
+  if (isUnique) {
     event.streamIds.push(
       SystemStreamsSerializer.options.STREAM_ID_UNIQUE
     );
@@ -322,7 +300,7 @@ function buildEventsTree (streams: Array<{}>, events: Array<{}>, user: {}): {} {
 
   for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
     const streamIdWithDot = streams[streamIndex].id;
-    const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot);
+    const streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithDot);
 
     // if stream has children recursivelly call the same function
     if (typeof streams[streamIndex].children !== 'undefined') {

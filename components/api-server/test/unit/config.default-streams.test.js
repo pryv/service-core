@@ -95,7 +95,7 @@ describe('SystemStreams config', () => {
           isRequiredInValidation: true,
           type: 'identifier/string',
           name: 'Username',
-          id: '.username'
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('username')
         },
         {
           isIndexed: true,
@@ -106,7 +106,7 @@ describe('SystemStreams config', () => {
           default: 'en',
           type: 'language/iso-639-1',
           name: 'Language',
-          id: '.language'
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('language')
         },
         {
           isIndexed: true,
@@ -117,7 +117,7 @@ describe('SystemStreams config', () => {
           type: 'identifier/string',
           name: 'appId',
           default: '',
-          id: '.appId'
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('appId')
         },
         {
           isIndexed: true,
@@ -128,7 +128,7 @@ describe('SystemStreams config', () => {
           default: 'no-token',
           type: 'token/string',
           name: 'Invitation Token',
-          id: '.invitationToken'
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken')
         },
         {
           isIndexed: false,
@@ -138,7 +138,7 @@ describe('SystemStreams config', () => {
           isRequiredInValidation: false,
           type: 'password-hash/string',
           name: 'Password Hash',
-          id: '.passwordHash'
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')
         },
         {
           isIndexed: true,
@@ -149,10 +149,10 @@ describe('SystemStreams config', () => {
           default: null,
           type: 'identifier/string',
           name: 'Referer',
-          id: '.referer'
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('referer')
         },
         {
-          id: '.storageUsed',
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
           name: 'Storage used',
           type: 'data-quantity/b',
           isRequiredInValidation: false,
@@ -170,7 +170,7 @@ describe('SystemStreams config', () => {
               default: 0,
               type: 'data-quantity/b',
               name: 'Db Documents',
-              id: '.dbDocuments'
+              id: SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')
             },
             {
               isIndexed: false,
@@ -181,7 +181,7 @@ describe('SystemStreams config', () => {
               default: 0,
               type: 'data-quantity/b',
               name: 'Attached files',
-              id: '.attachedFiles'
+              id: SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles')
             }
           ]
         },
@@ -191,7 +191,7 @@ describe('SystemStreams config', () => {
           isShown: false,
           isEditable: false,
           isRequiredInValidation: false,
-          id: '.field1',
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('field1'),
           name: 'field1',
           type: 'string/pryv'
         },
@@ -201,7 +201,7 @@ describe('SystemStreams config', () => {
           isShown: false,
           isEditable: false,
           isRequiredInValidation: false,
-          id: '.field-withchildern',
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('field-withchildern'),
           name: 'field-withchildern',
           type: 'smth/string',
           children: [
@@ -211,7 +211,7 @@ describe('SystemStreams config', () => {
               isShown: true,
               isEditable: false,
               isRequiredInValidation: false,
-              id: '.child-one',
+              id: SystemStreamsSerializer.addPrivatePrefixToStreamId('child-one'),
               name: 'child-one',
               type: 'string/pryv'
             },
@@ -221,7 +221,7 @@ describe('SystemStreams config', () => {
               isShown: true,
               isEditable: false,
               isRequiredInValidation: false,
-              id: '.child-two',
+              id: SystemStreamsSerializer.addPrivatePrefixToStreamId('child-two'),
               name: 'child-two',
               type: 'string/pryv'
             }
@@ -238,7 +238,7 @@ describe('SystemStreams config', () => {
           isShown: false,
           isEditable: false,
           isRequiredInValidation: false,
-          id: '.field1',
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('field1'),
           name: 'field1',
           type: 'string/pryv'
         },
@@ -248,7 +248,7 @@ describe('SystemStreams config', () => {
           isShown: true,
           isEditable: false,
           isRequiredInValidation: false,
-          id: '.field2',
+          id: SystemStreamsSerializer.addPrivatePrefixToStreamId('field2'),
           name: 'field2',
           type: 'string/pryv'
         }
