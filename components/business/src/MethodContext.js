@@ -83,7 +83,6 @@ class MethodContext {
 
     this.user = null;
     this.access = null;
-    this.streams = null;
 
     this.customAuthStepFn = customAuthStepFn;
 
@@ -125,8 +124,7 @@ class MethodContext {
     }
   }
 
-  // Retrieves the context's access from its token (auth in constructor) and
-  // expand its permissions (e.g. to include child streams). 
+  // Retrieves the context's access from its token (auth in constructor) 
   //
   // If the context's access is already set, the initial step is skipped. This
   // allows callers to implement custom retrieval logic if needed (e.g. using a
@@ -154,7 +152,6 @@ class MethodContext {
       // those 2 last are executed in callbatch for each call.
 
       // Load the streams we can access.
-      await this.retrieveStreams(storage);
       if (!access.isPersonal()) access.loadPermissions();
     }
     catch (err) {
@@ -262,17 +259,6 @@ class MethodContext {
         rej(errors.unexpectedError(`Custom auth step threw synchronously: ${err.message}`));
       }
     });
-  }
-
-  // Loads the users streams as `this.streams`.
-  async retrieveStreams(storage: StorageLayer) {
-    const user = this.user;
-    const streams = await bluebird.fromCallback(
-      cb => storage.streams.find(user, {}, null, cb));
-
-    // get streams ids from the config that should be retrieved
-    const userAccountStreams = this.systemStreamsSerializer.getSystemStreamsList();
-    this.streams = streams.concat(userAccountStreams);
   }
   
   /**

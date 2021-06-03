@@ -80,7 +80,6 @@ module.exports = function (api: API, logging, storageLayer: StorageLayer) {
       // Accept streamQueries in JSON format for batchCalls
       freshContext.acceptStreamsQueryNonStringified = true;
       const access = freshContext.access;
-      await freshContext.retrieveStreams(storageLayer);
       if (! access.isPersonal()) access.loadPermissions();
     }
 
@@ -88,9 +87,10 @@ module.exports = function (api: API, logging, storageLayer: StorageLayer) {
       try {
         if (needRefeshForNextcall) {
           await refreshContext();
+          needRefeshForNextcall = false;
         }
 
-        needRefeshForNextcall = ['streams.create', 'streams.update', 'streams.delete'].includes(call.method);
+        // needRefeshForNextcall = ['streams.create', 'streams.update', 'streams.delete'].includes(call.method);
         
         freshContext.methodId = call.method;
         // Perform API call
