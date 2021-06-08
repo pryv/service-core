@@ -116,7 +116,7 @@ Object.freeze(PermissionLevels);
    * @param {identifier} storeId 
    * @returns {Array<permission>}
    */
-   getStorePermissions(storeId) {
+  getStorePermissions(storeId) {
     const storeStreamPermissionMap = this._streamByStorePermissionsMap[storeId];
     if (! storeStreamPermissionMap) return [];
     return Object.values(storeStreamPermissionMap);

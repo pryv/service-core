@@ -53,7 +53,7 @@ class SystemStreamsSerializer {
   static readableAccountStreamsForTests: ?Array<{}>;
   static editableAccountStreams: ?Array<{}>;
   static accountMap: ?Map<string, Array<string>>;
-  static allAccountStreamsIdsForAccess: ?Array<string>;
+  static accountMapWithOptions: ?Array<string>;
   static allAccountStreamsLeaves: ?Array<{}>;
   static indexedAccountStreamsIdsWithoutPrefix: ?Array<string>;
   static uniqueAccountStreamsIdsWithoutPrefix: ?Array<string>;
@@ -93,7 +93,7 @@ class SystemStreamsSerializer {
     this.readableAccountStreamsForTests = null;
     this.editableAccountStreams = null;
     this.accountMap = null;
-    this.allAccountStreamsIdsForAccess = null;
+    this.accountMapWithOptions = null;
     this.allAccountStreamsLeaves = null;
     this.indexedAccountStreamsIdsWithoutPrefix = null;
     this.uniqueAccountStreamsIdsWithoutPrefix = null;
@@ -170,11 +170,10 @@ class SystemStreamsSerializer {
    * should be used only for internal usage because contains fields that 
    * should not be returned to the user
    */
-  static getAccountMap (): Map<string, {}> {
+  static getAccountMap(): Map<string, {}> {
     if ( SystemStreamsSerializer.accountMap != null ) return SystemStreamsSerializer.accountMap;
     
     SystemStreamsSerializer.accountMap = filterMapStreams(SystemStreamsSerializer.getAccountChildren(), ALL);
-
     return SystemStreamsSerializer.accountMap;
   }
 
@@ -213,17 +212,17 @@ class SystemStreamsSerializer {
    * Return not only account stream but also helper streams
    * @returns {array} of StreamIds
    */
-  static getAccountMapIdsForAccess () {
-    if ( SystemStreamsSerializer.allAccountStreamsIdsForAccess != null ) return SystemStreamsSerializer.allAccountStreamsIdsForAccess;
-    
-    const allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
-    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_ACCOUNT);
-    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_ACTIVE);
-    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
-    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_HELPERS);
-    SystemStreamsSerializer.allAccountStreamsIdsForAccess = allAccountStreamsIds;
+  static getAccountMapWithOptions (): Map<string, boolean> {
+    if ( SystemStreamsSerializer.accountMapWithOptions != null ) return SystemStreamsSerializer.accountMapWithOptions;
+    const accountMapWithOptions = _.cloneDeep(SystemStreamsSerializer.getAccountMap());
+    accountMapWithOptions[SystemStreamsSerializer.options.STREAM_ID_ACCOUNT] = true;
+    accountMapWithOptions[SystemStreamsSerializer.options.STREAM_ID_ACTIVE] = true;
+    accountMapWithOptions[SystemStreamsSerializer.options.STREAM_ID_UNIQUE] = true;
+    accountMapWithOptions[SystemStreamsSerializer.options.STREAM_ID_HELPERS] = true;
 
-    return SystemStreamsSerializer.allAccountStreamsIdsForAccess;
+    SystemStreamsSerializer.accountMapWithOptions = accountMapWithOptions;
+
+    return SystemStreamsSerializer.accountMapWithOptions;
   }
 
   /**
@@ -231,8 +230,8 @@ class SystemStreamsSerializer {
    * @param {string} streamId 
    * @returns {boolean} 
    */
-  static isAccountStreamId(streamId) {
-    return SystemStreamsSerializer.getAccountMapIdsForAccess().includes(streamId);
+  static isAccountStreamId(streamId: string): ?boolean {
+    return SystemStreamsSerializer.getAccountMapWithOptions()[streamId];
   }
 
   /**

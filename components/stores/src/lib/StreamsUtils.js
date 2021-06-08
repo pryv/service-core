@@ -35,7 +35,8 @@ function storeIdAndStreamIdForStreamId(fullStreamId) {
   const semiColonPos = fullStreamId.indexOf(':', ( 1 + isDashed) );
   const storeId = fullStreamId.substr(1 + isDashed, (semiColonPos - 1));
 
-  
+  if (storeId === 'system' || storeId === '_system') return [ LOCAL_STORE, fullStreamId ];
+
   let streamId = '';
   if (semiColonPos === (fullStreamId.length - 1)) { // if ':store:' or '#:store:'
     streamId = '*';

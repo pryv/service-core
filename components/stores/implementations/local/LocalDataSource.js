@@ -11,7 +11,6 @@ const bluebird = require('bluebird');
 const _ = require('lodash');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
 
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 const querying = require('api-server/src/methods//helpers/querying');
@@ -47,7 +46,7 @@ class LocalDataSource extends DataSource {
     this._streams = new LocalUserStreams();
     this._events = new LocalUserEvents();
     forbiddenForReadingSystemStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-    systemStreams = systemStreamsSerializer.getSystemStreamsList();
+    systemStreams = SystemStreamsSerializer.getAll();
     userEventsStorage = (await storage.getStorageLayer()).events;
     userStreamsStorage = (await storage.getStorageLayer()).streams;
     return this;
