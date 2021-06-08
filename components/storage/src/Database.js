@@ -646,7 +646,7 @@ class Database {
      * Returns the unique system streamId for the event that triggered the error (dot-less)
      * Works only for system streams uniqueness constraints
      */
-    err.getDuplicateSystemStreamId = (): string => {
+    err.getDuplicateSystemStreamIds = (): Array<string> => {
       if (err != null && err.errmsg != null && err.isDuplicate) {
         // This check depends on the MongoDB storage engine
         // We assume WiredTiger here (and not MMapV1).
@@ -658,13 +658,13 @@ class Database {
 
           // there are some cases for other unique fields to fail
           if (matchingKeys.length == 1 && separatedKeys.length > 1) {
-            return separatedKeys[separatedKeys.length - 2];
+            return [separatedKeys[separatedKeys.length - 2]];
           } else {
-            return separatedKeys[separatedKeys.length - 1];
+            return [separatedKeys[separatedKeys.length - 1]];
           }
         }
       }
-      return '';
+      return [];
     }
   }
 

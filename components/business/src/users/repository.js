@@ -366,12 +366,15 @@ async function checkDuplicates(repository: Repository, user: User): Promise<void
   if (duplicateEvents != null && duplicateEvents.length > 0) {
     const error = new Error('walou');
     error.isDuplicate = true;
-    const duplicates = {};
+    const duplicatesMap = {};
+    const duplicates = [];
     duplicateEvents.forEach(duplicate => {
       const key = extractDuplicateField(repository.uniqueFields, duplicate.streamIds);
-      duplicates[key] = true;
+      duplicates.push(key);
+      duplicatesMap[key] = true;
     });
-    error.isDuplicateIndex = key => duplicates[key];
+    error.isDuplicateIndex = key => duplicatesMap[key];
+    error.getDuplicateSystemStreamIds = () => duplicates;
     
     throw error;
   }

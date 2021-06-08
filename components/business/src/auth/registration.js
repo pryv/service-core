@@ -304,8 +304,10 @@ class Registration {
     // Duplicate errors
     const uniquenessErrors = {};
     if (err.isDuplicate) {
-      let fieldName = err.getDuplicateSystemStreamId();
-      uniquenessErrors[fieldName] = params[fieldName];     
+      const fieldNames = err.getDuplicateSystemStreamIds();
+      fieldNames.forEach(fieldName => {
+        uniquenessErrors[fieldName] = params[fieldName];     
+      }); 
     }
 
     if (Object.keys(uniquenessErrors).length > 0) {
