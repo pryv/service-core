@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+// @flow
 
 class Stream {
 
@@ -18,10 +19,12 @@ class Stream {
   modified: number;
   modifiedBy: string;
 
+  static properties: Array<string>;
+
   constructor (params: {}) {
-    params.forEach(p => {
-      this[p] = p;
-    })
+    for (const [key, value] of Object.entries(params)) {
+      this[key] = value;
+    }
   }
 }
 

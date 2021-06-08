@@ -19,7 +19,7 @@ const PORT = 6123;
 
 //const whStorage = require('test-helpers').dependencies.storage.user.webhooks;
 const storage = require('test-helpers').dependencies.storage.user.webhooks;
-const userStorage = require('test-helpers').dependencies.storage.events;
+const userStorage = require('test-helpers').dependencies.storage.user.events;
 
 const { ProjectVersion } = require('middleware/src/project_version');
 

@@ -44,34 +44,67 @@ class SystemStreamsSerializer {
   systemStreamsSettings: {};
 
   // static
-  allAsTree: Array<SystemStream>;
-  allStreamIds: Array<string>;
+  static allAsTree: ?Array<SystemStream>;
+  static allStreamIds: ?Array<string>;
 
-  readable: Array<SystemStream>;
+  static readable: ?Array<SystemStream>;
 
-  readableAccountStreams: Array<{}>;
-  readableAccountStreamsForTests: Array<{}>;
-  editableAccountStreams: Array<{}>;
-  accountMap: Map<string, Array<string>>;
-  allAccountStreamsIdsForAccess: Array<string>;
-  allAccountStreamsLeaves: Array<{}>;
-  indexedAccountStreamsIdsWithoutPrefix: Array<string>;
-  uniqueAccountStreamsIdsWithoutPrefix: Array<string>;
-  accountStreamsIdsForbiddenForEditing: Array<string>;
-  accountStreamsIdsForbiddenForReading: Array<string>;
-  flatAccountStreamSettings: Array<{}>;
-  accountStreamsConfig: {};
+  static readableAccountStreams: ?Array<{}>;
+  static readableAccountStreamsForTests: ?Array<{}>;
+  static editableAccountStreams: ?Array<{}>;
+  static accountMap: ?Map<string, Array<string>>;
+  static allAccountStreamsIdsForAccess: ?Array<string>;
+  static allAccountStreamsLeaves: ?Array<{}>;
+  static indexedAccountStreamsIdsWithoutPrefix: ?Array<string>;
+  static uniqueAccountStreamsIdsWithoutPrefix: ?Array<string>;
+  static accountStreamsIdsForbiddenForEditing: ?Array<string>;
+  static accountStreamsIdsForbiddenForReading: ?Array<string>;
+  static flatAccountStreamSettings: ?Array<{}>;
+  static accountStreamsConfig: ?{};
 
   // Maps used for quick translation from without prefix to with
-  streamIdWithPrefixToWithout: Map<string, string>;
-  streamIdWithoutPrefixToWith: Map<string, string>;
-  options: Map<string, string>;
+  static streamIdWithPrefixToWithout: ?Map<string, string>;
+  static streamIdWithoutPrefixToWith: ?Map<string, string>;
+  static options: ?Map<string, string>;
 
   static getSerializer() {
     if (singleton) return singleton;
     singleton = new SystemStreamsSerializer();
     initializeSerializer(singleton);
     return singleton;
+  }
+
+  /**
+   * Reloads the serializer based on the config provided as parameter.
+   * See "config.default-streams.test.js" (V9QB, 5T5S, ARD9) for usage example
+   */
+  static reloadSerializer(config: {}): void {
+    if (getConfigUnsafe(true).get('NODE_ENV') !== 'test') {
+      console.error('this is meant to be used in test only');
+      process.exit(1);
+    }
+    singleton = new SystemStreamsSerializer();
+    singleton.systemStreamsSettings = config.get('systemStreams');
+    
+    this.allAsTree = null;
+    this.allStreamIds = null;
+    this.readable = null;
+    this.readableAccountStreams = null;
+    this.readableAccountStreamsForTests = null;
+    this.editableAccountStreams = null;
+    this.accountMap = null;
+    this.allAccountStreamsIdsForAccess = null;
+    this.allAccountStreamsLeaves = null;
+    this.indexedAccountStreamsIdsWithoutPrefix = null;
+    this.uniqueAccountStreamsIdsWithoutPrefix = null;
+    this.accountStreamsIdsForbiddenForEditing = null;
+    this.accountStreamsIdsForbiddenForReading = null;
+    this.flatAccountStreamSettings = null;
+    this.accountStreamsConfig = null;
+    this.streamIdWithPrefixToWithout = null;
+    this.streamIdWithoutPrefixToWith = null;
+    this.options = null;
+    initializeSerializer(singleton);
   }
 
   constructor () {
@@ -238,15 +271,15 @@ class SystemStreamsSerializer {
   }
 
 /**
- * Get streamIds of fields that should be unique
+ * Returns streamIds of fields that are unique. Without prefix
  */
-  static getUniqueAccountStreamsIdsWithoutPrefix() {
+  static getUniqueAccountStreamsIdsWithoutPrefix(): Array<string> {
     if (!SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutPrefix) {
-      let uniqueStreamIds = Object.keys(filterMapStreams(SystemStreamsSerializer.getAccountStreamsConfig(), IS_UNIQUE));
+      const uniqueStreamIds = Object.keys(filterMapStreams(SystemStreamsSerializer.getAccountStreamsConfig(), IS_UNIQUE));
       SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutPrefix =
         uniqueStreamIds.map(streamId => {
           return SystemStreamsSerializer.removePrefixFromStreamId(streamId)
-        });
+      });
     }
     return SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutPrefix;
   }
@@ -351,7 +384,7 @@ class SystemStreamsSerializer {
   /**
    * Get all ids of all system streams
    */
-  static getAllSystemStreamsIds () {
+  static getAllSystemStreamsIds() {
     return this.allIds;
   }
 
@@ -359,9 +392,8 @@ class SystemStreamsSerializer {
    * Builds allAsTree
    * Returns a streams tree of all system streams
    */
-  static getAll (): Array<SystemStream> {
+  static getAll(): Array<SystemStream> {
     if ( SystemStreamsSerializer.allAsTree != null ) return SystemStreamsSerializer.allAsTree;
-
     SystemStreamsSerializer.allAsTree = this.systemStreamsSettings;
     return SystemStreamsSerializer.allAsTree;
   }
@@ -412,7 +444,6 @@ function initializeSerializer(serializer) {
 
   const allAsArray: Array<SystemStream> = treeUtils.flattenTree(SystemStreamsSerializer.allAsTree);
   const allIds: Array<string> = allAsArray.map(s => s.id);
-
   initializeTranslationMaps(allIds);
 
   SystemStreamsSerializer.allAsArray = allAsArray;
@@ -440,16 +471,6 @@ function initializeSerializer(serializer) {
       SystemStreamsSerializer.streamIdWithoutPrefixToWith[streamIdWithoutPrefix] = streamIdWithPrefix;
     });
   }
-}
-
-/**
- * adds private prefix to streamId
- * Only to be used at initialization!
- * 
- * @param streamId 
- */
-function _addPrivatePrefixToStreamId(streamId: string): string {
-  return PRYV_PREFIX + streamId;
 }
 
 /**

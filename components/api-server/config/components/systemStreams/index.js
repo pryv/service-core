@@ -16,6 +16,7 @@ const string = require('api-server/src/methods/helpers/string');
 const slugify = require('slug');
 const systemStreamSchema = require('./systemStreamSchema');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const SystemStream = require('business/src/system-streams/SystemStream');
 
 let additionalDefaultAccountStreams;
 if (fs.existsSync(path.join(path.dirname(__filename), 'additionalDefaultAccountStreams.json'))) {
@@ -140,7 +141,7 @@ function load(config: {}): {} {
 
   const CUSTOM_SYSTEM_STREAMS_FIELDS: string = 'CUSTOM_SYSTEM_STREAMS_FIELDS';
 
-  readAdditionalFieldsConfig(config);
+  addCustomStreams(config);
   addPrefixToRootStreamsAndSetParentIdAndChildren(config);
   return config;
 
@@ -176,81 +177,58 @@ function load(config: {}): {} {
     function makeRootKeysIntoStreamsWithDefaultValues(rootStreams) {
       const systemStreams = [];
       for (const [rootStreamId, streamArray] of Object.entries(rootStreams)) {
-        systemStreams.push({
+        systemStreams.push(_.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
           name: rootStreamId,
           id: rootStreamId,
           parentId: null,
           children: streamArray,
-          [IS_SHOWN]: true,
-          [IS_EDITABLE]: false,
-          [IS_INDEXED]: false,
-          [IS_UNIQUE]: false,
-        });
+        }));
       }
       return systemStreams;
     }
   }
 
   /**
-   * If any, load custom system streams from:
-   * 1. env variable
-   * 2. custom:systemStreams
+   * If any, load custom system streams from: custom:systemStreams
    */
-  function readAdditionalFieldsConfig(config): void {
+  function addCustomStreams(config): void {
     const customStreams = config.get('custom:systemStreams');
     if (customStreams != null) {
-      appendSystemStreamsConfigWithAdditionalFields(config, customStreams);
-    }
-    const customStreamsEnv = config.get(CUSTOM_SYSTEM_STREAMS_FIELDS);
-    if (customStreamsEnv != null) {
-      appendSystemStreamsConfigWithAdditionalFields(config, customStreamsEnv);
+      extendWithCustomStreams(config, customStreams);
     }
   }
 
   /**
    * Extend each stream with default values
-   * @param {*} additionalFields 
+   * @param {*} streams 
    */
   function extendSystemStreamsWithDefaultValues (
-    additionalFields: object
-  ): object{
-    for (let i = 0; i < additionalFields.length; i++) {
-      additionalFields[i] = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, additionalFields[i]);
-      if (!additionalFields[i].name) {
-        additionalFields[i].name = additionalFields[i].id;
+    streams: Array<{}>
+  ): Array<{}>{
+    for (let i = 0; i < streams.length; i++) {
+      streams[i] = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, streams[i]);
+      if (!streams[i].name) {
+        streams[i].name = streams[i].id;
       }
       // if stream has children recursivelly call the same function
-      if (additionalFields[i].children != null) {
-        additionalFields[i].children = extendSystemStreamsWithDefaultValues(additionalFields[i].children)
+      if (Array.isArray(streams[i].children)) {
+        streams[i].children = extendSystemStreamsWithDefaultValues(streams[i].children)
       }
     }
-    return additionalFields;
-  }
-
-  function denyDefaultStreamsOverride (objValue, srcValue) {
-    if (objValue && objValue.id && srcValue && srcValue.id && objValue.id == srcValue.id){
-      return objValue;
-    }
-    return _.merge(srcValue, objValue);
-  }
-
-  function validateSystemStreamWithSchema(systemStream) {
-    validation.validate(systemStream, systemStreamSchema, function (err) {
-      if (err) {
-        throw err;
-      }
-    });
+    return streams;
   }
 
   /**
-   * Return config list where each id is with prepended dot
-   * @param {*} streamIdWithoutDot 
+   * Adds the prefix to each "id" property of the provided system streams array.
+   * 
+   * @param {Array<systemStream>} systemStreams array of system streams
+   * @param {string} prefix the prefix to add
    */
   function ensurePrefixForStreamIds (systemStreams: Array<{}>, prefix: string = PRYV_PREFIX): array {
     for (const systemStream of systemStreams) {
       systemStream.id = _addPrefixToStreamId(systemStream.id, prefix);
       //systemStream.id = SystemStreamsSerializer.addPrivatePrefixToStreamId(systemStream.id);
-      if (typeof systemStream.children == 'object') {
+      if (Array.isArray(systemStream.children)) {
         systemStream.children = ensurePrefixForStreamIds(systemStream.children);
       }
     }
@@ -260,40 +238,36 @@ function load(config: {}): {} {
   /**
    * Iterate through additional fields, add default values and
    * set to the main system streams config
-   * @param {*} additionalFields
+   * @param {*} customStreams
    */
-  function appendSystemStreamsConfigWithAdditionalFields(
+  function extendWithCustomStreams(
     config,
-    additionalFields
+    customStreams: Map<string, Array<SystemStream>>
   ) {
     const systemStreams = config.get('systemStreams');
 
-    // extend systemStreams with default values
-    const newConfigKeys = Object.keys(additionalFields);
-    for (let i = 0; i < newConfigKeys.length; i++) {
-      additionalFields[newConfigKeys[i]] = extendSystemStreamsWithDefaultValues(additionalFields[newConfigKeys[i]]);
-    }
-
-    // make sure each config id starts with '.' - dot sign
-    for (const [configKey, config] of Object.entries(additionalFields)) {
-      additionalFields[configKey] = ensurePrefixForStreamIds(config);
+    for (const [key, streamsArray] of Object.entries(customStreams)) {
+      customStreams[key] = extendSystemStreamsWithDefaultValues(customStreams[key]);
+      customStreams[key] = ensurePrefixForStreamIds(streamsArray);
     }
     
     // first merge config with already existing keys (like account, helpers)
-    const configKeys = Object.keys(systemStreams);
-    for (let i = 0; i < configKeys.length; i++){
-      systemStreams[configKeys[i]] = _.values(_.mergeWith(
-        _.keyBy(systemStreams[configKeys[i]], 'id'),
-        _.keyBy(additionalFields[configKeys[i]], 'id'), denyDefaultStreamsOverride
+    for (const key of Object.keys(systemStreams)){
+      // merging will be easier as we will differentiate prefixes - although they will be the same in case of retro-compatibility
+      systemStreams[key] = Object.values(_.mergeWith(
+        _.keyBy(systemStreams[key], 'id'),
+        _.keyBy(customStreams[key], 'id'), denyDefaultStreamsOverride
       ));
     }
     // second append new config
-    for (let i = 0; i < newConfigKeys.length; i++) {
-      if (configKeys.includes(newConfigKeys[i])) continue;
-      systemStreams[newConfigKeys[i]] = additionalFields[newConfigKeys[i]];
+    const existingKeys = Object.keys(systemStreams);
+    const newKeys = Object.keys(customStreams);
+    for (const newKey of newKeys) {
+      if (existingKeys.includes(newKey)) continue;
+      systemStreams[newKey] = customStreams[newKey];
     }
 
-    // validate that each config stream is valid according to schmema, its id is not reserved and that it has a type
+    // validate that each config stream is valid according to schema, its id is not reserved and that it has a type
     const allConfigKeys = Object.keys(systemStreams);
     for(let configKey of allConfigKeys) {
       const flatStreamsList = treeUtils.flattenTree(systemStreams[configKey]);
@@ -319,4 +293,19 @@ module.exports.load = load;
 
 function _addPrefixToStreamId(streamId: string, prefix: string): string {
   return prefix + streamId;
+}
+
+function denyDefaultStreamsOverride (objValue, srcValue) {
+  if (objValue && objValue.id && srcValue && srcValue.id && objValue.id == srcValue.id){
+    return objValue;
+  }
+  return _.merge(srcValue, objValue);
+}
+
+function validateSystemStreamWithSchema(systemStream) {
+  validation.validate(systemStream, systemStreamSchema, function (err) {
+    if (err) {
+      throw err;
+    }
+  });
 }

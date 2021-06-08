@@ -12,24 +12,28 @@ const timestamp = require('unix-timestamp');
 
 const User = require('./User');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-let encryption = require('utils').encryption;
+const encryption = require('utils').encryption;
 const errors = require('errors').factory;
 
 /**
  * Repository of the users
  */
 class Repository {
-  storage;
-  sessionsStorage;
-  accessStorage;
+  storage: {};
+  sessionsStorage: {};
+  accessStorage: {};
+  collectionInfo: {};
+  uniqueFields: Array<string>;
 
-  constructor (eventsStorage, sessionsStorage, accessStorage) {
+  constructor (eventsStorage: {}, sessionsStorage: {}, accessStorage: {}) {
     this.storage = eventsStorage;
     this.sessionsStorage = sessionsStorage;
     this.accessStorage = accessStorage;
+    this.collectionInfo = eventsStorage.getCollectionInfoWithoutUserId();
+    this.uniqueFields = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
   }
 
- /**
+  /**
   * Get All users
   * (Used for testing and for the nighty job to make each user structure
   * compatible with a previous account structure and it is implemented in
@@ -46,7 +50,7 @@ class Repository {
     
     const usersNames = await bluebird.fromCallback(cb =>
       this.storage.database.find(
-        this.storage.getCollectionInfoWithoutUserId(),
+        this.collectionInfo,
         this.storage.applyQueryToDB(query),
         this.storage.applyOptionsToDB(null), cb)
     );
@@ -63,7 +67,7 @@ class Repository {
   /**
    * Get object with transaction options
    */
-  getTransactionOptions () {
+  getTransactionOptions() {
     return {
       readPreference: 'primary',
         readConcern: { level: 'local' },
@@ -85,7 +89,7 @@ class Repository {
     }
     const usersNames = await bluebird.fromCallback(cb =>
       this.storage.database.find(
-        this.storage.getCollectionInfoWithoutUserId(),
+        this.collectionInfo,
         this.storage.applyQueryToDB(query),
         this.storage.applyOptionsToDB(null), cb)
     );
@@ -101,7 +105,7 @@ class Repository {
    * @param string userId 
    * @param boolean getAll 
    */
-  async getById (userId: string, getAll: boolean): Promise<?User> {
+  async getById(userId: string, getAll: boolean): Promise<?User> {
     // get streams ids from the config that should be retrieved
     let userAccountStreamsIds;
     if (getAll) {
@@ -109,7 +113,7 @@ class Repository {
     } else {
       userAccountStreamsIds = SystemStreamsSerializer.getReadableAccountStreams();
     }
-    let query = {
+    const query = {
       $and: [
         { streamIds: { $in: Object.keys(userAccountStreamsIds) } },
         { streamIds: { $eq: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
@@ -132,7 +136,7 @@ class Repository {
   async getAccountByUsername (username: string, getAll: boolean): Promise<?User> {
     const userIdEvent = await bluebird.fromCallback(cb =>
       this.storage.database.findOne(
-        this.storage.getCollectionInfoWithoutUserId(),
+        this.collectionInfo,
         this.storage.applyQueryToDB({
           $and: [
             { streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] } },
@@ -165,7 +169,7 @@ class Repository {
 
     const existingUsers = await bluebird.fromCallback(
       (cb) => this.storage.database.find(
-        this.storage.getCollectionInfoWithoutUserId(),
+        this.collectionInfo,
         query, {}, cb));
     return existingUsers;
   }
@@ -227,9 +231,12 @@ class Repository {
    */
   async insertOne (user: User, shouldCreateSession: Boolean): Promise<object> {
     // first explicitly create a collection, because it would fail in the transation
-    const collectionInfo = this.storage.getCollectionInfoWithoutUserId();
+    
     await bluebird.fromCallback(
-      cb => this.storage.database.getCollection(collectionInfo, cb));
+      cb => this.storage.database.getCollection(this.collectionInfo, cb));
+
+    // Check for duplicates
+    await checkDuplicates(this, user);
 
     // Start a transaction session
     const transactionSession = await this.storage.database.startSession();
@@ -303,7 +310,7 @@ class Repository {
    * @param string userId 
    * @param string password
    */
-  async checkUserPassword (userId: string, password: string): boolean {
+  async checkUserPassword (userId: string, password: string): Promise<boolean> {
     const currentPass = await getUserPasswordHash(userId, this.storage);
     let isValid: boolean = false;
     if (currentPass != null) {
@@ -318,7 +325,7 @@ class Repository {
    * @param string userId 
    * @param string password
    */
-  async count (): number {
+  async count (): Promise<number> {
     return await bluebird.fromCallback(cb => {
       this.storage.count({}, { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME }, cb);
     });
@@ -326,19 +333,78 @@ class Repository {
 }
 
 /**
+ * Checks for duplicates for unique fields. Throws DuplicateError if any.
+ * 
+ * @param {Repository} respository 
+ */
+async function checkDuplicates(repository: Repository, user: User): Promise<void> {
+
+  /**
+   * forEach user.uniqueFields
+   * streamIds.contains(field) && content = user[field]
+   */
+  const orClause = [];
+  repository.uniqueFields.forEach(field => {
+    orClause.push({
+      content: { $eq: user[field] },
+      streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(field),
+    })
+  })
+
+  const query: {} = {
+    $or: orClause,
+  };
+
+  const duplicateEvents = await bluebird.fromCallback(cb =>
+    repository.storage.find(
+      repository.collectionInfo,
+      repository.storage.applyQueryToDB(query),
+      repository.storage.applyOptionsToDB(null),
+      cb
+    )
+  );
+  if (duplicateEvents != null && duplicateEvents.length > 0) {
+    const error = new Error('walou');
+    error.isDuplicate = true;
+    const duplicates = {};
+    duplicateEvents.forEach(duplicate => {
+      const key = extractDuplicateField(repository.uniqueFields, duplicate.streamIds);
+      duplicates[key] = true;
+    });
+    error.isDuplicateIndex = key => duplicates[key];
+    
+    throw error;
+  }
+  return;
+
+  /**
+   * Performs intersection of 2 arrays of streamIds: one with prefixes, on without.
+   * Returns the first element of the array, as we expect a single one.
+   * 
+   * @param {*} streamIdsWithoutPrefix 
+   * @param {*} streamIdsWithPrefix 
+   */
+  function extractDuplicateField(streamIdsWithoutPrefix, streamIdsWithPrefix): string {
+    const intersection: Array<string> = streamIdsWithoutPrefix.filter(streamIdWithoutPrefix => 
+      streamIdsWithPrefix.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix))
+    )
+    return intersection[0];
+  }
+}
+
+/**
  * Get user password hash
  * @param string userId 
  */
-async function getUserPasswordHash(userId: string, storage: any): Promise < void> {
-  let userPass;
-  userPass = await bluebird.fromCallback(cb =>
+async function getUserPasswordHash(userId: string, storage: any): Promise <string> {
+  const userPass: {} = await bluebird.fromCallback(cb =>
     storage.findOne({ id: userId },
       {
         $and: [
           { streamIds: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH }
         ]
       }, null, cb));
-  return (userPass?.content) ?userPass.content : null;
+  return (userPass?.content) ? userPass.content : null;
 }
 
 Repository.options = {

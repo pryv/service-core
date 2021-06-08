@@ -74,7 +74,7 @@ describe('Users repository', () => {
         // FLOW: we ensure that err contains the isDuplicateIndex function with assert
         const isDuplicateIndex = err.isDuplicateIndex;
         assert.isFunction(isDuplicateIndex);
-        assert.isTrue(isDuplicateIndex('username__unique'));
+        assert.isTrue(err.isDuplicateIndex('username'));
       }
     });
 
@@ -86,7 +86,6 @@ describe('Users repository', () => {
           email: email
         });
         await usersRepository.insertOne(userObj);
-        console.log('Test failed because error was not thrown');
         assert.isTrue(false);
       } catch (err) {
         assert.isNotNull(err);
@@ -97,7 +96,7 @@ describe('Users repository', () => {
         // FLOW: we ensure that err contains the isDuplicateIndex function with assert
         const isDuplicateIndex = err.isDuplicateIndex;
         assert.isFunction(isDuplicateIndex);
-        assert.isTrue(isDuplicateIndex('email__unique'));
+        assert.isTrue(isDuplicateIndex('email'));
       }
     });
   });

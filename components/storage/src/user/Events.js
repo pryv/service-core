@@ -126,25 +126,6 @@ function getDbIndexes (systemStreamsFlatList) {
       options: { partialFilterExpression: { endTime: { $exists: true } } },
     }
   ];
-
-  // for each event group that has to be unique add a rule
-  if (systemStreamsFlatList) {
-    Object.keys(systemStreamsFlatList).forEach(streamIdWithPrefix => {
-      const streamId = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
-      if (systemStreamsFlatList[streamIdWithPrefix].isUnique) {
-        indexes.push({
-          index: { [`${streamId}__unique`]: 1 },
-          options: {
-            unique: true,
-            partialFilterExpression: {
-              [`${streamId}__unique`]: { $exists: true },
-              streamIds: SystemStreamsSerializer.options.STREAM_ID_UNIQUE
-            }
-          }
-        });
-      }
-    });
-  }
   return indexes;
 }
 /**

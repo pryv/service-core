@@ -235,7 +235,7 @@ module.exports = async function (
       console.log(e);
       return next(e);
     }
-   
+
     console.log('XXXXX> streamQuery 2', JSON.stringify(params.streams));
 
     // delete streamQueries with no inclusions 
@@ -350,7 +350,7 @@ module.exports = async function (
         return next(errors.unknownResource('event', params.id));
       }
       context.event = event; // keep for next stage
-     
+
       next();
     });
   }

@@ -307,8 +307,6 @@ exports.expandIds = function (array, ids) {
 
 /**
  * Applies "iterator" function to all elements of the array and its children
- * 
- * Changes the array in place.
  */
 exports.apply = function (array, iterator) {
   const result = [];
@@ -319,7 +317,7 @@ exports.apply = function (array, iterator) {
   return result;
 
   function applyRecursive(item, iterator) {
-    if (item.children == null || item.children.length === 0) return item;
+    if (! Array.isArray(item.children) || item.children.length === 0) return item;
     const result = [];
     item.children.forEach(child => {
       const clone = _.clone(child);

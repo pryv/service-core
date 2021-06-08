@@ -63,7 +63,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     try { 
     // can't reuse context streams (they carry extra internal properties)
     let streams = await bluebird.fromCallback(cb => userStreamsStorage.find(context.user, {}, null, cb));
-   
 
     const systemStreams = systemStreamsSerializer.getReadable();
     streams = streams.concat(systemStreams);
@@ -77,13 +76,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       }
       streams = parent.children;
     }
-   
+
     if (params.state !== 'all') { // i.e. === 'default' (return non-trashed items)
       streams = treeUtils.filterTree(streams, false /*no orphans*/, function (item) {
         return !item.trashed;
       });
     }
-   
+
     streams = await treeUtils.filterTreeOnPromise(streams, true /*keep orphans*/, async function (stream) {
       return await context.access.canListStream(stream.id);
     });

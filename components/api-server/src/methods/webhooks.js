@@ -50,7 +50,7 @@ module.exports = function produceWebhooksApiMethods(
   wehbooksSettings: WebhooksSettingsHolder,
   storageLayer: StorageLayer) {
 
-  const webhooksRepository: WebhooksRepository = new WebhooksRepository(storageLayer.webhooks);
+  const webhooksRepository: WebhooksRepository = new WebhooksRepository(storageLayer.webhooks, storageLayer.events);
   const natsPublisher: NatsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
 
   // RETRIEVAL

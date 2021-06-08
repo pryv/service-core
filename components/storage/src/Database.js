@@ -288,7 +288,8 @@ class Database {
       const queryOptions = {
         projection: options.projection,
       };
-      var cursor = collection
+
+      let cursor = collection
         .find(query, queryOptions)
         .sort(options.sort);
       
