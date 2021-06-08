@@ -29,21 +29,34 @@ function sourceToStream(source, extraProperties) {
  * Get the sourceId related to this stream, and the streamId without the store reference
  * @returns {object} [storeId: ..., streamIdWithoutStorePrefix]
  */
-function storeIdAndStreamIdForStreamId(streamId) {
-  if (streamId.indexOf(':') !== 0) return [LOCAL_STORE, streamId];
-  const dashPos = streamId.indexOf(':', 1);
-  if (dashPos === (streamId.length -1 )) return [streamId.substr(1,dashPos -1), '*'];
-  return [streamId.substr(1, (dashPos - 1)), streamId.substr(dashPos + 1)];
+function storeIdAndStreamIdForStreamId(fullStreamId) {
+  const isDashed = (fullStreamId.indexOf('#') === 0) ? 1 : 0;
+  if (fullStreamId.indexOf(':') !== (0 + isDashed)) return [LOCAL_STORE, fullStreamId];
+  const semiColonPos = fullStreamId.indexOf(':', ( 1 + isDashed) );
+  const storeId = fullStreamId.substr(1 + isDashed, (semiColonPos - 1));
+
+  
+  let streamId = '';
+  if (semiColonPos === (fullStreamId.length - 1)) { // if ':store:' or '#:store:'
+    streamId = '*';
+  } else {
+    streamId = fullStreamId.substr(semiColonPos + 1);
+  }
+  if (isDashed) return [storeId, '#' + streamId];
+  return [ storeId, streamId];
 }
 
 /**
  * Get full streamId from source + cleanstreanId
  * @returns {string} 
  */
- function streamIdForStoreId(cleanStreamId, storeId) {
-  if (storeId === LOCAL_STORE) return cleanStreamId;
-  if (cleanStreamId === '*') return ':' + storeId + ':';
-  return ':' + storeId + ':' + cleanStreamId;
+ function streamIdForStoreId(streamId, storeId) {
+  if (storeId === LOCAL_STORE) return streamId;
+  const isDashed = (streamId.indexOf('#') === 0);
+  let sstreamId = isDashed ? streamId.substr(1) : streamId;
+  if (sstreamId === '*') sstreamId = '';
+  if (isDashed) return '#:' + storeId + ':' + sstreamId;
+  return ':' + storeId + ':' + sstreamId;
 }
 
 

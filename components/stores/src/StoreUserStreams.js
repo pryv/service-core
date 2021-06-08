@@ -22,18 +22,48 @@ class StoreUserStreams extends UserStreams {
   }
 
   async get(uid, params) {
-    let res = [];
+    
+    if (params.parentId && params.id) {
+      DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request')
+    }
+    
+    let fullStreamId = params.id || params.parentId;
 
     // *** root query we just expose stores handles
-    if (! params.parentIds) { 
+    if (! fullStreamId) { 
+      const res = [];
       for (let source of this.store.sources) {
         res.push([StreamsUtils.sourceToStream(source, {
           children: [],
           childrenHidden: true // To be discussed
         })]);
       }
+      // add local streams here
       return res;
     }
+
+    const [sourceId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
+    const myParams = {
+      id: streamId,
+      includeDeletionsSince: params.includeDeletionsSince,
+      state: params.state,
+      hideChildren: params.hideChildren
+    }
+    const source = this.store.sourceForId(sourceId);
+    const res = await source.streams.get(uid, myParams);
+    // if request was made on parentId .. return only the children
+    if (params.parentId && res.length === 1) {
+      return res[0].children;
+    } 
+    return res;
+  }
+
+
+  /**
+   * Kept for reference.. might be removed 
+   */
+  async getMultiple(uid, params) {
+
 
     // *** forward query to included stores (parallel)
 
@@ -41,7 +71,7 @@ class StoreUserStreams extends UserStreams {
 
     function addSourceParentId(sourceId, parentId) {
       if (typeof sourceParentIds[sourceId] !== 'undefined') {
-        DataSource.errorInvalidRequestStructure('parentIds should point to maximum one stream per source. [' + sourceId + '] appears more than once.', params);
+        DataSource.throwInvalidRequestStructure('parentIds should point to maximum one stream per source. [' + sourceId + '] appears more than once.', params);
       }
       sourceParentIds[sourceId] = parentId; // null means all
     }
@@ -61,7 +91,7 @@ class StoreUserStreams extends UserStreams {
           const sourceId = streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
           const source = this.store.sourceForId(sourceId);
           if (! source) {
-            DataSource.errorUnkownRessource('DataSource [' + sourceId + '] unkown in parentIds query parameters', params);
+            DataSource.throwUnkownRessource('parentIds query parameters', sourceId);
           } 
 
           if (dashPos < 0) { // root stream of source

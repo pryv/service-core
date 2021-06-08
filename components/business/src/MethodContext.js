@@ -20,7 +20,7 @@ const UsersRepository = require('business/src/users/repository');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getStore } = require('stores');
+const { getStore, StreamsUtils } = require('stores');
 
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
@@ -81,7 +81,6 @@ class MethodContext {
 
     this.user = null;
     this.access = null;
-    this.streams = null;
 
     this.customAuthStepFn = customAuthStepFn;
 
@@ -123,9 +122,7 @@ class MethodContext {
     }
   }
 
-  // Retrieves the context's access from its token (auth in constructor) and
-  // expand its permissions (e.g. to include child streams). Also sets
-  // `context.streams`.
+  // Retrieves the context's access from its token (auth in constructor) 
   //
   // If the context's access is already set, the initial step is skipped. This
   // allows callers to implement custom retrieval logic if needed (e.g. using a
@@ -153,11 +150,7 @@ class MethodContext {
       // those 2 last are executed in callbatch for each call.
 
       // Load the streams we can access.
-      await this.retrieveStreams(storage);
-
-      // And finally, load permissions for non-personal accesses.
-      const streams = this.streams;
-      if (!access.isPersonal()) access.loadPermissions(streams);
+      if (!access.isPersonal()) access.loadPermissions();
     }
     catch (err) {
       if (err != null && !(err instanceof APIError)) {
@@ -265,28 +258,18 @@ class MethodContext {
       }
     });
   }
-
-  // Loads the users streams as `this.streams`.
-  async retrieveStreams(storage: StorageLayer) {
-    const user = this.user;
-    const streams = await bluebird.fromCallback(
-      cb => storage.streams.find(user, {}, null, cb));
-
-    // get streams ids from the config that should be retrieved
-    const userAccountStreams = SystemStreamsSerializer.getReadable();
-    this.streams = streams.concat(userAccountStreams);
-  }
   
+  /**
+   * Get a Stream for StreamId
+   * @param {identifier} streamId 
+   * @param {identifier} [storeId] - If storeId is null streamId should be fully scoped 
+   * @returns 
+   */
   async streamForStreamId(streamId: string, storeId: string) {
-    
-    if (storeId === 'local') {
-      if (! this.streams) return null;
-      return treeUtils.findById(this.streams, streamId);
-    }
+    if (! storeId) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
     const store = (await getStore()).sourceForId(storeId);
     if (! store) return null;
-    const streams = await store.streams.get(this.user.id, {id: streamId});
-    console.log('OOOOOOOO ', streams);
+    const streams = await store.streams.get(this.user.id, {id: streamId, state: 'all'});
     if (streams && streams.length === 1) return streams[0];
     return null;
   }

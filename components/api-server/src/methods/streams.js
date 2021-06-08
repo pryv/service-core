@@ -132,8 +132,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     next();
   }
 
-  function applyPrerequisitesForCreation(context, params, result, next) {
-    if (!context.access.canCreateChildOnStream(params.parentId)) {
+  async function applyPrerequisitesForCreation(context, params, result, next) {
+    if (! await context.access.canCreateChildOnStream(params.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -222,9 +222,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     next();
   }
 
-  function applyPrerequisitesForUpdate(context, params, result, next) {
+  async function applyPrerequisitesForUpdate(context, params, result, next) {
     // check stream
-    var stream = treeUtils.findById(context.streams, params.id);
+    var stream = await context.streamForStreamId(params.id);
     if (!stream) {
       return process.nextTick(next.bind(null,
         errors.unknownResource(
@@ -232,12 +232,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         )
       ));
     }
-    if (!context.access.canUpdateStream(stream.id)) {
+    if (!await context.access.canUpdateStream(stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
     // check target parent if needed
-    if (params.update.parentId && !context.access.canCreateChildOnStream(params.update.parentId)) {
+    if (params.update.parentId && ! await context.access.canCreateChildOnStream(params.update.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -282,15 +282,15 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     verifyStreamExistenceAndPermissions,
     deleteStream);
 
-  function verifyStreamExistenceAndPermissions(context, params, result, next) {
+  async function verifyStreamExistenceAndPermissions(context, params, result, next) {
     _.defaults(params, { mergeEventsWithParent: null });
 
-    context.stream = treeUtils.findById(context.streams, params.id);
+    context.stream = await context.streamForStreamId(params.id); 
     if (context.stream == null) {
       return process.nextTick(next.bind(null,
         errors.unknownResource('stream', params.id)));
       }
-    if (! context.access.canDeleteStream(context.stream.id)) {
+    if (! await context.access.canDeleteStream(context.stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 

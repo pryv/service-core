@@ -369,7 +369,7 @@ async function definePermissions(access: AccessModel, event: EventModel): {write
   };
   const streamIdsLength = streamIds.length;
   for(let i=0; i<streamIdsLength && ! readAndWriteTrue(permissions); i++) {
-    if (access.canCreateEventsOnStream(streamIds[i])) permissions.write = true;
+    if (await access.canCreateEventsOnStream(streamIds[i])) permissions.write = true;
     if (await access.canGetEventsOnStream(streamIds[i], 'local')) permissions.read = true;
   }
   return permissions;

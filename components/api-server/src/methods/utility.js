@@ -80,17 +80,17 @@ module.exports = function (api: API, logging, storageLayer: StorageLayer) {
       // Accept streamQueries in JSON format for batchCalls
       freshContext.acceptStreamsQueryNonStringified = true;
       const access = freshContext.access;
-      await freshContext.retrieveStreams(storageLayer);
-      if (! access.isPersonal()) access.loadPermissions(freshContext.streams);
+      if (! access.isPersonal()) access.loadPermissions();
     }
 
     async function executeCall(call: ApiCall) {
       try {
         if (needRefeshForNextcall) {
           await refreshContext();
+          needRefeshForNextcall = false;
         }
 
-        needRefeshForNextcall = ['streams.create', 'streams.update', 'streams.delete'].includes(call.method);
+        // needRefeshForNextcall = ['streams.create', 'streams.update', 'streams.delete'].includes(call.method);
         
         freshContext.methodId = call.method;
         // Perform API call

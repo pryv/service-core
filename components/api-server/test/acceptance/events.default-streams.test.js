@@ -197,12 +197,18 @@ describe("Events of system streams", () => {
             level: 'read'
           }]
         });
-        res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
+        
       });
 
-      it('[GF3A] should return only the account event for which a permission was explicitely provided', () => {
+      it('[GF3A] should return only the account event for which a permission was explicitely provided', async () => {
+        res = await request.get(basePath).query({streams :['.email']}).set('authorization', sharedAccess.attrs.token);
         assert.equal(res.body.events.length, 1);
         assert.isTrue(res.body.events[0].streamIds.includes(systemStreamId));
+      });
+
+      it('[UZTS] should not return account event for which a permission was not explicitely provided', async () => {
+        res = await request.get(basePath).query({streams :['.username']}).set('authorization', sharedAccess.attrs.token);
+        assert.equal(res.body.error.id, 'forbidden');
       });
     });
 

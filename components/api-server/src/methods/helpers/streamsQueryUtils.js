@@ -102,6 +102,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
     throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) + '" must contain at least one of "any" or "all" property.');
   }
   const res = {};
+  let hasAnyStar = false;
   for (const [property, arrayOfStreamIds] of Object.entries(streamQuery)) {
     if (!['all', 'any', 'not'].includes(property))
       throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" unkown property: "' + property + '" in streams query "' + objectToString(streamQuery) + '"');
@@ -116,6 +117,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
     }
 
     const arrayOfCleanStreamIds = [];
+    
     for (item of arrayOfStreamIds) {
       if (typeof item !== 'string')
         throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) + ' must be streamIds. Found: ' + objectToString(item));
@@ -123,11 +125,19 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
       if (property !== 'any' && item === '*')
         throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] only "any" can contains "*" : ' + objectToString(arrayOfStreamIds));
 
+      if (property === 'any' && item === '*') {
+        hasAnyStar = true;
+        if (arrayOfStreamIds.length > 1)
+          throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] "*" cannot be mixed with other streamIds in "any": ' + objectToString(arrayOfStreamIds));
+      } 
       const cleanStreamid = checkStore(item);
       arrayOfCleanStreamIds.push(cleanStreamid);
 
       streamQuery[property] = arrayOfCleanStreamIds;
     }
+  }
+  if (hasAnyStar && streamQuery.all) {
+    throw ('Error in "streams" parameter[' + objectToString(streamQuery) + '] {any: "*"} cannot be mixed with "all": ' + objectToString(arrayOfQueries));
   }
 }
 
@@ -247,12 +257,10 @@ function uniqueStreamIds(arrayOfStreamiIs) {
 exports.expandAndTransformStreamQueries = async function(streamQueries, expandStream) {
 
   async function expandSet(streamIds, storeId) {
-    console.log('XXXXX expandSet 1', streamIds, storeId);
     const expandedSet = new Set(); // use a Set to avoid duplicate entries;
     for (let streamId of streamIds) {
       (await expandStream(streamId, storeId)).forEach(item => expandedSet.add(item));
     }
-    console.log('XXXXX expandSet 2', expandedSet);
     return Array.from(expandedSet);
   }
 
@@ -265,15 +273,12 @@ exports.expandAndTransformStreamQueries = async function(streamQueries, expandSt
 }
 
 async function expandAndTransformStreamQuery(streamQuery, expandSet) {
-  console.log('XXXXX expandAndTransformStreamQuery 1', streamQuery);
   let containsAtLeastOneInclusion = false; 
   const res = { storeId: streamQuery.storeId };
 
   // any
   if (streamQuery.any) {
-    console.log('******? 1');
     const expandedSet = await expandSet(streamQuery.any, streamQuery.storeId);
-    console.log('******? 2', expandedSet);
     if (expandedSet.length > 0) {
       containsAtLeastOneInclusion = true;
       res.any = expandedSet;
@@ -297,7 +302,6 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
       }
     }
   }
-  console.log('XXXXX: ', containsAtLeastOneInclusion, res);
   return (containsAtLeastOneInclusion) ? res : null;
 }
 

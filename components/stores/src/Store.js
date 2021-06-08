@@ -9,7 +9,20 @@
  * Pack configured datasources into one
  */
 
+const errors = require('errors').factory;
+
 const {DataSource} = require('../interfaces/DataSource');
+
+// --- Override Error handling 
+
+DataSource.throwInvalidRequestStructure = function(message, data) {
+  throw(errors.invalidRequestStructure(message, data, innerError));
+}
+
+DataSource.throwUnkownRessource = function(resourceType, id, innerError) {
+  throw(errors.unknownResource(resourceType, id, innerError));
+}
+
 
 // -- Core properties
 const StoreUserStreams = require('./StoreUserStreams');

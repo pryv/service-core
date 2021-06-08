@@ -164,22 +164,28 @@ describe('events.get streams query', function () {
         assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS_LOCAL, and: [ { not: [ 'A', 'B', 'C' ] } ], storeId: 'local' }]);
       });
 
-      it('[NHGF] must convert streams query {any: [*], all: ["D"], not: ["A"]} to [{any: [all accessible streams], and: [ any: [expanded "D"] , not: [expanded "A"]}]', async function () {
-        const res = await validateQuery({ any: ['*'], all: ['D'], not: ['A'] });
-        assert.deepEqual(res, [{ 
-          storeId: 'local',
-          any: ALL_ACCESSIBLE_STREAMS_LOCAL, 
-          and: [ 
-            { any: [ 'D', 'E', 'F' ] }, 
-            { not: [ 'A', 'B', 'C' ] } 
-          ]
-        }]);
+      it('[NHGF] not accept any: "*" query mixed with "all" query. like: {any: [*], all: ["D"], not: ["A"]}', async function () {
+        try {
+          const res = await validateQuery({ any: ['*'], all: ['D'], not: ['A'] });
+          assert(false);
+        } catch (e) {
+          assert.include(e, '"*"} cannot be mixed with "all"');
+        }
+      });
+
+
+      it('[U0FA] not accept any: "*", "B" mix. like: {any: ["*2, "D"], not: ["A"]}', async function () {
+        try {
+          const res = await validateQuery({ any: ['*','D'], not: ['A'] });
+          assert(false);
+        } catch (e) {
+          assert.include(e, '"*" cannot be mixed with other streamIds in "any"');
+        }
       });
 
 
       it('[N3Q6] must convert {any: "*", not: ["A"]} to [{any: [all accessible streams], not: [expanded "A"]}]', async function () {
         const res = await validateQuery({ any: ['*'], not: ['A'] });
-        console.log(res);
         assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS_LOCAL, and: [ { not: [ 'A', 'B', 'C' ] } ], storeId: 'local'  }]);
       });
 
@@ -619,7 +625,6 @@ describe('events.get streams query', function () {
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: ['T'] });
-
         assert.equal(res.body.events.length, 0);
       });
 

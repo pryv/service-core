@@ -28,7 +28,7 @@ async function getStore() {
   const FaultyStore = require('../implementations/faulty');
   store.addSource(new FaultyStore());
 
-  const LocalStore = require('../implementations/local');
+  const LocalStore = require('../implementations/local/LocalDataSource');
   store.addSource(new LocalStore());
 
   if ( (! config.get('openSource:isActive')) && config.get('audit:active')) {
