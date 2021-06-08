@@ -141,7 +141,7 @@ module.exports = function produceAccessesApiMethods(
   // CREATION
 
   const notVisibleAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-  const visibleAccountStreamsIds = Object.keys(SystemStreamsSerializer.getReadableAccountStreams());
+  const visibleAccountStreamsIds = Object.keys(SystemStreamsSerializer.getReadableAccountMap());
 
   api.register('accesses.create',
     commonFns.basicAccessAuthorizationCheck,

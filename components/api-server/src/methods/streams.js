@@ -64,7 +64,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     // can't reuse context streams (they carry extra internal properties)
     let streams = await bluebird.fromCallback(cb => userStreamsStorage.find(context.user, {}, null, cb));
 
-    const systemStreams = systemStreamsSerializer.getReadable();
+    const systemStreams = SystemStreamsSerializer.getReadable();
     streams = streams.concat(systemStreams);
     
     if (params.parentId) {

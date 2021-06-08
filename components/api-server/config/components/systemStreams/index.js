@@ -37,7 +37,7 @@ const CUSTOMER_PREFIX = ':system:';
 const DEFAULT_VALUES_FOR_FIELDS = {
   [IS_INDEXED]: false, // if true will be sent to service-register to be able to query across the platform
   [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqness on mongodb
-  [IS_SHOWN]: false, // if true, will be shown for the users
+  [IS_SHOWN]: true, // if true, will be shown for the users
   [IS_EDITABLE]: false, // if true, user will be allowed to edit it
   [IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
 };
@@ -48,7 +48,6 @@ function load(config: {}): {} {
     {
       [IS_INDEXED]: true,
       [IS_UNIQUE]: true,
-      [IS_SHOWN]: true,
       type: 'identifier/string',
       name: 'Username',
       id: 'username',
@@ -56,7 +55,6 @@ function load(config: {}): {} {
     },
     {
       [IS_INDEXED]: true,
-      [IS_SHOWN]: true,
       [IS_EDITABLE]: true,
       [DEFAULT]: 'en',
       type: 'language/iso-639-1',
@@ -64,6 +62,7 @@ function load(config: {}): {} {
       id: 'language'
     },
     {
+      [IS_SHOWN]: false,
       [IS_INDEXED]: true,
       [DEFAULT]: '',
       [IS_REQUIRED_IN_VALIDATION]: true,
@@ -72,6 +71,7 @@ function load(config: {}): {} {
       id: 'appId'
     },
     {
+      [IS_SHOWN]: false,
       [IS_INDEXED]: true,
       [DEFAULT]: 'no-token',
       type: 'token/string',
@@ -79,11 +79,13 @@ function load(config: {}): {} {
       id: 'invitationToken'
     },
     {
+      [IS_SHOWN]: false,
       type: 'password-hash/string',
       name: 'Password Hash',
       id: 'passwordHash'
     },
     {
+      [IS_SHOWN]: false,
       [IS_INDEXED]: true,
       [DEFAULT]: null,
       type: 'identifier/string',
@@ -92,19 +94,16 @@ function load(config: {}): {} {
     },
     {
       id: 'storageUsed',
-      [IS_SHOWN]: true,
       name: 'Storage used',
       type: 'data-quantity/b',      
       children: [
         {
-          [IS_SHOWN]: true,
           default: 0,
           type: 'data-quantity/b',
           name: 'Db Documents',
           id: 'dbDocuments'
         },
         {
-          [IS_SHOWN]: true,
           default: 0,
           type: 'data-quantity/b',
           name: 'Attached files',
@@ -292,6 +291,7 @@ function load(config: {}): {} {
 module.exports.load = load;
 
 function _addPrefixToStreamId(streamId: string, prefix: string): string {
+  if (streamId.startsWith(prefix)) return streamId;
   return prefix + streamId;
 }
 

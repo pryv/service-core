@@ -111,7 +111,7 @@ class Repository {
     if (getAll) {
       userAccountStreamsIds = SystemStreamsSerializer.getAccountMap();
     } else {
-      userAccountStreamsIds = SystemStreamsSerializer.getReadableAccountStreams();
+      userAccountStreamsIds = SystemStreamsSerializer.getReadableAccountMap();
     }
     const query = {
       $and: [

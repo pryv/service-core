@@ -10,6 +10,7 @@ const nconf = require('nconf');
 const assert = chai.assert;
 const systemStreamsConfig = require('api-server/config/components/systemStreams');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { getConfig } = require('@pryv/boiler');
 
 describe('SystemStreams config', () => {
   let store;
@@ -66,6 +67,10 @@ describe('SystemStreams config', () => {
       systemStreamsConfig.load(store);
       SystemStreamsSerializer.reloadSerializer(store);
     });
+    after(async () => {
+      const config = await getConfig();
+      SystemStreamsSerializer.reloadSerializer(config);
+    });
     it('[V9QB] New config does not override default one', async () => {
       const newConfig = store.get('systemStreams');
       let found = false;
@@ -93,7 +98,7 @@ describe('SystemStreams config', () => {
           name: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
           isIndexed: false,
           isUnique: false,
-          isShown: false,
+          isShown: true,
           isEditable: false,
           isRequiredInValidation: false,
           parentId: null,
@@ -216,7 +221,7 @@ describe('SystemStreams config', () => {
             {
               isIndexed: false,
               isUnique: false,
-              isShown: false,
+              isShown: true,
               isEditable: false,
               isRequiredInValidation: false,
               id: SystemStreamsSerializer.addPrivatePrefixToStreamId('field1'),
@@ -228,7 +233,7 @@ describe('SystemStreams config', () => {
             {
               isIndexed: false,
               isUnique: false,
-              isShown: false,
+              isShown: true,
               isEditable: false,
               isRequiredInValidation: false,
               id: SystemStreamsSerializer.addPrivatePrefixToStreamId('field-withchildren'),
@@ -277,7 +282,7 @@ describe('SystemStreams config', () => {
           name: idWithPrefix,
           isIndexed: false,
           isUnique: false,
-          isShown: false,
+          isShown: true,
           isEditable: false,
           isRequiredInValidation: false,
           parentId: null,
@@ -285,7 +290,7 @@ describe('SystemStreams config', () => {
             {
               isIndexed: false,
               isUnique: false,
-              isShown: false,
+              isShown: true,
               isEditable: false,
               isRequiredInValidation: false,
               id: SystemStreamsSerializer.addPrivatePrefixToStreamId('field1'),

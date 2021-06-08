@@ -18,6 +18,9 @@ const UsersRepository = require('business/src/users/repository');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { ApiEndpoint , encryption } = require('utils')
 
+const SystemStream = require('business/src/system-streams/SystemStream');
+const Event = require('business/src/events/Event');
+
 class User {
   // User properties that exists by default (email could not exist with specific config)
   id: ?string;
@@ -27,7 +30,7 @@ class User {
   password: ?string;
   accessId: ?string;
 
-  events: ?Array<{}>;
+  events: ?Array<Event>;
   apiEndpoint: ?string;
   accountFields: Array<string> = [];
   readableAccountFields: Array<string> = [];
@@ -35,7 +38,7 @@ class User {
   uniqueAccountFields: Array<string> = [];
 
   constructor (params: {
-    events?: Array<{}>,
+    events?: Array<Event>,
     id?: string,
     username?: string,
     email?: string,
@@ -138,10 +141,10 @@ class User {
     updateKeys.forEach(streamIdWithoutDot => {
       // check if field value was changed
       if (updateData[streamIdWithoutDot] !== this[streamIdWithoutDot]){
-        let streamIdWithDot = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutDot);
+        let streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutDot);
         updateRequest[streamIdWithoutDot] = [{
           value: updateData[streamIdWithoutDot],
-          isUnique: editableAccountStreams[streamIdWithDot].isUnique,
+          isUnique: editableAccountStreams[streamIdWithPrefix].isUnique,
           isActive: isActive,
           creation: false
         }];
@@ -282,7 +285,7 @@ function createEvent (
  * @param User user
  */
 function buildAccountDataFromListOfEvents (user: User) {
-  const account = buildEventsTree(SystemStreamsSerializer.getAccountStreamsConfig(), user.events, {});
+  const account = buildAccountRecursive(SystemStreamsSerializer.getAccountChildren(), user.events, {});
   Object.keys(account).forEach(param => {
     user[param] = account[param];
   });
@@ -295,27 +298,28 @@ function buildAccountDataFromListOfEvents (user: User) {
  * @param array events
  * @param object user
  */
-function buildEventsTree (streams: Array<{}>, events: Array<{}>, user: {}): {} {
+function buildAccountRecursive(streams: Array<SystemStream>, events: Array<Event>, user: {}): User {
   let streamIndex;
 
   for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
-    const streamIdWithDot = streams[streamIndex].id;
-    const streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithDot);
+    const currentStream: SystemStream = streams[streamIndex];
+    const streamIdWithPrefix = currentStream.id;
+    const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
 
     // if stream has children recursivelly call the same function
-    if (typeof streams[streamIndex].children !== 'undefined') {
-      user[streamIdWithoutDot] = {};
-      user[streamIdWithoutDot] = buildEventsTree(
-        streams[streamIndex].children,
+    if (Array.isArray(currentStream.children) && currentStream.children.length > 0) {
+      user[streamIdWithoutPrefix] = {};
+      user[streamIdWithoutPrefix] = buildAccountRecursive(
+        currentStream.children,
         events,
-        user[streamIdWithoutDot]
+        user[streamIdWithoutPrefix]
       );
     }
 
     // get value for the stream element
     for (let i = 0; i < events.length; i++) {
-      if (events[i].streamIds.includes(streamIdWithDot)) {
-        user[streamIdWithoutDot] = events[i].content;
+      if (events[i].streamIds.includes(streamIdWithPrefix)) {
+        user[streamIdWithoutPrefix] = events[i].content;
         break;
       }
     }

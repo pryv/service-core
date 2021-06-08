@@ -140,7 +140,7 @@ describe('account', function () {
               delete expected.id;
               delete expected.password;
               delete expected.storageUsed;
-
+              
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result,
@@ -154,7 +154,7 @@ describe('account', function () {
           },
           async function verifyData () {           
             const retrievedUser = await usersRepository.getAccountByUsername(user.username);
-              validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
+            validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
           }
         ], done);
       });
