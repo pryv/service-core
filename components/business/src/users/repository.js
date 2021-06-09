@@ -236,7 +236,7 @@ class Repository {
       cb => this.storage.database.getCollection(this.collectionInfo, cb));
 
     // Check for duplicates
-    await checkDuplicates(this, user);
+    await this.checkDuplicates(user);
 
     // Start a transaction session
     const transactionSession = await this.storage.database.startSession();
@@ -330,68 +330,70 @@ class Repository {
       this.storage.count({}, { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME }, cb);
     });
   }
-}
-
-/**
- * Checks for duplicates for unique fields. Throws DuplicateError if any.
- * 
- * @param {Repository} respository 
- */
-async function checkDuplicates(repository: Repository, user: User): Promise<void> {
 
   /**
-   * forEach user.uniqueFields
-   * streamIds.contains(field) && content = user[field]
-   */
-  const orClause = [];
-  repository.uniqueFields.forEach(field => {
-    orClause.push({
-      content: { $eq: user[field] },
-      streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(field),
-    })
-  })
-
-  const query: {} = {
-    $or: orClause,
-  };
-
-  const duplicateEvents = await bluebird.fromCallback(cb =>
-    repository.storage.find(
-      repository.collectionInfo,
-      repository.storage.applyQueryToDB(query),
-      repository.storage.applyOptionsToDB(null),
-      cb
-    )
-  );
-  if (duplicateEvents != null && duplicateEvents.length > 0) {
-    const error = new Error('walou');
-    error.isDuplicate = true;
-    const duplicatesMap = {};
-    const duplicates = [];
-    duplicateEvents.forEach(duplicate => {
-      const key = extractDuplicateField(repository.uniqueFields, duplicate.streamIds);
-      duplicates.push(key);
-      duplicatesMap[key] = true;
-    });
-    error.isDuplicateIndex = key => duplicatesMap[key];
-    error.getDuplicateSystemStreamIds = () => duplicates;
-    
-    throw error;
-  }
-  return;
-
-  /**
-   * Performs intersection of 2 arrays of streamIds: one with prefixes, on without.
-   * Returns the first element of the array, as we expect a single one.
+   * Checks for duplicates for unique fields. Throws DuplicateError if any.
    * 
-   * @param {*} streamIdsWithoutPrefix 
-   * @param {*} streamIdsWithPrefix 
+   * @param {User} user - a user object or 
    */
-  function extractDuplicateField(streamIdsWithoutPrefix, streamIdsWithPrefix): string {
-    const intersection: Array<string> = streamIdsWithoutPrefix.filter(streamIdWithoutPrefix => 
-      streamIdsWithPrefix.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix))
-    )
-    return intersection[0];
+  async checkDuplicates(user: User): Promise<void> {
+
+    /**
+     * forEach user.uniqueFields
+     * streamIds.contains(field) && content = user[field]
+     */
+    const orClause = [];
+    this.uniqueFields.forEach(field => {
+      if (user[field] != null) {
+        orClause.push({
+          content: { $eq: user[field] },
+          streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(field),
+        });
+      }
+    });
+
+    const query: {} = {
+      $or: orClause,
+    };
+
+    const duplicateEvents = await bluebird.fromCallback(cb =>
+      this.storage.find(
+        this.collectionInfo,
+        this.storage.applyQueryToDB(query),
+        this.storage.applyOptionsToDB(null),
+        cb
+      )
+    );
+    if (duplicateEvents != null && duplicateEvents.length > 0) {
+      const error = new Error('walou');
+      error.isDuplicate = true;
+      const duplicatesMap = {};
+      const duplicates = [];
+      duplicateEvents.forEach(duplicate => {
+        const key = extractDuplicateField(this.uniqueFields, duplicate.streamIds);
+        duplicates.push(key);
+        duplicatesMap[key] = true;
+      });
+      error.isDuplicateIndex = key => duplicatesMap[key];
+      error.getDuplicateSystemStreamIds = () => duplicates;
+      
+      throw error;
+    }
+    return;
+
+    /**
+     * Performs intersection of 2 arrays of streamIds: one with prefixes, on without.
+     * Returns the first element of the array, as we expect a single one.
+     * 
+     * @param {*} streamIdsWithoutPrefix 
+     * @param {*} streamIdsWithPrefix 
+     */
+    function extractDuplicateField(streamIdsWithoutPrefix, streamIdsWithPrefix): string {
+      const intersection: Array<string> = streamIdsWithoutPrefix.filter(streamIdWithoutPrefix => 
+        streamIdsWithPrefix.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix))
+      )
+      return intersection[0];
+    }
   }
 }
 

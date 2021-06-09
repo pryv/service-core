@@ -51,7 +51,8 @@ class SystemStreamsSerializer {
 
   static readableAccountStreams: ?Array<{}>;
   static readableAccountStreamsForTests: ?Array<{}>;
-  static editableAccountStreams: ?Array<{}>;
+  static editableAccountMap: ?Map<string, SystemStream>;
+  static editableAccountStreamIds: ?Array<string>;
   static accountMap: ?Map<string, Array<string>>;
   static accountMapWithOptions: ?Array<string>;
   static allAccountStreamsLeaves: ?Array<{}>;
@@ -91,7 +92,8 @@ class SystemStreamsSerializer {
     this.readable = null;
     this.readableAccountStreams = null;
     this.readableAccountStreamsForTests = null;
-    this.editableAccountStreams = null;
+    this.editableAccountMap = null;
+    this.editableAccountStreamIds = null;
     this.accountMap = null;
     this.accountMapWithOptions = null;
     this.allAccountStreamsLeaves = null;
@@ -152,15 +154,26 @@ class SystemStreamsSerializer {
   }
 
   /**
+   * Returns editable account streams in a map streamId -> stream
+   */
+  static getEditableAccountMap(): Map<string, SystemStream> {
+    if ( SystemStreamsSerializer.editableAccountMap != null ) return SystemStreamsSerializer.editableAccountMap;
+    
+    SystemStreamsSerializer.editableAccountMap = filterMapStreams(SystemStreamsSerializer.getAccountChildren(), IS_EDITABLE);
+
+    return SystemStreamsSerializer.editableAccountMap;
+  }
+
+
+  /**
    * Get only those streams that user is allowed to edit 
    */
-  static getEditableAccountStreams () {
-    if ( SystemStreamsSerializer.editableAccountStreams != null ) return SystemStreamsSerializer.editableAccountStreams;
+  static getEditableAccountStreamIds(): Array<string> {
+    if ( SystemStreamsSerializer.editableAccountStreamIds != null ) return SystemStreamsSerializer.editableAccountStreamIds;
     
-    SystemStreamsSerializer.editableAccountStreams = filterMapStreams(SystemStreamsSerializer.getAccountChildren(), IS_EDITABLE);
-    SystemStreamsSerializer.editableAccountStreams = filterMapStreams(SystemStreamsSerializer.getAccountChildren(), IS_EDITABLE);
+    SystemStreamsSerializer.editableAccountStreamIds = Object.keys(SystemStreamsSerializer.getEditableAccountMap());
 
-    return SystemStreamsSerializer.editableAccountStreams;
+    return SystemStreamsSerializer.editableAccountStreamIds;
   }
 
   /**
@@ -286,13 +299,13 @@ class SystemStreamsSerializer {
    */
   static getAccountStreamsIdsForbiddenForEditing () {
     if (!SystemStreamsSerializer.accountStreamsIdsForbiddenForEditing) {
-      let allStreams = SystemStreamsSerializer.getAccountMap();
-      let editableStreams = SystemStreamsSerializer.getEditableAccountStreams();
+      const allStreams = SystemStreamsSerializer.getAccountMap();
+      const editableStreams = SystemStreamsSerializer.getEditableAccountMap();
 
       SystemStreamsSerializer.accountStreamsIdsForbiddenForEditing = _.difference(
-          _.keys(allStreams),
-          _.keys(editableStreams)
-        );
+        Object.keys(allStreams),
+        Object.keys(editableStreams)
+      );
     }
     return SystemStreamsSerializer.accountStreamsIdsForbiddenForEditing;
   }

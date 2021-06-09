@@ -201,13 +201,13 @@ describe("Events of system streams", () => {
       });
 
       it('[GF3A] should return only the account event for which a permission was explicitely provided', async () => {
-        res = await request.get(basePath).query({streams :['.email']}).set('authorization', sharedAccess.attrs.token);
+        res = await request.get(basePath).query({streams :[SystemStreamsSerializer.addPrivatePrefixToStreamId('email')]}).set('authorization', sharedAccess.attrs.token);
         assert.equal(res.body.events.length, 1);
         assert.isTrue(res.body.events[0].streamIds.includes(systemStreamId));
       });
 
       it('[UZTS] should not return account event for which a permission was not explicitely provided', async () => {
-        res = await request.get(basePath).query({streams :['.username']}).set('authorization', sharedAccess.attrs.token);
+        res = await request.get(basePath).query({streams :[SystemStreamsSerializer.addPrivatePrefixToStreamId('username')]}).set('authorization', sharedAccess.attrs.token);
         assert.equal(res.body.error.id, 'forbidden');
       });
     });
@@ -513,7 +513,7 @@ describe("Events of system streams", () => {
             // simulating dnsLess behaviour for non-unique event error
             let serviceRegisterRequest;
             let streamId;
-            let email = charlatan.Lorem.characters(7);
+            let email = charlatan.Internet.email();
             before(async function () {
               streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
               await createUser();

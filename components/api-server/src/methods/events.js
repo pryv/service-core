@@ -5,20 +5,20 @@
  * Proprietary and confidential
  */
 
-var cuid = require('cuid'),
-  utils = require('utils'),
-  errors = require('errors').factory,
-  async = require('async'),
-  bluebird = require('bluebird'),
-  commonFns = require('./helpers/commonFunctions'),
-  methodsSchema = require('../schema/eventsMethods'),
-  eventSchema = require('../schema/event'),
-  timestamp = require('unix-timestamp'),
-  treeUtils = utils.treeUtils,
-  streamsQueryUtils = require('./helpers/streamsQueryUtils'),
-  _ = require('lodash'),
-  SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
-  SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
+const cuid = require('cuid');
+const utils = require('utils');
+const errors = require('errors').factory;
+const async = require('async');
+const bluebird = require('bluebird');
+const commonFns = require('./helpers/commonFunctions');
+const methodsSchema = require('../schema/eventsMethods');
+const eventSchema = require('../schema/event');
+const timestamp = require('unix-timestamp');
+const treeUtils = utils.treeUtils;
+const streamsQueryUtils = require('./helpers/streamsQueryUtils');
+const _ = require('lodash');
+const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
+const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
 
 const { getStore } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -44,6 +44,8 @@ const NATS_DELETE_EVENT = require('messages').NATS_DELETE_EVENT;
 const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
+
+import type { MethodContext } from 'business';
 
 // Type repository that will contain information about what is allowed/known
 // for events. 
@@ -469,13 +471,15 @@ module.exports = async function (
       return next();
     }
 
+    const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+
     try{
       // when new account event is created, all other should be marked as nonactive
       context.content.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_ACTIVE);
       context.removeActiveEvents = true;
       
       // get editable account streams
-      const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
+      const editableAccountStreams = SystemStreamsSerializer.getEditableAccountMap();
       if (
         editableAccountStreams[context.accountStreamId].isUnique ||
         editableAccountStreams[context.accountStreamId].isIndexed
@@ -485,10 +489,18 @@ module.exports = async function (
           context.content,
           editableAccountStreams[context.accountStreamId]
         );
-
         await sendDataToServiceRegister(context, true, editableAccountStreams);
+        await usersRepository.checkDuplicates({
+          [streamIdWithoutPrefix]: context.content.content,
+        });
       }
     } catch (err) {
+      if (err.isDuplicate) {
+        return next(Registration.handleUniquenessErrors(
+          err,
+          ErrorMessages[ErrorIds.UnexpectedError],
+          { [streamIdWithoutPrefix]: context.content.content }));
+      }
       return next(err);
     }
     next();
@@ -516,13 +528,6 @@ module.exports = async function (
           if (err.isDuplicateIndex('id')) {
             return next(errors.itemAlreadyExists('event', {id: params.id}, err));
           }
-          // Expecting a duplicate error for unique fields
-          if (err.isDuplicate) {
-            return next(Registration.handleUniquenessErrors(
-              err,
-              ErrorMessages[ErrorIds.UnexpectedError],
-              { [SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId)]: context.content.content }));
-          }
           // Any other error
           return next(errors.unexpectedError(err));
         }
@@ -535,15 +540,15 @@ module.exports = async function (
   }
 
   /**
-   * If event should be unique, add .unique streamId
-   * @param object contextContent 
-   * @param string fieldName 
+   * TODO: probably remove this as we enforce uniqueness in another way
+   * 
+   * If event should be unique, add unique streamId
+   * 
+   * @param {object} contextContent 
+   * @param {SystemStream} fieldName 
    */
-  function enforceEventUniquenessIfNeeded (
-    contextContent: object,
-    accountStreamSettings: object
-  ) {
-    if (! accountStreamSettings.isUnique) {
+  function enforceEventUniquenessIfNeeded(contextContent: object, accountSystemStream: SystemStream): object {
+    if (! accountSystemStream.isUnique) {
       return contextContent;
     }
     if (!contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE)) {
@@ -751,11 +756,14 @@ module.exports = async function (
     if (!context.doesEventBelongToAccountStream) {
       return next();
     }
+
+    const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+
     try{
-     context.removeActiveEvents = false;
+      context.removeActiveEvents = false;
 
       // get editable account streams
-      const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
+      const editableAccountStreams = SystemStreamsSerializer.getEditableAccountMap();
       // if .active stream id was added to the event
       if (
         !context.oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)
@@ -775,8 +783,17 @@ module.exports = async function (
           editableAccountStreams[context.accountStreamId]
         );
         await sendDataToServiceRegister(context, false, editableAccountStreams);
+        await usersRepository.checkDuplicates({
+          [streamIdWithoutPrefix]: context.content.content,
+        });
       }
     } catch (err) {
+      if (err.isDuplicate) {
+        return next(Registration.handleUniquenessErrors(
+          err,
+          ErrorMessages[ErrorIds.UnexpectedError],
+          { [streamIdWithoutPrefix]: context.content.content }));
+      }
       return next(err);
     }
     next();
@@ -1160,7 +1177,7 @@ module.exports = async function (
     if (config.get('dnsLess:isActive')) {
       return;
     }
-    const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
+    const editableAccountStreams = SystemStreamsSerializer.getEditableAccountMap();
     const streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(accountStreamId);
     if (editableAccountStreams[accountStreamId].isUnique) {
       // send information update to service regsiter
@@ -1355,7 +1372,7 @@ module.exports = async function (
       return next(); 
     }
 
-    const editableAccountStreamsIds = Object.keys(SystemStreamsSerializer.getEditableAccountStreams());
+    const editableAccountStreamsIds = SystemStreamsSerializer.getEditableAccountStreamIds();
     const eventBelongsToEditableStream = _.intersection(
       context.oldContent.streamIds,
       editableAccountStreamsIds
@@ -1399,17 +1416,17 @@ module.exports = async function (
 
   /**
    * Build request and send data to service-register about unique or indexed fields update
-   * @param {*} fieldName 
-   * @param {*} contextContent 
-   * @param {*} creation 
+   * @param {MethodContext} context 
+   * @param {boolean} isCreation 
+   * @param {Map<string, SystemStream>} editableAccountStreams 
    */
-  async function sendDataToServiceRegister (context, creation, editableAccountStreams) {
+  async function sendDataToServiceRegister (context: MethodContext, isCreation: boolean, editableAccountStreams: Map<string, SystemStream>) {
     // send update to service-register
     if (config.get('dnsLess:isActive')) {
       return;
     }
-    let fieldsForUpdate = {};
-    let streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+    const fieldsForUpdate = {};
+    const streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
 
     // for isActive "context.removeActiveEvents" is not enought because it would be set 
     // to false if old event was active and is still active (no change)
@@ -1419,7 +1436,7 @@ module.exports = async function (
       isActive: (
         context.content.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE) ||
         context.oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)),
-      creation: creation
+      creation: isCreation
     }];
 
     // send information update to service regsiter

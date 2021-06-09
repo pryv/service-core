@@ -135,7 +135,7 @@ class User {
   getUpdateRequestToServiceRegister (updateData: {}, isActive: boolean) {
     const updateRequest = {};
     const updateKeys = Object.keys(updateData);
-    const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
+    const editableAccountStreams = SystemStreamsSerializer.getEditableAccountMap();
     
     // iterate over updateData and check which fields should be updated
     updateKeys.forEach(streamIdWithoutDot => {
