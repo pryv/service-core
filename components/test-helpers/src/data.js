@@ -39,7 +39,7 @@ exports.resetUsers = async () => {
     { name: 'events' },
     {
       streamIds: {
-        $in: Object.keys(SystemStreamsSerializer.getAccountMap())
+        $in: SystemStreamsSerializer.getAccountStreamIds(),
       }
     }, cb));
   const usersRepository = new UsersRepository(storage.user.events);
@@ -100,7 +100,7 @@ const events = exports.events = require('./data/events');
 exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
-  const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAccountMap());
+  const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
 
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 

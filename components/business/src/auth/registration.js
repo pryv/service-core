@@ -30,7 +30,7 @@ class Registration {
   storageLayer: any;
   serviceRegisterConn: ServiceRegister;
   usersRepository: UsersRepository; 
-  accountStreamsSettings: any = SystemStreamsSerializer.getFlatAccountStreamSettings();
+  accountStreamsSettings: any = SystemStreamsSerializer.getAccountMap();
   servicesSettings: any; // settigns to get the email to send user welcome email
 
   constructor(logging, storageLayer, servicesSettings) {

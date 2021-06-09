@@ -39,19 +39,15 @@ function Events (database) {
       endTimeToDB,
       converters.deletionToDB,
       converters.stateToDB,
-      converters.addUniqueFieldIfNeeded
     ],
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData'),
-      // only because __unique field is useful only for db, it is added to the convertors
-      converters.addOrRemoveUniqueFieldIfNeeded
     ],
     itemFromDB: [
       clearEndTime,
       converters.deletionFromDB,
-      converters.removeFieldsEnforceUniqueness
     ],
   });
 

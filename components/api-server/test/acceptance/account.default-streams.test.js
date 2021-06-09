@@ -339,7 +339,7 @@ describe('Account with system streams', function () {
             const settings = _.cloneDeep(helpers.dependencies.settings);
             scope = nock(settings.services.register.url);
             scope.put(`/users`)
-              .reply(200, {});
+              .reply(200, {}); // should be 400 or something
   
             // modify account info
             res = await request.put(basePath)

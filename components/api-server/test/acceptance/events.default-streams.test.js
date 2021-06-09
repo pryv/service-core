@@ -131,7 +131,7 @@ describe("Events of system streams", () => {
       });
       it('[KS6K] should return visible system events only', () => {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
-        const accountStreams = Object.keys(SystemStreamsSerializer.getReadableAccountStreamsForTests());
+        const accountStreams = Object.keys(SystemStreamsSerializer.getReadableAccountMapForTests());
         assert.equal(separatedEvents.accountStreamsEvents.length, accountStreams.length);
         accountStreams.forEach(accountStreamId => {
           let found = false;
@@ -167,7 +167,7 @@ describe("Events of system streams", () => {
       });
       
       it('[DRFH] should return visible system events only', () => {
-        const accountStreams = Object.keys(SystemStreamsSerializer.getReadableAccountStreamsForTests());
+        const accountStreams = Object.keys(SystemStreamsSerializer.getReadableAccountMapForTests());
         assert.equal(separatedEvents.accountStreamsEvents.length, accountStreams.length);
         accountStreams.forEach(accountStreamId => {
           let found = false;

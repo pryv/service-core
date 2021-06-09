@@ -405,7 +405,7 @@ module.exports = async function (
    * @param {*} next 
    */
   function doesEventBelongToTheAccountStream (context, params, result, next) {
-    const allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
+    const allAccountStreamsIds = SystemStreamsSerializer.getAccountStreamIds();
     // check streamIds intersection with old event streamIds 
     // for new event it should be current context
     context.oldContentStreamIds = (context.oldContent != null) ? context.oldContent.streamIds : context.content.streamIds;
@@ -1059,7 +1059,7 @@ module.exports = async function (
     }
 
     // previously we have validated with old config streamIds, now with new streamIds
-    const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAccountMap());
+    const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
     const matchingAccountStreams = _.intersection(
       context.content.streamIds,
       allAccountStreamIds
@@ -1178,11 +1178,11 @@ module.exports = async function (
       return;
     }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountMap();
-    const streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(accountStreamId);
+    const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(accountStreamId);
     if (editableAccountStreams[accountStreamId].isUnique) {
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(
-        user.username, {}, { [streamIdWithoutDot]: event.content}, { [streamIdWithoutDot]: event.content});
+        user.username, {}, { [streamIdWithoutPrefix]: event.content}, { [streamIdWithoutPrefix]: event.content});
     }
   }
   
@@ -1426,11 +1426,11 @@ module.exports = async function (
       return;
     }
     const fieldsForUpdate = {};
-    const streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+    const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
 
     // for isActive "context.removeActiveEvents" is not enought because it would be set 
     // to false if old event was active and is still active (no change)
-    fieldsForUpdate[streamIdWithoutDot] = [{
+    fieldsForUpdate[streamIdWithoutPrefix] = [{
       value: context.content.content,
       isUnique: editableAccountStreams[context.accountStreamId].isUnique,
       isActive: (
@@ -1444,7 +1444,7 @@ module.exports = async function (
       context.user.username,
       fieldsForUpdate,
       {},
-      {[streamIdWithoutDot] : context.content.content}
+      {[streamIdWithoutPrefix] : context.content.content}
     );
   }
 };

@@ -373,7 +373,7 @@ exports.removeAccountStreamsEvents = function (items) {
 };
 
 exports.separateAccountStreamsAndOtherEvents = function (items) {
-  const readableAccountStreams = Object.keys(SystemStreamsSerializer.getAccountMap());
+  const readableAccountStreams = SystemStreamsSerializer.getAccountStreamIds();
   const normalEvents = items.filter(function (e) {
     return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
@@ -423,7 +423,7 @@ exports.removeTrackingProperties = function (items) {
  */
 exports.validateAccountEvents = function (actualAccountEvents) {
   // get streams ids from the config that should be retrieved
-  let expectedAccountStreams = SystemStreamsSerializer.getReadableAccountStreamsForTests();
+  let expectedAccountStreams = SystemStreamsSerializer.getReadableAccountMapForTests();
 
   // iterate through expected account events and check that they exists in actual
   // account events
@@ -435,7 +435,7 @@ exports.validateAccountEvents = function (actualAccountEvents) {
         foundEvent = true;
         // validate that event is indexed/unique if needed
         if (expectedAccountStreams[streamId].isUnique) {
-          assert.isTrue(event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE), `.unique streamId not found in ${event} for ${streamId}`);
+          assert.isTrue(event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE), `":_system:unique" streamId not found in ${event} for ${streamId}`);
         }
         // validate type
         assert.equal(event.type, expectedAccountStreams[streamId].type, `type mismatch between ${event} and ${expectedAccountStreams[streamId]}`);

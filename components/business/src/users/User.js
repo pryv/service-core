@@ -215,7 +215,7 @@ function loadAccountData (user: User, params): void {
 }
 
 async function buildEventsFromAccount (user: User): Promise<void> {
-  const accountLeavesMap: {} = SystemStreamsSerializer.getAccountLeavesMap();
+  const accountLeavesMap: Map<string, SystemStream> = SystemStreamsSerializer.getAccountLeavesMap();
   
   // convert to events
   let account = user.getFullAccount();
