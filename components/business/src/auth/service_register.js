@@ -8,14 +8,15 @@
 
 const urllib = require('url');
 const superagent = require('superagent');
-const ErrorIds = require('errors').ErrorIds,
-  errors = require('errors').factory,
-  ErrorMessages = require('errors/src/ErrorMessages');
+const ErrorIds = require('errors').ErrorIds;
+const errors = require('errors').factory;
+const ErrorMessages = require('errors/src/ErrorMessages');
+const User = require('business/src/users/User');
 
 const { getLogger, getConfigUnsafe, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
   config: {}; 
-  logger;
+  logger: {};
 
   constructor(config: {}) {
     this.config = config; 
@@ -116,9 +117,9 @@ class ServiceRegister {
    */
   async updateUserInServiceRegister (
     username: string,
-    user: object,
-    fieldsToDelete: object,
-    updateParams: object): Promise<void> {
+    user: User,
+    fieldsToDelete: {},
+    updateParams: {}): Promise<void> {
     const url = buildUrl('/users', this.config.url);
     // log fact about the event
     this.logger.info(`PUT ${url} for username:${username}`);
