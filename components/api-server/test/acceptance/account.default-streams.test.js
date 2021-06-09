@@ -339,7 +339,10 @@ describe('Account with system streams', function () {
             const settings = _.cloneDeep(helpers.dependencies.settings);
             scope = nock(settings.services.register.url);
             scope.put(`/users`)
-              .reply(200, {}); // should be 400 or something
+              .reply(400, { error: { 
+                id: ErrorIds.ItemAlreadyExists,
+                data: { email: user2.attrs.email },
+            }});
   
             // modify account info
             res = await request.put(basePath)
