@@ -235,7 +235,6 @@ class Repository {
     await bluebird.fromCallback(
       cb => this.storage.database.getCollection(this.collectionInfo, cb));
 
-    // Check for duplicates
     await this.checkDuplicates(user);
 
     // Start a transaction session

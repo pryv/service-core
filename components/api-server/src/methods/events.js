@@ -487,25 +487,22 @@ module.exports = async function (
       return next();
     }
 
+    const editableAccountStreams: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
+    const streamId: string = context.accountStreamId;
     const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+    const systemStream: SystemStream = editableAccountStreams[context.accountStreamId];
 
     try{
       // when new account event is created, all other should be marked as nonactive
       context.content.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_ACTIVE);
       context.removeActiveEvents = true;
-      
-      // get editable account streams
-      const editableAccountStreams = SystemStreamsSerializer.getEditableAccountMap();
-      if (
-        editableAccountStreams[context.accountStreamId].isUnique ||
-        editableAccountStreams[context.accountStreamId].isIndexed
-      ) {
+            
+      if (systemStream.isUnique || systemStream.isIndexed) {
         // if stream is unique append properties that enforce uniqueness
-        context.content = enforceEventUniquenessIfNeeded(
-          context.content,
-          editableAccountStreams[context.accountStreamId]
-        );
+        context.content = enforceEventUniquenessIfNeeded(context.content, systemStream);
         await sendDataToServiceRegister(context, true, editableAccountStreams);
+      }
+      if (systemStream.isUnique) {
         await usersRepository.checkDuplicates({
           [streamIdWithoutPrefix]: context.content.content,
         });
@@ -773,13 +770,14 @@ module.exports = async function (
       return next();
     }
 
+    const editableAccountStreams: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
+    const streamId: string = context.accountStreamId;
     const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+    const systemStream: SystemStream = editableAccountStreams[context.accountStreamId];
 
     try{
       context.removeActiveEvents = false;
 
-      // get editable account streams
-      const editableAccountStreams = SystemStreamsSerializer.getEditableAccountMap();
       // if .active stream id was added to the event
       if (
         !context.oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)
@@ -789,16 +787,12 @@ module.exports = async function (
         context.removeActiveEvents = true;
       }
 
-      if (
-        editableAccountStreams[context.accountStreamId].isUnique ||
-        editableAccountStreams[context.accountStreamId].isIndexed
-      ) {
+      if (systemStream.isUnique || systemStream.isIndexed) {
         // if stream is unique append properties that enforce uniqueness
-        context.content = enforceEventUniquenessIfNeeded(
-          context.content,
-          editableAccountStreams[context.accountStreamId]
-        );
+        context.content = enforceEventUniquenessIfNeeded(context.content, systemStream);
         await sendDataToServiceRegister(context, false, editableAccountStreams);
+      }
+      if (systemStream.isUnique) {
         await usersRepository.checkDuplicates({
           [streamIdWithoutPrefix]: context.content.content,
         });
