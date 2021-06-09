@@ -141,12 +141,6 @@ describe("Events of system streams", () => {
           assert.isTrue(found);
         });
       });
-      it('[C32B] should not return events internal properties that enforce db uniqueness', () => {
-        Object.keys(res.body.events).forEach(i => {
-          assert.equal(res.body.events[i].hasOwnProperty(`${
-            SystemStreamsSerializer.removePrefixFromStreamId(res.body.events[i].streamIds[0])}__unique`), false);
-        });
-      });
     });
     describe('When using a shared access with a read-level permission on the .account stream', () => {
       let sharedAccess;
@@ -255,10 +249,6 @@ describe("Events of system streams", () => {
         it('[IYE6] should return the event', () => {
           assert.equal(res.body.event.id, defaultEvent.id);
           assert.equal(res.body.event.streamId, systemStreamId);
-        });
-  
-        it('[4Q5L] should not return the event\'s internal properties that enforce db uniqueness', () => {
-          assert.equal(res.body.event.hasOwnProperty(`${streamId}__unique`), false);
         });
       });
       describe('to retrieve a non visible system event', () => {
@@ -442,8 +432,7 @@ describe("Events of system streams", () => {
             });
             it('[YS79] should return the created event', () => {
               assert.equal(res.body.event.content, eventData.content);
-              assert.equal(res.body.event.type, eventData.type);
-              assert.equal(res.body.event.hasOwnProperty('email__unique'), false);           
+              assert.equal(res.body.event.type, eventData.type);    
             });
             it('[DA23] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);

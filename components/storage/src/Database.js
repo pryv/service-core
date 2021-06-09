@@ -642,30 +642,6 @@ class Database {
       }
       return false;
     };
-    /**
-     * Returns the unique system streamId for the event that triggered the error (dot-less)
-     * Works only for system streams uniqueness constraints
-     */
-    err.getDuplicateSystemStreamIds = (): Array<string> => {
-      if (err != null && err.errmsg != null && err.isDuplicate) {
-        // This check depends on the MongoDB storage engine
-        // We assume WiredTiger here (and not MMapV1).
-        const matching = err.errmsg.match(/index:(.+) dup key:/);
-        if (Array.isArray(matching) && matching.length >= 2) {
-          const matchingKeys = matching[1].split('__unique');
-          const matchingKey = matchingKeys[0].trim();
-          const separatedKeys = matchingKey.split('_');
-
-          // there are some cases for other unique fields to fail
-          if (matchingKeys.length == 1 && separatedKeys.length > 1) {
-            return [separatedKeys[separatedKeys.length - 2]];
-          } else {
-            return [separatedKeys[separatedKeys.length - 1]];
-          }
-        }
-      }
-      return [];
-    }
   }
 
   /// Closes this database connection. After calling this, all other methods 

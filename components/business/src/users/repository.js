@@ -373,8 +373,8 @@ class Repository {
         duplicates.push(key);
         duplicatesMap[key] = true;
       });
-      error.isDuplicateIndex = key => duplicatesMap[key];
-      error.getDuplicateSystemStreamIds = () => duplicates;
+      error.isDuplicateIndex = (key): Map<string, boolean> => duplicatesMap[key];
+      error.getDuplicateSystemStreamIds = (): Array<string> => duplicates;
       
       throw error;
     }
