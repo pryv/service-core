@@ -136,7 +136,7 @@ module.exports = async function (
     for (let streamQuery of params.streams) {
       // ------------ "*" case 
       if (streamQuery.any && streamQuery.any.includes('*')) {
-        if (context.access.isPersonal() || await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
+        if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
       
         // replace any by allowed streams for reading
         const res = [];
