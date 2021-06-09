@@ -7,6 +7,7 @@
 const _ = require('lodash');
 const commonFns = require('./../helpers/commonFunctions');
 const errors = require('errors').factory;
+const { ErrorMessages, ErrorIds } = require('errors');
 const methodsSchema = require('api-server/src/schema/authMethods');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
@@ -98,7 +99,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
         return next(Registration.handleUniquenessErrors(
           error,
           ErrorMessages[ErrorIds.UnexpectedError],
-          { [streamIdWithoutPrefix]: context.content.content }));
+          { [field]: params[field] }));
       }
       return next(error);
     }

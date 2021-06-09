@@ -216,7 +216,7 @@ describe('[BMM2] registration: DNS-less', () => {
           
           // changed to new error format to match the cluster
           const error = JSON.parse(res.error.text);
-          assert.deepEqual(error.error.data, { username: registerBody.username });
+          assert.deepEqual(error.error.data, { username: registerBody.username, email: registerBody.email });
         });
         it('[9L3R] should not store the user in the database twice', async function() {
           const usersRepository = new UsersRepository(app.storageLayer.events);
