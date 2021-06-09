@@ -430,6 +430,12 @@ describe("Events of system streams", () => {
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
+              allEventsInDb = await bluebird.fromCallback(
+                (cb) => user.db.events.database.find(
+                  { name: 'events' },
+                  { userId: user.attrs.id, streamIds: streamId },
+                  {}, cb)
+              );
             });
             it('[SQZ2] should return 201', () => {
               assert.equal(res.status, 201);
@@ -438,17 +444,6 @@ describe("Events of system streams", () => {
               assert.equal(res.body.event.content, eventData.content);
               assert.equal(res.body.event.type, eventData.type);
               assert.equal(res.body.event.hasOwnProperty('email__unique'), false);           
-            });
-            it('[15H6] should add properties enforcing uniqueness in the storage', async () => {
-              allEventsInDb = await bluebird.fromCallback(
-                (cb) => user.db.events.database.find(
-                  { name: 'events' },
-                  { userId: user.attrs.id, streamIds: streamId },
-                  {}, cb)
-              );
-              assert.equal(allEventsInDb.length, 2);  
-              assert.equal(allEventsInDb[0].hasOwnProperty('email__unique'), true);  
-              assert.equal(allEventsInDb[1].hasOwnProperty('email__unique'), true);  
             });
             it('[DA23] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
@@ -941,17 +936,6 @@ describe("Events of system streams", () => {
                 fieldsToDelete: {}
               });
             });
-            it('[C457] should save an additional field to enforce uniqueness in mongodb', async () => {
-              updatedEvent = await bluebird.fromCallback(
-                (cb) => user.db.events.database.findOne(
-                  { name: 'events' },
-                  { userId: user.attrs.id, streamIds: systemStreamId },
-                  {}, cb)
-              );
-              assert.equal(updatedEvent.content, eventData.content);
-              assert.equal(updatedEvent.type, eventData.type);
-              assert.equal(updatedEvent.hasOwnProperty(`${streamId}__unique`), true);  
-            });
             describe('by adding the “active” streamId', () => {
               before(async () => {
                 await createUser();
@@ -1211,9 +1195,6 @@ describe("Events of system streams", () => {
             it('[3E12] should return the trashed event', () => {
               assert.equal(res.body.event.id, initialEvent._id);
               assert.equal(res.body.event.trashed, true);
-            });
-            it('[FJK3] should not return the event\'s internal properties that enforce db uniqueness', () => { 
-              assert.notEqual(res.body.event[`${streamId}__unique`], initialEvent[`${streamId}__unique`]);
             });
             it('[F328] should notify register with the deleted data', function () {
               if (isDnsLess) this.skip(); 

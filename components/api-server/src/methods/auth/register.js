@@ -92,12 +92,15 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
     try {
-      const existingUsers = await usersRepository.findExistingUniqueFields({ [field]: params[field]});
-      if (existingUsers.length > 0) {
-        return next(errors.itemAlreadyExists('user', { [field]: params[field] }));
-      }
+      await usersRepository.checkDuplicates({ [field]: params[field]});
     } catch (error) {
-      return next(errors.unexpectedError(error));
+      if (error.isDuplicate) {
+        return next(Registration.handleUniquenessErrors(
+          error,
+          ErrorMessages[ErrorIds.UnexpectedError],
+          { [streamIdWithoutPrefix]: context.content.content }));
+      }
+      return next(error);
     }
     next();
   }

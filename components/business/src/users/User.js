@@ -138,12 +138,12 @@ class User {
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountMap();
     
     // iterate over updateData and check which fields should be updated
-    updateKeys.forEach(streamIdWithoutDot => {
+    updateKeys.forEach(streamIdWithoutPrefix => {
       // check if field value was changed
-      if (updateData[streamIdWithoutDot] !== this[streamIdWithoutDot]){
-        let streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutDot);
-        updateRequest[streamIdWithoutDot] = [{
-          value: updateData[streamIdWithoutDot],
+      if (updateData[streamIdWithoutPrefix] !== this[streamIdWithoutPrefix]){
+        const streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix);
+        updateRequest[streamIdWithoutPrefix] = [{
+          value: updateData[streamIdWithoutPrefix],
           isUnique: editableAccountStreams[streamIdWithPrefix].isUnique,
           isActive: isActive,
           creation: false
@@ -171,21 +171,16 @@ class User {
 
     // update all account streams and don't allow additional properties
     for (let i = 0; i < streamIdsForUpdate.length; i++) {
-      let streamIdWithoutDot = streamIdsForUpdate[i];
+      let streamIdWithoutPrefix = streamIdsForUpdate[i];
       // if needed append field that enforces uniqueness
       let updateData = {
-        content: update[streamIdWithoutDot],
+        content: update[streamIdWithoutPrefix],
         modified: timestamp.now(),
         modifiedBy: accessId
       };
-      // __unique property is assigned here because update object that is passwed to convertors
-      // does not have streamIds info that is needed
-      if (uniqueAccountStreamIds.includes(streamIdWithoutDot)) {
-        updateData[`${streamIdWithoutDot}__unique`] = update[streamIdWithoutDot];
-      }
       events.push({
         updateData: updateData,
-        streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutDot)
+        streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix)
       });
     }
     return events;

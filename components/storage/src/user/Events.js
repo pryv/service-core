@@ -4,13 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var BaseStorage = require('./BaseStorage'),
-  converters = require('./../converters'),
-  timestamp = require('unix-timestamp'),
-  util = require('util'),
-  _ = require('lodash'),
-  ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream'),
-  SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const BaseStorage = require('./BaseStorage');
+const converters = require('./../converters');
+const timestamp = require('unix-timestamp');
+const util = require('util');
+const _ = require('lodash');
+const ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 module.exports = Events;
 /**
@@ -24,14 +24,9 @@ module.exports = Events;
  * @constructor
  */
 function Events (database) {
-  // TODO - maybe I should retrieve all and not only account streams here?
-  // So that unicity, indexing would be broader functionality?
-  // get streams ids of account streams from the config
-  SystemStreamsSerializer.getSerializer();
-  this.systemStreamsFlatList = SystemStreamsSerializer.getAccountMap();
-  this.uniqueStreamIdsList = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
-
   Events.super_.call(this, database);
+
+  SystemStreamsSerializer.getSerializer(); // TODO remove to load it correctly in tests
 
   _.extend(this.converters, {
     itemDefaults: [converters.createIdIfMissing],
@@ -93,7 +88,7 @@ function clearEndTime (event) {
   return event;
 }
 
-function getDbIndexes (systemStreamsFlatList) {
+function getDbIndexes () {
   // TODO: review indexes against 1) real usage and 2) how Mongo actually uses them
   const indexes = [
     {
@@ -131,7 +126,7 @@ Events.prototype.getCollectionInfo = function (userOrUserId) {
   const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'events',
-    indexes: getDbIndexes(this.systemStreamsFlatList),
+    indexes: getDbIndexes(),
     useUserId: userId
   };
 };
@@ -139,7 +134,7 @@ Events.prototype.getCollectionInfo = function (userOrUserId) {
 Events.prototype.getCollectionInfoWithoutUserId = function () {
   return {
     name: 'events',
-    indexes: getDbIndexes(this.systemStreamsFlatList)
+    indexes: getDbIndexes()
   };
 };
 
@@ -232,9 +227,6 @@ Events.prototype.minimizeEventsHistory = function (userOrUserId, headId, callbac
       createdBy: 1,
     },
   };
-  this.uniqueStreamIdsList.forEach(uniqueKeys => {
-    update['$unset'][`${uniqueKeys}__unique`] = 1;
-  });
 
   this.database.updateMany(
     this.getCollectionInfo(userOrUserId),
@@ -273,9 +265,6 @@ Events.prototype.delete = function (userOrUserId, query, deletionMode, callback)
         modified: 1,
         modifiedBy: 1,
       };
-      this.uniqueStreamIdsList.forEach(uniqueKeys => {
-        update['$unset'][`${uniqueKeys}__unique`] = 1;
-      });
       break;
     case 'keep-authors':
       update.$unset = {
@@ -293,9 +282,6 @@ Events.prototype.delete = function (userOrUserId, query, deletionMode, callback)
         created: 1,
         createdBy: 1,
       };
-      this.uniqueStreamIdsList.forEach(uniqueKeys => {
-        update['$unset'][`${uniqueKeys}__unique`] = 1;
-      });
       break;
   }
 

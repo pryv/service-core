@@ -162,7 +162,7 @@ class Repository {
         $and:
           [
             { streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(key) },
-            { [`${key}__unique`]: fields[key] }
+            { content: fields[key] }
           ]
       });
     });
