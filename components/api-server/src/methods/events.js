@@ -139,13 +139,20 @@ module.exports = async function (
         if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
       
         // replace any by allowed streams for reading
-        const res = [];
+        const canRead = [];
+        const cannotRead = [];
         for (const streamPermission of context.access.getStorePermissions(streamQuery.storeId)) {
           if (await context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)) {
-            res.push(streamPermission.streamId);
+            canRead.push(streamPermission.streamId);
+          } else {
+            cannotRead.push(streamPermission.streamId)
           }
         }
-        streamQuery.any = res;
+        streamQuery.any = canRead;
+        if (cannotRead.length > 0) {
+          if (! streamQuery.not) streamQuery.not = [];
+          //streamQuery.not.push(...cannotRead);
+        }
       } else { // ------------ All other cases
         for (const key of ['any', 'all', 'not']) {
           if (streamQuery[key]) {
@@ -191,7 +198,16 @@ module.exports = async function (
 
       const store = (await getStore()).sourceForId(storeId);
       const tree = await store.streams.get(context.user.id, query);
-      const result = treeUtils.collectPluck(tree, 'id');
+
+      // collect streamIds and exclude not readable streams that might have been expanded 
+      const result = [];
+      await treeUtils.filterTreeOnPromise(tree, false, async function(stream) {
+        const canRead = await context.access.canGetEventsOnStream(stream.id, storeId)
+        if (! canRead) return false; // break here (no inspection of childrens)
+        result.push(stream.id);
+        return true;
+      });
+
       return result;
     }
 
