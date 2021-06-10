@@ -59,7 +59,7 @@ class AuditUserStreams extends UserStreams {
       let parentId = null;
       if (params.id.startsWith('access-')) {
         parentId = 'accesses';
-      } else if (params.id.startsWith('actions-')) {
+      } else if (params.id.startsWith('action-')) {
         parentId = 'actions';
       }
 

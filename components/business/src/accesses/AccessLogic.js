@@ -37,6 +37,7 @@ Object.freeze(PermissionLevels);
  class AccessLogic {
   _access; // Access right from the DB
   _userId;
+  _limitationsByActionByStore;
 
   constructor(userId, access) {
     this._access = access;
@@ -58,7 +59,12 @@ Object.freeze(PermissionLevels);
       }
     }
     if (selfAudit) {
-      this.permissions.push({streamId: ':_audit:access-' + this.id , level: 'read'});
+      this.permissions.push({
+        streamId: ':_audit:', 
+        limitations: {
+          'events.get': {streams: {all: ['access-' + this.id]}}
+        }, 
+        level: 'read'});
     }
   }
   
@@ -83,6 +89,7 @@ Object.freeze(PermissionLevels);
       return;
     }
 
+    this._limitationsByActionByStore = {};
     this.tagPermissions = [];
     this.tagPermissionsMap = {};
     this.featurePermissions = [];
@@ -110,7 +117,30 @@ Object.freeze(PermissionLevels);
     const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
     if (! this._streamByStorePermissionsMap[storeId]) this._streamByStorePermissionsMap[storeId] = {}
     this._streamByStorePermissionsMap[storeId][streamId] = {streamId: streamId, level: perm.level};
+    this._loadLimitation(storeId, streamId, perm);
   }
+
+  _loadLimitation(storeId, streamId, perm) {
+    if (! perm.limitations) return;
+    for (let methodId of Object.keys(perm.limitations)) {
+      if (! this._limitationsByActionByStore[methodId]) this._limitationsByActionByStore[methodId] = {};
+      if (this._limitationsByActionByStore[methodId][storeId]) {
+        throw new Error('Only one limitation per method can be loaded for each store');
+      }
+      this._limitationsByActionByStore[methodId][storeId] = perm.limitations[methodId];
+    }
+  }
+
+  /**
+   * returns the limitations Map for this methods
+   * @param {*} methodId 
+   * @returns {Object} keys are storeId
+   */
+  getLimitationsForMethodId(methodId) {
+    if (! this._limitationsByActionByStore) return null;
+    return this._limitationsByActionByStore[methodId];
+  }
+
   /**
    * returns the permissions for this store if it exists
    * @param {identifier} storeId 
