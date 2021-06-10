@@ -553,7 +553,7 @@ describe("Events of system streams", () => {
         it('[90E6] should return the correct error', () => {
           assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
           assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
-          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
         });
       });
     });
@@ -713,8 +713,8 @@ describe("Events of system streams", () => {
               assert.equal(res.status, 200);
             });
             it('[5622] should return the updated event', () => {
-               assert.equal(res.body.event.content, eventData.content);
-               assert.equal(res.body.event.type, eventData.type);
+              assert.equal(res.body.event.content, eventData.content);
+              assert.equal(res.body.event.type, eventData.type);
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[CF70] should remove the "active" streamId for events of the same stream', async () => {
@@ -730,20 +730,21 @@ describe("Events of system streams", () => {
           });
           describe('by changing its steamIds', () => {
             describe('when editing with 2 streamIds at the time', () => {
+              let streamIds;
               before(async function () {
+                streamIds = [
+                  SystemStreamsSerializer.addPrivatePrefixToStreamId('email'),
+                  SystemStreamsSerializer.addPrivatePrefixToStreamId('phoneNumber')
+                ];
                 await createUser();
                 eventData = {
-                  streamIds: [
-                    SystemStreamsSerializer.addPrivatePrefixToStreamId('email'),
-                    SystemStreamsSerializer.addPrivatePrefixToStreamId('phoneNumber')
-                  ],
+                  streamIds,
                   content: charlatan.Lorem.characters(7),
                   type: 'string/pryv'
                 };
                 const initialEvent = await bluebird.fromCallback(
                   (cb) => user.db.events.findOne({ id: user.attrs.id },
                     { streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('phoneNumber') }, null, cb));
-  
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
                   .set('authorization', access.token);
@@ -754,7 +755,7 @@ describe("Events of system streams", () => {
               it('[E3KE] should return the correct error', () => {
                 assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
                 assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenMultipleAccountStreams]);
-                assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId('email')});
+                assert.includeMembers(res.body.error.data.streamIds, streamIds);
               });
             });
             describe('when substituting a system stream with another one', () => {
@@ -1079,7 +1080,7 @@ describe("Events of system streams", () => {
         });
         it('[BB5F] should return the correct error', () => {
           assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
-          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
           assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
         });
       });
@@ -1241,7 +1242,7 @@ describe("Events of system streams", () => {
           });
           it('[D4CA] should return the correct error', () => { 
             assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
-            assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountStreamsEventDeletion]);
+            assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
           });
         });
       });
@@ -1271,7 +1272,7 @@ describe("Events of system streams", () => {
         });
         it('[A727] should return the correct error', () => {
           assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
-          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountStreamsEventDeletion]);
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
         });
       });
     });

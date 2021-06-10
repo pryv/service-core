@@ -499,9 +499,9 @@ describe('Versioning', function () {
                     (previousVersion.modified).should.be.above(time);
                   }
                   time = previousVersion.modified;
-                  (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'content']))
+                  (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags']))
                     .should.eql(_.omit(eventWithNoHistory,
-                      ['id', 'headId', 'modified', 'modifiedBy', 'content']));
+                      ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags']));
                 });
                 stepDone();
               });

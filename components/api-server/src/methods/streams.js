@@ -207,14 +207,14 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     if (params.id != null) {
       if (accountStreamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(params.id))) {
         return next(errors.invalidOperation(
-          ErrorMessages[ErrorIds.ForbiddenAccountStreamsActions])
+          ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
         );
       }
     }
     if (params.parentId != null) {
       if (accountStreamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(params.parentId))) {
         return next(errors.invalidOperation(
-          ErrorMessages[ErrorIds.ForbiddenAccountStreamsActions])
+          ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
         );
       }
     }

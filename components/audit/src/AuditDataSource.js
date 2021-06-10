@@ -10,7 +10,6 @@
  */
 
 
-const { ForbiddenNoneditableAccountStreamsEdit } = require('errors/src/ErrorIds');
 const {DataSource, UserStreams, UserEvents}  = require('stores/interfaces/DataSource');
 
 const audit = require('audit');

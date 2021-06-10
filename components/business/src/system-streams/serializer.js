@@ -64,7 +64,6 @@ class SystemStreamsSerializer {
   static indexedAccountStreamsIdsWithoutPrefix: ?Array<string>;
   static uniqueAccountStreamsIdsWithoutPrefix: ?Array<string>;
 
-  static accountStreamsIdsForbiddenForEditing: ?Array<string>;
   static accountStreamsIdsForbiddenForReading: ?Array<string>;
   
   static accountChildren: ?Array<SystemStream>;
@@ -107,7 +106,6 @@ class SystemStreamsSerializer {
     this.accountStreamIds = null;
     this.indexedAccountStreamsIdsWithoutPrefix = null;
     this.uniqueAccountStreamsIdsWithoutPrefix = null;
-    this.accountStreamsIdsForbiddenForEditing = null;
     this.accountStreamsIdsForbiddenForReading = null;
     this.accountChildren = null;
     this.streamIdWithPrefixToWithout = null;
@@ -316,22 +314,6 @@ class SystemStreamsSerializer {
         return SystemStreamsSerializer.removePrefixFromStreamId(streamId)
     });
     return SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutPrefix;
-  }
-
-  /**
-   * Get steams that are NOT allowed to edit - this function will be used to 
-   * exclude from queries
-   */
-  static getAccountStreamsIdsForbiddenForEditing(): Array<string> {
-    if (SystemStreamsSerializer.accountStreamsIdsForbiddenForEditing != null) return SystemStreamsSerializer.accountStreamsIdsForbiddenForEditing; 
-    const allStreams = SystemStreamsSerializer.getAccountMap();
-    const editableStreams = SystemStreamsSerializer.getEditableAccountMap();
-
-    SystemStreamsSerializer.accountStreamsIdsForbiddenForEditing = _.difference(
-      Object.keys(allStreams),
-      Object.keys(editableStreams)
-    );
-    return SystemStreamsSerializer.accountStreamsIdsForbiddenForEditing;
   }
 
   /**

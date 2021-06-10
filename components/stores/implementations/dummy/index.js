@@ -9,8 +9,6 @@
  * Send predicatable static data
  */
 
-
-const { ForbiddenNoneditableAccountStreamsEdit } = require('../../../errors/src/ErrorIds');
 const {DataSource, UserStreams, UserEvents}  = require('../../interfaces/DataSource');
 
 const STORE_ID = 'dummy';
