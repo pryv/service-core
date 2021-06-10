@@ -21,7 +21,7 @@ import type { StorageLayer } from 'storage';
 const Webhook = require('business/src/webhooks/Webhook');
 const WebhooksRepository = require('business/src/webhooks/repository');
 
-const { ProjectVersion } = require('middleware/src/project_version');
+const { getAPIVersion } = require('middleware/src/project_version');
 
 const BOOT_MESSAGE = require('./messages').BOOT_MESSAGE;
 
@@ -55,8 +55,7 @@ class WebhooksService implements MessageSink {
   }
 
   async start() {
-    const pv = new ProjectVersion();
-    this.apiVersion = pv.version();
+    this.apiVersion = await getAPIVersion();
     this.serial = this.settings.get('service:info:serial');
 
     this.logger.info('Loading service with version ' + this.apiVersion + ' and serial ' + this.serial + '.');

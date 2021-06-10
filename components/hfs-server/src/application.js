@@ -31,7 +31,6 @@ const storage = require('storage');
 const Context = require('./context');
 const Server = require('./server'); 
 
-// Initialize ProjectVersion
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
 
 const opentracing = require('opentracing');

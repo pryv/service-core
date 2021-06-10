@@ -16,9 +16,6 @@ const errorsMiddleware = require('./middleware/errors');
 const tracingMiddlewareFactory = require('./tracing/middleware/trace');
 const clsWrapFactory = require('./tracing/middleware/clsWrap');
 
-const { ProjectVersion } = require('middleware/src/project_version');
-
-
 const controllerFactory = require('./web/controller');
 const getAuth = require('middleware/src/getAuth');
 
@@ -124,13 +121,10 @@ class Server {
    * 
    * @return express application.
    */
-  setupExpress(): Promise<express$Application> {
+  async setupExpress(): Promise<express$Application> {
     const logger = this.logger;
     const config = this.config;
     const traceEnabled = config.get('trace:enable'); 
-    
-    const pv = new ProjectVersion(); 
-    const version = pv.version(); 
         
     var app = express(); 
     
@@ -145,7 +139,7 @@ class Server {
     app.use(middleware.requestTrace(express, logger));
     app.use(bodyParser.json({ limit: '10mb' }));
     app.use(middleware.override);
-    app.use(middleware.commonHeaders(version));
+    app.use(await middleware.commonHeaders());
     app.all('/*', getAuth);
     
     this.defineApplication(app); 

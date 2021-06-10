@@ -123,6 +123,7 @@ var permissions = exports.permissions = function (action) {
     'streamId': {
       type: ['string', 'null']
     },
+    'limitations': helpers.object({}, {nullable: true}),
     'level': permissionLevel
   }, {
     id: 'streamPermission',

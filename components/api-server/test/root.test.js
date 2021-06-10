@@ -163,6 +163,7 @@ describe('root', function() {
       ]);
       validation.checkMeta(res.body);
 
+      console.log(res.body, res.headers['api-version']);
       assert.match(
         res.headers['api-version'],
         /^\d+\.\d+\.\d+(-.*)?$/,
@@ -310,9 +311,12 @@ describe('root', function() {
       const res = await server.request()
         .get('/' + username + '/access-info')
         .set('Authorization', sharedAccessToken);
-      
       // extend sharedAccess with audit rights
-      sharedAccess.permissions.push({streamId: ':_audit:access-' + sharedAccess.id, level: 'read'});
+      sharedAccess.permissions.push({
+        streamId: ':_audit:', 
+        limitations: { 'events.get': {streams: { all: [ 'access-' + sharedAccess.id ] } } },
+        level: 'read'});
+
       validation.check(
         res,
         {
@@ -327,8 +331,6 @@ describe('root', function() {
       );
     });
   });
-
-  
 
   describe('Accept Basic Auth request', function () {
 

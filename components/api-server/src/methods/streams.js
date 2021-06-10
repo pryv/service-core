@@ -23,6 +23,7 @@ const ErrorIds = require('errors/src/ErrorIds');
 
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
+const { getStore } = require('stores');
 
 SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 
@@ -38,10 +39,10 @@ SystemStreamsSerializer.getSerializer(); // ensure it's loaded
  * @param auditSettings
  * @param updatesSettings
  */
-module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
+module.exports = async function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
   notifications, logging, auditSettings, updatesSettings) {
 
-  
+  const stores = await getStore();
   // RETRIEVAL
 
   api.register('streams.get',
@@ -63,6 +64,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     try { 
     // can't reuse context streams (they carry extra internal properties)
     let streams = await bluebird.fromCallback(cb => userStreamsStorage.find(context.user, {}, null, cb));
+
+    const newStreams = await stores.streams.get(context.user.id, {});
+
+    console.log(newStreams);
 
     const systemStreams = SystemStreamsSerializer.getReadable();
     streams = streams.concat(systemStreams);

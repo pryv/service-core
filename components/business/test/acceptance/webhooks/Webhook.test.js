@@ -21,7 +21,7 @@ const PORT = 6123;
 const storage = require('test-helpers').dependencies.storage.user.webhooks;
 const userStorage = require('test-helpers').dependencies.storage.user.events;
 
-const { ProjectVersion } = require('middleware/src/project_version');
+const { getAPIVersion } = require('middleware/src/project_version');
 
 describe('Webhook', () => {
 
@@ -48,9 +48,8 @@ describe('Webhook', () => {
         });
 
         let apiVersion;
-        before(() => {
-          const pv = new ProjectVersion(); 
-          apiVersion = pv.version();
+        before(async () => {
+          apiVersion = await getAPIVersion();
         });
 
         after(() => {

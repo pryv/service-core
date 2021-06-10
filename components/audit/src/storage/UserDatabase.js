@@ -138,7 +138,8 @@ function prepareLogQuery(params = {}) {
   }
 
   if (params.streams != null) {
-    ands.push('streamIds MATCH \'' + toSQLiteQuery(params.streams) + '\'');
+    const str = toSQLiteQuery(params.streams);
+    if (str) ands.push('streamIds MATCH \'' + str + '\'');
   }
   
   let queryString = 'SELECT * FROM events_fts';

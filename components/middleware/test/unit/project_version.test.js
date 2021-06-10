@@ -17,20 +17,41 @@ const bluebird = require('bluebird');
 const child_process = require('child_process');
 const fs = require('fs');
 
-const { ProjectVersion } = require('../../src/project_version');
+const { getAPIVersion } = require('../../src/project_version');
 
-describe('ProjectVersion#version', () => {
-  let pv;
-  beforeEach(() => {
-    pv = new ProjectVersion();
+const versionFilePath = path.join(__dirname, '../../../../../', '.api-version');
+
+describe('APIVersion#version', () => {
+
+
+  describe('[HV40] when a ".api-version" file exists in the project and is != that 1.2.3', () => {
+
+    before(() => { 
+      const versionRead = fs.writeFileSync(versionFilePath, '1.2.4', { encoding: 'utf-8'});
+    });
+
+    after(() => { // put test version back in place
+      const versionRead = fs.writeFileSync(versionFilePath, '1.2.3', { encoding: 'utf-8'});
+    });
+
+    it('reads .api-version and returns that constant', async () => {
+      const version = await getAPIVersion(true);
+      assert.strictEqual(version, '1.2.4');
+    });
   });
 
-  describe('when a ".api-version" file exists in the project', () => {
-    const versionFilePath = path.join(__dirname, '../../../../../', '.api-version');
 
-    it('[HV40] reads .api-version and returns that constant', async () => {
+  describe('when a ".api-version" file exists in the project and is 1.2.3', () => {
+
+    before(() => {
       const versionRead = fs.readFileSync(versionFilePath, { encoding: 'utf-8'});
-      assert.strictEqual(pv.version(), versionRead);
+      assert(versionRead === '1.2.3', '.apiversion file content should be 1.2.3');
+    });
+
+    it('[HV40] should return git tag version', async () => {
+      const version = await getAPIVersion(true);
+      const versionFromGitTag = require('child_process').execSync('git describe --tags').toString().trim();
+      assert.strictEqual(version, versionFromGitTag);
     });
   });
 });

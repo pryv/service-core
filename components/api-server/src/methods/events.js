@@ -32,7 +32,7 @@ const MultiStream = require('multistream');
 
 const eventsGetUtil = require('./helpers/eventsGetUtils');
 
-const { ProjectVersion } = require('middleware/src/project_version');
+const { getAPIVersion } = require('middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('business').types;
 
@@ -68,7 +68,7 @@ module.exports = async function (
   const stores = await getStore();
   
   // Initialise the project version as soon as we can. 
-  const version = (new ProjectVersion()).version();
+  const version = await getAPIVersion();
   
   // Update types and log error
   typeRepo.tryUpdate(eventTypesUrl, version)
@@ -227,8 +227,9 @@ module.exports = async function (
   }
 
   /**
-   * Aggregate streamQueries by store in params.streamsQueryMapByStore
-   * For legacy code, 'local' storage streamQuery is kept in params.streams
+   * - Create a copy of the params per query
+   * - Add specific stream queries to each of them
+   * - Eventually apply limitations per store
    * @param {*} context 
    * @param {*} params 
    * @param {*} result 
@@ -241,24 +242,56 @@ module.exports = async function (
       return next();
     }
 
+
     // --- The following code my be moved directly into store.get()
-    const storeQueryMap = {};
-    let count = 0;
+    const paramsByStoreId = {};
     for (let streamQuery of params.streams) {
       const storeId = streamQuery.storeId;
       if (! storeId) {
         console.error('Missing storeId' + params.streams);
         throw(new Error("Missing storeId" + params.streams));
       }
-      if (! storeQueryMap[storeId]) storeQueryMap[storeId] = [];
-      delete streamQuery.storeId;
-      storeQueryMap[storeId].push(streamQuery);
-      count++;
+      if (! paramsByStoreId[storeId]) {
+        paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
+        paramsByStoreId[storeId].streams = []; // empty the stream query
+      }
+      delete streamQuery.storeId; 
+      paramsByStoreId[storeId].streams.push(streamQuery);
+    }
+    
+  
+    // ---- apply limitation if any 
+    const limitations = context.access.getLimitationsForMethodId('events.get');
+    if (limitations) {
+      for (let storeId of Object.keys(paramsByStoreId)) {
+        const paramsForStore = paramsByStoreId[storeId];
+        if (limitations[storeId]) { // found limitation for this store
+          const limitation = limitations[storeId];
+          if (limitation.streams) {
+            if (paramsForStore.streams) { // apply to all streamQueries
+
+              for (let streamQuery of paramsForStore.streams) {
+                if (limitation.streams.all) {
+                  if (!streamQuery.all) streamQuery.all = [];
+                  streamQuery.all.push(...limitation.streams.all);
+                }
+                if (limitation.streams.not) {
+                  if (!streamQuery.not) streamQuery.not = [];
+                  streamQuery.not.push(...limitation.streams.not);
+                }
+              }
+
+            } else { // use limitation as streamQuery
+              paramsForStore.streams = [{
+                all: limitation.streams.all,
+                not: limitation.streams.not
+              }];
+            }
+          }
+        }
+      }
     }
 
-    delete params.streams;
-    params.streamsQueryMapByStore = storeQueryMap;
-  
 
     /**
      * Will be called by "stores" for each source of event that need to be streames to result
@@ -273,7 +306,7 @@ module.exports = async function (
       result.addToConcatArrayStream('events', stream);
     }
 
-    await stores.events.generateStreams(context.user.id, params, addnewEventStreamFromSource);
+    await stores.events.generateStreams(context.user.id, paramsByStoreId, addnewEventStreamFromSource);
     result.closeConcatArrayStream('events');
 
     return next();

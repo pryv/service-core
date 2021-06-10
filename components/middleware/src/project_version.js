@@ -36,9 +36,17 @@ class ProjectVersion {
   // 
   version(): string {
     const version = this.readStaticVersion(); 
-    if (version != null) return version; 
-    
-    return DEFAULT_VERSION;
+    if (version != null && version != '1.2.3') return version; 
+
+    let versionFromGitTag = null;
+    try {
+      versionFromGitTag = require('child_process').execSync('git describe --tags').toString();
+      if (versionFromGitTag) versionFromGitTag = versionFromGitTag.trim();
+    } catch (e) {
+      console.error('Cannot read git tag: ' + e.message);
+    }
+
+    return versionFromGitTag || version || DEFAULT_VERSION;
   }
   
   readStaticVersion(): ?string {
@@ -59,6 +67,16 @@ class ProjectVersion {
   }
 }
 
+let version = null;
+async function getAPIVersion(forceRefresh: ?boolean): Promise<string> {
+  if (! version || forceRefresh) {
+    const pv = new ProjectVersion();
+    version = pv.version();
+  }
+  return version;
+}
+
 module.exports = {
-  ProjectVersion
+  ProjectVersion,
+  getAPIVersion
 };

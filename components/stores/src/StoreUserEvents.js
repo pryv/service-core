@@ -21,20 +21,11 @@ class StoreUserEvents extends UserEvents {
     this.store = store;
   }
 
-  async generateStreams(uid, params, addEventStreamCB) {
-    const store = this.store;
-    const streamsQueryMapByStore = params.streamsQueryMapByStore;
-    delete params.streamsQueryMapByStore;
-    for (let sourceId of Object.keys(streamsQueryMapByStore)) {
-      const source = store.sourceForId(sourceId);
-      params.streams = streamsQueryMapByStore[sourceId];
-
-      // replace '*' by null <-- this should be done upfront
-      if (params.streams && params.streams[0] && params.streams[0].any && params.streams[0].any[0] === '*') {
-        params.streams = null; 
-      }
-
-      await source.events.getStreamed(uid, _.cloneDeep(params)).then((eventsStream) => {
+  async generateStreams(uid, paramsBySource, addEventStreamCB) {
+    for (let sourceId of Object.keys(paramsBySource)) {
+      const source = this.store.sourceForId(sourceId);
+      const params = paramsBySource[sourceId];
+      await source.events.getStreamed(uid, params).then((eventsStream) => {
         if (sourceId == 'local') {
           addEventStreamCB(source, eventsStream);
         } else {
