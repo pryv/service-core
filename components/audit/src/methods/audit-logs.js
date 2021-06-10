@@ -27,6 +27,9 @@ module.exports = function (api) {
     getAuditLogs);
 }
 
+/**
+ * params?.streams === [{ any: ['*']}]
+ */
 function anyStarStreamQueryIsNullQUery(context, params, result, next) {
   if (params.streams &&
     params.streams.length === 1 && 

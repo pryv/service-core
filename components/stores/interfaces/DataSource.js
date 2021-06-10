@@ -39,17 +39,12 @@ class DataSource {
    * ex: "localStorage", "System Streams"
    */
   get name() { toBeImplemented(); } 
-
-  /**
-   * Get UserSource instance for  this userId or null if unkown;
-   * @param {string} uid - userId
-   * @returns {UserSource}
-   */
-  async forUID(uid) { toBeImplemented(); } 
   
   async init() { toBeImplemented(); }
 
+  /** @returns  UserStreams */
   get streams() { toBeImplemented(); } 
+  /** @returns  UserEvents */
   get events() { toBeImplemented(); } 
 
   // -- will be overriden by the system to throw appropriate error
@@ -97,7 +92,6 @@ class UserStreams {
    * @param {identifier} [params.hideChildren] default false
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @param {timestamp} [params.includeDeletionsSince] 
-   * @param {identifier} [streamId] - the streamId to ge or null to get the root of this volume
    * @returns {UserStream|null} - the stream or null if not found:
    */
   async get(uid, params) { toBeImplemented(); }

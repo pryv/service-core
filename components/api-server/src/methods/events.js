@@ -239,8 +239,7 @@ module.exports = async function (
       return next();
     }
 
-
-    // --- The following code my be moved directly into store.get()
+    // in> params.fromTime = 2 params.streams = [{any: '*' storeId: 'local'}, {any: 'access-gasgsg', storeId: 'audit'}, {any: 'action-events.get', storeId: 'audit'}]
     const paramsByStoreId = {};
     for (let streamQuery of params.streams) {
       const storeId = streamQuery.storeId;
@@ -255,6 +254,9 @@ module.exports = async function (
       delete streamQuery.storeId; 
       paramsByStoreId[storeId].streams.push(streamQuery);
     }
+    // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
+
+
     
   
     // ---- apply limitation if any 
