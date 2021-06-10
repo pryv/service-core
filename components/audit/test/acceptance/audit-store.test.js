@@ -35,6 +35,7 @@ describe('Audit Streams and Events', function () {
     user = user.attrs;
     accessesPath = '/' + username + '/accesses/';
     eventsPath = '/' + username + '/events/';
+    streamsPath = '/' + username + '/streams/';
     appAccess = await createAppAccess(personalToken, 'app-access');
     anotherAppAccess = await createAppAccess(personalToken, 'another-app-access');
   });
@@ -68,6 +69,16 @@ describe('Audit Streams and Events', function () {
     await validGet(eventsPath, appAccess);
     await validGet(eventsPath, appAccess).query({ streams: ['other'] });
     await validGet(eventsPath, anotherAppAccess);
+  });
+
+  describe('streams.get', () => {
+    it('[7SGO] must retrive a list of available streams', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .set('Authorization', appAccess.token);
+      console.log(res.body);
+    });
+
   });
 
   describe('events.get', () => {

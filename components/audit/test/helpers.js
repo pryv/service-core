@@ -80,6 +80,15 @@ async function initCore() {
     app.config.get('updates'),
     app.config.get('openSource'),
     app.config.get('services'));
+
+  require('api-server/src/methods/streams')(app.api, 
+    app.storageLayer.streams, 
+    app.storageLayer.events, 
+    app.storageLayer.eventFiles, 
+    this.notificationBus, 
+    app.logging, 
+    app.config.get('versioning'), 
+    app.config.get('updates'));
   require('api-server/src/methods/service')(app.api);
   require('api-server/src/methods/auth/login')(app.api, 
     app.storageLayer.accesses, 
