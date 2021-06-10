@@ -19,8 +19,9 @@ const { getApplication } = require('api-server/src/application');
 const UsersRepository = require('business/src/users/repository');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
-
+const { getAPIVersion } = require('middleware/src/project_version');
 let app;
+let apiVersion;
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -47,6 +48,7 @@ class Server {
   async start() {
     this.logger = getLogger('server');
     this.logger.debug('start initiated');
+    const apiVersion = await getAPIVersion();
     
     app = getApplication();
     await app.initiate();
@@ -78,7 +80,7 @@ class Server {
       await this.setupReporting();
     }
 
-    this.logger.info('Server ready.');
+    this.logger.info('Server ready. API Version: ' + apiVersion);
     this.notificationBus.serverReady();
     this.logger.debug('start completed');
   }
@@ -221,8 +223,6 @@ class Server {
     await bluebird.fromCallback(
       (cb) => server.listen(port, hostname, backlog, cb));
     
-    
-      
     const address = server.address();
     const protocol = 'http';
     

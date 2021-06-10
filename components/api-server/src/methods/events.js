@@ -32,7 +32,7 @@ const MultiStream = require('multistream');
 
 const eventsGetUtil = require('./helpers/eventsGetUtils');
 
-const { ProjectVersion } = require('middleware/src/project_version');
+const { getAPIVersion } = require('middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('business').types;
 
@@ -71,8 +71,7 @@ module.exports = async function (
   }
   
   // Initialise the project version as soon as we can. 
-  const pv = new ProjectVersion();
-  let version = pv.version();
+  const version = await getAPIVersion();
   
   // Update types and log error
   typeRepo.tryUpdate(eventTypesUrl, version)

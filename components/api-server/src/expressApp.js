@@ -14,7 +14,7 @@ const middleware = require('middleware');
 
 const Paths = require('./routes/Paths');
 
-const { ProjectVersion } = require('middleware/src/project_version');
+const { getAPIVersion } = require('middleware/src/project_version');
 
 // ------------------------------------------------------------ express app init
 
@@ -22,10 +22,9 @@ const { ProjectVersion } = require('middleware/src/project_version');
 // `version` should be the version string you want to show to API clients. 
 // 
 async function expressAppInit(isDnsLess: boolean, logging) {
-  const pv = new ProjectVersion();
-  const version = pv.version();
+  const version = await getAPIVersion();
   var app = express(); // register common middleware
-  const commonHeadersMiddleware = middleware.commonHeaders(version);
+  const commonHeadersMiddleware = await middleware.commonHeaders();
   const requestTraceMiddleware = middleware.requestTrace(app, logging);
 
   // register common middleware

@@ -34,8 +34,6 @@ const { axonMessaging } = require('messages');
 
 const ExtensionLoader = utils.extension.ExtensionLoader;
 
-const { ProjectVersion } = require('middleware/src/project_version');
-
 import type { Extension } from 'utils';
 
 function loadCustomAuthStepFn(customExtensions): ?Extension {
@@ -74,11 +72,8 @@ async function start() {
   const loadAccessMiddleware = middleware.loadAccess(
     storageLayer);
 
-  const pv = new ProjectVersion();
-  const version = pv.version();
-
   const { expressApp, routesDefined } = require('./expressApp')(
-    middleware.commonHeaders(version), 
+    await middleware.commonHeaders(), 
     require('./middleware/errors')(logger), 
     middleware.requestTrace(null, logger));
 
