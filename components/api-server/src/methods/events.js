@@ -1106,26 +1106,24 @@ module.exports = async function (
    * @param files Express-style uploaded files object (as in req.files)
    */
   async function attachFiles(context: MethodContext, eventInfo: {}, files) {
-    if (!files) { return; }
+    if (! files) return;
 
-    var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [];
-    let i;
-    let fileInfo;
-    const filesKeys = Object.keys(files);
-    for (i = 0; i < filesKeys.length; i++) {
+    const attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [];
+
+    for (const file of files) {
       //saveFile
-      fileInfo = files[filesKeys[i]];
+      fileInfo = file;
       const fileId = await bluebird.fromCallback(cb =>
-        userEventFilesStorage.saveAttachedFile(fileInfo.path, context.user, eventInfo.id, cb));
+        userEventFilesStorage.saveAttachedFile(file.path, context.user, eventInfo.id, cb));
 
       attachments.push({
         id: fileId,
-        fileName: fileInfo.originalname,
-        type: fileInfo.mimetype,
-        size: fileInfo.size
+        fileName: file.originalname,
+        type: file.mimetype,
+        size: file.size
       });
       // approximately update account storage size
-      context.user.storageUsed.attachedFiles += fileInfo.size;
+      context.user.storageUsed.attachedFiles += file.size;
       
       await usersRepository.updateOne(
         context.user,
