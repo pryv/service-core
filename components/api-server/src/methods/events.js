@@ -230,11 +230,6 @@ module.exports = async function (
    * - Create a copy of the params per query
    * - Add specific stream queries to each of them
    * - Eventually apply limitations per store
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   * @returns 
    */
   async function findEventsFromStore(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (params.streams === null || params.streams.length === 0)  {
@@ -420,6 +415,7 @@ module.exports = async function (
     doesEventBelongToAccountStream,
     validateAccountStreamsForCreation,
     appendAccountStreamsDataForCreation,
+    verifyUnicity,
     createEvent,
     handleEventsWithActiveStreamId,
     createAttachments,
@@ -496,43 +492,44 @@ module.exports = async function (
   }
 
   /**
-   * Do additional actions if event belongs to the account stream and is
-   * 1) unique
-   * 2) indexed
-   * 3) active
-   * Additional actions like
-   * a) adding property to enforce uniqueness
-   * b) sending data update to service-register
-   * c) saving streamId 'active' has to be handled in a different way than
-   * for all other events
-   *
-   * @param string username 
-   * @param object contextContent 
-   * @param boolean creation - if true - active streamId will be added by default
+   * Do additional actions if event belongs to account stream
    */
   async function appendAccountStreamsDataForCreation(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    // check if event belongs to account stream ids
     if (!context.doesEventBelongToAccountStream) {
       return next();
     }
 
     const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
-    const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
-    const systemStream: SystemStream = editableAccountStreamsMap[context.accountStreamId];
+    context.accountStreamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+    context.systemStream = editableAccountStreamsMap[context.accountStreamId];
+
+    // when new account event is created, all other should be marked as nonactive
+    context.content.streamIds.push(STREAM_ID_ACTIVE);
+    context.removeActiveEvents = true;
+
+    context.content.streamIds = addUniqueStreamIdIfNeeded(context.content.streamIds, context.systemStream.isUnique);
+    next();
+  }
+
+  /**
+   * Update data on register and verify unicity on register and core
+   */
+  async function verifyUnicity(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if(! context.doesEventBelongToAccountStream) {
+      return next();
+    }
+
+    const isCreation: boolean = context.oldContent == null;
+
+    const systemStream: SystemStream = context.systemStream;
+    const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
 
     try{
-      // when new account event is created, all other should be marked as nonactive
-      context.content.streamIds.push(STREAM_ID_ACTIVE);
-      context.removeActiveEvents = true;
-            
       if (systemStream.isIndexed) {
-        await sendDataToServiceRegister(context, true, editableAccountStreamsMap);
+        await sendDataToServiceRegister(context, isCreation);
       }
       if (systemStream.isUnique) {
-        context.content = enforceEventUniquenessIfNeeded(context.content, systemStream);
-        await usersRepository.checkDuplicates({
-          [streamIdWithoutPrefix]: context.content.content,
-        });
+        await usersRepository.checkDuplicates({[streamIdWithoutPrefix]: context.content.content});
       }
     } catch (err) {
       if (err.isDuplicate) {
@@ -577,22 +574,14 @@ module.exports = async function (
       });
   }
 
-  /**
-   * TODO: probably remove this as we enforce uniqueness in another way
-   * 
-   * If event should be unique, add unique streamId
-   * 
-   * @param {object} contextContent 
-   * @param {SystemStream} accountSystemStream 
-   */
-  function enforceEventUniquenessIfNeeded(contextContent: object, accountSystemStream: SystemStream): object {
-    if (! accountSystemStream.isUnique) {
-      return contextContent;
+  function addUniqueStreamIdIfNeeded(streamIds: Array<string>, isUnique: boolean): Array<string> {
+    if (! isUnique) {
+      return streamIds;
     }
-    if (!contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE)) {
-      contextContent.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
+    if (! streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE)) {
+      streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
     }
-    return contextContent;
+    return streamIds;
   }
 
   /**
@@ -648,6 +637,7 @@ module.exports = async function (
     generateVersionIfNeeded,
     updateAttachments,
     appendAccountStreamsDataForUpdate,
+    verifyUnicity,
     updateEvent,
     handleEventsWithActiveStreamId,
     notify);
@@ -775,19 +765,7 @@ module.exports = async function (
 
 
   /**
-   * Do additional actions if event belongs to the account stream and is
-   * 1) unique
-   * 2) indexed
-   * 3) active
-   * Additional actions like
-   * a) adding property to enforce uniqueness
-   * b) sending data update to service-register
-   * c) saving streamId 'active' has to be handled in a different way than
-   * for all other events
-   *
-   * @param string username 
-   * @param object contextContent 
-   * @param boolean creation - if true - active streamId will be added by default
+   * Do additional actions if event belongs to account stream
    */
   async function appendAccountStreamsDataForUpdate(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     // check if event belongs to account stream ids
@@ -796,40 +774,20 @@ module.exports = async function (
     }
 
     const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
-    const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
-    const systemStream: SystemStream = editableAccountStreamsMap[context.accountStreamId];
+    context.accountStreamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+    context.systemStream = editableAccountStreamsMap[context.accountStreamId];
 
-    try{
-      context.removeActiveEvents = false;
+    context.removeActiveEvents = false;
 
-      // if .active stream id was added to the event
-      if (
-        !context.oldContent.streamIds.includes(STREAM_ID_ACTIVE)
-        && context.content.streamIds.includes(STREAM_ID_ACTIVE)
-      ) {
-        // after event will be saved, active property will be removed from the other events
-        context.removeActiveEvents = true;
-      }
-
-      if (systemStream.isIndexed) {
-        await sendDataToServiceRegister(context, false, editableAccountStreamsMap);
-      }
-      if (systemStream.isUnique) {
-        context.content = enforceEventUniquenessIfNeeded(context.content, systemStream);
-        await usersRepository.checkDuplicates({
-          [streamIdWithoutPrefix]: context.content.content,
-        });
-      }
-    } catch (err) {
-      if (err.isDuplicate) {
-        return next(Registration.handleUniquenessErrors(
-          err,
-          ErrorMessages[ErrorIds.UnexpectedError],
-          { [streamIdWithoutPrefix]: context.content.content }));
-      }
-      return next(err);
+    if (hasBecomeActive(context.oldContent.streamIds, context.content.streamIds)) {
+      context.removeActiveEvents = true;
     }
+
     next();
+
+    function hasBecomeActive(oldStreamIds: Array<string>, newSreamIds: Array<string>): boolean {
+      return ! oldStreamIds.includes(STREAM_ID_ACTIVE) && newSreamIds.includes(STREAM_ID_ACTIVE);
+    }
   }
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -1432,11 +1390,14 @@ module.exports = async function (
    * @param {boolean} isCreation 
    * @param {Map<string, SystemStream>} editableAccountStreamsMap 
    */
-  async function sendDataToServiceRegister(context: MethodContext, isCreation: boolean, editableAccountStreamsMap: Map<string, SystemStream>) {
+  async function sendDataToServiceRegister(context: MethodContext, isCreation: boolean) {
     // send update to service-register
     if (config.get('dnsLess:isActive')) {
       return;
     }
+
+    const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
+
     const fieldsForUpdate = {};
     const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
 
