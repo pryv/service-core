@@ -18,10 +18,7 @@
   "scripts": {
     "api": "cd dist/components/api-server && NODE_ENV=development bin/server",
     "build-dev": "scripts/prepare_dist && node_modules/.bin/babel ./components --out-dir=dist/components --copy-files --source-maps both",
-    "cover": "yarn cover:clean && yarn cover:do && yarn cover:report",
-    "cover:clean": "rm -rf .nyc_output",
-    "cover:do": "node scripts/components-command ../../node_modules/.bin/nyc --no-clean --temp-dir=../../../.nyc_output yarn run test",
-    "cover:report": "node_modules/.bin/nyc report --reporter=html",
+    "cover": "node_modules/.bin/nyc --reporter=html --report-dir=./coverage yarn run test",
     "database": "scripts/start-database.sh",
     "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'components/**/*.js' -t html",
     "influx": "influxd -config /usr/local/etc/influxdb.conf",
