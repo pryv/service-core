@@ -13,6 +13,17 @@ const errors = require('errors').factory;
 const ErrorMessages = require('errors/src/ErrorMessages');
 const User = require('business/src/users/User');
 
+type OperationType = 'update' | 'delete';
+type AccountProperty = string;
+type Value = string;
+type Operation = {
+  [OperationType]: {
+    key: AccountProperty,
+    value: Value,
+    isUnique: ?boolean,
+  },
+};
+
 const { getLogger, getConfigUnsafe, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
   config: {}; 
@@ -110,29 +121,57 @@ class ServiceRegister {
     }
   }
 
-
   /**
    * After indexed fields are updated, service-register is notified to update
    * the information
    */
   async updateUserInServiceRegister (
     username: string,
-    user: User,
-    fieldsToDelete: {},
-    updateParams: {}): Promise<void> {
+    operations: Array<Operation>,
+    isActive: boolean,
+    isCreation: boolean
+  ): Promise<void> {
     const url = buildUrl('/users', this.config.url);
-    // log fact about the event
     this.logger.info(`PUT ${url} for username:${username}`);
 
-    const request = {
-      username: username,
-      user: user,
-      fieldsToDelete: fieldsToDelete,
+    // otherwise deletion
+    const isUpdate: boolean = operations[0].update != null;
+    const operationType: OperationType = isUpdate ? 'update' : 'delete';
+
+    const fieldsForUpdate: {} = {}; // stored as user
+    const fieldsToDelete: {} = {};
+    const updateParams: {} = {};
+    let streamIdWithoutPrefix: string;
+    if (isUpdate) {
+      operations.forEach(operation => {
+        const streamIdWithoutPrefix: string = operation.update.key;
+        fieldsForUpdate[streamIdWithoutPrefix] = [
+          {
+            value: operation.update.value,
+            isUnique: operation.update.isUnique,
+            isActive,
+            creation: isCreation,
+          }
+        ];
+        updateParams[operation[operationType].key] = operation[operationType].value;
+      });
+    } else {
+      operations.forEach(operation => {
+        const streamIdWithoutPrefix: string = operation.delete.key;
+        fieldsToDelete[streamIdWithoutPrefix] = operation.delete.value;
+        updateParams[operation[operationType].key] = operation[operationType].value;
+      });
+    }
+
+    const payload: {} = {
+      username,
+      user: fieldsForUpdate,
+      fieldsToDelete,
     }
 
     try {
       const res = await superagent.put(url)
-        .send(request)
+        .send(payload)
         .set('Authorization', this.config.key);
       return res.body;
     } catch (err) {

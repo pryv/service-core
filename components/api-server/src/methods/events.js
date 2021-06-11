@@ -477,8 +477,9 @@ module.exports = async function (
 
     throwIfUserTriesToAddMultipleAccountStreamIds(context.accountStreamIds); // assert context.accountStreamIds.length == 1
     context.accountStreamId = context.accountStreamIds[0];
-    throwIfStreamIdIsNotEditable(context.accountStreamId);
 
+    throwIfStreamIdIsNotEditable(context.accountStreamId);
+    
     next();
   }
 
@@ -541,6 +542,36 @@ module.exports = async function (
       return next(err);
     }
     next();
+
+    /**
+     * Build request and send data to service-register about unique or indexed fields update
+     * @param {MethodContext} context 
+     * @param {boolean} isCreation
+     */
+    async function sendDataToServiceRegister(context: MethodContext, isCreation: boolean): void {
+      if (config.get('dnsLess:isActive')) {
+        return;
+      }
+
+      const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
+      const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
+
+      // send information update to service regsiter
+      await serviceRegisterConn.updateUserInServiceRegister(
+        context.user.username,
+        [{ update: { 
+            key: streamIdWithoutPrefix,
+            value: context.content.content,
+            isUnique: editableAccountStreamsMap[context.accountStreamId].isUnique,
+          } 
+        }],
+        // for isActive, "context.removeActiveEvents" is not enough because, it would be set 
+        // to false if old event was active and is still active (no change)
+        context.content.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
+        context.oldContent.streamIds.includes(STREAM_ID_ACTIVE),
+        isCreation,
+      );
+    }
   }
 
   async function createEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -777,17 +808,13 @@ module.exports = async function (
     context.accountStreamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
     context.systemStream = editableAccountStreamsMap[context.accountStreamId];
 
-    context.removeActiveEvents = false;
-
     if (hasBecomeActive(context.oldContent.streamIds, context.content.streamIds)) {
       context.removeActiveEvents = true;
+    } else {
+      context.removeActiveEvents = false;
     }
 
     next();
-
-    function hasBecomeActive(oldStreamIds: Array<string>, newSreamIds: Array<string>): boolean {
-      return ! oldStreamIds.includes(STREAM_ID_ACTIVE) && newSreamIds.includes(STREAM_ID_ACTIVE);
-    }
   }
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -808,10 +835,7 @@ module.exports = async function (
       setFileReadToken(context.access, result.event);
 
     } catch (err) {
-      return next(Registration.handleUniquenessErrors( // should be unexpected only
-        err,
-        ErrorMessages[ErrorIds.UnexpectedError],
-        { [SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId)]: context.content.content }));
+      return next(err);
     };
     next();
   }
@@ -822,18 +846,15 @@ module.exports = async function (
   * only one should be main/active
   */
   async function handleEventsWithActiveStreamId(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    // if it is needed update events from the same account stream
-    if (!context.removeActiveEvents) {
+    if (! context.removeActiveEvents) {
       return next();
     }
     await bluebird.fromCallback(cb =>
-      userEventsStorage.updateMany(context.user, // why many? there should be a single one
+      userEventsStorage.updateOne(context.user,
         {
           id: { $ne: result.event.id },
           streamIds: {
             $all: [
-              // if we use active stream id not only for account streams
-              // this should be made more general
               context.accountStreamId, 
               STREAM_ID_ACTIVE
             ]
@@ -1003,25 +1024,16 @@ module.exports = async function (
 
   }
 
-  /**
-   * Forbid event editing if event has non editable core stream
-   * @param {string} streamId
-   */
-  function throwIfStreamIdIsNotEditable(streamId: string): void { // this should be called in case of events.delete as well
+  function throwIfStreamIdIsNotEditable(accountStreamId: string): void {
     const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
-    if (editableAccountMap[streamId] == null) {
-      // if user tries to add new streamId from non editable streamsIds
+    if (editableAccountMap[accountStreamId] == null) {
       throw errors.invalidOperation(
         ErrorMessages[ErrorIds.ForbiddenAccountEventModification],
-        { streamId: streamId }
+        { streamId: accountStreamId }
       );
     }
   }
 
-  /**
-   * Forbid event editing if user tries to add multiple account streams
-   * to the same event
-   */
   function throwIfUserTriesToAddMultipleAccountStreamIds(accountStreamIds: Array<string>): void {
     if (accountStreamIds.length > 1) {
       throw errors.invalidOperation(
@@ -1150,16 +1162,24 @@ module.exports = async function (
    * @param object event
    * @param string accountStreamId - accountStreamId
    */
-  async function sendUpdateToServiceRegister (user, event, accountStreamId) {
+  async function sendUpdateToServiceRegister (user, event, accountStreamId) { // TODO merge with sendDataToServiceRegister
     if (config.get('dnsLess:isActive')) {
       return;
     }
-    const editableAccountStreamsMap = SystemStreamsSerializer.getEditableAccountMap();
-    const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(accountStreamId);
-    if (editableAccountStreamsMap[accountStreamId].isUnique) {
-      // send information update to service regsiter
+
+    const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
+    const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(accountStreamId);
+
+    if (editableAccountStreamsMap[accountStreamId].isUnique) { // TODO should be isIndexed??
       await serviceRegisterConn.updateUserInServiceRegister(
-        user.username, {}, { [streamIdWithoutPrefix]: event.content}, { [streamIdWithoutPrefix]: event.content});
+        user.username,
+        [{ 
+          delete: {
+            key: streamIdWithoutPrefix,
+            value: event.content,
+          }
+        }]
+      );
     }
   }
   
@@ -1384,42 +1404,10 @@ module.exports = async function (
     });
   }
 
-  /**
-   * Build request and send data to service-register about unique or indexed fields update
-   * @param {MethodContext} context 
-   * @param {boolean} isCreation 
-   * @param {Map<string, SystemStream>} editableAccountStreamsMap 
-   */
-  async function sendDataToServiceRegister(context: MethodContext, isCreation: boolean) {
-    // send update to service-register
-    if (config.get('dnsLess:isActive')) {
-      return;
-    }
-
-    const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
-
-    const fieldsForUpdate = {};
-    const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
-
-    // for isActive, "context.removeActiveEvents" is not enough because, it would be set 
-    // to false if old event was active and is still active (no change)
-    fieldsForUpdate[streamIdWithoutPrefix] = [{
-      value: context.content.content,
-      isUnique: editableAccountStreamsMap[context.accountStreamId].isUnique,
-      isActive: (
-        context.content.streamIds.includes(STREAM_ID_ACTIVE) ||
-        context.oldContent.streamIds.includes(STREAM_ID_ACTIVE)),
-      creation: isCreation
-    }];
-
-    // send information update to service regsiter
-    await serviceRegisterConn.updateUserInServiceRegister(
-      context.user.username,
-      fieldsForUpdate,
-      {},
-      {[streamIdWithoutPrefix] : context.content.content}
-    );
+  function hasBecomeActive(oldStreamIds: Array<string>, newSreamIds: Array<string>): boolean {
+    return ! oldStreamIds.includes(STREAM_ID_ACTIVE) && newSreamIds.includes(STREAM_ID_ACTIVE);
   }
+
 };
 
 

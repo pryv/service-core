@@ -129,30 +129,6 @@ class User {
   }
 
   /**
-   * Build request to service register for data update
-   * @param {*} updateData 
-   */
-  getUpdateRequestToServiceRegister (updateData: {}, isActive: boolean) {
-    const updateRequest = {};
-    const updateKeys = Object.keys(updateData);
-    const editableAccountStreams = SystemStreamsSerializer.getEditableAccountMap();
-    
-    // iterate over updateData and check which fields should be updated
-    updateKeys.forEach(streamIdWithoutPrefix => {
-      // check if field value was changed
-      if (updateData[streamIdWithoutPrefix] !== this[streamIdWithoutPrefix]){
-        const streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix);
-        updateRequest[streamIdWithoutPrefix] = [{
-          value: updateData[streamIdWithoutPrefix],
-          isUnique: editableAccountStreams[streamIdWithPrefix].isUnique,
-          isActive: isActive,
-          creation: false
-        }];
-      }
-    });
-    return updateRequest;
-  }
-  /**
    * 1) Build events for the given updateData
    * @param {*} update
    */

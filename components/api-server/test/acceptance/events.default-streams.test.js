@@ -1294,7 +1294,6 @@ describe("Events of system streams", () => {
           (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
 
         await createAdditionalEvent(streamId);
-
         res = await request.delete(path.join(basePath, initialEvent.id))
           .set('authorization', access.token);
       });

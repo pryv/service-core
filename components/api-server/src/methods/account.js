@@ -201,15 +201,23 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
       return next();
     }
     try {
-      const serviceRegisterRequest = await context.user.getUpdateRequestToServiceRegister(
-        params.update,
-        true
-      );
+      const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
+
+      const operations: Array<{}> = [];
+      for (const [key, value] of Object.entries(params.update)) {
+        operations.push({
+          update: {
+            key,
+            value,
+            isUnique: editableAccountStreamsMap[SystemStreamsSerializer.addPrivatePrefixToStreamId(key)].isUnique,
+          }
+        })
+      }
       await serviceRegisterConn.updateUserInServiceRegister(
         context.user.username,
-        serviceRegisterRequest,
-        {},
-        params.update
+        operations,
+        true,
+        false,
       );
     } catch (err) {
       return next(err);
