@@ -34,7 +34,7 @@ class User {
   apiEndpoint: ?string;
   accountFields: Array<string> = [];
   readableAccountFields: Array<string> = [];
-  accountFieldsWithDot: Array<string> = [];
+  accountFieldsWithPrefix: Array<string> = [];
   uniqueAccountFields: Array<string> = [];
 
   constructor (params: {
@@ -189,7 +189,7 @@ class User {
 
 function buildAccountFields (user: User): void {
   const userAccountStreamIds = SystemStreamsSerializer.getAccountStreamIdsForUser();
-  user.accountFieldsWithDot = userAccountStreamIds.accountFieldsWithPrefix;
+  user.accountFieldsWithPrefix = userAccountStreamIds.accountFieldsWithPrefix;
   user.uniqueAccountFields = userAccountStreamIds.uniqueAccountFields;
   user.readableAccountFields = userAccountStreamIds.readableAccountFields;
   user.accountFields = userAccountStreamIds.accountFields;

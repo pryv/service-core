@@ -53,6 +53,7 @@ custom:
       regexError:
         message: Cool error
         code: cool-error
+      isEditable: true
     - id: phoneNumber
       isEditable: true
       isShown: true

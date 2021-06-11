@@ -72,12 +72,12 @@ class Registration {
     next: ApiCallback
   ) {
     try {
-      let uniqueFields = {};
-      for (const [streamIdWithDot, streamSettings] of Object.entries(this.accountStreamsSettings)) {
+      const uniqueFields = {};
+      for (const [streamIdWithPrefix, streamSettings] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
         if (streamSettings?.isUnique) {
-          let streamIdWithoutDot = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithDot)
-          uniqueFields[streamIdWithoutDot] = context.user[streamIdWithoutDot];
+          const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix)
+          uniqueFields[streamIdWithoutPrefix] = context.user[streamIdWithoutPrefix];
         }
       }
       

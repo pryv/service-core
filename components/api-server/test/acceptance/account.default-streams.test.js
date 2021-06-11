@@ -54,26 +54,26 @@ describe('Account with system streams', function () {
   }
 
   async function getActiveEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+    let streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
           streamIds: {
             $all: [
               SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
-              streamIdWithDot
+              streamIdWithPrefix
             ]
           }
         }, null, cb));
   }
 
   async function getNotActiveEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+    let streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
           $and: [
-            { streamIds: streamIdWithDot },
+            { streamIds: streamIdWithPrefix },
             { streamIds: { $ne: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
           ]
         }, null, cb));
@@ -83,9 +83,9 @@ describe('Account with system streams', function () {
    * @param string streamId 
    */
   async function createAdditionalEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+    const streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
     eventDataForadditionalEvent = {
-      streamIds: [streamIdWithDot],
+      streamIds: [streamIdWithPrefix],
       content: charlatan.Lorem.characters(7),
       type: 'string/pryv'
     };
@@ -150,13 +150,12 @@ describe('Account with system streams', function () {
           (body) => {
             serviceRegisterRequest = body;
             return true;
-          }).times(4).reply(200, { errors: [] });
+          }).times(3).reply(200, { errors: [] });
         const editableStreamsIds = ['email', 'language', 'phoneNumber', 'insurancenumber'].map(SystemStreamsSerializer.addPrivatePrefixToStreamId);
         const visibleStreamsIds = ['username', 'email', 'language', 'phoneNumber', 'insurancenumber', 'dbDocuments', 'attachedFiles'].map(SystemStreamsSerializer.addPrivatePrefixToStreamId);
 
-        let i;
-        for (i = 0; i < editableStreamsIds.length; i++){
-          await createAdditionalEvent(editableStreamsIds[i]);
+        for (const editableStreamsId of editableStreamsIds) {
+          await createAdditionalEvent(editableStreamsId);
         }
 
         allVisibleAccountEvents = await bluebird.fromCallback(
