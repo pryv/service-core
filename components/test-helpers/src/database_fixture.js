@@ -274,7 +274,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     const db = this.db;
     const attributes = this.attrs;
     const usersRepository = new UsersRepository(db.events);
-    let userObj: User = new User(attributes);
+    const userObj: User = new User(attributes);
     await usersRepository.insertOne(userObj);
     return this.attrs;
   }

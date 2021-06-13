@@ -141,7 +141,7 @@ class ServiceRegister {
     const fieldsForUpdate: {} = {}; // stored as user
     const fieldsToDelete: {} = {};
     const updateParams: {} = {};
-    let streamIdWithoutPrefix: string;
+
     if (isUpdate) {
       operations.forEach(operation => {
         const streamIdWithoutPrefix: string = operation.update.key;
@@ -155,7 +155,7 @@ class ServiceRegister {
         ];
         updateParams[operation[operationType].key] = operation[operationType].value;
       });
-    } else {
+    } else { // isDelete
       operations.forEach(operation => {
         const streamIdWithoutPrefix: string = operation.delete.key;
         fieldsToDelete[streamIdWithoutPrefix] = operation.delete.value;
@@ -240,6 +240,6 @@ function getServiceRegisterConn() {
   }
 
 module.exports = {
-  getServiceRegisterConn: getServiceRegisterConn,
-  safetyCleanDuplicate: safetyCleanDuplicate
+  getServiceRegisterConn,
+  safetyCleanDuplicate,
 };

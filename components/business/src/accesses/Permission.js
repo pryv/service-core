@@ -4,8 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-module.exports = {
-  AccessLogic: require('./AccessLogic'),
-  Access: require('./Access'),
-  Permission: require('./Permission'),
+// @flow
+
+class Permission {
+
+  streamId: string;
+  level: string;
+  feature: ?string;
+  setting: ?string;
 }
+module.exports = Permission;

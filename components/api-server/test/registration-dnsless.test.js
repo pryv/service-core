@@ -332,9 +332,7 @@ describe('[BMM2] registration: DNS-less', () => {
 
     const existingUsername = 'existing-username';
     before(async function () {
-      await mongoFixtures.user({
-        username: existingUsername,
-      });
+      await mongoFixtures.user(existingUsername);
     });
 
     function path(username) {

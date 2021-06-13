@@ -6,22 +6,20 @@
  */
 // @flow
 
-const Attachment = require('./Attachment');
+const Permission = require('./Permission');
 
-class Event {
-
+class Access {
   id: string;
-  streamIds: Array<string>;
-  streamId: ?string; // deprecated
+  token: string;
   type: string;
-  time: number;
-  duration: ?number;
-  content: any;
-  tags: ?Array<string>; // deprecated
-  description: ?string;
-  attachments: Array<Attachment>;
-  clientData: {};
-  trashed: ?boolean;
+  name: string;
+  deviceName: ?string;
+  permissions: Array<Permission>;
+  lastUsed: ?number;
+  expireAfter: ?number;
+  expires: ?number;
+  deleted: ?number;
+  clientData: ?{};
   created: number;
   createdBy: string;
   modified: number;
@@ -33,7 +31,4 @@ class Event {
     }
   }
 }
-
-
-
-module.exports = Event;
+module.exports = Access;

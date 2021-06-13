@@ -1105,15 +1105,14 @@ module.exports = async function (
    * @param {Object} eventInfo Expected properties: id, attachments
    * @param files Express-style uploaded files object (as in req.files)
    */
-  async function attachFiles(context: MethodContext, eventInfo: {}, files) {
+  async function attachFiles(context: MethodContext, eventInfo: {}, files: Array<{}>) {
     if (! files) return;
 
-    const attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [];
+    const attachments: Array<{}> = eventInfo.attachments ? eventInfo.attachments.slice() : [];
 
     for (const file of files) {
       //saveFile
-      fileInfo = file;
-      const fileId = await bluebird.fromCallback(cb =>
+      const fileId: string = await bluebird.fromCallback(cb =>
         userEventFilesStorage.saveAttachedFile(file.path, context.user, eventInfo.id, cb));
 
       attachments.push({

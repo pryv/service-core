@@ -51,11 +51,10 @@ class User {
     dbDocuments?: number,
     attachedFiles: number,
   }) {
-    this.events = params.events;
     buildAccountFields(this);
     loadAccountData(this, params);
 
-    if (this.events != null) buildAccountDataFromListOfEvents(this);
+    if (params.events != null) this.events = buildAccountDataFromListOfEvents(this, params.events);
     this.createIdIfMissing();
   }
 
@@ -66,8 +65,8 @@ class User {
   /**
    * Get list of events from account data
    */
-  async getEvents (): Array<{}> {
-    if (this.events == null) await buildEventsFromAccount(this);
+  async getEvents (): Array<Event> {
+    if (this.events == null) this.events = await buildEventsFromAccount(this);
     return this.events;
   }
 
@@ -127,40 +126,6 @@ class User {
   buildApiEndpoint(token) {
     return ApiEndpoint.build(this.username, token);
   }
-
-  /**
-   * 1) Build events for the given updateData
-   * @param {*} update
-   */
-  async getEventsDataForUpdate (update: {}, accessId: string) {
-    const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
-
-    // change password into hash if it exists
-    if (update.password) {
-      update.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(update.password, cb));
-    }
-    delete update.password;
-
-    // Start a transaction session
-    const streamIdsForUpdate = Object.keys(update);
-    let events = [];
-
-    // update all account streams and don't allow additional properties
-    for (let i = 0; i < streamIdsForUpdate.length; i++) {
-      let streamIdWithoutPrefix = streamIdsForUpdate[i];
-      // if needed append field that enforces uniqueness
-      let updateData = {
-        content: update[streamIdWithoutPrefix],
-        modified: timestamp.now(),
-        modifiedBy: accessId
-      };
-      events.push({
-        updateData: updateData,
-        streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix)
-      });
-    }
-    return events;
-  }
 }
 
 function buildAccountFields (user: User): void {
@@ -185,11 +150,11 @@ function loadAccountData (user: User, params): void {
   }
 }
 
-async function buildEventsFromAccount (user: User): Promise<void> {
+async function buildEventsFromAccount (user: User): Promise<Array<Event>> {
   const accountLeavesMap: Map<string, SystemStream> = SystemStreamsSerializer.getAccountLeavesMap();
   
   // convert to events
-  let account = user.getFullAccount();
+  const account: {} = user.getFullAccount();
 
   // change password into hash (also allow for tests to pass passwordHash directly)
   if (user.password != null && user.passwordHash == null) {
@@ -197,14 +162,11 @@ async function buildEventsFromAccount (user: User): Promise<void> {
   }
   delete user.password;
 
-  // flatten account information
-  account = treeUtils.flattenSimpleObject(account); // prolly useless
-  const events = [];
-
+  const events: Array<Event> = [];
   for (const [streamId, stream] of Object.entries(accountLeavesMap)) {
 
     const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(streamId);
-    const content: any = account[streamIdWithoutPrefix] ? account[streamIdWithoutPrefix] : stream.default;
+    const content: string = account[streamIdWithoutPrefix] ? account[streamIdWithoutPrefix] : stream.default;
 
     if (content != null) {
       const event = createEvent(
@@ -219,7 +181,7 @@ async function buildEventsFromAccount (user: User): Promise<void> {
     }
   }
 
-  user.events = events;
+  return events;
 }
 
 function createEvent (
@@ -228,8 +190,8 @@ function createEvent (
   isUnique: boolean,
   content: string,
   accessId: string
-) {
-  const event = {
+): Event {
+  const event: Event = {
     id: cuid(),
     streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE], // add active stream id by default
     type,
@@ -252,14 +214,14 @@ function createEvent (
 }
 
 /**
- * Convert system->account events to the account object
- * @param User user
+ * Assign events data to user account fields
  */
-function buildAccountDataFromListOfEvents (user: User) {
-  const account = buildAccountRecursive(SystemStreamsSerializer.getAccountChildren(), user.events, {});
+function buildAccountDataFromListOfEvents(user: User, events: Array<Event>): Array<Event> {
+  const account = buildAccountRecursive(SystemStreamsSerializer.getAccountChildren(), events, {});
   Object.keys(account).forEach(param => {
     user[param] = account[param];
   });
+  return events;
 }
 
 /**

@@ -11,6 +11,9 @@ const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
 const User = require('./User');
+const Event = require('business/src/events/Event');
+const Access = require('business/src/accesses/Access');
+const SystemStream = require('business/src/system-streams/SystemStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
@@ -34,31 +37,28 @@ class Repository {
   }
 
   /**
-  * Get All users
-  * (Used for testing and for the nighty job to make each user structure
-  * compatible with a previous account structure and it is implemented in
-  * inefficiant way)
+  * Returns all users
+  * Only used for testing and nightly. Very indefficient!
   */
-  async getAll (): Promise<Map<string, Array<User>>> {
-    let users = [];
+  async getAll(): Promise<Array<User>> {
+
     // get list of user ids and usernames
-    let query = {
+    const query: {} = {
       streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] },
       deleted: null,
       headId: null
     }
     
-    const usersNames = await bluebird.fromCallback(cb =>
+    const userIdObjects: Array<{}> = await bluebird.fromCallback(cb =>
       this.storage.database.find(
         this.collectionInfo,
         this.storage.applyQueryToDB(query),
         this.storage.applyOptionsToDB(null), cb)
     );
 
-    const usersCount = usersNames.length;
-    let user;
-    for (var i = 0; i < usersCount; i++) {
-      user = await this.getById(usersNames[i].userId, true);
+    const users: Array<User> = [];
+    for (const userIdObject of userIdObjects) {
+      const user = await this.getById(userIdObject.userId, true);
       users.push(user);
     }
     return users;
@@ -67,35 +67,37 @@ class Repository {
   /**
    * Get object with transaction options
    */
-  getTransactionOptions() {
+  getTransactionOptions(): {} {
     return {
       readPreference: 'primary',
         readConcern: { level: 'local' },
       writeConcern: { w: 'majority' }
     }
   }
+
   /**
    * Get All usernames
    * Does the same as this.getAll(), just retrieves - only username and id
    * Used for the webhooks
    */
-  async getAllUsernames (): Promise<Array<User>> {
-    let users = [];
+  async getAllUsernames(): Promise<Array<User>> {
     // get list of user ids and usernames
-    let query = {
+    const query: {} = {
       streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] },
       deleted: null,
       headId: null
     }
-    const usersNames = await bluebird.fromCallback(cb =>
+    
+    const userIdObjects: Array<{}> = await bluebird.fromCallback(cb =>
       this.storage.database.find(
         this.collectionInfo,
         this.storage.applyQueryToDB(query),
         this.storage.applyOptionsToDB(null), cb)
     );
 
-    for (var i = 0; i < usersNames.length; i++) {
-      users.push(new User({ id: usersNames[i].userId, events: [usersNames[i]]}));
+    const users: Array<User> = [];
+    for (const userIdObject of userIdObjects) {
+      users.push(new User({ id: userIdObject.userId, events: [userIdObject]}));
     }
     return users;
   }
@@ -107,20 +109,20 @@ class Repository {
    */
   async getById(userId: string, getAll: boolean): Promise<?User> {
     // get streams ids from the config that should be retrieved
-    let userAccountStreamsIds;
+    let userAccountStreamsIds: ?Map<string, SystemStream>;
     if (getAll) {
       userAccountStreamsIds = SystemStreamsSerializer.getAccountMap();
     } else {
       userAccountStreamsIds = SystemStreamsSerializer.getReadableAccountMap();
     }
-    const query = {
+    const query: {} = {
       $and: [
         { streamIds: { $in: Object.keys(userAccountStreamsIds) } },
         { streamIds: { $eq: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
       ]
     };
 
-    const userAccountEvents = await bluebird.fromCallback(cb =>
+    const userAccountEvents: Array<Event> = await bluebird.fromCallback(cb =>
       this.storage.find({ id: userId }, query, null, cb));
     
     // convert events to the account info structure
@@ -133,7 +135,7 @@ class Repository {
   /**
    * Get account info from username
    */
-  async getAccountByUsername (username: string, getAll: boolean): Promise<?User> {
+  async getAccountByUsername(username: string, getAll: boolean): Promise<?User> {
     const userIdEvent = await bluebird.fromCallback(cb =>
       this.storage.database.findOne(
         this.collectionInfo,
@@ -155,8 +157,8 @@ class Repository {
    * Check if fields are unique
    * @param ({key: value}) fields
    */
-  async findExistingUniqueFields (fields: {}): number {
-    let query = { $or: [] }
+  async findExistingUniqueFields(fields: {}): Promise<{}> {
+    const query = { $or: [] }
     Object.keys(fields).forEach(key => {
       query['$or'].push({
         $and:
@@ -181,26 +183,27 @@ class Repository {
    * @param string appId 
    * @param object session 
    */
-  async createSessionForUser (
+  async createSessionForUser(
     username: string,
     appId: string,
-    transactionSession: any): string {
-    const sessionData = {
-      username: username,
-      appId: appId
-    }
-    const sessionId = await bluebird.fromCallback((cb) =>
-      this.sessionsStorage.generate(sessionData, { transactionSession }, cb));
-    return sessionId;
+    transactionSession: any
+  ): Promise<string> {
+    return await bluebird.fromCallback((cb) =>
+      this.sessionsStorage.generate(
+        { username, appId },
+        { transactionSession },
+        cb,
+      ));
   }
 
-  async createPersonalAccessForUser (
+  async createPersonalAccessForUser(
     userId: string,
     token: string,
     appId: string,
-    transactionSession) {
+    transactionSession
+  ): Access {
 
-    let accessData = {
+    const accessData = {
       token: token,
       userId: userId,
       name: appId,
@@ -211,13 +214,11 @@ class Repository {
       modifiedBy: Repository.options.SYSTEM_USER_ACCESS_ID,
     };
 
-    const access = await bluebird.fromCallback((cb) =>
+    return await bluebird.fromCallback((cb) =>
       this.accessStorage.insertOne({ id: userId }, accessData, cb, { transactionSession }));
-
-    return access;
   }
 
-  validateAllStorageObjectsInitialized () {
+  validateAllStorageObjectsInitialized(): boolean {
     if (!this.accessStorage || !this.sessionsStorage) {
       throw new Error('Please initialize the user repository with all dependencies.');
     }
@@ -229,7 +230,7 @@ class Repository {
    * @param userParams - parameters to be saved
    * @return object with created user information in flat format
    */
-  async insertOne (user: User, shouldCreateSession: Boolean): Promise<object> {
+  async insertOne(user: User, shouldCreateSession: Boolean): Promise<User> {
     // first explicitly create a collection, because it would fail in the transation
     
     await bluebird.fromCallback(
@@ -242,8 +243,8 @@ class Repository {
     await transactionSession.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
       let accessId = Repository.options.SYSTEM_USER_ACCESS_ID;
-      if (shouldCreateSession && this.validateAllStorageObjectsInitialized() && user.appId) {
-        const token = await this.createSessionForUser(user.username, user.appId, transactionSession);
+      if (shouldCreateSession && this.validateAllStorageObjectsInitialized() && user.appId != null) {
+        const token: string = await this.createSessionForUser(user.username, user.appId, transactionSession);
         const access = await this.createPersonalAccessForUser(
           user.id, token, user.appId, transactionSession);
         accessId = access?.id;
@@ -252,7 +253,7 @@ class Repository {
       user.accessId = accessId;
       
       // create all user account events
-      const events = await user.getEvents();
+      const events: Array<Event> = await user.getEvents();
     
       await bluebird.fromCallback((cb) =>
         this.storage.insertMany({ id: user.id }, events, cb, { transactionSession }));
@@ -268,24 +269,35 @@ class Repository {
    * @param {} update 
    * @param string accessId
    */
-  async updateOne (user: User, update: {}, accessId: string): Promise<void> {
-    const eventForUpdate = await user.getEventsDataForUpdate(update, accessId);
+  async updateOne(user: User, update: {}, accessId: string): Promise<void> {
+
+    // change password into hash if it exists
+    if (update.password != null) {
+      update.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(update.password, cb));
+    }
+    delete update.password;
+    
     // Start a transaction session
     const transactionSession = await this.storage.database.startSession();
     await transactionSession.withTransaction(async () => {
       // update all account streams and don't allow additional properties
-      for (let i = 0; i < eventForUpdate.length; i++) {
+      for (const [streamIdWithoutPrefix, content] of Object.entries(update)) {
+      //for (let i = 0; i < eventsForUpdate.length; i++) {
         await bluebird.fromCallback(cb => this.storage.updateOne(
           { id: user.id },
           {
             streamIds: {
               $all: [
-                eventForUpdate[i].streamId,
-                SystemStreamsSerializer.options.STREAM_ID_ACTIVE
+                SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix),
+                SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
               ]
             }
           },
-          eventForUpdate[i].updateData,
+          {
+            content,
+            modified: timestamp.now(),
+            modifiedBy: accessId,
+          },
           cb,
           { transactionSession }
         ));
@@ -295,11 +307,10 @@ class Repository {
 
   /**
    * Deletes a user by id
-   * @param string userId 
    */
-  async deleteOne (userId: string): Promise<void> {
-    const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
-    await bluebird.fromCallback(cb => this.storage.database.deleteMany(
+  async deleteOne (userId: string): Promise<number> {
+    const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
+    return await bluebird.fromCallback(cb => this.storage.database.deleteMany(
       this.storage.getCollectionInfo(userId),
       { streamIds: { $in: userAccountStreamsIds } }, cb));
   }
@@ -320,11 +331,9 @@ class Repository {
   }
 
   /**
-   * Checks if passwword is valid for the given userId
-   * @param string userId 
-   * @param string password
+   * counts the number of users
    */
-  async count (): Promise<number> {
+  async count(): Promise<number> {
     return await bluebird.fromCallback(cb => {
       this.storage.count({}, { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME }, cb);
     });
@@ -400,15 +409,15 @@ class Repository {
  * Get user password hash
  * @param string userId 
  */
-async function getUserPasswordHash(userId: string, storage: any): Promise <string> {
-  const userPass: {} = await bluebird.fromCallback(cb =>
+async function getUserPasswordHash(userId: string, storage: any): Promise <?string> {
+  const userPass: Event = await bluebird.fromCallback(cb =>
     storage.findOne({ id: userId },
       {
         $and: [
           { streamIds: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH }
         ]
       }, null, cb));
-  return (userPass?.content) ? userPass.content : null;
+  return (userPass?.content != null) ? userPass.content : null;
 }
 
 Repository.options = {
