@@ -28,7 +28,7 @@ const DEFAULT: string = 'default';
 const PRYV_PREFIX: string = ':_system:';
 const CUSTOMER_PREFIX: string = ':system:';
 
-const DEFAULT_VALUES_FOR_FIELDS: Map<string, boolean> = {
+const DEFAULT_VALUES_FOR_FIELDS: {} = {
   [IS_INDEXED]: false, // if true will be sent to service-register to be able to query across the platform
   [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqness on mongodb
   [IS_SHOWN]: true, // if true, will be shown for the users
@@ -141,8 +141,8 @@ function load(config: {}): {} {
   addPrefixToRootStreamsAndSetParentIdAndChildren(config);
   return config;
 
-  function addPrefixToRootStreamsAndSetParentIdAndChildren(config): void {
-    const rootStreams = config.get('systemStreams');
+  function addPrefixToRootStreamsAndSetParentIdAndChildren(config: {}): void {
+    const rootStreams: Map<string, Array<SystemStream>> = config.get('systemStreams');
     for (const [rootStreamId, streams] of Object.entries(rootStreams)) {
       
       rootStreams[_addPrefixToStreamId(rootStreamId, PRYV_PREFIX)] = streams;
@@ -154,11 +154,11 @@ function load(config: {}): {} {
       delete rootStreams[rootStreamId];
     }
 
-    const systemStreams = makeRootKeysIntoStreamsWithDefaultValues(rootStreams);
+    const systemStreams: Array<SystemStream> = makeRootKeysIntoStreamsWithDefaultValues(rootStreams);
   
     config.set('systemStreams', systemStreams);
 
-    function addParentIdToChildren(stream) {
+    function addParentIdToChildren(stream: SystemStream): SystemStream {
       if (stream.children == null) {
         stream.children = [];
         return stream;
@@ -170,8 +170,8 @@ function load(config: {}): {} {
       return stream;
     }
 
-    function makeRootKeysIntoStreamsWithDefaultValues(rootStreams) {
-      const systemStreams = [];
+    function makeRootKeysIntoStreamsWithDefaultValues(rootStreams: Array<SystemStream>): Array<SystemStream> {
+      const systemStreams: Array<SystemStream> = [];
       for (const [rootStreamId, streamArray] of Object.entries(rootStreams)) {
         systemStreams.push(_.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
           name: rootStreamId,
@@ -188,7 +188,7 @@ function load(config: {}): {} {
    * If any, load custom system streams from: custom:systemStreams
    */
   function addCustomStreams(config): void {
-    const customStreams = config.get('custom:systemStreams');
+    const customStreams: Array<SystemStream> = config.get('custom:systemStreams');
     if (customStreams != null) {
       extendWithCustomStreams(config, customStreams);
     }

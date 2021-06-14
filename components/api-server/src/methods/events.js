@@ -430,7 +430,7 @@ module.exports = async function (
     notify);
 
   function applyPrerequisitesForCreation(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const event = context.content;
+    const event: Event = context.newEvent;
     // default time is now
     _.defaults(event, { time: timestamp.now() });
     if (event.tags == null) {
@@ -444,7 +444,7 @@ module.exports = async function (
 
     context.initTrackingProperties(event);
     
-    context.content = event;
+    context.newEvent = event;
     next();
   }
 
@@ -460,18 +460,18 @@ module.exports = async function (
   function doesEventBelongToAccountStream(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const allAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
 
-    const isUpdate: boolean = context.oldContent != null && context.content != null;
-    const isDelete: boolean = context.oldContent != null && context.content == null;
+    const isUpdate: boolean = (context.oldEvent != null) && (context.newEvent != null);
+    const isDelete: boolean = (context.oldEvent != null) && (context.newEvent == null);
     
     if (isUpdate) {
-      context.oldAccountStreamIds = _.intersection(allAccountStreamsIds, context.oldContent.streamIds)
-      context.accountStreamIds = _.intersection(allAccountStreamsIds, context.content.streamIds)
+      context.oldAccountStreamIds = _.intersection(allAccountStreamsIds, context.oldEvent.streamIds) // rename to oldEvent/newEvent
+      context.accountStreamIds = _.intersection(allAccountStreamsIds, context.newEvent.streamIds)
       context.doesEventBelongToAccountStream = context.oldAccountStreamIds.length > 0;
     } else if (isDelete) {
-      context.oldAccountStreamIds = _.intersection(allAccountStreamsIds, context.oldContent.streamIds)
+      context.oldAccountStreamIds = _.intersection(allAccountStreamsIds, context.oldEvent.streamIds)
       context.doesEventBelongToAccountStream = context.oldAccountStreamIds.length > 0;
     } else {
-      context.accountStreamIds = _.intersection(allAccountStreamsIds, context.content.streamIds)
+      context.accountStreamIds = _.intersection(allAccountStreamsIds, context.newEvent.streamIds)
       context.doesEventBelongToAccountStream = context.accountStreamIds.length > 0;
     }
     next();
@@ -483,7 +483,7 @@ module.exports = async function (
   function validateAccountStreamsForCreation(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (! context.doesEventBelongToAccountStream) return next();
 
-    throwIfUserTriesToAddMultipleAccountStreamIds(context.accountStreamIds); // assert context.accountStreamIds.length == 1
+    throwIfUserTriesToAddMultipleAccountStreamIds(context.accountStreamIds); // assert context.accountStreamIds.length == 1 - probably OK for mixing custom and account
     context.accountStreamId = context.accountStreamIds[0];
 
     throwIfStreamIdIsNotEditable(context.accountStreamId);
@@ -492,8 +492,8 @@ module.exports = async function (
   }
 
   async function verifycanCreateEventsOnStreamAndWIthTags(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    for (const streamId of context.content.streamIds) { // refuse if any context is not accessible
-      if (! await context.access.canCreateEventsOnStreamAndWIthTags(streamId, context.content.tags)) {
+    for (const streamId of context.newEvent.streamIds) { // refuse if any context is not accessible
+      if (! await context.access.canCreateEventsOnStreamAndWIthTags(streamId, context.newEvent.tags)) {
         return next(errors.forbidden());
       }
     }
@@ -513,10 +513,10 @@ module.exports = async function (
     context.systemStream = editableAccountStreamsMap[context.accountStreamId];
 
     // when new account event is created, all other should be marked as nonactive
-    context.content.streamIds.push(STREAM_ID_ACTIVE);
+    context.newEvent.streamIds.push(STREAM_ID_ACTIVE);
     context.removeActiveEvents = true;
 
-    context.content.streamIds = addUniqueStreamIdIfNeeded(context.content.streamIds, context.systemStream.isUnique);
+    context.newEvent.streamIds = addUniqueStreamIdIfNeeded(context.newEvent.streamIds, context.systemStream.isUnique);
     next();
   }
 
@@ -528,7 +528,7 @@ module.exports = async function (
       return next();
     }
 
-    const isCreation: boolean = context.oldContent == null;
+    const isCreation: boolean = context.oldEvent == null;
 
     const systemStream: SystemStream = context.systemStream;
     const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
@@ -538,14 +538,14 @@ module.exports = async function (
         await sendDataToServiceRegister(context, isCreation);
       }
       if (systemStream.isUnique) {
-        await usersRepository.checkDuplicates({[streamIdWithoutPrefix]: context.content.content});
+        await usersRepository.checkDuplicates({[streamIdWithoutPrefix]: context.newEvent.content});
       }
     } catch (err) {
       if (err.isDuplicate) {
         return next(Registration.handleUniquenessErrors(
           err,
           ErrorMessages[ErrorIds.UnexpectedError],
-          { [streamIdWithoutPrefix]: context.content.content }));
+          { [streamIdWithoutPrefix]: context.newEvent.content }));
       }
       return next(err);
     }
@@ -569,34 +569,34 @@ module.exports = async function (
         context.user.username,
         [{ update: { 
             key: streamIdWithoutPrefix,
-            value: context.content.content,
+            value: context.newEvent.content,
             isUnique: editableAccountStreamsMap[context.accountStreamId].isUnique,
           } 
         }],
         // for isActive, "context.removeActiveEvents" is not enough because, it would be set 
         // to false if old event was active and is still active (no change)
-        context.content.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
-        context.oldContent.streamIds.includes(STREAM_ID_ACTIVE),
+        context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
+        context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
         isCreation,
       );
     }
   }
 
   async function createEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (isSeriesType(context.content.type)) {
+    if (isSeriesType(context.newEvent.type)) {
       if (openSourceSettings.isActive) {
         return next(errors.unavailableMethod());
       }
       try {
-        context.content.content = createSeriesEventContent(context);
+        context.newEvent.content = createSeriesEventContent(context);
       }
       catch (err) { return next(err); }
         
       // As long as there is no data, event duration is considered to be 0.
-      context.content.duration = 0; 
+      context.newEvent.duration = 0; 
     }
     userEventsStorage.insertOne(
-      context.user, context.content, function (err, newEvent) {
+      context.user, context.newEvent, function (err, newEvent) {
         if (err != null) {
           // Expecting a duplicate error
           if (err.isDuplicateIndex('id')) {
@@ -627,7 +627,7 @@ module.exports = async function (
    * Creates the event's body according to its type and context. 
    */
   function createSeriesEventContent(context: MethodContext): {} {
-    const seriesTypeName = context.content.type; 
+    const seriesTypeName = context.newEvent.type; 
     const eventType = typeRepo.lookup(seriesTypeName); 
     
     // assert: Type is a series type, so this should be always true: 
@@ -683,7 +683,7 @@ module.exports = async function (
 
   async function applyPrerequisitesForUpdate(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
 
-    const eventUpdate = context.content;
+    const eventUpdate: Event = context.newEvent;
     
     try {
       eventUpdate.tags = cleanupEventTags(eventUpdate.tags);
@@ -704,7 +704,7 @@ module.exports = async function (
     }
 
     // 1. check that have contributeContext on at least 1 existing streamId
-    let canUpdateEvent = false;
+    let canUpdateEvent: boolean = false;
     for (let i = 0; i < event.streamIds.length ; i++) {
       if (await context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
         canUpdateEvent = true;
@@ -716,29 +716,29 @@ module.exports = async function (
     if (hasStreamIdsModification(eventUpdate)) {
 
       // 2. check that streams we add have contribute access
-      const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
-      for (let i=0; i<streamIdsToAdd.length; i++) {
-        if (! await context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToAdd[i], event.tags)) {
+      const streamIdsToAdd: Array<string> = _.difference(eventUpdate.streamIds, event.streamIds);
+      for (const streamIdToAdd of streamIdsToAdd) {
+        if (! await context.access.canUpdateEventsOnStreamAndWIthTags(streamIdToAdd, event.tags)) {
           return next(errors.forbidden());
         }
       }
 
       // 3. check that streams we remove have contribute access        
       // streamsToRemove = event.streamIds - eventUpdate.streamIds
-      const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
+      const streamIdsToRemove: Array<string> = _.difference(event.streamIds, eventUpdate.streamIds);
 
-      for (let i = 0; i < streamIdsToRemove.length ; i++) {
-        if (! await context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToRemove[i], event.tags)) {
+      for (const streamIdToRemove of streamIdsToRemove) {
+        if (! await context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToRemove, event.tags)) {
           return next(errors.forbidden());
         }
       }
     }
 
-    const updatedEventType = eventUpdate.type;
+    const updatedEventType: string = eventUpdate.type;
     if(updatedEventType != null) {
-      const currentEventType = event.type;
-      const isCurrentEventTypeSeries = isSeriesType(currentEventType);
-      const isUpdatedEventTypeSeries = isSeriesType(updatedEventType);
+      const currentEventType: string = event.type;
+      const isCurrentEventTypeSeries: boolean = isSeriesType(currentEventType);
+      const isUpdatedEventTypeSeries: boolean = isSeriesType(updatedEventType);
       if (! typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
         return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types. 
       }
@@ -749,36 +749,36 @@ module.exports = async function (
       }
     }
 
-    context.oldContent = _.cloneDeep(event);
-    context.content = _.extend(event, eventUpdate);
+    context.oldEvent = _.cloneDeep(event);
+    context.newEvent = _.extend(event, eventUpdate);
     next();
 
-    function hasStreamIdsModification(event) {
+    function hasStreamIdsModification(event: Event): boolean {
       return event.streamIds != null;
     }
   }
 
   /**
-   * Depends on context.oldContent
+   * Depends on context.oldEvent
    */
   function generateVersionIfNeeded(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (!auditSettings.forceKeepHistory) {
+    if (! auditSettings.forceKeepHistory) {
       return next();
     }
 
-    context.oldContent = _.extend(context.oldContent, {headId: context.oldContent.id});
-    delete context.oldContent.id;
+    context.oldEvent = _.extend(context.oldEvent, {headId: context.oldEvent.id});
+    delete context.oldEvent.id;
     // otherwise the history value will squat
-    context.oldContent = removeUniqueStreamId(context.oldContent);
-    userEventsStorage.insertOne(context.user, context.oldContent, function (err) {
+    context.oldEvent = removeUniqueStreamId(context.oldEvent);
+    userEventsStorage.insertOne(context.user, context.oldEvent, function (err) {
       if (err) {
         return next(errors.unexpectedError(err));
       }
       next();
     });
 
-    function removeUniqueStreamId(event) {
-      const index = event.streamIds.indexOf('.unique');
+    function removeUniqueStreamId(event: Event): Event {
+      const index = event.streamIds.indexOf(SystemStreamsSerializer.addPrivatePrefixToStreamId('unique'));
       if (index > -1) {
         event.streamIds.splice(index, 1);
       }
@@ -787,14 +787,14 @@ module.exports = async function (
   }
 
   async function updateAttachments(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    var eventInfo = {
-      id: context.content.id,
-      attachments: context.content.attachments || []
+    const eventInfo: {} = {
+      id: context.newEvent.id,
+      attachments: context.newEvent.attachments || []
     };
     try{
-      const attachments = await attachFiles(context, eventInfo, sanitizeRequestFiles(params.files));
+      const attachments: Array<Attachment> = await attachFiles(context, eventInfo, sanitizeRequestFiles(params.files));
       if (attachments) {
-        context.content.attachments = attachments;
+        context.newEvent.attachments = attachments;
       }
       return next();
     } catch (err) {
@@ -807,8 +807,7 @@ module.exports = async function (
    * Do additional actions if event belongs to account stream
    */
   async function appendAccountStreamsDataForUpdate(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    // check if event belongs to account stream ids
-    if (!context.doesEventBelongToAccountStream) {
+    if (! context.doesEventBelongToAccountStream) {
       return next();
     }
 
@@ -816,7 +815,7 @@ module.exports = async function (
     context.accountStreamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
     context.systemStream = editableAccountStreamsMap[context.accountStreamId];
 
-    if (hasBecomeActive(context.oldContent.streamIds, context.content.streamIds)) {
+    if (hasBecomeActive(context.oldEvent.streamIds, context.newEvent.streamIds)) {
       context.removeActiveEvents = true;
     } else {
       context.removeActiveEvents = false;
@@ -827,8 +826,8 @@ module.exports = async function (
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      let updatedEvent = await bluebird.fromCallback(cb =>
-        userEventsStorage.updateOne(context.user, { _id: context.content.id }, context.content, cb));
+      const updatedEvent: Event = await bluebird.fromCallback(cb =>
+        userEventsStorage.updateOne(context.user, { _id: context.newEvent.id }, context.newEvent, cb));
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
@@ -879,17 +878,17 @@ module.exports = async function (
     // notify is called by create, update and delete
     // depending on the case the event properties will be found in context or event
     if (isSeriesEvent(context.event || result.event) && !openSourceSettings.isActive) {
-      const isDelete = result.eventDeletion ? true : false;
+      const isDelete: boolean = result.eventDeletion ? true : false;
       // if event is a deletion 'id' is given by result.eventDeletion
-      const updatedEventId = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
-      const subject = isDelete ? NATS_DELETE_EVENT : NATS_UPDATE_EVENT;
+      const updatedEventId: string = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
+      const subject: string = isDelete ? NATS_DELETE_EVENT : NATS_UPDATE_EVENT;
       natsPublisher.deliver(subject, {
         username: context.user.username,
         event: updatedEventId,
       });
     }
 
-    function isSeriesEvent(event) {
+    function isSeriesEvent(event: Event): boolean {
       return event.type.startsWith('series:');
     }
     next();
@@ -902,12 +901,12 @@ module.exports = async function (
    * @param {Object} files
    * @returns {Object}
    */
-  function sanitizeRequestFiles(files) {
+  function sanitizeRequestFiles(files: ?Array<{}>): {} {
     if (! files || ! files.file || ! Array.isArray(files.file)) {
       // assume files is an object, nothing to do
       return files;
     }
-    var result = {};
+    const result = {};
     files.file.forEach(function (item, i) {
       if (! item.filename) {
         item.filename = item.name;
@@ -918,7 +917,7 @@ module.exports = async function (
   }
 
   async function normalizeStreamIdAndStreamIds(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const event = isEventsUpdateMethod() ? params.update : params;
+    const event: Event = isEventsUpdateMethod() ? params.update : params;
 
     // forbid providing both streamId and streamIds
     if (event.streamId != null && event.streamIds != null) {
@@ -936,14 +935,14 @@ module.exports = async function (
       event.streamIds = [...new Set(event.streamIds)];
     }
     delete event.streamId;
-    // using context.content now - not params
-    context.content = event;
+    // using context.newEvent now - not params
+    context.newEvent = event;
 
     
     // used only in the events creation and update
     if (event.streamIds != null && event.streamIds.length > 0) {
-      const streamIdsNotFoundList = [];
-      const streamIdsTrashed = [];
+      const streamIdsNotFoundList: Array<string> = [];
+      const streamIdsTrashed: Array<string> = [];
       for (streamId of event.streamIds) {
         const stream = await context.streamForStreamId(streamId, 'local');
         if (! stream) {
@@ -975,13 +974,13 @@ module.exports = async function (
    * Validates the event's content against its type (if known).
    * Will try casting string content to number if appropriate.
    *
-   * @param {Object} context.content contains the event data
+   * @param {Object} context.newEvent contains the event data
    * @param {Object} params
    * @param {Object} result
    * @param {Function} next
    */
   function validateEventContentAndCoerce(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const type = context.content.type;
+    const type: string = context.newEvent.type;
 
     // Unknown types can just be created as normal events. 
     if (! typeRepo.isKnown(type)) {
@@ -994,10 +993,10 @@ module.exports = async function (
         
     // assert: `type` is known
     
-    const eventType = typeRepo.lookup(type);
+    const eventType: {} = typeRepo.lookup(type);
     if (eventType.isSeries()) {
       // Series cannot have content on update, not here at least.
-      if (isCreateSeriesAndHasContent() || isUpdateSeriesAndHasContent()) {
+      if (isCreateSeriesAndHasContent(params) || isUpdateSeriesAndHasContent(params)) {
         return next(errors.invalidParametersFormat('The event content\'s format is invalid.', 'Events of type High-frequency have a read-only content'));
       }
       return next();
@@ -1005,15 +1004,15 @@ module.exports = async function (
     
     // assert: `type` is not a series but is known
 
-    const content = context.content.hasOwnProperty('content') 
-      ? context.content.content
+    const content: {} = context.newEvent.hasOwnProperty('content') 
+      ? context.newEvent.content
       : null;
 
-    const validator = typeRepo.validator();
+    const validator: {} = typeRepo.validator();
     validator.validate(eventType, content)
       .then(function (newContent) {
         // Store the coerced value. 
-        context.content.content = newContent; 
+        context.newEvent.content = newContent; 
         next();
         return null;
       })
@@ -1022,11 +1021,11 @@ module.exports = async function (
           'The event content\'s format is invalid.', err))
       );
 
-    function isCreateSeriesAndHasContent() {
+    function isCreateSeriesAndHasContent(params): boolean {
       return params.content != null;
     }
 
-    function isUpdateSeriesAndHasContent() {
+    function isUpdateSeriesAndHasContent(params): boolean {
       return params.update != null && params.update.content != null;
     }
 
@@ -1056,7 +1055,7 @@ module.exports = async function (
    * if yes, validate and prepend context with the properties that will be
    * used later like:
    * a) doesEventBelongToAccountStream: boolean
-   * b) oldContentStreamIds: array<string>
+   * b) oldEventStreamIds: array<string>
    * c) accountStreamId - string - account streamId
    * 
    * @param {*} context 
@@ -1093,7 +1092,7 @@ module.exports = async function (
   function cleanupEventTags(tags: ?Array<string>): Array<string> {      
     if (tags == null) return [];
 
-    const limit = 500;
+    const limit: number = 500;
     
     tags = tags.map(function (tag) {
       if(tag.length > limit) {
@@ -1150,7 +1149,7 @@ module.exports = async function (
     validateAccountStreamsForDeletion,
     generateVersionIfNeeded,
     function (context, params, result, next) {
-      if (!context.oldContent.trashed) {
+      if (!context.oldEvent.trashed) {
         // move to trash
         flagAsTrashed(context, params, result, next);
       } else {
@@ -1197,7 +1196,7 @@ module.exports = async function (
       if (context.doesEventBelongToAccountStream){
         await sendDeletionToServiceRegister(
           context.user.username,
-          context.oldContent.content,
+          context.oldEvent.content,
           context.accountStreamId,
         );
       }
@@ -1205,7 +1204,7 @@ module.exports = async function (
         userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
       // if update was not done and no errors were catched
-      //, perhaps user is trying to edit account streams
+      //, perhaps user is trying to edit account streams ---- WTF
       if (updatedEvent == null) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
@@ -1333,9 +1332,9 @@ module.exports = async function (
 
 
   async function checkEventForDelete(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const eventId = params.id;
+    const eventId: string = params.id;
     
-    let event;
+    let event: ?Event;
     try {
       event = await bluebird.fromCallback(cb => userEventsStorage.findOne(context.user, { id: eventId }, null, cb));
     } catch (err) {
@@ -1347,7 +1346,7 @@ module.exports = async function (
       ));
     }
       
-    let canDeleteEvent = false;
+    let canDeleteEvent: boolean = false;
 
     for (const streamId of event.streamIds) {
       if (await context.access.canUpdateEventsOnStreamAndWIthTags(streamId, event.tags)) {
@@ -1356,8 +1355,8 @@ module.exports = async function (
       }
     }
     if (!canDeleteEvent) return next(errors.forbidden());
-    // save event from the database as an oldContent
-    context.oldContent = event;
+    // save event from the database as an oldEvent
+    context.oldEvent = event;
 
     // create an event object that could be modified
     context.event = Object.assign({}, event);
@@ -1377,7 +1376,7 @@ module.exports = async function (
     context.oldAccountStreamIds.forEach(streamId => {
       throwIfStreamIdIsNotEditable(streamId);
     });
-    if (context.oldContent.streamIds.includes(STREAM_ID_ACTIVE)) return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); 
+    if (context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE)) return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); 
     context.accountStreamId = context.oldAccountStreamIds[0];
 
     next();
