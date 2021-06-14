@@ -356,6 +356,8 @@ class Repository {
         orClause.push({
           content: { $eq: user[field] },
           streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(field),
+          deleted: null,
+          headId: null,
         });
       }
     });
