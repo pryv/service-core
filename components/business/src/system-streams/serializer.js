@@ -265,12 +265,13 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * Return true is this streamid is a system stream
+   * Return true if the provided streamId is a system stream
+   * 
    * @param {string} streamId 
    * @returns {boolean} 
    */
   static isAccountStreamId(streamId: string): ?boolean {
-    return SystemStreamsSerializer.getAccountMapWithOptions()[streamId];
+    return SystemStreamsSerializer.getAccountMapWithOptions()[streamId] != null;
   }
 
   /**
