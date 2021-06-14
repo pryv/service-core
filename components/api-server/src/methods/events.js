@@ -369,12 +369,12 @@ module.exports = async function (
 
   async function checkIfAuthorized(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (! context.event) return next();
-    event = context.event;
+    const event: Event = context.event;
     delete context.event;
 
-    let canReadEvent = false;
-    for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
-      if (await context.access.canGetEventsOnStreamAndWithTags(event.streamIds[i], event.tags)) {
+    let canReadEvent: boolean = false;
+    for (const streamId of event.streamIds) { // ok if at least one
+      if (await context.access.canGetEventsOnStreamAndWithTags(streamId, event.tags)) {
         canReadEvent = true;
         break;
       }
@@ -1292,13 +1292,13 @@ module.exports = async function (
             'attachment', params.fileId
           ));
         }
-        const deletedAtt = context.event.attachments[attIndex];
+        const deletedAtt: Attachment = context.event.attachments[attIndex];
         context.event.attachments.splice(attIndex, 1);
 
-        const updatedData = { attachments: context.event.attachments };
+        const updatedData: {} = { attachments: context.event.attachments };
         context.updateTrackingProperties(updatedData);
 
-        const alreadyUpdatedEvent = await bluebird.fromCallback(cb =>
+        const alreadyUpdatedEvent: Event = await bluebird.fromCallback(cb =>
           userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
         // if update was not done and no errors were catched
