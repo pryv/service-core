@@ -22,8 +22,6 @@ const IS_UNIQUE = 'isUnique';
 
 const ALL = 'all';
 
-const CONFIG_ACCOUNT_STREAMS = 'systemStreams:account';
-
 let singleton = null;
 
 /**
@@ -73,7 +71,7 @@ class SystemStreamsSerializer {
   static streamIdWithoutPrefixToWith: ?Map<string, string>;
   static options: ?Map<string, string>;
 
-  static getSerializer() {
+  static getSerializer(): SystemStreamsSerializer {
     if (singleton) return singleton;
     singleton = new SystemStreamsSerializer();
     initializeSerializer(singleton);

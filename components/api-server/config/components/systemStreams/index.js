@@ -15,26 +15,20 @@ const validation = require('api-server/src/schema/validation');
 const string = require('api-server/src/methods/helpers/string');
 const slugify = require('slug');
 const systemStreamSchema = require('./systemStreamSchema');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const SystemStream = require('business/src/system-streams/SystemStream');
 
-let additionalDefaultAccountStreams;
-if (fs.existsSync(path.join(path.dirname(__filename), 'additionalDefaultAccountStreams.json'))) {
-  additionalDefaultAccountStreams = require('./additionalDefaultAccountStreams.json');
-}
+const IS_SHOWN: string = 'isShown';
+const IS_INDEXED: string = 'isIndexed';
+const IS_EDITABLE: string = 'isEditable';
+const IS_UNIQUE: string = 'isUnique';
+const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
 
-const IS_SHOWN = 'isShown';
-const IS_INDEXED = 'isIndexed';
-const IS_EDITABLE = 'isEditable';
-const IS_UNIQUE = 'isUnique';
-const IS_REQUIRED_IN_VALIDATION = 'isRequiredInValidation';
+const DEFAULT: string = 'default';
 
-const DEFAULT = 'default';
+const PRYV_PREFIX: string = ':_system:';
+const CUSTOMER_PREFIX: string = ':system:';
 
-const PRYV_PREFIX = ':_system:';
-const CUSTOMER_PREFIX = ':system:';
-
-const DEFAULT_VALUES_FOR_FIELDS = {
+const DEFAULT_VALUES_FOR_FIELDS: Map<string, boolean> = {
   [IS_INDEXED]: false, // if true will be sent to service-register to be able to query across the platform
   [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqness on mongodb
   [IS_SHOWN]: true, // if true, will be shown for the users
@@ -42,6 +36,14 @@ const DEFAULT_VALUES_FOR_FIELDS = {
   [IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
 };
 
+/**
+ * Fetches "systemStreams" and "custom:systemStreams" from the config provided in parameter
+ * Applies the following:
+ * - default values
+ * - sets default account
+ * - children and parentId values
+ * Stores the result in "systemStreams"
+ */
 function load(config: {}): {} {
   // default system streams that should be not changed
   let defaultAccountStreams = ensurePrefixForStreamIds([
@@ -112,12 +114,9 @@ function load(config: {}): {} {
       ]
     }
   ]);
-  
-  if (additionalDefaultAccountStreams) {
-    defaultAccountStreams = defaultAccountStreams.concat(additionalDefaultAccountStreams);
-  }
 
   defaultAccountStreams = extendSystemStreamsWithDefaultValues(defaultAccountStreams);
+  
   config.set('systemStreams:account', defaultAccountStreams);
   config.set('systemStreams:helpers', ensurePrefixForStreamIds([
     _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
@@ -137,8 +136,6 @@ function load(config: {}): {} {
       id: 'unique',
     }),
   ]));
-
-  const CUSTOM_SYSTEM_STREAMS_FIELDS: string = 'CUSTOM_SYSTEM_STREAMS_FIELDS';
 
   addCustomStreams(config);
   addPrefixToRootStreamsAndSetParentIdAndChildren(config);
@@ -202,11 +199,11 @@ function load(config: {}): {} {
    * @param {*} streams 
    */
   function extendSystemStreamsWithDefaultValues (
-    streams: Array<{}>
-  ): Array<{}>{
+    streams: Array<SystemStream>
+  ): Array<SystemStream>{
     for (let i = 0; i < streams.length; i++) {
       streams[i] = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, streams[i]);
-      if (!streams[i].name) {
+      if (streams[i].name == null) {
         streams[i].name = streams[i].id;
       }
       // if stream has children recursivelly call the same function
@@ -223,10 +220,9 @@ function load(config: {}): {} {
    * @param {Array<systemStream>} systemStreams array of system streams
    * @param {string} prefix the prefix to add
    */
-  function ensurePrefixForStreamIds (systemStreams: Array<{}>, prefix: string = PRYV_PREFIX): array {
+  function ensurePrefixForStreamIds(systemStreams: Array<SystemStream>, prefix: string = PRYV_PREFIX): Array<SystemStream> {
     for (const systemStream of systemStreams) {
       systemStream.id = _addPrefixToStreamId(systemStream.id, prefix);
-      //systemStream.id = SystemStreamsSerializer.addPrivatePrefixToStreamId(systemStream.id);
       if (Array.isArray(systemStream.children)) {
         systemStream.children = ensurePrefixForStreamIds(systemStream.children);
       }
@@ -240,10 +236,10 @@ function load(config: {}): {} {
    * @param {*} customStreams
    */
   function extendWithCustomStreams(
-    config,
+    config: {},
     customStreams: Map<string, Array<SystemStream>>
-  ) {
-    const systemStreams = config.get('systemStreams');
+  ): {} {
+    const systemStreams: Array<SystemStream> = config.get('systemStreams');
 
     for (const [key, streamsArray] of Object.entries(customStreams)) {
       customStreams[key] = extendSystemStreamsWithDefaultValues(customStreams[key]);
@@ -259,15 +255,15 @@ function load(config: {}): {} {
       ));
     }
     // second append new config
-    const existingKeys = Object.keys(systemStreams);
-    const newKeys = Object.keys(customStreams);
+    const existingKeys: Array<string> = Object.keys(systemStreams);
+    const newKeys: Array<string> = Object.keys(customStreams);
     for (const newKey of newKeys) {
       if (existingKeys.includes(newKey)) continue;
       systemStreams[newKey] = customStreams[newKey];
     }
 
     // validate that each config stream is valid according to schema, its id is not reserved and that it has a type
-    const allConfigKeys = Object.keys(systemStreams);
+    const allConfigKeys: Array<string> = Object.keys(systemStreams);
     for(let configKey of allConfigKeys) {
       const flatStreamsList = treeUtils.flattenTree(systemStreams[configKey]);
       // check if each stream has a type
@@ -302,7 +298,7 @@ function denyDefaultStreamsOverride (objValue, srcValue) {
   return _.merge(srcValue, objValue);
 }
 
-function validateSystemStreamWithSchema(systemStream) {
+function validateSystemStreamWithSchema(systemStream: SystemStream): void {
   validation.validate(systemStream, systemStreamSchema, function (err) {
     if (err) {
       throw err;

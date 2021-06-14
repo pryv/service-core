@@ -138,7 +138,7 @@ class ServiceRegister {
     const isUpdate: boolean = operations[0].update != null;
     const operationType: OperationType = isUpdate ? 'update' : 'delete';
 
-    const fieldsForUpdate: {} = {}; // stored as user
+    const fieldsForUpdate: {} = {}; // sent as user in payload
     const fieldsToDelete: {} = {};
     const updateParams: {} = {};
 
@@ -192,11 +192,9 @@ class ServiceRegister {
       }
     }
   }
-
- 
 }
 
-function buildUrl(path: string, url): string {
+function buildUrl(path: string, url): URL {
   return new urllib.URL(path, url);
 }
 

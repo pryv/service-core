@@ -48,6 +48,12 @@ const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
 
+// for typing
+const Event = require('business/src/events/Event');
+const Attachment = require('business/src/events/Attachment');
+const Stream = require('business/src/streams/Stream');
+const SystemStream = require('business/src/system-streams/SystemStream');
+
 // Type repository that will contain information about what is allowed/known
 // for events. 
 const typeRepo = new TypeRepository(); 
@@ -417,7 +423,7 @@ module.exports = async function (
     appendAccountStreamsDataForCreation,
     verifyUnicity,
     createEvent,
-    handleEventsWithActiveStreamId,
+    removeActiveFromSibling,
     createAttachments,
     notify);
 
@@ -670,7 +676,7 @@ module.exports = async function (
     appendAccountStreamsDataForUpdate,
     verifyUnicity,
     updateEvent,
-    handleEventsWithActiveStreamId,
+    removeActiveFromSibling,
     notify);
 
   async function applyPrerequisitesForUpdate(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -845,7 +851,7 @@ module.exports = async function (
   * from of the stream. If there are many events (like many emails), 
   * only one should be main/active
   */
-  async function handleEventsWithActiveStreamId(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function removeActiveFromSibling(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (! context.removeActiveEvents) {
       return next();
     }
@@ -1159,7 +1165,7 @@ module.exports = async function (
    * @param object event
    * @param string accountStreamId - accountStreamId
    */
-  async function sendUpdateToServiceRegister (user, event, accountStreamId) { // TODO merge with sendDataToServiceRegister
+  async function sendDeletionToServiceRegister (username, content, accountStreamId) {
     if (config.get('dnsLess:isActive')) {
       return;
     }
@@ -1169,36 +1175,36 @@ module.exports = async function (
 
     if (editableAccountStreamsMap[accountStreamId].isUnique) { // TODO should be isIndexed??
       await serviceRegisterConn.updateUserInServiceRegister(
-        user.username,
+        username,
         [{ 
           delete: {
             key: streamIdWithoutPrefix,
-            value: event.content,
+            value: content,
           }
-        }]
+        }],
       );
     }
   }
   
   async function flagAsTrashed(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const updatedData = {
+    const updatedData: {} = {
       trashed: true
     };
     context.updateTrackingProperties(updatedData);
     try {
       if (context.doesEventBelongToAccountStream){
-        await sendUpdateToServiceRegister(
-          context.user,
-          context.oldContent,
+        await sendDeletionToServiceRegister(
+          context.user.username,
+          context.oldContent.content,
           context.accountStreamId,
         );
       }
-      const updatedEvent = await bluebird.fromCallback(cb =>
+      const updatedEvent: Event = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
-      if (!updatedEvent) {
+      if (updatedEvent == null) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
       }
@@ -1341,8 +1347,8 @@ module.exports = async function (
       
     let canDeleteEvent = false;
 
-    for (let i = 0; i < event.streamIds.length; i++) {
-      if (await context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
+    for (const streamId of event.streamIds) {
+      if (await context.access.canUpdateEventsOnStreamAndWIthTags(streamId, event.tags)) {
         canDeleteEvent = true;
         break;
       }

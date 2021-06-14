@@ -80,7 +80,7 @@ describe("Events of system streams", () => {
     // create an additional event
     await createAdditionalEvent(streamId);
 
-    let response = await request.put(path.join(basePath, initialEvent.id))
+    const response = await request.put(path.join(basePath, initialEvent.id))
       .send(eventData)
       .set('authorization', access.token);
     return response;
