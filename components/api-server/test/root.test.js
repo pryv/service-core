@@ -163,7 +163,6 @@ describe('root', function() {
       ]);
       validation.checkMeta(res.body);
 
-      console.log(res.body, res.headers['api-version']);
       assert.match(
         res.headers['api-version'],
         /^\d+\.\d+\.\d+(-.*)?$/,
