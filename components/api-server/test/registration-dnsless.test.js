@@ -69,13 +69,10 @@ describe('[BMM2] registration: DNS-less', () => {
       app.config.get('services'));
     
     request = supertest(app.expressApp);
-    
-    
   });
   describe('POST /users', () => {
-    let registerBody;
-    before(() => {
-      registerBody = {
+    function generateRegisterBody() {
+      return {
         username: charlatan.Lorem.characters(7),
         password: charlatan.Lorem.characters(7),
         email: charlatan.Internet.email(),
@@ -83,22 +80,24 @@ describe('[BMM2] registration: DNS-less', () => {
         insurancenumber: charlatan.Number.number(3),
         phoneNumber: charlatan.Number.number(3),
       };
-    });
+    }
     
     describe('when given valid input', function() {
+      let registerData;
       before(async function() {
-        res = await request.post('/users').send(registerBody);
+        registerData = generateRegisterBody();
+        res = await request.post('/users').send(registerData);
       });
       it('[KB3T] should respond with status 201', function() {
         assert.equal(res.status, 201);
       });
       it('[VDA8] should respond with a username and apiEndpoint in the request body', async () => {
-        assert.equal(res.body.username, registerBody.username);
+        assert.equal(res.body.username, registerData.username);
         const usersRepository = new UsersRepository(app.storageLayer.events);
-        const user = await usersRepository.getAccountByUsername(registerBody.username, true);
+        const user = await usersRepository.getAccountByUsername(registerData.username, true);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
-        let initUser = new User(registerBody);
+        const initUser = new User(user);
         initUser.token = personalAccess.token;
         assert.equal(res.body.apiEndpoint, initUser.getApiEndpoint());
       });
@@ -199,13 +198,15 @@ describe('[BMM2] registration: DNS-less', () => {
     });
     describe('Property values uniqueness', function() {
       describe('username property', function() {
+        let registerData;
         before(async function () {
-          await mongoFixtures.context.cleanEverything();
-          await app.database.deleteMany({ name: 'events' });
+          registerData = generateRegisterBody();
+          //await mongoFixtures.context.cleanEverything();
+          //await app.database.deleteMany({ name: 'events' });
 
-          res = await request.post('/users').send(registerBody);
+          res = await request.post('/users').send(registerData);
           assert.equal(res.status, 201);
-          res = await request.post('/users').send(registerBody);
+          res = await request.post('/users').send(registerData);
         });
         it('[LZ1K] should respond with status 409', function() {
           assert.equal(res.status, 409);
@@ -216,13 +217,7 @@ describe('[BMM2] registration: DNS-less', () => {
           
           // changed to new error format to match the cluster
           const error = JSON.parse(res.error.text);
-          assert.deepEqual(error.error.data, { username: registerBody.username, email: registerBody.email });
-        });
-        it('[9L3R] should not store the user in the database twice', async function() {
-          const usersRepository = new UsersRepository(app.storageLayer.events);
-          const users = await usersRepository.getAll();
-          assert.equal(users.length, 1);
-          assert.equal(users[0].username, registerBody.username);
+          assert.deepEqual(error.error.data, { username: registerData.username, email: registerData.email });
         });
       });
     });
@@ -236,7 +231,7 @@ describe('[BMM2] registration: DNS-less', () => {
         before(async function() {
           const invalidRegisterBody = Object.assign(
             {},
-            registerBody,
+            generateRegisterBody(),
             registerBodyModification
           );
           res = await request.post('/users').send(invalidRegisterBody);
