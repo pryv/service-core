@@ -17,6 +17,11 @@ const _ = require('lodash');
 const storage = helpers.dependencies.storage.user.events;
 const timestamp = require('unix-timestamp');
 const testData = helpers.data;
+const bluebird = require('bluebird');
+const url = require('url');
+const charlatan = require('charlatan');
+const SystemStreamSerializer = require('business/src/system-streams/serializer');
+const assert = require('chai').assert;
 require('date-utils');
 
 describe('Versioning', function () {
@@ -633,6 +638,85 @@ describe('Versioning', function () {
             });
         }
       ], done);
+    });
+  });
+
+  describe('Users', function () {
+    const req = require('superagent');
+    before(async function () {
+      const settings = _.cloneDeep(helpers.dependencies.settings);
+      settings.versioning = {
+        forceKeepHistory: true,
+      };
+      settings.dnsLess = { isActive: true };
+      await bluebird.fromCallback(cb => server.ensureStarted.call(server, settings, cb));
+    });
+
+    function buildPath(path) {
+      return url.resolve(server.url, path);
+    }
+    function generateRegisterBody() {
+      return {
+        username: charlatan.Lorem.characters(7),
+        password: charlatan.Lorem.characters(7),
+        email: charlatan.Internet.email(),
+        appId: charlatan.Lorem.characters(7),
+        insurancenumber: charlatan.Number.number(3),
+        phoneNumber: charlatan.Number.number(3),
+      };
+    }
+    function extractToken(apiEndpoint) {
+      const hostname = apiEndpoint.split('//')[1];
+      return hostname.split('@')[0];
+    }
+
+    it('[4ETL] must allow reusing unique values after they are in history', async () => {
+      /**
+       * 1. create user
+       * 2. change unique field value
+       * 3. ensure it is there in history
+       * 4. create user with same unique value - must pass
+       */
+
+      // 1.
+      const user1 = generateRegisterBody();
+      const res = await req
+        .post(buildPath('/users'))
+        .send(user1);
+      const token = extractToken(res.body.apiEndpoint);
+      const resEvents = await req
+        .get(buildPath(`/${user1.username}/events`))
+        .set('Authorization',token)
+        .query({streams: [SystemStreamSerializer.addPrivatePrefixToStreamId('email')]});
+      const oldEmailEvent = resEvents.body.events[0];
+
+      // 2.
+      const resUpdate = await req
+        .put(buildPath(`/${user1.username}/events/${oldEmailEvent.id}`))
+        .set('Authorization',token)
+        .send({
+          content: charlatan.Internet.email(),
+        });
+
+      // 3.
+      const resGet = await req
+        .get(buildPath(`/${user1.username}/events/${oldEmailEvent.id}`))
+        .set('Authorization',token)
+        .query({ includeHistory: true });
+      assert.equal(resGet.body.history[0].content, oldEmailEvent.content);
+
+      // 4.
+      const user2 = _.merge(generateRegisterBody(), { email: oldEmailEvent.content });
+      const res2 = await req
+        .post(buildPath('/users'))
+        .send(user2);
+      const token2 = extractToken(res2.body.apiEndpoint);
+      const resEvents2 = await req
+        .get(buildPath(`/${user2.username}/events`))
+        .set('Authorization',token2)
+        .query({streams: [SystemStreamSerializer.addPrivatePrefixToStreamId('email')]});
+      const emailEvent = resEvents2.body.events[0];
+      assert.equal(emailEvent.content, oldEmailEvent.content);
     });
   });
 
