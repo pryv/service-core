@@ -434,14 +434,14 @@ Object.freeze(PermissionLevels);
 
     let currentStream = (streamId !== '*') ? streamId : null; 
 
+    const stores = await getStore();
+
     while (currentStream) {
       const permissions = this.getStreamPermission(storeId, currentStream);
-      if (permissions) return permissions.level; // found
-      
+      if (permissions) return permissions.level; // found  
       // not found, look for parent
-      const store = (await getStore()).sourceForId(storeId);
-      const streams = await store.streams.get(this._userId, {id: currentStream});
-      currentStream = (streams.length > 0) ? streams[0].parentId : null;
+      const stream = await stores.streams.getOne(this._userId, currentStream, storeId);
+      currentStream = stream ? stream.parentId : null;
     } 
     
     // do not allow star permissions for account streams

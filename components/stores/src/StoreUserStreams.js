@@ -21,16 +21,43 @@ class StoreUserStreams extends UserStreams {
     this.store = store;
   }
 
+  /**
+   * Helper to get a single stream
+   */
+  async getOne(uid, streamId, storeId) {
+    if (! storeId) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
+    const store = this.store._storeForId(storeId);
+    if (! store) return null;
+    const streams = await store.streams.get(uid, {id: streamId, state: 'all'});
+    if (streams && streams.length === 1) return streams[0];
+    return null;
+  }
+
+  /**
+   * Get the stream that will be set as root for all Stream Structure of this Data Source.
+   * @see https://api.pryv.com/reference/#get-streams
+   * @param {identifier} uid
+   * @param {Object} params
+   * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by Stores 
+   * @param {identifier} [params.storeId] null, means streamId is a "FullStreamId that includes stores informations"
+   * @param {identifier} [params.expandChildren] default false, if true also return childrens
+   * @param {identifiers} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is true, children of excludedIds should be excludded too
+   * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
+   * @param {timestamp} [params.includeDeletionsSince] 
+   * @returns {UserStream|null} - the stream or null if not found:
+   */
   async get(uid, params) {
     
     if (params.parentId && params.id) {
       DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
     }
     
-    let fullStreamId = params.id || params.parentId;
+    let streamId = params.id || params.parentId;
+    let storeId = params.storeId; // might me null
+    
 
     // *** root query we just expose stores handles
-    if (! fullStreamId) { 
+    if (! streamId) { 
       const res = [];
       for (let source of this.store.sources) {
         res.push([StreamsUtils.sourceToStream(source, {
@@ -42,14 +69,17 @@ class StoreUserStreams extends UserStreams {
       return res;
     }
 
-    const [sourceId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
+    if (! storeId) {
+      [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    } 
+
     const myParams = {
       id: streamId,
       includeDeletionsSince: params.includeDeletionsSince,
       state: params.state,
       expandChildren: params.expandChildren
     }
-    const source = this.store.sourceForId(sourceId);
+    const source = this.store._storeForId(storeId);
     const res = await source.streams.get(uid, myParams);
     // if request was made on parentId .. return only the children
     if (params.parentId && res.length === 1) {
@@ -89,7 +119,7 @@ class StoreUserStreams extends UserStreams {
         } else {  // add streamId's corresponding source 
           const dashPos = streamId.indexOf('-');
           const sourceId = streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
-          const source = this.store.sourceForId(sourceId);
+          const source = this.store._storeForId(sourceId);
           if (! source) {
             DataSource.throwUnkownRessource('parentIds query parameters', sourceId);
           } 
@@ -112,7 +142,7 @@ class StoreUserStreams extends UserStreams {
         includeDeletionsSince: params.includeDeletionsSince,
         state: params.state
       }
-      tasks.push(this.store.sourceForId(sourceId).streams.get(uid, myParams));
+      tasks.push(this.store._storeForId(sourceId).streams.get(uid, myParams));
     }
 
     // call all sources

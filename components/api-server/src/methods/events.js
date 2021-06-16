@@ -197,15 +197,14 @@ module.exports = async function (
         }
       }
 
-      const query =  {id: streamId, state: params.state, expandChildren: true};
+      const query =  {id: streamId, storeId: storeId, state: params.state, expandChildren: true};
 
       // do not expand SystemStreams for non-personal tokens
       if (streamId === '*' && storeId === 'local' && ! context.access.isPersonal()) {
         query.hideSystemStreams = true;
       }
 
-      const store = (await getStore()).sourceForId(storeId);
-      const tree = await store.streams.get(context.user.id, query);
+      const tree = await stores.streams.get(context.user.id, query);
 
       // collect streamIds and exclude not readable streams that might have been expanded 
       const result = [];

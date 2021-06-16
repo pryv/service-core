@@ -23,7 +23,7 @@ class StoreUserEvents extends UserEvents {
 
   async generateStreams(uid, paramsBySource, addEventStreamCB) {
     for (let sourceId of Object.keys(paramsBySource)) {
-      const source = this.store.sourceForId(sourceId);
+      const source = this.store._storeForId(sourceId);
       const params = paramsBySource[sourceId];
       await source.events.getStreamed(uid, params).then((eventsStream) => {
         if (sourceId == 'local') {
