@@ -6,26 +6,26 @@
  */
 /*global describe, before, beforeEach, after, it */
 
-var helpers = require('./helpers'),
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    validation = helpers.validation,
-    eventsMethodsSchema = require('../src/schema/eventsMethods'),
-    streamsMethodsSchema = require('../src/schema/streamsMethods'),
-    should = require('should'), // explicit require to benefit from static functions
-    _ = require('lodash'),
-    storage = helpers.dependencies.storage.user.events,
-    timestamp = require('unix-timestamp'),
-    testData = helpers.data;
+const helpers = require('./helpers');
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const validation = helpers.validation;
+const eventsMethodsSchema = require('../src/schema/eventsMethods');
+const streamsMethodsSchema = require('../src/schema/streamsMethods');
+const should = require('should'); // explicit require to benefit from static functions
+const _ = require('lodash');
+const storage = helpers.dependencies.storage.user.events;
+const timestamp = require('unix-timestamp');
+const testData = helpers.data;
 require('date-utils');
 
 describe('Versioning', function () {
 
-  var user = Object.assign({}, testData.users[0]),
-      request = null;
+  const user = Object.assign({}, testData.users[0]);
+  let request = null;
 
   function pathToEvent(eventId) {
-    var resPath = '/' + user.username + '/events';
+    let resPath = '/' + user.username + '/events';
     if (eventId) {
       resPath += '/' + eventId;
     }
@@ -33,7 +33,7 @@ describe('Versioning', function () {
   }
 
   function pathToStream(streamId) {
-    var resPath = '/' + user.username + '/streams';
+    let resPath = '/' + user.username + '/streams';
     if (streamId) {
       resPath += '/' + streamId;
     }
@@ -41,7 +41,7 @@ describe('Versioning', function () {
   }
 
   before(function (done) {
-    var settings = _.cloneDeep(helpers.dependencies.settings);
+    const settings = _.cloneDeep(helpers.dependencies.settings);
     settings.versioning.forceKeepHistory = true;
     async.series([
       testData.resetUsers,
@@ -58,7 +58,7 @@ describe('Versioning', function () {
   });
 
   after(function (done) {
-    var settings = _.cloneDeep(helpers.dependencies.settings);
+    const settings = _.cloneDeep(helpers.dependencies.settings);
     settings.versioning = {
       forceKeepHistory: false,
       deletionMode: 'keep-nothing'
@@ -66,22 +66,22 @@ describe('Versioning', function () {
     server.ensureStarted.call(server, settings, done);
   });
 
-  var eventWithHistory = testData.events[16],
-      trashedEventWithHistory = testData.events[19],
-      eventWithNoHistory = testData.events[22],
-      runningEventOnNormalStream = testData.events[23],
-      runningEventOnSingleActivityStream = testData.events[24],
-      eventOnChildStream = testData.events[25];
+  const eventWithHistory = testData.events[16];
+  const trashedEventWithHistory = testData.events[19];
+  const eventWithNoHistory = testData.events[22];
+  const runningEventOnNormalStream = testData.events[23];
+  const runningEventOnSingleActivityStream = testData.events[24];
+  const eventOnChildStream = testData.events[25];
 
-  var normalStream = testData.streams[7],
-      singleActivityStream = testData.streams[8],
-      childStream = normalStream.children[0];
+  const normalStream = testData.streams[7];
+  const singleActivityStream = testData.streams[8];
+  const childStream = normalStream.children[0];
 
   describe('Events', function () {
 
     it('[RWIA] must not return history when calling events.get', function (done) {
 
-      var queryParams = {limit: 100};
+      const queryParams = {limit: 100};
 
       request.get(pathToEvent(null)).query(queryParams).end(function (res) {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
@@ -90,7 +90,7 @@ describe('Versioning', function () {
           status: 200,
           schema: eventsMethodsSchema.get.result
         });
-        var events = res.body.events;
+        const events = res.body.events;
         (events.length).should.be.above(0);
         events.forEach(function (event) {
           should.not.exist(event.headId);
@@ -105,7 +105,7 @@ describe('Versioning', function () {
 
       it('[FLLW] must delete the event\'s history when deleting it with deletionMode=keep-nothing',
         function (done) {
-          var settings = _.cloneDeep(helpers.dependencies.settings);
+          const settings = _.cloneDeep(helpers.dependencies.settings);
           settings.versioning.deletionMode = 'keep-nothing';
 
           async.series([
@@ -148,7 +148,7 @@ describe('Versioning', function () {
 
       it('[6W0B] must minimize the event\'s history when deleting it with deletionMode=keep-authors',
         function (done) {
-          var settings = _.cloneDeep(helpers.dependencies.settings);
+          const settings = _.cloneDeep(helpers.dependencies.settings);
           settings.versioning.deletionMode = 'keep-authors';
 
           async.series([
@@ -200,7 +200,7 @@ describe('Versioning', function () {
       it('[1DBC] must not modify the event\'s history when deleting it with ' +
         'deletionMode=keep-everything',
         function (done) {
-          var settings = _.cloneDeep(helpers.dependencies.settings);
+          const settings = _.cloneDeep(helpers.dependencies.settings);
           settings.versioning.deletionMode = 'keep-everything';
 
           async.series([
@@ -234,7 +234,7 @@ describe('Versioning', function () {
                     return stepDone(err);
                   }
                   // TODO clean this test
-                  var checked = {first: false, second: false};
+                  const checked = {first: false, second: false};
                   (events.length).should.eql(2);
                   events.forEach(function (event) {
                     if (event.id === testData.events[20].id) {
@@ -288,7 +288,7 @@ describe('Versioning', function () {
     describe('forceKeepHistory is OFF', function () {
 
       before(function (done) {
-        var settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = _.cloneDeep(helpers.dependencies.settings);
         settings.versioning.forceKeepHistory = false;
         server.ensureStarted.call(server, settings, done);
       });
@@ -296,7 +296,7 @@ describe('Versioning', function () {
       beforeEach(testData.resetEvents);
 
       it('[PKA9] must not generate history when updating an event', function (done) {
-        var updateData = {
+        const updateData = {
           content: 'updated content'
         };
         async.series([
@@ -323,16 +323,14 @@ describe('Versioning', function () {
           }
         ], done);
       });
-
     });
-
 
     describe('forceKeepHistory is ON', function () {
 
       beforeEach(testData.resetEvents);
 
       before(function (done) {
-        var settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = _.cloneDeep(helpers.dependencies.settings);
         settings.versioning.forceKeepHistory = true;
         async.series([
           server.ensureStarted.bind(server, settings)
@@ -340,7 +338,7 @@ describe('Versioning', function () {
       });
 
       it('[0P6S] must generate history when updating an event', function (done) {
-        var updateData = {
+        const updateData = {
           content: 'first updated content'
         };
         async.series([
@@ -374,8 +372,8 @@ describe('Versioning', function () {
                 should.exist(res.body);
                 should.exist(res.body.history);
                 (res.body.history.length).should.eql(2);
-                var history = res.body.history;
-                var time = 0;
+                const history = res.body.history;
+                let time = 0;
                 history.forEach(function (previousVersion) {
                   delete previousVersion.streamId;
                   (previousVersion.headId).should.eql(eventWithNoHistory.id);
@@ -435,7 +433,7 @@ describe('Versioning', function () {
   describe('Streams', function () {
 
     before(function (done) {
-      var settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = _.cloneDeep(helpers.dependencies.settings);
       settings.versioning = {
         forceKeepHistory: true
       };
@@ -470,9 +468,9 @@ describe('Versioning', function () {
                 status: 200,
                 schema: eventsMethodsSchema.getOne.result
               });
-              var event = res.body.event;
+              const event = res.body.event;
               event.streamId.should.eql(normalStream.id);
-              var history = res.body.history;
+              const history = res.body.history;
               should.exist(history);
               history.length.should.eql(2);
               history.forEach(function (previousVersion) {
@@ -487,7 +485,7 @@ describe('Versioning', function () {
 
     it('[95TJ] must delete the events\' history when their stream is deleted with ' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-nothing\'', function (done) {
-      var settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = _.cloneDeep(helpers.dependencies.settings);
       settings.versioning = {
         deletionMode: 'keep-nothing'
       };
@@ -531,7 +529,7 @@ describe('Versioning', function () {
 
     it('[4U91] must keep the events\' minimal history when their stream is deleted with ' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-authors\'', function (done) {
-      var settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = _.cloneDeep(helpers.dependencies.settings);
       settings.versioning = {
         deletionMode: 'keep-authors'
       };
@@ -585,7 +583,7 @@ describe('Versioning', function () {
 
     it('[D4CY] must not delete the events\' history when their stream is deleted with' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-everything\'', function (done) {
-      var settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = _.cloneDeep(helpers.dependencies.settings);
       settings.versioning = {
         deletionMode: 'keep-everything'
       };
@@ -621,7 +619,7 @@ describe('Versioning', function () {
               if (err) {
                 return stepDone(err);
               }
-              var checked = false;
+              let checked = false;
               (events.length).should.eql(1);
               events.forEach(function (event) {
                 event.headId.should.eql(eventOnChildStream.id);
