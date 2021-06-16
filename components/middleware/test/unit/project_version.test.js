@@ -34,7 +34,7 @@ describe('APIVersion#version', () => {
       const versionRead = fs.writeFileSync(versionFilePath, '1.2.3', { encoding: 'utf-8'});
     });
 
-    it('reads .api-version and returns that constant', async () => {
+    it('[5ICP] reads .api-version and returns that constant', async () => {
       const version = await getAPIVersion(true);
       assert.strictEqual(version, '1.2.4');
     });
