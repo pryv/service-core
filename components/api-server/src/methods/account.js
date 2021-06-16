@@ -235,11 +235,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
       );
       notifications.accountChanged(context.user);
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(
-        err,
-        ErrorMessages[ErrorIds.UnexpectedError],
-        params.update
-      ));
+      return next(err);
     }
     next();
   }

@@ -541,12 +541,6 @@ module.exports = async function (
         await usersRepository.checkDuplicates({[streamIdWithoutPrefix]: context.newEvent.content});
       }
     } catch (err) {
-      if (err.isDuplicate) {
-        return next(Registration.handleUniquenessErrors(
-          err,
-          ErrorMessages[ErrorIds.UnexpectedError],
-          { [streamIdWithoutPrefix]: context.newEvent.content }));
-      }
       return next(err);
     }
     next();

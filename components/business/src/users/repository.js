@@ -17,6 +17,7 @@ const SystemStream = require('business/src/system-streams/SystemStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
+const { safetyCleanDuplicate } = require('business/src/auth/service_register');
 
 /**
  * Repository of the users
@@ -272,6 +273,8 @@ class Repository {
    */
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
 
+    this.checkDuplicates(update);
+
     // change password into hash if it exists
     if (update.password != null) {
       update.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(update.password, cb));
@@ -346,12 +349,8 @@ class Repository {
    * @param {User} user - a user object or 
    */
   async checkDuplicates(user: User): Promise<void> {
-
-    /**
-     * forEach user.uniqueFields
-     * streamIds.contains(field) && content = user[field]
-     */
-    const orClause = [];
+    
+    const orClause: Array<{}> = [];
     this.uniqueFields.forEach(field => {
       if (user[field] != null) {
         orClause.push({
@@ -362,6 +361,8 @@ class Repository {
         });
       }
     });
+
+    if (orClause.length === 0) return;
 
     const query: {} = {
       $or: orClause,
@@ -376,24 +377,17 @@ class Repository {
       )
     );
     if (duplicateEvents != null && duplicateEvents.length > 0) {
-      const error = new Error('walou');
-      error.isDuplicate = true;
-      const duplicatesMap = {};
-      const duplicates = [];
+      const uniquenessErrors = {};
       duplicateEvents.forEach(duplicate => {
         const key = extractDuplicateField(this.uniqueFields, duplicate.streamIds);
-        duplicates.push(key);
-        duplicatesMap[key] = true;
+        uniquenessErrors[key] = user[key];
       });
-      error.isDuplicateIndex = (key): Map<string, boolean> => duplicatesMap[key];
-      error.getDuplicateSystemStreamIds = (): Array<string> => duplicates;
-      
-      throw error;
+      throw errors.itemAlreadyExists('user', safetyCleanDuplicate(uniquenessErrors, null, user));
     }
     return;
 
     /**
-     * Performs intersection of 2 arrays of streamIds: one with prefixes, on without.
+     * Performs intersection of 2 arrays of streamIds: one with prefixes, one without.
      * Returns the first element of the array, as we expect a single one.
      * 
      * @param {*} streamIdsWithoutPrefix 

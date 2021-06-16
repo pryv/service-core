@@ -162,11 +162,7 @@ class Registration {
     try {
       context.user = await this.usersRepository.insertOne(context.user, true);
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(
-        err,
-        ErrorIds.UnexpectedError,
-        params
-      ));
+      return next(err);
     }
     next();
   }
@@ -273,28 +269,6 @@ class Registration {
       }
     );
     next();
-  }
-
-  /**
-   * Build errors for api response
-   * @param {*} err
-   * @param {*} params
-   */
-  static handleUniquenessErrors (err, message, params) {
-    // Duplicate errors
-    const uniquenessErrors = {};
-    if (err.isDuplicate) {
-      const fieldNames = err.getDuplicateSystemStreamIds();
-      fieldNames.forEach(fieldName => {
-        uniquenessErrors[fieldName] = params[fieldName];     
-      }); 
-    }
-
-    if (Object.keys(uniquenessErrors).length > 0) {
-      return errors.itemAlreadyExists('user', safetyCleanDuplicate(uniquenessErrors, null, params));
-    }
-    // Any other error
-    return errors.unexpectedError(err, message);
   }
 }
 

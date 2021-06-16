@@ -95,12 +95,6 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
     try {
       await usersRepository.checkDuplicates({ [field]: params[field]});
     } catch (error) {
-      if (error.isDuplicate) {
-        return next(Registration.handleUniquenessErrors(
-          error,
-          ErrorMessages[ErrorIds.UnexpectedError],
-          { [field]: params[field] }));
-      }
       return next(error);
     }
     next();
