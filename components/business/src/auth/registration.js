@@ -53,7 +53,7 @@ class Registration {
    * @param {*} result 
    * @param {*} next 
    */
-   async prepareUserData(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async prepareUserData(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     context.user = new User(params);
     next();
   }
@@ -140,26 +140,7 @@ class Registration {
   }
 
   /**
-   * DEPRECATED
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  createPoolUser (context, params, result, next) {
-    const POOL_USERNAME_PREFIX = 'pool@';
-    const uniqueId = cuid();
-    params.username = POOL_USERNAME_PREFIX + uniqueId;
-    params.passwordHash = 'changeMe';
-    params.language = 'en';
-    params.email = POOL_USERNAME_PREFIX + uniqueId + '@email';
-    context.user = new User(params);
-    next();
-  }
-
-  /**
    * Save user to the database
-   * Pool user is not consumed anymore
    * @param {*} context 
    * @param {*} params 
    * @param {*} result 
@@ -179,8 +160,7 @@ class Registration {
     }
 
     try {
-      const createUserWithSession = (context.methodId === 'system.createPoolUser') ? false : true;
-      context.user = await this.usersRepository.insertOne(context.user, createUserWithSession);
+      context.user = await this.usersRepository.insertOne(context.user, true);
     } catch (err) {
       return next(Registration.handleUniquenessErrors(
         err,

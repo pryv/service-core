@@ -52,17 +52,13 @@ const ALL_METHODS = [
   'events.delete',
   'events.deleteAttachment',
   'system.createUser',
-  'system.createPoolUser',
   'system.deactivateMfa',
-  'system.getUsersPoolSize',
   'system.getUserInfo',
   'audit.getLogs'
 ];
 
 const NOT_AUDITED_METHODS = [
   'service.info',
-  'system.createPoolUser',
-  'system.getUsersPoolSize',
   'system.getUserInfo',
   'auth.usernameCheck',
   'auth.emailCheck',

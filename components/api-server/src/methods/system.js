@@ -31,7 +31,6 @@ module.exports = function (
   logging, storageLayer
 ) {
 
-  const POOL_REGEX = new RegExp('^' + 'pool@');
   const registration = new Registration(logging, storageLayer, servicesSettings);
   const usersRepository = new UsersRepository(storageLayer.events);
   const userProfileStorage = storageLayer.profile;
@@ -44,33 +43,6 @@ module.exports = function (
     registration.createUser.bind(registration),
     registration.sendWelcomeMail.bind(registration),
     );
-
-  // ------------------------------------------------------------ createPoolUser
-  systemAPI.register('system.createPoolUser',
-    registration.prepareUserData,
-    registration.createPoolUser.bind(registration),
-    registration.createUser.bind(registration),
-  );
-
-  // ---------------------------------------------------------- getUsersPoolSize
-  systemAPI.register('system.getUsersPoolSize',
-    countPoolUsers);
-
-  async function countPoolUsers(context, params, result, next) {
-    try {
-      const numUsers = await bluebird.fromCallback(cb => 
-        storageLayer.events.count({}, {
-          $and: [
-            { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME },
-            { content: { $regex: POOL_REGEX } }
-          ]
-        }, cb));
-      result.size = numUsers ? numUsers : 0;
-      return next();
-    } catch (err) {
-      return next(errors.unexpectedError(err))
-    }
-  }
 
   // --------------------------------------------------------------- getUserInfo
   systemAPI.register('system.getUserInfo',

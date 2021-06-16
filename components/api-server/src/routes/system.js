@@ -49,21 +49,6 @@ module.exports = function system(expressApp: express$Application, app: Applicati
     systemAPI.call(req.context, params, methodCallback(res, next, 201));
   }
 
-  // Specific routes for managing users pool
-  expressApp.post(Paths.System + '/pool/create-user', 
-      contentType.json, 
-      setMethodId('system.createPoolUser'),
-      function (req: express$Request, res, next) {
-        systemAPI.call(req.context, {}, methodCallback(res, next, 201));
-    }
-  );
-
-  expressApp.get(Paths.System + '/pool/size', 
-    setMethodId('system.getUsersPoolSize'),
-    function (req: express$Request, res, next) {
-      systemAPI.call(req.context, {}, methodCallback(res, next, 200));
-  });
-
   expressApp.get(Paths.System + '/user-info/:username',
     setMethodId('system.getUserInfo'),
     function (req: express$Request, res, next) {

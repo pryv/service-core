@@ -219,7 +219,7 @@ class Repository {
   }
 
   validateAllStorageObjectsInitialized(): boolean {
-    if (!this.accessStorage || !this.sessionsStorage) {
+    if (this.accessStorage == null || this.sessionsStorage == null) {
       throw new Error('Please initialize the user repository with all dependencies.');
     }
     return true;
@@ -227,10 +227,11 @@ class Repository {
 
   /**
    * Create user
-   * @param userParams - parameters to be saved
+   * @param user - parameters to be saved
+   * @param withSession - create session as well - for tests, we don't because it crashes, because validateAllStorageObjectsInitialized() returns false
    * @return object with created user information in flat format
    */
-  async insertOne(user: User, shouldCreateSession: Boolean): Promise<User> {
+  async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
     // first explicitly create a collection, because it would fail in the transation
     
     await bluebird.fromCallback(
@@ -243,7 +244,7 @@ class Repository {
     await transactionSession.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
       let accessId = Repository.options.SYSTEM_USER_ACCESS_ID;
-      if (shouldCreateSession && this.validateAllStorageObjectsInitialized() && user.appId != null) {
+      if (withSession && this.validateAllStorageObjectsInitialized() && user.appId != null) {
         const token: string = await this.createSessionForUser(user.username, user.appId, transactionSession);
         const access = await this.createPersonalAccessForUser(
           user.id, token, user.appId, transactionSession);
