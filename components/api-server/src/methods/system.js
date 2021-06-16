@@ -48,15 +48,15 @@ module.exports = function (
   systemAPI.register('system.getUserInfo',
     setAuditAccessId(AuditAccessIds.ADMIN_TOKEN),
     commonFns.getParamsValidation(methodsSchema.getUserInfo.params),
-    retrieveUser,
+    loadUserToMinimalMethodContext,
     getUserInfoInit,
     getUserInfoSetAccessStats);
 
-  async function retrieveUser(context, params, result, next) {
+  async function loadUserToMinimalMethodContext(minimalMethodContext, params, result, next) {
     try {
-      context.user = await usersRepository.getAccountByUsername(params.username, true);
+      minimalMethodContext.user = await usersRepository.getAccountByUsername(params.username, true);
 
-      if (context.user == null) {
+      if (minimalMethodContext.user == null) {
         return next(errors.unknownResource('user', params.username));
       }
       next();
@@ -115,7 +115,7 @@ module.exports = function (
   systemAPI.register('system.deactivateMfa',
     setAuditAccessId(AuditAccessIds.ADMIN_TOKEN),
     commonFns.getParamsValidation(methodsSchema.deactivateMfa.params),
-    retrieveUser,
+    loadUserToMinimalMethodContext,
     deactivateMfa
   );
 

@@ -76,7 +76,7 @@ describe('Audit Streams and Events', function () {
       const res = await coreRequest
         .get(streamsPath)
         .set('Authorization', appAccess.token);
-      console.log(res.body);
+      console.log('TEST 75GO', res.body);
     });
 
   });

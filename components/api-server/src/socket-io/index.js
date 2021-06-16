@@ -76,11 +76,7 @@ function setupSocketIO(
       );
       // Load user, init the namespace
       await context.retrieveUser();
-      if (context.user == null) throw new Error('AF: context.user != null');
-    
-      // Load user, init the namespace
-      await context.retrieveUser();
-      if (context.username == null) throw new Error('AF: context.username != null');
+
       // Load access
       await context.retrieveExpandedAccess(storageLayer);
 
