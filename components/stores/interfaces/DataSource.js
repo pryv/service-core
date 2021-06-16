@@ -89,12 +89,13 @@ class UserStreams {
    * @param {identifier} uid
    * @param {Object} params
    * @param {identifier} [params.id] null, means all. return this stream and it's children ! Notice parentId is not implemented by Stores 
-   * @param {identifier} [params.hideChildren] default false
+   * @param {identifier} [params.expandChildren] default false
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @param {timestamp} [params.includeDeletionsSince] 
    * @returns {UserStream|null} - the stream or null if not found:
    */
   async get(uid, params) { toBeImplemented(); }
+
 
   /**
    * @see https://api.pryv.com/reference/#create-stream

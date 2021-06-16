@@ -71,7 +71,7 @@ class LocalUserStreams extends UserStreams {
       streams = stream ? [ stream ] : [];
     }
     
-    if (params.hideChildren) {
+    if (! params.expandChildren) {
       streams = streams.map((stream) => {
         stream.childrenHidden = true;
         stream.children = []; 

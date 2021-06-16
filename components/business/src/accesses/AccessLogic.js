@@ -440,7 +440,7 @@ Object.freeze(PermissionLevels);
       
       // not found, look for parent
       const store = (await getStore()).sourceForId(storeId);
-      const streams = await store.streams.get(this._userId, {id: currentStream, hideChildren: true});
+      const streams = await store.streams.get(this._userId, {id: currentStream});
       currentStream = (streams.length > 0) ? streams[0].parentId : null;
     } 
     

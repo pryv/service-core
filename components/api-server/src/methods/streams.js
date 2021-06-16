@@ -66,7 +66,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
     let streams = await bluebird.fromCallback(cb => userStreamsStorage.find(context.user, {}, null, cb));
 
     // AT WORK
-    //const newStreams = await stores.streams.get(context.user.id, {});
+    //const newStreams = await stores.streams.get(context.user.id, {expandChildren: true});
 
     const systemStreams = SystemStreamsSerializer.getReadable();
     streams = streams.concat(systemStreams);

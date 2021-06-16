@@ -24,7 +24,7 @@ class StoreUserStreams extends UserStreams {
   async get(uid, params) {
     
     if (params.parentId && params.id) {
-      DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request')
+      DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
     }
     
     let fullStreamId = params.id || params.parentId;
@@ -47,7 +47,7 @@ class StoreUserStreams extends UserStreams {
       id: streamId,
       includeDeletionsSince: params.includeDeletionsSince,
       state: params.state,
-      hideChildren: params.hideChildren
+      expandChildren: params.expandChildren
     }
     const source = this.store.sourceForId(sourceId);
     const res = await source.streams.get(uid, myParams);

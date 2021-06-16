@@ -197,7 +197,7 @@ module.exports = async function (
         }
       }
 
-      const query =  {id: streamId, state: params.state};
+      const query =  {id: streamId, state: params.state, expandChildren: true};
 
       // do not expand SystemStreams for non-personal tokens
       if (streamId === '*' && storeId === 'local' && ! context.access.isPersonal()) {
