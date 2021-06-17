@@ -17,7 +17,7 @@ const cuid = require('cuid');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users/repository');
 const User = require('business/src/users/User');
 
 
@@ -292,7 +292,7 @@ describe('Storing data in a HF series', function() {
         { streamIds: [parentStreamId], time: Date.now() / 1000 },
         attrs
       );
-      const usersRepository = new UsersRepository(storageLayer.events);
+      const usersRepository = await getUsersRepository(); 
       const user: User = await usersRepository.getById(userId);
       assert.isNotNull(user);
 
@@ -789,7 +789,7 @@ describe('Storing data in a HF series', function() {
           attrs
         );
 
-        const usersRepository = new UsersRepository(storageLayer.events);
+        const usersRepository = await getUsersRepository(); 
         const user: User = await usersRepository.getById(userId);
 
         assert.isNotNull(user);

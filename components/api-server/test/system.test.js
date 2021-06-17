@@ -28,7 +28,7 @@ const validation = helpers.validation;
 const encryption = require('utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users/repository');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const charlatan = require('charlatan');
@@ -188,7 +188,7 @@ describe('system (ex-register)', function () {
         });
         await (new Promise(server.ensureStarted.bind(server, settings)));
 
-        const usersRepository = new UsersRepository(storage);
+        const usersRepository = await getUsersRepository(); 
         const originalUsers = await usersRepository.getAll();
 
         originalCount = originalUsers.length;
@@ -285,7 +285,7 @@ describe('system (ex-register)', function () {
 
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
-          const usersRepository = new UsersRepository(storage);
+          const usersRepository = await getUsersRepository(); 
           originalUsers = await usersRepository.getAll();
           originalCount = originalUsers.length;
 

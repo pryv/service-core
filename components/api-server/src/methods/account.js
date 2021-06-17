@@ -17,7 +17,7 @@ const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),
   ErrorIds = require('errors').ErrorIds,
   { getServiceRegisterConn } = require('business/src/auth/service_register'),
-  UsersRepository = require('business/src/users/repository');
+  { getUsersRepository, UsersRepositoryOptions } = require('business/src/users/repository');
   User = require('business/src/users/User'),
   SystemStreamsSerializer = require('business/src/system-streams/serializer');
   /**
@@ -36,7 +36,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
 
   // initialize service-register connection
   const serviceRegisterConn = getServiceRegisterConn();
-  const usersRepository = new UsersRepository(userEventsStorage);
+  const usersRepository = await getUsersRepository(); 
 
   const isDnsLess = (await getConfig()).get('dnsLess:isActive') === true;
 
@@ -227,7 +227,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
 
   async function updateAccount(context, params, result, next) {
     try {
-      const accessId = (context.access?.id) ? context.access.id : UsersRepository.options.SYSTEM_USER_ACCESS_ID
+      const accessId = (context.access?.id) ? context.access.id : UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID
       await usersRepository.updateOne(
         context.user,
         params.update,

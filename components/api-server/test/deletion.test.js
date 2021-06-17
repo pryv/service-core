@@ -18,7 +18,7 @@ const { getApplication } = require('api-server/src/application');
 const InfluxRepository = require('business/src/series/repository');
 const DataMatrix = require('business/src/series/data_matrix');
 const { getConfig } = require('@pryv/boiler');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users/repository');
 const { databaseFixture } = require('test-helpers');
 const {
   produceMongoConnection,
@@ -84,7 +84,7 @@ describe('DELETE /users/:username', async () => {
     influx = produceInfluxConnection(app.config);
     influxRepository = new InfluxRepository(influx);
 
-    usersRepository = new UsersRepository(app.storageLayer.events);
+    usersRepository = await getUsersRepository(); 
 
     await bluebird.fromCallback((cb) =>
       app.storageLayer.eventFiles.removeAll(cb)

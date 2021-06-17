@@ -24,7 +24,7 @@ const { getStores } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users/repository');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const assert = require('assert');
@@ -69,7 +69,7 @@ module.exports = async function (
 ) {
 
 
-  const usersRepository = new UsersRepository(userEventsStorage);
+  const usersRepository = await getUsersRepository(); 
   const config = await getConfig();
   const stores = await getStores();
   
