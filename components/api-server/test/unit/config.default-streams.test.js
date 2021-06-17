@@ -15,6 +15,12 @@ const { getConfig } = require('@pryv/boiler');
 describe('SystemStreams config', () => {
   let store;
   let customRootStreamId = 'myNewStream';
+
+  after(async () => {
+    const config = await getConfig();
+    SystemStreamsSerializer.reloadSerializer(config);
+  });
+
   describe('When nested custom systemStreams are provided in the config for the account steam', () => {
     before(async () => {
       
@@ -67,10 +73,7 @@ describe('SystemStreams config', () => {
       systemStreamsConfig.load(store);
       SystemStreamsSerializer.reloadSerializer(store);
     });
-    after(async () => {
-      const config = await getConfig();
-      SystemStreamsSerializer.reloadSerializer(config);
-    });
+    
     it('[V9QB] New config does not override default one', async () => {
       const newConfig = store.get('systemStreams');
       let found = false;
@@ -315,6 +318,36 @@ describe('SystemStreams config', () => {
         }
         
       ]);
+    });
+  });
+
+  describe('when providing a custom system stream that is unique but not indexed', () => {
+    before(async () => {
+      
+      store = new nconf.Provider();
+      store.use('memory');
+      store.set('custom:systemStreams',
+        {
+          account: [
+            {
+              id: 'faulty-params',
+              type: 'string/pryv',
+              isIndexed: false,
+              isUnique: true,
+            },
+          ],
+        });
+    });
+
+    it('[42A1] must throw an error if a custom system stream is unique but not indexed', async () => {
+      try {
+        systemStreamsConfig.load(store);
+        assert.fail('supposed to throw.');
+      } catch (err) {
+        assert.exists(err);
+        assert.include(err.message, 'Config error: custom system stream cannot be unique and not indexed. Stream: ');
+      }
+      
     });
   });
 });

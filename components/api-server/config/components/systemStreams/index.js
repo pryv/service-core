@@ -304,4 +304,10 @@ function validateSystemStreamWithSchema(systemStream: SystemStream): void {
       throw err;
     }
   });
+
+  throwIfUniqueAndNotIndexed(systemStream);
+
+  function throwIfUniqueAndNotIndexed(systemStream: SystemStream) {
+    if (systemStream[IS_UNIQUE] && ! systemStream[IS_INDEXED]) throw new Error('Config error: custom system stream cannot be unique and not indexed. Stream: ' + JSON.stringify(systemStream, null, 2));
+  }
 }

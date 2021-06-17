@@ -344,7 +344,7 @@ class Repository {
   }
 
   /**
-   * Checks for duplicates for unique fields. Throws DuplicateError if any.
+   * Checks for duplicates for unique fields. Throws item already exists error if any.
    * 
    * @param {User} user - a user object or 
    */
