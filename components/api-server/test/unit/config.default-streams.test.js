@@ -332,8 +332,8 @@ describe('SystemStreams config', () => {
             {
               id: 'faulty-params',
               type: 'string/pryv',
-              isIndexed: false,
-              isUnique: true,
+              [systemStreamsConfig.features.IS_INDEXED]: false,
+              [systemStreamsConfig.features.IS_UNIQUE]: true,
             },
           ],
         });

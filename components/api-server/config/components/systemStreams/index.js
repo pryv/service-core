@@ -23,6 +23,14 @@ const IS_EDITABLE: string = 'isEditable';
 const IS_UNIQUE: string = 'isUnique';
 const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
 
+module.exports.features = {
+  IS_SHOWN,
+  IS_INDEXED,
+  IS_EDITABLE,
+  IS_UNIQUE,
+  IS_REQUIRED_IN_VALIDATION,
+};
+
 const DEFAULT: string = 'default';
 
 const PRYV_PREFIX: string = ':_system:';
@@ -48,68 +56,68 @@ function load(config: {}): {} {
   // default system streams that should be not changed
   let defaultAccountStreams = ensurePrefixForStreamIds([
     {
+      id: 'username',
+      name: 'Username',
+      type: 'identifier/string',
       [IS_INDEXED]: true,
       [IS_UNIQUE]: true,
-      type: 'identifier/string',
-      name: 'Username',
-      id: 'username',
-      [IS_REQUIRED_IN_VALIDATION]: true
+      [IS_REQUIRED_IN_VALIDATION]: true,
     },
     {
+      id: 'language',
+      name: 'Language',
+      type: 'language/iso-639-1',
+      [DEFAULT]: 'en',
       [IS_INDEXED]: true,
       [IS_EDITABLE]: true,
-      [DEFAULT]: 'en',
-      type: 'language/iso-639-1',
-      name: 'Language',
-      id: 'language'
     },
     {
-      [IS_SHOWN]: false,
-      [IS_INDEXED]: true,
-      [DEFAULT]: '',
-      [IS_REQUIRED_IN_VALIDATION]: true,
-      type: 'identifier/string',
+      id: 'appId',
       name: 'appId',
-      id: 'appId'
-    },
-    {
-      [IS_SHOWN]: false,
-      [IS_INDEXED]: true,
-      [DEFAULT]: 'no-token',
-      type: 'token/string',
-      name: 'Invitation Token',
-      id: 'invitationToken'
-    },
-    {
-      [IS_SHOWN]: false,
-      type: 'password-hash/string',
-      name: 'Password Hash',
-      id: 'passwordHash'
-    },
-    {
-      [IS_SHOWN]: false,
-      [IS_INDEXED]: true,
-      [DEFAULT]: null,
       type: 'identifier/string',
+      [DEFAULT]: '',
+      [IS_INDEXED]: true,
+      [IS_REQUIRED_IN_VALIDATION]: true,
+      [IS_SHOWN]: false,
+    },
+    {
+      id: 'invitationToken',
+      name: 'Invitation Token',
+      type: 'token/string',
+      [DEFAULT]: 'no-token',
+      [IS_INDEXED]: true,
+      [IS_SHOWN]: false,
+    },
+    {
+      id: 'passwordHash',
+      name: 'Password Hash',
+      type: 'password-hash/string',
+      [IS_SHOWN]: false,
+    },
+    {
+      id: 'referer',
       name: 'Referer',
-      id: 'referer'
+      type: 'identifier/string',
+      [DEFAULT]: null,
+      [IS_INDEXED]: true,
+      [IS_SHOWN]: false,
     },
     {
       id: 'storageUsed',
       name: 'Storage used',
-      type: 'data-quantity/b',      
+      type: 'data-quantity/b',     
       children: [
         {
-          default: 0,
-          type: 'data-quantity/b',
+          id: 'dbDocuments',
           name: 'Db Documents',
-          id: 'dbDocuments'
+          type: 'data-quantity/b',
+          [DEFAULT]: 0,
         },
         {
-          default: 0,
-          type: 'data-quantity/b',
+          id: 'attachedFiles',
           name: 'Attached files',
-          id: 'attachedFiles'
+          type: 'data-quantity/b',
+          [DEFAULT]: 0,
         }
       ]
     }
