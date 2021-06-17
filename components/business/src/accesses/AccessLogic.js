@@ -26,6 +26,7 @@ function addAuditStreams() {
  * Lists permission levels ordered by ascending level to help with permission assessment.
  */
 var PermissionLevels = {
+  'none': -1,
   'read': 0,
   'create-only': 1,
   'contribute': 1,
@@ -51,13 +52,21 @@ Object.freeze(PermissionLevels);
     if (! this.id) return; // this is an access "in" creation process  
     
     if (! this.permissions) this.permissions = [];
+
+    // by default lock all permisssions on system streams by adding them in order at start of permissions
+    // in case they are allowed, they will be overwritten by permissions
+    for (const forbiddenStream of SystemStreamsSerializer.getAllRootStreamIdsThatRequireReadRightsForEventsGet()) {
+      this.permissions.unshift({streamId: forbiddenStream, level: 'none'});
+    }
+    
     let selfAudit = true;
     for (let permission of this.permissions) {
       if (permission.feature === 'selfAudit' && permission.setting === 'forbidden') {
         selfAudit = false;
-        break;
       }
     }
+    
+    // if can selfAudit add :_audit: permission
     if (selfAudit) {
       this.permissions.push({
         streamId: ':_audit:', 
@@ -170,6 +179,25 @@ Object.freeze(PermissionLevels);
     const localPerms = this._streamByStorePermissionsMap['local'];
     if (! localPerms) return [];
     return Object.values(localPerms).filter(perm => SystemStreamsSerializer.isAccountStreamId(perm.streamId));
+  }
+
+  /**
+   * get StreamIds with explicit "no-read" permissions ("create-only", ...)
+   * @param {storeId} storeId
+   * @returns {Array<cleanStreamIds>} 
+   */
+  getCannotGetEventsStreamIds(storeId) {
+    if (! this._streamByStorePermissionsMap) return [];
+    const localPerms = this._streamByStorePermissionsMap[storeId];
+    if (! localPerms) return [];
+    
+    const res = [];
+    for (const perm of Object.values(localPerms)) {
+      if (perm.level === 'create-only' || perm.level === null || perm.level === 'none') { 
+        res.push(StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
+      }      
+    }
+    return res;
   }
 
   _loadFeaturePermission (perm) {
@@ -422,10 +450,9 @@ Object.freeze(PermissionLevels);
   /**
    * new fashion to retrieve stream permissions
    * @param {identifier} streamIdFull :{storeId}:{streamId}
-   * @param {boolean} noStar used by tags search .. should be deprecated
    * @returns {String}  `null` if no matching permission exists.
    */
-  async _getStreamPermissionLevel (streamIdFull, noStar) {
+  async _getStreamPermissionLevel (streamIdFull) {
     if (! streamIdFull) streamIdFull = '*'; // to be investgated why this happens
 
     if (this.isPersonal()) return 'manage';
@@ -443,6 +470,8 @@ Object.freeze(PermissionLevels);
       const stream = await stores.streams.getOne(this._userId, currentStream, storeId);
       currentStream = stream ? stream.parentId : null;
     } 
+
+    // Here -- Stream Has not been found in permissions.. look for a '*' permission
     
     // do not allow star permissions for account streams
     if (SystemStreamsSerializer.isAccountStreamId(streamId)) return null;
@@ -489,6 +518,12 @@ AccessLogic.PERMISSION_LEVEL_CREATE_ONLY = 'create-only';
 
 
 
+/**
+ * return true is A >= B
+ * @param {*} permissionLevelA - level to challenge
+ * @param {*} permissionLevelB  - level 
+ * @returns 
+ */
 function isHigherOrEqualLevel(permissionLevelA, permissionLevelB) {
   return PermissionLevels[permissionLevelA] >= PermissionLevels[permissionLevelB];
 }

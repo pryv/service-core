@@ -38,7 +38,7 @@ import type Result  from '../Result';
 
 type Permission = {
   streamId: string, 
-  level: 'manage' | 'contribute' | 'read' | 'create-only',
+  level: 'manage' | 'contribute' | 'read' | 'create-only' | 'none',
 };
 type Access = {
   type: 'personal' | 'app' | 'shared',

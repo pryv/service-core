@@ -114,7 +114,7 @@ exports = module.exports = function (action) {
   return res;
 };
 
-var permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only']});
+var permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only', 'none']});
 
 var featureSetting = exports.featureSetting = string({ enum: ['forbidden']});
 

@@ -197,7 +197,13 @@ module.exports = async function (
         }
       }
 
-      const query =  {id: streamId, storeId: storeId, state: params.state, expandChildren: true};
+      const query =  {
+        id: streamId, 
+        storeId: storeId, 
+        state: params.state, 
+        expandChildren: true,
+        excludedIds: context.access.getCannotGetEventsStreamIds(storeId)
+      };
 
       // do not expand SystemStreams for non-personal tokens
       if (streamId === '*' && storeId === 'local' && ! context.access.isPersonal()) {
@@ -205,16 +211,9 @@ module.exports = async function (
       }
 
       const tree = await stores.streams.get(context.user.id, query);
-
-      // collect streamIds and exclude not readable streams that might have been expanded 
-      const result = [];
-      await treeUtils.filterTreeOnPromise(tree, false, async function(stream) {
-        const canRead = await context.access.canGetEventsOnStream(stream.id, storeId)
-        if (! canRead) return false; // break here (no inspection of childrens)
-        result.push(stream.id);
-        return true;
-      });
-
+      
+      // collect streamIds 
+      const result = treeUtils.collectPluck(tree, 'id');
       return result;
     }
 

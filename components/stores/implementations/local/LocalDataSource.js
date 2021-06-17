@@ -79,7 +79,7 @@ class LocalUserStreams extends UserStreams {
       });
     }
 
-    if (params.state !== 'all') { // i.e. === 'default' (return non-trashed items)
+    if (! params.includeTrashed) { // i.e. === 'default' (return non-trashed items)
       streams = treeUtils.filterTree(streams, false /*no orphans*/, function (item) {
         return !item.trashed;
       });
