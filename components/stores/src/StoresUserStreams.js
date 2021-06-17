@@ -11,7 +11,7 @@ const StreamsUtils = require('./lib/StreamsUtils');
 /**
  * Handle Store.streams.* methods
  */
-class StoreUserStreams extends UserStreams {
+class StoresUserStreams extends UserStreams {
  
   /**
    * @param {Store} store 
@@ -99,7 +99,7 @@ class StoreUserStreams extends UserStreams {
 
     const sourceParentIds = {}; // keep specific parentId for each store
 
-    function addSourceParentId(storeId, parentId) {
+    function addStoreParentId(storeId, parentId) {
       if (typeof sourceParentIds[storeId] !== 'undefined') {
         DataSource.throwInvalidRequestStructure('parentIds should point to maximum one stream per source. [' + storeId + '] appears more than once.', params);
       }
@@ -113,7 +113,7 @@ class StoreUserStreams extends UserStreams {
         
         if (streamId === '.*') {   // if '.*' add all sources
           for (let source of this.store.sources) {
-            addSourceParentId(source.id, null);
+            addStoreParentId(source.id, null);
           }
 
         } else {  // add streamId's corresponding source 
@@ -125,9 +125,9 @@ class StoreUserStreams extends UserStreams {
           } 
 
           if (dashPos < 0) { // root stream of source
-            addSourceParentId(source.id, null);
+            addStoreParentId(source.id, null);
           } else { // add streamId stripped out from '.${source}-'
-            addSourceParentId(source.id, streamId.substr(dashPos + 1));
+            addStoreParentId(source.id, streamId.substr(dashPos + 1));
           }
         }
       }
@@ -170,4 +170,4 @@ class StoreUserStreams extends UserStreams {
   }
 }
 
-module.exports = StoreUserStreams;
+module.exports = StoresUserStreams;

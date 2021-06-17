@@ -25,41 +25,42 @@ DataSource.throwUnkownRessource = function(resourceType, id, innerError) {
 
 
 // -- Core properties
-const StoreUserStreams = require('./StoreUserStreams');
-const StoreUserEvents = require('./StoreUserEvents');
+const StoresUserStreams = require('./StoresUserStreams');
+const StoreUserEvents = require('./StoresUserEvents');
 
-class Store extends DataSource {
+class Stores extends DataSource {
 
   get id() { return 'store' }
   get name() { return 'Store' }
 
   constructor() {
     super();
-    this.sourcesMap = {};
-    this.sources = [];
+    this.storesMap = {};
+    this.stores = [];
     this.initialized = false;
   }
 
   /**
    * register a new DataSource
+   * @param 
    */
-  addSource(source) {
+  addStore(store) {
     if (this.initialized) throw(new Error('Sources cannot be added after init()'));
-    this.sources.push(source);
-    this.sourcesMap[source.id] = source;
+    this.stores.push(store);
+    this.storesMap[store.id] = store;
   }
 
   async init() {
     if (this.initialized) throw(new Error('init() can only be called once.'));
     this.initialized = true;
 
-    // initialize all sources
-    for (let source of this.sources) {
-      await source.init();
+    // initialize all stores
+    for (let store of this.stores) {
+      await store.init();
     }
 
     // expose streams and events;
-    this._streams = new StoreUserStreams(this);
+    this._streams = new StoresUserStreams(this);
     this._events = new StoreUserEvents(this);
     
     return this;
@@ -71,7 +72,7 @@ class Store extends DataSource {
    * @returns 
    */
   _storeForId(storeId) {
-    return this.sourcesMap[storeId];
+    return this.storesMap[storeId];
   }
 
   get streams() { return this._streams; }
@@ -79,4 +80,4 @@ class Store extends DataSource {
 
 }
 
-module.exports = Store;
+module.exports = Stores;
