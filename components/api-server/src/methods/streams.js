@@ -23,7 +23,7 @@ const ErrorIds = require('errors/src/ErrorIds');
 
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
-const { getStore } = require('stores');
+const { getStores } = require('stores');
 
 SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 
@@ -42,7 +42,7 @@ SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 module.exports = async function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
   notifications, logging, auditSettings, updatesSettings) {
 
-  const stores = await getStore();
+  const stores = await getStores();
   // RETRIEVAL
 
   api.register('streams.get',

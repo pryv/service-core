@@ -20,7 +20,7 @@ const _ = require('lodash');
 const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
 
-const { getStore } = require('stores');
+const { getStores } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
@@ -71,7 +71,7 @@ module.exports = async function (
 
   const usersRepository = new UsersRepository(userEventsStorage);
   const config = await getConfig();
-  const stores = await getStore();
+  const stores = await getStores();
   
   // Initialise the project version as soon as we can. 
   const version = await getAPIVersion();
@@ -149,7 +149,7 @@ module.exports = async function (
         // replace any by allowed streams for reading
         const canRead = [];
         const cannotRead = [];
-        for (const streamPermission of context.access.getStorePermissions(streamQuery.storeId)) {
+        for (const streamPermission of context.access.getStoresPermissions(streamQuery.storeId)) {
           if (await context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)) {
             canRead.push(streamPermission.streamId);
           } else {

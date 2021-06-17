@@ -99,11 +99,11 @@ class StoreUserStreams extends UserStreams {
 
     const sourceParentIds = {}; // keep specific parentId for each store
 
-    function addSourceParentId(sourceId, parentId) {
-      if (typeof sourceParentIds[sourceId] !== 'undefined') {
-        DataSource.throwInvalidRequestStructure('parentIds should point to maximum one stream per source. [' + sourceId + '] appears more than once.', params);
+    function addSourceParentId(storeId, parentId) {
+      if (typeof sourceParentIds[storeId] !== 'undefined') {
+        DataSource.throwInvalidRequestStructure('parentIds should point to maximum one stream per source. [' + storeId + '] appears more than once.', params);
       }
-      sourceParentIds[sourceId] = parentId; // null means all
+      sourceParentIds[storeId] = parentId; // null means all
     }
 
     // get storages involved from streamIds 
@@ -118,10 +118,10 @@ class StoreUserStreams extends UserStreams {
 
         } else {  // add streamId's corresponding source 
           const dashPos = streamId.indexOf('-');
-          const sourceId = streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
-          const source = this.store._storeForId(sourceId);
+          const storeId = streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
+          const source = this.store._storeForId(storeId);
           if (! source) {
-            DataSource.throwUnkownRessource('parentIds query parameters', sourceId);
+            DataSource.throwUnkownRessource('parentIds query parameters', storeId);
           } 
 
           if (dashPos < 0) { // root stream of source
@@ -134,33 +134,33 @@ class StoreUserStreams extends UserStreams {
     }
 
     const tasks = [];
-    const sourceIds = Object.keys(sourceParentIds);
-    for (let sourceId of sourceIds) {
+    const storeIds = Object.keys(sourceParentIds);
+    for (let storeId of storeIds) {
       // make a copy of params and change parentId
       const myParams = {
-        parentId: sourceParentIds[sourceId] || undefined,
+        parentId: sourceParentIds[storeId] || undefined,
         includeDeletionsSince: params.includeDeletionsSince,
         state: params.state
       }
-      tasks.push(this.store._storeForId(sourceId).streams.get(uid, myParams));
+      tasks.push(this.store._storeForId(storeId).streams.get(uid, myParams));
     }
 
     // call all sources
     const sourcesRes =  await Promise.allSettled(tasks);
 
     // check results and eventually replace with error (non blocking unavailable ressource)
-    for (let i = 0; i < sourceIds.length; i++) {
+    for (let i = 0; i < storeIds.length; i++) {
       if (sourcesRes[i].status === 'fulfilled') {
-        if (sourceParentIds[sourceIds[i]] !== null) { // if null => requested root stream of source
+        if (sourceParentIds[storeIds[i]] !== null) { // if null => requested root stream of source
           res.push(...sourcesRes[i].value); // add all items to res
         } else {
-          const source = this.store.sourcesMap[sourceIds[i]];
+          const source = this.store.sourcesMap[storeIds[i]];
           res.push([StreamsUtils.sourceToStream(source, {
             children: sourcesRes[i].value
           })]);
         }
       } else {
-        const source = this.store.sourcesMap[sourceIds[i]];
+        const source = this.store.sourcesMap[storeIds[i]];
         res.push([StreamsUtils.sourceToStream(source, {
           unreachable: sourcesRes[i].reason // change to sourcesRes[i].reason.message || sourcesRes[i].reason
         })]);

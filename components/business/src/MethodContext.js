@@ -20,7 +20,7 @@ const UsersRepository = require('business/src/users/repository');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getStore, StreamsUtils } = require('stores');
+const { getStores, StreamsUtils } = require('stores');
 
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
@@ -116,7 +116,7 @@ class MethodContext {
   // Load the user identified by `this.username`, storing it in `this.user`.
   async retrieveUser() {
     try {
-      this.stores = await getStore();
+      this.stores = await getStores();
       // get user details
       this.user = await this.usersRepository.getAccountByUsername(this.username, true);
       if (!this.user) throw errors.unknownResource('user', this.username);

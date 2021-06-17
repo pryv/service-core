@@ -26,7 +26,7 @@ function sourceToStream(source, extraProperties) {
 }
 
 /**
- * Get the sourceId related to this stream, and the streamId without the store reference
+ * Get the storeId related to this stream, and the streamId without the store reference
  * @returns {object} [storeId: ..., streamIdWithoutStorePrefix]
  */
 function storeIdAndStreamIdForStreamId(fullStreamId) {

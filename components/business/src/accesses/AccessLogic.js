@@ -13,7 +13,7 @@ var treeUtils = require('utils').treeUtils,
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
-const { StreamsUtils, getStore } = require('stores');
+const { StreamsUtils, getStores } = require('stores');
 
 let auditIsActive = null;
 function addAuditStreams() {
@@ -146,7 +146,7 @@ Object.freeze(PermissionLevels);
    * @param {identifier} storeId 
    * @returns {Array<permission>}
    */
-  getStorePermissions(storeId) {
+  getStoresPermissions(storeId) {
     const storeStreamPermissionMap = this._streamByStorePermissionsMap[storeId];
     if (! storeStreamPermissionMap) return [];
     return Object.values(storeStreamPermissionMap);
@@ -434,7 +434,7 @@ Object.freeze(PermissionLevels);
 
     let currentStream = (streamId !== '*') ? streamId : null; 
 
-    const stores = await getStore();
+    const stores = await getStores();
 
     while (currentStream) {
       const permissions = this.getStreamPermission(storeId, currentStream);

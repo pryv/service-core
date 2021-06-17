@@ -26,7 +26,7 @@ const string = require('./helpers/string');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getLogger } = require('@pryv/boiler');
-const { getStore } = require('stores');
+const { getStores } = require('stores');
 
 import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'business';
@@ -60,7 +60,7 @@ module.exports = async function produceAccessesApiMethods(
   const logger = getLogger('methods:accesses');
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
-  const stores = await getStore();
+  const stores = await getStores();
 
   // RETRIEVAL
 

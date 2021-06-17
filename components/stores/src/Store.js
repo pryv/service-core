@@ -67,11 +67,11 @@ class Store extends DataSource {
 
   /**
    * @private
-   * @param {identifier} sourceId 
+   * @param {identifier} storeId 
    * @returns 
    */
-  _storeForId(sourceId) {
-    return this.sourcesMap[sourceId];
+  _storeForId(storeId) {
+    return this.sourcesMap[storeId];
   }
 
   get streams() { return this._streams; }

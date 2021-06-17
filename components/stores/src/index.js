@@ -14,7 +14,7 @@ const { getConfig } = require('@pryv/boiler');
 
 
 let store;
-async function getStore() {
+async function getStores() {
   if (store) return store;
   const config = await getConfig();
 
@@ -41,7 +41,7 @@ async function getStore() {
 
 
 module.exports = {
-  getStore : getStore,
+  getStores : getStores,
   StreamsUtils: require('./lib/StreamsUtils')
 };
 
@@ -51,7 +51,7 @@ module.exports = {
 
 (async () => { 
   try {
-    const s = await getStore();
+    const s = await getStores();
     const streams = await s.streams.get('toto', {parentIds: ['.*']});
     //const streams = await s.events.get('toto', {streamIds: ['.*']});
     console.log(require('util').inspect(streams, null, 10));
