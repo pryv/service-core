@@ -25,6 +25,8 @@ const accessSchema = require('../schema/access');
 const string = require('./helpers/string');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
+const cache = require('cache');
+
 const { getLogger } = require('@pryv/boiler');
 const { getStores } = require('stores');
 
@@ -466,6 +468,15 @@ module.exports = async function produceAccessesApiMethods(
     let idsToDelete: Array<{id: string}> = [{ id: params.id }];
     if (result.relatedDeletions != null) {
       idsToDelete = idsToDelete.concat(result.relatedDeletions);
+    }
+
+    // remove from cache
+    for (const idToDelete of idsToDelete) {
+      const accessToDelete = cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, context.user.id + '/' + idToDelete.id);
+      if (accessToDelete) {
+        cache.unset(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, context.user.id + '/' + accessToDelete.token);
+        cache.unset(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, context.user.id + '/' +  accessToDelete.id);
+     }
     }
 
     try {

@@ -31,5 +31,7 @@ module.exports = {
     USER_BY_ID: 'userById',
     USERID_BY_USERNAME: 'userIdByUsername',
     LOCAL_STORE_STREAMS_BY_USERID: 'localStoreStreamsByUser',
+    ACCESS_LOGIC_BY_USERIDTOKEN: 'access_Logic_BY_USERIDTOKEN',
+    ACCESS_LOGIC_BY_USERIDACCESSID: 'access_Logic_BY_USERIDACCESSID',
   }
 }

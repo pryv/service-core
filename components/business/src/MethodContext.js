@@ -22,6 +22,8 @@ import type { StorageLayer } from 'storage';
 const storage = require('storage');
 const { getStores, StreamsUtils } = require('stores');
 
+const cache = require('cache');
+
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
 
@@ -174,15 +176,21 @@ class MethodContext {
         'The access token is missing: expected an ' +
         '"Authorization" header or an "auth" query string parameter.');
 
-    const query = { token: token };
-    const access = await bluebird.fromCallback(
-      cb => storage.accesses.findOne(this.user, query, null, cb));
+    this.access = cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, this.user.id + '/' + token);
+    
+    if (! this.access) { // retreiveing from Db
+      const query = { token: token };
+      const access = await bluebird.fromCallback(
+        cb => storage.accesses.findOne(this.user, query, null, cb));
 
-    if (access == null)
-      throw errors.invalidAccessToken(
-        'Cannot find access from token.', 403);
-      
-    this.access = new AccessLogic(this.user.id, access);
+      if (access == null)
+        throw errors.invalidAccessToken(
+          'Cannot find access from token.', 403);
+        
+      this.access = new AccessLogic(this.user.id, access);
+      cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, this.user.id + '/' + token, this.access);
+      cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, this.user.id + '/' + this.access.id, this.access);
+    }
 
     this.checkAccessValid(this.access);
   }
@@ -204,19 +212,25 @@ class MethodContext {
   // `this.access` and `this.accessToken`. 
   // 
   async retrieveAccessFromId(storage: StorageLayer, accessId: string): Promise<Access> {
-    const query = { id: accessId };
-    const access = await bluebird.fromCallback(
-      cb => storage.accesses.findOne(this.user, query, null, cb));
 
-    if (access == null)
-      throw errors.invalidAccessToken('Cannot find access matching id.');
+    this.access = cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, this.user.id + '/' + accessId);
+    if (! this.access) {
+      const query = { id: accessId };
+      const access = await bluebird.fromCallback(
+        cb => storage.accesses.findOne(this.user, query, null, cb));
 
-    this.access = new AccessLogic(this.user.id, access);
-    this.accessToken = access.token;
+      if (access == null)
+        throw errors.invalidAccessToken('Cannot find access matching id.');
 
-    this.checkAccessValid(access);
+      this.access = new AccessLogic(this.user.id, access);
+      cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, this.user.id + '/' + this.access.token, this.access);
+      cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, this.user.id + '/' + this.access.id, this.access);
+    }
 
-    return access;
+    this.accessToken = this.access.token;
+    this.checkAccessValid(this.access);
+
+    return this.access;
   }
 
   // Loads session and touches it (personal sessions only)
