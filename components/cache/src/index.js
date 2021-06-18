@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 const _cache = {};
 
 function getNameSpace(namespace) {
@@ -10,7 +16,7 @@ function set(namespace, key, value) {
 }
 
 function unset(namespace, key) {
-  delete getNameSpace(namespace)[value];
+  delete getNameSpace(namespace)[key];
 }
 
 function get(namespace, key) {
@@ -20,5 +26,9 @@ function get(namespace, key) {
 module.exports = {
   set,
   unset,
-  get
+  get,
+  NS: {
+    USER_BY_ID: 'userById',
+    USERID_BY_USERNAME: 'userIdByUsername'
+  }
 }

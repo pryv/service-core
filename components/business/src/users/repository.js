@@ -93,6 +93,13 @@ class UsersRepository {
     return users;
   }
   async getById(userId: string, getAll: boolean): Promise<?User> {
+    getAll = true; // !!!!! <=== discuss with Ilia .. what was it used for ? 
+
+    const cachedUser = cache.get(cache.NS.USER_BY_ID, userId);
+    if (cachedUser) { 
+      return cachedUser;
+    }
+
     let userAccountStreamsIds: ?Map<string, SystemStream>;
     if (getAll) {
       userAccountStreamsIds = SystemStreamsSerializer.getAccountMap();
@@ -117,37 +124,43 @@ class UsersRepository {
     ) {
       return null;
     }
-    return new User({ id: userId, events: userAccountEvents });
+    const user = new User({ id: userId, events: userAccountEvents });
+    return cache.set(cache.NS.USER_BY_ID, userId, user);
   }
   async getAccountByUsername(username: string, getAll: boolean): Promise<?User> {
-    getAll = true;
-    //const cachedVersion = cacheAccountByUserName[username];
-    //if (cachedVersion) return cachedVersion;
-    const userIdEvent = await bluebird.fromCallback(
-      cb => this.eventsStorage.database.findOne(
-        this.collectionInfo,
-        this.eventsStorage.applyQueryToDB(
-          {
-            $and: [
-              {
-                streamIds: {
-                  $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME],
+    let userId = cache.get(cache.NS.USERID_BY_USERNAME, username);
+    if (! userId) {
+      const userIdEvent = await bluebird.fromCallback(
+        cb => this.eventsStorage.database.findOne(
+          this.collectionInfo,
+          this.eventsStorage.applyQueryToDB(
+            {
+              $and: [
+                {
+                  streamIds: {
+                    $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME],
+                  },
                 },
-              },
-              { content: { $eq: username } },
-            ],
-          },
+                { content: { $eq: username } },
+              ],
+            },
+          ),
+          null,
+          cb,
         ),
-        null,
-        cb,
-      ),
-    );
-
-    if (userIdEvent && userIdEvent.userId) {
-      return this.getById(userIdEvent.userId, getAll);
-    } else {
-      return null;
+      );
+      userId = userIdEvent?.userId;
+      cache.set(cache.NS.USERID_BY_USERNAME, username, userId);
     }
+
+    if (userId) {
+      const user = await this.getById(userId, getAll);
+      if (! user) {
+         cache.unset(cache.NS.USERID_BY_USERNAME, username);
+      }
+      return user;
+    } 
+    return null;
   }
 
   async getStorageUsedFor(userId: string): Promise<?any>  {
@@ -242,6 +255,8 @@ class UsersRepository {
     return true;
   }
   async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
+    cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
+    cache.unset(cache.NS.USER_BY_ID, user.id);
     // first explicitly create a collection, because it would fail in the transation
     await bluebird.fromCallback(
       cb => this.eventsStorage.database.getCollection(this.collectionInfo, cb),
@@ -289,6 +304,9 @@ class UsersRepository {
     return user;
   }
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
+    // invalidate caches
+    cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
+    cache.unset(cache.NS.USER_BY_ID, user.id);
     this.checkDuplicates(update);
 
     // change password into hash if it exists
@@ -328,6 +346,7 @@ class UsersRepository {
     );
   }
   async deleteOne(userId: string): Promise<number> {
+    cache.unset(cache.NS.USER_BY_ID, userId);
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
     return await bluebird.fromCallback(
       cb => this.eventsStorage.database.deleteMany(
