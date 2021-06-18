@@ -19,6 +19,8 @@ const { treeUtils } = require('utils');
 
 const {DataSource, UserStreams, UserEvents}  = require('stores/interfaces/DataSource');
 
+const cache = require('cache');
+
 const STORE_ID = 'local';
 const STORE_NAME = 'Local Store';
 
@@ -59,7 +61,11 @@ class LocalDataSource extends DataSource {
 
 class LocalUserStreams extends UserStreams {
   async get(uid, params) {
-    let streams = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
+    let streams = cache.get(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, uid);
+    if (! streams) {
+        streams = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
+        cache.set(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, uid, streams);
+    }
     if (! params.hideSystemStreams) {
      streams = streams.concat(systemStreams);
     }

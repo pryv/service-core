@@ -29,6 +29,7 @@ module.exports = {
   get,
   NS: {
     USER_BY_ID: 'userById',
-    USERID_BY_USERNAME: 'userIdByUsername'
+    USERID_BY_USERNAME: 'userIdByUsername',
+    LOCAL_STORE_STREAMS_BY_USERID: 'localStoreStreamsByUser',
   }
 }
