@@ -19,7 +19,7 @@ const encryption = require('utils').encryption;
 const errors = require('errors').factory;
 const { safetyCleanDuplicate } = require('business/src/auth/service_register');
 
-
+const cache = require('cache');
 
 /**
  * Repository of the users
@@ -41,8 +41,8 @@ class UsersRepository {
     this.eventsStorage = this.storageLayer.events;
     this.sessionsStorage = this.storageLayer.sessions;
     this.accessStorage = this.storageLayer.accesses;
-    this.collectionInfo =  this.eventsStorage.getCollectionInfoWithoutUserId();
-   
+    this.collectionInfo = this.eventsStorage.getCollectionInfoWithoutUserId();
+
   }
 
   async getAll(): Promise<Array<User>> {
@@ -51,7 +51,7 @@ class UsersRepository {
       deleted: null,
       headId: null,
     };
-    
+
     const userIdObjects: Array<{}> = await bluebird.fromCallback(
       cb => this.eventsStorage.database.find(
         this.collectionInfo,
@@ -60,7 +60,7 @@ class UsersRepository {
         cb,
       ),
     );
-    
+
     const users: Array<User> = [];
     for (const userIdObject of userIdObjects) {
       const user = await this.getById(userIdObject.userId, true);
@@ -68,23 +68,15 @@ class UsersRepository {
     }
     return users;
   }
+
   
-/**
-   * Get object with transaction options
-   */getTransactionOptions(): {} {
-    return {
-      readPreference: "primary",
-      readConcern: { level: "local" },
-      writeConcern: { w: "majority" },
-    };
-  }
   async getAllUsernames(): Promise<Array<User>> {
     const query: {} = {
       streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] },
       deleted: null,
       headId: null,
     };
-    
+
     const userIdObjects: Array<{}> = await bluebird.fromCallback(
       cb => this.eventsStorage.database.find(
         this.collectionInfo,
@@ -93,7 +85,7 @@ class UsersRepository {
         cb,
       ),
     );
-    
+
     const users: Array<User> = [];
     for (const userIdObject of userIdObjects) {
       users.push(new User({ id: userIdObject.userId, events: [userIdObject] }));
@@ -107,19 +99,20 @@ class UsersRepository {
     } else {
       userAccountStreamsIds = SystemStreamsSerializer.getReadableAccountMap();
     }
+    
     const query: {} = {
       $and: [
         { streamIds: { $in: Object.keys(userAccountStreamsIds) } },
         { streamIds: { $eq: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } },
       ],
     };
-    
+
     const userAccountEvents: Array<Event> = await bluebird.fromCallback(
       cb => this.eventsStorage.find({ id: userId }, query, null, cb),
     );
-    
+
     // convert events to the account info structure
-if (
+    if (
       userAccountEvents.length == 0
     ) {
       return null;
@@ -127,6 +120,9 @@ if (
     return new User({ id: userId, events: userAccountEvents });
   }
   async getAccountByUsername(username: string, getAll: boolean): Promise<?User> {
+    getAll = true;
+    //const cachedVersion = cacheAccountByUserName[username];
+    //if (cachedVersion) return cachedVersion;
     const userIdEvent = await bluebird.fromCallback(
       cb => this.eventsStorage.database.findOne(
         this.collectionInfo,
@@ -146,13 +142,32 @@ if (
         cb,
       ),
     );
-    
+
     if (userIdEvent && userIdEvent.userId) {
       return this.getById(userIdEvent.userId, getAll);
     } else {
       return null;
     }
   }
+
+  async getStorageUsedFor(userId: string): Promise<?any>  {
+    return {
+      dbDocuments: await this.getOnePropertyValue(userId, 'dbDocuments') || 0,
+      attachedFiles: await this.getOnePropertyValue(userId, 'attachedFiles') || 0
+    };
+  }
+
+  async getOnePropertyValue(userId: string, propertyKey: string) {
+    const res = await bluebird.fromCallback( 
+      cb => this.eventsStorage.find(
+        { id: userId}, 
+        { streamIds: {$in: [SystemStreamsSerializer.getStreamIdForProperty(propertyKey)] } }, 
+        {limit: 1},
+        cb));
+    if (! res || ! res[0]) return null;
+    return res[0].content;
+  };
+
   async findExistingUniqueFields(fields: {}): Promise<{}> {
     const query = { $or: [] };
     Object.keys(fields).forEach(
@@ -171,7 +186,7 @@ if (
         );
       },
     );
-    
+
     const existingUsers = await bluebird.fromCallback(
       cb => this.eventsStorage.database.find(this.collectionInfo, query, {}, cb),
     );
@@ -206,7 +221,7 @@ if (
       modified: timestamp.now(),
       modifiedBy: UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID,
     };
-    
+
     return await bluebird.fromCallback(
       cb => this.accessStorage.insertOne(
         { id: userId },
@@ -228,19 +243,19 @@ if (
   }
   async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
     // first explicitly create a collection, because it would fail in the transation
-await bluebird.fromCallback(
+    await bluebird.fromCallback(
       cb => this.eventsStorage.database.getCollection(this.collectionInfo, cb),
     );
-    
+
     await this.checkDuplicates(user);
-    
+
     const transactionSession = await this.eventsStorage.database.startSession();
     await transactionSession.withTransaction(
       async () => {
         let accessId = UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID;
         if (
           withSession && this.validateAllStorageObjectsInitialized() &&
-            user.appId != null
+          user.appId != null
         ) {
           const token: string = await this.createSessionForUser(
             user.username,
@@ -257,9 +272,9 @@ await bluebird.fromCallback(
           user.token = access.token;
         }
         user.accessId = accessId;
-        
+
         const events: Array<Event> = await user.getEvents();
-        
+
         await bluebird.fromCallback(
           cb => this.eventsStorage.insertMany(
             { id: user.id },
@@ -269,27 +284,27 @@ await bluebird.fromCallback(
           ),
         );
       },
-      this.getTransactionOptions(),
+      getTransactionOptions(),
     );
     return user;
   }
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
     this.checkDuplicates(update);
-    
+
     // change password into hash if it exists
-if (update.password != null) {
+    if (update.password != null) {
       update.passwordHash = await bluebird.fromCallback(
         cb => encryption.hash(update.password, cb),
       );
     }
     delete update.password;
-    
+
     const transactionSession = await this.eventsStorage.database.startSession();
     await transactionSession.withTransaction(
       async () => {
         for (const [streamIdWithoutPrefix, content] of Object.entries(update)) {
           //for (let i = 0; i < eventsForUpdate.length; i++) {
-await bluebird.fromCallback(
+          await bluebird.fromCallback(
             cb => this.eventsStorage.updateOne(
               { id: user.id },
               {
@@ -309,7 +324,7 @@ await bluebird.fromCallback(
           );
         }
       },
-      this.getTransactionOptions(),
+      getTransactionOptions(),
     );
   }
   async deleteOne(userId: string): Promise<number> {
@@ -361,11 +376,11 @@ await bluebird.fromCallback(
         }
       },
     );
-    
+
     if (orClause.length === 0) return;
-    
+
     const query: {} = { $or: orClause };
-    
+
     const duplicateEvents = await bluebird.fromCallback(
       cb => this.eventsStorage.find(
         this.collectionInfo,
@@ -393,7 +408,7 @@ await bluebird.fromCallback(
       );
     }
     return;
-    
+
     function extractDuplicateField(streamIdsWithoutPrefix, streamIdsWithPrefix): string {
       const intersection: Array<string> = streamIdsWithoutPrefix.filter(
         streamIdWithoutPrefix => streamIdsWithPrefix.includes(
@@ -408,10 +423,21 @@ await bluebird.fromCallback(
 }
 
 /**
+   * Get object with transaction options
+   */
+function getTransactionOptions() {
+  return {
+    readPreference: "primary",
+    readConcern: { level: "local" },
+    writeConcern: { w: "majority" },
+  };
+}
+
+/**
  * Get user password hash
  * @param string userId 
  */
-async function getUserPasswordHash(userId: string, storage: any): Promise <?string> {
+async function getUserPasswordHash(userId: string, storage: any): Promise<?string> {
   const userPass: Event = await bluebird.fromCallback(cb =>
     storage.findOne({ id: userId },
       {
@@ -425,8 +451,8 @@ async function getUserPasswordHash(userId: string, storage: any): Promise <?stri
 
 let usersRepository = null;
 async function getUsersRepository() {
-  if (! usersRepository) {
-    usersRepository = new UsersRepository(); 
+  if (!usersRepository) {
+    usersRepository = new UsersRepository();
     await usersRepository.init();
   }
   return usersRepository;

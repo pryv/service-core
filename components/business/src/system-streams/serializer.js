@@ -123,6 +123,13 @@ class SystemStreamsSerializer {
   }
 
   /**
+   * Return streamId corresponding to ressource
+   */
+  static getStreamIdForProperty(propertyKey: string): string {
+    return PRYV_PREFIX + propertyKey;
+  }
+
+  /**
    * Get all root streamIds that need explicit rights to be readable (all stream starting by PRYV_PRFIX) 
    */
   static getAllRootStreamIdsThatRequireReadRightsForEventsGet (): Array<string> {

@@ -13,7 +13,7 @@ const bluebird = require('bluebird');
 
 const treeUtils = require('utils/src/treeUtils');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { getUsersRepository, UsersRepositoryOptions } = require('business/src/users/repository');
+const { UsersRepositoryOptions } = require('business/src/users/repository');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { ApiEndpoint , encryption } = require('utils')
@@ -48,8 +48,6 @@ class User {
     password?: string,
     passwordHash?: string,
     referer?: string,
-    dbDocuments?: number,
-    attachedFiles: number,
   }) {
     buildAccountFields(this);
     loadAccountData(this, params);
@@ -74,14 +72,14 @@ class User {
    * Get only readable account information
    */
   getReadableAccount (): {} {
-    return _.pick(this, this.readableAccountFields);
+    return _.pick(this, this.readableAccountFields.filter(x => x !== 'dbDocuments' && x != 'attachedFiles'));
   }
 
   /**
    * Get full account information
    */
   getFullAccount (): {} {
-    return _.pick(this, this.accountFields);
+    return _.pick(this, this.accountFields.filter(x => x !== 'dbDocuments' && x != 'attachedFiles'));
   }
 
   /**
@@ -100,7 +98,7 @@ class User {
    * Get account with id property added to it
    */
   getAccountWithId () {
-    return _.pick(this, this.accountFields.concat('id'));
+    return _.pick(this, this.accountFields.concat('id').filter(x => x !== 'dbDocuments' && x != 'attachedFiles'));
   }
 
   /**
@@ -126,6 +124,19 @@ class User {
   buildApiEndpoint(token) {
     return ApiEndpoint.build(this.username, token);
   }
+
+  get dbDocuments() {
+    console.log('XXXXX > dbDocuments', new Error());
+  }
+  set dbDocuments(x) {
+    console.log('XXXXX set dbDocuments', new Error());
+  }
+  get attachedFiles() {
+    console.log('XXXXX get attachedFiles', new Error());
+  }
+  set attachedFiles(x) {
+    console.log('XXXXX set attachedFiles', new Error());
+  }
 }
 
 function buildAccountFields (user: User): void {
@@ -138,7 +149,11 @@ function buildAccountFields (user: User): void {
 
 function loadAccountData (user: User, params): void {
   user.accountFields.forEach(field => {
-    if (params[field] != null) user[field] = params[field];
+    if (field === 'dbDocuments' || field === 'attachedFiles') {
+      //console.log('XXXXXX loadAccountData > Ignoring', field);
+    } else {
+      if (params[field] != null) user[field] = params[field];
+    }
   });
   // temporarily add password because the encryption need to be loded asyncronously
   // and it could not be done in the contructor

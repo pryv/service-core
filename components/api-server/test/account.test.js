@@ -159,7 +159,7 @@ describe('account', function () {
             });
           },
           async function verifyData () {           
-            const retrievedUser = await usersRepository.getAccountByUsername(user.username);
+            const retrievedUser = await usersRepository.getAccountByUsername(user.username, true);
             validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
           }
         ], done);

@@ -65,10 +65,11 @@ module.exports = async function (
     }
   }
 
-  function getUserInfoInit(context, params, result, next) {
+  async function getUserInfoInit(context, params, result, next) {
+    const newStorageUsed = await usersRepository.getStorageUsedFor(context.user.id);
     result.userInfo = {
       username: context.user.username,
-      storageUsed: context.user.storageUsed
+      storageUsed: newStorageUsed
     };
     next();
   }

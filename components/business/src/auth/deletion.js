@@ -75,7 +75,7 @@ class Deletion {
     next: ApiCallback
   ) {
     const usersRepository = await getUsersRepository(); 
-    const user = await usersRepository.getAccountByUsername(params.username);
+    const user = await usersRepository.getAccountByUsername(params.username, true);
     if (!user || !user.id) {
       return next(errors.unknownResource('user', params.username));
     }

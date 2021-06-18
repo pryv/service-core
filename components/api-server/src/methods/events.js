@@ -1120,12 +1120,15 @@ module.exports = async function (
         type: file.mimetype,
         size: file.size
       });
+      
+      const storagedUsed = await usersRepository.getStorageUsedFor(context.user.id);
+
       // approximately update account storage size
-      context.user.storageUsed.attachedFiles += file.size;
+      storagedUsed.attachedFiles += file.size;
       
       await usersRepository.updateOne(
         context.user,
-        { attachedFiles: context.user.storageUsed.attachedFiles },
+        { attachedFiles: storagedUsed.attachedFiles },
         context.access.id,
       );
     }
@@ -1250,14 +1253,16 @@ module.exports = async function (
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       async function () {
+        const storagedUsed = await usersRepository.getStorageUsedFor(context.user.id);
+
         // If needed, approximately update account storage size
-        if (! context.user.storageUsed || ! context.user.storageUsed.attachedFiles) {
+        if (! storagedUsed || !storagedUsed.attachedFiles) {
           return;
         }
-        context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event.attachments);
+        storagedUsed.attachedFiles -= getTotalAttachmentsSize(context.event.attachments);
         await usersRepository.updateOne(
           context.user,
-          context.user.storageUsed,
+          storagedUsed,
           context.access.id,
         );
       }
@@ -1308,11 +1313,13 @@ module.exports = async function (
 
         await bluebird.fromCallback(cb => userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, cb));
 
+        const storagedUsed = await usersRepository.getStorageUsedFor(context.user.id);
+
         // approximately update account storage size
-        context.user.storageUsed.attachedFiles -= deletedAtt.size;
+        storagedUsed.attachedFiles -= deletedAtt.size;
         await usersRepository.updateOne(
           context.user,
-          context.user.storageUsed,
+          storagedUsed,
           context.access.id,
         );
         notifications.eventsChanged(context.user);
