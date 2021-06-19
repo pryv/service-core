@@ -39,10 +39,12 @@ Object.freeze(PermissionLevels);
   _access; // Access right from the DB
   _userId;
   _limitationsByActionByStore;
+  _streamPermissionLevelCache;
 
   constructor(userId, access) {
     this._access = access;
     this._userId = userId;
+    this._streamPermissionLevelCache = {};
     _.merge(this, access);
 
 
@@ -456,6 +458,9 @@ Object.freeze(PermissionLevels);
     if (! streamIdFull) streamIdFull = '*'; // to be investgated why this happens
 
     if (this.isPersonal()) return 'manage';
+    
+    const chachedLevel = this._streamPermissionLevelCache[streamIdFull];
+    if (chachedLevel) return chachedLevel;
 
     const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamIdFull);
 
@@ -477,7 +482,9 @@ Object.freeze(PermissionLevels);
     if (SystemStreamsSerializer.isAccountStreamId(streamId)) return null;
     
     const permissions = this.getStreamPermission(storeId, '*'); // found nothing finaly.. look for global access level if any
-    return permissions ? permissions.level : null;
+    const permission = permissions ? permissions.level : null;
+    this._streamPermissionLevelCache[streamIdFull] = permission;
+    return permission;
   }
 
   /**
