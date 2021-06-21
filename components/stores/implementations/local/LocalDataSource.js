@@ -71,7 +71,7 @@ class LocalUserStreams extends UserStreams {
       streams = stream ? [ stream ] : [];
     }
     
-    if (params.hideChildren) {
+    if (! params.expandChildren) {
       streams = streams.map((stream) => {
         stream.childrenHidden = true;
         stream.children = []; 
@@ -79,7 +79,7 @@ class LocalUserStreams extends UserStreams {
       });
     }
 
-    if (params.state !== 'all') { // i.e. === 'default' (return non-trashed items)
+    if (! params.includeTrashed) { // i.e. === 'default' (return non-trashed items)
       streams = treeUtils.filterTree(streams, false /*no orphans*/, function (item) {
         return !item.trashed;
       });

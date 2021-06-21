@@ -64,6 +64,8 @@ class SystemStreamsSerializer {
   static uniqueAccountStreamsIdsWithoutPrefix: ?Array<string>;
 
   static accountStreamsIdsForbiddenForReading: ?Array<string>;
+
+  static allRootStreamIdsThatRequireReadRightsForEventsGet: ?Array<string>;
   
   static accountChildren: ?Array<SystemStream>;
 
@@ -115,6 +117,7 @@ class SystemStreamsSerializer {
     this.privateStreamIdWithoutPrefixToWith = null;
     this.accountStreamIdWithoutPrefixToWith = null;
     this.options = null;
+    this.allRootStreamIdsThatRequireReadRightsForEventsGet = null;
     initializeSerializer(singleton);
   }
 
@@ -123,6 +126,18 @@ class SystemStreamsSerializer {
     if (this.systemStreamsSettings == null) {
       throw Error('Invalid system streams settings');
     }
+  }
+
+  /**
+   * Get all root streamIds that need explicit rights to be readable (all stream starting by PRYV_PRFIX) 
+   */
+  static getAllRootStreamIdsThatRequireReadRightsForEventsGet (): Array<string> {
+    if (SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet) return SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet;
+    SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet = [];
+    for (const rootStream of SystemStreamsSerializer.getAll()) {
+      if (rootStream.id.indexOf(PRYV_PREFIX) === 0) SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet.push(rootStream.id);
+    }
+    return SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet;
   }
 
   /**

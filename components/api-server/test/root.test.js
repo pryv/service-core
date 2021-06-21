@@ -311,6 +311,9 @@ describe('root', function() {
         .get('/' + username + '/access-info')
         .set('Authorization', sharedAccessToken);
       // extend sharedAccess with audit rights
+      sharedAccess.permissions.unshift({streamId: ':_system:account', level: 'none'});
+      sharedAccess.permissions.unshift({streamId: ':_system:helpers', level: 'none'});
+      
       sharedAccess.permissions.push({
         streamId: ':_audit:', 
         limitations: { 'events.get': {streams: { all: [ 'access-' + sharedAccess.id ] } } },

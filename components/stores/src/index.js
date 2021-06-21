@@ -13,35 +13,35 @@ const { getConfig } = require('@pryv/boiler');
 
 
 
-let store;
-async function getStore() {
-  if (store) return store;
+let stores;
+async function getStores() {
+  if (stores) return stores;
   const config = await getConfig();
 
-  const Store = require('./Store');
-  store = new Store();
+  const Stores = require('./Stores');
+  stores = new Stores();
 
   // -- DataStores (Imported After to avoid cycles);
   const DummyStore = require('../implementations/dummy');
-  store.addSource(new DummyStore());
+  stores.addStore(new DummyStore());
 
   const FaultyStore = require('../implementations/faulty');
-  store.addSource(new FaultyStore());
+  stores.addStore(new FaultyStore());
 
   const LocalStore = require('../implementations/local/LocalDataSource');
-  store.addSource(new LocalStore());
+  stores.addStore(new LocalStore());
 
   if ( (! config.get('openSource:isActive')) && config.get('audit:active')) {
     const AuditDataSource = require('audit/src/AuditDataSource');
-    store.addSource(new AuditDataSource());
+    stores.addStore(new AuditDataSource());
   }
 
-  return await store.init();
+  return await stores.init();
 };
 
 
 module.exports = {
-  getStore : getStore,
+  getStores : getStores,
   StreamsUtils: require('./lib/StreamsUtils')
 };
 
@@ -51,7 +51,7 @@ module.exports = {
 
 (async () => { 
   try {
-    const s = await getStore();
+    const s = await getStores();
     const streams = await s.streams.get('toto', {parentIds: ['.*']});
     //const streams = await s.events.get('toto', {streamIds: ['.*']});
     console.log(require('util').inspect(streams, null, 10));

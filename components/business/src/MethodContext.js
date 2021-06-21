@@ -20,7 +20,7 @@ const UsersRepository = require('business/src/users/repository');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getStore, StreamsUtils } = require('stores');
+const { getStores, StreamsUtils } = require('stores');
 
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
@@ -66,6 +66,7 @@ class MethodContext {
 
   methodId: ?string;
   usersRepository: UsersRepository;
+  stores: Store;
 
   constructor(
     source: ContextSource,
@@ -80,6 +81,7 @@ class MethodContext {
     this.username = username;
 
     this.user = null;
+    this.stores = null;
     this.access = null;
 
     this.customAuthStepFn = customAuthStepFn;
@@ -114,6 +116,7 @@ class MethodContext {
   // Load the user identified by `this.username`, storing it in `this.user`.
   async retrieveUser() {
     try {
+      this.stores = await getStores();
       // get user details
       this.user = await this.usersRepository.getAccountByUsername(this.username, true);
       if (!this.user) throw errors.unknownResource('user', this.username);
@@ -266,12 +269,7 @@ class MethodContext {
    * @returns 
    */
   async streamForStreamId(streamId: string, storeId: string) {
-    if (! storeId) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
-    const store = (await getStore()).sourceForId(storeId);
-    if (! store) return null;
-    const streams = await store.streams.get(this.user.id, {id: streamId, state: 'all'});
-    if (streams && streams.length === 1) return streams[0];
-    return null;
+    return await this.stores.streams.getOne(this.user.id, streamId, storeId);
   }
 
   initTrackingProperties(item: any, authorOverride: ?string) {

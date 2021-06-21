@@ -20,7 +20,7 @@ const _ = require('lodash');
 const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
 
-const { getStore } = require('stores');
+const { getStores } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
@@ -71,7 +71,7 @@ module.exports = async function (
 
   const usersRepository = new UsersRepository(userEventsStorage);
   const config = await getConfig();
-  const stores = await getStore();
+  const stores = await getStores();
   
   // Initialise the project version as soon as we can. 
   const version = await getAPIVersion();
@@ -149,7 +149,7 @@ module.exports = async function (
         // replace any by allowed streams for reading
         const canRead = [];
         const cannotRead = [];
-        for (const streamPermission of context.access.getStorePermissions(streamQuery.storeId)) {
+        for (const streamPermission of context.access.getStoresPermissions(streamQuery.storeId)) {
           if (await context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)) {
             canRead.push(streamPermission.streamId);
           } else {
@@ -197,25 +197,23 @@ module.exports = async function (
         }
       }
 
-      const query =  {id: streamId, state: params.state};
+      const query =  {
+        id: streamId, 
+        storeId: storeId, 
+        state: params.state, 
+        expandChildren: true,
+        excludedIds: context.access.getCannotGetEventsStreamIds(storeId)
+      };
 
       // do not expand SystemStreams for non-personal tokens
       if (streamId === '*' && storeId === 'local' && ! context.access.isPersonal()) {
         query.hideSystemStreams = true;
       }
 
-      const store = (await getStore()).sourceForId(storeId);
-      const tree = await store.streams.get(context.user.id, query);
-
-      // collect streamIds and exclude not readable streams that might have been expanded 
-      const result = [];
-      await treeUtils.filterTreeOnPromise(tree, false, async function(stream) {
-        const canRead = await context.access.canGetEventsOnStream(stream.id, storeId)
-        if (! canRead) return false; // break here (no inspection of childrens)
-        result.push(stream.id);
-        return true;
-      });
-
+      const tree = await stores.streams.get(context.user.id, query);
+      
+      // collect streamIds 
+      const result = treeUtils.collectPluck(tree, 'id');
       return result;
     }
 
