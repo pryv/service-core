@@ -208,16 +208,16 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
    * @param {*} next 
    */
   function forbidSystemStreamsActions (context, params, result, next) {
-    let accountStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds();
+    const systemStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getAllMap();
     if (params.id != null) {
-      if (accountStreamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(params.id))) {
+      if (systemStreamsMap[params.id] != null) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
         );
       }
     }
     if (params.parentId != null) {
-      if (accountStreamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(params.parentId))) {
+      if (systemStreamsMap[params.parentId] != null) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
         );

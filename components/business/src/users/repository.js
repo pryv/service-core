@@ -164,7 +164,7 @@ class Repository {
       query['$or'].push({
         $and:
           [
-            { streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(key) },
+            { streamIds: SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key) },
             { content: fields[key] }
           ]
       });
@@ -292,7 +292,7 @@ class Repository {
           {
             streamIds: {
               $all: [
-                SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix),
+                SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix),
                 SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
               ]
             }
@@ -355,7 +355,7 @@ class Repository {
       if (user[field] != null) {
         orClause.push({
           content: { $eq: user[field] },
-          streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(field),
+          streamIds: SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(field),
           deleted: null,
           headId: null,
         });
@@ -395,7 +395,7 @@ class Repository {
      */
     function extractDuplicateField(streamIdsWithoutPrefix, streamIdsWithPrefix): string {
       const intersection: Array<string> = streamIdsWithoutPrefix.filter(streamIdWithoutPrefix => 
-        streamIdsWithPrefix.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix))
+        streamIdsWithPrefix.includes(SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix))
       )
       return intersection[0];
     }
