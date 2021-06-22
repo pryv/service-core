@@ -53,8 +53,8 @@ describe('Account with system streams', function () {
     return user;
   }
 
-  async function getActiveEvent (streamId) {
-    let streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+  async function getActiveEvent(streamId, isPrivate = true) {
+    const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
@@ -67,8 +67,8 @@ describe('Account with system streams', function () {
         }, null, cb));
   }
 
-  async function getNotActiveEvent (streamId) {
-    let streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+  async function getNotActiveEvent (streamId, isPrivate = true) {
+    const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
@@ -82,11 +82,10 @@ describe('Account with system streams', function () {
    * Create additional event
    * @param string streamId 
    */
-  async function createAdditionalEvent (streamId) {
-    const streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+  async function createAdditionalEvent (streamIdWithPrefix, content) {
     eventDataForadditionalEvent = {
       streamIds: [streamIdWithPrefix],
-      content: charlatan.Lorem.characters(7),
+      content: content || charlatan.Lorem.characters(7),
       type: 'string/pryv'
     };
     return await request.post('/' + user.attrs.username + '/events')
@@ -151,8 +150,12 @@ describe('Account with system streams', function () {
             serviceRegisterRequest = body;
             return true;
           }).times(3).reply(200, { errors: [] });
-        const editableStreamsIds = ['email', 'language', 'phoneNumber', 'insurancenumber'].map(SystemStreamsSerializer.addPrivatePrefixToStreamId);
-        const visibleStreamsIds = ['username', 'email', 'language', 'phoneNumber', 'insurancenumber', 'dbDocuments', 'attachedFiles'].map(SystemStreamsSerializer.addPrivatePrefixToStreamId);
+        const editableStreamsIds = ['email', 'phoneNumber', 'insurancenumber']
+          .map(SystemStreamsSerializer.addCustomerPrefixToStreamId)
+          .concat([SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]);
+        const visibleStreamsIds = ['username', 'language', 'dbDocuments', 'attachedFiles']
+          .map(SystemStreamsSerializer.addPrivatePrefixToStreamId)
+          .concat(['email', 'phoneNumber', 'insurancenumber'].map(SystemStreamsSerializer.addCustomerPrefixToStreamId));
 
         for (const editableStreamsId of editableStreamsIds) {
           await createAdditionalEvent(editableStreamsId);
@@ -172,20 +175,20 @@ describe('Account with system streams', function () {
         assert.equal(res.status, 200);
       });
       it('[JUHR] should return account information in the structure that is defined in system streams and only active values', async () => {
-        const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes(
-          SystemStreamsSerializer.addPrivatePrefixToStreamId('username')))[0];
-        const emailAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('email')))[0];
-        const languageAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))[0];
-        const dbDocumentsAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')))[0];
-        const attachedFilesAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles')))[0];
-        const insurancenumberAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('insurancenumber')))[0];
-        const phoneNumberAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('phoneNumber')))[0];
+        const usernameAccountEvent = allVisibleAccountEvents.find(event => event.streamIds.includes(
+          SystemStreamsSerializer.addPrivatePrefixToStreamId('username')));
+        const emailAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('email')));
+        const languageAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')));
+        const dbDocumentsAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')));
+        const attachedFilesAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles')));
+        const insurancenumberAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
+        const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
 
         assert.equal(res.body.account.username, usernameAccountEvent.content);
         assert.equal(res.body.account.email, emailAccountEvent.content);
@@ -294,7 +297,7 @@ describe('Account with system streams', function () {
   });
 
   describe('PUT /account', () => {
-      describe('and when user tries to modify the username', () => {
+      describe('when updating the username', () => {
         before(async function () {
           await createUser();
           // modify account info
@@ -311,7 +314,7 @@ describe('Account with system streams', function () {
           assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
         });
       });
-      describe('and when user tries to modify non editable fields', () => {
+      describe('when updating non editable fields', () => {
         before(async function () {
           await createUser();
           // modify account info
@@ -328,7 +331,7 @@ describe('Account with system streams', function () {
           assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
         });
       });
-      describe('and when updating a unique field that are already taken', () => {
+      describe('when updating a unique field that is already taken', () => {
         describe('and the field is not unique in mongodb', () => {
           let scope;
           let user2;
@@ -358,9 +361,9 @@ describe('Account with system streams', function () {
         });
       });
 
-      describe('and when user tries to edit email or language when non-active fields exists', () => {
-        let newEmail = charlatan.Lorem.characters(7);
-        let newLanguage = charlatan.Lorem.characters(2);
+      describe('when updating email and language and non-active fields exists', () => {
+        const newEmail = charlatan.Internet.email();
+        const newLanguage = charlatan.Lorem.characters(2);
         let activeEmailBefore;
         let notActiveEmailBefore;
         let activeLanguageBefore;
@@ -386,11 +389,11 @@ describe('Account with system streams', function () {
             }).times(3).reply(200, {});
           
           // create additional events
-          await createAdditionalEvent('email');
-          await createAdditionalEvent('language');
+          await createAdditionalEvent(SystemStreamsSerializer.addCustomerPrefixToStreamId('email'), charlatan.Internet.email());
+          await createAdditionalEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('language'));
   
-          activeEmailBefore = await getActiveEvent('email');
-          notActiveEmailBefore = await getNotActiveEvent('email');
+          activeEmailBefore = await getActiveEvent('email', false);
+          notActiveEmailBefore = await getNotActiveEvent('email', false);
           activeLanguageBefore = await getActiveEvent('language');
           notActiveLanguageBefore = await getNotActiveEvent('language');
   
@@ -402,8 +405,8 @@ describe('Account with system streams', function () {
             })
             .set('authorization', access.token);
 
-          activeEmailAfter = await getActiveEvent('email');
-          notActiveEmailAfter = await getNotActiveEvent('email');
+          activeEmailAfter = await getActiveEvent('email', false);
+          notActiveEmailAfter = await getNotActiveEvent('email', false);
           activeLanguageAfter = await getActiveEvent('language');
           notActiveLanguageAfter = await getNotActiveEvent('language');
         });

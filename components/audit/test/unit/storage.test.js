@@ -22,7 +22,7 @@ describe('Storage', () => {
         {
           type: 'log/test',
           createdBy: createdBy,
-          streamIds: ['.audit-test'],
+          streamIds: [':_audit:test'],
           content: {
             action: 'events.get',
             message: 'hello',

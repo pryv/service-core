@@ -121,7 +121,7 @@ describe("Accesses with account streams", function () {
           let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
           before(async function () {
-            streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
+            streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[UE9G] should return 201', async () => {
@@ -186,7 +186,7 @@ describe("Accesses with account streams", function () {
           let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CREATE_ONLY;
           before(async function () {
-            streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
+            streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[IWMQ] should return 201', async () => {
@@ -200,7 +200,7 @@ describe("Accesses with account streams", function () {
           let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CONTRIBUTE;
           before(async function () {
-            streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
+            streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[R0M1] should return 201', async () => {
@@ -234,7 +234,7 @@ describe("Accesses with account streams", function () {
         describe('with a manage-level permission', async () => {
           let streamId;
           before(async function () {
-            streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
+            streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
             await createUserAndAccess(AccessLogic.PERMISSION_LEVEL_MANAGE, streamId);
           });
           it('[93HO] should return 400', async () => {

@@ -77,7 +77,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
   function validateThatAllFieldsAreEditable (context, params, result, next) {
     const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
     Object.keys(params.update).forEach(streamId => {
-      const streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+      const streamIdWithPrefix = SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamId);
       if (editableAccountMap[streamIdWithPrefix] == null) {
         // if user tries to add new streamId from non editable streamsIds
         return next(errors.invalidOperation(
@@ -201,7 +201,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
       return next();
     }
     try {
-      const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
+      const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
 
       const operations: Array<{}> = [];
       for (const [key, value] of Object.entries(params.update)) {
@@ -209,7 +209,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
           update: {
             key,
             value,
-            isUnique: editableAccountStreamsMap[SystemStreamsSerializer.addPrivatePrefixToStreamId(key)].isUnique,
+            isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
           }
         })
       }

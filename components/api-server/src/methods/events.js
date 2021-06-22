@@ -532,7 +532,7 @@ module.exports = async function (
     const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
 
     try{
-      if (systemStream.isIndexed) {
+      if (systemStream.isIndexed) { // assume can be unique as per test #42A1
         await sendDataToServiceRegister(context, isCreation);
       }
       if (systemStream.isUnique) {
