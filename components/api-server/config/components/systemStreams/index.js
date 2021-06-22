@@ -129,7 +129,6 @@ function load(config: {}): {} {
     }];
   defaultAccountStreams = extendSystemStreamsWithDefaultValues(defaultAccountStreams);
   defaultAccountStreams = ensurePrefixForStreamIds(defaultAccountStreams)
-  //config.set('systemStreams:account', defaultAccountStreams);
 
   let helpers: Array<SystemStream> = [{
     id: 'helpers',
@@ -150,9 +149,9 @@ function load(config: {}): {} {
   }];
   helpers = extendSystemStreamsWithDefaultValues(helpers);
   helpers = ensurePrefixForStreamIds(helpers);
-  //config.set('systemStreams:helpers', helpers);
 
   let customAccountStreams: Array<SystemStream> = config.get('custom:systemStreams:account');
+  if (customAccountStreams == null) customAccountStreams = [];
   customAccountStreams = extendSystemStreamsWithDefaultValues(customAccountStreams);
   customAccountStreams = ensurePrefixForStreamIds(customAccountStreams, CUSTOMER_PREFIX);
 
