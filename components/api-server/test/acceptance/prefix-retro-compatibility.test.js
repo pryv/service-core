@@ -12,6 +12,7 @@ const { produceMongoConnection, context } = require('../test-helpers');
 const charlatan = require('charlatan');
 const cuid = require('cuid');
 const assert = require('chai').assert;
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('(System stream id) prefix retro-compatibility', () => {
 
@@ -26,10 +27,9 @@ describe('(System stream id) prefix retro-compatibility', () => {
   before(async () => {
     // activate retro-compat setting
     config = await getConfig();
-    config.injectTestConfig({ systemStreams: { prefix: { isRetroCompatibilityActivated: true } } });
   
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    server = await context.spawn();
+    server = await context.spawn({ retroCompatibility: { systemStreams: { prefix: { isActive: true } } } });
 
     username = cuid();
     token = cuid();
@@ -53,6 +53,7 @@ describe('(System stream id) prefix retro-compatibility', () => {
   });
 
   function checkOldPrefix(streamId) {
+    if (! SystemStreamsSerializer.isSystemStreamId(streamId)) return;
     const DOT = '.';
     const PRYV_PREFIX = ':_system:';
     const CUSTOMER_PREFIX = ':system:';
@@ -63,7 +64,7 @@ describe('(System stream id) prefix retro-compatibility', () => {
 
   // for all use cases, make double one with retro-compatibility breaking parameter
   describe('events', () => {
-    it('must return old prefixes in events.get', async () => {
+    it('[Q40I] must return old prefixes in events.get', async () => {
       const res = await server.request()
         .get(`/${username}/events`)
         .set('Authorization', token);
@@ -71,44 +72,44 @@ describe('(System stream id) prefix retro-compatibility', () => {
         checkOldPrefix(event.streamId);
       }
     });
-    it('must accept old prefixes in events.get', () => {
+    it('[4YCD] must accept old prefixes in events.get', () => {
 
     });
-    it('must return old prefixes in events.getOne', () => {
+    it('[CF3N] must return old prefixes in events.getOne', () => {
 
     });
-    it('must accept old prefixes in events.create', () => {
+    it('[U28C] must accept old prefixes in events.create', () => {
 
     });
-    it('must accept old prefixes in events.update', () => {
+    it('[YIWX] must accept old prefixes in events.update', () => {
 
     });
-    it('must return old prefixes in events.delete', () => {
+    it('[75DN] must return old prefixes in events.delete', () => {
 
     });
   });
   describe('streams', () => {
-    it('must return old prefixes in streams.get', () => {
+    it('[WY07] must return old prefixes in streams.get', () => {
 
     });
-    it('must accept old prefixes in streams.get', () => {
+    it('[YJS6] must accept old prefixes in streams.get', () => {
 
     });
-    it('must accept old prefixes in streams.create', () => {
+    it('[CCE8] must accept old prefixes in streams.create', () => {
 
     });
-    it('must accept old prefixes in streams.update', () => {
+    it('[4DP2] must accept old prefixes in streams.update', () => {
 
     });
-    it('must return old prefixes in streams.delete', () => {
+    it('[LQ5X] must return old prefixes in streams.delete', () => {
 
     });
   });
   describe('accesses', () => {
-    it('must return old prefixes in accesses.get', () => {
+    it('[UDJF] must return old prefixes in accesses.get', () => {
 
     });
-    it('must accept old prefixes in accesses.create', () => {
+    it('[DWWD] must accept old prefixes in accesses.create', () => {
 
     });
   });

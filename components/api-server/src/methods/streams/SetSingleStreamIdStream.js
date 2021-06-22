@@ -14,7 +14,7 @@ module.exports = SetSingleStreamIdStream;
  * For retrocompatibility set single StreamId to Event
  * @constructor
  */
-function SetSingleStreamIdStream(params) {
+function SetSingleStreamIdStream() {
   Transform.call(this, {objectMode: true});
 }
 

@@ -64,6 +64,7 @@ user-account:
     - 'adminToken' # enable deletion from admin Panel
     #- 'personalToken' # enable self deletion request with a personal token
 
-systemStreams:
-  prefix:
-    isRetroCompatibilityActivated: false
+retroCompatibility:
+  systemStreams:
+    prefix:
+      isActive: false

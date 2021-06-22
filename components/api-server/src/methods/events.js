@@ -19,6 +19,7 @@ const streamsQueryUtils = require('./helpers/streamsQueryUtils');
 const _ = require('lodash');
 const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
+const ChangeStreamIdPrefixStream = require('./streams/ChangeStreamIdPrefixStream');
 
 const { getStores } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -96,6 +97,7 @@ module.exports = async function (
       serviceRegisterConn = getServiceRegisterConn();
     }
 
+  const isStreamIdPrefixRetrocompatibilityActive: boolean = config.get('retroCompatibility:systemStreams:prefix:isActive');
   // RETRIEVAL
 
   api.register('events.get',
@@ -299,8 +301,14 @@ module.exports = async function (
      * @param {Store} store
      * @param {ReadableStream} eventsStream of "Events"
      */
-    function addnewEventStreamFromSource (store, eventsStream) {
-      let stream = eventsStream.pipe(new SetSingleStreamIdStream());
+    function addnewEventStreamFromSource (store, eventsStream: ReadableStream) {
+      let stream: ?ReadableStream;
+      if (isStreamIdPrefixRetrocompatibilityActive) {
+        stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
+      } else {
+        stream = eventsStream;
+      }
+      stream = stream.pipe(new SetSingleStreamIdStream(isStreamIdPrefixRetrocompatibilityActive));
       if (store.settings?.attachments?.setFileReadToken) {
         stream = stream.pipe(new SetFileReadTokenStream({ access: context.access, filesReadTokenSecret: authSettings.filesReadTokenSecret }));
       }

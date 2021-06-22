@@ -168,7 +168,7 @@ function load(config: {}): {} {
 
   let seen: Map<string, boolean> = new Map();
   let seenWithPrefix: Map<string, boolean> = new Map();
-  const isRetroCompatibilityActive: boolean = config.get('systemStreams:prefix:isRetroCompatibilityActivated');
+  const isRetroCompatibilityActive: boolean = config.get('retroCompatibility:systemStreams:prefix:isActive');
 
   treeUtils.apply(systemStreams, s => { // ugly reuse of treeUtils.apply() because we don't modify the array
     validateSystemStreamWithSchema(s);

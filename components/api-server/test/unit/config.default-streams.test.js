@@ -151,7 +151,7 @@ describe('SystemStreams config', () => {
       store = new nconf.Provider();
       store.use('memory');
       store.set('custom:systemStreams', customStreams);
-      store.set('systemStreams:prefix:isRetroCompatibilityActivated', true);
+      store.set('retroCompatibility:systemStreams:prefix:isActive', true);
       try {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw');
