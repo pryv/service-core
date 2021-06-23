@@ -52,7 +52,11 @@ function changeStreamIdsPrefixInStreamQuery(context: MethodContext, params: mixe
   for (const streamsQuery of streamsQueries) {
     const oldStyleStreamQuery = {};
     for (const [prop, streamIds] of Object.entries(streamsQuery)) {
-      oldStyleStreamQuery[prop] = changeMultipleStreamIdsPrefix(streamIds, putNewPrefix);
+      if (prop === 'storeId') {
+        oldStyleStreamQuery[prop] = streamIds; // hack
+      } else {
+        oldStyleStreamQuery[prop] = changeMultipleStreamIdsPrefix(streamIds, putNewPrefix);
+      }
     }
     oldStyleStreamsQueries.push(oldStyleStreamQuery);
   }
