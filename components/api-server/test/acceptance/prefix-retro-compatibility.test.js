@@ -13,18 +13,16 @@ const charlatan = require('charlatan');
 const cuid = require('cuid');
 const assert = require('chai').assert;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const timestamp = require('unix-timestamp');
 
-describe('XXSystem stream id) prefix retro-compatibility', () => {
+describe('(System stream id) prefix retro-compatibility', () => {
 
   let config;
   let mongoFixtures;
   let server;
   let username;
   let token;
-  let eventId;
   let systemEventId;
-  let streamId;
-  let accessId;
   before(async () => {
     config = await getConfig();
   
@@ -32,15 +30,26 @@ describe('XXSystem stream id) prefix retro-compatibility', () => {
 
     username = cuid();
     token = cuid();
-    streamId = cuid();
     const user = await mongoFixtures.user(username);
-    const stream = await user.stream({ id: streamId }, () => {});
+    const stream = await user.stream();
     const event = await stream.event({
-      streamIds: [streamId],
       type: 'language/iso-639-1',
       content: charlatan.Lorem.characters(2),
     });
-    eventId = event.attrs.id;
+    await user.access({
+      permissions: [{
+        streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+        level: 'read',
+      }],
+    });
+    const access = await user.access({
+      permissions: [{
+        streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+        level: 'read',
+      }],
+    });
+    const accessId = access.attrs.id;
+
     await user.access({ token, type: 'personal' });
     await user.session(token);
 
@@ -52,6 +61,8 @@ describe('XXSystem stream id) prefix retro-compatibility', () => {
         forceKeepHistory: true,
       },
     });
+
+    await del(`/${username}/accesses/${accessId}`);
 
     const res = await get(`/${username}/events`);
     const systemEvent = res.body.events.find(e => e.streamIds.includes('.language'));
@@ -117,6 +128,7 @@ describe('XXSystem stream id) prefix retro-compatibility', () => {
   describe('events', () => {
     it('[Q40I] must return old prefixes in events.get', async () => {
       const res = await get(`/${username}/events`);
+      assert.isNotEmpty(res.body.events);
       for (const event of res.body.events) {
         checkOldPrefixes(event.streamIds);
       }
@@ -124,6 +136,7 @@ describe('XXSystem stream id) prefix retro-compatibility', () => {
     it('[4YCD] must accept old prefixes in events.get', async () => {
       const res = await get(`/${username}/events`, { streams: ['.email']});
       assert.equal(res.status, 200);
+      assert.isNotEmpty(res.body.events);
       for (const event of res.body.events) {
         checkOldPrefixes(event.streamIds);
       }
@@ -131,6 +144,7 @@ describe('XXSystem stream id) prefix retro-compatibility', () => {
     it('[CF3N] must return old prefixes in events.getOne (including history)', async () => {
       const res = await get(`/${username}/events/${systemEventId}`, { includeHistory: true });
       checkOldPrefixes(res.body.event.streamIds);
+      assert.isNotEmpty(res.body.history);
       for (const event of res.body.history) {
         checkOldPrefixes(event.streamIds);
       }
@@ -158,6 +172,7 @@ describe('XXSystem stream id) prefix retro-compatibility', () => {
   describe('streams', () => {
     it('[WY07] must return old prefixes in streams.get', async () => {
       const res = await get(`/${username}/streams/`);
+      assert.isNotEmpty(res.body.streams);
       for (const stream of res.body.streams) {
         checkOldPrefix(stream.id);
         checkOldPrefix(stream.parentId);
@@ -165,6 +180,7 @@ describe('XXSystem stream id) prefix retro-compatibility', () => {
     });
     it('[YJS6] must accept old prefixes in streams.get', async () => {
       const res = await get(`/${username}/streams/`, { parentId: '.account'});
+      assert.isNotEmpty(res.body.streams);
       for (const stream of res.body.streams) {
         checkOldPrefix(stream.id);
         checkOldPrefix(stream.parentId);
@@ -194,10 +210,41 @@ describe('XXSystem stream id) prefix retro-compatibility', () => {
   });
   describe('accesses', () => {
     it('[UDJF] must return old prefixes in accesses.get', async () => {
+      const res = await get(`/${username}/accesses/`, {
+        includeExpired: true,
+        includeDeletions: true,
+      });
+      const accesses = res.body.accesses;
+      assert.isNotEmpty(accesses);
+      for (const access of accesses) {
+        if (access.permissions == null) continue;
+        for (permission of access.permissions) {
+          checkOldPrefix(permission.streamId);
+        }
+      }
+      const deletions = res.body.accessDeletions;
+      assert.isNotEmpty(deletions);
+      for (const access of deletions) {
+        if (access.permissions == null) continue;
+        for (permission of access.permissions) {
+          checkOldPrefix(permission.streamId);
+        }
+      }
       
     });
     it('[DWWD] must accept old prefixes in accesses.create', async () => {
-
+      const res = await post(`/${username}/accesses/`, {
+        name: charlatan.Lorem.characters(10),
+        permissions: [{
+          streamId: '.passwordHash',
+          level: 'read',
+        }],
+        clientData: {
+          something: 'hi'
+        }
+      });
+      assert.equal(res.status, 400);
+      assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
     });
   });
   

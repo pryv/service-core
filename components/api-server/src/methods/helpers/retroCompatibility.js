@@ -10,6 +10,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 
 const Stream = require('business/src/streams/Stream');
 const StreamsQuery = require('business/src/streams/StreamsQuery');
+const Permission = require('business/src/accesses/Permission');
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
 
@@ -77,6 +78,17 @@ function changeStreamIdsPrefixInStreamQuery(context: MethodContext, params: mixe
   next();
 }
 
+function changeStreamIdsInPermissions(permissions: Array<Permission>, toOldPrefix: boolean = true): Array<Permission> {
+  const changeFunction: string => string = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
+  const oldStylePermissions: Array<Permission> = [];
+
+  for (const permission of permissions) {
+    permission.streamId = changeFunction(permission.streamId);
+    oldStylePermissions.push(permission);
+  }
+  return oldStylePermissions;
+}
+
 // double for loop
 
 module.exports = {
@@ -84,4 +96,5 @@ module.exports = {
   changeStreamIdsPrefixInStreamQuery,
   changePrefixIdForStreams,
   replaceWithNewPrefix,
+  changeStreamIdsInPermissions,
 }
