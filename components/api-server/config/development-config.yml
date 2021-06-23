@@ -28,17 +28,18 @@ dnsLess:
 custom:
   systemStreams:
     account:
-    - isIndexed: true
-      isUnique: true
-      isShown: true
-      isEditable: true
-      type: email/string
-      name: Email
-      id: email
-      isRequiredInValidation: true
+      - 
+        isIndexed: true
+        isUnique: true
+        isShown: true
+        isEditable: true
+        type: email/string
+        name: Email
+        id: email
+        isRequiredInValidation: true
     other:
-      myCustomStream:
-      - isShown: true
+      - 
+        isShown: true
         isEditable: true
         type: myCustomStream/string
         name: myCustomStream

@@ -311,7 +311,7 @@ module.exports = async function (
       } else {
         stream = eventsStream;
       }
-      stream = stream.pipe(new SetSingleStreamIdStream(isStreamIdPrefixRetrocompatibilityActive));
+      stream = stream.pipe(new SetSingleStreamIdStream());
       if (store.settings?.attachments?.setFileReadToken) {
         stream = stream.pipe(new SetFileReadTokenStream({ access: context.access, filesReadTokenSecret: authSettings.filesReadTokenSecret }));
       }
@@ -402,27 +402,28 @@ module.exports = async function (
     return next();
 }
 
-  function includeHistoryIfRequested(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function includeHistoryIfRequested(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (!params.includeHistory) {
       return next();
     }
+    const options = { sort: {modified: 1} };
 
-    var options = {
-      sort: {modified: 1}
-    };
+    try {
+      const history = await bluebird.fromCallback(cb => userEventsStorage.findHistory(context.user, params.id, options, cb))
 
-    userEventsStorage.findHistory(context.user, params.id, options,
-      function (err, history) {
-        if (err) {
-          return next(errors.unexpectedError(err));
-        }
-
-        // To remove when streamId not necessary
-        history.forEach(e => e.streamId = e.streamIds[0]);
-        
-        result.history = history;
-        next();
+      // To remove when streamId not necessary
+      history.forEach(e => {
+        if (isStreamIdPrefixRetrocompatibilityActive) e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
+        e.streamId = e.streamIds[0]
+        return e;
       });
+        
+      result.history = history;
+      next();
+
+    } catch (err) {
+      next(errors.unexpectedError(err));
+    }
   }
 
   // -------------------------------------------------------------------- CREATE
@@ -602,22 +603,22 @@ module.exports = async function (
       // As long as there is no data, event duration is considered to be 0.
       context.newEvent.duration = 0; 
     }
-    userEventsStorage.insertOne(
-      context.user, context.newEvent, function (err, newEvent) {
-        if (err != null) {
-          // Expecting a duplicate error
-          if (err.isDuplicateIndex('id')) {
-            return next(errors.itemAlreadyExists('event', {id: params.id}, err));
-          }
-          // Any other error
-          return next(errors.unexpectedError(err));
-        }
+    try {
+      const newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
-        // To remove when streamId not necessary
-        newEvent.streamId = newEvent.streamIds[0];
-        result.event = newEvent;
-        next();
-      });
+      if (isStreamIdPrefixRetrocompatibilityActive) newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
+
+      // To remove when streamId not necessary
+      newEvent.streamId = newEvent.streamIds[0];
+      result.event = newEvent;
+      next();
+    } catch (err) {
+      if (err.isDuplicateIndex('id')) {
+        return next(errors.itemAlreadyExists('event', {id: params.id}, err));
+      }
+      // Any other error
+      return next(errors.unexpectedError(err));
+    }
   }
 
   function addUniqueStreamIdIfNeeded(streamIds: Array<string>, isUnique: boolean): Array<string> {
@@ -843,11 +844,11 @@ module.exports = async function (
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
       }
 
+      if (isStreamIdPrefixRetrocompatibilityActive) updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
       result.event = updatedEvent;
       result.event.attachments = setFileReadToken(context.access, result.event.attachments);
-
     } catch (err) {
       return next(err);
     };
@@ -948,6 +949,9 @@ module.exports = async function (
     
     // used only in the events creation and update
     if (event.streamIds != null && event.streamIds.length > 0) {
+
+      if (isStreamIdPrefixRetrocompatibilityActive) event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds, false);
+
       const streamIdsNotFoundList: Array<string> = [];
       const streamIdsTrashed: Array<string> = [];
       for (streamId of event.streamIds) {
@@ -986,7 +990,7 @@ module.exports = async function (
    * @param {Object} result
    * @param {Function} next
    */
-  function validateEventContentAndCoerce(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function validateEventContentAndCoerce(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const type: string = context.newEvent.type;
 
     // Unknown types can just be created as normal events. 
@@ -1016,17 +1020,11 @@ module.exports = async function (
       : null;
 
     const validator: {} = typeRepo.validator();
-    validator.validate(eventType, content)
-      .then(function (newContent) {
-        // Store the coerced value. 
-        context.newEvent.content = newContent; 
-        next();
-        return null;
-      })
-      .catch(
-        (err) => next(errors.invalidParametersFormat(
-          'The event content\'s format is invalid.', err))
-      );
+    try {
+      context.newEvent.content = await validator.validate(eventType, content);
+    } catch (err) {
+      next(errors.invalidParametersFormat('The event content\'s format is invalid.', err));
+    }
 
     function isCreateSeriesAndHasContent(params): boolean {
       return params.content != null;
@@ -1217,6 +1215,7 @@ module.exports = async function (
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
       }
 
+      if (isStreamIdPrefixRetrocompatibilityActive) updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
 

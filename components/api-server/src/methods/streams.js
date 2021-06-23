@@ -21,9 +21,10 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const ErrorMessages = require('errors/src/ErrorMessages');
 const ErrorIds = require('errors/src/ErrorIds');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
 const { getStores } = require('stores');
+const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/retroCompatibility');
 
 SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 
@@ -42,9 +43,13 @@ SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 module.exports = async function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
   notifications, logging, auditSettings, updatesSettings) {
 
-  const stores = await getStores();
-  // RETRIEVAL
+  const config = await getConfig();
 
+  const stores = await getStores();
+
+  const isStreamIdPrefixRetrocompatibilityActive: boolean = config.get('retroCompatibility:systemStreams:prefix:isActive');
+
+  // RETRIEVAL
   api.register('streams.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
     applyDefaultsForRetrieval,
@@ -72,9 +77,10 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
     streams = streams.concat(systemStreams);
     
     if (params.parentId) {
-      var parent = treeUtils.findById(streams, params.parentId);
-      if (!parent) {
-        
+      if (isStreamIdPrefixRetrocompatibilityActive) params.parentId = replaceWithNewPrefix(params.parentId);
+
+      const parent = treeUtils.findById(streams, params.parentId);
+      if (parent == null) {
         return next(errors.unknownReferencedResource('parent stream',
           'parentId', params.parentId, null));
       }
@@ -92,11 +98,13 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
     });
     
     // hide inaccessible parent ids
-    for (let stream of streams) {
+    for (const stream of streams) {
       if (! await context.access.canListStream(stream.parentId)) {
         delete stream.parentId;
       }
     }
+
+    if (isStreamIdPrefixRetrocompatibilityActive) streams = changePrefixIdForStreams(streams);
 
     result.streams = streams;
     next();
@@ -207,16 +215,19 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
    * @param {*} next 
    */
   function forbidSystemStreamsActions (context, params, result, next) {
-    const systemStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getAllMap();
     if (params.id != null) {
-      if (systemStreamsMap[params.id] != null) {
+      if (isStreamIdPrefixRetrocompatibilityActive) params.id = replaceWithNewPrefix(params.id);
+
+      if (SystemStreamsSerializer.isSystemStreamId(params.id)) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
         );
       }
     }
     if (params.parentId != null) {
-      if (systemStreamsMap[params.parentId] != null) {
+      if (isStreamIdPrefixRetrocompatibilityActive) params.parentId = replaceWithNewPrefix(params.parentId);
+      
+      if (SystemStreamsSerializer.isSystemStreamId(params.parentId)) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
         );
