@@ -1022,6 +1022,7 @@ module.exports = async function (
     const validator: {} = typeRepo.validator();
     try {
       context.newEvent.content = await validator.validate(eventType, content);
+      next();
     } catch (err) {
       next(errors.invalidParametersFormat('The event content\'s format is invalid.', err));
     }
