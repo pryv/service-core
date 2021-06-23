@@ -82,23 +82,30 @@ describe('SystemStreams config', () => {
           }
         ],
       };
-      customStreamIds = treeUtils.flattenTree(customStreams.account)
-        .concat(treeUtils.flattenTree(customStreams.other))
-        .map(s => SystemStreamsSerializer.addCustomerPrefixToStreamId(s.id));
       
       store = new nconf.Provider();
       store.use('memory');
       store.set('custom:systemStreams', customStreams);
       systemStreamsConfig.load(store);
       SystemStreamsSerializer.reloadSerializer(store);
+
+      customStreamIds = treeUtils.flattenTree(customStreams.account)
+        .concat(treeUtils.flattenTree(customStreams.other))
+        .map(s => SystemStreamsSerializer.addCustomerPrefixToStreamId(s.id));
     });
 
     
     it('[GB8G] must set default values and other fields', () => {
       const systemStreams = store.get('systemStreams');
       for (const streamId of customStreamIds) {
-        const configStream = treeUtils.findById(customStreams.account, streamId) || treeUtils.findById(customStreams.other, streamId);
-        const systemStream = treeUtils.findById(systemStreams, SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId));
+        const configStream = treeUtils.findById(
+          customStreams.account, 
+          SystemStreamsSerializer.removePrefixFromStreamId(streamId))
+          || 
+          treeUtils.findById(
+            customStreams.other, 
+            SystemStreamsSerializer.removePrefixFromStreamId(streamId));
+        const systemStream = treeUtils.findById(systemStreams, streamId)
         for (const [key, value] of Object.entries(systemStream)) {
           if (configStream[key] == null && ! isIgnoredKey(key)) {
             assert.equal(value, DEFAULT_VALUES_FOR_FIELDS[key]);

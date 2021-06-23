@@ -4,9 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var Transform = require('stream').Transform,
-    inherits = require('util').inherits,
-  utils = require('utils');
+const Transform = require('stream').Transform;
+const inherits = require('util').inherits;
 
 module.exports = SetSingleStreamIdStream;
 

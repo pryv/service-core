@@ -382,7 +382,12 @@ class SystemStreamsSerializer {
   */
   static addPrivatePrefixToStreamId(streamId: string): string {
     const streamIdWithPrefix = SystemStreamsSerializer.privateStreamIdWithoutPrefixToWith[streamId];
-    return streamIdWithPrefix ? streamIdWithPrefix : streamId;
+    if (streamIdWithPrefix == null) throw new Error('trying to call addCustomerPrefixToStreamId() with non-private streamId: ' + streamId)
+    return streamIdWithPrefix;
+  }
+
+  static isPrivateSystemStreamId(streamId: string): boolean {
+    return SystemStreamsSerializer.privateStreamIdWithoutPrefixToWith[streamId] != null;
   }
 
   /**
@@ -391,7 +396,12 @@ class SystemStreamsSerializer {
   */
   static addCustomerPrefixToStreamId(streamId: string): string {
     const streamIdWithPrefix = SystemStreamsSerializer.customerStreamIdWithoutPrefixToWith[streamId];
-    return streamIdWithPrefix ? streamIdWithPrefix : streamId;
+    if (streamIdWithPrefix == null) throw new Error('trying to call addCustomerPrefixToStreamId() with non-customer streamId: ' + streamId)
+    return streamIdWithPrefix;
+  }
+
+  static isCustomerSystemStreamId(streamId: string): boolean {
+    return SystemStreamsSerializer.customerStreamIdWithoutPrefixToWith[streamId] != null;
   }
 
   static addCorrectPrefixToAccountStreamId(streamId: string): string {

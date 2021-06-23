@@ -46,6 +46,8 @@ const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
+const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/retroCompatibility');
+
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
 
@@ -98,12 +100,13 @@ module.exports = async function (
     }
 
   const isStreamIdPrefixRetrocompatibilityActive: boolean = config.get('retroCompatibility:systemStreams:prefix:isActive');
-  // RETRIEVAL
 
+  // RETRIEVAL
   api.register('events.get',
     eventsGetUtil.coerceStreamsParam,
     commonFns.getParamsValidation(methodsSchema.get.params),
     eventsGetUtil.transformArrayOfStringsToStreamsQuery,
+    changeStreamIdsPrefixInStreamQuery,
     eventsGetUtil.validateStreamsQueriesAndSetStore,
     eventsGetUtil.applyDefaultsForRetrieval,
     applyTagsDefaultsForRetrieval,
@@ -387,7 +390,11 @@ module.exports = async function (
     }
     if (! canReadEvent) return next(errors.forbidden());
 
-    setFileReadToken(context.access, event);
+    event.attachments = setFileReadToken(context.access, event.attachments);
+
+    if (isStreamIdPrefixRetrocompatibilityActive) {
+      event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds);
+    }
 
     // To remove when streamId not necessary
     event.streamId = event.streamIds[0];     
@@ -655,7 +662,7 @@ module.exports = async function (
             return next(errors.unexpectedError(err));
           }
 
-          setFileReadToken(context.access, result.event);
+          result.event.attachments = setFileReadToken(context.access, result.event.attachments);
           next();
         });
     } catch (err) {
@@ -839,7 +846,7 @@ module.exports = async function (
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
       result.event = updatedEvent;
-      setFileReadToken(context.access, result.event);
+      result.event.attachments = setFileReadToken(context.access, result.event.attachments);
 
     } catch (err) {
       return next(err);
@@ -1214,7 +1221,7 @@ module.exports = async function (
       updatedEvent.streamId = updatedEvent.streamIds[0];
 
       result.event = updatedEvent;
-      setFileReadToken(context.access, result.event);
+      result.event.attachments = setFileReadToken(context.access, result.event.attachments);
 
       next();
     } catch (err) {
@@ -1312,7 +1319,7 @@ module.exports = async function (
         alreadyUpdatedEvent.streamId = alreadyUpdatedEvent.streamIds[0];
 
         result.event = alreadyUpdatedEvent;
-        setFileReadToken(context.access, result.event);
+        result.event.attachments = setFileReadToken(context.access, result.event.attachments);
 
         await bluebird.fromCallback(cb => userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, cb));
 
@@ -1396,16 +1403,17 @@ module.exports = async function (
    * access.
    *
    * @param access
-   * @param event
+   * @param attachments
    */
-  function setFileReadToken(access, event): void {
-    if (! event.attachments) { return; }
-    event.attachments.forEach(function (att) {
+  function setFileReadToken(access: Access, attachments: Array<Attachment>): Array<Attachment> {
+    if (attachments == null) { return; }
+    attachments.forEach(function (att) {
       att.readToken = utils.encryption
         .fileReadToken(att.id, 
           access.id, access.token,
           authSettings.filesReadTokenSecret);
     });
+    return attachments;
   }
 
   function hasBecomeActive(oldStreamIds: Array<string>, newSreamIds: Array<string>): boolean {
