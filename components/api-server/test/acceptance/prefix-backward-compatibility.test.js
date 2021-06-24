@@ -15,7 +15,13 @@ const assert = require('chai').assert;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const timestamp = require('unix-timestamp');
 
-describe('XXSystem stream id) prefix backward-compatibility', () => {
+describe('(System stream id) prefix backward-compatibility', () => {
+
+  const DISABLE_BACKWARD_COMPATIBILITY_PARAM = 'disableBackwardCompatibility';
+
+  const DOT = '.';
+  const PRYV_PREFIX = ':_system:';
+  const CUSTOMER_PREFIX = ':system:';
 
   let config;
   let mongoFixtures;
@@ -88,21 +94,34 @@ describe('XXSystem stream id) prefix backward-compatibility', () => {
       checkOldPrefix(streamId);
     }
   }
+  /**
+   * if old prefix, must be system stream
+   * if not, and not system stream, fine
+   * if not, and systemStream, not fine
+   */
   function checkOldPrefix(streamId) {
-    if (! SystemStreamsSerializer.isSystemStreamId(streamId)) return;
-    const DOT = '.';
-    const PRYV_PREFIX = ':_system:';
-    const CUSTOMER_PREFIX = ':system:';
-    assert.isTrue(streamId.startsWith(DOT), `streamId "${streamId}" does not start with "${DOT}"`);
-    assert.isFalse(streamId.startsWith(PRYV_PREFIX), `streamId "${streamId}" starts with "${PRYV_PREFIX}"`);
-    assert.isFalse(streamId.startsWith(CUSTOMER_PREFIX), `streamId "${streamId}" starts with "${CUSTOMER_PREFIX}"`);
+    if (streamId.startsWith(DOT)) {
+      
+      const streamIdWithoutPrefix = removeDot(streamId);
+      let customStreamIdVariant, privateStreamIdVariant
+      try { customStreamIdVariant = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamIdWithoutPrefix); } catch (e) {}
+      try { privateStreamIdVariant = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix); } catch (e) {}
+      assert.isTrue(customStreamIdVariant != null || privateStreamIdVariant != null, 'streamId starting with dot but neither custom nor private: ' + streamId);
+    } else {
+      if (! SystemStreamsSerializer.isSystemStreamId(streamId)) return;
+      assert.isFalse(streamId.startsWith(PRYV_PREFIX), `streamId "${streamId}" starts with "${PRYV_PREFIX}"`);
+      assert.isFalse(streamId.startsWith(CUSTOMER_PREFIX), `streamId "${streamId}" starts with "${CUSTOMER_PREFIX}"`);
+    }
+    function removeDot(streamId) {
+      return streamId.substring(1);
+    }
   }
   async function post(path, payload, query) {
     return await server.request()
-    .post(path)
-    .set('Authorization', token)
-    .set('Content-Type', 'application/json')
-    .send(payload);
+      .post(path)
+      .set('Authorization', token)
+      .set('Content-Type', 'application/json')
+      .send(payload);
   }
   async function get(path, query) {
     return await server.request()
@@ -175,7 +194,7 @@ describe('XXSystem stream id) prefix backward-compatibility', () => {
       assert.isNotEmpty(res.body.streams);
       for (const stream of res.body.streams) {
         checkOldPrefix(stream.id);
-        checkOldPrefix(stream.parentId);
+        if (stream.parentId != null) checkOldPrefix(stream.parentId);
       }
     });
     it('[YJS6] must accept old prefixes in streams.get', async () => {
@@ -183,7 +202,7 @@ describe('XXSystem stream id) prefix backward-compatibility', () => {
       assert.isNotEmpty(res.body.streams);
       for (const stream of res.body.streams) {
         checkOldPrefix(stream.id);
-        checkOldPrefix(stream.parentId);
+        if (stream.parentId != null) checkOldPrefix(stream.parentId);
       }
     });
     it('[CCE8] must handle old prefixes in streams.create', async () => {
