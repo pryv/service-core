@@ -28,7 +28,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStores } = require('stores');
 
-const { changeStreamIdsInPermissions } = require('./helpers/retroCompatibility');
+const { changeStreamIdsInPermissions } = require('./helpers/backwardCompatibility');
 
 import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'business';
@@ -65,7 +65,7 @@ module.exports = async function produceAccessesApiMethods(
     { calls: 0, deleted: 0 } };
   const stores = await getStores();
 
-  const isStreamIdPrefixRetrocompatibilityActive: boolean = config.get('retroCompatibility:systemStreams:prefix:isActive');
+  const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
   // RETRIEVAL
   api.register('accesses.get',
@@ -98,7 +98,7 @@ module.exports = async function produceAccessesApiMethods(
       // Add apiEndpoind
       for (let i = 0; i < accesses.length; i++) {
         if (accesses[i].permissions != null) { // assert is personal access
-          if (isStreamIdPrefixRetrocompatibilityActive) accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);  
+          if (isStreamIdPrefixBackwardCompatibilityActive) accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);  
         }
         accesses[i].apiEndpoint = context.user.buildApiEndpoint(accesses[i].token);
       }
@@ -130,7 +130,7 @@ module.exports = async function produceAccessesApiMethods(
     try {
       const deletions: Array<Access> = await bluebird.fromCallback(cb => accessesRepository.findDeletions(context.user, query,  { projection: { calls: 0 } }, cb));
 
-      if (isStreamIdPrefixRetrocompatibilityActive) {
+      if (isStreamIdPrefixBackwardCompatibilityActive) {
         for (let access of deletions) {
           if (access.permissions == null) continue;
           access.permissions = changeStreamIdsInPermissions(access.permissions);
@@ -172,7 +172,7 @@ module.exports = async function produceAccessesApiMethods(
       ));
     }
     
-    if (isStreamIdPrefixRetrocompatibilityActive) params.permissions = changeStreamIdsInPermissions(params.permissions, false);
+    if (isStreamIdPrefixBackwardCompatibilityActive) params.permissions = changeStreamIdsInPermissions(params.permissions, false);
     
     const access = context.access;
     if (access == null) 

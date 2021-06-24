@@ -46,7 +46,7 @@ const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
-const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/retroCompatibility');
+const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
 
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
@@ -99,7 +99,7 @@ module.exports = async function (
       serviceRegisterConn = getServiceRegisterConn();
     }
 
-  const isStreamIdPrefixRetrocompatibilityActive: boolean = config.get('retroCompatibility:systemStreams:prefix:isActive');
+  const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
   // RETRIEVAL
   api.register('events.get',
@@ -306,7 +306,7 @@ module.exports = async function (
      */
     function addnewEventStreamFromSource (store, eventsStream: ReadableStream) {
       let stream: ?ReadableStream;
-      if (isStreamIdPrefixRetrocompatibilityActive) {
+      if (isStreamIdPrefixBackwardCompatibilityActive) {
         stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
       } else {
         stream = eventsStream;
@@ -392,7 +392,7 @@ module.exports = async function (
 
     event.attachments = setFileReadToken(context.access, event.attachments);
 
-    if (isStreamIdPrefixRetrocompatibilityActive) {
+    if (isStreamIdPrefixBackwardCompatibilityActive) {
       event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds);
     }
 
@@ -413,7 +413,7 @@ module.exports = async function (
 
       // To remove when streamId not necessary
       history.forEach(e => {
-        if (isStreamIdPrefixRetrocompatibilityActive) e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
+        if (isStreamIdPrefixBackwardCompatibilityActive) e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
         e.streamId = e.streamIds[0]
         return e;
       });
@@ -606,7 +606,7 @@ module.exports = async function (
     try {
       const newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
-      if (isStreamIdPrefixRetrocompatibilityActive) newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
+      if (isStreamIdPrefixBackwardCompatibilityActive) newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
 
       // To remove when streamId not necessary
       newEvent.streamId = newEvent.streamIds[0];
@@ -844,7 +844,7 @@ module.exports = async function (
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
       }
 
-      if (isStreamIdPrefixRetrocompatibilityActive) updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+      if (isStreamIdPrefixBackwardCompatibilityActive) updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
       result.event = updatedEvent;
@@ -950,7 +950,7 @@ module.exports = async function (
     // used only in the events creation and update
     if (event.streamIds != null && event.streamIds.length > 0) {
 
-      if (isStreamIdPrefixRetrocompatibilityActive) event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds, false);
+      if (isStreamIdPrefixBackwardCompatibilityActive) event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds, false);
 
       const streamIdsNotFoundList: Array<string> = [];
       const streamIdsTrashed: Array<string> = [];
@@ -1216,7 +1216,7 @@ module.exports = async function (
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
       }
 
-      if (isStreamIdPrefixRetrocompatibilityActive) updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+      if (isStreamIdPrefixBackwardCompatibilityActive) updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
 

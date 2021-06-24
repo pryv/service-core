@@ -6,12 +6,12 @@
  */
 const Transform = require('stream').Transform;
 const inherits = require('util').inherits;
-const { changeMultipleStreamIdsPrefix } = require('../helpers/retroCompatibility');
+const { changeMultipleStreamIdsPrefix } = require('../helpers/backwardCompatibility');
 
 module.exports = ChangeStreamIdPrefixStream;
 
 /**
- * For retrocompatibility, change system stream id prefix
+ * For backwardCompatibility, change system stream id prefix
  * This needs to be run before "SetSingleStreamIdStream.js"
  * @constructor
  */

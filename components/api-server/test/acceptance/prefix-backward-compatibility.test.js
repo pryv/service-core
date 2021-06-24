@@ -8,14 +8,14 @@
 
 const { getConfig } = require('@pryv/boiler');
 const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('../test-helpers');
+const { produceMongoConnection, context } = require('api-server/test/test-helpers');
 const charlatan = require('charlatan');
 const cuid = require('cuid');
 const assert = require('chai').assert;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const timestamp = require('unix-timestamp');
 
-describe('(System stream id) prefix retro-compatibility', () => {
+describe('XXSystem stream id) prefix backward-compatibility', () => {
 
   let config;
   let mongoFixtures;
@@ -54,7 +54,7 @@ describe('(System stream id) prefix retro-compatibility', () => {
     await user.session(token);
 
     server = await context.spawn({ 
-      retroCompatibility: { systemStreams: { prefix: { isActive: true } } },
+      backwardCompatibility: { systemStreams: { prefix: { isActive: true } } },
       dnsLess: { isActive: true }, // so updating account streams does not notify register
       versioning: { 
         deletionMode: 'keep-everything',
@@ -247,5 +247,129 @@ describe('(System stream id) prefix retro-compatibility', () => {
       assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
     });
   });
-  
+
+  describe('when using the query param to use new prefixes', () => {
+    describe('events', () => {
+      it('[Q40I] must return new prefixes in events.get', async () => {
+        const res = await get(`/${username}/events`, { });
+        assert.isNotEmpty(res.body.events);
+        for (const event of res.body.events) {
+          checkOldPrefixes(event.streamIds);
+        }
+      });
+      it('[4YCD] must accept old prefixes in events.get', async () => {
+        const res = await get(`/${username}/events`, { streams: ['.email']});
+        assert.equal(res.status, 200);
+        assert.isNotEmpty(res.body.events);
+        for (const event of res.body.events) {
+          checkOldPrefixes(event.streamIds);
+        }
+      });
+      it('[CF3N] must return old prefixes in events.getOne (including history)', async () => {
+        const res = await get(`/${username}/events/${systemEventId}`, { includeHistory: true });
+        checkOldPrefixes(res.body.event.streamIds);
+        assert.isNotEmpty(res.body.history);
+        for (const event of res.body.history) {
+          checkOldPrefixes(event.streamIds);
+        }
+      });
+      it('[U28C] must accept old prefixes in events.create', async () => {
+        const res = await post(`/${username}/events/`, {
+          streamIds: ['.language'],
+          type: 'language/iso-639-1',
+          content: charlatan.Lorem.characters(2),
+        });
+        assert.equal(res.status, 201);
+        checkOldPrefixes(res.body.event.streamIds);
+      });
+      it('[YIWX] must return old prefixes in events.update', async () => {
+        const res = await put(`/${username}/events/${systemEventId}`, {
+          content: charlatan.Lorem.characters(2),
+        });
+        checkOldPrefixes(res.body.event.streamIds);
+      });
+      it('[75DN] must return old prefixes in events.delete', async () => {
+        const res = await del(`/${username}/events/${systemEventId}`);
+        checkOldPrefixes(res.body.event.streamIds);
+      });
+    });
+    describe('streams', () => {
+      it('[WY07] must return old prefixes in streams.get', async () => {
+        const res = await get(`/${username}/streams/`);
+        assert.isNotEmpty(res.body.streams);
+        for (const stream of res.body.streams) {
+          checkOldPrefix(stream.id);
+          checkOldPrefix(stream.parentId);
+        }
+      });
+      it('[YJS6] must accept old prefixes in streams.get', async () => {
+        const res = await get(`/${username}/streams/`, { parentId: '.account'});
+        assert.isNotEmpty(res.body.streams);
+        for (const stream of res.body.streams) {
+          checkOldPrefix(stream.id);
+          checkOldPrefix(stream.parentId);
+        }
+      });
+      it('[CCE8] must handle old prefixes in streams.create', async () => {
+        const res = await post(`/${username}/streams/`, {
+          id: charlatan.Lorem.word(),
+          name: charlatan.Lorem.word(),
+          parentId: '.language',
+        });
+        assert.equal(res.status, 400);
+        assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+      });
+      it('[4DP2] must accept old prefixes in streams.update', async () => {
+        const res = await put(`/${username}/streams/.language`, {
+          content: charlatan.Lorem.characters(2),
+        });
+        assert.equal(res.status, 400);
+        assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+      });
+      it('[LQ5X] must return old prefixes in streams.delete', async () => {
+        const res = await del(`/${username}/streams/.language`);
+        assert.equal(res.status, 400);
+        assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+      });
+    });
+    describe('accesses', () => {
+      it('[UDJF] must return old prefixes in accesses.get', async () => {
+        const res = await get(`/${username}/accesses/`, {
+          includeExpired: true,
+          includeDeletions: true,
+        });
+        const accesses = res.body.accesses;
+        assert.isNotEmpty(accesses);
+        for (const access of accesses) {
+          if (access.permissions == null) continue;
+          for (permission of access.permissions) {
+            checkOldPrefix(permission.streamId);
+          }
+        }
+        const deletions = res.body.accessDeletions;
+        assert.isNotEmpty(deletions);
+        for (const access of deletions) {
+          if (access.permissions == null) continue;
+          for (permission of access.permissions) {
+            checkOldPrefix(permission.streamId);
+          }
+        }
+        
+      });
+      it('[DWWD] must accept old prefixes in accesses.create', async () => {
+        const res = await post(`/${username}/accesses/`, {
+          name: charlatan.Lorem.characters(10),
+          permissions: [{
+            streamId: '.passwordHash',
+            level: 'read',
+          }],
+          clientData: {
+            something: 'hi'
+          }
+        });
+        assert.equal(res.status, 400);
+        assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+      });
+    });
+  })
 });

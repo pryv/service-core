@@ -10,7 +10,7 @@ const inherits = require('util').inherits;
 module.exports = SetSingleStreamIdStream;
 
 /**
- * For retrocompatibility set single StreamId to Event
+ * For backwardCompatibility set single StreamId to Event
  * @constructor
  */
 function SetSingleStreamIdStream() {
