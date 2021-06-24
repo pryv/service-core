@@ -23,7 +23,7 @@ const ErrorIds = require('errors/src/ErrorIds');
 
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
-const { getStores } = require('stores');
+const { getStores, StreamsUtils } = require('stores');
 
 SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 
@@ -61,49 +61,71 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
   }
 
   async function findAccessibleStreams(context, params, result, next) {
-    try { 
-    // can't reuse context streams (they carry extra internal properties)
-    let streams = await bluebird.fromCallback(cb => userStreamsStorage.find(context.user, {}, null, cb));
-
-    // AT WORK
-    //const newStreams = await stores.streams.get(context.user.id, {expandChildren: true});
-
-    const systemStreams = SystemStreamsSerializer.getReadable();
-    streams = streams.concat(systemStreams);
+    if (params.parentId && params.id) {
+      DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
+    }
     
-    if (params.parentId) {
-      var parent = treeUtils.findById(streams, params.parentId);
-      if (!parent) {
-        
-        return next(errors.unknownReferencedResource('parent stream',
-          'parentId', params.parentId, null));
-      }
-      streams = parent.children;
+
+    let streamId = params.id || params.parentId || '*';
+
+    let storeId = params.storeId; // might me null
+    if (! storeId) {
+      [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     }
 
-    if (params.state !== 'all') { // i.e. === 'default' (return non-trashed items)
-      streams = treeUtils.filterTree(streams, false /*no orphans*/, function (item) {
-        return !item.trashed;
+    let streams = await stores.streams.get(context.user.id, 
+      {
+        id: streamId,
+        expandChildren: true,
+        includeDeletionsSince: params.includeDeletionsSince,
+        includeTrashed: params.includeTrashed || params.state === 'all',
+        excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
+
+    if (streamId !== '*') {
+      const inResult = treeUtils.findById(streams, streamId);
+      if (!inResult) {
+        return next(errors.unknownReferencedResource('unkown Stream:', 'id', streamId, null));
+      }
+    } else if (! context.access.canListAnyStream()) { // request is "*" and not personal acess
+      // cherry pick accessible streams from result
+      /********************************
+       * This is not optimal (fetches all streams) and not accurate 
+       * This method can "duplicate" streams, if read rights have been given to a parent and one of it's children
+       * Either:
+       *  - detect parent / child relationships
+       *  - pass a list of streamIds to store.streams.get() to get a consolidated answer 
+       *********************************/
+      const listables = context.access.getListableStreamIds();
+      
+      let filteredStreams = [];
+      for (const listable of listables) {
+        if (storeId === listable.storeId) {
+          if (listable.streamId === '*') { // -- Break here => /!\ ignore other permissions for this store
+            filteredStreams = streams;
+            break;
+          }
+          
+          const fullStreamId = StreamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
+          const inResult = treeUtils.findById(streams, fullStreamId);
+          if (inResult) {
+            const copy = _.cloneDeep(inResult);
+            delete copy.parentId;
+            filteredStreams.push(copy);
+          }
+        }
+      }
+      streams = filteredStreams;
     }
 
-    streams = await treeUtils.filterTreeOnPromise(streams, true /*keep orphans*/, async function (stream) {
-      return await context.access.canListStream(stream.id);
-    });
-    
-    // hide inaccessible parent ids
-    for (let stream of streams) {
-      if (! await context.access.canListStream(stream.parentId)) {
-        delete stream.parentId;
-      }
-    }
+    // if request was made on parentId .. return only the children
+    if (params.parentId && streams.length === 1) {
+      streams = streams[0].children;
+    } 
+
 
     result.streams = streams;
     next();
-    } catch (e) {
-      console.log(e);
-      return next(errors.unexpectedError(e)); 
-    } 
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {

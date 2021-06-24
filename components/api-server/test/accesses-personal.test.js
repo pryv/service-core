@@ -79,8 +79,9 @@ describe('accesses (personal)', function () {
     it('[K5BF] must return all accesses (including personal ones)', function (done) {
       req().get(basePath).end(function (res) {
         const expected = validation
-          .removeDeletions(testData.accesses)
+          .removeDeletions( _.cloneDeep(testData.accesses))
           .map(a =>  _.omit(a, 'calls'));
+        validation.addStoreStreams(expected);
         for (let e of expected) {
           e.apiEndpoint = buildApiEndpoint('userzero', e.token);
         }

@@ -72,9 +72,20 @@ describe("System streams", function () {
   describe('GET /streams', () => {
     describe('When using a personal access', () => {
       it('[9CGO] Should return all streams - including system ones', async () => {
-        await createUser();
-        res = await request.get(basePath).set('authorization', access.token);
-        assert.deepEqual(res.body.streams, [
+        const expectedRes = [];
+        const {StreamsUtils, getStores} = require('stores');
+        // -- ADD Stores
+        const mainStore = await getStores();
+        for (let source of mainStore.stores) {
+          if (source.id !== 'local') {
+            expectedRes.push(StreamsUtils.sourceToStream(source, {
+              children: [],
+              childrenHidden: true // To be discussed
+            }));
+          }
+        }
+      
+        const readableStreams = [
           {
             name: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
@@ -144,7 +155,17 @@ describe("System streams", function () {
               }
             ] 
           }
-        ]);
+        ];
+
+        const { UserStreams } = require('stores/interfaces/DataSource')
+        UserStreams.applyDefaults(null, readableStreams);
+
+        expectedRes.push(...readableStreams);
+
+        await createUser();
+        res = await request.get(basePath).set('authorization', access.token);
+
+        assert.deepEqual(res.body.streams, expectedRes);
       });
     });
   });

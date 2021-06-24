@@ -21,7 +21,7 @@ const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert;
 
-describe('Access permissions', function () {
+describe('[ACCP] Access permissions', function () {
 
   var user = Object.assign({}, testData.users[0]),
       request = null, // must be set after server instance started
@@ -354,9 +354,11 @@ describe('Access permissions', function () {
 
     it('[NJ1A] must allow access to all streams when no specific stream permissions are defined',
         function (done) {
+          const expected = validation.removeDeletions(_.cloneDeep(testData.streams));
+          validation.addStoreStreams(expected);
           request.get(basePath, token(2)).query({ state: 'all' }).end(function (res) {
             res.body.streams = validation.removeAccountStreams(res.body.streams);
-            res.body.streams.should.eql(validation.removeDeletions(testData.streams));
+            res.body.streams.should.eql(expected);
             done();
       });
     });

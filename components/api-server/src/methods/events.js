@@ -200,7 +200,7 @@ module.exports = async function (
       const query =  {
         id: streamId, 
         storeId: storeId, 
-        state: params.state, 
+        includeTrashed: params.includeTrashed || params.state === 'all', 
         expandChildren: true,
         excludedIds: context.access.getCannotGetEventsStreamIds(storeId)
       };

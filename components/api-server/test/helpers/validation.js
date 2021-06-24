@@ -395,6 +395,21 @@ exports.removeAccountStreams = function (streams) {
   return streams;
 }
 
+exports.addStoreStreams = async function (streams) {
+  const {StreamsUtils, getStores} = require('stores');
+  // -- ADD Stores
+  const mainStore = await getStores();
+  for (let source of mainStore.stores.reverse()) {
+    if (source.id !== 'local') {
+      streams.unshift(StreamsUtils.sourceToStream(source, {
+        children: [],
+        childrenHidden: true // To be discussed
+      }));
+    }
+  };
+  return streams;
+}
+
 /*
  * Strips off item from tracking properties
  */

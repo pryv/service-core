@@ -15,7 +15,7 @@ const LOCAL_STORE = 'local';
  */
 function sourceToStream(source, extraProperties) {
   return Object.assign({
-    id: source.id,
+    id: ':' + source.id + ':',
     name: source.name,
     parentId: null,
     created: DataSource.UNKOWN_DATE,
