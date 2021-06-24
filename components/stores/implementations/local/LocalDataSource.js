@@ -81,7 +81,12 @@ class LocalUserStreams extends UserStreams {
         return !item.trashed;
       });
     }
+
     return streams;
+  }
+
+  async create(uid, params) {
+
   }
 }
 

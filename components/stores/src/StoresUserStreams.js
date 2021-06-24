@@ -117,6 +117,31 @@ class StoresUserStreams extends UserStreams {
     return res;
   }
 
+  async create(uid, params) {
+    let streamId = params.id;
+    let storeId = params.storeId;
+
+    if (! storeId) {
+      [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    }
+
+    const store = this.mainStore._storeForId(storeId);
+
+    const myParams = {
+      id: streamId,
+      parentId: params.parentId,
+      name: params.name,
+      clientData: params.clientData,
+      trashed: params.trashed,
+      created: params.created,
+      createdBy: params.createdBy,
+      modifiedd: params.modified,
+      modifiedBy: params.modifiedBy 
+    }
+    const res = await store.streams.create(uid, myParams);
+    
+  }
+
 
   /**
    * Kept for reference.. might be removed 
