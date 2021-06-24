@@ -687,7 +687,7 @@ describe('Versioning', function () {
       const resEvents = await req
         .get(buildPath(`/${user1.username}/events`))
         .set('Authorization',token)
-        .query({streams: [SystemStreamSerializer.addPrivatePrefixToStreamId('email')]});
+        .query({streams: [SystemStreamSerializer.addCustomerPrefixToStreamId('email')]});
       const oldEmailEvent = resEvents.body.events[0];
 
       // 2.
@@ -714,7 +714,7 @@ describe('Versioning', function () {
       const resEvents2 = await req
         .get(buildPath(`/${user2.username}/events`))
         .set('Authorization',token2)
-        .query({streams: [SystemStreamSerializer.addPrivatePrefixToStreamId('email')]});
+        .query({streams: [SystemStreamSerializer.addCustomerPrefixToStreamId('email')]});
       const emailEvent = resEvents2.body.events[0];
       assert.equal(emailEvent.content, oldEmailEvent.content);
     });

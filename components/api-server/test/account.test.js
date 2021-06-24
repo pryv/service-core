@@ -22,11 +22,17 @@ const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users/repository');
+
+let usersRepository = null;
 
 describe('account', function () {
   const user = Object.assign({}, testData.users[0]);
-  const usersRepository = new UsersRepository(storage);
+  
+  before(async () => {
+    usersRepository = await getUsersRepository(); 
+  });
+  
   let basePath = '/' + user.username + '/account';
   let request = null; // must be set after server instance started
 

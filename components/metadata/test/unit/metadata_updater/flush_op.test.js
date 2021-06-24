@@ -23,7 +23,7 @@ const { databaseFixture } = require('test-helpers');
 
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
-const { Flush, UsersRepository } = require('../../../src/metadata_updater/flush');
+const { Flush, CustomUsersRepository } = require('../../../src/metadata_updater/flush');
 const { getLogger } = require('@pryv/boiler');
 
 describe('Flush', () => {
@@ -147,9 +147,9 @@ describe('UsersRepository', () => {
     return pryv.user(username, { id: userId });
   });
 
-  let repository: UsersRepository;
+  let repository: CustomUsersRepository;
   beforeEach(() => {
-    repository = new UsersRepository(db);
+    repository = new CustomUsersRepository(db);
   });
   
   describe('#resolve(name)', () => {

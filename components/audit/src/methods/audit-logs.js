@@ -43,7 +43,7 @@ function anyStarStreamQueryIsNullQUery(context, params, result, next) {
 
 
 /**
- * Remove '.audit-' from stream query;
+ * Remove ':audit:' from stream query;
  * @returns 
  */
 function removeStoreIdFromStreamQuery(context, params, result, next) {

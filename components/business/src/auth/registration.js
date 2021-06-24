@@ -13,7 +13,7 @@ const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
 const { getServiceRegisterConn, safetyCleanDuplicate } = require('./service_register');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users/repository');
 const User = require('business/src/users/User');
 const ErrorIds = require('errors').ErrorIds;
 
@@ -29,7 +29,6 @@ class Registration {
   logger: any;
   storageLayer: any;
   serviceRegisterConn: ServiceRegister;
-  usersRepository: UsersRepository; 
   accountStreamsSettings: any = SystemStreamsSerializer.getAccountMap();
   servicesSettings: any; // settigns to get the email to send user welcome email
 
@@ -39,11 +38,6 @@ class Registration {
     this.servicesSettings = servicesSettings;
 
     this.serviceRegisterConn = getServiceRegisterConn();
-    this.usersRepository = new UsersRepository(
-      this.storageLayer.events,
-      this.storageLayer.sessions,
-      this.storageLayer.accesses
-    );
   }
 
   /**
@@ -110,7 +104,8 @@ class Registration {
     try {
       // assert that we have obtained a lock on register, so any conflicting fields here 
       // would be failed registration attempts that partially saved user data.
-      const existingUsers = await this.usersRepository.findExistingUniqueFields(context.user.getUniqueFields());
+      const usersRepository = await getUsersRepository();
+      const existingUsers = await usersRepository.findExistingUniqueFields(context.user.getUniqueFields());
 
       // if any of unique fields were already saved, it means that there was an error
       // saving in service register (before this step there is a check that unique fields 
@@ -124,7 +119,8 @@ class Registration {
         for (let userId of distinctUserIds){
           // assert that unique fields are free to take
           // so if we get conflicting ones here, we can simply delete them
-          await this.usersRepository.deleteOne(userId);
+          const usersRepository = await getUsersRepository();
+          await usersRepository.deleteOne(userId);
 
           this.logger.error(
             `User with id ${
@@ -160,7 +156,8 @@ class Registration {
     }
 
     try {
-      context.user = await this.usersRepository.insertOne(context.user, true);
+      const usersRepository = await getUsersRepository();
+      context.user = await usersRepository.insertOne(context.user, true);
     } catch (err) {
       return next(err);
     }

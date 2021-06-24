@@ -76,7 +76,7 @@ describe("System streams", function () {
         res = await request.get(basePath).set('authorization', access.token);
         assert.deepEqual(res.body.streams, [
           {
-            name: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+            name: 'account',
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
             parentId: null,
             children: [
@@ -113,19 +113,19 @@ describe("System streams", function () {
               },
               {
                 name: 'insurancenumber',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('insurancenumber'),
+                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber'),
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'phoneNumber',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('phoneNumber'),
+                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'),
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               { 
                 name: 'Email',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('email'),
+                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('email'),
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
@@ -133,7 +133,7 @@ describe("System streams", function () {
           },
           {
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
-            name: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
+            name: 'helpers',
             parentId: null,
             children: [
               {
@@ -141,7 +141,8 @@ describe("System streams", function () {
                 name: 'Active',
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
                 children: []
-              }
+              },
+
             ] 
           }
         ]);
@@ -180,7 +181,7 @@ describe("System streams", function () {
           streamData = {
             name: 'lanugage2'
           };
-          res = await request.put(path.join(basePath, 'language'))
+          res = await request.put(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
             .send(streamData)
             .set('authorization', access.token);
         });
@@ -199,7 +200,7 @@ describe("System streams", function () {
       describe('to delete a system stream', () => {
         before(async function () {
           await createUser();
-          res = await request.delete(path.join(basePath, 'language'))
+          res = await request.delete(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
             .set('authorization', access.token);
         });
         it('[1R35] should return status 400', async () => { 
