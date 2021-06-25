@@ -407,7 +407,7 @@ class SystemStreamsSerializer {
   static getReadable(): Array<Stream> {
     if (SystemStreamsSerializer.readable) return SystemStreamsSerializer.readable;
     SystemStreamsSerializer.readable = treeUtils.filterTree(this.allAsTree, false, s => s[IS_SHOWN]);
-    SystemStreamsSerializer.readable = treeUtils.apply(this.readable, s => _.pick(s, Stream.properties));
+    SystemStreamsSerializer.readable = treeUtils.cloneAndApply(this.readable, s => _.pick(s, Stream.properties));
     return SystemStreamsSerializer.readable;
   }
 }

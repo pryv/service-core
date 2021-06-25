@@ -50,15 +50,14 @@ class StoresUserStreams extends UserStreams {
    */
   async get(uid, params) {
 
-    // --- cleanup params --------- //
+    // -------- cleanup params --------- //
     
     let streamId = params.id || '*';
     let storeId = params.storeId; // might me null
     let excludedIds = null;
 
-    if (! storeId) {
+    if (! storeId) { // --- Also strip storeId from excluded Idds
       [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
-
       excludedIds = [];
       for (const excludedFullStreamId of params.excludedIds) { // keep only streamIds in this store
         const [excludedStoreId, excludedStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(excludedFullStreamId);
@@ -69,8 +68,8 @@ class StoresUserStreams extends UserStreams {
     } else {
       excludedIds = params.excludedIds;
     }
-    
-    // -- create result ------//
+
+    // ------- create result ------//
     let res = [];
 
     // *** root query we just expose stores handles & local streams
@@ -86,8 +85,7 @@ class StoresUserStreams extends UserStreams {
       }
     }
 
-    //console.log('XXXXX', res);
-    //process.exit(1);
+    //------ Query Store -------------//
 
     const myParams = {
       id: streamId,
@@ -112,6 +110,15 @@ class StoresUserStreams extends UserStreams {
       res = treeUtils.filterTree(res, false, function (stream) { 
         return ! excludedIds.includes(stream.id);;
       });
+    }
+
+    if (storeId !== 'local') { // add Prefix
+      StreamsUtils.addStoreIdToStreams(storeId, res);
+      if (streamId === '*') { // add root stream
+        res = [StreamsUtils.sourceToStream(store, {
+          children: res,
+        })];
+      }
     }
 
     return res;

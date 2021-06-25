@@ -60,9 +60,27 @@ function storeIdAndStreamIdForStreamId(fullStreamId) {
   return ':' + storeId + ':' + sstreamId;
 }
 
+/**
+ * Add storeId to streamIds to parentIds of a tree
+ * Add storeId to "null" parentId
+ * @param {identifier} storeId 
+ * @param {Array<Streams>} streams 
+ */
+function addStoreIdToStreams(storeId, streams) {
+  for (const stream of streams) {
+    stream.id = streamIdForStoreId(stream.id, storeId);
+    if (stream.parentId) { 
+      stream.parentId = streamIdForStoreId(stream.parentId, storeId);
+    } else {
+      stream.parentId = streamIdForStoreId('*', storeId);
+    }
+    if (stream.children) addStoreIdToStreams(storeId, stream.children)
+  }
+}
 
 module.exports = {
-  sourceToStream: sourceToStream,
-  storeIdAndStreamIdForStreamId: storeIdAndStreamIdForStreamId,
-  streamIdForStoreId: streamIdForStoreId
+  sourceToStream,
+  storeIdAndStreamIdForStreamId,
+  streamIdForStoreId,
+  addStoreIdToStreams
 }

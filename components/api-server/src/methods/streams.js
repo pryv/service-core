@@ -73,14 +73,17 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     }
 
+   
     let streams = await stores.streams.get(context.user.id, 
       {
         id: streamId,
+        storeId: storeId,
         expandChildren: true,
         includeDeletionsSince: params.includeDeletionsSince,
         includeTrashed: params.includeTrashed || params.state === 'all',
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
+
 
     if (streamId !== '*') {
       const inResult = treeUtils.findById(streams, streamId);

@@ -14,7 +14,7 @@ const { UserStreams } = require('stores/interfaces/DataSource');
 const forbiddenForReadingStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
 
 const visibleStreamsTree = SystemStreamsSerializer.getReadable()
-UserStreams.applyDefaults(null, visibleStreamsTree);
+UserStreams.applyDefaults(visibleStreamsTree);
 
 module.exports = {
   visibleStreamsTree,
