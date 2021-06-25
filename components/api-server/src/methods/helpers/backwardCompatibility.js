@@ -60,7 +60,14 @@ function replaceWithNewPrefix(streamId: string): string {
   }
 }
 
-function changeStreamIdsPrefixInStreamQuery(context: MethodContext, params: mixed, result: Result, next: ApiCallback): void {
+function changeStreamIdsPrefixInStreamQuery(
+  isStreamIdPrefixBackwardCompatibilityActive: boolean,
+  context: MethodContext,
+  params: mixed,
+  result: Result,
+  next: ApiCallback
+): void {
+  if (! isStreamIdPrefixBackwardCompatibilityActive || context.disableBackwardCompatibility) return next();
   const streamsQueries: Array<StreamsQuery> = params.streams;
   const oldStyleStreamsQueries: Array<StreamsQuery> = [];
   for (const streamsQuery of streamsQueries) {

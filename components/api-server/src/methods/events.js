@@ -107,7 +107,7 @@ module.exports = async function (
     commonFns.getParamsValidation(methodsSchema.get.params),
     eventsGetUtil.transformArrayOfStringsToStreamsQuery,
     eventsGetUtil.validateStreamsQueriesAndSetStore,
-    changeStreamIdsPrefixInStreamQuery,
+    changeStreamIdsPrefixInStreamQuery.bind(null, isStreamIdPrefixBackwardCompatibilityActive), // using currying to pass "isStreamIdPrefixBackwardCompatibilityActive" argument
     eventsGetUtil.applyDefaultsForRetrieval,
     applyTagsDefaultsForRetrieval,
     streamQueryCheckPermissionsAndReplaceStars,
@@ -306,7 +306,7 @@ module.exports = async function (
      */
     function addnewEventStreamFromSource (store, eventsStream: ReadableStream) {
       let stream: ?ReadableStream;
-      if (isStreamIdPrefixBackwardCompatibilityActive) {
+      if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
         stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
       } else {
         stream = eventsStream;
@@ -362,18 +362,17 @@ module.exports = async function (
       },
       id: params.id 
     };
-    userEventsStorage.findOne(context.user, query, null, function (err, event) {
-      if (err) {
-        return next(errors.unexpectedError(err));
-      }
+    try {
+      const event: Event = await bluebird.fromCallback(cb => userEventsStorage.findOne(context.user, query, null, cb));
 
-      if (! event) {
-        return next(errors.unknownResource('event', params.id));
-      }
-      context.event = event; // keep for next stage
+      if (event == null) return next(errors.unknownResource('event', params.id));
+
+      context.event = event;
 
       next();
-    });
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 
   async function checkIfAuthorized(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -392,7 +391,7 @@ module.exports = async function (
 
     event.attachments = setFileReadToken(context.access, event.attachments);
 
-    if (isStreamIdPrefixBackwardCompatibilityActive) {
+    if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
       event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds);
     }
 
@@ -413,7 +412,9 @@ module.exports = async function (
 
       // To remove when streamId not necessary
       history.forEach(e => {
-        if (isStreamIdPrefixBackwardCompatibilityActive) e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
+        if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+          e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
+        }
         e.streamId = e.streamIds[0]
         return e;
       });
@@ -606,7 +607,9 @@ module.exports = async function (
     try {
       const newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
-      if (isStreamIdPrefixBackwardCompatibilityActive) newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
+      }
 
       // To remove when streamId not necessary
       newEvent.streamId = newEvent.streamIds[0];
@@ -844,7 +847,9 @@ module.exports = async function (
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
       }
 
-      if (isStreamIdPrefixBackwardCompatibilityActive) updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+      }
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
       result.event = updatedEvent;
@@ -949,9 +954,9 @@ module.exports = async function (
     
     // used only in the events creation and update
     if (event.streamIds != null && event.streamIds.length > 0) {
-
-      if (isStreamIdPrefixBackwardCompatibilityActive) event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds, false);
-
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds, false);
+      }
       const streamIdsNotFoundList: Array<string> = [];
       const streamIdsTrashed: Array<string> = [];
       for (streamId of event.streamIds) {
@@ -1216,7 +1221,9 @@ module.exports = async function (
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
       }
 
-      if (isStreamIdPrefixBackwardCompatibilityActive) updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+      }
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
 

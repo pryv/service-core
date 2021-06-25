@@ -98,7 +98,9 @@ module.exports = async function produceAccessesApiMethods(
       // Add apiEndpoind
       for (let i = 0; i < accesses.length; i++) {
         if (accesses[i].permissions != null) { // assert is personal access
-          if (isStreamIdPrefixBackwardCompatibilityActive) accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);  
+          if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+            accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);  
+          }
         }
         accesses[i].apiEndpoint = context.user.buildApiEndpoint(accesses[i].token);
       }
@@ -130,7 +132,7 @@ module.exports = async function produceAccessesApiMethods(
     try {
       const deletions: Array<Access> = await bluebird.fromCallback(cb => accessesRepository.findDeletions(context.user, query,  { projection: { calls: 0 } }, cb));
 
-      if (isStreamIdPrefixBackwardCompatibilityActive) {
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         for (let access of deletions) {
           if (access.permissions == null) continue;
           access.permissions = changeStreamIdsInPermissions(access.permissions);
@@ -172,7 +174,9 @@ module.exports = async function produceAccessesApiMethods(
       ));
     }
     
-    if (isStreamIdPrefixBackwardCompatibilityActive) params.permissions = changeStreamIdsInPermissions(params.permissions, false);
+    if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+      params.permissions = changeStreamIdsInPermissions(params.permissions, false);
+    }
     
     const access = context.access;
     if (access == null) 

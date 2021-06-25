@@ -77,7 +77,9 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
     streams = streams.concat(systemStreams);
     
     if (params.parentId) {
-      if (isStreamIdPrefixBackwardCompatibilityActive) params.parentId = replaceWithNewPrefix(params.parentId);
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        params.parentId = replaceWithNewPrefix(params.parentId);
+      }
 
       const parent = treeUtils.findById(streams, params.parentId);
       if (parent == null) {
@@ -104,7 +106,9 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       }
     }
 
-    if (isStreamIdPrefixBackwardCompatibilityActive) streams = changePrefixIdForStreams(streams);
+    if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+      streams = changePrefixIdForStreams(streams);
+    }
 
     result.streams = streams;
     next();
@@ -216,7 +220,9 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
    */
   function forbidSystemStreamsActions (context, params, result, next) {
     if (params.id != null) {
-      if (isStreamIdPrefixBackwardCompatibilityActive) params.id = replaceWithNewPrefix(params.id);
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        params.id = replaceWithNewPrefix(params.id);
+      }
 
       if (SystemStreamsSerializer.isSystemStreamId(params.id)) {
         return next(errors.invalidOperation(
@@ -225,7 +231,9 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       }
     }
     if (params.parentId != null) {
-      if (isStreamIdPrefixBackwardCompatibilityActive) params.parentId = replaceWithNewPrefix(params.parentId);
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        params.parentId = replaceWithNewPrefix(params.parentId);
+      }
       
       if (SystemStreamsSerializer.isSystemStreamId(params.parentId)) {
         return next(errors.invalidOperation(
