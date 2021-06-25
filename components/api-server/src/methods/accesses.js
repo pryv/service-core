@@ -258,7 +258,7 @@ module.exports = async function produceAccessesApiMethods(
     return next();
 
     async function ensureStream (permission) {
-      if (! permission.streamId) return ;
+      if (! permission.streamId || permission.streamId === '*' || ! permission.defaultName) return ; // we could also have tested "defaultName"
 
 
       const streamsRepository = storageLayer.streams;
@@ -585,6 +585,7 @@ module.exports = async function produceAccessesApiMethods(
     // NOT REACHED
 
     function checkPermission(permission, done) {
+     
       if (permission.streamId === '*') {
         // cleanup ignored properties just in case
         delete permission.defaultName;

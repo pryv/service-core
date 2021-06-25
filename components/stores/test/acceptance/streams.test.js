@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 describe('Stores Streams', function() {
-  let user, username, password, access, appAccessDummy;
+  let user, username, password, access, appAccessDummy, appAccessMaster;
   let personalToken;
   let mongoFixtures;
   
@@ -37,6 +37,12 @@ describe('Stores Streams', function() {
       .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: streamId, level: 'manage'}, { streamId: ':dummy:', level: 'manage'}]});
     appAccessDummy = res.body.access;
     assert.exists(appAccessDummy);
+
+    const res2 = await coreRequest.post(accessesPath)
+      .set('Authorization', personalToken)
+      .send({ type: 'app', name: 'app access master', token: 'app-token-master', permissions: [{ streamId: '*', level: 'manage'}]});
+    appAccessMaster = res2.body.access;
+    assert.exists(appAccessMaster);
   });
 
   after(async function() {
@@ -68,6 +74,22 @@ describe('Stores Streams', function() {
     assert.equal(streams[0].children.length,1);
     assert.equal(streams[1].id,':dummy:');
     assert.equal(streams[2].id,':_audit:');
+  });
+
+  it('[XC20] Must retrieve "yo" streams and all stores when requesting "*"', async () => {
+    const res = await coreRequest
+      .get(streamsPath)
+      .set('Authorization', appAccessMaster.token)
+      .query({});
+    const streams = res.body.streams;
+    console.log(streams);
+    assert.exists(streams);
+    assert.equal(streams.length,4);
+    assert.equal(streams[0].id,':dummy:');
+    assert.equal(streams[1].id,':faulty:');
+    assert.equal(streams[2].id,':_audit:');
+    assert.equal(streams[3].id,streamId);
+    assert.equal(streams[3].children.length,1);
   });
 
 });

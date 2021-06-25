@@ -373,14 +373,10 @@ Object.freeze(PermissionLevels);
 
   /** ------------ STREAMS ------------- */
 
-  canListAnyStream () {
-    return this.isPersonal();
-  }
-
   async canListStream (streamId) {
     if (this.isPersonal()) return true;
     const level = await this._getStreamPermissionLevel(streamId);
-    return level && isHigherOrEqualLevel(level, 'read');
+    return (level && isHigherOrEqualLevel(level, 'read')) ? true : false;
   }
 
   async canCreateChildOnStream(streamId) {

@@ -84,7 +84,6 @@ class StoresUserStreams extends UserStreams {
         }
       }
     }
-
     //------ Query Store -------------//
 
     const myParams = {

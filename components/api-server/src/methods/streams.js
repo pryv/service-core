@@ -65,14 +65,12 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
     }
     
-
     let streamId = params.id || params.parentId || '*';
 
     let storeId = params.storeId; // might me null
     if (! storeId) {
       [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     }
-
    
     let streams = await stores.streams.get(context.user.id, 
       {
@@ -84,12 +82,14 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
 
+    console.log('XXXX context.access.canListStream', streams);
+
     if (streamId !== '*') {
       const inResult = treeUtils.findById(streams, streamId);
       if (!inResult) {
         return next(errors.unknownReferencedResource('unkown Stream:', 'id', streamId, null));
       }
-    } else if (! context.access.canListAnyStream()) { // request is "*" and not personal acess
+    } else if (! await context.access.canListStream('*')) { // request is "*" and not personal access
       // cherry pick accessible streams from result
       /********************************
        * This is not optimal (fetches all streams) and not accurate 
@@ -99,24 +99,16 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
        *  - pass a list of streamIds to store.streams.get() to get a consolidated answer 
        *********************************/
       const listables = context.access.getListableStreamIds();
-
       let filteredStreams = [];
       for (const listable of listables) {
-        if (true || storeId === listable.storeId) {
-          if (listable.streamId === '*' && listable.storeId === 'local') { // -- Break here => /!\ ignore other permissions for this store
-            filteredStreams = streams;
-            break;
+        const fullStreamId = StreamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
+        const inResult = treeUtils.findById(streams, fullStreamId);
+        if (inResult) {
+          const copy = _.cloneDeep(inResult);
+          if (! copy.parentId || ! await context.access.canListStream(copy.parentId)) {
+            copy.parentId = null;
           }
-          
-          const fullStreamId = StreamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
-          const inResult = treeUtils.findById(streams, fullStreamId);
-          if (inResult) {
-            const copy = _.cloneDeep(inResult);
-            if (! copy.parentId || ! await context.access.canListStream(copy.parentId)) {
-              copy.parentId = null;
-            }
-            filteredStreams.push(copy);
-          }
+          filteredStreams.push(copy);
         }
       }
       streams = filteredStreams;

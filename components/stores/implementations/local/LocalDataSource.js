@@ -56,11 +56,13 @@ class LocalDataSource extends DataSource {
 
 class LocalUserStreams extends UserStreams {
   async get(uid, params) {
+
+   
     let streams = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
     if (! params.hideSystemStreams) {
      streams = streams.concat(SystemStreamUtils.visibleStreamsTree);
     }
-
+  
     // BAd BaD -- To be optimized 
     streams = JSON.parse(JSON.stringify(streams));
     if (params.id && params.id !== '*') {

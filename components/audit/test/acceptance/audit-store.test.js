@@ -72,13 +72,20 @@ describe('Audit Streams and Events', function () {
   });
 
   describe('streams.get', () => {
-    it('[7SGO] must retrive a list of available streams', async() => { 
+    it('[7SGO] must retrive a list of available streams appAccess', async() => { 
       const res = await coreRequest
         .get(streamsPath)
+        .query({parentId: ':_audit:'})
         .set('Authorization', appAccess.token);
       console.log('TEST 75GO', res.body);
     });
-
+    it('[XP27] must retrive a list of available streams personal', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .query({parentId: ':_audit:'})
+        .set('Authorization', personalToken);
+      console.log('TEST XP27', res.body);
+    });
   });
 
   describe('events.get', () => {
