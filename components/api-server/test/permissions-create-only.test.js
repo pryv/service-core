@@ -522,7 +522,7 @@ describe('permissions create-only level', () => {
           .set('Authorization', createOnlyToken)
           .query({ state: 'all' });
         const streams = res.body.streams;
-        assert.equal(streams.length, 1);
+        assert.equal(streams.length, 2);
         const stream = streams[0];
         assert.equal(stream.id, streamCreateOnlyId);
       });

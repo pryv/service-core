@@ -17,7 +17,7 @@ function sourceToStream(source, extraProperties) {
   return Object.assign({
     id: ':' + source.id + ':',
     name: source.name,
-    parentId: null,
+    parentId: null,  
     created: DataSource.UNKOWN_DATE,
     modified: DataSource.UNKOWN_DATE,
     createdBy: DataSource.BY_SYSTEM,

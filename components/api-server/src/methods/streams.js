@@ -84,7 +84,6 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
 
-
     if (streamId !== '*') {
       const inResult = treeUtils.findById(streams, streamId);
       if (!inResult) {
@@ -100,11 +99,11 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
        *  - pass a list of streamIds to store.streams.get() to get a consolidated answer 
        *********************************/
       const listables = context.access.getListableStreamIds();
-      
+
       let filteredStreams = [];
       for (const listable of listables) {
-        if (storeId === listable.storeId) {
-          if (listable.streamId === '*') { // -- Break here => /!\ ignore other permissions for this store
+        if (true || storeId === listable.storeId) {
+          if (listable.streamId === '*' && listable.storeId === 'local') { // -- Break here => /!\ ignore other permissions for this store
             filteredStreams = streams;
             break;
           }
@@ -113,7 +112,9 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
           const inResult = treeUtils.findById(streams, fullStreamId);
           if (inResult) {
             const copy = _.cloneDeep(inResult);
-            delete copy.parentId;
+            if (! copy.parentId || ! await context.access.canListStream(copy.parentId)) {
+              copy.parentId = null;
+            }
             filteredStreams.push(copy);
           }
         }

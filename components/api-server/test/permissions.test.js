@@ -263,14 +263,19 @@ describe('[ACCP] Access permissions', function () {
     // note: personal (i.e. full) access is implicitly covered by streams/events tests
 
     it('[BSFP] `get` must only return streams for which permissions are defined', function (done) {
-      request.get(basePath, token(1)).query({state: 'all'}).end(function (res) {
-        res.body.streams.should.eql([
+      request.get(basePath, token(1)).query({state: 'all'}).end(async function (res) {
+        const testDataCopy = _.cloneDeep(testData.streams);
+        testDataCopy[0].parentId = null;
+        testDataCopy[1].parentId = null;
+        testDataCopy[2].children[0].parentId = null;
+        const expected = [
           // must not include inaccessible parentIds
-          _.omit(testData.streams[0], 'parentId'),
-          _.omit(testData.streams[1], 'parentId'),
-          _.omit(testData.streams[2].children[0], 'parentId')
-        ]);
-
+          testDataCopy[0],
+          testDataCopy[1],
+          testDataCopy[2].children[0]
+        ];
+        await validation.addStoreStreams(expected, ['_audit'], true);
+        res.body.streams.should.eql(expected);
         done();
       });
     });
