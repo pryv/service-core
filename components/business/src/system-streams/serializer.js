@@ -284,13 +284,17 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * Return true if the provided streamId is a system stream
-   * 
-   * @param {string} streamId 
-   * @returns {boolean} 
+   * Returns true if the provided streamId is an account system stream
    */
-  static isAccountStreamId(streamId: string): ?boolean {
+  static isAccountStreamId(streamId: string): boolean {
     return SystemStreamsSerializer.getAccountMapWithOptions()[streamId] != null;
+  }
+
+  /**
+   * Returns true if the provided streamId is a system stream
+   */
+  static isSystemStreamId(streamId: string): boolean {
+    return SystemStreamsSerializer.getAllMap()[streamId] != null;
   }
 
   /**
@@ -378,7 +382,12 @@ class SystemStreamsSerializer {
   */
   static addPrivatePrefixToStreamId(streamId: string): string {
     const streamIdWithPrefix = SystemStreamsSerializer.privateStreamIdWithoutPrefixToWith[streamId];
-    return streamIdWithPrefix ? streamIdWithPrefix : streamId;
+    if (streamIdWithPrefix == null) throw new Error('trying to call addCustomerPrefixToStreamId() with non-private streamId: ' + streamId)
+    return streamIdWithPrefix;
+  }
+
+  static isPrivateSystemStreamId(streamId: string): boolean {
+    return SystemStreamsSerializer.privateStreamIdWithoutPrefixToWith[streamId] != null;
   }
 
   /**
@@ -387,7 +396,12 @@ class SystemStreamsSerializer {
   */
   static addCustomerPrefixToStreamId(streamId: string): string {
     const streamIdWithPrefix = SystemStreamsSerializer.customerStreamIdWithoutPrefixToWith[streamId];
-    return streamIdWithPrefix ? streamIdWithPrefix : streamId;
+    if (streamIdWithPrefix == null) throw new Error('trying to call addCustomerPrefixToStreamId() with non-customer streamId: ' + streamId)
+    return streamIdWithPrefix;
+  }
+
+  static isCustomerSystemStreamId(streamId: string): boolean {
+    return SystemStreamsSerializer.customerStreamIdWithoutPrefixToWith[streamId] != null;
   }
 
   static addCorrectPrefixToAccountStreamId(streamId: string): string {

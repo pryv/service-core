@@ -11,6 +11,7 @@ const Paths = require('./Paths');
 const _ = require('lodash');
 const middleware = require('middleware');
 const { setMethodId } = require('middleware');
+const tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues;
 
 import type Application  from '../application';
 
@@ -24,7 +25,12 @@ module.exports = function (expressApp: express$Application, app: Application) {
     setMethodId('accesses.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      api.call(req.context, req.query, methodCallback(res, next, 200));
+      const params = _.extend({}, req.query);
+      tryCoerceStringValues(params, {
+        includeExpired: 'boolean',
+        includeDeletions: 'boolean',
+      });
+      api.call(req.context, params, methodCallback(res, next, 200));
   });
 
   expressApp.post(Paths.Accesses, 

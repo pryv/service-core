@@ -34,7 +34,7 @@ const { StreamsUtils } = require('stores');
   */
 
 /**
- * For retrocompatibility with older streams parameter ['A', 'B'] transform it to streams query [{any: ['A', 'B']}]
+ * For backwardCompatibility with older streams parameter ['A', 'B'] transform it to streams query [{any: ['A', 'B']}]
  * Takes care of grouping by store. ['A', 'B', ':_audit:xx'] => [{any: ['A', 'B']}, {any: ':audit:xx'}]
  * @param {Array.<StreamQuery>} arrayOfQueries 
  * @throws - Error if mixed strings and other are found in array

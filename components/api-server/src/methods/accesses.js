@@ -25,8 +25,10 @@ const accessSchema = require('../schema/access');
 const string = require('./helpers/string');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStores } = require('stores');
+
+const { changeStreamIdsInPermissions } = require('./helpers/backwardCompatibility');
 
 import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'business';
@@ -57,13 +59,15 @@ module.exports = async function produceAccessesApiMethods(
   updatesSettings: UpdatesSettingsHolder, 
   storageLayer: StorageLayer) 
 {
+  const config = await getConfig();
   const logger = getLogger('methods:accesses');
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
   const stores = await getStores();
 
-  // RETRIEVAL
+  const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
+  // RETRIEVAL
   api.register('accesses.get',
     commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.get.params),
@@ -71,8 +75,8 @@ module.exports = async function produceAccessesApiMethods(
     includeDeletionsIfRequested
   );
 
-  function findAccessibleAccesses(context, params, result, next) {
-    const currentAccess = context.access;
+  async function findAccessibleAccesses(context, params, result, next) {
+    const currentAccess: Access = context.access;
     const accessesRepository = storageLayer.accesses;
     const query = {};
     
@@ -84,45 +88,39 @@ module.exports = async function produceAccessesApiMethods(
       query.createdBy = currentAccess.id;
     }
 
-    accessesRepository.find(context.user, query, dbFindOptions, function (err, accesses) {
-      if (err != null) return next(errors.unexpectedError(err)); 
-      
-      // We'll perform a few filter steps on this list, so let's start a chain.
-      let chain = _.chain(accesses);
-        
-      // Filter expired accesses (maybe)
-      chain = maybeFilterExpired(params, chain);
+    try {
+      let accesses: Array<Access> = await bluebird.fromCallback(cb => accessesRepository.find(context.user, query, dbFindOptions, cb));
 
-      // Return the chain result.
-      result.accesses = chain.value();
-
-      // Add apiEndpoind
-      for (let i = 0; i < result.accesses.length; i++) {
-        result.accesses[i].apiEndpoint = context.user.buildApiEndpoint(result.accesses[i].token);
+      if (excludeExpired(params)) {
+        accesses = accesses.filter(a => ! isAccessExpired(a));
       }
 
+      // Add apiEndpoind
+      for (let i = 0; i < accesses.length; i++) {
+        if (accesses[i].permissions != null) { // assert is personal access
+          if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+            accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);  
+          }
+        }
+        accesses[i].apiEndpoint = context.user.buildApiEndpoint(accesses[i].token);
+      }
+
+      result.accesses = accesses;
+
       next();
-    });
-    
-    // Depending on 'includeExpired' in the query string, adds a filter to
-    // `chain` that filters expired accesses.
-    // 
-    function maybeFilterExpired(params, chain: lodash$Chain<Access>) {
-      const includeExpiredParam = params.includeExpired;
-                  
-      // If we also want to see expired accesses, don't filter them.
-      if (includeExpiredParam === 'true' || includeExpiredParam === '1') 
-        return chain;
-      
-      return chain.reject(
-        a => isAccessExpired(a));
+    } catch (err) {
+      return next(errors.unexpectedError(err)); 
+    }
+
+    function excludeExpired(params: mixed): boolean {
+      return ! params.includeExpired;
     }
   }
 
-  function includeDeletionsIfRequested(context, params, result, next) {
+  async function includeDeletionsIfRequested(context, params, result, next) {
     if (params.includeDeletions == null) { return next(); }
 
-    const currentAccess = context.access;
+    const currentAccess: Access = context.access;
     const accessesRepository = storageLayer.accesses;
 
     const query = {};
@@ -131,12 +129,21 @@ module.exports = async function produceAccessesApiMethods(
       query.createdBy = currentAccess.id;
     }
 
-    accessesRepository.findDeletions(context.user, query,  { projection: { calls: 0 } },
-      function (err, deletions) {
-        if (err) { return next(errors.unexpectedError(err)); }
-        result.accessDeletions = deletions;
-        next();
-      });
+    try {
+      const deletions: Array<Access> = await bluebird.fromCallback(cb => accessesRepository.findDeletions(context.user, query,  { projection: { calls: 0 } }, cb));
+
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        for (let access of deletions) {
+          if (access.permissions == null) continue;
+          access.permissions = changeStreamIdsInPermissions(access.permissions);
+        }
+      }
+      result.accessDeletions = deletions;
+
+      next();
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 
 
@@ -167,6 +174,9 @@ module.exports = async function produceAccessesApiMethods(
       ));
     }
     
+    if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+      params.permissions = changeStreamIdsInPermissions(params.permissions, false);
+    }
     
     const access = context.access;
     if (access == null) 

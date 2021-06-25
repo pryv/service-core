@@ -67,13 +67,18 @@ class MethodContext {
   methodId: ?string;
   stores: Store;
 
+  /**
+   * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
+   */
+  disableBackwardCompatibility: boolean;
+
   constructor(
     source: ContextSource,
     username: string,
     auth: ?string,
     customAuthStepFn: ?CustomAuthFunction,
     eventsStorage: ?StorageLayer,
-    headers: ?{},
+    headers: Map<string, any>,
     query: ?{},
   ) {
     this.source = source;
@@ -93,6 +98,9 @@ class MethodContext {
     SystemStreamsSerializer.getSerializer(); // ensure it's loaded
     if (auth != null) this.parseAuth(auth);
     this.originalQuery = query;
+    if (headers != null) {
+      this.disableBackwardCompatibility = headers['disable-backward-compatibility-prefix'] || false;
+    }
   }
 
   // Extracts access token and optional caller id from the given auth string, 
