@@ -17,7 +17,7 @@ const timestamp = require('unix-timestamp');
 
 describe('(System stream id) prefix backward-compatibility', () => {
 
-  const DISABLE_BACKWARD_COMPATIBILITY_PARAM = 'disable-backward-compatibility';
+  const DISABLE_BACKWARD_COMPATIBILITY_PARAM = 'disable-backward-compatibility-prefix';
 
   const DOT = '.';
   const PRYV_PREFIX = ':_system:';

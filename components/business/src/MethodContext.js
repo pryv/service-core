@@ -99,7 +99,7 @@ class MethodContext {
     if (auth != null) this.parseAuth(auth);
     this.originalQuery = query;
     if (headers != null) {
-      this.disableBackwardCompatibility = headers['disable-backward-compatibility'] || false;
+      this.disableBackwardCompatibility = headers['disable-backward-compatibility-prefix'] || false;
     }
   }
 
