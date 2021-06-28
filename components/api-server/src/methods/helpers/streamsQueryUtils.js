@@ -34,8 +34,8 @@ const { StreamsUtils } = require('stores');
   */
 
 /**
- * For retrocompatibility with older streams parameter ['A', 'B'] transform it to streams query [{any: ['A', 'B']}]
- * Takes care of grouping by store. ['A', 'B', '.audit-xx'] => [{any: ['A', 'B']}, {any: '.audit-xx'}]
+ * For backwardCompatibility with older streams parameter ['A', 'B'] transform it to streams query [{any: ['A', 'B']}]
+ * Takes care of grouping by store. ['A', 'B', ':_audit:xx'] => [{any: ['A', 'B']}, {any: ':audit:xx'}]
  * @param {Array.<StreamQuery>} arrayOfQueries 
  * @throws - Error if mixed strings and other are found in array
  */
@@ -79,7 +79,7 @@ exports.validateStreamsQueriesAndSetStore = validateStreamsQueriesAndSetStore;
 
 /**
  * throw an error if streamQuery is not of the form {any: all: not: } with at least one of any or all 
- * [{any: ['A', 'B', '.email']}, {any: '.audit-xx'}] => [{any: ['A', 'B', '.email'], storeId: 'local'}, {any: 'xx', storeId: 'audit'}]
+ * [{any: ['A', 'B', '.email']}, {any: ':_audit:xx'}] => [{any: ['A', 'B', '.email'], storeId: 'local'}, {any: 'xx', storeId: 'audit'}]
  * @param {Array.<StreamQuery>} arrayOfQueries - the full request for error message
  * @param {StreamQuery} streamQuery 
  */

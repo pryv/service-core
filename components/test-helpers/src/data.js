@@ -19,7 +19,7 @@ const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users/repository');
 const User = require('business/src/users/User');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
@@ -42,7 +42,7 @@ exports.resetUsers = async () => {
         $in: SystemStreamsSerializer.getAccountStreamIds(),
       }
     }, cb));
-  const usersRepository = new UsersRepository(storage.user.events);
+  const usersRepository = await getUsersRepository(); 
   
   let i;
   let userObj: User;

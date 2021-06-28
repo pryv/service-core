@@ -21,9 +21,10 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const ErrorMessages = require('errors/src/ErrorMessages');
 const ErrorIds = require('errors/src/ErrorIds');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
 const { getStores, StreamsUtils } = require('stores');
+const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 
 SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 
@@ -42,9 +43,13 @@ SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 module.exports = async function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
   notifications, logging, auditSettings, updatesSettings) {
 
-  const stores = await getStores();
-  // RETRIEVAL
+  const config = await getConfig();
 
+  const stores = await getStores();
+
+  const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
+
+  // RETRIEVAL
   api.register('streams.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
     applyDefaultsForRetrieval,
@@ -65,6 +70,12 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
     }
     
+    if (params.parentId) {
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        params.parentId = replaceWithNewPrefix(params.parentId);
+      }
+    }
+
     let streamId = params.id || params.parentId || '*';
 
     let storeId = params.storeId; // might me null
@@ -119,6 +130,9 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       streams = streams[0].children;
     } 
 
+    if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+      streams = changePrefixIdForStreams(streams);
+    }
 
     result.streams = streams;
     next();
@@ -225,16 +239,23 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
    * @param {*} next 
    */
   function forbidSystemStreamsActions (context, params, result, next) {
-    let accountStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds();
     if (params.id != null) {
-      if (accountStreamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(params.id))) {
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        params.id = replaceWithNewPrefix(params.id);
+      }
+
+      if (SystemStreamsSerializer.isSystemStreamId(params.id)) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
         );
       }
     }
     if (params.parentId != null) {
-      if (accountStreamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId(params.parentId))) {
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        params.parentId = replaceWithNewPrefix(params.parentId);
+      }
+      
+      if (SystemStreamsSerializer.isSystemStreamId(params.parentId)) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
         );
