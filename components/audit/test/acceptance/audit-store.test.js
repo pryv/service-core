@@ -100,6 +100,7 @@ describe('Audit Streams and Events', function () {
         .query({parentId: ':_audit:accesses'})
         .set('Authorization', appAccess.token);
       console.log('TEST 75GO', res.body);
+      assert.equal(res.body.streams.length, 1);
     });
 
     it('[XP27] must retrive all available streams with a personal Token', async() => { 
@@ -107,7 +108,19 @@ describe('Audit Streams and Events', function () {
         .get(streamsPath)
         .query({parentId: ':_audit:accesses'})
         .set('Authorization', personalToken);
-      console.log('TEST XP27', res.body);
+      assert.isAtLeast(res.body.streams.length, 2);
+    });
+
+    it('[WOIG] must retrive list of availble actions', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .query({parentId: ':_audit:actions'})
+        .set('Authorization', appAccess.token);
+      assert.exists(res.body.streams);
+      assert.isAtLeast(res.body.streams.length, 1);
+      for (const stream of res.body.streams) {
+        assert.isTrue(stream.id.startsWith(':_audit:action-'), 'StreamId should starts With ":_audit:actions-", found: "' + stream.id+ '"');
+      }
     });
   });
 

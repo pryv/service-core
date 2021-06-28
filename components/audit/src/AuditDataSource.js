@@ -72,9 +72,41 @@ class AuditUserStreams extends UserStreams {
 
     // list accesses
     if (params.id === 'accesses') {
-      
+      const userStorage = await audit.storage.forUser(uid);
+      const accesses = userStorage.getAllAccesses();
+      if (! accesses) return [];
+      const res = accesses.map((access) => { return {
+        id: access.term,
+        name: access.term,
+        children: [],
+        parentId: 'accesses'
+      }});
+      return [{
+        id: 'accesses',
+        name: 'Accesses',
+        parentId: null,
+        children: res,
+      }];
     }
 
+     // list actions
+     if (params.id === 'actions') {
+      const userStorage = await audit.storage.forUser(uid);
+      const actions = userStorage.getAllActions();
+      if (! actions) return [];
+      const res = actions.map((action) => { return {
+        id: action.term,
+        name: action.term,
+        children: [],
+        parentId: 'actions'
+      }});
+      return [{
+        id: 'actions',
+        name: 'Actions',
+        parentId: null,
+        children: res,
+      }];
+    }
 
     if (params.id) {
       let parentId = null;
@@ -93,7 +125,7 @@ class AuditUserStreams extends UserStreams {
       }];
     } 
 
-    return streams;
+    return [];
   }
 }
 

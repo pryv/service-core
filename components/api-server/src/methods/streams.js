@@ -82,10 +82,12 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
 
+      
     if (streamId !== '*') {
-      const inResult = treeUtils.findById(streams, streamId);
+      const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
+      const inResult = treeUtils.findById(streams, fullStreamId);
       if (!inResult) {
-        return next(errors.unknownReferencedResource('unkown Stream:', 'id', streamId, null));
+        return next(errors.unknownReferencedResource('unkown Stream:', 'id', fullStreamId, null));
       }
     } else if (! await context.access.canListStream('*')) { // request is "*" and not personal access
       // cherry pick accessible streams from result
@@ -99,8 +101,8 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       const listables = context.access.getListableStreamIds();
       let filteredStreams = [];
       for (const listable of listables) {
-        const fullStreamId = StreamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
-        const inResult = treeUtils.findById(streams, fullStreamId);
+        const listableFullStreamId = StreamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
+        const inResult = treeUtils.findById(streams, listableFullStreamId);
         if (inResult) {
           const copy = _.cloneDeep(inResult);
           if (! copy.parentId || ! await context.access.canListStream(copy.parentId)) {
