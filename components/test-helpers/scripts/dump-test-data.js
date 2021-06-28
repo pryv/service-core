@@ -9,7 +9,30 @@
  * See `../src/data` for details.
  */
 
-const testData = require('../src/data');
+const path = require('path');
+
+const boiler = require('@pryv/boiler').init({
+  appName: 'dump-test-data',
+  baseConfigDir: path.resolve(__dirname, '../../api-server/config/'),
+  extraConfigs: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  }, {
+    scope: 'defaults-paths',
+    file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
+  },{
+    plugin: require(path.resolve(__dirname, '../../api-server/config/components/systemStreams'))
+  },{
+    plugin: require(path.resolve(__dirname, '../../api-server/config/public-url'))
+  }, {
+    plugin: require(path.resolve(__dirname, '../../api-server/config/config-validation'))
+  }]
+});
+
+const { getConfig } = require('@pryv/boiler');
+const bluebird = require('bluebird');
+
 // don't add additional layer of ".." as this script is meant to be launched with babel-node as per the package.json script
 // it does require the "ln -s ../components components" symlink in the root node_modules/ of the projet
 const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin';
@@ -20,10 +43,19 @@ if (version == null) {
   process.exit(1);
 }
 
-testData.dumpCurrent(mongoFolder, version, function (err) {
-  if (err) {
+
+
+(async () => {
+  let hasErr = false;
+  await getConfig();
+  const testData = require('../src/data');
+  try {
+    await bluebird.fromCallback(cb => testData.dumpCurrent(mongoFolder, version, cb));
+  } catch (err) {
     console.error(err);
+    hasErr = true;
   }
-  process.exit(err ? 1 : 0);
-});
+  process.exit(hasErr ? 1 : 0);
+})();
+
 
