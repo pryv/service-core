@@ -20,7 +20,7 @@ const _ = require('lodash');
 const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
 
-const { getStores } = require('stores');
+const { getStores, StreamsUtils } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
@@ -186,7 +186,6 @@ module.exports = async function (
 
 
   async function streamQueryExpandStreams(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-
     async function expandStreamInContext(streamId, storeId) {
       // remove eventual '#' in streamQuery
       if (streamId.startsWith('#')) {
@@ -213,7 +212,11 @@ module.exports = async function (
       const tree = await stores.streams.get(context.user.id, query);
       
       // collect streamIds 
-      const result = treeUtils.collectPluck(tree, 'id');
+      const resultWithPrefix = treeUtils.collectPluck(tree, 'id');
+      // remove storePrefix 
+      const result = resultWithPrefix.map((fullStreamId) => {
+        return StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId)[1];
+      });
       return result;
     }
 
@@ -226,7 +229,6 @@ module.exports = async function (
 
     // delete streamQueries with no inclusions 
     params.streams = params.streams.filter(streamQuery => streamQuery.any || streamQuery.and);
-
     next();
   }
 

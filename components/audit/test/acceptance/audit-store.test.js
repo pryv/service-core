@@ -72,17 +72,40 @@ describe('Audit Streams and Events', function () {
   });
 
   describe('streams.get', () => {
-    it('[7SGO] must retrive a list of available streams appAccess', async() => { 
+    it('[U2PV] must retreive access and actions substrea,s ', async() => { 
       const res = await coreRequest
         .get(streamsPath)
         .query({parentId: ':_audit:'})
         .set('Authorization', appAccess.token);
-      console.log('TEST 75GO', res.body);
+      assert.deepEqual(res.body.streams, [
+        {
+          id: ':_audit:accesses',
+          name: 'Accesses',
+          parentId: ':_audit:',
+          children: [],
+          childrenHidden: true
+        },
+        {
+          id: ':_audit:actions',
+          name: 'Actions',
+          parentId: ':_audit:',
+          children: [],
+          childrenHidden: true
+        }
+      ]);
     });
-    it('[XP27] must retrive a list of available streams personal', async() => { 
+    it('[7SGO] must retrive only one accesses (stream) with appAccess', async() => { 
       const res = await coreRequest
         .get(streamsPath)
-        .query({parentId: ':_audit:'})
+        .query({parentId: ':_audit:accesses'})
+        .set('Authorization', appAccess.token);
+      console.log('TEST 75GO', res.body);
+    });
+
+    it('[XP27] must retrive all available streams with a personal Token', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .query({parentId: ':_audit:accesses'})
         .set('Authorization', personalToken);
       console.log('TEST XP27', res.body);
     });

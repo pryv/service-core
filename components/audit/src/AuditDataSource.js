@@ -52,7 +52,29 @@ class AuditDataSource extends DataSource {
 class AuditUserStreams extends UserStreams {
 
   async get(uid, params) {
-    let streams = [];
+
+    // -- List root streams (accesses & actions)
+    if (params.id === '*') {
+      return [{
+        id: 'accesses',
+        name: 'Accesses',
+        parentId: null,
+        children: [],
+        childrenHidden: true,
+      }, {
+        id: 'actions',
+        name: 'Actions',
+        parentId: null,
+        children: [],
+        childrenHidden: true,
+      }];
+    }
+
+    // list accesses
+    if (params.id === 'accesses') {
+      
+    }
+
 
     if (params.id) {
       let parentId = null;
@@ -61,18 +83,15 @@ class AuditUserStreams extends UserStreams {
       } else if (params.id.startsWith('action-')) {
         parentId = 'actions';
       }
-
-      streams.push({
+      // here check that this action or streams exists
+      return [{
         id: params.id,
         name: params.id,
         parentId: parentId,
         children: [],
-        childrenHidden: true,
         trashed: false,
-      });
-    } else {
-      throw(new Error('Audit stream query not supported :' + params));
-    }
+      }];
+    } 
 
     return streams;
   }

@@ -82,8 +82,6 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
 
-    console.log('XXXX context.access.canListStream', streams);
-
     if (streamId !== '*') {
       const inResult = treeUtils.findById(streams, streamId);
       if (!inResult) {
