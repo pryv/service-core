@@ -10,24 +10,29 @@
  */
 
 const path = require('path');
-
-const boiler = require('@pryv/boiler').init({
+require('@pryv/boiler').init({
   appName: 'dump-test-data',
   baseConfigDir: path.resolve(__dirname, '../../api-server/config/'),
-  extraConfigs: [{
-    scope: 'serviceInfo',
-    key: 'service',
-    urlFromKey: 'serviceInfoUrl'
-  }, {
-    scope: 'defaults-paths',
-    file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
-  },{
-    plugin: require(path.resolve(__dirname, '../../api-server/config/components/systemStreams'))
-  },{
-    plugin: require(path.resolve(__dirname, '../../api-server/config/public-url'))
-  }, {
-    plugin: require(path.resolve(__dirname, '../../api-server/config/config-validation'))
-  }]
+  extraConfigs: [
+    {
+      scope: 'serviceInfo',
+      key: 'service',
+      urlFromKey: 'serviceInfoUrl'
+    }, 
+    {
+      scope: 'defaults-paths',
+      file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
+    },
+    {
+      plugin: require(path.resolve(__dirname, '../../api-server/config/components/systemStreams'))
+    },
+    {
+      plugin: require(path.resolve(__dirname, '../../api-server/config/public-url'))
+    },
+    {
+      plugin: require(path.resolve(__dirname, '../../api-server/config/config-validation'))
+    }
+  ]
 });
 
 const { getConfig } = require('@pryv/boiler');
