@@ -44,12 +44,8 @@ exports.resetUsers = async () => {
     }, cb));
   const usersRepository = await getUsersRepository(); 
   
-  let i;
-  let userObj: User;
-  for (i = 0; i < users.length; i++){
-    let user = Object.assign({}, users[i]);
-    user = _.merge(customAccountProperties, user);
-    userObj = new User(user);
+  for (const user of users) {
+    const userObj: User = new User(user);
     await usersRepository.insertOne(userObj);
   }
 };
