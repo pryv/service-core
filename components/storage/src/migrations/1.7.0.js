@@ -14,8 +14,6 @@ const DOT: string = '.';
  * v1.7.0: 
  * - refactor streamId prefixes from '.' to ':_system:' and ':system'
  * - remove XX__unique properties from all events containing '.unique'
- * - remove tags, replacing them with streamIds? -> yes, with a property "previously tag" for backward compatibility in API
- * - 
  */
 module.exports = async function (context, callback) {
   console.log('V1.6.21 => v1.7.0 Migration started');
@@ -23,6 +21,7 @@ module.exports = async function (context, callback) {
   const UserEventsStorage = new (require('../user/Events'))(context.database);
   // get streams ids from the config that should be retrieved
   const uniqueProperties: Array<string> = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
+  const uniquePropertiesToDelete: Array<string> = uniqueProperties.map(s => s + '__unique');
   const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
   const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
   const usersRepository: UsersRepository = getUsersRepository();
@@ -50,36 +49,72 @@ module.exports = async function (context, callback) {
         console.log(`Migrating ${usersCounter + 1}st user`);
       }
       usersCounter++;
-      console.log('got', usernameEvent)
       await migrateUserEvents(usernameEvent, eventsCollection, oldToNewStreamIdsMap);
     }
   }
 
   async function migrateUserEvents(usernameEvent: {}, eventsCollection: {}, oldToNewStreamIdsMap: Map<string, string>, newSystemStreamIds: Array<string>): Promise<void> {
-    const eventsCursor = eventsCollection.find({ userId: usernameEvent.userId });
+    const eventsCursor: {} = eventsCollection.find({ userId: usernameEvent.userId });
+    const BUFFER_SIZE: number = 500;
+    let requests: Array<{}> = [];
     while (await eventsCursor.hasNext()) {
-      const event = await eventsCursor.next();
+      let event: Event = await eventsCursor.next();
+
+      if (! isSystemEvent(event)) continue;
+
       //console.log('got event', event);
-      if (event?.streamIds?.indexOf('.email') > 0) console.log('got event', event);
+
       const streamIds: Array<string> = translateStreamIdsIfNeeded(event.streamIds, oldToNewStreamIdsMap);
-      event.streamIds = streamIds;
-      for (const uniqueProp of uniqueProperties) {
-        delete event[buildProperty(uniqueProp)];
+
+      const request = {
+        updateOne: {
+          filter: { '_id': event._id },
+          update: {
+            $set: { streamIds },
+          }
+        }
       }
-      if (event?.streamIds?.indexOf(':system:email') > 0) console.log('translated to', event);
+      if (isUniqueEvent(event.streamIds)) request.updateOne.update['$unset'] = buildUniquePropsToDelete(event);
+
+      //console.log('translated to', JSON.stringify(request,null,2));
+      requests.push(request);
+      if (requests.length > BUFFER_SIZE) requests = await flushToDb(requests, eventsCollection);
+    }
+    if (requests.length > 1) await flushToDb(requests, eventsCollection);
+
+    function isUniqueEvent(streamIds: Array<string>): boolean {
+      if (streamIds.indexOf('.unique') > -1) return true;
+      return false;
+    }
+
+    function buildUniquePropsToDelete(event) {
+      const unsets = {};
+      for (const prop of uniquePropertiesToDelete) {
+        if (event[prop] != null) unsets[prop] = 1;
+      }
+      return unsets;
+    }
+
+    function isSystemEvent(event: Event): boolean {
+      if (event.streamIds == null) return false; // if event is deleted
+      for (const streamId of event.streamIds) {
+        if (streamId.startsWith('.')) return true; // can't use new check because it doesn't work with DOT anymore
+      }
+      return false;
+    }
+
+    async function flushToDb(events: Array<{}>, eventsCollection: {}): Promise<void> {
+      const result: {} = await eventsCollection.bulkWrite(events);
+      console.info(`flushed ${result.nModified} modifications into database`);
+      return [];
     }
 
     function translateStreamIdsIfNeeded(streamIds: Array<string>, oldToNewMap: Map<string, string>): Array<string> {
-      if (streamIds == null) return null;
       const translatedStreamIds: Array<string> = [];
       for (const streamId of streamIds) {
         translatedStreamIds.push(translateToNewOrNothing(streamId, oldToNewMap));
       }
       return translatedStreamIds;
-    }
-
-    function buildProperty(prop: string): string {
-      return prop + '__unique'; 
     }
   }
 
