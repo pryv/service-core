@@ -18,9 +18,6 @@ const SystemStream = require('business/src/system-streams/SystemStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
-const { safetyCleanDuplicate } = require('business/src/auth/service_register');
-
-
 
 /**
  * Repository of the users
@@ -359,7 +356,7 @@ if (update.password != null) {
     
     const query: {} = { $or: orClause };
     
-    const duplicateEvents = await bluebird.fromCallback(
+    const duplicateEvents: ?Array<Event> = await bluebird.fromCallback(
       cb => this.eventsStorage.find(
         this.collectionInfo,
         this.eventsStorage.applyQueryToDB(query),
@@ -381,7 +378,7 @@ if (update.password != null) {
       throw (
         errors.itemAlreadyExists(
           "user",
-          safetyCleanDuplicate(uniquenessErrors, null, user),
+          uniquenessErrors,
         )
       );
     }
