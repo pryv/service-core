@@ -412,14 +412,7 @@ class Database {
    * @param {Object} item
    * @param {Function} callback
    */
-  insertOne (collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback, options: Object) {
-    // default value for options 
-    const defaultOptions = { w: 1, j: true };
-    if (typeof options == null) {
-      options = defaultOptions;
-    } else {
-      options = { ...defaultOptions, ...options };
-    }
+  insertOne (collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback, options: Object = {}) {
 
     this.addUserIdIfneed(collectionInfo, item);
     this.getCollectionSafe(collectionInfo, callback, collection => {
@@ -435,13 +428,7 @@ class Database {
   /**
    * Inserts an array of items (each item must have a valid id already).
    */
-  insertMany (collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback, options: Object) {
-    const defaultOptions = { w: 1, j: true };
-    if (typeof options == null) {
-      options = defaultOptions;
-    } else {
-      options = { ...defaultOptions, ...options };
-    }
+  insertMany (collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback, options: Object = {}) {
     this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertMany(items, options, (err, res) => {
@@ -462,15 +449,7 @@ class Database {
    * @param {Object} update
    * @param {Function} callback
    */
-  updateOne (collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback, options: Object) {
-    // default value for options 
-    const defaultOptions = { w: 1, j: true };
-    if (typeof options == null) {
-      options = defaultOptions;
-    } else {
-      options = { ...defaultOptions, ...options };
-    }
-
+  updateOne (collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback, options: Object = {}) {
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, options, (err, res) => {
@@ -494,7 +473,7 @@ class Database {
   updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateMany(query, update, {w: 1, j:true}, callback);
+      collection.updateMany(query, update, {}, callback);
     });
   }
 
@@ -532,7 +511,7 @@ class Database {
   upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateOne(query, update, {w: 1, upsert: true, j: true}, callback);
+      collection.updateOne(query, update, {upsert: true}, callback);
     });
   }
 
@@ -546,7 +525,7 @@ class Database {
   deleteOne(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.deleteOne(query, {w: 1, j: true}, callback);
+      collection.deleteOne(query, {}, callback);
     });
   }
 
@@ -560,7 +539,7 @@ class Database {
   deleteMany(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.deleteMany(query, {w: 1, j: true}, callback);
+      collection.deleteMany(query, {}, callback);
     });
   }
 
