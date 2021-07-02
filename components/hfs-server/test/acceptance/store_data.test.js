@@ -17,7 +17,6 @@ const cuid = require('cuid');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
-const { getUsersRepository, User } = require('business/src/users');
 
 const { 
   spawnContext, produceMongoConnection, 
@@ -31,6 +30,8 @@ const metadata = require('metadata');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('store_data.test');
+
+const { getUsersRepository, User } = require('business/src/users');
 
 import type { IMetadataUpdaterService } from 'metadata';
 
