@@ -423,8 +423,8 @@ exports.removeTrackingProperties = function (items) {
  */
 exports.validateAccountEvents = function (actualAccountEvents) {
   // get streams ids from the config that should be retrieved
-  let expectedAccountStreams = SystemStreamsSerializer.getReadableAccountMapForTests();
 
+  const expectedAccountStreams = SystemStreamsSerializer.getReadableAccountMapForTests();
   // iterate through expected account events and check that they exists in actual
   // account events
   const expectedSreamIds = Object.keys(expectedAccountStreams);

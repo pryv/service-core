@@ -23,13 +23,6 @@ const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
 
 const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
 
-/**
- * v1.7.0: 
- * - refactor streamId prefixes from '.' to ':_system:' and ':system'
- * - remove XX__unique properties from all events containing '.unique'
- * - remove tags, replacing them with streamIds? -> yes, with a property "previously tag" for backward compatibility in API
- * - 
- */
 describe('Migration - 1.7.0', function () {
   this.timeout(20000);
 

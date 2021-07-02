@@ -72,24 +72,11 @@ backwardCompatibility:
 custom:
   systemStreams:
     account:
-    - id: insurancenumber
+    - id: email
       isIndexed: true
-      isShown: true
-      type: string/pryv
-      isRequiredInValidation: true
-      regexValidation: "^[0-9]*$"
-      regexError:
-        message: Cool error
-        code: cool-error
-    - id: phoneNumber
-      isEditable: true
-      isShown: true
-      type: string/pryv
-    - isIndexed: true
       isUnique: true
       isShown: true
       isEditable: true
       type: email/string
       name: Email
-      id: email
       isRequiredInValidation: true
