@@ -17,8 +17,10 @@ import type { Db as MongoDB, Collection }  from 'mongodb';
 
 
 type DatabaseOptions = {
-  j?: boolean,
-  w?: number, 
+  writeConcern: {
+    j?: boolean,
+    w?: number, 
+  },
   autoReconnect?: boolean,
   connectTimeoutMS?: number, 
   socketTimeoutMS?: number, 
@@ -58,8 +60,10 @@ class Database {
     this.connectionString = `mongodb://${authPart}${settings.host}:${settings.port}/${settings.name}`;
     this.databaseName = settings.name; 
     this.options = {
-      j: true, // Requests acknowledgement that the write operation has been written to the journal.
-      w: 1,   // Requests acknowledgement that the write operation has propagated.
+      writeConcern: {
+        j: true, // Requests acknowledgement that the write operation has been written to the journal.
+        w: 1,   // Requests acknowledgement that the write operation has propagated.
+      },
       connectTimeoutMS: settings.connectTimeoutMS, 
       socketTimeoutMS: settings.socketTimeoutMS, 
       useNewUrlParser: true,
