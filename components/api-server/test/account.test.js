@@ -185,7 +185,7 @@ describe('account', function () {
 
   function getFilesystemBlockSize(done) {
     const testFilePath = './file_test.txt';
-    const testValue = 0;
+    const testValue = '0';
     fs.writeFile(testFilePath, testValue, (err) => {
       if (err) throw err;
 

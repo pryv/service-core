@@ -87,6 +87,7 @@
     "tchannel": "^3.9.12",
     "unicode": "^12.1.0",
     "unix-timestamp": "^0.2.0",
+    "xmlhttprequest-ssl": "^1.6.2",
     "yargs": "^16.0.3"
   },
   "devDependencies": {
@@ -107,7 +108,7 @@
     "date-utils": "latest",
     "deep-equal": "latest",
     "eslint": "^7.0.0",
-    "eslint-plugin-flowtype": "latest",
+    "eslint-plugin-flowtype": "^5.8.0",
     "flow-coverage-report": "0.8.0",
     "flow-typed": "^3.2.1",
     "inspect": "^0.0.2",
@@ -126,7 +127,7 @@
     "wrench": "latest"
   },
   "engines": {
-    "node": "12.x",
+    "node": "16.x",
     "yarn": "1.x"
   }
 }
