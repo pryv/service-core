@@ -490,7 +490,7 @@ class Database {
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.findOneAndUpdate(query, update, {returnOriginal: false}, function (err, r) {
+      collection.findOneAndUpdate(query, update, { returnDocument: 'after' }, function (err, r) {
         if (err != null) {
           Database.handleDuplicateError(err);
           return callback(err);
