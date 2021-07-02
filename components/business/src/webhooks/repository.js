@@ -12,7 +12,7 @@ const _ = require('lodash');
 const Webhook = require('./Webhook');
 const WebhooksStorage = require('storage').StorageLayer.webhooks;
 const UserEventsStorage = require('storage').StorageLayer.events;
-const { getUsersRepository } = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 
 /** 
  * Repository of all Webhooks in this Pryv.io instance. 

@@ -6,8 +6,7 @@
  */
 const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { UsersRepository, getUsersRepository } = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { UsersRepository, getUsersRepository, User } = require('business/src/users');
 
 const DOT: string = '.';
 /**

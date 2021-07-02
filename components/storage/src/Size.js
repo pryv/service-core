@@ -6,8 +6,7 @@
  */
 const bluebird = require('bluebird');
 
-const { getUsersRepository, UsersRepositoryOptions } = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, UserRepositoryOptions, User } = require('business/src/users');
 
 class Size {
 
@@ -45,7 +44,7 @@ class Size {
     await usersRepository.updateOne(
       userObject,
       storageUsed,
-      UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID
+      UserRepositoryOptions.SYSTEM_USER_ACCESS_ID
     );
 
     return storageUsed;

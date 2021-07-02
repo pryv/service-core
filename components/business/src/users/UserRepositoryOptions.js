@@ -5,9 +5,8 @@
  * Proprietary and confidential
  */
 
+
 module.exports = {
-  UserLocalDirectory: require('./UserLocalDirectory'),
-  getUsersRepository: require('./repository').getUsersRepository,
-  UserRepositoryOptions: require('./UserRepositoryOptions'),
-  User: require('./User'),
+  SYSTEM_USER_ACCESS_ID: 'system',
+  ACCESS_TYPE_PERSONAL: 'personal',
 };

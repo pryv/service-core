@@ -11,6 +11,7 @@ const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
 const User = require('./User');
+const UserRepositoryOptions = require('./UserRepositoryOptions');
 const Event = require('business/src/events/Event');
 const Access = require('business/src/accesses/Access');
 const SystemStream = require('business/src/system-streams/SystemStream');
@@ -193,11 +194,11 @@ if (
       token: token,
       userId: userId,
       name: appId,
-      type: UsersRepositoryOptions.ACCESS_TYPE_PERSONAL,
+      type: UserRepositoryOptions.ACCESS_TYPE_PERSONAL,
       created: timestamp.now(),
-      createdBy: UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID,
+      createdBy: UserRepositoryOptions.SYSTEM_USER_ACCESS_ID,
       modified: timestamp.now(),
-      modifiedBy: UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID,
+      modifiedBy: UserRepositoryOptions.SYSTEM_USER_ACCESS_ID,
     };
     
     return await bluebird.fromCallback(
@@ -230,7 +231,7 @@ await bluebird.fromCallback(
     const transactionSession = await this.eventsStorage.database.startSession();
     await transactionSession.withTransaction(
       async () => {
-        let accessId = UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID;
+        let accessId = UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
         if (
           withSession && this.validateAllStorageObjectsInitialized() &&
             user.appId != null
@@ -420,12 +421,6 @@ async function getUsersRepository() {
   return usersRepository;
 }
 
-const UsersRepositoryOptions = {
-  SYSTEM_USER_ACCESS_ID: 'system',
-  ACCESS_TYPE_PERSONAL: 'personal',
-}
-
 module.exports = {
   getUsersRepository,
-  UsersRepositoryOptions
 };

@@ -11,7 +11,7 @@ const superagent = require('superagent');
 const ErrorIds = require('errors').ErrorIds;
 const errors = require('errors').factory;
 const ErrorMessages = require('errors/src/ErrorMessages');
-const User = require('business/src/users/User');
+const { User } = require('business/src/users');
 
 type OperationType = 'update' | 'delete';
 type AccountProperty = string;

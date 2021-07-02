@@ -17,10 +17,7 @@ const cuid = require('cuid');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
-const { getUsersRepository } = require('business/src/users/repository');
-const User = require('business/src/users/User');
-
-
+const { getUsersRepository, User } = require('business/src/users');
 
 const { 
   spawnContext, produceMongoConnection, 

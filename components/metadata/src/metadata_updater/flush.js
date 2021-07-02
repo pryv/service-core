@@ -10,7 +10,7 @@ const LRU = require('lru-cache');
 const bluebird = require('bluebird');
 
 const storage = require('storage');
-const { getUsersRepository } = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { PendingUpdate } = require('./pending_updates');
 
 import type { LRUCache }  from 'lru-cache';

@@ -22,7 +22,7 @@ const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const { getUsersRepository } = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 
 let usersRepository = null;
 

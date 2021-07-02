@@ -17,9 +17,8 @@ const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),
   ErrorIds = require('errors').ErrorIds,
   { getServiceRegisterConn } = require('business/src/auth/service_register'),
-  { getUsersRepository, UsersRepositoryOptions } = require('business/src/users/repository');
-  User = require('business/src/users/User'),
-  SystemStreamsSerializer = require('business/src/system-streams/serializer');
+  { getUsersRepository, UserRepositoryOptions, User } = require('business/src/users');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
   /**
  * @param api
  * @param usersStorage
@@ -227,7 +226,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
 
   async function updateAccount(context, params, result, next) {
     try {
-      const accessId = (context.access?.id) ? context.access.id : UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID
+      const accessId = (context.access?.id) ? context.access.id : UserRepositoryOptions.SYSTEM_USER_ACCESS_ID
       await usersRepository.updateOne(
         context.user,
         params.update,

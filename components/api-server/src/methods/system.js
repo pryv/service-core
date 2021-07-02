@@ -11,8 +11,7 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const { getUsersRepository } = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
