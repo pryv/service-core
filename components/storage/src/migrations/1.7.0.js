@@ -18,23 +18,21 @@ const DOT: string = '.';
 module.exports = async function (context, callback) {
   console.log('V1.6.21 => v1.7.0 Migration started');
 
-  const UserEventsStorage = new (require('../user/Events'))(context.database);
-  // get streams ids from the config that should be retrieved
   const uniqueProperties: Array<string> = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
   const uniquePropertiesToDelete: Array<string> = uniqueProperties.map(s => s + '__unique');
   const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
   const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
-  const usersRepository: UsersRepository = getUsersRepository();
+  const eventsCollection = await bluebird.fromCallback(cb =>
+    context.database.getCollection({ name: 'events' }, cb));
+  const userEventsStorage = new (require('../user/Events'))(context.database);
 
-  await migrateAccounts(UserEventsStorage);
-  console.log('Accounts were migrated, now creating the indexes');
-  //await createIndex(userAccountStreams, userAccountStreamIds, UserEventsStorage);
+  await migrateAccounts(eventsCollection);
+  console.log('Accounts were migrated, now rebuilding the indexes');
+  await rebuildIndexes(context.database, eventsCollection, userEventsStorage.getCollectionInfoWithoutUserId()),
   console.log('V1.6.21 => v1.7.0 Migration finished');
   callback();
 
-  async function migrateAccounts () {
-    const eventsCollection = await bluebird.fromCallback(cb =>
-      context.database.getCollection({ name: 'events' }, cb));
+  async function migrateAccounts (eventsCollection): Promise<void> {
     const usernameCursor = await eventsCollection.find({ 
       streamIds: { $in: ['.username'] },
       deleted: null,
@@ -103,7 +101,7 @@ module.exports = async function (context, callback) {
       return false;
     }
 
-    async function flushToDb(events: Array<{}>, eventsCollection: {}): Promise<void> {
+    async function flushToDb(events: Array<{}>, eventsCollection: {}): Promise<Array<{}>> {
       const result: {} = await eventsCollection.bulkWrite(events);
       console.info(`flushed ${result.nModified} modifications into database`);
       return [];
@@ -115,15 +113,17 @@ module.exports = async function (context, callback) {
         translatedStreamIds.push(translateToNewOrNothing(streamId, oldToNewMap));
       }
       return translatedStreamIds;
+
+      function translateToNewOrNothing(oldStreamId: string, oldToNewMap: Map<string, string>): string {
+        return oldToNewMap[oldStreamId] ? oldToNewMap[oldStreamId] : oldStreamId;
+      }
     }
   }
 
   function buildOldToNewStreamIdsMap(newSystemStreamIds: Array<string>): Map<string, string> {
-    //const oldSystemStreamIds: Array<string> = [];
     const oldToNewMap: {} = {};
     for (const newStreamId of newSystemStreamIds) {
       const oldStreamId: string = translateToOldPrefix(newStreamId);
-      //oldSystemStreamIds.push(oldStreamId);
       oldToNewMap[oldStreamId] = newStreamId;
     }
     return oldToNewMap;
@@ -133,30 +133,16 @@ module.exports = async function (context, callback) {
     }
   }
 
-  function translateToNewOrNothing(oldStreamId: string, oldToNewMap: Map<string, string>): string {
-    return oldToNewMap[oldStreamId] ? oldToNewMap[oldStreamId] : oldStreamId;
-  }
+  async function rebuildIndexes(database, eventsCollection, collectionInfo): Promise<void> {
+    await eventsCollection.dropIndexes();
 
-  async function createIndex (userAccountStreams, userAccountStreamIds, UserEventsStorage) {
-    console.log('Building new indexes');
-    
-    for (let i=0; i<userAccountStreamIds.length; i++) {
-      const streamId = userAccountStreamIds[i];
-      const streamData = userAccountStreams[streamId];
-      const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
-      if (streamData.isUnique) {
-        await bluebird.fromCallback(cb => UserEventsStorage.database.db.collection('events')
-          .createIndex({ [streamIdWithoutDot + '__unique']: 1 },
-            {
-              unique: true,
-              partialFilterExpression: {
-                [streamIdWithoutDot + '__unique']: { '$exists': true },
-                streamIds: SystemStreamsSerializer.options.STREAM_ID_UNIQUE
-              },
-              background: true
-            }, cb));
-      }
+    collectionInfo.useUserId = true;
+    collectionInfo = database.addUserIdToIndexIfNeeded(collectionInfo);
+    for (const index of collectionInfo.indexes) {
+      await eventsCollection.createIndex(index.index, index.options);
     }
   }
+
+  
 
 };
