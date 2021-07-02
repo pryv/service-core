@@ -40,7 +40,6 @@ module.exports = async function (context, callback) {
     });
 
     let usersCounter: number = 0;
-    let eventsCounter: number = 0;
     while (await usernameCursor.hasNext()) {
       const usernameEvent = await usernameCursor.next();
       if (usersCounter % 200 === 0) {
@@ -142,7 +141,4 @@ module.exports = async function (context, callback) {
       await eventsCollection.createIndex(index.index, index.options);
     }
   }
-
-  
-
 };
