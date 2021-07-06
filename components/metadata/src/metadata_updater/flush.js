@@ -94,7 +94,7 @@ class CustomUsersRepository {
   constructor(db: storage.StorageLayer) {
     this.db = db;
     
-    this.cache = LRU({ max: USER_LOOKUP_CACHE_SIZE });
+    this.cache = new LRU({ max: USER_LOOKUP_CACHE_SIZE });
    
   }
   async resolve(name: string): Promise<User> {
