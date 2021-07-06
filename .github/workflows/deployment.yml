@@ -16,6 +16,8 @@ jobs:
     steps:
     - name: Download master branch
       uses: actions/checkout@v2
+      with:
+        persist-credentials: false
 
     - name: Login to github
       uses: webfactory/ssh-agent@v0.4.1
