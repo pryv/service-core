@@ -67,7 +67,7 @@
     "influx": "^5.0.6",
     "jaeger-client": "^3.8.0",
     "js-yaml": "^3.11.0",
-    "lib-reporting": "git+ssh://git@github.com/pryv/lib-reporting",
+    "lib-reporting": "git+ssh://git@github.com:pryv/lib-reporting.git",
     "lodash": "^4.17.4",
     "lru-cache": "6.x",
     "mkdirp": "1.0.4",
