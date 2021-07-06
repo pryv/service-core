@@ -22,7 +22,7 @@ jobs:
     - name: Login to github
       uses: webfactory/ssh-agent@v0.4.1
       with:
-        ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
+        ssh-private-key: ${{ secrets.TECH_PRYV_SSH_KEY }}
           
     - name: Install Node.js with version ${{ matrix.node-version }}
       uses: actions/setup-node@v1
@@ -40,10 +40,6 @@ jobs:
 
     - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install
       run: sudo apt-get install unicode-data
-
-
-    - name: authenticate private repo
-      run: git config --global url."https://${{ secrets.SSH_PRYV_PRIVATE_KEY }}@github.com/".insteadOf ssh://git@github.com/
       
     # needed to run here, as we are fetching deps from private repos, inside docker builder is not authenticated
     - name: yarn setup
