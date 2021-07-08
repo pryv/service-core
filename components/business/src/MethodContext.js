@@ -97,7 +97,7 @@ class MethodContext {
     this.methodId = null;
     SystemStreamsSerializer.getSerializer(); // ensure it's loaded
     if (auth != null) this.parseAuth(auth);
-    this.originalQuery = query;
+    this.originalQuery = _.cloneDeep(query);
     if (this.originalQuery?.auth) delete this.originalQuery.auth;
     if (headers != null) {
       this.disableBackwardCompatibility = headers['disable-backward-compatibility-prefix'] || false;
