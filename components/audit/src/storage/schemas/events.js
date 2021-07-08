@@ -84,7 +84,12 @@ function eventFromDB(event, addStorePrefix) {
     event.streamIds = event.streamIds.map(addStorePrefixToId);
   }
   
-  event.trashed = (event.trashed === 1);
+  if (event.trashed === 1) {
+    event.trashed = true; 
+  } else {
+    delete event.trashed; // don't return it to API if false
+  }
+
   if (event.content) {
     event.content = JSON.parse(event.content);
   }

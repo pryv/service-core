@@ -123,13 +123,14 @@ describe('Audit logs events', () => {
 
   describe('GET /events', () => {
 
-    it('[0BK7] must not return null values', async () => {
+    it('[0BK7] must not return null values or trashed=false', async () => {
       const res = await get('/events', { streams: [':_audit:action-events.get']}, personalToken);
       const events = res.body.events;
       const event = events[0];
       for (const [key, val] of Object.entries(event)) {
         assert.isNotNull(val, `"null" property ${key} of event is present.`);
       }
+      if (event.trashed != null && event.trashed === false) assert.fail('trashed=false is present.');
     });
     it('[VBV0] must not return "auth" in "content:query"', async () => {
       await get('/events', { auth: actionsToken }, null);
