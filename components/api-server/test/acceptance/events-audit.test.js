@@ -101,10 +101,16 @@ describe('Audit logs events', () => {
       .send(payload);
   }
   async function get(path, query, token = auditToken) {
-    return await server.request()
+    if (token != null) {
+      return await server.request()
       .get('/' + username + path)
       .set('Authorization', token)
       .query(query);
+    } else { // to allow passing token in query
+      return await server.request()
+      .get('/' + username + path)
+      .query(query);
+    }
   }
   async function put(path, payload, query) {
     return await server.request()

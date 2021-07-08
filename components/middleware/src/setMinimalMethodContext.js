@@ -18,6 +18,7 @@ class MinimalMethodContext {
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
     }
     this.originalQuery = req.query;
+    delete this.originalQuery.auth;
   }
 }
 
