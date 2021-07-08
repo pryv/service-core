@@ -225,6 +225,8 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events'
         });
+        res.body.events.should.containEql(testData.events[8]); // activity/test
+        res.body.events.should.containEql(testData.events[9]); // activity/pryv
         done();
       });
     });
