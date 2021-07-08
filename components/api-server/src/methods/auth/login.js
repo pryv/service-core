@@ -9,7 +9,7 @@ const utils = require('utils');
 const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
-const { getUsersRepository, UsersRepositoryOptions } = require('business/src/users/repository');
+const { getUsersRepository, UserRepositoryOptions } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
@@ -119,12 +119,12 @@ module.exports = async function (api, userAccessesStorage, sessionsStorage, user
     
     function createAccess(access, context, callback) {
       _.extend(access, context.accessQuery);
-      context.initTrackingProperties(access, UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID);
+      context.initTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.insertOne(context.user, access, callback);
     }
     
     function updatePersonalAccess(access, context, callback) {
-      context.updateTrackingProperties(access, UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID);
+      context.updateTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);
     }
   }

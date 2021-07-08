@@ -16,7 +16,7 @@ const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const treeUtils = require('utils').treeUtils;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { getUsersRepository } = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
@@ -98,6 +98,7 @@ class MethodContext {
     SystemStreamsSerializer.getSerializer(); // ensure it's loaded
     if (auth != null) this.parseAuth(auth);
     this.originalQuery = query;
+    if (this.originalQuery?.auth) delete this.originalQuery.auth;
     if (headers != null) {
       this.disableBackwardCompatibility = headers['disable-backward-compatibility-prefix'] || false;
     }

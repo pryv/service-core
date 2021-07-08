@@ -11,15 +11,13 @@ const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
 const User = require('./User');
+const UserRepositoryOptions = require('./UserRepositoryOptions');
 const Event = require('business/src/events/Event');
 const Access = require('business/src/accesses/Access');
 const SystemStream = require('business/src/system-streams/SystemStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
-const { safetyCleanDuplicate } = require('business/src/auth/service_register');
-
-
 
 /**
  * Repository of the users
@@ -193,11 +191,11 @@ if (
       token: token,
       userId: userId,
       name: appId,
-      type: UsersRepositoryOptions.ACCESS_TYPE_PERSONAL,
+      type: UserRepositoryOptions.ACCESS_TYPE_PERSONAL,
       created: timestamp.now(),
-      createdBy: UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID,
+      createdBy: UserRepositoryOptions.SYSTEM_USER_ACCESS_ID,
       modified: timestamp.now(),
-      modifiedBy: UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID,
+      modifiedBy: UserRepositoryOptions.SYSTEM_USER_ACCESS_ID,
     };
     
     return await bluebird.fromCallback(
@@ -230,7 +228,7 @@ await bluebird.fromCallback(
     const transactionSession = await this.eventsStorage.database.startSession();
     await transactionSession.withTransaction(
       async () => {
-        let accessId = UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID;
+        let accessId = UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
         if (
           withSession && this.validateAllStorageObjectsInitialized() &&
             user.appId != null
@@ -358,7 +356,7 @@ if (update.password != null) {
     
     const query: {} = { $or: orClause };
     
-    const duplicateEvents = await bluebird.fromCallback(
+    const duplicateEvents: ?Array<Event> = await bluebird.fromCallback(
       cb => this.eventsStorage.find(
         this.collectionInfo,
         this.eventsStorage.applyQueryToDB(query),
@@ -380,7 +378,7 @@ if (update.password != null) {
       throw (
         errors.itemAlreadyExists(
           "user",
-          safetyCleanDuplicate(uniquenessErrors, null, user),
+          uniquenessErrors,
         )
       );
     }
@@ -420,12 +418,6 @@ async function getUsersRepository() {
   return usersRepository;
 }
 
-const UsersRepositoryOptions = {
-  SYSTEM_USER_ACCESS_ID: 'system',
-  ACCESS_TYPE_PERSONAL: 'personal',
-}
-
 module.exports = {
   getUsersRepository,
-  UsersRepositoryOptions
 };

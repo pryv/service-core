@@ -12,14 +12,20 @@ const path = require('path');
 require('@pryv/boiler').init({
   appName: 'metadata',
   baseConfigDir: path.resolve(__dirname, '../config'),
-  extraConfigs: [{
-    scope: 'serviceInfo',
-    key: 'service',
-    urlFromKey: 'serviceInfoUrl'
-  },{
-    scope: 'defaults-data',
-    file: path.resolve(__dirname, '../config/default-config.hjson')
-  }]
+  extraConfigs: [
+    {
+      scope: 'serviceInfo',
+      key: 'service',
+      urlFromKey: 'serviceInfoUrl'
+    },
+    {
+      scope: 'defaults-data',
+      file: path.resolve(__dirname, '../config/default-config.hjson')
+    },
+    {
+      plugin: require('api-server/config/components/systemStreams')
+    }
+  ]
 });
 const { getConfig, getLogger } = require('@pryv/boiler');
 

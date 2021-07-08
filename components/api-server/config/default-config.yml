@@ -68,3 +68,15 @@ backwardCompatibility:
   systemStreams:
     prefix:
       isActive: false
+
+custom:
+  systemStreams:
+    account:
+    - id: email
+      isIndexed: true
+      isUnique: true
+      isShown: true
+      isEditable: true
+      type: email/string
+      name: Email
+      isRequiredInValidation: true
