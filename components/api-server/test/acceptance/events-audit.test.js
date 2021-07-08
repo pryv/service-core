@@ -39,10 +39,14 @@ describe('Audit logs events', () => {
       content: charlatan.Lorem.characters(2),
     });
     await user.access({
-      permissions: [{
-        streamId: '*',
-        level: 'manage',
-      }],
+      permissions: [
+        {
+          streamId: '*', level: 'manage',
+        },
+        {
+          streamId: ':_system:account', level: 'read',
+        }
+        ],
       token: actionsToken,
       type: 'app',
     })
@@ -126,6 +130,9 @@ describe('Audit logs events', () => {
       .query(query);
   }
 
+  function toSystem(streamId) {
+    return SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+  }
 
   describe('GET /events', () => {
 
@@ -153,17 +160,11 @@ describe('Audit logs events', () => {
       assert.exists(event.content.error);
       assert.notExists(event.content.data);
     });
-    it('[3UVW] must not display expanded streams and streamsQuery parameter, but show them as they were provided in the request', async () => {
-      await get('/events', { streams: [streamId] }, actionsToken)
-      const res = await get('/events', { streams: [':_audit:action-events.get']}, personalToken);
-      const event = res.body.events[0];
-      console.log('got', event);
-      assert.notExists(event.content.query.streamsQuery);
-
-    }); // actually, maybe it's not the case
     it('[R8MS] must escape special characters', async () => {
       // makes server crash
-      const res = await get('/events', { streams: [':_audit:action-events.get"']}, personalToken); // trailing " (quote) in streamId parameter
+      //const res = await get('/events', { streams: [':_audit:action-events.get"']}, personalToken); // trailing " (quote) in streamId parameter
+      const res = await get('/events', { streams: [':_system:username"']}, personalToken); // trailing " (quote) in streamId parameter
+      console.log('got', res.body);
       assert.equal(res.status, 400, 'status should be 400');
     });
   });
