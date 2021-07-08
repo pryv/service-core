@@ -76,8 +76,8 @@ class UserDatabase {
     this.db = db;
   }
 
-  createEvent(event, defaulTime) {
-    const eventForDb = eventSchemas.eventToDB(event, defaulTime);
+  createEvent(event, defaultTime) {
+    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
     this.create.events.run(eventForDb);
   }
 

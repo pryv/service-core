@@ -125,7 +125,6 @@ describe('Audit logs events', () => {
 
     it('[0BK7] must not return null values', async () => {
       const res = await get('/events', { streams: [':_audit:action-events.get']}, personalToken);
-      console.log('got', JSON.stringify(res.body,null,2));
       const events = res.body.events;
       const event = events[0];
       for (const [key, val] of Object.entries(event)) {

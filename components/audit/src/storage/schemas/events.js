@@ -88,6 +88,10 @@ function eventFromDB(event, addStorePrefix) {
   if (event.content) {
     event.content = JSON.parse(event.content);
   }
+
+  for (key of Object.keys(event)) {
+    if (event[key] == null) delete event[key];
+  }
   return event;
 }
 
