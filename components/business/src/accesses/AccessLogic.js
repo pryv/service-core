@@ -70,9 +70,12 @@ Object.freeze(PermissionLevels);
     // if can selfAudit add :_audit: permission
     if (selfAudit) {
       this.permissions.push({
-        streamId: ':_audit:', 
+        streamId: ':_audit:access-' + this.id,
+        level: 'read'
+       }, {
+        streamId: ':_audit:actions', 
         limitations: {
-          'events.get': {streams: {all: ['access-' + this.id]}}
+          'events.get': {streams: {all: ['access-' + this.id]}},
         }, 
         level: 'read'});
     }

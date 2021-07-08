@@ -82,6 +82,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
 
+    console.log('XXXX findAccessibleStreams:', streamId, storeId, ' excludeds:', context.access.getCannotListStreamsStreamIds(storeId), ' listable:', context.access.getListableStreamIds());
       
     if (streamId !== '*') {
       const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);

@@ -131,6 +131,7 @@ describe('Audit Streams and Events', function () {
         .get(eventsPath)
         .set('Authorization', appAccess.token)
         .query({ streams: [':_audit:access-' + appAccess.id], fromTime: start, toTime: stop });
+      console.log('TJ8S res', res.body)
       assert.equal(res.status, 200);
       const logs = res.body.events;
       assert.isAtLeast(logs.length, 2);
