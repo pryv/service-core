@@ -152,14 +152,6 @@ describe('Audit logs events', () => {
       console.log('got', event);
       assert.notProperty(event.content.query, 'auth', 'token provided in query is present.');
     });
-    it('[SB29] must not return "data" in "error" if its is null', async () => {
-      await get('/events', {}, 'invalid-token');
-      const res = await get('/events', { streams: [':_audit:action-events.get']}, personalToken);
-      const event = res.body.events[0];
-      console.log('got', event);
-      assert.exists(event.content.error);
-      assert.notExists(event.content.data);
-    });
     it('[R8MS] must escape special characters', async () => {
       // makes server crash
       //const res = await get('/events', { streams: [':_audit:action-events.get"']}, personalToken); // trailing " (quote) in streamId parameter
