@@ -77,8 +77,19 @@ function validateStreamsQueriesAndSetStore(arrayOfQueries) {
 }
 exports.validateStreamsQueriesAndSetStore = validateStreamsQueriesAndSetStore;
 
+/**
+ * List of characters that are forbbidden in streamIds
+ */
 const forbiddenCharsMap = {
   '"': true,
+  '\0': true,
+  '\b': true,
+  '\t': true,
+  '\n': true,
+  '\r': true,
+  '\x1a': true,
+  '\'': true,
+  '\\': true,
 };
 
 /**
