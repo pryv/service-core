@@ -95,11 +95,11 @@ class UserDatabase {
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
 
   getLogsStream(params, addStorePrefix) {
-    const queryString = prepareLogQuery(params, );
+    const queryString = prepareLogQuery(params);
     logger.debug(queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
-   
+
     const iterateTransform = {
       next: function() {
         const res = iterateSource.next();

@@ -160,4 +160,14 @@ describe('Audit logs events', () => {
       assert.equal(res.status, 400, 'status should be 400');
     });
   });
+
+  describe('GET /audit/logs', () => {
+    it('[RV4W] must return a valid id field', async () => {
+      const res = await get('/audit/logs', {}, personalToken);
+      const logs = res.body.auditLogs;
+      for (const log of logs) {
+        assert.notEqual(log.id.substring(':_audit:'.length), 'undefined');
+      }
+    });
+  })
 });

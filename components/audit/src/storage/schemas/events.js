@@ -75,14 +75,15 @@ function addStorePrefixToId(streamId) {
  * transform events out of db
  */
 function eventFromDB(event, addStorePrefix) {
-  event.id = event.eventid;
-  delete event.eventid;
   event.streamIds = event.streamIds.split(' ');
 
   if (addStorePrefix) {
     event.id = addStorePrefixToId(event.eventid);
     event.streamIds = event.streamIds.map(addStorePrefixToId);
+  } else {
+    event.id = event.eventid;
   }
+  delete event.eventid;
   
   if (event.trashed === 1) {
     event.trashed = true; 
