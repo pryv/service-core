@@ -225,9 +225,20 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events'
         });
-        res.body.events.should.containEql(testData.events[8]); // activity/test
-        res.body.events.should.containEql(testData.events[9]); // activity/pryv
         done();
+      });
+    });
+
+    it('[4TWI] must refuse unsupported event types', function (done) {
+      var params = {
+        types: ['activity/asd asd'],
+        state: 'all'
+      };
+      request.get(basePath).query(params).end(function (res) {
+        validation.check(res, {
+          status: 400,
+          id: ErrorIds.invalidParametersFormat
+        }, done);
       });
     });
 
