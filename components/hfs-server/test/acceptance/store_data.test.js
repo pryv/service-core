@@ -17,10 +17,6 @@ const cuid = require('cuid');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
-
-
 
 const { 
   spawnContext, produceMongoConnection, 
@@ -34,6 +30,8 @@ const metadata = require('metadata');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('store_data.test');
+
+const { getUsersRepository, User } = require('business/src/users');
 
 import type { IMetadataUpdaterService } from 'metadata';
 
@@ -292,7 +290,7 @@ describe('Storing data in a HF series', function() {
         { streamIds: [parentStreamId], time: Date.now() / 1000 },
         attrs
       );
-      const usersRepository = new UsersRepository(storageLayer.events);
+      const usersRepository = await getUsersRepository(); 
       const user: User = await usersRepository.getById(userId);
       assert.isNotNull(user);
 
@@ -789,7 +787,7 @@ describe('Storing data in a HF series', function() {
           attrs
         );
 
-        const usersRepository = new UsersRepository(storageLayer.events);
+        const usersRepository = await getUsersRepository(); 
         const user: User = await usersRepository.getById(userId);
 
         assert.isNotNull(user);

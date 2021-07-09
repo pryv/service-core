@@ -17,8 +17,7 @@ const { getConfig } = require('@pryv/boiler');
 const { getApplication } = require('api-server/src/application');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
-const User = require('business/src/users/User');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository, User } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 
@@ -70,7 +69,7 @@ describe('registration: cluster', function() {
     app = getApplication();
     await app.initiate();
 
-    require('../src/methods/auth/register')(
+    await require('../src/methods/auth/register')(
       app.api,
       app.logging,
       app.storageLayer,
@@ -79,7 +78,7 @@ describe('registration: cluster', function() {
 
     request = supertest(app.expressApp);
 
-    usersRepository = new UsersRepository(app.storageLayer.events);
+    usersRepository = await getUsersRepository(); 
   });
   after(async function () {
     config.injectTestConfig({});
@@ -161,7 +160,7 @@ describe('registration: cluster', function() {
       it('[TCOM] should respond with the username and apiEndpoint', async () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
-        const usersRepository = new UsersRepository(app.storageLayer.events);
+        const usersRepository = await getUsersRepository(); 
         const user = await usersRepository.getAccountByUsername(userData.username, true);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));

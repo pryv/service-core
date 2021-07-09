@@ -11,8 +11,7 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
@@ -26,13 +25,13 @@ const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUti
  * @param logging
  * @param storageLayer
  */
-module.exports = function (
+module.exports = async function (
   systemAPI, userAccessesStorage, servicesSettings, api,
   logging, storageLayer
 ) {
 
   const registration = new Registration(logging, storageLayer, servicesSettings);
-  const usersRepository = new UsersRepository(storageLayer.events);
+  const usersRepository = await getUsersRepository(); 
   const userProfileStorage = storageLayer.profile;
 
   // ---------------------------------------------------------------- createUser

@@ -80,8 +80,8 @@ class UserDatabase {
     this.db = db;
   }
 
-  createEvent(event, defaulTime) {
-    const eventForDb = eventSchemas.eventToDB(event, defaulTime);
+  createEvent(event, defaultTime) {
+    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
     this.create.events.run(eventForDb);
   }
 
@@ -107,11 +107,11 @@ class UserDatabase {
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
 
   getLogsStream(params, addStorePrefix) {
-    const queryString = prepareLogQuery(params, );
+    const queryString = prepareLogQuery(params);
     logger.debug(queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
-   
+
     const iterateTransform = {
       next: function() {
         const res = iterateSource.next();
@@ -142,6 +142,10 @@ function prepareTermQuery(params = {}) {
 
 function prepareLogQuery(params = {}) {
   const ands = [];
+
+  if (params.type != null) {
+    ands.push('type = ' + params.type);
+  } 
 
   if (params.fromTime != null) {
     ands.push('time >= ' + params.fromTime);

@@ -16,7 +16,7 @@ const { axonMessaging } = require('messages');
 const { Notifications } = require('messages');
 const { getApplication } = require('api-server/src/application');
 
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getAPIVersion } = require('middleware/src/project_version');
@@ -97,7 +97,7 @@ class Server {
     const l = (topic) => getLogger(topic);
     const config = this.config;
     
-    require('./methods/system')(app.systemAPI,
+    await require('./methods/system')(app.systemAPI,
       app.storageLayer.accesses, 
       config.get('services'), 
       app.api, 
@@ -106,13 +106,13 @@ class Server {
     
     require('./methods/utility')(app.api, app.logging, app.storageLayer);
 
-    require('./methods/auth/login')(app.api, 
+    await require('./methods/auth/login')(app.api, 
       app.storageLayer.accesses, 
       app.storageLayer.sessions, 
       app.storageLayer.events, 
       config.get('auth'));
     
-    require('./methods/auth/register')(app.api, 
+    await require('./methods/auth/register')(app.api, 
       app.logging, 
       app.storageLayer, 
       config.get('services'));
@@ -322,7 +322,7 @@ class Server {
   async getUserCount(): Promise<Number> {
     let numUsers;
     try{
-      let usersRepository = new UsersRepository(app.storageLayer.events);
+      let usersRepository = await getUsersRepository(); 
       numUsers = await usersRepository.count();
     } catch (error) {
       this.logger.error(error, error);

@@ -6,8 +6,7 @@
  */
 const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 
 /**
  * v1.6.0: Account in events
@@ -23,7 +22,7 @@ module.exports = async function (context, callback) {
   // get streams ids from the config that should be retrieved
   const userAccountStreams = SystemStreamsSerializer.getAccountMap();
   const userAccountStreamIds = Object.keys(userAccountStreams);
-  let usersRepository = new UsersRepository(UserEventsStorage);
+  let usersRepository = await getUsersRepository(); 
 
   await migrateAccounts(UserEventsStorage);
   console.log('Accounts were migrated, now creating the indexes');

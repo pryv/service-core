@@ -22,7 +22,7 @@ describe('Syslog', () => {
     const e = _.merge({
         type: 'log/test',
         createdBy: createdBy,
-        streamIds: ['.audit-test'],
+        streamIds: [':_audit:test'],
         content: {
           action: 'events.get',
           message: 'hello',
@@ -42,7 +42,7 @@ describe('Syslog', () => {
 
       const logString = userid + 
       ' log/unkown createdBy:' + createdBy +
-      ' [".audit-test"] ' +  JSON.stringify({action: 'events.get', message: randomString});
+      ' [":_audit:test"] ' +  JSON.stringify({action: 'events.get', message: randomString});
 
       syslogWatch(
         function() { // syslog Watch is ready 
@@ -62,7 +62,7 @@ describe('Syslog', () => {
 
       const logString = userid + 
       ' log/test createdBy:' + createdBy +
-      ' streamIds:[".audit-test"] ' +  randomString;
+      ' streamIds:[":_audit:test"] ' +  randomString;
 
       syslogWatch( 
         function() { // syslog Watch is ready 

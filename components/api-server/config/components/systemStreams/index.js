@@ -23,6 +23,14 @@ const IS_EDITABLE: string = 'isEditable';
 const IS_UNIQUE: string = 'isUnique';
 const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
 
+module.exports.features = {
+  IS_SHOWN,
+  IS_INDEXED,
+  IS_EDITABLE,
+  IS_UNIQUE,
+  IS_REQUIRED_IN_VALIDATION,
+};
+
 const DEFAULT: string = 'default';
 
 const PRYV_PREFIX: string = ':_system:';
@@ -30,9 +38,9 @@ const CUSTOMER_PREFIX: string = ':system:';
 
 const DEFAULT_VALUES_FOR_FIELDS: {} = {
   [IS_INDEXED]: false, // if true will be sent to service-register to be able to query across the platform
-  [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqness on mongodb
-  [IS_SHOWN]: true, // if true, will be shown for the users
-  [IS_EDITABLE]: false, // if true, user will be allowed to edit it
+  [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
+  [IS_SHOWN]: true, // if true, will be returned in events.get
+  [IS_EDITABLE]: false, // if true, user will be allowed to edit through events.put
   [IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
 };
 
@@ -46,256 +54,183 @@ const DEFAULT_VALUES_FOR_FIELDS: {} = {
  */
 function load(config: {}): {} {
   // default system streams that should be not changed
-  let defaultAccountStreams = ensurePrefixForStreamIds([
-    {
-      [IS_INDEXED]: true,
-      [IS_UNIQUE]: true,
-      type: 'identifier/string',
-      name: 'Username',
-      id: 'username',
-      [IS_REQUIRED_IN_VALIDATION]: true
-    },
-    {
-      [IS_INDEXED]: true,
-      [IS_EDITABLE]: true,
-      [DEFAULT]: 'en',
-      type: 'language/iso-639-1',
-      name: 'Language',
-      id: 'language'
-    },
-    {
-      [IS_SHOWN]: false,
-      [IS_INDEXED]: true,
-      [DEFAULT]: '',
-      [IS_REQUIRED_IN_VALIDATION]: true,
-      type: 'identifier/string',
-      name: 'appId',
-      id: 'appId'
-    },
-    {
-      [IS_SHOWN]: false,
-      [IS_INDEXED]: true,
-      [DEFAULT]: 'no-token',
-      type: 'token/string',
-      name: 'Invitation Token',
-      id: 'invitationToken'
-    },
-    {
-      [IS_SHOWN]: false,
-      type: 'password-hash/string',
-      name: 'Password Hash',
-      id: 'passwordHash'
-    },
-    {
-      [IS_SHOWN]: false,
-      [IS_INDEXED]: true,
-      [DEFAULT]: null,
-      type: 'identifier/string',
-      name: 'Referer',
-      id: 'referer'
-    },
-    {
-      id: 'storageUsed',
-      name: 'Storage used',
-      type: 'data-quantity/b',      
+  let defaultAccountStreams: Array<SystemStream> = 
+    [{
+      id: 'account',
+      type: 'none',
       children: [
         {
-          default: 0,
-          type: 'data-quantity/b',
-          name: 'Db Documents',
-          id: 'dbDocuments'
+          id: 'username',
+          name: 'Username',
+          type: 'identifier/string',
+          [IS_INDEXED]: true,
+          [IS_UNIQUE]: true,
+          [IS_REQUIRED_IN_VALIDATION]: true,
         },
         {
-          default: 0,
-          type: 'data-quantity/b',
-          name: 'Attached files',
-          id: 'attachedFiles'
+          id: 'language',
+          name: 'Language',
+          type: 'language/iso-639-1',
+          [DEFAULT]: 'en',
+          [IS_INDEXED]: true,
+          [IS_EDITABLE]: true,
+        },
+        {
+          id: 'appId',
+          name: 'appId',
+          type: 'identifier/string',
+          [DEFAULT]: '',
+          [IS_INDEXED]: true,
+          [IS_REQUIRED_IN_VALIDATION]: true,
+          [IS_SHOWN]: false,
+        },
+        {
+          id: 'invitationToken',
+          name: 'Invitation Token',
+          type: 'token/string',
+          [DEFAULT]: 'no-token',
+          [IS_INDEXED]: true,
+          [IS_SHOWN]: false,
+        },
+        {
+          id: 'passwordHash',
+          name: 'Password Hash',
+          type: 'password-hash/string',
+          [IS_SHOWN]: false,
+        },
+        {
+          id: 'referer',
+          name: 'Referer',
+          type: 'identifier/string',
+          [DEFAULT]: null,
+          [IS_INDEXED]: true,
+          [IS_SHOWN]: false,
+        },
+        {
+          id: 'storageUsed',
+          name: 'Storage used',
+          type: 'data-quantity/b',     
+          children: [
+            {
+              id: 'dbDocuments',
+              name: 'Db Documents',
+              type: 'data-quantity/b',
+              [DEFAULT]: 0,
+            },
+            {
+              id: 'attachedFiles',
+              name: 'Attached files',
+              type: 'data-quantity/b',
+              [DEFAULT]: 0,
+            }
+          ]
         }
       ]
-    }
-  ]);
-
+    }];
   defaultAccountStreams = extendSystemStreamsWithDefaultValues(defaultAccountStreams);
-  
-  config.set('systemStreams:account', defaultAccountStreams);
-  config.set('systemStreams:helpers', ensurePrefixForStreamIds([
-    _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
-      isIndexed: false,
-      isUnique: false,
-      [IS_SHOWN]: true,
-      type: 'identifier/string',
-      name: 'Active',
-      id: 'active',
-    }),
-    _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
-      isIndexed: false,
-      isUnique: false,
-      [IS_SHOWN]: false,
-      type: 'identifier/string',
-      name: 'Unique',
-      id: 'unique',
-    }),
-  ]));
+  defaultAccountStreams = ensurePrefixForStreamIds(defaultAccountStreams)
 
-  addCustomStreams(config);
-  addPrefixToRootStreamsAndSetParentIdAndChildren(config);
+  let helpers: Array<SystemStream> = [{
+    id: 'helpers',
+    type: 'none',
+    children: [
+      {
+        id: 'active',
+        name: 'Active',
+        type: 'identifier/string',
+      },
+      {
+        id: 'unique',
+        name: 'Unique',
+        type: 'identifier/string',
+        [IS_SHOWN]: false,
+      }
+    ]
+  }];
+  helpers = extendSystemStreamsWithDefaultValues(helpers);
+  helpers = ensurePrefixForStreamIds(helpers);
+
+  let customAccountStreams: Array<SystemStream> = config.get('custom:systemStreams:account');
+  if (customAccountStreams == null) customAccountStreams = [];
+  customAccountStreams = extendSystemStreamsWithDefaultValues(customAccountStreams);
+  customAccountStreams = ensurePrefixForStreamIds(customAccountStreams, CUSTOMER_PREFIX);
+
+  defaultAccountStreams[0].children = defaultAccountStreams[0].children.concat(customAccountStreams);
+  const fullAccountStreams: Array<SystemStream> = defaultAccountStreams; // for readability
+  
+  let otherCustomStreams: Array<SystemStream> = config.get('custom:systemStreams:other');
+  if (otherCustomStreams == null) otherCustomStreams = [];
+  otherCustomStreams = extendSystemStreamsWithDefaultValues(otherCustomStreams);
+  otherCustomStreams = ensurePrefixForStreamIds(otherCustomStreams, CUSTOMER_PREFIX);
+
+  let systemStreams: Array<SystemStream> = fullAccountStreams.concat(otherCustomStreams).concat(helpers);
+  systemStreams = addParentIdAndChildren(systemStreams);
+
+  let seen: Map<string, boolean> = new Map();
+  let seenWithPrefix: Map<string, boolean> = new Map();
+  const isBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
+
+  treeUtils.cloneAndApply(systemStreams, s => { // ugly reuse of treeUtils.cloneAndApply() because we don't modify the array
+    validateSystemStreamWithSchema(s);
+    [seen, seenWithPrefix] = throwIfNotUnique(seen, seenWithPrefix, s.id, isBackwardCompatibilityActive);
+    return s;
+  });
+
+  config.set('systemStreams', systemStreams);
+
   return config;
-
-  function addPrefixToRootStreamsAndSetParentIdAndChildren(config: {}): void {
-    const rootStreams: Map<string, Array<SystemStream>> = config.get('systemStreams');
-    for (const [rootStreamId, streams] of Object.entries(rootStreams)) {
-      
-      rootStreams[_addPrefixToStreamId(rootStreamId, PRYV_PREFIX)] = streams;
-
-      streams.forEach(stream => {
-        stream.parentId = _addPrefixToStreamId(rootStreamId, PRYV_PREFIX);
-        stream = addParentIdToChildren(stream);
-      });
-      delete rootStreams[rootStreamId];
-    }
-
-    const systemStreams: Array<SystemStream> = makeRootKeysIntoStreamsWithDefaultValues(rootStreams);
-  
-    config.set('systemStreams', systemStreams);
-
-    function addParentIdToChildren(stream: SystemStream): SystemStream {
-      if (stream.children == null) {
-        stream.children = [];
-        return stream;
-      }
-      stream.children.forEach(childStream => {
-        childStream.parentId = stream.id;
-        childStream = addParentIdToChildren(childStream);
-      });
-      return stream;
-    }
-
-    function makeRootKeysIntoStreamsWithDefaultValues(rootStreams: Array<SystemStream>): Array<SystemStream> {
-      const systemStreams: Array<SystemStream> = [];
-      for (const [rootStreamId, streamArray] of Object.entries(rootStreams)) {
-        systemStreams.push(_.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
-          name: rootStreamId,
-          id: rootStreamId,
-          parentId: null,
-          children: streamArray,
-        }));
-      }
-      return systemStreams;
-    }
-  }
-
-  /**
-   * If any, load custom system streams from: custom:systemStreams
-   */
-  function addCustomStreams(config): void {
-    const customStreams: Array<SystemStream> = config.get('custom:systemStreams');
-    if (customStreams != null) {
-      extendWithCustomStreams(config, customStreams);
-    }
-  }
-
-  /**
-   * Extend each stream with default values
-   * @param {*} streams 
-   */
-  function extendSystemStreamsWithDefaultValues (
-    streams: Array<SystemStream>
-  ): Array<SystemStream>{
-    for (let i = 0; i < streams.length; i++) {
-      streams[i] = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, streams[i]);
-      if (streams[i].name == null) {
-        streams[i].name = streams[i].id;
-      }
-      // if stream has children recursivelly call the same function
-      if (Array.isArray(streams[i].children)) {
-        streams[i].children = extendSystemStreamsWithDefaultValues(streams[i].children)
-      }
-    }
-    return streams;
-  }
-
-  /**
-   * Adds the prefix to each "id" property of the provided system streams array.
-   * 
-   * @param {Array<systemStream>} systemStreams array of system streams
-   * @param {string} prefix the prefix to add
-   */
-  function ensurePrefixForStreamIds(systemStreams: Array<SystemStream>, prefix: string = PRYV_PREFIX): Array<SystemStream> {
-    for (const systemStream of systemStreams) {
-      systemStream.id = _addPrefixToStreamId(systemStream.id, prefix);
-      if (Array.isArray(systemStream.children)) {
-        systemStream.children = ensurePrefixForStreamIds(systemStream.children);
-      }
-    }
-    return systemStreams;
-  }
-
-  /**
-   * Iterate through additional fields, add default values and
-   * set to the main system streams config
-   * @param {*} customStreams
-   */
-  function extendWithCustomStreams(
-    config: {},
-    customStreams: Map<string, Array<SystemStream>>
-  ): {} {
-    const systemStreams: Array<SystemStream> = config.get('systemStreams');
-
-    for (const [key, streamsArray] of Object.entries(customStreams)) {
-      customStreams[key] = extendSystemStreamsWithDefaultValues(customStreams[key]);
-      customStreams[key] = ensurePrefixForStreamIds(streamsArray);
-    }
-    
-    // first merge config with already existing keys (like account, helpers)
-    for (const key of Object.keys(systemStreams)){
-      // merging will be easier as we will differentiate prefixes - although they will be the same in case of retro-compatibility
-      systemStreams[key] = Object.values(_.mergeWith(
-        _.keyBy(systemStreams[key], 'id'),
-        _.keyBy(customStreams[key], 'id'), denyDefaultStreamsOverride
-      ));
-    }
-    // second append new config
-    const existingKeys: Array<string> = Object.keys(systemStreams);
-    const newKeys: Array<string> = Object.keys(customStreams);
-    for (const newKey of newKeys) {
-      if (existingKeys.includes(newKey)) continue;
-      systemStreams[newKey] = customStreams[newKey];
-    }
-
-    // validate that each config stream is valid according to schema, its id is not reserved and that it has a type
-    const allConfigKeys: Array<string> = Object.keys(systemStreams);
-    for(let configKey of allConfigKeys) {
-      const flatStreamsList = treeUtils.flattenTree(systemStreams[configKey]);
-      // check if each stream has a type
-      for (let stream of flatStreamsList) {
-        validateSystemStreamWithSchema(stream);
-        if (string.isReservedId(stream.id) ||
-          string.isReservedId(stream.id = slugify(stream.id))) {
-          throw new Error('The specified id "' + stream.id + '" is not allowed.');
-        }
-        if (!stream.type) {
-          throw new Error(`SystemStreams streams must have a type. Please fix the config systemStreams.custom ${stream.id} so that all custom streams would include type. It will be used while creating the events.`);
-        }
-      }
-    }
-
-    config.set('systemStreams', systemStreams);
-    // clear the settings seems to not work as expected
-    return config;
-  }
 }
 module.exports.load = load;
 
-function _addPrefixToStreamId(streamId: string, prefix: string): string {
-  if (streamId.startsWith(prefix)) return streamId;
-  return prefix + streamId;
+function addParentIdAndChildren(streams: Array<SystemStream>): Array<SystemStream> {
+  for(let stream of streams) {
+    stream = addParentIdToChildren(stream);
+    stream.parentId = null;
+  }
+  return streams;
+
+  function addParentIdToChildren(stream: SystemStream): SystemStream {
+    if (stream.children == null) {
+      stream.children = [];
+      return stream;
+    }
+    stream.children.forEach(childStream => {
+      childStream.parentId = stream.id;
+      childStream = addParentIdToChildren(childStream);
+    });
+    return stream;
+  }
 }
 
-function denyDefaultStreamsOverride (objValue, srcValue) {
-  if (objValue && objValue.id && srcValue && srcValue.id && objValue.id == srcValue.id){
-    return objValue;
+/**
+ * Extend system stream properties with default values
+ * @param {*} streams 
+ */
+function extendSystemStreamsWithDefaultValues (
+  streams: Array<SystemStream>
+): Array<SystemStream>{
+  return treeUtils.cloneAndApply(streams, s => { 
+    const stream = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, s);
+    if (stream.name == null) {
+      stream.name = stream.id;
+    }
+    return stream;
+  });
+}
+
+/**
+ * Adds the prefix to each "id" property of the provided system streams array.
+ * 
+ * @param {Array<systemStream>} systemStreams array of system streams
+ * @param {string} prefix the prefix to add
+ */
+function ensurePrefixForStreamIds(systemStreams: Array<SystemStream>, prefix: string = PRYV_PREFIX): Array<SystemStream> {
+  return treeUtils.cloneAndApply(systemStreams, s => _.extend({}, s, { id: _addPrefixToStreamId(s.id, prefix)}));
+
+  function _addPrefixToStreamId(streamId: string, prefix: string): string {
+    if (streamId.startsWith(prefix)) return streamId;
+    return prefix + streamId;
   }
-  return _.merge(srcValue, objValue);
 }
 
 function validateSystemStreamWithSchema(systemStream: SystemStream): void {
@@ -304,4 +239,35 @@ function validateSystemStreamWithSchema(systemStream: SystemStream): void {
       throw err;
     }
   });
+
+  throwIfUniqueAndNotIndexed(systemStream);
+
+  function throwIfUniqueAndNotIndexed(systemStream: SystemStream) {
+    if (systemStream[IS_UNIQUE] && ! systemStream[IS_INDEXED]) throw new Error('Config error: custom system stream cannot be unique and not indexed. Stream: ' + JSON.stringify(systemStream, null, 2));
+  }
+}
+
+function throwIfNotUnique(
+  seen: Map<string, boolean>,
+  seenWithPrefix: Map<string, boolean>,
+  streamId: string,
+  isBackwardCompatible: boolean = false
+): Array<Map<string, boolean>> {
+  const streamIdWithoutPrefix: string = _removePrefixFromStreamId(streamId);
+  
+  if (seenWithPrefix[streamId]) {
+    throw new Error(`Config error: Custom system stream id duplicate. Remove duplicate custom system stream with streamId: "${streamIdWithoutPrefix}".`);
+  } else if (seen[streamIdWithoutPrefix] && isBackwardCompatible) {
+    throw new Error(`Config error: Custom system stream id unicity collision with default one. Deactivate retro-compatibility prefix or change streamId: "${streamIdWithoutPrefix}".`);
+  } else {
+    seenWithPrefix[streamId] = true;
+    seen[streamIdWithoutPrefix] = true;
+    return [seen, seenWithPrefix];
+  }
+
+  function _removePrefixFromStreamId(streamIdWithPrefix: string): string {
+    if (streamIdWithPrefix.startsWith(PRYV_PREFIX)) return streamIdWithPrefix.substr(PRYV_PREFIX.length);
+    if (streamIdWithPrefix.startsWith(CUSTOMER_PREFIX)) return streamIdWithPrefix.substr(CUSTOMER_PREFIX.length);
+    throw new Error('Config error: should not crash here');
+}
 }

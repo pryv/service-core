@@ -13,7 +13,7 @@ const bluebird = require('bluebird');
 
 const treeUtils = require('utils/src/treeUtils');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const UsersRepository = require('business/src/users/repository');
+const UserRepositoryOptions = require('./UserRepositoryOptions');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { ApiEndpoint , encryption } = require('utils')
@@ -174,7 +174,7 @@ async function buildEventsFromAccount (user: User): Promise<Array<Event>> {
         stream.type,
         stream.isUnique,
         content,
-        user.accessId ? user.accessId : UsersRepository.options.SYSTEM_USER_ACCESS_ID,
+        user.accessId ? user.accessId : UserRepositoryOptions.SYSTEM_USER_ACCESS_ID,
       );
 
       events.push(event);

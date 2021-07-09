@@ -66,3 +66,7 @@ custom:
       type: email/string
       name: Email
       isRequiredInValidation: true
+backwardCompatibility:
+  systemStreams:
+    prefix:
+      isActive: false

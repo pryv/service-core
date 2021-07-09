@@ -11,7 +11,7 @@ const { ErrorMessages, ErrorIds } = require('errors');
 const methodsSchema = require('api-server/src/schema/authMethods');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
@@ -28,14 +28,14 @@ import type { ApiCallback }  from '../API';
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, logging, storageLayer, servicesSettings) {
+module.exports = async function (api, logging, storageLayer, servicesSettings) {
 
   const isDnsLess = getConfigUnsafe().get('dnsLess:isActive');
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
   const serviceRegisterConn: ServiceRegister = getServiceRegisterConn();
-  const usersRepository = new UsersRepository(storageLayer.events);
+  const usersRepository = await getUsersRepository(); 
 
   function skip(context, params, result, next) { next(); }
   function ifDnsLess(ifTrue, ifFalse) {

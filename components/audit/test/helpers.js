@@ -90,12 +90,12 @@ async function initCore() {
     app.config.get('versioning'), 
     app.config.get('updates'));
   require('api-server/src/methods/service')(app.api);
-  require('api-server/src/methods/auth/login')(app.api, 
+  await require('api-server/src/methods/auth/login')(app.api, 
     app.storageLayer.accesses, 
     app.storageLayer.sessions, 
     app.storageLayer.events, 
     config.get('auth'));
-  require('api-server/src/methods/auth/register')(app.api, 
+  await require('api-server/src/methods/auth/register')(app.api, 
     app.logging, 
     app.storageLayer, 
     config.get('services'));

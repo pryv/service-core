@@ -19,12 +19,13 @@ const streamsQueryUtils = require('./helpers/streamsQueryUtils');
 const _ = require('lodash');
 const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
+const ChangeStreamIdPrefixStream = require('./streams/ChangeStreamIdPrefixStream');
 
 const { getStores, StreamsUtils } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const assert = require('assert');
@@ -44,6 +45,8 @@ const NATS_DELETE_EVENT = require('messages').NATS_DELETE_EVENT;
 const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
+
+const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
 
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
@@ -69,7 +72,7 @@ module.exports = async function (
 ) {
 
 
-  const usersRepository = new UsersRepository(userEventsStorage);
+  const usersRepository = await getUsersRepository(); 
   const config = await getConfig();
   const stores = await getStores();
   
@@ -96,13 +99,15 @@ module.exports = async function (
       serviceRegisterConn = getServiceRegisterConn();
     }
 
-  // RETRIEVAL
+  const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
+  // RETRIEVAL
   api.register('events.get',
     eventsGetUtil.coerceStreamsParam,
     commonFns.getParamsValidation(methodsSchema.get.params),
     eventsGetUtil.transformArrayOfStringsToStreamsQuery,
     eventsGetUtil.validateStreamsQueriesAndSetStore,
+    changeStreamIdsPrefixInStreamQuery.bind(null, isStreamIdPrefixBackwardCompatibilityActive), // using currying to pass "isStreamIdPrefixBackwardCompatibilityActive" argument
     eventsGetUtil.applyDefaultsForRetrieval,
     applyTagsDefaultsForRetrieval,
     streamQueryCheckPermissionsAndReplaceStars,
@@ -303,8 +308,14 @@ module.exports = async function (
      * @param {Store} store
      * @param {ReadableStream} eventsStream of "Events"
      */
-    function addnewEventStreamFromSource (store, eventsStream) {
-      let stream = eventsStream.pipe(new SetSingleStreamIdStream());
+    function addnewEventStreamFromSource (store, eventsStream: ReadableStream) {
+      let stream: ?ReadableStream;
+      if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
+        stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
+      } else {
+        stream = eventsStream;
+      }
+      stream = stream.pipe(new SetSingleStreamIdStream());
       if (store.settings?.attachments?.setFileReadToken) {
         stream = stream.pipe(new SetFileReadTokenStream({ access: context.access, filesReadTokenSecret: authSettings.filesReadTokenSecret }));
       }
@@ -355,18 +366,17 @@ module.exports = async function (
       },
       id: params.id 
     };
-    userEventsStorage.findOne(context.user, query, null, function (err, event) {
-      if (err) {
-        return next(errors.unexpectedError(err));
-      }
+    try {
+      const event: Event = await bluebird.fromCallback(cb => userEventsStorage.findOne(context.user, query, null, cb));
 
-      if (! event) {
-        return next(errors.unknownResource('event', params.id));
-      }
-      context.event = event; // keep for next stage
+      if (event == null) return next(errors.unknownResource('event', params.id));
+
+      context.event = event;
 
       next();
-    });
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 
   async function checkIfAuthorized(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -383,7 +393,11 @@ module.exports = async function (
     }
     if (! canReadEvent) return next(errors.forbidden());
 
-    setFileReadToken(context.access, event);
+    event.attachments = setFileReadToken(context.access, event.attachments);
+
+    if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+      event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds);
+    }
 
     // To remove when streamId not necessary
     event.streamId = event.streamIds[0];     
@@ -391,27 +405,30 @@ module.exports = async function (
     return next();
 }
 
-  function includeHistoryIfRequested(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function includeHistoryIfRequested(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (!params.includeHistory) {
       return next();
     }
+    const options = { sort: {modified: 1} };
 
-    var options = {
-      sort: {modified: 1}
-    };
+    try {
+      const history = await bluebird.fromCallback(cb => userEventsStorage.findHistory(context.user, params.id, options, cb))
 
-    userEventsStorage.findHistory(context.user, params.id, options,
-      function (err, history) {
-        if (err) {
-          return next(errors.unexpectedError(err));
+      // To remove when streamId not necessary
+      history.forEach(e => {
+        if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+          e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
         }
-
-        // To remove when streamId not necessary
-        history.forEach(e => e.streamId = e.streamIds[0]);
-        
-        result.history = history;
-        next();
+        e.streamId = e.streamIds[0]
+        return e;
       });
+        
+      result.history = history;
+      next();
+
+    } catch (err) {
+      next(errors.unexpectedError(err));
+    }
   }
 
   // -------------------------------------------------------------------- CREATE
@@ -536,7 +553,7 @@ module.exports = async function (
     const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
 
     try{
-      if (systemStream.isIndexed) {
+      if (systemStream.isIndexed) { // assume can be unique as per test #42A1
         await sendDataToServiceRegister(context, isCreation);
       }
       if (systemStream.isUnique) {
@@ -591,22 +608,24 @@ module.exports = async function (
       // As long as there is no data, event duration is considered to be 0.
       context.newEvent.duration = 0; 
     }
-    userEventsStorage.insertOne(
-      context.user, context.newEvent, function (err, newEvent) {
-        if (err != null) {
-          // Expecting a duplicate error
-          if (err.isDuplicateIndex('id')) {
-            return next(errors.itemAlreadyExists('event', {id: params.id}, err));
-          }
-          // Any other error
-          return next(errors.unexpectedError(err));
-        }
+    try {
+      const newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
-        // To remove when streamId not necessary
-        newEvent.streamId = newEvent.streamIds[0];
-        result.event = newEvent;
-        next();
-      });
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
+      }
+
+      // To remove when streamId not necessary
+      newEvent.streamId = newEvent.streamIds[0];
+      result.event = newEvent;
+      next();
+    } catch (err) {
+      if (err.isDuplicateIndex('id')) {
+        return next(errors.itemAlreadyExists('event', {id: params.id}, err));
+      }
+      // Any other error
+      return next(errors.unexpectedError(err));
+    }
   }
 
   function addUniqueStreamIdIfNeeded(streamIds: Array<string>, isUnique: boolean): Array<string> {
@@ -651,7 +670,7 @@ module.exports = async function (
             return next(errors.unexpectedError(err));
           }
 
-          setFileReadToken(context.access, result.event);
+          result.event.attachments = setFileReadToken(context.access, result.event.attachments);
           next();
         });
     } catch (err) {
@@ -832,11 +851,13 @@ module.exports = async function (
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
       }
 
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+      }
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
       result.event = updatedEvent;
-      setFileReadToken(context.access, result.event);
-
+      result.event.attachments = setFileReadToken(context.access, result.event.attachments);
     } catch (err) {
       return next(err);
     };
@@ -937,6 +958,9 @@ module.exports = async function (
     
     // used only in the events creation and update
     if (event.streamIds != null && event.streamIds.length > 0) {
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds, false);
+      }
       const streamIdsNotFoundList: Array<string> = [];
       const streamIdsTrashed: Array<string> = [];
       for (streamId of event.streamIds) {
@@ -975,7 +999,7 @@ module.exports = async function (
    * @param {Object} result
    * @param {Function} next
    */
-  function validateEventContentAndCoerce(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function validateEventContentAndCoerce(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const type: string = context.newEvent.type;
 
     // Unknown types can just be created as normal events. 
@@ -1005,17 +1029,12 @@ module.exports = async function (
       : null;
 
     const validator: {} = typeRepo.validator();
-    validator.validate(eventType, content)
-      .then(function (newContent) {
-        // Store the coerced value. 
-        context.newEvent.content = newContent; 
-        next();
-        return null;
-      })
-      .catch(
-        (err) => next(errors.invalidParametersFormat(
-          'The event content\'s format is invalid.', err))
-      );
+    try {
+      context.newEvent.content = await validator.validate(eventType, content);
+      next();
+    } catch (err) {
+      next(errors.invalidParametersFormat('The event content\'s format is invalid.', err));
+    }
 
     function isCreateSeriesAndHasContent(params): boolean {
       return params.content != null;
@@ -1206,11 +1225,14 @@ module.exports = async function (
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
       }
 
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+      }
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
 
       result.event = updatedEvent;
-      setFileReadToken(context.access, result.event);
+      result.event.attachments = setFileReadToken(context.access, result.event.attachments);
 
       next();
     } catch (err) {
@@ -1308,7 +1330,7 @@ module.exports = async function (
         alreadyUpdatedEvent.streamId = alreadyUpdatedEvent.streamIds[0];
 
         result.event = alreadyUpdatedEvent;
-        setFileReadToken(context.access, result.event);
+        result.event.attachments = setFileReadToken(context.access, result.event.attachments);
 
         await bluebird.fromCallback(cb => userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, cb));
 
@@ -1392,16 +1414,17 @@ module.exports = async function (
    * access.
    *
    * @param access
-   * @param event
+   * @param attachments
    */
-  function setFileReadToken(access, event): void {
-    if (! event.attachments) { return; }
-    event.attachments.forEach(function (att) {
+  function setFileReadToken(access: Access, attachments: Array<Attachment>): Array<Attachment> {
+    if (attachments == null) { return; }
+    attachments.forEach(function (att) {
       att.readToken = utils.encryption
         .fileReadToken(att.id, 
           access.id, access.token,
           authSettings.filesReadTokenSecret);
     });
+    return attachments;
   }
 
   function hasBecomeActive(oldStreamIds: Array<string>, newSreamIds: Array<string>): boolean {

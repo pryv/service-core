@@ -11,8 +11,7 @@ const charlatan = require('charlatan');
 const bluebird = require('bluebird');
 const { getApplication } = require('api-server/src/application');
 const { getConfig } = require('@pryv/boiler');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const { Notifications } = require('messages');
@@ -41,7 +40,7 @@ describe('[BMM2] registration: DNS-less', () => {
     app = getApplication(true);
     await app.initiate();
 
-    require('api-server/src/methods/auth/register')(
+    await require('api-server/src/methods/auth/register')(
       app.api,
       app.logging,
       app.storageLayer,
@@ -93,7 +92,7 @@ describe('[BMM2] registration: DNS-less', () => {
       });
       it('[VDA8] should respond with a username and apiEndpoint in the request body', async () => {
         assert.equal(res.body.username, registerData.username);
-        const usersRepository = new UsersRepository(app.storageLayer.events);
+        const usersRepository = await getUsersRepository(); 
         const user = await usersRepository.getAccountByUsername(registerData.username, true);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));

@@ -23,7 +23,7 @@ const url = require('url');
 const _ = require('lodash');
 const fs = require('fs');
 const os = require('os');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository, UserRepositoryOptions } = require('business/src/users');
 
 describe('auth', function() {
   this.timeout(5000);
@@ -94,7 +94,7 @@ describe('auth', function() {
               { name: authData.appId },
               null,
               function(err, access) {
-                access.modifiedBy.should.eql(UsersRepository.options.SYSTEM_USER_ACCESS_ID);
+                access.modifiedBy.should.eql(UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
                 stepDone();
               }
             );
@@ -414,8 +414,8 @@ describe('auth', function() {
                 if (err) {
                   return stepDone(err);
                 }
-                should(data.indexOf(wrongPasswordData.password)).be.equal(-1);
-                should(data.indexOf('"password":"(hidden password)"')).be.aboveOrEqual(0);
+                assert.equal(data.indexOf(wrongPasswordData.password), -1, 'password is present in logs when it should not.')
+                assert.isAtLeast(data.indexOf('"password":"(hidden password)"'), 0, 'log with hidden password not found.')
                 stepDone();
               });
             },

@@ -9,7 +9,7 @@ const utils = require('utils');
 const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository, UserRepositoryOptions } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
@@ -22,8 +22,8 @@ const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUti
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, userAccessesStorage, sessionsStorage, userEventsStorage, authSettings) {
-  const usersRepository = new UsersRepository(userEventsStorage);
+module.exports = async function (api, userAccessesStorage, sessionsStorage, userEventsStorage, authSettings) {
+  const usersRepository = await getUsersRepository(); 
   
   api.register('auth.login',
     commonFns.getParamsValidation(methodsSchema.login.params),
@@ -119,12 +119,12 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     
     function createAccess(access, context, callback) {
       _.extend(access, context.accessQuery);
-      context.initTrackingProperties(access, UsersRepository.options.SYSTEM_USER_ACCESS_ID);
+      context.initTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.insertOne(context.user, access, callback);
     }
     
     function updatePersonalAccess(access, context, callback) {
-      context.updateTrackingProperties(access, UsersRepository.options.SYSTEM_USER_ACCESS_ID);
+      context.updateTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);
     }
   }

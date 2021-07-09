@@ -19,8 +19,7 @@ const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('test-helpers:data');
@@ -42,14 +41,10 @@ exports.resetUsers = async () => {
         $in: SystemStreamsSerializer.getAccountStreamIds(),
       }
     }, cb));
-  const usersRepository = new UsersRepository(storage.user.events);
+  const usersRepository = await getUsersRepository(); 
   
-  let i;
-  let userObj: User;
-  for (i = 0; i < users.length; i++){
-    let user = Object.assign({}, users[i]);
-    user = _.merge(customAccountProperties, user);
-    userObj = new User(user);
+  for (const user of users) {
+    const userObj: User = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
     await usersRepository.insertOne(userObj);
   }
 };

@@ -13,8 +13,7 @@ const helpers = require('api-server/test/helpers');
 const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('api-server/test/test-helpers');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 const { ErrorIds } = require('errors');
 
 describe('Users repository', () => {
@@ -54,7 +53,7 @@ describe('Users repository', () => {
 
     it('[7C22] must throw an item already exists error when username field is not unique', async () => {
       try {
-        const usersRepository = new UsersRepository(eventsStorage);
+        const usersRepository = await getUsersRepository(); 
         const userObj: User = new User({
           id: charlatan.Lorem.characters(10),
           username,
@@ -72,7 +71,7 @@ describe('Users repository', () => {
 
     it('[6CFE] must throw an item already exists error when email field is not unique', async () => {
       try {
-        const usersRepository = new UsersRepository(eventsStorage);
+        const usersRepository = await getUsersRepository(); 
         const userObj: User = new User({
           id: charlatan.Lorem.characters(10),
           email,
