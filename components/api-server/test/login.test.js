@@ -414,8 +414,8 @@ describe('auth', function() {
                 if (err) {
                   return stepDone(err);
                 }
-                should(data.indexOf(wrongPasswordData.password)).be.equal(-1);
-                should(data.indexOf('"password":"(hidden password)"')).be.aboveOrEqual(0);
+                assert.equal(data.indexOf(wrongPasswordData.password), -1, 'password is present in logs when it should not.')
+                assert.isAtLeast(data.indexOf('"password":"(hidden password)"'), 0, 'log with hidden password not found.')
                 stepDone();
               });
             },

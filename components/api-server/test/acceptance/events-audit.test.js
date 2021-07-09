@@ -149,14 +149,11 @@ describe('Audit logs events', () => {
       await get('/events', { auth: actionsToken }, null);
       const res = await get('/events', { streams: [':_audit:action-events.get']}, personalToken);
       const event = res.body.events[0];
-      console.log('got', event);
       assert.notProperty(event.content.query, 'auth', 'token provided in query is present.');
     });
     it('[R8MS] must escape special characters', async () => {
-      // makes server crash
-      //const res = await get('/events', { streams: [':_audit:action-events.get"']}, personalToken); // trailing " (quote) in streamId parameter
+      // it made the server crash
       const res = await get('/events', { streams: [':_system:username"']}, personalToken); // trailing " (quote) in streamId parameter
-      console.log('got', res.body);
       assert.equal(res.status, 400, 'status should be 400');
     });
   });

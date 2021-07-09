@@ -78,6 +78,21 @@ function validateStreamsQueriesAndSetStore(arrayOfQueries) {
 exports.validateStreamsQueriesAndSetStore = validateStreamsQueriesAndSetStore;
 
 /**
+ * List of characters that are forbbidden in streamIds
+ */
+const forbiddenCharsMap = {
+  '"': true,
+  '\0': true,
+  '\b': true,
+  '\t': true,
+  '\n': true,
+  '\r': true,
+  '\x1a': true,
+  '\'': true,
+  '\\': true,
+};
+
+/**
  * throw an error if streamQuery is not of the form {any: all: not: } with at least one of any or all 
  * [{any: ['A', 'B', '.email']}, {any: ':_audit:xx'}] => [{any: ['A', 'B', '.email'], storeId: 'local'}, {any: 'xx', storeId: 'audit'}]
  * @param {Array.<StreamQuery>} arrayOfQueries - the full request for error message
@@ -91,11 +106,23 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
    * @returns {string} streamId without storeId
    */
   function checkStore(streamId) {
+
+    const forbiddenChar = findForbiddenChar(streamId);
+    if (forbiddenChar != null) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" forbidden chartacter "' + forbiddenChar + '" in streamId "' + streamId + '".');
+
     // queries must be grouped by store 
     const [thisStore, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     if (!streamQuery.storeId) streamQuery.storeId = thisStore;
     if (streamQuery.storeId !== thisStore) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) + '" queries must me grouped by stores.');
     return cleanStreamId;
+
+    function findForbiddenChar(streamId) {
+      for (let i=0; i<streamId.length; i++) {
+        const char = streamId[i];
+        if (forbiddenCharsMap[char]) return char;
+      }
+      return null;
+    }
   }
 
   if (!streamQuery.any && !streamQuery.all) {

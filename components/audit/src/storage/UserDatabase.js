@@ -143,6 +143,10 @@ function prepareTermQuery(params = {}) {
 function prepareLogQuery(params = {}) {
   const ands = [];
 
+  if (params.type != null) {
+    ands.push('type = ' + params.type);
+  } 
+
   if (params.fromTime != null) {
     ands.push('time >= ' + params.fromTime);
   } 
