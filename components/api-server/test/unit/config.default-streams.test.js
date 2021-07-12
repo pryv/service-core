@@ -24,7 +24,7 @@ describe('SystemStreams config', () => {
     [systemStreamsConfig.features.IS_INDEXED]: false, // if true will be sent to service-register to be able to query across the platform
     [systemStreamsConfig.features.IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
     [systemStreamsConfig.features.IS_SHOWN]: true, // if true, will be returned in events.get
-    [systemStreamsConfig.features.IS_EDITABLE]: false, // if true, user will be allowed to edit through events.put
+    [systemStreamsConfig.features.IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
     [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
   };
 
@@ -40,7 +40,7 @@ describe('SystemStreams config', () => {
       customStreams = {
         account: [
           {
-            id: 'username',
+            id: 'avs-number',
             isEditable: false,
             isShown: false,
             type: 'string/pryv'
@@ -52,12 +52,10 @@ describe('SystemStreams config', () => {
             children: [
               {
                 id: 'child-one',
-                isShown: true,
                 type: 'string/pryv',
               },
               {
                 id: 'child-two',
-                isShown: true,
                 type: 'string/pryv',
               },
             ]
@@ -75,8 +73,6 @@ describe('SystemStreams config', () => {
               {
                 id: 'field2',
                 type: 'string/pryv',
-                isEditable: false,
-                isShown: true
               },
             ]
           }
@@ -108,7 +104,7 @@ describe('SystemStreams config', () => {
         const systemStream = treeUtils.findById(systemStreams, streamId)
         for (const [key, value] of Object.entries(systemStream)) {
           if (configStream[key] == null && ! isIgnoredKey(key)) {
-            assert.equal(value, DEFAULT_VALUES_FOR_FIELDS[key]);
+            assert.equal(value, DEFAULT_VALUES_FOR_FIELDS[key], `${key} was supposed to be ${DEFAULT_VALUES_FOR_FIELDS[key]}, but is ${value} for stream "${systemStream.id}"`);
           } else if (key === 'name' && configStream.name == null) {
             assert.equal(systemStream.name, configStream.id);
           } else if (key === 'children') {
@@ -219,6 +215,116 @@ describe('SystemStreams config', () => {
         assert.include(err.message, 'Config error: custom system stream cannot be unique and not indexed. Stream: ');
       }
       
+    });
+  });
+
+  describe('When providing an "other" custom stream that is unique', () => {
+    it('[GZEK] must throw a config error', async () => {
+      const store = new nconf.Provider();
+      store.use('memory');
+      store.set('custom:systemStreams:other',
+        [
+          {
+              id: 'faulty-params',
+              type: 'string/pryv',
+              [systemStreamsConfig.features.IS_UNIQUE]: true,
+            },
+          ]
+        );
+      try {
+        systemStreamsConfig.load(store);
+        assert.fail('supposed to throw.');
+      } catch (err) {
+        assert.include(err.message, 'Config error: custom "other" system stream cannot be unique. Only "account" streams can be unique. Stream: ');
+      }
+    });
+  });
+
+  describe('When providing an other custom stream that is indexed', () => {
+    it('[2IBL] must throw a config error', async () => {
+      const store = new nconf.Provider();
+      store.use('memory');
+      store.set('custom:systemStreams:other',
+        [
+          {
+              id: 'faulty-params',
+              type: 'string/pryv',
+              [systemStreamsConfig.features.IS_INDEXED]: true,
+            },
+          ]
+        );
+      try {
+        systemStreamsConfig.load(store);
+        assert.fail('supposed to throw.');
+      } catch (err) {
+        assert.include(err.message, 'Config error: custom "other" system stream cannot be indexed. Only "account" streams can be indexed. Stream: ');
+      }
+    });
+  });
+
+  describe('When providing an other custom stream that is non editable', () => {
+    it('[655X] must throw a config error', async () => {
+      const store = new nconf.Provider();
+      store.use('memory');
+      store.set('custom:systemStreams:other',
+        [
+          {
+              id: 'faulty-params',
+              type: 'string/pryv',
+              [systemStreamsConfig.features.IS_EDITABLE]: false,
+            },
+          ]
+        );
+      try {
+        systemStreamsConfig.load(store);
+        assert.fail('supposed to throw.');
+      } catch (err) {
+        assert.include(err.message, 'Config error: custom "other" system stream cannot be non-editable. Only "account" streams can be non-editable. Stream: ');
+      }
+    });
+  });
+
+  describe('When providing an other custom stream that is required at registration', () => {
+    it('[OJJ0] must throw a config error', async () => {
+      const store = new nconf.Provider();
+      store.use('memory');
+      store.set('custom:systemStreams:other',
+        [
+          {
+              id: 'faulty-params',
+              type: 'string/pryv',
+              [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: true,
+            },
+          ]
+        );
+      try {
+        systemStreamsConfig.load(store);
+        assert.fail('supposed to throw.');
+      } catch (err) {
+        assert.include(err.message, 'Config error: custom "other" system stream cannot be required at registration. Only "account" streams can be required at registration. Stream: ');
+      }
+    });
+  });
+
+  describe('When providing an other custom stream that is not visible', () => {
+    it('[TY42] must throw a config error', async () => {
+      const store = new nconf.Provider();
+      store.use('memory');
+      store.set('custom:systemStreams:other',
+        [
+          {
+              id: 'faulty-params',
+              type: 'string/pryv',
+              [systemStreamsConfig.features.IS_SHOWN]: false,
+            },
+          ]
+        );
+      try {
+        systemStreamsConfig.load(store);
+        assert.fail('supposed to throw.');
+      } catch (err) {
+        assert.include(err.message, 'Config error: custom "other" system stream cannot be non visible. Only "account" streams can non visible. Stream: ');
+      }
     });
   });
 

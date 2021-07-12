@@ -40,7 +40,7 @@ const DEFAULT_VALUES_FOR_FIELDS: {} = {
   [IS_INDEXED]: false, // if true will be sent to service-register to be able to query across the platform
   [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
   [IS_SHOWN]: true, // if true, will be returned in events.get
-  [IS_EDITABLE]: false, // if true, user will be allowed to edit through events.put
+  [IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
   [IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
 };
 
@@ -66,6 +66,7 @@ function load(config: {}): {} {
           [IS_INDEXED]: true,
           [IS_UNIQUE]: true,
           [IS_REQUIRED_IN_VALIDATION]: true,
+          [IS_EDITABLE]: false,
         },
         {
           id: 'language',
@@ -73,7 +74,6 @@ function load(config: {}): {} {
           type: 'language/iso-639-1',
           [DEFAULT]: 'en',
           [IS_INDEXED]: true,
-          [IS_EDITABLE]: true,
         },
         {
           id: 'appId',
@@ -83,6 +83,7 @@ function load(config: {}): {} {
           [IS_INDEXED]: true,
           [IS_REQUIRED_IN_VALIDATION]: true,
           [IS_SHOWN]: false,
+          [IS_EDITABLE]: false,
         },
         {
           id: 'invitationToken',
@@ -91,12 +92,14 @@ function load(config: {}): {} {
           [DEFAULT]: 'no-token',
           [IS_INDEXED]: true,
           [IS_SHOWN]: false,
+          [IS_EDITABLE]: false,
         },
         {
           id: 'passwordHash',
           name: 'Password Hash',
           type: 'password-hash/string',
           [IS_SHOWN]: false,
+          [IS_EDITABLE]: false,
         },
         {
           id: 'referer',
@@ -105,6 +108,7 @@ function load(config: {}): {} {
           [DEFAULT]: null,
           [IS_INDEXED]: true,
           [IS_SHOWN]: false,
+          [IS_EDITABLE]: false,
         },
         {
           id: 'storageUsed',
@@ -116,12 +120,14 @@ function load(config: {}): {} {
               name: 'Db Documents',
               type: 'data-quantity/b',
               [DEFAULT]: 0,
+              [IS_EDITABLE]: false,
             },
             {
               id: 'attachedFiles',
               name: 'Attached files',
               type: 'data-quantity/b',
               [DEFAULT]: 0,
+              [IS_EDITABLE]: false,
             }
           ]
         }
@@ -162,6 +168,10 @@ function load(config: {}): {} {
   if (otherCustomStreams == null) otherCustomStreams = [];
   otherCustomStreams = extendSystemStreamsWithDefaultValues(otherCustomStreams);
   otherCustomStreams = ensurePrefixForStreamIds(otherCustomStreams, CUSTOMER_PREFIX);
+  treeUtils.apply(otherCustomStreams, s => { // ugly reuse of treeUtils.apply() because we don't modify the array
+    validateOtherStreams(s);
+    return s;
+  });
 
   let systemStreams: Array<SystemStream> = fullAccountStreams.concat(otherCustomStreams).concat(helpers);
   systemStreams = addParentIdAndChildren(systemStreams);
@@ -242,8 +252,37 @@ function validateSystemStreamWithSchema(systemStream: SystemStream): void {
 
   throwIfUniqueAndNotIndexed(systemStream);
 
-  function throwIfUniqueAndNotIndexed(systemStream: SystemStream) {
+  function throwIfUniqueAndNotIndexed(systemStream: SystemStream): void {
     if (systemStream[IS_UNIQUE] && ! systemStream[IS_INDEXED]) throw new Error('Config error: custom system stream cannot be unique and not indexed. Stream: ' + JSON.stringify(systemStream, null, 2));
+  }
+}
+
+function validateOtherStreams(systemStream: SystemStream): void {
+  throwIfUnique(systemStream);
+  throwIfIndexed(systemStream);
+  throwIfNonEditable(systemStream);
+  throwIfRequiredAtRegistration(systemStream);
+  throwIfNonVisible(systemStream);
+
+  function throwIfUnique(systemStream: SystemStream): void {
+    if (systemStream[IS_UNIQUE]) throw new Error('Config error: custom "other" system stream cannot be unique. Only "account" streams can be unique. Stream: ' + 
+    JSON.stringify(systemStream, null, 2));
+  }
+  function throwIfIndexed(systemStream: SystemStream): void {
+    if (systemStream[IS_INDEXED]) throw new Error('Config error: custom "other" system stream cannot be indexed. Only "account" streams can be indexed. Stream: ' + 
+    JSON.stringify(systemStream, null, 2));
+  }
+  function throwIfNonEditable(systemStream: SystemStream): void {
+    if (! systemStream[IS_EDITABLE]) throw new Error('Config error: custom "other" system stream cannot be non-editable. Only "account" streams can be non-editable. Stream: ' + 
+    JSON.stringify(systemStream, null, 2));
+  }
+  function throwIfRequiredAtRegistration(systemStream: SystemStream): void {
+    if (systemStream[IS_REQUIRED_IN_VALIDATION]) throw new Error('Config error: custom "other" system stream cannot be required at registration. Only "account" streams can be required at registration. Stream: ' + 
+    JSON.stringify(systemStream, null, 2));
+  }
+  function throwIfNonVisible(systemStream: SystemStream): void {
+    if (! systemStream[IS_SHOWN]) throw new Error('Config error: custom "other" system stream cannot be non visible. Only "account" streams can non visible. Stream: ' + 
+    JSON.stringify(systemStream, null, 2));
   }
 }
 
