@@ -177,8 +177,6 @@ module.exports = async function (
       }
     }
 
-    //console.log('XXXXX Perm:', context.access, ' query:', params.streams, ' unAuthorizedStreams', unAuthorizedStreams);
-
     if (unAuthorizedStreams.length > 0) {
       return next(errors.forbidden('stream [' + unAuthorizedStreams[0] + '] has not sufficent permission to get events'));
     }
