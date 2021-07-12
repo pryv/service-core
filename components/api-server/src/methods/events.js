@@ -1145,7 +1145,7 @@ module.exports = async function (
       await usersRepository.updateOne(
         context.user,
         { attachedFiles: context.user.storageUsed.attachedFiles },
-        context.access.id,
+        'system',
       );
     }
     return attachments;
@@ -1280,7 +1280,7 @@ module.exports = async function (
         await usersRepository.updateOne(
           context.user,
           context.user.storageUsed,
-          context.access.id,
+          'system',
         );
       }
     ], next);
@@ -1335,7 +1335,7 @@ module.exports = async function (
         await usersRepository.updateOne(
           context.user,
           context.user.storageUsed,
-          context.access.id,
+          'system',
         );
         notifications.eventsChanged(context.user);
         next();
