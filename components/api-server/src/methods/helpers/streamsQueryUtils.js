@@ -46,7 +46,7 @@ function transformArrayOfStringsToStreamsQuery(arrayOfQueries) {
   if (streamIds.length === 0) return arrayOfQueries;
 
   if (streamIds.length != arrayOfQueries.length) {
-    throw ('Error in "streams" parameter: streams queries and streamIds cannot be mixed');
+    throw ('Error in \'streams\' parameter: streams queries and streamIds cannot be mixed');
   }
 
   // group streamIds per "store"
@@ -108,12 +108,12 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
   function checkStore(streamId) {
 
     const forbiddenChar = findForbiddenChar(streamId);
-    if (forbiddenChar != null) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" forbidden chartacter "' + forbiddenChar + '" in streamId "' + streamId + '".');
+    if (forbiddenChar != null) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' forbidden chartacter \'' + forbiddenChar + '\' in streamId \'' + streamId + '\'.');
 
     // queries must be grouped by store 
     const [thisStore, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     if (!streamQuery.storeId) streamQuery.storeId = thisStore;
-    if (streamQuery.storeId !== thisStore) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) + '" queries must me grouped by stores.');
+    if (streamQuery.storeId !== thisStore) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' queries must me grouped by stores.');
     return cleanStreamId;
 
     function findForbiddenChar(streamId) {
@@ -126,20 +126,20 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
   }
 
   if (!streamQuery.any && !streamQuery.all) {
-    throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) + '" must contain at least one of "any" or "all" property.');
+    throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' must contain at least one of \'any\' or \'all\' property.');
   }
   const res = {};
   let hasAnyStar = false;
   for (const [property, arrayOfStreamIds] of Object.entries(streamQuery)) {
     if (!['all', 'any', 'not'].includes(property))
-      throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" unkown property: "' + property + '" in streams query "' + objectToString(streamQuery) + '"');
+      throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' unkown property: \'' + property + '\' in streams query \'' + objectToString(streamQuery) + '\'');
 
     if (!Array.isArray(arrayOfStreamIds)) {
       if (property === 'any' && arrayOfStreamIds === '*') {
         checkStore('*'); // will be handled as local
         continue; // stop here and go to next property
       } else {
-        throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" value of : "' + property + '" must be an array. Found: "' + objectToString(arrayOfStreamIds) + '"');
+        throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' value of : \'' + property + '\' must be an array. Found: \'' + objectToString(arrayOfStreamIds) + '\'');
       }
     }
 
@@ -147,15 +147,15 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
     
     for (item of arrayOfStreamIds) {
       if (typeof item !== 'string')
-        throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) + ' must be streamIds. Found: ' + objectToString(item));
+        throw ('Error in \'streams\' parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) + ' must be streamIds. Found: ' + objectToString(item));
 
       if (property !== 'any' && item === '*')
-        throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] only "any" can contains "*" : ' + objectToString(arrayOfStreamIds));
+        throw ('Error in \'streams\' parameter[' + objectToString(arrayOfQueries) + '] only \'any\' can contains \'*\' : ' + objectToString(arrayOfStreamIds));
 
       if (property === 'any' && item === '*') {
         hasAnyStar = true;
         if (arrayOfStreamIds.length > 1)
-          throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] "*" cannot be mixed with other streamIds in "any": ' + objectToString(arrayOfStreamIds));
+          throw ('Error in \'streams\' parameter[' + objectToString(arrayOfQueries) + '] \'*\' cannot be mixed with other streamIds in \'any\': ' + objectToString(arrayOfStreamIds));
       } 
       const cleanStreamid = checkStore(item);
       arrayOfCleanStreamIds.push(cleanStreamid);
@@ -164,7 +164,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
     }
   }
   if (hasAnyStar && streamQuery.all) {
-    throw ('Error in "streams" parameter[' + objectToString(streamQuery) + '] {any: "*"} cannot be mixed with "all": ' + objectToString(arrayOfQueries));
+    throw ('Error in \'streams\' parameter[' + objectToString(streamQuery) + '] {any: \'*\'} cannot be mixed with \'all\': ' + objectToString(arrayOfQueries));
   }
 }
 
