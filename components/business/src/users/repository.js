@@ -265,10 +265,10 @@ await bluebird.fromCallback(
     return user;
   }
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
-    this.checkDuplicates(update);
+    await this.checkDuplicates(update);
     
     // change password into hash if it exists
-if (update.password != null) {
+    if (update.password != null) {
       update.passwordHash = await bluebird.fromCallback(
         cb => encryption.hash(update.password, cb),
       );
