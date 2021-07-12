@@ -85,6 +85,9 @@ describe('accesses (personal)', function () {
         for (let e of expected) {
           e.apiEndpoint = buildApiEndpoint('userzero', e.token);
         }
+        for (let e of res.body.accesses) {
+          if (e.id === 'a_0') e.lastUsed = 0;
+        }
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,

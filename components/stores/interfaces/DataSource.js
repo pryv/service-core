@@ -73,9 +73,9 @@ class DataSource {
 }
 
 DataSource.UNKOWN_DATE = 10000000.00000001;
-DataSource.BY_SYSTEM = '.system';
-DataSource.BY_UNKOWN = '.unkown';
-DataSource.BY_EXTERNAL_PREFIX = '.external-';
+DataSource.BY_SYSTEM = 'system';
+DataSource.BY_UNKOWN = 'unkown';
+DataSource.BY_EXTERNAL_PREFIX = 'external-';
 
 
 /**

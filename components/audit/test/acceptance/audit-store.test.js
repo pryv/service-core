@@ -72,35 +72,36 @@ describe('Audit Streams and Events', function () {
   });
 
   describe('streams.get', () => {
-    it('[U2PV] must retreive access and actions substrea,s ', async() => { 
+    it('[U2PV] must retreive access and actions substreams ', async() => { 
       const res = await coreRequest
         .get(streamsPath)
-        .query({parentId: ':_audit:'})
+        .query({})
         .set('Authorization', appAccess.token);
-      assert.deepEqual(res.body.streams, [
-        {
-          id: ':_audit:accesses',
-          name: 'Accesses',
-          parentId: ':_audit:',
-          children: [],
-          childrenHidden: true
-        },
-        {
-          id: ':_audit:actions',
-          name: 'Actions',
-          parentId: ':_audit:',
-          children: [],
-          childrenHidden: true
-        }
-      ]);
+
+      const expectedStreamids = ['yo', ':_audit:access-' + appAccess.id, ':_audit:actions'];
+      assert.exists(res.body.streams);
+      assert.equal(res.body.streams.length, expectedStreamids.length);
+      for (stream of res.body.streams) {
+        assert.include(expectedStreamids, stream.id);
+      }
     });
-    it('[7SGO] must retrive only one accesses (stream) with appAccess', async() => { 
+
+    it('[D7WV] forbid listing of all accesses', async() => { 
       const res = await coreRequest
         .get(streamsPath)
         .query({parentId: ':_audit:accesses'})
         .set('Authorization', appAccess.token);
-      console.log('TEST 75GO', res.body);
+      assert.strictEqual(res.status, 403);
+      assert.exists(res.body.error);
+    });
+
+    it('[7SGO] must all listing one accesses (stream) with appAccess', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .query({id: ':_audit:access-' + appAccess.id})
+        .set('Authorization', appAccess.token);
       assert.equal(res.body.streams.length, 1);
+      assert.equal(res.body.streams[0].id, ':_audit:access-' + appAccess.id);
     });
 
     it('[XP27] must retrive all available streams with a personal Token', async() => { 
@@ -131,7 +132,6 @@ describe('Audit Streams and Events', function () {
         .get(eventsPath)
         .set('Authorization', appAccess.token)
         .query({ streams: [':_audit:access-' + appAccess.id], fromTime: start, toTime: stop });
-      console.log('TJ8S res', res.body)
       assert.equal(res.status, 200);
       const logs = res.body.events;
       assert.isAtLeast(logs.length, 2);

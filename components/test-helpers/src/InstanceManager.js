@@ -52,9 +52,6 @@ function InstanceManager(settings) {
 
   const NATS = require('nats');
   let nc = NATS.connect({ url: "nats://localhost:4222"});
-  nc.subscribe('*', (msg, reply, subject) => {
-      console.log('got', msg, 'from', subject);
-  });
 
   messagingSocket.on('*', function (message, data) {
     if (message === 'server-ready') {

@@ -52,6 +52,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
   // RETRIEVAL
   api.register('streams.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
+    checkAuthorization,
     applyDefaultsForRetrieval,
     findAccessibleStreams,
     includeDeletionsIfRequested
@@ -65,10 +66,27 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
     next();
   }
 
-  async function findAccessibleStreams(context, params, result, next) {
+  async function checkAuthorization(context, params, result, next) {
     if (params.parentId && params.id) {
       DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
     }
+    
+    if (params.parentId) {
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        params.parentId = replaceWithNewPrefix(params.parentId);
+      }
+    }
+
+    let streamId = params.id || params.parentId || null;
+    if (! streamId ) return next(); // "*" is authorized for everyone
+
+    if (! await context.access.canListStream(streamId)) {
+      return next(errors.forbidden('Insufficient permissions or non-existant stream [' + streamId + ']'));
+    }
+    return next();
+  }
+
+  async function findAccessibleStreams(context, params, result, next) {
     
     if (params.parentId) {
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
@@ -93,7 +111,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
 
-    console.log('XXXX findAccessibleStreams:', streamId, storeId, ' excludeds:', context.access.getCannotListStreamsStreamIds(storeId), ' listable:', context.access.getListableStreamIds());
+    //console.log('XXXX findAccessibleStreams:', streamId, storeId, ' excludeds:', context.access.getCannotListStreamsStreamIds(storeId), ' listable:', context.access.getListableStreamIds());
       
     if (streamId !== '*') {
       const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
@@ -121,10 +139,24 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
             copy.parentId = null;
           }
           filteredStreams.push(copy);
+        } else {
+          if (storeId === 'local' && listable.storeId !== 'local') {
+            // fetch stream structures for listables not in local and add it to the result
+            const listableStreamAndChilds = await stores.streams.get(context.user.id, 
+              {
+                id: listable.streamId,
+                storeId: listable.storeId,
+                expandChildren: true,
+                includeDeletionsSince: params.includeDeletionsSince,
+                includeTrashed: params.includeTrashed || params.state === 'all',
+                excludedIds: context.access.getCannotListStreamsStreamIds(listable.storeId),
+              });
+            filteredStreams.push(...listableStreamAndChilds);
+          }
         }
       }
       streams = filteredStreams;
-    }
+    } 
 
     // if request was made on parentId .. return only the children
     if (params.parentId && streams.length === 1) {

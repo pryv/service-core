@@ -405,7 +405,7 @@ exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
 
   // -- ADD Stores
   const mainStore = await getStores();
-  for (let source of mainStore.stores.reverse()) {
+  for (let source of [...mainStore.stores].reverse()) { // cloning array before reversing it!
     if (isShown(source.id)) {
       const stream = StreamsUtils.sourceToStream(source, {
         children: [],
