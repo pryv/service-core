@@ -111,12 +111,12 @@ Object.freeze(PermissionLevels);
     this.featurePermissionsMap = {};
     this._streamByStorePermissionsMap = {};
 
-    for (let perm of this.permissions) {
-      if (perm.streamId) {
+    for (const perm of this.permissions) {
+      if (perm.streamId != null) {
         this._loadStreamPermission(perm);
-      } else if (perm.tag) {
+      } else if (perm.tag != null) {
         this._loadTagPermission(perm);
-      } else if (perm.feature) {
+      } else if (perm.feature != null) {
         this._loadFeaturePermission(perm);
       }
     };
@@ -130,14 +130,14 @@ Object.freeze(PermissionLevels);
 
   _loadStreamPermission (perm) {
     const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
-    if (! this._streamByStorePermissionsMap[storeId]) this._streamByStorePermissionsMap[storeId] = {}
+    if (this._streamByStorePermissionsMap[storeId] == null) this._streamByStorePermissionsMap[storeId] = {}
     this._streamByStorePermissionsMap[storeId][streamId] = {streamId: streamId, level: perm.level};
     this._loadLimitation(storeId, streamId, perm);
   }
 
   _loadLimitation(storeId, streamId, perm) {
-    if (! perm.limitations) return;
-    for (let methodId of Object.keys(perm.limitations)) {
+    if (perm.limitations == null) return;
+    for (const methodId of Object.keys(perm.limitations)) {
       if (! this._limitationsByActionByStore[methodId]) this._limitationsByActionByStore[methodId] = {};
       if (this._limitationsByActionByStore[methodId][storeId]) {
         throw new Error('Only one limitation per method can be loaded for each store');
@@ -152,7 +152,7 @@ Object.freeze(PermissionLevels);
    * @returns {Object} keys are storeId
    */
   getLimitationsForMethodId(methodId) {
-    if (! this._limitationsByActionByStore) return null;
+    if (this._limitationsByActionByStore == null) return null;
     return this._limitationsByActionByStore[methodId];
   }
 
@@ -163,7 +163,7 @@ Object.freeze(PermissionLevels);
    */
   getStoresPermissions(storeId) {
     const storeStreamPermissionMap = this._streamByStorePermissionsMap[storeId];
-    if (! storeStreamPermissionMap) return [];
+    if (storeStreamPermissionMap == null) return [];
     return Object.values(storeStreamPermissionMap);
   }
   /**
@@ -174,7 +174,7 @@ Object.freeze(PermissionLevels);
    */
   getStreamPermission(storeId, streamId) {
     const storeStreamPermissionMap = this._streamByStorePermissionsMap[storeId];
-    if (! storeStreamPermissionMap) return null;
+    if (storeStreamPermissionMap == null) return null;
     return storeStreamPermissionMap[streamId];
   }
   /**
@@ -183,7 +183,7 @@ Object.freeze(PermissionLevels);
    */
   getAccountStreamPermissions() {
     const localPerms = this._streamByStorePermissionsMap['local'];
-    if (! localPerms) return [];
+    if (localPerms == null) return [];
     return Object.values(localPerms).filter(perm => SystemStreamsSerializer.isAccountStreamId(perm.streamId));
   }
 
@@ -194,11 +194,11 @@ Object.freeze(PermissionLevels);
    */
    getListableStreamIds() {
     const res = [];
-    if (this._streamByStorePermissionsMap) {
+    if (this._streamByStorePermissionsMap != null) {
       for (const storeId of Object.keys(this._streamByStorePermissionsMap)) {
         const storePermissions = this._streamByStorePermissionsMap[storeId];
         for (const perm of Object.values(storePermissions)) {
-          if (perm.streamId && isHigherOrEqualLevel(perm.level, 'read')) {
+          if ((perm.streamId != null) && isHigherOrEqualLevel(perm.level, 'read')) {
             res.push({streamId: perm.streamId, storeId: storeId});
           }
         }
@@ -215,12 +215,12 @@ Object.freeze(PermissionLevels);
    getCannotListStreamsStreamIds(storeId) {
     const res = (storeId === 'local') ? [].concat(SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading()) : [];
 
-    if (! this._streamByStorePermissionsMap) return res;
+    if (this._streamByStorePermissionsMap == null) return res;
     const localPerms = this._streamByStorePermissionsMap[storeId];  
-    if (! localPerms) return res;
+    if (localPerms == null) return res;
     
     for (const perm of Object.values(localPerms)) {
-      if (perm.level === null || perm.level === 'none') { 
+      if (perm.level == null || perm.level === 'none') { 
         res.push(StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
       }      
     }
@@ -235,12 +235,12 @@ Object.freeze(PermissionLevels);
   getCannotGetEventsStreamIds(storeId) {
     const res = (storeId === 'local') ? [].concat(SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading()) : [];
 
-    if (! this._streamByStorePermissionsMap) return res;
+    if (this._streamByStorePermissionsMap == null) return res;
     const localPerms = this._streamByStorePermissionsMap[storeId];  
-    if (! localPerms) return res;
+    if (localPerms == null) return res;
     
     for (const perm of Object.values(localPerms)) {
-      if (perm.level === 'create-only' || perm.level === null || perm.level === 'none') { 
+      if (perm.level === 'create-only' || perm.level == null || perm.level === 'none') { 
         res.push(StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
       }      
     }
@@ -258,8 +258,8 @@ Object.freeze(PermissionLevels);
   }
 
   _loadTagPermission (perm) {
-    var existingPerm = this.tagPermissionsMap[perm.tag];
-    if (existingPerm && isHigherOrEqualLevel(existingPerm.level, perm.level)) {
+    const existingPerm = this.tagPermissionsMap[perm.tag];
+    if ((existingPerm != null) && isHigherOrEqualLevel(existingPerm.level, perm.level)) {
       return;
     }
     this._registerTagPermission(perm);
@@ -347,20 +347,20 @@ Object.freeze(PermissionLevels);
     if (candidate.type !== 'shared') return false;
 
     let hasStreamPermissions = false;
-    for (let perm of candidate.permissions) {
-      if (perm.streamId) {
+    for (const perm of candidate.permissions) {
+      if (perm.streamId != null) {
         hasStreamPermissions = true;
         const myLevel = await this._getStreamPermissionLevel(perm.streamId);
         if (! myLevel || isLowerLevel(myLevel, perm.level) || myLevel === 'create-only') {
           return false; 
         }
 
-      } else if (perm.tag) {
+      } else if (perm.tag != null) {
         const myTagPermission = this.tagPermissionsMap[perm.tag];
         const myLevel = myTagPermission?.level;
         if (! myLevel || isLowerLevel(myLevel, perm.level)) return false; 
 
-      } else if (perm.feature) {
+      } else if (perm.feature != null) {
         const myFeaturePermission = this.featurePermissionsMap[perm.feature];
         const myValue = myFeaturePermission?.level;
         if (! myValue || myValue != perm.feature) return false;
@@ -379,7 +379,7 @@ Object.freeze(PermissionLevels);
   async canListStream (streamId) {
     if (this.isPersonal()) return true;
     const level = await this._getStreamPermissionLevel(streamId);
-    return (level && isHigherOrEqualLevel(level, 'read')) ? true : false;
+    return ((level != null) && isHigherOrEqualLevel(level, 'read')) ? true : false;
   }
 
   async canCreateChildOnStream(streamId) {
@@ -410,7 +410,7 @@ Object.freeze(PermissionLevels);
     const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
     
     const level = await this._getStreamPermissionLevel(fullStreamId);
-    if (level === null || level === 'create-only') return false;
+    if (level == null || level === 'create-only') return false;
     return isHigherOrEqualLevel(level, 'read');
   }
 
@@ -418,7 +418,7 @@ Object.freeze(PermissionLevels);
   async canCreateEventsOnStream (streamId) {
     if (this.isPersonal()) return true;
     const level = await this._getStreamPermissionLevel(streamId);
-    return level && isHigherOrEqualLevel(level, 'contribute');
+    return (level != null) && isHigherOrEqualLevel(level, 'contribute');
   }
 
   async canUpdateEventsOnStream (streamId) {
@@ -437,14 +437,14 @@ Object.freeze(PermissionLevels);
     if (this.isPersonal()) return true;
     const level = this._getTagPermissionLevel(tag);
     if (level === 'create-only') return false;
-    return level && isHigherOrEqualLevel(level, 'read');
+    return (level != null) && isHigherOrEqualLevel(level, 'read');
   }
 
   /** kept private as not used elsewhere */
   _canCreateEventsWithTag (tag) {
     if (this.isPersonal()) return true;
     const level = this._getTagPermissionLevel(tag);
-    return level && isHigherOrEqualLevel(level, 'contribute');
+    return (level != null) && isHigherOrEqualLevel(level, 'contribute');
   }
 
   /** kept private as not used elsewhere */
@@ -505,7 +505,7 @@ Object.freeze(PermissionLevels);
    * @returns {String}  `null` if no matching permission exists.
    */
   async _getStreamPermissionLevel (streamIdFull) {
-    if (! streamIdFull) streamIdFull = '*'; // to be investgated why this happens
+    if (streamIdFull == null) streamIdFull = '*'; // to be investgated why this happens
 
     if (this.isPersonal()) return 'manage';
 
@@ -539,8 +539,8 @@ Object.freeze(PermissionLevels);
     if (this.isPersonal()) {
       return 'manage';
     } else {
-      var permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
-      return permission ? permission.level : null;
+      const permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
+      return (permission != null) ? permission.level : null;
     }
   }
 
@@ -557,7 +557,7 @@ Object.freeze(PermissionLevels);
   }
 
   hasTagPermissions() {
-    return (this.tagPermissions && this.tagPermissions.length > 0);
+    return ((this.tagPermissions != null) && this.tagPermissions.length > 0);
   }
 };
 

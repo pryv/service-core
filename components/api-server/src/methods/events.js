@@ -252,7 +252,7 @@ module.exports = async function (
     const paramsByStoreId = {};
     for (let streamQuery of params.streams) {
       const storeId = streamQuery.storeId;
-      if (! storeId) {
+      if (storeId == null) {
         console.error('Missing storeId' + params.streams);
         throw(new Error("Missing storeId" + params.streams));
       }

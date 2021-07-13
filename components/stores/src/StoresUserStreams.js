@@ -27,7 +27,7 @@ class StoresUserStreams extends UserStreams {
    * Helper to get a single stream
    */
   async getOne(uid, streamId, storeId) {
-    if (! storeId) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
+    if (storeId == null) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
     const store = this.mainStore._storeForId(storeId);
     if (! store) return null;
     const streams = await store.streams.get(uid, {id: streamId, includeTrashed: true});
@@ -56,7 +56,7 @@ class StoresUserStreams extends UserStreams {
     let storeId = params.storeId; // might me null
     let excludedIds = null;
 
-    if (! storeId) { // --- Also strip storeId from excluded Idds
+    if (storeId == null) { // --- Also strip storeId from excluded Idds
       [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
       excludedIds = [];
       for (const excludedFullStreamId of params.excludedIds) { // keep only streamIds in this store
@@ -75,7 +75,7 @@ class StoresUserStreams extends UserStreams {
     // *** root query we just expose stores handles & local streams
     // might be moved in LocalDataSource ? 
     if (streamId === '*' && storeId === 'local') { 
-      for (let source of this.mainStore.stores) {
+      for (const source of this.mainStore.stores) {
         if (source.id !== 'local') {
           res.push(StreamsUtils.sourceToStream(source, {
             children: [],
@@ -99,7 +99,7 @@ class StoresUserStreams extends UserStreams {
     if (store.streams.hasFeatureGetParamsExcludedIds)
       myParams.excludedIds = excludedIds;
    
-    let storeStreams = await store.streams.get(uid, myParams);
+    const storeStreams = await store.streams.get(uid, myParams);
 
     // add storeStreams to result
     res.push(...storeStreams);
@@ -112,7 +112,7 @@ class StoresUserStreams extends UserStreams {
     }
 
     if (storeId !== 'local') { // add Prefix
-      StreamsUtils.addStoreIdToStreams(storeId, res);
+      StreamsUtils.addStoreIdPrefixToStreams(storeId, res);
       if (streamId === '*') { // add root stream
         res = [StreamsUtils.sourceToStream(store, {
           children: res,
@@ -147,7 +147,7 @@ class StoresUserStreams extends UserStreams {
       if (streamId.indexOf('.') === 0) { // fatest method against startsWith or charAt() -- 10x
         
         if (streamId === '.*') {   // if '.*' add all sources
-          for (let source of this.mainStore.stores) {
+          for (const source of this.mainStore.stores) {
             addStoreParentId(source.id, null);
           }
 

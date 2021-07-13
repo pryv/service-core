@@ -74,7 +74,7 @@ class AuditUserStreams extends UserStreams {
     if (params.id === 'accesses') {
       const userStorage = await audit.storage.forUser(uid);
       const accesses = userStorage.getAllAccesses();
-      if (! accesses) return [];
+      if (accesses == null) return [];
       const res = accesses.map((access) => { return {
         id: access.term,
         name: access.term,
@@ -93,7 +93,7 @@ class AuditUserStreams extends UserStreams {
      if (params.id === 'actions') {
       const userStorage = await audit.storage.forUser(uid);
       const actions = userStorage.getAllActions();
-      if (! actions) return [];
+      if (actions == null) return [];
       const res = actions.map((action) => { return {
         id: action.term,
         name: action.term,

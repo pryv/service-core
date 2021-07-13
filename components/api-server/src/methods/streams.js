@@ -97,7 +97,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
     let streamId = params.id || params.parentId || '*';
 
     let storeId = params.storeId; // might me null
-    if (! storeId) {
+    if (storeId == null) {
       [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     }
    
@@ -115,7 +115,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
       const inResult = treeUtils.findById(streams, fullStreamId);
       if (!inResult) {
-        return next(errors.unknownReferencedResource('unkown Stream:', 'id', fullStreamId, null));
+        return next(errors.unknownReferencedResource('unkown Stream:', params.parentId ? 'parentId' : 'id', fullStreamId, null));
       }
     } else if (! await context.access.canListStream('*')) { // request is "*" and not personal access
       // cherry pick accessible streams from result
@@ -127,7 +127,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
        *  - pass a list of streamIds to store.streams.get() to get a consolidated answer 
        *********************************/
       const listables = context.access.getListableStreamIds();
-      let filteredStreams = [];
+      const filteredStreams = [];
       for (const listable of listables) {
         const listableFullStreamId = StreamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
         const inResult = treeUtils.findById(streams, listableFullStreamId);

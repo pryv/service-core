@@ -72,7 +72,7 @@ describe('Audit Streams and Events', function () {
   });
 
   describe('streams.get', () => {
-    it('[U2PV] must retreive access and actions substreams ', async() => { 
+    it('[U2PV] must retrieve access and actions substreams ', async() => { 
       const res = await coreRequest
         .get(streamsPath)
         .query({})
@@ -81,7 +81,7 @@ describe('Audit Streams and Events', function () {
       const expectedStreamids = ['yo', ':_audit:access-' + appAccess.id, ':_audit:actions'];
       assert.exists(res.body.streams);
       assert.equal(res.body.streams.length, expectedStreamids.length);
-      for (stream of res.body.streams) {
+      for (const stream of res.body.streams) {
         assert.include(expectedStreamids, stream.id);
       }
     });
@@ -91,11 +91,11 @@ describe('Audit Streams and Events', function () {
         .get(streamsPath)
         .query({parentId: ':_audit:accesses'})
         .set('Authorization', appAccess.token);
-      assert.strictEqual(res.status, 403);
+      assert.equal(res.status, 403);
       assert.exists(res.body.error);
     });
 
-    it('[7SGO] must all listing one accesses (stream) with appAccess', async() => { 
+    it('[7SGO] must allow listing one accesses (stream) with appAccess', async() => { 
       const res = await coreRequest
         .get(streamsPath)
         .query({id: ':_audit:access-' + appAccess.id})
@@ -104,7 +104,7 @@ describe('Audit Streams and Events', function () {
       assert.equal(res.body.streams[0].id, ':_audit:access-' + appAccess.id);
     });
 
-    it('[XP27] must retrive all available streams with a personal Token', async() => { 
+    it('[XP27] must retrieve all available streams with a personal token', async() => { 
       const res = await coreRequest
         .get(streamsPath)
         .query({parentId: ':_audit:accesses'})
@@ -112,7 +112,7 @@ describe('Audit Streams and Events', function () {
       assert.isAtLeast(res.body.streams.length, 2);
     });
 
-    it('[WOIG] must retrive list of availble actions', async() => { 
+    it('[WOIG] must retrieve list of available actions', async() => { 
       const res = await coreRequest
         .get(streamsPath)
         .query({parentId: ':_audit:actions'})

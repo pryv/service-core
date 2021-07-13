@@ -66,15 +66,15 @@ function storeIdAndStreamIdForStreamId(fullStreamId) {
  * @param {identifier} storeId 
  * @param {Array<Streams>} streams 
  */
-function addStoreIdToStreams(storeId, streams) {
+function addStoreIdPrefixToStreams(storeId, streams) {
   for (const stream of streams) {
     stream.id = streamIdForStoreId(stream.id, storeId);
-    if (stream.parentId) { 
+    if (stream.parentId != null) { 
       stream.parentId = streamIdForStoreId(stream.parentId, storeId);
     } else {
       stream.parentId = streamIdForStoreId('*', storeId);
     }
-    if (stream.children) addStoreIdToStreams(storeId, stream.children)
+    if (stream.children != null) addStoreIdPrefixToStreams(storeId, stream.children)
   }
 }
 
@@ -82,5 +82,5 @@ module.exports = {
   sourceToStream,
   storeIdAndStreamIdForStreamId,
   streamIdForStoreId,
-  addStoreIdToStreams
+  addStoreIdPrefixToStreams
 }

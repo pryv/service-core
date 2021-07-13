@@ -15,6 +15,7 @@ const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
 const { Notifications } = require('messages');
 const { databaseFixture } = require('test-helpers');
+const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
@@ -72,19 +73,8 @@ describe("System streams", function () {
   describe('GET /streams', () => {
     describe('When using a personal access', () => {
       it('[9CGO] Should return all streams - including system ones', async () => {
-        const expectedRes = [];
-        const {StreamsUtils, getStores} = require('stores');
-        // -- ADD Stores
-        const mainStore = await getStores();
-        for (let source of mainStore.stores) {
-          if (source.id !== 'local') {
-            expectedRes.push(StreamsUtils.sourceToStream(source, {
-              children: [],
-              childrenHidden: true // To be discussed
-            }));
-          }
-        }
-      
+        const expectedRes = [];
+        validation.addStoreStreams(expectedRes)
         const readableStreams = [
           {
             name: 'account',

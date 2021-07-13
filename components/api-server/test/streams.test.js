@@ -147,6 +147,16 @@ describe('streams', function () {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
+          data: {parentId: 'unknownStreamId'}
+        }, done);
+      });
+    });
+
+    it('[G5F2] must return a correct error if the stream is unknown', function (done) {
+      request.get(basePath).query({id: 'unknownStreamId'}).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.UnknownReferencedResource,
           data: {id: 'unknownStreamId'}
         }, done);
       });

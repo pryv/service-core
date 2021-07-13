@@ -399,13 +399,13 @@ exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
   const {StreamsUtils, getStores} = require('stores');
   function isShown(storeId) {
     if (storeId === 'local') return false;
-    if (! storesId) return true;
+    if (storesId == null) return true;
     return storesId.includes(storeId);
   }
 
   // -- ADD Stores
   const mainStore = await getStores();
-  for (let source of [...mainStore.stores].reverse()) { // cloning array before reversing it!
+  for (const source of [...mainStore.stores].reverse()) { // cloning array before reversing it!
     if (isShown(source.id)) {
       const stream = StreamsUtils.sourceToStream(source, {
         children: [],
