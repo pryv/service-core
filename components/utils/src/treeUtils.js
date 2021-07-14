@@ -308,7 +308,7 @@ exports.expandIds = function (array, ids) {
 /**
  * Applies "iterator" function to all elements of the array and its children
  */
-exports.apply = function (array, iterator) {
+exports.cloneAndApply = function (array, iterator) {
   const result = [];
   array.forEach(item => {
     const clone = _.clone(item);

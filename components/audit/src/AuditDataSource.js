@@ -52,7 +52,61 @@ class AuditDataSource extends DataSource {
 class AuditUserStreams extends UserStreams {
 
   async get(uid, params) {
-    let streams = [];
+
+    // -- List root streams (accesses & actions)
+    if (params.id === '*') {
+      return [{
+        id: 'accesses',
+        name: 'Accesses',
+        parentId: null,
+        children: [],
+        childrenHidden: true,
+      }, {
+        id: 'actions',
+        name: 'Actions',
+        parentId: null,
+        children: [],
+        childrenHidden: true,
+      }];
+    }
+
+    // list accesses
+    if (params.id === 'accesses') {
+      const userStorage = await audit.storage.forUser(uid);
+      const accesses = userStorage.getAllAccesses();
+      if (accesses == null) return [];
+      const res = accesses.map((access) => { return {
+        id: access.term,
+        name: access.term,
+        children: [],
+        parentId: 'accesses'
+      }});
+      return [{
+        id: 'accesses',
+        name: 'Accesses',
+        parentId: null,
+        children: res,
+      }];
+    }
+
+     // list actions
+     if (params.id === 'actions') {
+      const userStorage = await audit.storage.forUser(uid);
+      const actions = userStorage.getAllActions();
+      if (actions == null) return [];
+      const res = actions.map((action) => { return {
+        id: action.term,
+        name: action.term,
+        children: [],
+        parentId: 'actions'
+      }});
+      return [{
+        id: 'actions',
+        name: 'Actions',
+        parentId: null,
+        children: res,
+      }];
+    }
 
     if (params.id) {
       let parentId = null;
@@ -61,20 +115,17 @@ class AuditUserStreams extends UserStreams {
       } else if (params.id.startsWith('action-')) {
         parentId = 'actions';
       }
-
-      streams.push({
+      // here check that this action or streams exists
+      return [{
         id: params.id,
         name: params.id,
         parentId: parentId,
         children: [],
-        childrenHidden: true,
         trashed: false,
-      });
-    } else {
-      throw(new Error('Audit stream query not supported :' + params));
-    }
+      }];
+    } 
 
-    return streams;
+    return [];
   }
 }
 

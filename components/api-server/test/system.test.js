@@ -174,8 +174,7 @@ describe('system (ex-register)', function () {
           execute: function () {
             require('nock')(this.context.url)
               .post('')
-              .reply(200, function (uri, requestBody) {
-                var body = JSON.parse(requestBody);
+              .reply(200, function (uri, body) {
                 body.message.global_merge_vars[0].content.should.be.equal('mr-dupotager');
                 body.template_name.should.match(/welcome/);
                 this.context.messagingSocket.emit('mail-sent1');
@@ -198,6 +197,7 @@ describe('system (ex-register)', function () {
           status: 201,
           schema: methodsSchema.createUser.result
         });
+        await new Promise(r => setTimeout(r, 1000));
         mailSent.should.eql(true);
 
         // getUpdatedUsers

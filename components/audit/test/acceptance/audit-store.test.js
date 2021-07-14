@@ -72,13 +72,57 @@ describe('Audit Streams and Events', function () {
   });
 
   describe('streams.get', () => {
-    it('[7SGO] must retrive a list of available streams', async() => { 
+    it('[U2PV] must retrieve access and actions substreams ', async() => { 
       const res = await coreRequest
         .get(streamsPath)
+        .query({})
         .set('Authorization', appAccess.token);
-      console.log('TEST 75GO', res.body);
+
+      const expectedStreamids = ['yo', ':_audit:access-' + appAccess.id, ':_audit:actions'];
+      assert.exists(res.body.streams);
+      assert.equal(res.body.streams.length, expectedStreamids.length);
+      for (const stream of res.body.streams) {
+        assert.include(expectedStreamids, stream.id);
+      }
     });
 
+    it('[D7WV] forbid listing of all accesses', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .query({parentId: ':_audit:accesses'})
+        .set('Authorization', appAccess.token);
+      assert.equal(res.status, 403);
+      assert.exists(res.body.error);
+    });
+
+    it('[7SGO] must allow listing one accesses (stream) with appAccess', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .query({id: ':_audit:access-' + appAccess.id})
+        .set('Authorization', appAccess.token);
+      assert.equal(res.body.streams.length, 1);
+      assert.equal(res.body.streams[0].id, ':_audit:access-' + appAccess.id);
+    });
+
+    it('[XP27] must retrieve all available streams with a personal token', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .query({parentId: ':_audit:accesses'})
+        .set('Authorization', personalToken);
+      assert.isAtLeast(res.body.streams.length, 2);
+    });
+
+    it('[WOIG] must retrieve list of available actions', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .query({parentId: ':_audit:actions'})
+        .set('Authorization', appAccess.token);
+      assert.exists(res.body.streams);
+      assert.isAtLeast(res.body.streams.length, 1);
+      for (const stream of res.body.streams) {
+        assert.isTrue(stream.id.startsWith(':_audit:action-'), 'StreamId should starts With ":_audit:actions-", found: "' + stream.id+ '"');
+      }
+    });
   });
 
   describe('events.get', () => {

@@ -106,7 +106,7 @@ describe('account', function () {
             scope.put('/users')
               .matchHeader('Authorization', this.context.key)
               .reply(200, function (uri, requestBody) {
-                this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
+                this.context.messagingSocket.emit('reg-server-called', requestBody);
               }.bind(this));
           }
         });
@@ -424,8 +424,7 @@ describe('account', function () {
         context: settings.services.email,
         execute: function () {
           require('nock')(this.context.url).post('')
-            .reply(200, function (uri, requestBody) {
-              var body = JSON.parse(requestBody);
+            .reply(200, function (uri, body) {
               var token = body.message.global_merge_vars[0].content; // HACK, assume structure 
               this.context.messagingSocket.emit('password-reset-token', token);
             }.bind(this));

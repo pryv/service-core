@@ -21,7 +21,7 @@ const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert;
 
-describe('Access permissions', function () {
+describe('[ACCP] Access permissions', function () {
 
   var user = Object.assign({}, testData.users[0]),
       request = null, // must be set after server instance started
@@ -263,14 +263,13 @@ describe('Access permissions', function () {
     // note: personal (i.e. full) access is implicitly covered by streams/events tests
 
     it('[BSFP] `get` must only return streams for which permissions are defined', function (done) {
-      request.get(basePath, token(1)).query({state: 'all'}).end(function (res) {
-        res.body.streams.should.eql([
-          // must not include inaccessible parentIds
-          _.omit(testData.streams[0], 'parentId'),
-          _.omit(testData.streams[1], 'parentId'),
-          _.omit(testData.streams[2].children[0], 'parentId')
-        ]);
-
+      request.get(basePath, token(1)).query({state: 'all'}).end(async function (res) {
+        const expectedStreamids = [testData.streams[0].id, testData.streams[1].id, testData.streams[2].children[0].id, ':_audit:access-a_1', ':_audit:actions'];
+        assert.exists(res.body.streams);
+        res.body.streams.length.should.eql(expectedStreamids.length)
+        for (const stream of res.body.streams) {
+          assert.include(expectedStreamids, stream.id);
+        }
         done();
       });
     });
@@ -354,9 +353,11 @@ describe('Access permissions', function () {
 
     it('[NJ1A] must allow access to all streams when no specific stream permissions are defined',
         function (done) {
+          const expected = validation.removeDeletions(_.cloneDeep(testData.streams));
+          validation.addStoreStreams(expected);
           request.get(basePath, token(2)).query({ state: 'all' }).end(function (res) {
             res.body.streams = validation.removeAccountStreams(res.body.streams);
-            res.body.streams.should.eql(validation.removeDeletions(testData.streams));
+            res.body.streams.should.eql(expected);
             done();
       });
     });

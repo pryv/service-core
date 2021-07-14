@@ -23,7 +23,7 @@ const ErrorIds = require('errors/src/ErrorIds');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
-const { getStores } = require('stores');
+const { getStores, StreamsUtils } = require('stores');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 
 SystemStreamsSerializer.getSerializer(); // ensure it's loaded
@@ -52,6 +52,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
   // RETRIEVAL
   api.register('streams.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
+    checkAuthorization,
     applyDefaultsForRetrieval,
     findAccessibleStreams,
     includeDeletionsIfRequested
@@ -65,46 +66,100 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
     next();
   }
 
-  async function findAccessibleStreams(context, params, result, next) {
-    try { 
-    // can't reuse context streams (they carry extra internal properties)
-    let streams = await bluebird.fromCallback(cb => userStreamsStorage.find(context.user, {}, null, cb));
-
-    // AT WORK
-    //const newStreams = await stores.streams.get(context.user.id, {expandChildren: true});
-
-    const systemStreams = SystemStreamsSerializer.getReadable();
-    streams = streams.concat(systemStreams);
+  async function checkAuthorization(context, params, result, next) {
+    if (params.parentId && params.id) {
+      DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
+    }
     
     if (params.parentId) {
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         params.parentId = replaceWithNewPrefix(params.parentId);
       }
-
-      const parent = treeUtils.findById(streams, params.parentId);
-      if (parent == null) {
-        return next(errors.unknownReferencedResource('parent stream',
-          'parentId', params.parentId, null));
-      }
-      streams = parent.children;
     }
 
-    if (params.state !== 'all') { // i.e. === 'default' (return non-trashed items)
-      streams = treeUtils.filterTree(streams, false /*no orphans*/, function (item) {
-        return !item.trashed;
-      });
-    }
+    let streamId = params.id || params.parentId || null;
+    if (! streamId ) return next(); // "*" is authorized for everyone
 
-    streams = await treeUtils.filterTreeOnPromise(streams, true /*keep orphans*/, async function (stream) {
-      return await context.access.canListStream(stream.id);
-    });
+    if (! await context.access.canListStream(streamId)) {
+      return next(errors.forbidden('Insufficient permissions or non-existant stream [' + streamId + ']'));
+    }
+    return next();
+  }
+
+  async function findAccessibleStreams(context, params, result, next) {
     
-    // hide inaccessible parent ids
-    for (const stream of streams) {
-      if (! await context.access.canListStream(stream.parentId)) {
-        delete stream.parentId;
+    if (params.parentId) {
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        params.parentId = replaceWithNewPrefix(params.parentId);
       }
     }
+
+    let streamId = params.id || params.parentId || '*';
+
+    let storeId = params.storeId; // might me null
+    if (storeId == null) {
+      [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    }
+   
+    let streams = await stores.streams.get(context.user.id, 
+      {
+        id: streamId,
+        storeId: storeId,
+        expandChildren: true,
+        includeDeletionsSince: params.includeDeletionsSince,
+        includeTrashed: params.includeTrashed || params.state === 'all',
+        excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
+      });
+ 
+    if (streamId !== '*') {
+      const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
+      const inResult = treeUtils.findById(streams, fullStreamId);
+      if (!inResult) {
+        return next(errors.unknownReferencedResource('unkown Stream:', params.parentId ? 'parentId' : 'id', fullStreamId, null));
+      }
+    } else if (! await context.access.canListStream('*')) { // request is "*" and not personal access
+      // cherry pick accessible streams from result
+      /********************************
+       * This is not optimal (fetches all streams) and not accurate 
+       * This method can "duplicate" streams, if read rights have been given to a parent and one of it's children
+       * Either:
+       *  - detect parent / child relationships
+       *  - pass a list of streamIds to store.streams.get() to get a consolidated answer 
+       *********************************/
+      const listables = context.access.getListableStreamIds();
+      const filteredStreams = [];
+      for (const listable of listables) {
+        const listableFullStreamId = StreamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
+        const inResult = treeUtils.findById(streams, listableFullStreamId);
+        if (inResult) {
+          const copy = _.cloneDeep(inResult);
+          if (! copy.parentId || ! await context.access.canListStream(copy.parentId)) {
+            copy.parentId = null;
+          }
+          filteredStreams.push(copy);
+        } else {
+          if (storeId === 'local' && listable.storeId !== 'local') {
+            // fetch stream structures for listables not in local and add it to the result
+            const listableStreamAndChilds = await stores.streams.get(context.user.id, 
+              {
+                id: listable.streamId,
+                storeId: listable.storeId,
+                expandChildren: true,
+                includeDeletionsSince: params.includeDeletionsSince,
+                includeTrashed: params.includeTrashed || params.state === 'all',
+                excludedIds: context.access.getCannotListStreamsStreamIds(listable.storeId),
+              });
+            filteredStreams.push(...listableStreamAndChilds);
+          }
+        }
+      }
+      streams = filteredStreams;
+    } 
+
+    // if request was made on parentId .. return only the children
+    if (params.parentId && streams.length === 1) {
+      streams = streams[0].children;
+    } 
 
     if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
       streams = changePrefixIdForStreams(streams);
@@ -112,10 +167,6 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
 
     result.streams = streams;
     next();
-    } catch (e) {
-      console.log(e);
-      return next(errors.unexpectedError(e)); 
-    } 
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {

@@ -315,7 +315,10 @@ describe('root', function() {
       sharedAccess.permissions.unshift({streamId: ':_system:helpers', level: 'none'});
       
       sharedAccess.permissions.push({
-        streamId: ':_audit:', 
+        streamId: ':_audit:access-' + sharedAccess.id, 
+        level: 'read'});
+      sharedAccess.permissions.push({
+        streamId: ':_audit:actions', 
         limitations: { 'events.get': {streams: { all: [ 'access-' + sharedAccess.id ] } } },
         level: 'read'});
 

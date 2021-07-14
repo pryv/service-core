@@ -168,7 +168,7 @@ function load(config: {}): {} {
   if (otherCustomStreams == null) otherCustomStreams = [];
   otherCustomStreams = extendSystemStreamsWithDefaultValues(otherCustomStreams);
   otherCustomStreams = ensurePrefixForStreamIds(otherCustomStreams, CUSTOMER_PREFIX);
-  treeUtils.apply(otherCustomStreams, s => { // ugly reuse of treeUtils.apply() because we don't modify the array
+  treeUtils.cloneAndApply(otherCustomStreams, s => { // ugly reuse of treeUtils.cloneAndApply() because we don't modify the array
     validateOtherStreams(s);
     return s;
   });
@@ -180,7 +180,7 @@ function load(config: {}): {} {
   let seenWithPrefix: Map<string, boolean> = new Map();
   const isBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
-  treeUtils.apply(systemStreams, s => { // ugly reuse of treeUtils.apply() because we don't modify the array
+  treeUtils.cloneAndApply(systemStreams, s => { // ugly reuse of treeUtils.cloneAndApply() because we don't modify the array
     validateSystemStreamWithSchema(s);
     [seen, seenWithPrefix] = throwIfNotUnique(seen, seenWithPrefix, s.id, isBackwardCompatibilityActive);
     return s;
@@ -219,7 +219,7 @@ function addParentIdAndChildren(streams: Array<SystemStream>): Array<SystemStrea
 function extendSystemStreamsWithDefaultValues (
   streams: Array<SystemStream>
 ): Array<SystemStream>{
-  return treeUtils.apply(streams, s => { 
+  return treeUtils.cloneAndApply(streams, s => { 
     const stream = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, s);
     if (stream.name == null) {
       stream.name = stream.id;
@@ -235,7 +235,7 @@ function extendSystemStreamsWithDefaultValues (
  * @param {string} prefix the prefix to add
  */
 function ensurePrefixForStreamIds(systemStreams: Array<SystemStream>, prefix: string = PRYV_PREFIX): Array<SystemStream> {
-  return treeUtils.apply(systemStreams, s => _.extend({}, s, { id: _addPrefixToStreamId(s.id, prefix)}));
+  return treeUtils.cloneAndApply(systemStreams, s => _.extend({}, s, { id: _addPrefixToStreamId(s.id, prefix)}));
 
   function _addPrefixToStreamId(streamId: string, prefix: string): string {
     if (streamId.startsWith(prefix)) return streamId;

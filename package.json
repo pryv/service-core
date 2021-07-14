@@ -36,7 +36,8 @@
     "test-root": "node_modules/.bin/mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
     "upload-test-results": "scripts/test-results/upload.sh",
     "watch": "node_modules/.bin/babel --verbose --watch=./components --out-dir=dist/components --copy-files --source-maps both",
-    "webhooks": "cd dist/components/webhooks && bin/server"
+    "webhooks": "cd dist/components/webhooks && bin/server",
+    "c2w": "rm -rf dist && rm -rf components/**/node_modules && yarn setup && yarn release && yarn watch"
   },
   "pre-commit": [
     "license"
@@ -114,7 +115,7 @@
     "inspect": "^0.0.2",
     "mocha": "^8.1.2",
     "moment": "^2.24.0",
-    "nock": "9.4.0",
+    "nock": "13.1.1",
     "nyc": "^15.0.1",
     "parallelshell": "^2.0.0",
     "pre-commit": "^1.2.2",

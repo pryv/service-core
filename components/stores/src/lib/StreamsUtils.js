@@ -15,9 +15,9 @@ const LOCAL_STORE = 'local';
  */
 function sourceToStream(source, extraProperties) {
   return Object.assign({
-    id: source.id,
+    id: ':' + source.id + ':',
     name: source.name,
-    parentId: null,
+    parentId: null,  
     created: DataSource.UNKOWN_DATE,
     modified: DataSource.UNKOWN_DATE,
     createdBy: DataSource.BY_SYSTEM,
@@ -60,9 +60,27 @@ function storeIdAndStreamIdForStreamId(fullStreamId) {
   return ':' + storeId + ':' + sstreamId;
 }
 
+/**
+ * Add storeId to streamIds to parentIds of a tree
+ * Add storeId to "null" parentId
+ * @param {identifier} storeId 
+ * @param {Array<Streams>} streams 
+ */
+function addStoreIdPrefixToStreams(storeId, streams) {
+  for (const stream of streams) {
+    stream.id = streamIdForStoreId(stream.id, storeId);
+    if (stream.parentId != null) { 
+      stream.parentId = streamIdForStoreId(stream.parentId, storeId);
+    } else {
+      stream.parentId = streamIdForStoreId('*', storeId);
+    }
+    if (stream.children != null) addStoreIdPrefixToStreams(storeId, stream.children)
+  }
+}
 
 module.exports = {
-  sourceToStream: sourceToStream,
-  storeIdAndStreamIdForStreamId: storeIdAndStreamIdForStreamId,
-  streamIdForStoreId: streamIdForStoreId
+  sourceToStream,
+  storeIdAndStreamIdForStreamId,
+  streamIdForStoreId,
+  addStoreIdPrefixToStreams
 }

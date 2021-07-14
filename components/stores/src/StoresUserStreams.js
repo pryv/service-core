@@ -16,19 +16,19 @@ const { treeUtils } = require('utils');
 class StoresUserStreams extends UserStreams {
  
   /**
-   * @param {Stores} stores 
+   * @param {Stores} mainStore 
    */
-  constructor(stores) {
+  constructor(mainStore) {
     super();
-    this.stores = stores;
+    this.mainStore = mainStore;
   }
 
   /**
    * Helper to get a single stream
    */
   async getOne(uid, streamId, storeId) {
-    if (! storeId) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
-    const store = this.stores._storeForId(storeId);
+    if (storeId == null) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
+    const store = this.mainStore._storeForId(storeId);
     if (! store) return null;
     const streams = await store.streams.get(uid, {id: streamId, includeTrashed: true});
     if (streams && streams.length === 1) return streams[0];
@@ -49,37 +49,18 @@ class StoresUserStreams extends UserStreams {
    * @returns {UserStream|null} - the stream or null if not found:
    */
   async get(uid, params) {
+
+    // -------- cleanup params --------- //
     
-    if (params.parentId && params.id) {
-      DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
-    }
-    
-    let streamId = params.id || params.parentId;
+    let streamId = params.id || '*';
     let storeId = params.storeId; // might me null
-    
-
-    // *** root query we just expose stores handles
-    if (! streamId) { 
-      const res = [];
-      for (let source of this.stores.sources) {
-        res.push([StreamsUtils.sourceToStream(source, {
-          children: [],
-          childrenHidden: true // To be discussed
-        })]);
-      }
-      // add local streams here
-      return res;
-    }
-
-   
     let excludedIds = null;
 
-     // different comportement if storeId is already provided - else 
-    if (! storeId) {
+    if (storeId == null) { // --- Also strip storeId from excluded Idds
       [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
       excludedIds = [];
-      for (const exludedFullStreamId of params.excludedIds) { // keep only streamIds in this store
-        const [excludedStoreId, excludedStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+      for (const excludedFullStreamId of params.excludedIds) { // keep only streamIds in this store
+        const [excludedStoreId, excludedStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(excludedFullStreamId);
         if (excludedStoreId === storeId) {
           excludedIds.push(excludedStreamId);
         }
@@ -88,26 +69,40 @@ class StoresUserStreams extends UserStreams {
       excludedIds = params.excludedIds;
     }
 
+    // ------- create result ------//
+    let res = [];
+
+    // *** root query we just expose stores handles & local streams
+    // might be moved in LocalDataSource ? 
+    if (streamId === '*' && storeId === 'local') { 
+      for (const source of this.mainStore.stores) {
+        if (source.id !== 'local') {
+          res.push(StreamsUtils.sourceToStream(source, {
+            children: [],
+            childrenHidden: true // To be discussed
+          }));
+        }
+      }
+    }
+    //------ Query Store -------------//
+
     const myParams = {
       id: streamId,
       includeDeletionsSince: params.includeDeletionsSince,
-      includeTrashed: params.includeTrashed || params.state === 'all',
+      includeTrashed: params.includeTrashed,
       expandChildren: params.expandChildren,
     }
 
-    const store = this.stores._storeForId(storeId);
+    const store = this.mainStore._storeForId(storeId);
 
     // add it to parameters if feature is supported.
     if (store.streams.hasFeatureGetParamsExcludedIds)
       myParams.excludedIds = excludedIds;
    
-    let res = await store.streams.get(uid, myParams);
+    const storeStreams = await store.streams.get(uid, myParams);
 
-    // if request was made on parentId .. return only the children
-    if (params.parentId && res.length === 1) {
-      res = res[0].children;
-    } 
-
+    // add storeStreams to result
+    res.push(...storeStreams);
 
     // if store does not handle excludeIds on his own filter 
     if (! store.streams.hasFeatureGetParamsExcludedIds &&  excludedIds.length > 0) {
@@ -115,7 +110,16 @@ class StoresUserStreams extends UserStreams {
         return ! excludedIds.includes(stream.id);;
       });
     }
-   
+
+    if (storeId !== 'local') { // add Prefix
+      StreamsUtils.addStoreIdPrefixToStreams(storeId, res);
+      if (streamId === '*') { // add root stream
+        res = [StreamsUtils.sourceToStream(store, {
+          children: res,
+        })];
+      }
+    }
+
     return res;
   }
 
@@ -143,14 +147,14 @@ class StoresUserStreams extends UserStreams {
       if (streamId.indexOf('.') === 0) { // fatest method against startsWith or charAt() -- 10x
         
         if (streamId === '.*') {   // if '.*' add all sources
-          for (let source of this.stores.sources) {
+          for (const source of this.mainStore.stores) {
             addStoreParentId(source.id, null);
           }
 
         } else {  // add streamId's corresponding source 
           const dashPos = streamId.indexOf('-');
           const storeId = streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
-          const source = this.stores._storeForId(storeId);
+          const source = this.mainStore._storeForId(storeId);
           if (! source) {
             DataSource.throwUnkownRessource('parentIds query parameters', storeId);
           } 
@@ -173,7 +177,7 @@ class StoresUserStreams extends UserStreams {
         includeDeletionsSince: params.includeDeletionsSince,
         state: params.state
       }
-      tasks.push(this.stores._storeForId(storeId).streams.get(uid, myParams));
+      tasks.push(this.mainStore._storeForId(storeId).streams.get(uid, myParams));
     }
 
     // call all sources
@@ -185,13 +189,13 @@ class StoresUserStreams extends UserStreams {
         if (sourceParentIds[storeIds[i]] !== null) { // if null => requested root stream of source
           res.push(...sourcesRes[i].value); // add all items to res
         } else {
-          const source = this.stores.sourcesMap[storeIds[i]];
+          const source = this.mainStore.storesMap[storeIds[i]];
           res.push([StreamsUtils.sourceToStream(source, {
             children: sourcesRes[i].value
           })]);
         }
       } else {
-        const source = this.stores.sourcesMap[storeIds[i]];
+        const source = this.mainStore.storesMap[storeIds[i]];
         res.push([StreamsUtils.sourceToStream(source, {
           unreachable: sourcesRes[i].reason // change to sourcesRes[i].reason.message || sourcesRes[i].reason
         })]);

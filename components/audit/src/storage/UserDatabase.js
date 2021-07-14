@@ -30,6 +30,7 @@ class UserDatabase {
   create;
   get;
   getAll;
+  queryGetTerms;
 
 
   /**
@@ -43,6 +44,7 @@ class UserDatabase {
     this.create = {};
     this.getAll = {};
     this.get = {};
+    
 
     // --- Create all Tables
     Object.keys(tables).map((tableName) => {
@@ -72,6 +74,8 @@ class UserDatabase {
 
     // -- create FTS for streamIds on events
     createFTSFor(db, 'events', tables['events'], ['streamIds'], 'rowid');
+
+    this.queryGetTerms = db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
     
     this.db = db;
   }
@@ -79,6 +83,14 @@ class UserDatabase {
   createEvent(event, defaultTime) {
     const eventForDb = eventSchemas.eventToDB(event, defaultTime);
     this.create.events.run(eventForDb);
+  }
+
+  getAllActions() {
+    return this.queryGetTerms.all('action-%');
+  }
+
+  getAllAccesses() {
+    return this.queryGetTerms.all('access-%');
   }
 
   getLogs(params) {
@@ -121,6 +133,11 @@ class UserDatabase {
   close() { 
     this.db.close();
   }
+}
+
+function prepareTermQuery(params = {}) {
+  let queryString = 'SELECT * FROM events_fts_v';
+  return queryString;
 }
 
 function prepareLogQuery(params = {}) {

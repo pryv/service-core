@@ -15,6 +15,7 @@ const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
 const { Notifications } = require('messages');
 const { databaseFixture } = require('test-helpers');
+const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
@@ -72,9 +73,9 @@ describe("System streams", function () {
   describe('GET /streams', () => {
     describe('When using a personal access', () => {
       it('[9CGO] Should return all streams - including system ones', async () => {
-        await createUser();
-        res = await request.get(basePath).set('authorization', access.token);
-        assert.deepEqual(res.body.streams, [
+        const expectedRes = [];
+        validation.addStoreStreams(expectedRes)
+        const readableStreams = [
           {
             name: 'account',
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
@@ -145,7 +146,17 @@ describe("System streams", function () {
 
             ] 
           }
-        ]);
+        ];
+
+        const { UserStreams } = require('stores/interfaces/DataSource')
+        UserStreams.applyDefaults(readableStreams);
+
+        expectedRes.push(...readableStreams);
+
+        await createUser();
+        res = await request.get(basePath).set('authorization', access.token);
+
+        assert.deepEqual(res.body.streams, expectedRes);
       });
     });
   });
