@@ -1344,7 +1344,7 @@ module.exports = async function (
         await usersRepository.updateOne(
           context.user,
           storagedUsed,
-          'system'
+          'system',
         );
         notifications.eventsChanged(context.user);
         next();

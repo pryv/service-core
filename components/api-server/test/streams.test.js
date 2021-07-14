@@ -771,7 +771,16 @@ describe('streams', function () {
           deletedStream = parentStream.children[1];
 
       async.series([
-        storage.updateOne.bind(storage, user, {id: deletedStream.id}, {trashed: true}),
+        function trashStream(stepDone) {
+          request.del(path(deletedStream.id)).query({mergeEventsWithParent: true})
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.del.result
+              });
+              stepDone();
+            });
+        },
         function deleteStream(stepDone) {
           request.del(path(deletedStream.id)).query({mergeEventsWithParent: true})
             .end(function (res) {
@@ -779,12 +788,13 @@ describe('streams', function () {
                 status: 200,
                 schema: methodsSchema.del.result
               });
-
-              streamsNotifCount.should.eql(1, 'streams notifications');
-              eventsNotifCount.should.eql(1, 'events notifications');
-
               stepDone();
             });
+        },
+        function checkNotifs(stepDone) {
+          streamsNotifCount.should.eql(2, 'streams notifications');
+          eventsNotifCount.should.eql(1, 'events notifications');
+          stepDone();
         },
         function verifyLinkedEvents(stepDone) {
           eventsStorage.find(user, {streamIds: parentStream.id}, null, function (err, linkedEvents) {

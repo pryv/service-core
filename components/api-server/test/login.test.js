@@ -409,13 +409,18 @@ describe('auth', function() {
                   stepDone();
                 });
             },
+            function givehalfSecondChance(stepDone) {
+              setTimeout(stepDone, 500);
+            },  
             function verifyHiddenPasswordInLogs(stepDone) {
               fs.readFile(logFilePath, 'utf8', function(err, data) {
                 if (err) {
                   return stepDone(err);
                 }
-                assert.equal(data.indexOf(wrongPasswordData.password), -1, 'password is present in logs when it should not.')
-                assert.isAtLeast(data.indexOf('"password":"(hidden password)"'), 0, 'log with hidden password not found.')
+                const passwordFound = data.indexOf(wrongPasswordData.password);
+                const hiddenPasswordFound = data.indexOf('"password":"(hidden password)"');
+                assert.equal(passwordFound, -1, 'password is present in logs when it should not. >> \n' + data)
+                assert.isAtLeast(hiddenPasswordFound, 0, 'log with hidden password not found.. >> \n' + data)
                 stepDone();
               });
             },
