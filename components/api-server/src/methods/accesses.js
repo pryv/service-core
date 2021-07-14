@@ -173,14 +173,23 @@ module.exports = async function produceAccessesApiMethods(
         'Personal accesses are created automatically on login.'
       ));
     }
-    
+
     if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
       params.permissions = changeStreamIdsInPermissions(params.permissions, false);
     }
+
+    const permissions = params.permissions;
+    for (const permission of permissions) {
+      if (permission.streamId != null) {
+        try {
+          commonFns.isValidStreamIdForQuery(permission.streamId, permission, 'permissions');
+        } catch (err) {
+          return next(errors.invalidRequestStructure(err.message, params.permissions));
+        }
+      } 
+    }
     
     const access = context.access;
-    if (access == null) 
-      return next(errors.unexpectedError('AF: Access must not be null here.'));
       
     if (! await access.canCreateAccess(params)) {
       return next(errors.forbidden(
@@ -252,15 +261,12 @@ module.exports = async function produceAccessesApiMethods(
   // 
   async function createDataStructureFromPermissions(context, params, result, next) {
     const access = context.access;
-    if (access == null) 
-      return next(errors.unexpectedError('AF: Access must not be null here.'));
 
     if (! access.isPersonal()) return next(); // not needed for personal access
-    if (params.permissions == null) return next(); 
 
-    for (let permission of params.permissions) {
+    for (const permission of params.permissions) {
       try {
-       await ensureStream(permission);
+        await ensureStream(permission);
       } catch (e) {
         return next(e);
       }
@@ -268,14 +274,14 @@ module.exports = async function produceAccessesApiMethods(
     return next();
 
     async function ensureStream (permission) {
-      if (! permission.streamId) return ;
-
+      if (! permission.streamId) return;
+      if ( permission.streamId === '*') return;
 
       const streamsRepository = storageLayer.streams;
   
       const existingStream = await context.streamForStreamId(permission.streamId);
 
-      if (existingStream) {
+      if (existingStream != null) {
         if (! existingStream.trashed) return ; 
 
         // untrash stream
@@ -286,7 +292,11 @@ module.exports = async function produceAccessesApiMethods(
           throw(errors.unexpectedError(err));
         }
         return ;
-      } 
+      }
+
+      if (! commonFns.isValidStreamIdForCreation(permission.streamId)) {
+        return next(errors.invalidRequestStructure(`Error while creating stream for access. Invalid 'permission' parameter, forbidden chartacter(s) in streamId '${permission.streamId}'. StreamId should be of length 1 to 100 chars, with lowercase letters, numbers or dashes.`, permission));
+      }
 
       // create new stream
       const newStream = {
@@ -309,7 +319,7 @@ module.exports = async function produceAccessesApiMethods(
             throw(errors.itemAlreadyExists('stream', {name: newStream.name}, err));
           } else {
             // Any other error
-           throw(errors.unexpectedError(err));
+            throw(errors.unexpectedError(err));
           }
       }
     }
