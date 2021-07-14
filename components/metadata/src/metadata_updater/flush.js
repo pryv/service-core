@@ -10,7 +10,7 @@ const LRU = require('lru-cache');
 const bluebird = require('bluebird');
 
 const storage = require('storage');
-const { getUsersRepository } = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { PendingUpdate } = require('./pending_updates');
 
 import type { LRUCache }  from 'lru-cache';
@@ -94,7 +94,7 @@ class CustomUsersRepository {
   constructor(db: storage.StorageLayer) {
     this.db = db;
     
-    this.cache = LRU({ max: USER_LOOKUP_CACHE_SIZE });
+    this.cache = new LRU({ max: USER_LOOKUP_CACHE_SIZE });
    
   }
   async resolve(name: string): Promise<User> {

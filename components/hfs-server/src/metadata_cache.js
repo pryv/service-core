@@ -101,7 +101,7 @@ class MetadataCache implements MetadataRepository, MessageSink {
       max: LRU_CACHE_SIZE,
       maxAge: LRU_CACHE_MAX_AGE_MS,
     };
-    this.cache = LRU(options);
+    this.cache = new LRU(options);
 
     // nats messages
     this.subscribeToNotifications();

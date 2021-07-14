@@ -70,11 +70,14 @@ describe('streams', function () {
     before(resetData);
 
     it('[TG78] must return non-trashed streams (as a tree) by default', function (done) {
-      request.get(basePath).end(function (res) {
+      request.get(basePath).end(async function (res) {
         // manually filter out trashed items
-        var expected = treeUtils.filterTree(validation.removeDeletionsAndHistory(testData.streams),
+
+        var expected = treeUtils.filterTree(validation.removeDeletionsAndHistory(_.cloneDeep(testData.streams)),
           false, function (s) { return !s.trashed; });
+        await validation.addStoreStreams(expected);
         res.body.streams = validation.removeAccountStreams(res.body.streams);
+   
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
@@ -84,12 +87,14 @@ describe('streams', function () {
     });
 
     it('[DPWG] must return all streams (trashed or not) when requested', function (done) {
-      request.get(basePath).query({ state: 'all' }).end(function (res) {
+      request.get(basePath).query({ state: 'all' }).end(async function (res) {
+        const expected = _.sortBy(validation.removeDeletions(_.cloneDeep(testData.streams)), 'name');
+        await validation.addStoreStreams(expected);
         res.body.streams = validation.removeAccountStreams(res.body.streams);
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
-          body: {streams: _.sortBy(validation.removeDeletions(testData.streams), 'name')}
+          body: {streams: expected}
         }, done);
       });
     });
@@ -143,6 +148,16 @@ describe('streams', function () {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
           data: {parentId: 'unknownStreamId'}
+        }, done);
+      });
+    });
+
+    it('[G5F2] must return a correct error if the stream is unknown', function (done) {
+      request.get(basePath).query({id: 'unknownStreamId'}).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.UnknownReferencedResource,
+          data: {id: 'unknownStreamId'}
         }, done);
       });
     });

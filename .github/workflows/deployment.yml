@@ -11,16 +11,18 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [12.13]
+        node-version: [16.4.1]
 
     steps:
     - name: Download master branch
       uses: actions/checkout@v2
+      with:
+        persist-credentials: false
 
     - name: Login to github
       uses: webfactory/ssh-agent@v0.4.1
       with:
-          ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
+        ssh-private-key: ${{ secrets.TECH_PRYV_SSH_KEY }}
           
     - name: Install Node.js with version ${{ matrix.node-version }}
       uses: actions/setup-node@v1

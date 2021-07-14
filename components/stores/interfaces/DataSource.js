@@ -73,9 +73,9 @@ class DataSource {
 }
 
 DataSource.UNKOWN_DATE = 10000000.00000001;
-DataSource.BY_SYSTEM = '.system';
-DataSource.BY_UNKOWN = '.unkown';
-DataSource.BY_EXTERNAL_PREFIX = '.external-';
+DataSource.BY_SYSTEM = 'system';
+DataSource.BY_UNKOWN = 'unkown';
+DataSource.BY_EXTERNAL_PREFIX = 'external-';
 
 
 /**
@@ -133,9 +133,8 @@ class UserStreams {
    * @property {Array<Streams>} streams
    * @returns null;
    */
-  static applyDefaults(storeId, streams) {
-    const rootId = storeId ? ':' + storeId + ':' : null;
-    _applyDefaults(rootId, streams, rootId);
+  static applyDefaults(streams) {
+    _applyDefaults(streams, null);
   }
 }
 
@@ -145,15 +144,14 @@ class UserStreams {
  * @param {string} storeIdNameSpace - namespacing for streamIds
  * @param {Array<Streams>} streams 
  */
-function _applyDefaults(storeIdNameSpace, streams, parentId) {
+function _applyDefaults(streams, parentId) {
   for (let stream of streams) {
-    if (storeIdNameSpace) stream.id = storeIdNameSpace + stream.id;
     if (typeof stream.created === 'undefined') stream.created = DataSource.UNKOWN_DATE;
     if (typeof stream.modified === 'undefined') stream.modified = DataSource.UNKOWN_DATE;
     if (typeof stream.createdBy === 'undefined') stream.createdBy = DataSource.BY_UNKOWN;
     if (typeof stream.modifiedBy === 'undefined') stream.modifiedBy = DataSource.BY_UNKOWN;
     if (! stream.children) stream.children = [];
-    if (stream.children.length > 0) _applyDefaults(storeIdNameSpace, stream.children, stream.id);
+    if (stream.children.length > 0) _applyDefaults(stream.children, stream.id);
     // force parentId
     stream.parentId = parentId;
   }
@@ -229,12 +227,8 @@ class UserEvents {
    * @property {Array<Events>} events
    * @returns null;
    */
-  static applyDefaults(storeId, events) {
-    const storeStreamIdPrefix = storeId ? '.' + storeId + '-' : null;
+  static applyDefaults(events) {
     for (let event of events) {
-      if (storeStreamIdPrefix) {
-        event.streamIds = event.streamIds.map(streamId => storeStreamIdPrefix + streamId);
-      }
       if (typeof event.created === 'undefined') event.created = DataSource.UNKOWN_DATE;
       if (typeof event.modified === 'undefined') event.modified = DataSource.UNKOWN_DATE;
       if (typeof event.createdBy === 'undefined') event.createdBy = DataSource.BY_UNKOWN;

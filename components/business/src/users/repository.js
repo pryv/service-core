@@ -11,6 +11,7 @@ const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
 const User = require('./User');
+const UserRepositoryOptions = require('./UserRepositoryOptions');
 const Event = require('business/src/events/Event');
 const Access = require('business/src/accesses/Access');
 const SystemStream = require('business/src/system-streams/SystemStream');
@@ -182,23 +183,16 @@ class UsersRepository {
   };
 
   async findExistingUniqueFields(fields: {}): Promise<{}> {
-    const query = { $or: [] };
-    Object.keys(fields).forEach(
-      key => {
-        query["$or"].push(
-          {
-            $and: [
-              {
-                streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(
-                  key,
-                ),
-              },
-              { content: fields[key] },
-            ],
-          },
-        );
-      },
-    );
+    const query = { $or: [] }
+    Object.keys(fields).forEach(key => {
+      query['$or'].push({
+        $and:
+          [
+            { streamIds: SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key) },
+            { content: fields[key] }
+          ]
+      });
+    });
 
     const existingUsers = await bluebird.fromCallback(
       cb => this.eventsStorage.database.find(this.collectionInfo, query, {}, cb),
@@ -228,11 +222,11 @@ class UsersRepository {
       token: token,
       userId: userId,
       name: appId,
-      type: UsersRepositoryOptions.ACCESS_TYPE_PERSONAL,
+      type: UserRepositoryOptions.ACCESS_TYPE_PERSONAL,
       created: timestamp.now(),
-      createdBy: UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID,
+      createdBy: UserRepositoryOptions.SYSTEM_USER_ACCESS_ID,
       modified: timestamp.now(),
-      modifiedBy: UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID,
+      modifiedBy: UserRepositoryOptions.SYSTEM_USER_ACCESS_ID,
     };
 
     return await bluebird.fromCallback(
@@ -267,7 +261,7 @@ class UsersRepository {
     const transactionSession = await this.eventsStorage.database.startSession();
     await transactionSession.withTransaction(
       async () => {
-        let accessId = UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID;
+        let accessId = UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
         if (
           withSession && this.validateAllStorageObjectsInitialized() &&
           user.appId != null
@@ -309,6 +303,8 @@ class UsersRepository {
     cache.unset(cache.NS.USER_BY_ID, user.id);
     this.checkDuplicates(update);
 
+    await this.checkDuplicates(update);
+    
     // change password into hash if it exists
     if (update.password != null) {
       update.passwordHash = await bluebird.fromCallback(
@@ -316,34 +312,33 @@ class UsersRepository {
       );
     }
     delete update.password;
-
+    
+    // Start a transaction session
     const transactionSession = await this.eventsStorage.database.startSession();
-    await transactionSession.withTransaction(
-      async () => {
-        for (const [streamIdWithoutPrefix, content] of Object.entries(update)) {
-          //for (let i = 0; i < eventsForUpdate.length; i++) {
-          await bluebird.fromCallback(
-            cb => this.eventsStorage.updateOne(
-              { id: user.id },
-              {
-                streamIds: {
-                  $all: [
-                    SystemStreamsSerializer.addPrivatePrefixToStreamId(
-                      streamIdWithoutPrefix,
-                    ),
-                    SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
-                  ],
-                },
-              },
-              { content, modified: timestamp.now(), modifiedBy: accessId },
-              cb,
-              { transactionSession },
-            ),
-          );
-        }
-      },
-      getTransactionOptions(),
-    );
+    await transactionSession.withTransaction(async () => {
+      // update all account streams and don't allow additional properties
+      for (const [streamIdWithoutPrefix, content] of Object.entries(update)) {
+      //for (let i = 0; i < eventsForUpdate.length; i++) {
+        await bluebird.fromCallback(cb => this.eventsStorage.updateOne(
+          { id: user.id },
+          {
+            streamIds: {
+              $all: [
+                SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix),
+                SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
+              ]
+            }
+          },
+          {
+            content,
+            modified: timestamp.now(),
+            modifiedBy: accessId,
+          },
+          cb,
+          { transactionSession }
+        ));
+      }
+    }, getTransactionOptions());
   }
   async deleteOne(userId: string): Promise<number> {
     cache.unset(cache.NS.USER_BY_ID, userId);
@@ -377,30 +372,30 @@ class UsersRepository {
       },
     );
   }
+
+  /**
+   * Checks for duplicates for unique fields. Throws item already exists error if any.
+   * 
+   * @param {User} user - a user object or 
+   */
   async checkDuplicates(user: User): Promise<void> {
     const orClause: Array<{}> = [];
-    this.uniqueFields.forEach(
-      field => {
-        if (user[field] != null) {
-          orClause.push(
-            {
-              content: { $eq: user[field] },
-              streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId(
-                field,
-              ),
-              deleted: null,
-              headId: null,
-            },
-          );
-        }
-      },
-    );
+    this.uniqueFields.forEach(field => {
+      if (user[field] != null) {
+        orClause.push({
+          content: { $eq: user[field] },
+          streamIds: SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(field),
+          deleted: null,
+          headId: null,
+        });
+      }
+    });
 
     if (orClause.length === 0) return;
 
     const query: {} = { $or: orClause };
-
-    const duplicateEvents = await bluebird.fromCallback(
+    
+    const duplicateEvents: ?Array<Event> = await bluebird.fromCallback(
       cb => this.eventsStorage.find(
         this.collectionInfo,
         this.eventsStorage.applyQueryToDB(query),
@@ -422,20 +417,16 @@ class UsersRepository {
       throw (
         errors.itemAlreadyExists(
           "user",
-          safetyCleanDuplicate(uniquenessErrors, null, user),
+          uniquenessErrors,
         )
       );
     }
     return;
 
     function extractDuplicateField(streamIdsWithoutPrefix, streamIdsWithPrefix): string {
-      const intersection: Array<string> = streamIdsWithoutPrefix.filter(
-        streamIdWithoutPrefix => streamIdsWithPrefix.includes(
-          SystemStreamsSerializer.addPrivatePrefixToStreamId(
-            streamIdWithoutPrefix,
-          ),
-        ),
-      );
+      const intersection: Array<string> = streamIdsWithoutPrefix.filter(streamIdWithoutPrefix => 
+        streamIdsWithPrefix.includes(SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix))
+      )
       return intersection[0];
     }
   }
@@ -446,9 +437,9 @@ class UsersRepository {
    */
 function getTransactionOptions() {
   return {
-    readPreference: "primary",
-    readConcern: { level: "local" },
-    writeConcern: { w: "majority" },
+    readPreference: 'primary',
+    readConcern: { level: 'local' },
+    writeConcern: { w: 'majority' },
   };
 }
 
@@ -477,12 +468,6 @@ async function getUsersRepository() {
   return usersRepository;
 }
 
-const UsersRepositoryOptions = {
-  SYSTEM_USER_ACCESS_ID: 'system',
-  ACCESS_TYPE_PERSONAL: 'personal',
-}
-
 module.exports = {
   getUsersRepository,
-  UsersRepositoryOptions
 };

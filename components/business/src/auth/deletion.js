@@ -10,7 +10,7 @@ const bluebird = require('bluebird');
 const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
-const { getUsersRepository } = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const errors = require('errors').factory;
 

@@ -63,7 +63,7 @@ describe('Mailing helper methods', () => {
         nock(baseURL)
           .post(path)
           .reply(200, (uri, req) => {
-            requestBody = JSON.parse(req);
+            requestBody = req;
           });
         mailing.sendmail(emailSettings, template, recipient, substitutions, lang, done);
       });
@@ -112,7 +112,7 @@ describe('Mailing helper methods', () => {
         nock(baseURL)
           .post(path)
           .reply(200, (uri, req) => {
-            requestBody = JSON.parse(req);
+            requestBody = req;
           });
         mailing.sendmail(emailSettings, template, recipient, substitutions, lang, done);
       });

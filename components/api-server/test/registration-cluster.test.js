@@ -17,8 +17,7 @@ const { getConfig } = require('@pryv/boiler');
 const { getApplication } = require('api-server/src/application');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
-const User = require('business/src/users/User');
-const { getUsersRepository } = require('business/src/users/repository');
+const { getUsersRepository, User } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 

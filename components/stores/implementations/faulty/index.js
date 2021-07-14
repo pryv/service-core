@@ -4,48 +4,4 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-/**
- * Faulty Data Source. 
- * Always fail
- */
-
-
-const {DataSource, UserStreams, UserEvents}  = require('../../interfaces/DataSource');
-
-const STORE_ID = 'faulty';
-const STORE_NAME = 'Faulty Store';
-
-class Faulty extends DataSource {
-  
-  get id() { return STORE_ID; }
-  get name() { return STORE_NAME; }
-
-  constructor() {  super(); }
-
-  async init() {
-    // get config and load approriated data sources componenst;
-    this._streams = new FaultyUserStreams();
-    this._events = new FaultyUserEvents();
-    return this;
-  }
-
-  get streams() { return this._streams; }
-  get events() { return this._events; }
-
-}
-
-
-class FaultyUserStreams extends UserStreams {
-  async get(uid, params) {
-    throw new Error('Faulty');
-  }
-}
-
-class FaultyUserEvents extends UserEvents {
-  async get(uid, params) {
-    throw new Error('Faulty');
-  }
-}
-
-module.exports = Faulty;
+module.exports = require('./Faulty');

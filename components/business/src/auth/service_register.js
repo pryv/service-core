@@ -11,7 +11,6 @@ const superagent = require('superagent');
 const ErrorIds = require('errors').ErrorIds;
 const errors = require('errors').factory;
 const ErrorMessages = require('errors/src/ErrorMessages');
-const User = require('business/src/users/User');
 
 type OperationType = 'update' | 'delete';
 type AccountProperty = string;
@@ -215,11 +214,11 @@ function getServiceRegisterConn() {
    * @param {string} username 
    * @param {object} params 
    */
-  function safetyCleanDuplicate(foundDuplicates, username, params) {
-    if (! foundDuplicates) return foundDuplicates;
-    const res = {};
-    const newParams = Object.assign({}, params);
-    if (username) newParams.username = username; 
+  function safetyCleanDuplicate(foundDuplicates, username, params: {}): {} {
+    if (foundDuplicates == null) return foundDuplicates;
+    const res: {} = {};
+    const newParams: {} = Object.assign({}, params);
+    if (username != null) newParams.username = username; 
     for (const key of Object.keys(foundDuplicates)) {
       if (foundDuplicates[key] === newParams[key]) {
         res[key] = foundDuplicates[key] ;

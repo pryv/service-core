@@ -231,6 +231,19 @@ describe('events', function () {
       });
     });
 
+    it('[4TWI] must refuse unsupported event types', function (done) {
+      var params = {
+        types: ['activity/asd asd'],
+        state: 'all'
+      };
+      request.get(basePath).query(params).end(function (res) {
+        validation.check(res, {
+          status: 400,
+          id: ErrorIds.invalidParametersFormat
+        }, done);
+      });
+    });
+
     it('[7MOU] must only return events in the given time period sorted ascending when set',
       function (done) {
         var params = {

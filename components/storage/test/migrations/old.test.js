@@ -14,21 +14,21 @@ const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
-const converters = require('../src/converters');
+const converters = require('../../src/converters');
 const database = storage.database;
 const async = require('async');
-const migrations = require('../src/migrations');
+const migrations = require('../../src/migrations');
 const should = require('should');
 const assert = require('chai').assert;
 const testData = helpers.data;
-const Versions = require('../src/Versions');
+const Versions = require('../../src/Versions');
 const wrench = require('wrench');
 const _ = require('lodash');
 const buildTree = require('utils').treeUtils.buildTree;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getLogger } = require('@pryv/boiler');
 
-const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'
+const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin'
 
 describe('Versions', function () {
   this.timeout(20000);
@@ -501,7 +501,7 @@ describe('Versions', function () {
     }
   });
 
-  it('[VMKO] must handle data migration from 1.5.22 to 1.6.0', async function () {
+  it.skip('[VMKO] must handle data migration from 1.5.22 to 1.6.0', async function () {
     const versions = getVersions('1.6.0');
     const newIndexes = testData.getStructure('1.6.0').indexes;
     const defaultUser = { id: 'u_0' };

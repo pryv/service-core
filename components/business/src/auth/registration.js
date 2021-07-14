@@ -11,10 +11,9 @@ const cuid = require('cuid');
 const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
-const { getServiceRegisterConn, safetyCleanDuplicate } = require('./service_register');
+const { getServiceRegisterConn } = require('./service_register');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { getUsersRepository } = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 const ErrorIds = require('errors').ErrorIds;
 
 const { getLogger } = require('@pryv/boiler');

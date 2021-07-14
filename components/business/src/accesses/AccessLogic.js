@@ -40,6 +40,7 @@ Object.freeze(PermissionLevels);
   _userId;
   _limitationsByActionByStore;
   _streamPermissionLevelCache;
+  _streamByStorePermissionsMap;
 
   constructor(userId, access) {
     this._access = access;
@@ -71,9 +72,12 @@ Object.freeze(PermissionLevels);
     // if can selfAudit add :_audit: permission
     if (selfAudit) {
       this.permissions.push({
-        streamId: ':_audit:', 
+        streamId: ':_audit:access-' + this.id,
+        level: 'read'
+       }, {
+        streamId: ':_audit:actions', 
         limitations: {
-          'events.get': {streams: {all: ['access-' + this.id]}}
+          'events.get': {streams: {all: ['access-' + this.id]}},
         }, 
         level: 'read'});
     }
@@ -91,6 +95,8 @@ Object.freeze(PermissionLevels);
     return this.type === 'shared';
   }
 
+  /** ---------- PERMISSION & STREAMSID LISTS --------------- */
+
   /**
    * Loads permissions from `this.permissions`.
    * - Loads tag permissions into `tagPermissions`/`tagPermissionsMap`.
@@ -107,12 +113,12 @@ Object.freeze(PermissionLevels);
     this.featurePermissionsMap = {};
     this._streamByStorePermissionsMap = {};
 
-    for (let perm of this.permissions) {
-      if (perm.streamId) {
+    for (const perm of this.permissions) {
+      if (perm.streamId != null) {
         this._loadStreamPermission(perm);
-      } else if (perm.tag) {
+      } else if (perm.tag != null) {
         this._loadTagPermission(perm);
-      } else if (perm.feature) {
+      } else if (perm.feature != null) {
         this._loadFeaturePermission(perm);
       }
     };
@@ -126,14 +132,14 @@ Object.freeze(PermissionLevels);
 
   _loadStreamPermission (perm) {
     const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
-    if (! this._streamByStorePermissionsMap[storeId]) this._streamByStorePermissionsMap[storeId] = {}
+    if (this._streamByStorePermissionsMap[storeId] == null) this._streamByStorePermissionsMap[storeId] = {}
     this._streamByStorePermissionsMap[storeId][streamId] = {streamId: streamId, level: perm.level};
     this._loadLimitation(storeId, streamId, perm);
   }
 
   _loadLimitation(storeId, streamId, perm) {
-    if (! perm.limitations) return;
-    for (let methodId of Object.keys(perm.limitations)) {
+    if (perm.limitations == null) return;
+    for (const methodId of Object.keys(perm.limitations)) {
       if (! this._limitationsByActionByStore[methodId]) this._limitationsByActionByStore[methodId] = {};
       if (this._limitationsByActionByStore[methodId][storeId]) {
         throw new Error('Only one limitation per method can be loaded for each store');
@@ -148,7 +154,7 @@ Object.freeze(PermissionLevels);
    * @returns {Object} keys are storeId
    */
   getLimitationsForMethodId(methodId) {
-    if (! this._limitationsByActionByStore) return null;
+    if (this._limitationsByActionByStore == null) return null;
     return this._limitationsByActionByStore[methodId];
   }
 
@@ -159,7 +165,7 @@ Object.freeze(PermissionLevels);
    */
   getStoresPermissions(storeId) {
     const storeStreamPermissionMap = this._streamByStorePermissionsMap[storeId];
-    if (! storeStreamPermissionMap) return [];
+    if (storeStreamPermissionMap == null) return [];
     return Object.values(storeStreamPermissionMap);
   }
   /**
@@ -170,7 +176,7 @@ Object.freeze(PermissionLevels);
    */
   getStreamPermission(storeId, streamId) {
     const storeStreamPermissionMap = this._streamByStorePermissionsMap[storeId];
-    if (! storeStreamPermissionMap) return null;
+    if (storeStreamPermissionMap == null) return null;
     return storeStreamPermissionMap[streamId];
   }
   /**
@@ -179,8 +185,48 @@ Object.freeze(PermissionLevels);
    */
   getAccountStreamPermissions() {
     const localPerms = this._streamByStorePermissionsMap['local'];
-    if (! localPerms) return [];
+    if (localPerms == null) return [];
     return Object.values(localPerms).filter(perm => SystemStreamsSerializer.isAccountStreamId(perm.streamId));
+  }
+
+  /**
+   * get a List of readable (root) streams that can be read / listed  
+   * @param {*} storeId 
+   * @returns 
+   */
+   getListableStreamIds() {
+    const res = [];
+    if (this._streamByStorePermissionsMap != null) {
+      for (const storeId of Object.keys(this._streamByStorePermissionsMap)) {
+        const storePermissions = this._streamByStorePermissionsMap[storeId];
+        for (const perm of Object.values(storePermissions)) {
+          if ((perm.streamId != null) && isHigherOrEqualLevel(perm.level, 'read')) {
+            res.push({streamId: perm.streamId, storeId: storeId});
+          }
+        }
+      }
+    }
+    return res;
+  }
+
+  /**
+   * get StreamIds with explicit "no-list" permissions ("none", ...)
+   * @param {storeId} storeId
+   * @returns {Array<cleanStreamIds>} 
+   */
+   getCannotListStreamsStreamIds(storeId) {
+    const res = (storeId === 'local') ? [].concat(SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading()) : [];
+
+    if (this._streamByStorePermissionsMap == null) return res;
+    const localPerms = this._streamByStorePermissionsMap[storeId];  
+    if (localPerms == null) return res;
+    
+    for (const perm of Object.values(localPerms)) {
+      if (perm.level == null || perm.level === 'none') { 
+        res.push(StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
+      }      
+    }
+    return res;
   }
 
   /**
@@ -189,13 +235,14 @@ Object.freeze(PermissionLevels);
    * @returns {Array<cleanStreamIds>} 
    */
   getCannotGetEventsStreamIds(storeId) {
-    if (! this._streamByStorePermissionsMap) return [];
-    const localPerms = this._streamByStorePermissionsMap[storeId];
-    if (! localPerms) return [];
+    const res = (storeId === 'local') ? [].concat(SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading()) : [];
+
+    if (this._streamByStorePermissionsMap == null) return res;
+    const localPerms = this._streamByStorePermissionsMap[storeId];  
+    if (localPerms == null) return res;
     
-    const res = [];
     for (const perm of Object.values(localPerms)) {
-      if (perm.level === 'create-only' || perm.level === null || perm.level === 'none') { 
+      if (perm.level === 'create-only' || perm.level == null || perm.level === 'none') { 
         res.push(StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
       }      
     }
@@ -213,8 +260,8 @@ Object.freeze(PermissionLevels);
   }
 
   _loadTagPermission (perm) {
-    var existingPerm = this.tagPermissionsMap[perm.tag];
-    if (existingPerm && isHigherOrEqualLevel(existingPerm.level, perm.level)) {
+    const existingPerm = this.tagPermissionsMap[perm.tag];
+    if ((existingPerm != null) && isHigherOrEqualLevel(existingPerm.level, perm.level)) {
       return;
     }
     this._registerTagPermission(perm);
@@ -274,22 +321,67 @@ Object.freeze(PermissionLevels);
     return this.isPersonal();
   }
 
-  /** ------------ EVENTS --------------- */
-
-  async canGetEventsOnStream (streamId, storeId) {
+  // Whether the current access delete manage the given access
+  async canDeleteAccess (access) {
+    // The account owner can do everything. 
     if (this.isPersonal()) return true;
-   
-    const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
-    
-    const level = await this._getStreamPermissionLevel(fullStreamId);
-    if (level === null || level === 'create-only') return false;
-    return isHigherOrEqualLevel(level, 'read');
+    // App and Shared accesses can delete themselves (selfRevoke)
+    if (access.id === this.id) { 
+      return this._canSelfRevoke();
+    }
+
+    if (this.isShared()) return false;
+
+    // App token can delete the one they created
+    return this.id === access.createdBy;
   }
+
+  
+  // Whether the current access can create the given access. 
+  // 
+  async canCreateAccess (candidate) {
+    // The account owner can do everything. 
+    if (this.isPersonal()) return true;
+    // Shared accesses don't manage anything. 
+    if (this.isShared()) return false;
+   
+    // App accesses can only manage shared accesses.
+    if (candidate.type !== 'shared') return false;
+
+    let hasStreamPermissions = false;
+    for (const perm of candidate.permissions) {
+      if (perm.streamId != null) {
+        hasStreamPermissions = true;
+        const myLevel = await this._getStreamPermissionLevel(perm.streamId);
+        if (! myLevel || isLowerLevel(myLevel, perm.level) || myLevel === 'create-only') {
+          return false; 
+        }
+
+      } else if (perm.tag != null) {
+        const myTagPermission = this.tagPermissionsMap[perm.tag];
+        const myLevel = myTagPermission?.level;
+        if (! myLevel || isLowerLevel(myLevel, perm.level)) return false; 
+
+      } else if (perm.feature != null) {
+        const myFeaturePermission = this.featurePermissionsMap[perm.feature];
+        const myValue = myFeaturePermission?.level;
+        if (! myValue || myValue != perm.feature) return false;
+      }
+    }
+    // can only manage shared accesses with permissions
+    if (! hasStreamPermissions) return false;
+
+    // all OK
+    return true;
+  }
+
+
+  /** ------------ STREAMS ------------- */
 
   async canListStream (streamId) {
     if (this.isPersonal()) return true;
     const level = await this._getStreamPermissionLevel(streamId);
-    return level && isHigherOrEqualLevel(level, 'read');
+    return ((level != null) && isHigherOrEqualLevel(level, 'read')) ? true : false;
   }
 
   async canCreateChildOnStream(streamId) {
@@ -304,18 +396,31 @@ Object.freeze(PermissionLevels);
     return await this._canManageStream(streamId);
   }
 
-  /** @private internal  */
-  async _canManageStream (streamId) {
+   /** @private internal  */
+   async _canManageStream (streamId) {
     if (this.isPersonal()) return true;
     const level = await this._getStreamPermissionLevel(streamId || undefined);
     if (level === 'create-only') return false;
     return (level != null) && isHigherOrEqualLevel(level, 'manage');
   }
 
+  /** ------------ EVENTS --------------- */
+
+  async canGetEventsOnStream (streamId, storeId) {
+    if (this.isPersonal()) return true;
+   
+    const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
+    
+    const level = await this._getStreamPermissionLevel(fullStreamId);
+    if (level == null || level === 'create-only') return false;
+    return isHigherOrEqualLevel(level, 'read');
+  }
+
+  
   async canCreateEventsOnStream (streamId) {
     if (this.isPersonal()) return true;
     const level = await this._getStreamPermissionLevel(streamId);
-    return level && isHigherOrEqualLevel(level, 'contribute');
+    return (level != null) && isHigherOrEqualLevel(level, 'contribute');
   }
 
   async canUpdateEventsOnStream (streamId) {
@@ -334,14 +439,14 @@ Object.freeze(PermissionLevels);
     if (this.isPersonal()) return true;
     const level = this._getTagPermissionLevel(tag);
     if (level === 'create-only') return false;
-    return level && isHigherOrEqualLevel(level, 'read');
+    return (level != null) && isHigherOrEqualLevel(level, 'read');
   }
 
   /** kept private as not used elsewhere */
   _canCreateEventsWithTag (tag) {
     if (this.isPersonal()) return true;
     const level = this._getTagPermissionLevel(tag);
-    return level && isHigherOrEqualLevel(level, 'contribute');
+    return (level != null) && isHigherOrEqualLevel(level, 'contribute');
   }
 
   /** kept private as not used elsewhere */
@@ -394,60 +499,7 @@ Object.freeze(PermissionLevels);
         _.some(tags || [], this._canCreateEventsWithTag.bind(this)));
   }
 
-  // Whether the current access delete manage the given access
-  async canDeleteAccess (access) {
-    // The account owner can do everything. 
-    if (this.isPersonal()) return true;
-    // App and Shared accesses can delete themselves (selfRevoke)
-    if (access.id === this.id) { 
-      return this._canSelfRevoke();
-    }
-
-    if (this.isShared()) return false;
-
-    // App token can delete the one they created
-    return this.id === access.createdBy;
-  }
-
   
-  // Whether the current access can create the given access. 
-  // 
-  async canCreateAccess (candidate) {
-    // The account owner can do everything. 
-    if (this.isPersonal()) return true;
-    // Shared accesses don't manage anything. 
-    if (this.isShared()) return false;
-   
-    // App accesses can only manage shared accesses.
-    if (candidate.type !== 'shared') return false;
-
-    let hasStreamPermissions = false;
-    for (let perm of candidate.permissions) {
-      if (perm.streamId) {
-        hasStreamPermissions = true;
-        const myLevel = await this._getStreamPermissionLevel(perm.streamId);
-        if (! myLevel || isLowerLevel(myLevel, perm.level) || myLevel === 'create-only') {
-          return false; 
-        }
-
-      } else if (perm.tag) {
-        const myTagPermission = this.tagPermissionsMap[perm.tag];
-        const myLevel = myTagPermission?.level;
-        if (! myLevel || isLowerLevel(myLevel, perm.level)) return false; 
-
-      } else if (perm.feature) {
-        const myFeaturePermission = this.featurePermissionsMap[perm.feature];
-        const myValue = myFeaturePermission?.level;
-        if (! myValue || myValue != perm.feature) return false;
-      }
-    }
-    // can only manage shared accesses with permissions
-    if (! hasStreamPermissions) return false;
-
-    // all OK
-    return true;
-  }
-
 
   /**
    * new fashion to retrieve stream permissions
@@ -455,7 +507,7 @@ Object.freeze(PermissionLevels);
    * @returns {String}  `null` if no matching permission exists.
    */
   async _getStreamPermissionLevel (streamIdFull) {
-    if (! streamIdFull) streamIdFull = '*'; // to be investgated why this happens
+    if (streamIdFull == null) streamIdFull = '*'; // to be investgated why this happens
 
     if (this.isPersonal()) return 'manage';
     
@@ -494,8 +546,8 @@ Object.freeze(PermissionLevels);
     if (this.isPersonal()) {
       return 'manage';
     } else {
-      var permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
-      return permission ? permission.level : null;
+      const permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
+      return (permission != null) ? permission.level : null;
     }
   }
 
@@ -512,7 +564,7 @@ Object.freeze(PermissionLevels);
   }
 
   hasTagPermissions() {
-    return (this.tagPermissions && this.tagPermissions.length > 0);
+    return ((this.tagPermissions != null) && this.tagPermissions.length > 0);
   }
 };
 

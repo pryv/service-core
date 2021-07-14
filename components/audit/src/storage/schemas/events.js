@@ -75,18 +75,28 @@ function addStorePrefixToId(streamId) {
  * transform events out of db
  */
 function eventFromDB(event, addStorePrefix) {
-  event.id = event.eventid;
-  delete event.eventid;
   event.streamIds = event.streamIds.split(' ');
 
   if (addStorePrefix) {
     event.id = addStorePrefixToId(event.eventid);
     event.streamIds = event.streamIds.map(addStorePrefixToId);
+  } else {
+    event.id = event.eventid;
   }
+  delete event.eventid;
   
-  event.trashed = (event.trashed === 1);
+  if (event.trashed === 1) {
+    event.trashed = true; 
+  } else {
+    delete event.trashed; // don't return it to API if false
+  }
+
   if (event.content) {
     event.content = JSON.parse(event.content);
+  }
+
+  for (key of Object.keys(event)) {
+    if (event[key] == null) delete event[key];
   }
   return event;
 }

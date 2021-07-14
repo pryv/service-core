@@ -13,8 +13,7 @@ const helpers = require('api-server/test/helpers');
 const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('api-server/test/test-helpers');
-const { getUsersRepository } = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 const { ErrorIds } = require('errors');
 
 describe('Users repository', () => {

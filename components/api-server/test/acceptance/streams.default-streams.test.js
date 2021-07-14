@@ -15,6 +15,7 @@ const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
 const { Notifications } = require('messages');
 const { databaseFixture } = require('test-helpers');
+const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
@@ -72,11 +73,11 @@ describe("System streams", function () {
   describe('GET /streams', () => {
     describe('When using a personal access', () => {
       it('[9CGO] Should return all streams - including system ones', async () => {
-        await createUser();
-        res = await request.get(basePath).set('authorization', access.token);
-        assert.deepEqual(res.body.streams, [
+        const expectedRes = [];
+        validation.addStoreStreams(expectedRes)
+        const readableStreams = [
           {
-            name: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+            name: 'account',
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
             parentId: null,
             children: [
@@ -113,19 +114,19 @@ describe("System streams", function () {
               },
               {
                 name: 'insurancenumber',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('insurancenumber'),
+                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber'),
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'phoneNumber',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('phoneNumber'),
+                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'),
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               { 
                 name: 'Email',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('email'),
+                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('email'),
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
@@ -133,7 +134,7 @@ describe("System streams", function () {
           },
           {
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
-            name: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
+            name: 'helpers',
             parentId: null,
             children: [
               {
@@ -141,10 +142,21 @@ describe("System streams", function () {
                 name: 'Active',
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
                 children: []
-              }
+              },
+
             ] 
           }
-        ]);
+        ];
+
+        const { UserStreams } = require('stores/interfaces/DataSource')
+        UserStreams.applyDefaults(readableStreams);
+
+        expectedRes.push(...readableStreams);
+
+        await createUser();
+        res = await request.get(basePath).set('authorization', access.token);
+
+        assert.deepEqual(res.body.streams, expectedRes);
       });
     });
   });
@@ -180,7 +192,7 @@ describe("System streams", function () {
           streamData = {
             name: 'lanugage2'
           };
-          res = await request.put(path.join(basePath, 'language'))
+          res = await request.put(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
             .send(streamData)
             .set('authorization', access.token);
         });
@@ -199,7 +211,7 @@ describe("System streams", function () {
       describe('to delete a system stream', () => {
         before(async function () {
           await createUser();
-          res = await request.delete(path.join(basePath, 'language'))
+          res = await request.delete(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
             .set('authorization', access.token);
         });
         it('[1R35] should return status 400', async () => { 

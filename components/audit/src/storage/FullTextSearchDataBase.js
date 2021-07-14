@@ -40,6 +40,9 @@ function createFTSFor(db, tableName, tableData, columnsToInclude, id) {
   db.prepare(`CREATE VIRTUAL TABLE IF NOT EXISTS ${tableName}_fts USING fts5(` +
       columnsTypes.join(', ') + ', tokenize = "unicode61 remove_diacritics 0 tokenchars \'-_:.\'"' +
     ');').run();
+  
+  // create an fts_v table to query list of available terms 
+  db.prepare(`CREATE VIRTUAL TABLE IF NOT EXISTS ${tableName}_fts_v USING fts5vocab(${tableName}_fts, 'row');`).run();
 
   // Triggers to update FTS table 
   db.prepare(`CREATE TRIGGER IF NOT EXISTS  ${tableName}_ai AFTER INSERT ON ${tableName}

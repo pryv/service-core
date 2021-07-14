@@ -16,7 +16,7 @@ const { axonMessaging } = require('messages');
 const { Notifications } = require('messages');
 const { getApplication } = require('api-server/src/application');
 
-const { getUsersRepository } = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getAPIVersion } = require('middleware/src/project_version');

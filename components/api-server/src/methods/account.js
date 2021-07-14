@@ -17,9 +17,8 @@ const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),
   ErrorIds = require('errors').ErrorIds,
   { getServiceRegisterConn } = require('business/src/auth/service_register'),
-  { getUsersRepository, UsersRepositoryOptions } = require('business/src/users/repository');
-  User = require('business/src/users/User'),
-  SystemStreamsSerializer = require('business/src/system-streams/serializer');
+  { getUsersRepository, UserRepositoryOptions} = require('business/src/users');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
   /**
  * @param api
  * @param usersStorage
@@ -77,7 +76,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
   function validateThatAllFieldsAreEditable (context, params, result, next) {
     const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
     Object.keys(params.update).forEach(streamId => {
-      const streamIdWithPrefix = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+      const streamIdWithPrefix = SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamId);
       if (editableAccountMap[streamIdWithPrefix] == null) {
         // if user tries to add new streamId from non editable streamsIds
         return next(errors.invalidOperation(
@@ -201,7 +200,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
       return next();
     }
     try {
-      const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
+      const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
 
       const operations: Array<{}> = [];
       for (const [key, value] of Object.entries(params.update)) {
@@ -209,7 +208,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
           update: {
             key,
             value,
-            isUnique: editableAccountStreamsMap[SystemStreamsSerializer.addPrivatePrefixToStreamId(key)].isUnique,
+            isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
           }
         })
       }
@@ -227,7 +226,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
 
   async function updateAccount(context, params, result, next) {
     try {
-      const accessId = (context.access?.id) ? context.access.id : UsersRepositoryOptions.SYSTEM_USER_ACCESS_ID
+      const accessId = (context.access?.id) ? context.access.id : UserRepositoryOptions.SYSTEM_USER_ACCESS_ID
       await usersRepository.updateOne(
         context.user,
         params.update,

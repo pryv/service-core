@@ -10,7 +10,6 @@
 const bluebird = require('bluebird');
 const _ = require('lodash');
 
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 const querying = require('api-server/src/methods//helpers/querying');
@@ -18,14 +17,13 @@ const storage = require('storage');
 const { treeUtils } = require('utils');
 
 const {DataSource, UserStreams, UserEvents}  = require('stores/interfaces/DataSource');
+const SystemStreamUtils = require('./SystemStreamUtils');
 
 const cache = require('cache');
 
 const STORE_ID = 'local';
 const STORE_NAME = 'Local Store';
 
-let forbiddenForReadingSystemStreamIds ;
-let systemStreams;
 let userEventsStorage;
 let userStreamsStorage;
 
@@ -47,8 +45,7 @@ class LocalDataSource extends DataSource {
     // get config and load approriated data sources componenst;
     this._streams = new LocalUserStreams();
     this._events = new LocalUserEvents();
-    forbiddenForReadingSystemStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-    systemStreams = SystemStreamsSerializer.getAll();
+
     userEventsStorage = (await storage.getStorageLayer()).events;
     userStreamsStorage = (await storage.getStorageLayer()).streams;
     return this;
@@ -67,9 +64,9 @@ class LocalUserStreams extends UserStreams {
         cache.set(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, uid, streams);
     }
     if (! params.hideSystemStreams) {
-     streams = streams.concat(systemStreams);
+     streams = streams.concat(SystemStreamUtils.visibleStreamsTree);
     }
-
+  
     // BAd BaD -- To be optimized 
     streams = JSON.parse(JSON.stringify(streams));
     if (params.id && params.id !== '*') {
@@ -98,7 +95,7 @@ class LocalUserEvents extends UserEvents {
   async getStreamed(userId, params) {
     const query = querying.noDeletions(querying.applyState({}, params.state));
 
-    const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams, forbiddenForReadingSystemStreamIds);
+    const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams, SystemStreamUtils.forbiddenForReadingStreamIds);
     
     if (streamsQuery.$or) query.$or = streamsQuery.$or;
     if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;

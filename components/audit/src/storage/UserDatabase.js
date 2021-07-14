@@ -30,6 +30,7 @@ class UserDatabase {
   create;
   get;
   getAll;
+  queryGetTerms;
 
 
   /**
@@ -43,6 +44,7 @@ class UserDatabase {
     this.create = {};
     this.getAll = {};
     this.get = {};
+    
 
     // --- Create all Tables
     Object.keys(tables).map((tableName) => {
@@ -72,13 +74,23 @@ class UserDatabase {
 
     // -- create FTS for streamIds on events
     createFTSFor(db, 'events', tables['events'], ['streamIds'], 'rowid');
+
+    this.queryGetTerms = db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
     
     this.db = db;
   }
 
-  createEvent(event, defaulTime) {
-    const eventForDb = eventSchemas.eventToDB(event, defaulTime);
+  createEvent(event, defaultTime) {
+    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
     this.create.events.run(eventForDb);
+  }
+
+  getAllActions() {
+    return this.queryGetTerms.all('action-%');
+  }
+
+  getAllAccesses() {
+    return this.queryGetTerms.all('access-%');
   }
 
   getLogs(params) {
@@ -95,11 +107,11 @@ class UserDatabase {
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
 
   getLogsStream(params, addStorePrefix) {
-    const queryString = prepareLogQuery(params, );
+    const queryString = prepareLogQuery(params);
     logger.debug(queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
-   
+
     const iterateTransform = {
       next: function() {
         const res = iterateSource.next();
@@ -123,8 +135,17 @@ class UserDatabase {
   }
 }
 
+function prepareTermQuery(params = {}) {
+  let queryString = 'SELECT * FROM events_fts_v';
+  return queryString;
+}
+
 function prepareLogQuery(params = {}) {
   const ands = [];
+
+  if (params.type != null) {
+    ands.push('type = ' + params.type);
+  } 
 
   if (params.fromTime != null) {
     ands.push('time >= ' + params.fromTime);

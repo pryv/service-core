@@ -4,17 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var Transform = require('stream').Transform,
-    inherits = require('util').inherits,
-  utils = require('utils');
+const Transform = require('stream').Transform;
+const inherits = require('util').inherits;
 
 module.exports = SetSingleStreamIdStream;
 
 /**
- * For retrocompatibility set single StreamId to Event
+ * For backwardCompatibility set single StreamId to Event
  * @constructor
  */
-function SetSingleStreamIdStream(params) {
+function SetSingleStreamIdStream() {
   Transform.call(this, {objectMode: true});
 }
 

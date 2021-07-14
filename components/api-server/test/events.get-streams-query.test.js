@@ -169,7 +169,7 @@ describe('events.get streams query', function () {
           const res = await validateQuery({ any: ['*'], all: ['D'], not: ['A'] });
           assert(false);
         } catch (e) {
-          assert.include(e, '"*"} cannot be mixed with "all"');
+          assert.include(e, '\'*\'} cannot be mixed with \'all\'');
         }
       });
 
@@ -179,7 +179,7 @@ describe('events.get streams query', function () {
           const res = await validateQuery({ any: ['*','D'], not: ['A'] });
           assert(false);
         } catch (e) {
-          assert.include(e, '"*" cannot be mixed with other streamIds in "any"');
+          assert.include(e, '\'*\' cannot be mixed with other streamIds in \'any\'');
         }
       });
 
@@ -223,7 +223,7 @@ describe('events.get streams query', function () {
           'streams queries and streamIds cannot be mixed': [
             ['A', { any: ['A', 'B'] }],
           ],
-          'must contain at least one of "any" or "all"': [
+          'must contain at least one of \'any\' or \'all\'': [
             { not: ['A', 'B'] },
           ],
           'unkown property': [

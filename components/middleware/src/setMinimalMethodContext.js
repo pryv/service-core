@@ -4,6 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+const _ = require('lodash');
+
 import type ContextSource from 'business/src/MethodContext';
 
 class MinimalMethodContext {
@@ -17,7 +20,8 @@ class MinimalMethodContext {
       name: 'http',
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
     }
-    this.originalQuery = req.query;
+    this.originalQuery = _.cloneDeep(req.query);
+    if (this.originalQuery?.auth) delete this.originalQuery.auth;
   }
 }
 

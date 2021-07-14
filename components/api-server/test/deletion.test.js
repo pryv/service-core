@@ -18,7 +18,7 @@ const { getApplication } = require('api-server/src/application');
 const InfluxRepository = require('business/src/series/repository');
 const DataMatrix = require('business/src/series/data_matrix');
 const { getConfig } = require('@pryv/boiler');
-const { getUsersRepository } = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const {
   produceMongoConnection,
