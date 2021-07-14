@@ -135,12 +135,13 @@ module.exports = async function (context, callback) {
   }
 
   async function rebuildIndexes(database, eventsCollection, collectionInfo): Promise<void> {
-    await eventsCollection.dropIndexes();
-
-    collectionInfo.useUserId = true;
-    collectionInfo = database.addUserIdToIndexIfNeeded(collectionInfo);
-    for (const index of collectionInfo.indexes) {
-      await eventsCollection.createIndex(index.index, index.options);
+    const indexCursor = await eventsCollection.listIndexes();
+    while (await indexCursor.hasNext()) {
+      const index = await indexCursor.next();
+      if (index.name.endsWith('__unique_1')) {
+        logger.info('dropping index', index.name);
+        await eventsCollection.dropIndex(index.name);
+      }
     }
   }
 };
