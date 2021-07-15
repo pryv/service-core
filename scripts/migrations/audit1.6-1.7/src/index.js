@@ -222,7 +222,7 @@ function eventFromLine(line, username) {
   try {
     data = JSON.parse(line.substr(detailPos + RESULT_LINE_L));
   } catch (err) {
-    console.err('unable to parse JSON at', line);
+    console.error('unable to parse JSON at', line);
     return false;
   }
 
