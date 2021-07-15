@@ -147,7 +147,7 @@ class MethodContext {
   async retrieveExpandedAccess (storage: StorageLayer) {
     try {
       if (this.access == null)
-        await this.retrieveAccess(storage);
+        await this.retrieveAccessFromToken(storage);
 
       const access = this.access;
       if (access == null) throw new Error('AF: this.access != null');
@@ -175,9 +175,23 @@ class MethodContext {
     }
   }
 
+  // generic retrieve access
+  async _retrieveAccess(storage: StorageLayer, query) {
+    const access = await bluebird.fromCallback(
+      cb => storage.accesses.findOne(this.user, query, null, cb));
+
+    if (access == null)
+      throw errors.invalidAccessToken(
+        'Cannot find access from token.', 403);
+      
+    this.access = new AccessLogic(this.user.id, access);
+    cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, this.user.id + '/' + this.access.token, this.access);
+    cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, this.user.id + '/' + this.access.id, this.access);
+  }
+
   // Internal: Loads `this.access`. 
   // 
-  async retrieveAccess(storage: StorageLayer) {
+  async retrieveAccessFromToken(storage: StorageLayer) {
     const token = this.accessToken;
 
     if (token == null)
@@ -187,26 +201,15 @@ class MethodContext {
 
     this.access = cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, this.user.id + '/' + token);
     
-    if (! this.access) { // retreiveing from Db
-      const query = { token: token };
-      const access = await bluebird.fromCallback(
-        cb => storage.accesses.findOne(this.user, query, null, cb));
-
-      if (access == null)
-        throw errors.invalidAccessToken(
-          'Cannot find access from token.', 403);
-        
-      this.access = new AccessLogic(this.user.id, access);
-      cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, this.user.id + '/' + token, this.access);
-      cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, this.user.id + '/' + this.access.id, this.access);
+    if (this.access == null) { // retreiveing from Db
+      await this._retrieveAccess(storage, {token: token})
     }
-
     this.checkAccessValid(this.access);
   }
 
   // Performs validity checks on the given access. You must call this after
   // every access load that needs to return a valid access. Internal function, 
-  // since all the 'retrieveAccess*' methods call it. 
+  // since all the 'retrieveAccessFromToken*' methods call it. 
   // 
   // Returns nothing but throws if an error is detected.
   // 
@@ -222,23 +225,13 @@ class MethodContext {
   // 
   async retrieveAccessFromId(storage: StorageLayer, accessId: string): Promise<Access> {
 
-    this.access = cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, this.user.id + '/' + accessId);
-    if (! this.access) {
-      const query = { id: accessId };
-      const access = await bluebird.fromCallback(
-        cb => storage.accesses.findOne(this.user, query, null, cb));
-
-      if (access == null)
-        throw errors.invalidAccessToken('Cannot find access matching id.');
-
-      this.access = new AccessLogic(this.user.id, access);
-      cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, this.user.id + '/' + this.access.token, this.access);
-      cache.set(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, this.user.id + '/' + this.access.id, this.access);
+    this.access = cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, this.user.id + '/' + accessId);
+    if (this.access == null) {
+      this._retrieveAccess(storage, { id: accessId });
     }
 
     this.accessToken = this.access.token;
     this.checkAccessValid(this.access);
-
     return this.access;
   }
 
