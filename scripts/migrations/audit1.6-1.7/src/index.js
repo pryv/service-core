@@ -220,7 +220,8 @@ function eventFromLine(line, username) {
     console.error('beginning of data anchor "Details:" not found');
     errors.push({
       username,
-      line
+      line,
+      reason: 'beginning of data anchor "Details:" not found'
     });
     return false;
   }
@@ -232,7 +233,18 @@ function eventFromLine(line, username) {
     console.error('unable to parse JSON at', line);
     errors.push({
       username,
-      line
+      line,
+      reason: 'unable to parse JSON'
+    });
+    return false;
+  }
+
+  if (data.iso_date == null) {
+    console.error('iso_data missing at', line);
+    errors.push({
+      username,
+      line,
+      reason: 'iso_data missing'
     });
     return false;
   }
