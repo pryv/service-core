@@ -14,6 +14,8 @@ const fs = require('fs');
 const API_VERSION_FILENAME = '.api-version';
 const DEFAULT_VERSION = 'unset';
 
+const { execSync } = require('child_process');
+
 // The method '#version' returns a version string for this project; it
 // determines it using the following:
 // 
@@ -40,7 +42,8 @@ class ProjectVersion {
 
     let versionFromGitTag = null;
     try {
-      versionFromGitTag = require('child_process').execSync('git describe --tags').toString();
+      const options = { stdio: 'pipe' }; // in order to mute stderr from console stdout. https://stackoverflow.com/a/45578119/3967660
+      versionFromGitTag = execSync('git describe --tags', options).toString(); 
       if (versionFromGitTag) versionFromGitTag = versionFromGitTag.trim();
     } catch (e) {
       // remove log because we don't want it to appear in CI logs
