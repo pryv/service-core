@@ -217,7 +217,14 @@ function eventFromLine(line, username) {
   if (detailPos < 0) {  
     throw new Error('CANNOT FIND DETAILS:'); 
   }
-  const data = JSON.parse(line.substr(detailPos + RESULT_LINE_L));
+
+  let data;
+  try {
+    data = JSON.parse(line.substr(detailPos + RESULT_LINE_L));
+  } catch (err) {
+    console.err('unable to parse JSON at', line);
+    return false;
+  }
 
   const time = (new Date(data.iso_date)).getTime() / 1000;
   if (time <= userAnchor[username].lastSync) {
