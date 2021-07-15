@@ -43,7 +43,7 @@ class ProjectVersion {
       versionFromGitTag = require('child_process').execSync('git describe --tags').toString();
       if (versionFromGitTag) versionFromGitTag = versionFromGitTag.trim();
     } catch (e) {
-      console.error('Cannot read git tag: ' + e.message);
+      console.info('Cannot read git tag: ' + e.message); // info because we don't want it to appear in CI logs
     }
 
     return versionFromGitTag || version || DEFAULT_VERSION;
