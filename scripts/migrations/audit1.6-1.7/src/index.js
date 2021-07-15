@@ -203,6 +203,8 @@ function methodIdForAction2(action, username) {
   return myRes;
 }
 
+const errors = [];
+
 const INCOMING_REQUEST = 'Incoming request. Details: ';
 const RESULT_LINE = ' Details: ';
 const RESULT_LINE_L = RESULT_LINE.length - 1;
@@ -215,7 +217,12 @@ function eventFromLine(line, username) {
 
   const detailPos = line.indexOf(RESULT_LINE);
   if (detailPos < 0) {  
-    throw new Error('CANNOT FIND DETAILS:'); 
+    console.error('beginning of data anchor "Details:" not found');
+    errors.push({
+      username,
+      line
+    });
+    return false;
   }
 
   let data;
@@ -223,6 +230,10 @@ function eventFromLine(line, username) {
     data = JSON.parse(line.substr(detailPos + RESULT_LINE_L));
   } catch (err) {
     console.error('unable to parse JSON at', line);
+    errors.push({
+      username,
+      line
+    });
     return false;
   }
 
@@ -331,5 +342,6 @@ async function start() {
 (async () => {
   await start();
   console.log('finished migration.')
+  if (errors.length > 0) console.log('errors:', JSON.stringify(errors, null, 2));
   process.exit(0)
 })()
