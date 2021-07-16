@@ -13,17 +13,11 @@
 
 const {DataSource, UserStreams, UserEvents}  = require('../../interfaces/DataSource');
 
-const STORE_ID = 'faulty';
-const STORE_NAME = 'Faulty Store';
-
 class Faulty extends DataSource {
-  
-  get id() { return STORE_ID; }
-  get name() { return STORE_NAME; }
 
   constructor() {  super(); }
 
-  async init() {
+  async init(config) {
     // get config and load approriated data sources componenst;
     this._streams = new FaultyUserStreams();
     this._events = new FaultyUserEvents();

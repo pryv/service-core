@@ -80,3 +80,6 @@ custom:
       type: email/string
       name: Email
       isRequiredInValidation: true
+
+stores:
+  loadExternal: null
