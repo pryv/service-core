@@ -59,7 +59,7 @@ class LocalDataSource extends DataSource {
 class LocalUserStreams extends UserStreams {
   async get(uid, params) {
     let streams = cache.get(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, uid);
-    if (! streams) {
+    if (streams == null) { // get from DB
         streams = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
         cache.set(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, uid, streams);
     }
@@ -67,8 +67,9 @@ class LocalUserStreams extends UserStreams {
      streams = streams.concat(SystemStreamUtils.visibleStreamsTree);
     }
   
-    // BAd BaD -- To be optimized 
+    // Clone streams -- BAd BaD -- To be optimized 
     streams = JSON.parse(JSON.stringify(streams));
+    
     if (params.id && params.id !== '*') {
       const stream = treeUtils.findById(streams, params.id);
       streams = stream ? [ stream ] : [];

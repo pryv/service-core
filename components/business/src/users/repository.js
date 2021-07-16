@@ -342,6 +342,7 @@ class UsersRepository {
   }
   async deleteOne(userId: string): Promise<number> {
     cache.unset(cache.NS.USER_BY_ID, userId);
+    cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
     return await bluebird.fromCallback(
       cb => this.eventsStorage.database.deleteMany(
