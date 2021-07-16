@@ -121,7 +121,7 @@ class Audit {
 module.exports = Audit;
 
 function buildDefaultEvent(context) {
-  return {
+  const event = {
     createdBy: 'system',
     streamIds: [CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id, CONSTANTS.ACTION_STREAM_ID_PREFIX + context.methodId],
     content: {
@@ -130,6 +130,10 @@ function buildDefaultEvent(context) {
       query: context.originalQuery,
     },
   }
+  if (context.callerId != null) {
+    event.content.callerId = context.callerId;
+  }
+  return event;
 }
 
 function log(context, userId, validity, id) {
