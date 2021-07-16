@@ -2,7 +2,7 @@
 
 1. Mount `/var/log/pryv/audit/pryvio_core/` to `/app/audit` in pryvio_core docker container
 
-```
+```yaml
  core:
     image: "eu.gcr.io/pryvio/core:1.7.0-rc10"
     container_name: pryvio_core
@@ -16,9 +16,10 @@
       - /dev/log:/dev/log # for audit log
       - /var/log/pryv/audit/pryvio_core/:/app/audit
 ```
-2. restart Pryvio core docker container
-3. Run the following commands:
- `docker exec -ti pryvio_core /app/bin/scripts/migrations/audit1.6-1.7/run_in_container.sh`
+
+2. Restart Pryvio core docker container: `docker restart pryvio_core`
+3. Run the following commands: `docker exec -ti pryvio_core /app/bin/scripts/migrations/audit1.6-1.7/run_in_container.sh`
+
 
 # License
 Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved

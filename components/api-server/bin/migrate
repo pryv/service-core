@@ -4,14 +4,15 @@
 
 const { getApplication } = require('api-server/src/application');
 const bluebird = require('bluebird');
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 let logger;
 
 (async () => {
-  // Load settings asynchronously because we have to fetch
-  // some values from register via an http-get request.
-  process.env.CONNECT_TIMOUT_MS = 1000000;
-  process.env.SOCKET_TIMOUT_MS = 1000000;
+  const config = await getConfig();
+
+  // boost timeout values because DB operations can be above the default 60s
+  config.set('database:connectTimeoutMS', 30 * 60 * 1000);
+  config.set('database:socketTimeoutMS', 30 * 60 * 1000);
 
   // Construct application
   const app = getApplication();

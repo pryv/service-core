@@ -44,7 +44,17 @@ const UserLocalDirectory = require(DistPath + 'components/business/src/users/Use
 // ---------------- username => ID ---------------//
 
 async function userIdForusername(username) {
-  const res = await db.collection('events').findOne({'username__unique': username});
+  const res = await db.collection('events').findOne(
+    {
+      $and: [
+        {
+          streamIds: {
+            $in: [':_system:username'],
+          },
+        },
+        { content: { $eq: username } },
+      ],
+    });
   if (!res) return null;
   return res.userId;
 }
@@ -54,7 +64,7 @@ function connectToMongo() {
   const dbconf = config.get('database');
   const mongoConnectString = `mongodb://${dbconf.host}:${dbconf.port}/`;
   return new Promise((resolve, reject) => {
-   MongoClient.connect(mongoConnectString, { useUnifiedTopology: true }, (err, client) => {
+    MongoClient.connect(mongoConnectString, { useUnifiedTopology: true }, (err, client) => {
       if (err) return reject(err);
       resolve(client.db(dbconf.name));
     });
@@ -96,7 +106,7 @@ function listAuditFilesForUser(username) {
 
 function readFile(username, filename) {
   const file = path.resolve(audiLogsDirs, username, filename);
- 
+
   return new Promise((resolve, reject) => { 
     if (fs.statSync(file).size === 0) {
       logger.info(file + ' => is empty');
@@ -109,10 +119,10 @@ function readFile(username, filename) {
       lineCount++;
       let item;
       try {
-         item = eventFromLine(line, username);
-         if (item) {
-           storeEvent(username, item);
-         }
+        item = eventFromLine(line, username);
+        if (item) {
+          storeEvent(username, item);
+        }
       } catch (e) {
         cb(false)
         reject(new Error('Error on file ' + file+':'+lineCount +' >>> '+ e.message + '\n' + line));
@@ -168,7 +178,7 @@ const IGNORES = [
 
 for (let r of ROUTES.concat(IGNORES)) {
   if (r.methodId !== undefined)
-   router[r.method](r.path,  (req, res, next) => { res.methodId = r.methodId;});
+    router[r.method](r.path,  (req, res, next) => { res.methodId = r.methodId;});
 }
 
 router.get('/*', (req, res, next) => { logger.info('IGNORED>', req.url, req.method); next(); });
@@ -193,6 +203,8 @@ function methodIdForAction2(action, username) {
   return myRes;
 }
 
+const errors = [];
+
 const INCOMING_REQUEST = 'Incoming request. Details: ';
 const RESULT_LINE = ' Details: ';
 const RESULT_LINE_L = RESULT_LINE.length - 1;
@@ -205,9 +217,37 @@ function eventFromLine(line, username) {
 
   const detailPos = line.indexOf(RESULT_LINE);
   if (detailPos < 0) {  
-    throw new Error('CANNOT FIND DETAILS:'); 
+    console.error('beginning of data anchor "Details:" not found');
+    errors.push({
+      username,
+      line,
+      reason: 'beginning of data anchor "Details:" not found'
+    });
+    return false;
   }
-  const data = JSON.parse(line.substr(detailPos + RESULT_LINE_L));
+
+  let data;
+  try {
+    data = JSON.parse(line.substr(detailPos + RESULT_LINE_L));
+  } catch (err) {
+    console.error('unable to parse JSON at', line);
+    errors.push({
+      username,
+      line,
+      reason: 'unable to parse JSON'
+    });
+    return false;
+  }
+
+  if (data.iso_date == null) {
+    console.error('iso_data missing at', line);
+    errors.push({
+      username,
+      line,
+      reason: 'iso_data missing'
+    });
+    return false;
+  }
 
   const time = (new Date(data.iso_date)).getTime() / 1000;
   if (time <= userAnchor[username].lastSync) {
@@ -313,4 +353,7 @@ async function start() {
 
 (async () => {
   await start();
+  console.log('finished migration.')
+  if (errors.length > 0) console.log('errors:', JSON.stringify(errors, null, 2));
+  process.exit(0)
 })()
