@@ -72,11 +72,11 @@ backwardCompatibility:
       isActive: false
 stores:
   loadExternal:
-    dummy:
+    - id: dummy
       name: Dummy Store
       path: ../implementations/dummy # should be fully qualified path for external stores
       config: null
-    faulty:
+    - id: faulty
       name: Faulty Store
       path: ../implementations/faulty # should be fully qualified path
       config: null

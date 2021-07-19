@@ -28,14 +28,15 @@ async function getStores() {
   
   // -- DataStores (Imported After to avoid cycles);
   const externalStores = config.get('stores:loadExternal');
-  for (const storeId in externalStores) {
-    const storeConfig = externalStores[storeId];
-    const NewStore = require(storeConfig.path);
-    const newStore = new NewStore(storeConfig.config);
-    newStore.id = storeId;
-    newStore.name = storeConfig.name;
-    stores.addStore(newStore); 
-    logger.info('Loading stores [' + newStore.name + '] with id [' + newStore.id + '] from ' + storeConfig.path);
+  if (externalStores) { // keep it like this .. to be sure we test null, undefined, [], false
+    for (const externalStore of externalStores) {
+      const NewStore = require(externalStore.path);
+      const newStore = new NewStore(externalStore.config);
+      newStore.id = externalStore.id;
+      newStore.name = externalStore.name;
+      stores.addStore(newStore); 
+      logger.info('Loading stores [' + newStore.name + '] with id [' + newStore.id + '] from ' + externalStore.path);
+    }
   }
 
   // -- Builds in

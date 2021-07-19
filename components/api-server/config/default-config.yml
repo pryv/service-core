@@ -82,4 +82,4 @@ custom:
       isRequiredInValidation: true
 
 stores:
-  loadExternal: null
+  loadExternal: []
