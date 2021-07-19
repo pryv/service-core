@@ -7,6 +7,7 @@
 const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { UsersRepository, getUsersRepository, User } = require('business/src/users');
+const { getLogger } = require('@pryv/boiler');
 
 const DOT: string = '.';
 /**
@@ -15,7 +16,9 @@ const DOT: string = '.';
  * - remove XX__unique properties from all events containing '.unique'
  */
 module.exports = async function (context, callback) {
-  console.log('V1.6.21 => v1.7.0 Migration started');
+
+  const logger = getLogger('migration-1.7.0');
+  logger.info('V1.6.21 => v1.7.0 Migration started');
 
   const uniqueProperties: Array<string> = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
   const uniquePropertiesToDelete: Array<string> = uniqueProperties.map(s => s + '__unique');
@@ -26,9 +29,9 @@ module.exports = async function (context, callback) {
   const userEventsStorage = new (require('../user/Events'))(context.database);
 
   await migrateAccounts(eventsCollection);
-  console.log('Accounts were migrated, now rebuilding the indexes');
+  logger.info('Accounts were migrated, now rebuilding the indexes');
   await rebuildIndexes(context.database, eventsCollection, userEventsStorage.getCollectionInfoWithoutUserId()),
-  console.log('V1.6.21 => v1.7.0 Migration finished');
+  logger.info('V1.6.21 => v1.7.0 Migration finished');
   callback();
 
   async function migrateAccounts (eventsCollection): Promise<void> {
@@ -42,7 +45,7 @@ module.exports = async function (context, callback) {
     while (await usernameCursor.hasNext()) {
       const usernameEvent = await usernameCursor.next();
       if (usersCounter % 200 === 0) {
-        console.log(`Migrating ${usersCounter + 1}st user`);
+        logger.info(`Migrating ${usersCounter + 1}st user`);
       }
       usersCounter++;
       await migrateUserEvents(usernameEvent, eventsCollection, oldToNewStreamIdsMap);
@@ -101,7 +104,7 @@ module.exports = async function (context, callback) {
 
     async function flushToDb(events: Array<{}>, eventsCollection: {}): Promise<Array<{}>> {
       const result: {} = await eventsCollection.bulkWrite(events);
-      console.info(`flushed ${result.nModified} modifications into database`);
+      logger.info(`flushed ${result.nModified} modifications into database`);
       return [];
     }
 
@@ -132,12 +135,13 @@ module.exports = async function (context, callback) {
   }
 
   async function rebuildIndexes(database, eventsCollection, collectionInfo): Promise<void> {
-    await eventsCollection.dropIndexes();
-
-    collectionInfo.useUserId = true;
-    collectionInfo = database.addUserIdToIndexIfNeeded(collectionInfo);
-    for (const index of collectionInfo.indexes) {
-      await eventsCollection.createIndex(index.index, index.options);
+    const indexCursor = await eventsCollection.listIndexes();
+    while (await indexCursor.hasNext()) {
+      const index = await indexCursor.next();
+      if (index.name.endsWith('__unique_1')) {
+        logger.info('dropping index', index.name);
+        await eventsCollection.dropIndex(index.name);
+      }
     }
   }
 };
