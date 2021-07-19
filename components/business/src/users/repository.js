@@ -410,10 +410,16 @@ async function getUserPasswordHash(userId: string, storage: any): Promise <?stri
 
 
 let usersRepository = null;
+let usersRepositoryInitializing = false;
 async function getUsersRepository() {
-  if (! usersRepository) {
-    usersRepository = new UsersRepository(); 
+  while (usersRepositoryInitializing) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  if (!usersRepository) {
+    usersRepositoryInitializing = true;
+    usersRepository = new UsersRepository();
     await usersRepository.init();
+    usersRepositoryInitializing = false;
   }
   return usersRepository;
 }

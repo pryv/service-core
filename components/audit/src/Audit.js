@@ -105,7 +105,7 @@ class Audit {
     }
     if (this.storage && isAudited.storage) {
       const userStorage = await this.storage.forUser(userId);
-      userStorage.createEvent(event);
+      await userStorage.createEvent(event);
     }
   }
 
