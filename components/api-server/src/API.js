@@ -13,6 +13,9 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
+const { initTracer, Tags, FORMAT_HTTP_HEADERS } = require('../../tracing');
+const tracer = initTracer('api-server');
+
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
 
 // When storing full events.get request instead of streaming it, the maximum
@@ -181,6 +184,9 @@ class API {
 
     if (methodList == null) 
       return callback(errors.invalidMethod(context.methodId), null);
+
+    const span = tracer.startSpan(context.methodId);
+    span.setTag('username', context.username);
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -191,10 +197,14 @@ class API {
       }
     }, function (err) {
       if (err != null) {
+        span.setTag(Tags.ERROR, true);
+        span.setTag(Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
+        span.finish();
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
       }
+      span.finish();
       if (isAuditActive) {
         result.onEnd(function() {
           audit.validApiCall(context, result);
