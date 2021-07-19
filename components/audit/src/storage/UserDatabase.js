@@ -82,7 +82,10 @@ class UserDatabase {
 
   createEvent(event, defaultTime) {
     const eventForDb = eventSchemas.eventToDB(event, defaultTime);
-    this.create.events.run(eventForDb);
+    const that = this;
+    this.concurentSafeWriteStatement(() => {
+      that.create.events.run(eventForDb);
+    }, 10000);
   }
 
   getAllActions() {
@@ -132,6 +135,24 @@ class UserDatabase {
 
   close() { 
     this.db.close();
+  }
+
+  /**
+   * Will look "retries" times, in case of "SQLITE_BUSY".
+   * This is CPU intensive, but tests have shown this solution to be efficient
+   */
+  concurentSafeWriteStatement(statement, retries) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        statement();
+        return;
+      } catch (error) {
+        if (err.code !== 'SQLITE_BUSY') { // ignore 
+          throw err;
+        }
+      }
+    }
+    throw new Error('Failed write action on Audit after ' + retries + ' rertries');
   }
 }
 
