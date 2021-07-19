@@ -164,7 +164,7 @@ async function readLogs(username) {
 
 
 function storeEvent(username, event) {
-  userStorageByUsername[username].createEvent(event);
+  userStorageByUsername[username].createEventSync(event);
 }
 
 // Load routes in a fake expressRouter
