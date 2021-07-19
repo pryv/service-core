@@ -7,7 +7,14 @@
 const { initTracer: initJaegerTracer } = require('jaeger-client');
 const { Tags, FORMAT_HTTP_HEADERS } = require('opentracing');
 
-module.exports.initTracer = serviceName => {
+let tracerSingleton;
+module.exports.getTracer = () => {
+  if (tracerSingleton != null) return tracerSingleton;
+  tracerSingleton = initTracer('api-server');
+  return tracerSingleton;
+}
+
+function initTracer(serviceName) {
   const config = {
     serviceName: serviceName,
     sampler: {
@@ -29,7 +36,7 @@ module.exports.initTracer = serviceName => {
     },
   };*/
   return initJaegerTracer(config, {}); //options);
-};
+}
 
 module.exports.Tags = Tags;
 module.exports.FORMAT_HTTP_HEADERS = FORMAT_HTTP_HEADERS;

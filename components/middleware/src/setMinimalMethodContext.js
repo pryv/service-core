@@ -14,6 +14,7 @@ class MinimalMethodContext {
   user: ?User;
   access: ?Access;
   originalQuery: ?{};
+  tracingSpan: ?{};
 
   constructor(req: express$Request) {
     this.source =  {

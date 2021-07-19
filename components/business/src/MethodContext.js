@@ -31,7 +31,6 @@ export type ContextSource = {
   ip?: string
 }
 
-
 export type AuthenticationData = {
   accessToken: string,
   callerId?: string,
@@ -39,9 +38,6 @@ export type AuthenticationData = {
 
 const AUTH_SEPARATOR = ' ';
 const ACCESS_TYPE_PERSONAL = 'personal';
-
-
-
 
 class MethodContext {
   // Username of the user making the request. 
@@ -66,6 +62,8 @@ class MethodContext {
 
   methodId: ?string;
   stores: Store;
+
+  tracingSpan: ?{};
 
   /**
    * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
