@@ -43,10 +43,12 @@ function produceHandleErrorMiddleware(logging: any) {
       error = errorsFactory.invalidRequestStructure(error.message);
     }
 
-    if (isAuditActive) {
-      await audit.errorApiCall(req.context, error);
+    if (req.context != null) { // context is not initialized in case of malformed JSON
+      if (isAuditActive) { 
+        await audit.errorApiCall(req.context, error);
+      }
+      req.context.tracing.rootSpan.finish();
     }
-    req.context.tracing.rootSpan.finish();
 
     errorHandling.logError(error, req, logger);
 
