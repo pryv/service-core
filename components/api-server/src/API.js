@@ -13,7 +13,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-const { initTracer, Tags, FORMAT_HTTP_HEADERS, getTracer } = require('../../tracing');
+const { Tags, FORMAT_HTTP_HEADERS, getTracer } = require('tracing');
 const tracer = getTracer();
 
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
