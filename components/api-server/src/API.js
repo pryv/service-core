@@ -197,7 +197,7 @@ class API {
     }, function (err) {
       if (err != null) {
         context = setErrorToTracingSpan(context, err);
-        context.tracingSpan.finish();
+        context.tracing.apiSpan.finish();
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
@@ -208,7 +208,8 @@ class API {
           audit.validApiCall(context, result);
         });
       }
-      context.tracingSpan.finish();
+      context.tracing.apiSpan.finish();
+      context.tracing.rootSpan.finish();
       callback(null, result);
     });
   }
@@ -232,15 +233,18 @@ function matches(idFilter: string, id: string) {
 }
 
 function initTracingSpan(context: MethodContext): MethodContext {
-  const span = tracer.startSpan(context.methodId);
+  const span = tracer.startSpan(context.methodId, { childOf: context.tracing.rootSpan });
   if (context.username != null) span.setTag('username', context.username);
-  context.tracingSpan = span;
+  context.tracing.spans.push(span);
+  context.tracing.lastSpan = span;
+  context.tracing.apiSpan = span;
   return context;
 }
 
 function setErrorToTracingSpan(context: MethodContext, err): MethodContext {
-  context.tracingSpan.setTag(Tags.ERROR, true);
-  context.tracingSpan.setTag(Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
+  context.tracing.apiSpan.setTag(Tags.ERROR, true);
+  context.tracing.apiSpan.setTag('errorId', err.id);
+  context.tracing.apiSpan.setTag(Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
   return context;
 }
 

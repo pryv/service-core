@@ -64,7 +64,7 @@ class Audit {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
-    const span = this.tracer.startSpan('audit.validApiCall', { childOf: context.tracingSpan });
+    const span = this.tracer.startSpan('audit.validApiCall', { childOf: context.tracing.rootSpan });
 
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
@@ -77,7 +77,7 @@ class Audit {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
-    const span = this.tracer.startSpan('audit.errorApiCall', { childOf: context.tracingSpan });
+    const span = this.tracer.startSpan('audit.errorApiCall', { childOf: context.tracing.rootSpan });
 
     const userId = context?.user?.id;
   

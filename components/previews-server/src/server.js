@@ -91,7 +91,7 @@ async function start() {
 
   // Go
 
- axonMessaging.openPubSocket(config.get('tcpMessaging'), function (err, pubSocket) {
+  axonMessaging.openPubSocket(config.get('tcpMessaging'), function (err, pubSocket) {
     if (err) {
       logger.error('Error setting up TCP pub socket: ' + err);
       process.exit(1);

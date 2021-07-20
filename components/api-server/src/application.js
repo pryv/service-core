@@ -47,6 +47,9 @@ const UserLocalDirectory = require('business').users.UserLocalDirectory;
 
 const { Extension, ExtensionLoader } = require('utils').extension;
 
+const { getAPIVersion } = require('middleware/src/project_version');
+const { tracingMiddleware } = require('tracing');
+
 logger.debug('Loading app');
 
 import type { CustomAuthFunction } from 'business';
@@ -111,6 +114,15 @@ class Application {
     
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
+    const apiVersion: string = await getAPIVersion();
+    const hostname: string = require('os').hostname();
+    this.expressApp.use(tracingMiddleware(
+      'rootSpan',
+      {
+        apiVersion,
+        hostname,
+      }
+    ))
     this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
     const errorsMiddleware = errorsMiddlewareMod(this.logging);

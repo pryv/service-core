@@ -46,6 +46,7 @@ function produceHandleErrorMiddleware(logging: any) {
     if (isAuditActive) {
       audit.errorApiCall(req.context, error);
     }
+    req.context.tracing.rootSpan.finish();
 
     errorHandling.logError(error, req, logger);
 

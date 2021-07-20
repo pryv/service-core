@@ -24,6 +24,9 @@ const Paths = require('../routes/Paths');
 
 const ChangeNotifier = require('./change_notifier');
 
+const { getTracer } = require('tracing');
+const { getAPIVersion } = require('middleware/src/project_version');
+
 import type { StorageLayer } from 'storage';
 import type { CustomAuthFunction } from 'business';
 
@@ -39,7 +42,7 @@ function setupSocketIO(
   customAuthStepFn: ?CustomAuthFunction,
   isOpenSource: boolean,
 ) {
- 
+
   const io = socketIO.listen(server, {
     path: Paths.SocketIO
   });
@@ -53,6 +56,9 @@ function setupSocketIO(
     const nameSpaceContext = await manager.ensureInitNamespace(socket.nsp.name);
     nameSpaceContext.onConnect(socket);
   });
+
+  const tracer = getTracer();
+  const hostname: string = require('os').hostname();
   
   // add a middelware for authentication 
   // add middelware for authentication 
@@ -67,12 +73,21 @@ function setupSocketIO(
         name: 'socket.io',
         ip:  socket.handshake.headers['x-forwarded-for'] || socket.request.connection.remoteAddress
       }
+      const apiVersion: string = await getAPIVersion(); // move this above when possible
       const context = new MethodContext(
         contextSource,
         userName,
         query.auth,
         customAuthStepFn,
-        storageLayer.events
+        storageLayer.events,
+        null,
+        null,
+        tracer.startSpan('socket.io', {
+          tags: {
+            apiVersion,
+            hostname,
+          }
+        })
       );
       // Load user, init the namespace
       await context.retrieveUser();

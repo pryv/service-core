@@ -8,13 +8,14 @@
 const _ = require('lodash');
 
 import type ContextSource from 'business/src/MethodContext';
+import type Tracing from 'business/src/MethodContext';
 
 class MinimalMethodContext {
   source: ContextSource;
   user: ?User;
   access: ?Access;
   originalQuery: ?{};
-  tracingSpan: ?{};
+  tracing: Tracing;
 
   constructor(req: express$Request) {
     this.source =  {
@@ -23,6 +24,10 @@ class MinimalMethodContext {
     }
     this.originalQuery = _.cloneDeep(req.query);
     if (this.originalQuery?.auth) delete this.originalQuery.auth;
+    this.tracing = { 
+      rootSpan: req.rootSpan,
+      spans: [],
+    };
   }
 }
 
