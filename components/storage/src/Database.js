@@ -10,6 +10,7 @@ const async = require('async');
 const MongoClient = require('mongodb').MongoClient;
 const lodash = require('lodash');
 const bluebird = require('bluebird');
+const ah = require('api-server/src/hooks');
 
 const { getLogger } = require('@pryv/boiler');
 
@@ -287,6 +288,9 @@ class Database {
    * @param {Function} callback
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
+    const requestContext = ah.getRequestContext();
+    console.log('Database.find', requestContext);
+  
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {

@@ -9,6 +9,7 @@
 const express = require('express');
 const _ = require('lodash');
 const bodyParser = require('body-parser');
+const ah = require('./hooks');
 
 const middleware = require('middleware');
 
@@ -26,6 +27,13 @@ async function expressAppInit(isDnsLess: boolean, logging) {
   var app = express(); // register common middleware
   const commonHeadersMiddleware = await middleware.commonHeaders();
   const requestTraceMiddleware = middleware.requestTrace(app, logging);
+
+  // register trace middleware
+  app.use((request, response, next) => {
+      ah.createRequestContext({ method: request.method, url:  request.url});
+      next();
+  });
+
 
   // register common middleware
 
