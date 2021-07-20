@@ -197,15 +197,14 @@ class API {
     }, function (err) {
       if (err != null) {
         context = setErrorToTracingSpan(context, err);
-        context.tracing.apiSpan.finish();
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
       }
       
       if (isAuditActive) {
-        result.onEnd(function() {
-          audit.validApiCall(context, result);
+        result.onEnd(async function() {
+          await audit.validApiCall(context, result);
         });
       }
       context.tracing.apiSpan.finish();

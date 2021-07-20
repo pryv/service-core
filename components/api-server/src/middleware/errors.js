@@ -34,17 +34,17 @@ function produceHandleErrorMiddleware(logging: any) {
   if (isAuditActive) {
     audit = require('audit');
   }
- 
+
   // NOTE next is not used, since the request is terminated on all errors. 
   /*eslint-disable no-unused-vars*/
-  return function handleError(error, req: express$Request, res: express$Response, next: () => void) {
+  return async function handleError(error, req: express$Request, res: express$Response, next: () => void) {
     if (! (error instanceof APIError) && error.status) {
       // it should be coming from Express' bodyParser: just wrap the error
       error = errorsFactory.invalidRequestStructure(error.message);
     }
 
     if (isAuditActive) {
-      audit.errorApiCall(req.context, error);
+      await audit.errorApiCall(req.context, error);
     }
     req.context.tracing.rootSpan.finish();
 
