@@ -226,8 +226,9 @@ class MethodContext {
   async retrieveAccessFromId(storage: StorageLayer, accessId: string): Promise<Access> {
 
     this.access = cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, this.user.id + '/' + accessId);
+
     if (this.access == null) {
-      this._retrieveAccess(storage, { id: accessId });
+      await this._retrieveAccess(storage, { id: accessId });
     }
 
     this.accessToken = this.access.token;

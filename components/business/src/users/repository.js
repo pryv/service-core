@@ -299,8 +299,8 @@ class UsersRepository {
   }
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
     // invalidate caches
-    cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
     cache.unset(cache.NS.USER_BY_ID, user.id);
+    cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
     this.checkDuplicates(update);
 
     await this.checkDuplicates(update);
@@ -341,8 +341,10 @@ class UsersRepository {
     }, getTransactionOptions());
   }
   async deleteOne(userId: string): Promise<number> {
+    const cachedUser = cache.get(cache.NS.USER_BY_ID, userId);
     cache.unset(cache.NS.USER_BY_ID, userId);
-    cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
+    if (cachedUser != null)
+      cache.unset(cache.NS.USERID_BY_USERNAME, cachedUser.username);
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
     return await bluebird.fromCallback(
       cb => this.eventsStorage.database.deleteMany(
