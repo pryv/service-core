@@ -289,7 +289,7 @@ class Database {
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
     const requestContext = ah.getRequestContext();
-    console.log('Database.find', requestContext);
+    console.log('Database.find', requestContext, collectionInfo.name, collectionInfo.useUserId);
   
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {

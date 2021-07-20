@@ -12,6 +12,7 @@ const errors = require('errors').factory;
 const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
+const ah = require('api-server/src/hooks');
 
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
 
@@ -78,6 +79,19 @@ class API {
 
     const methodMap = this.map; 
     const wildcardAt = id.indexOf(WILDCARD);
+
+    fns.unshift(function(context, params, result, next) {
+      const requestContext = ah.getRequestContext();
+      if (requestContext == null) {
+        console.log('Null API register context', id);
+      } else {
+        requestContext.data.apiRegister = id;
+      }
+      next();
+    });
+
+    /// Tracing Idea... ICI on pourrait intercaller des tracing start / close entre chaque fonction de l'array... 
+
     
     // Is this a full method id, without wildcards?
     if (wildcardAt === -1) {
