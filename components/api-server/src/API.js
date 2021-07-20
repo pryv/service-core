@@ -80,18 +80,40 @@ class API {
     const methodMap = this.map; 
     const wildcardAt = id.indexOf(WILDCARD);
 
-    fns.unshift(function(context, params, result, next) {
+    fns.unshift(function setTracing(context, params, result, next) {
       const requestContext = ah.getRequestContext();
       if (requestContext == null) {
         console.log('Null API register context', id);
       } else {
         requestContext.data.apiRegister = id;
+        context.apiFns = [];  // here we could set the Tracing to context.. 
       }
       next();
     });
 
     /// Tracing Idea... ICI on pourrait intercaller des tracing start / close entre chaque fonction de l'array... 
+    const newFns = [];
+    let lastFn = null;
+    for (const fn of fns) {
+      const myLastFn = lastFn ? null : '' + lastFn;
+      const fnName = fn.name;
+      lastFn = fnName;
+      newFns.push(function (context, params, result, next) { 
+        // here we close tracing for lastFN
+        //if (lastFn !== null) context.apiFns.push['Close ' + myLastFn];
+        context.apiFns.push['Start ' + fnName];
+        next();
+      });
+      newFns.push(fn);
+    }
 
+    newFns.push(function (context, params, result, next) { 
+      const requestContext = ah.getRequestContext();
+      console.log('Finalized ', requestContext, ' with', context.apiFns);
+      next();
+    });
+
+    fns = newFns;
     
     // Is this a full method id, without wildcards?
     if (wildcardAt === -1) {
