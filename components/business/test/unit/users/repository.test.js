@@ -74,6 +74,7 @@ describe('Users repository', () => {
         const usersRepository = await getUsersRepository(); 
         const userObj: User = new User({
           id: charlatan.Lorem.characters(10),
+          username: charlatan.Lorem.characters(10),
           email,
         });
         await usersRepository.insertOne(userObj);
