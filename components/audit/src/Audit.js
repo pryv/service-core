@@ -69,7 +69,7 @@ class Audit {
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
     event.type = CONSTANTS.EVENT_TYPE_VALID;
-    this.eventForUser(userId, event, methodId);
+    await this.eventForUser(userId, event, methodId);
     span.finish();
   }
 

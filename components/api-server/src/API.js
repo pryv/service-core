@@ -185,7 +185,7 @@ class API {
     if (methodList == null) 
       return callback(errors.invalidMethod(context.methodId), null);
 
-    context = initTracingSpan(context);
+    context = initTracingSpan(context, params);
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -232,8 +232,11 @@ function matches(idFilter: string, id: string) {
   return id.startsWith(filterWithoutWildcard);
 }
 
-function initTracingSpan(context: MethodContext): MethodContext {
-  const span = tracer.startSpan(context.methodId, { childOf: context.tracing.rootSpan });
+function initTracingSpan(context: MethodContext, params: {}): MethodContext {
+  const span = tracer.startSpan(context.methodId, { 
+    childOf: context.tracing.rootSpan,
+    tags: params,
+  });
   if (context.username != null) span.setTag('username', context.username);
   context.tracing.spans.push(span);
   context.tracing.lastSpan = span;
