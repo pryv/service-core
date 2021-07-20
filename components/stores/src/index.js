@@ -9,25 +9,38 @@
  * Pack configured datasources into one
  */
 
-const { getConfig } = require('@pryv/boiler');
-
+const { getConfig, getLogger } = require('@pryv/boiler');
+const Stores = require('./Stores');
 
 
 let stores;
+let initializing = false;
 async function getStores() {
-  if (stores) return stores;
+  while (initializing) {
+    await new Promise((r) => setTimeout(r, 5));
+  }
+  if (stores != null) return stores;
+  initializing = true;
+
   const config = await getConfig();
-
-  const Stores = require('./Stores');
+  const logger = getLogger('stores');
   stores = new Stores();
-
+  
   // -- DataStores (Imported After to avoid cycles);
-  const DummyStore = require('../implementations/dummy');
-  stores.addStore(new DummyStore());
+  const externalStores = config.get('stores:loadExternal');
+  if (externalStores) { // keep it like this .. to be sure we test null, undefined, [], false
+    for (const externalStore of externalStores) {
+      const NewStore = require(externalStore.path);
+      const newStore = new NewStore(externalStore.config);
+      newStore.id = externalStore.id;
+      newStore.name = externalStore.name;
+      stores.addStore(newStore); 
+      logger.info('Loading stores [' + newStore.name + '] with id [' + newStore.id + '] from ' + externalStore.path);
+    }
+  }
 
-  const FaultyStore = require('../implementations/faulty');
-  stores.addStore(new FaultyStore());
-
+  // -- Builds in
+ 
   const LocalStore = require('../implementations/local/LocalDataSource');
   stores.addStore(new LocalStore());
 
@@ -35,8 +48,9 @@ async function getStores() {
     const AuditDataSource = require('audit/src/AuditDataSource');
     stores.addStore(new AuditDataSource());
   }
-
-  return await stores.init();
+  await stores.init()
+  initializing = false;
+  return stores;
 };
 
 

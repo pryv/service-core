@@ -28,19 +28,8 @@ function toBeImplemented() {
  * @property {string} BY_EXTERNAL_PREFIX - When createdBy / modifiedBy value is an external Reference
  */
 class DataSource { 
-  /**
-   * Data source id 
-   * ex: "local", "system"
-   */
-  get id() { toBeImplemented(); } 
-
-  /**
-   * Data source name 
-   * ex: "localStorage", "System Streams"
-   */
-  get name() { toBeImplemented(); } 
   
-  async init() { toBeImplemented(); }
+  async init(config) { toBeImplemented(); }
 
   /** @returns  UserStreams */
   get streams() { toBeImplemented(); } 

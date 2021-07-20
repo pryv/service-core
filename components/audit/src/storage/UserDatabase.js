@@ -41,6 +41,7 @@ class UserDatabase {
   constructor(params) {
     const db = new sqlite3(params.dbPath, DB_OPTIONS);
     db.pragma('journal_mode = WAL');
+    db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
     this.create = {};
     this.getAll = {};
     this.get = {};
@@ -80,9 +81,21 @@ class UserDatabase {
     this.db = db;
   }
 
-  createEvent(event, defaultTime) {
+  /**
+   * Use only during tests or migration
+   * Not safe within a multi-process environement
+   */
+  createEventSync(event, defaultTime) {
     const eventForDb = eventSchemas.eventToDB(event, defaultTime);
     this.create.events.run(eventForDb);
+  }  
+
+  async createEvent(event, defaultTime) {
+    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
+    const that = this;
+    await this.concurentSafeWriteStatement(() => {
+      that.create.events.run(eventForDb);
+    }, 10000);
   }
 
   getAllActions() {
@@ -133,7 +146,30 @@ class UserDatabase {
   close() { 
     this.db.close();
   }
+
+  /**
+   * Will look "retries" times, in case of "SQLITE_BUSY".
+   * This is CPU intensive, but tests have shown this solution to be efficient
+   */
+  async concurentSafeWriteStatement(statement, retries) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        statement();
+        return;
+      } catch (error) {
+        if (err.code !== 'SQLITE_BUSY') { // ignore 
+          throw err;
+        }
+        const waitTime = i > (WAIT_LIST_MS.length - 1) ? 100 : WAIT_LIST[i];
+        await new Promise((r) => setTimeout(r, waitTime));
+      }
+    }
+    throw new Error('Failed write action on Audit after ' + retries + ' rertries');
+  }
 }
+const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25,  25,  50,  50, 100];
+
+
 
 function prepareTermQuery(params = {}) {
   let queryString = 'SELECT * FROM events_fts_v';
