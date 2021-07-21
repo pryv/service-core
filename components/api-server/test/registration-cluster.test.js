@@ -20,6 +20,7 @@ const ErrorMessages = require('errors/src/ErrorMessages');
 const { getUsersRepository, User } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
+const { ApiEndpoint } = require('utils');
 
 function defaults() {
   return {
@@ -166,8 +167,7 @@ describe('registration: cluster', function() {
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
 
         let initUser = new User(userData);
-        initUser.token = personalAccess.token;
-        assert.equal(body.apiEndpoint, initUser.getApiEndpoint());
+        assert.equal(body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
       });
       it('[7QB6] should send the right data to register', () => {
         const firstValidationSent = serviceRegisterRequests[0];

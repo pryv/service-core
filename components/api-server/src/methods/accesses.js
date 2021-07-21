@@ -17,7 +17,7 @@ const errors = require('errors').factory;
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors').ErrorMessages;
 
-const treeUtils = require('utils').treeUtils;
+const { ApiEndpoint , treeUtils } = require('utils');
 
 const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/accessesMethods');
@@ -104,7 +104,7 @@ module.exports = async function produceAccessesApiMethods(
             accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);  
           }
         }
-        accesses[i].apiEndpoint = context.user.buildApiEndpoint(accesses[i].token);
+        accesses[i].apiEndpoint = ApiEndpoint.build(context.username, accesses[i].token); 
       }
 
       result.accesses = accesses;
@@ -363,7 +363,7 @@ module.exports = async function produceAccessesApiMethods(
       }
 
       result.access = newAccess;
-      result.access.apiEndpoint = context.user.buildApiEndpoint(result.access.token);
+      result.access.apiEndpoint = ApiEndpoint.build(context.username, result.access.token);
       notifications.accessesChanged(context.username);
       next();
     });

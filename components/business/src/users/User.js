@@ -16,7 +16,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const UserRepositoryOptions = require('./UserRepositoryOptions');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
-const { ApiEndpoint , encryption } = require('utils')
+const { encryption } = require('utils')
 
 const SystemStream = require('business/src/system-streams/SystemStream');
 const Event = require('business/src/events/Event');
@@ -31,7 +31,6 @@ class User {
   accessId: ?string;
 
   events: ?Array<Event>;
-  apiEndpoint: ?string;
   accountFields: Array<string> = [];
   readableAccountFields: Array<string> = [];
   accountFieldsWithPrefix: Array<string> = [];
@@ -106,23 +105,6 @@ class User {
    */
   getUniqueFields () {
     return _.pick(this, this.uniqueAccountFields);
-  }
-
-  /**
-   * Builds apiEndpoint with the token if it exists
-   */
-  getApiEndpoint () {
-    if (! this.apiEndpoint) this.apiEndpoint = this.buildApiEndpoint(this.token);
-    return this.apiEndpoint;
-  }
-
-  /**
-   * Build apiEndPoint for this user and token
-   * @param {*} updateData 
-   * @param {*} isActive 
-   */
-  buildApiEndpoint(token) {
-    return ApiEndpoint.build(this.username, token);
   }
 
   get dbDocuments() {

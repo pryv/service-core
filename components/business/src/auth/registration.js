@@ -17,6 +17,7 @@ const { getUsersRepository, User } = require('business/src/users');
 const ErrorIds = require('errors').ErrorIds;
 
 const { getLogger } = require('@pryv/boiler');
+const { ApiEndpoint } = require('utils');
 
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
@@ -47,7 +48,9 @@ class Registration {
    * @param {*} next 
    */
   async prepareUserData(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    context.user = new User(params);
+    context.newUser = new User(params);
+    context.username = context.newUser.username;
+    context.user = { id: context.newUser.id };
     next();
   }
 
@@ -70,14 +73,14 @@ class Registration {
         // if key is set as required - add required validation
         if (streamSettings?.isUnique) {
           const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix)
-          uniqueFields[streamIdWithoutPrefix] = context.user[streamIdWithoutPrefix];
+          uniqueFields[streamIdWithoutPrefix] = context.newUser[streamIdWithoutPrefix];
         }
       }
       
       // do the validation and reservation in service-register
       await this.serviceRegisterConn.validateUser(
-        context.user.username,
-        context.user.invitationToken,
+        context.newUser.username,
+        context.newUser.invitationToken,
         uniqueFields,
         context.host
       );
@@ -104,7 +107,7 @@ class Registration {
       // assert that we have obtained a lock on register, so any conflicting fields here 
       // would be failed registration attempts that partially saved user data.
       const usersRepository = await getUsersRepository();
-      const existingUsers = await usersRepository.findExistingUniqueFields(context.user.getUniqueFields());
+      const existingUsers = await usersRepository.findExistingUniqueFields(context.newUser.getUniqueFields());
 
       // if any of unique fields were already saved, it means that there was an error
       // saving in service register (before this step there is a check that unique fields 
@@ -148,15 +151,16 @@ class Registration {
     next: ApiCallback
   ) {
     // if it is testing user, skip registration process
-    if (context.user.username === 'recla') {
+    if (context.newUser.username === 'recla') {
       result.id = 'dummy-test-user';
-      context.user.id = result.id;
+      context.newUser.id = result.id;
+      context.username = context.newUser.username;
       return next();
     }
 
     try {
       const usersRepository = await getUsersRepository();
-      context.user = await usersRepository.insertOne(context.user, true);
+      await usersRepository.insertOne(context.newUser, true);
     } catch (err) {
       return next(err);
     }
@@ -185,13 +189,13 @@ class Registration {
       // some default values and indexed/uinique fields of the system
       const userData = {
         user: {
-          id: context.user.id
+          id: context.newUser.id
         },
         host: { name: context.host },
         unique: SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()
       };
       userStreamsIds.forEach(streamId => {
-        if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];
+        if (context.newUser[streamId] != null) userData.user[streamId] = context.newUser[streamId];
       });
 
       await this.serviceRegisterConn.createUser(userData);
@@ -214,8 +218,9 @@ class Registration {
     result: Result,
     next: ApiCallback
   ) {
-    result.username = context.user.username;
-    result.apiEndpoint = context.user.getApiEndpoint();
+    console.log('XXXXXXX', context);
+    result.username =  context.newUser.username;
+    result.apiEndpoint = ApiEndpoint.build(context.newUser.username, context.newUser.token);
     next();
   }
   /**
@@ -241,14 +246,14 @@ class Registration {
     }
 
     const recipient = {
-      email: context.user.email,
-      name: context.user.username,
+      email: context.newUser.email,
+      name: context.newUser.username,
       type: 'to'
     };
 
     const substitutions = {
-      USERNAME: context.user.username,
-      EMAIL: context.user.email
+      USERNAME: context.newUser.username,
+      EMAIL: context.newUser.email
     };
 
     mailing.sendmail(
@@ -256,7 +261,7 @@ class Registration {
       emailSettings.welcomeTemplate,
       recipient,
       substitutions,
-      context.user.language,
+      context.newUser.language,
       err => {
         // Don't fail creation process itself (mail isn't critical), just log error
         if (err) {

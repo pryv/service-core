@@ -12,6 +12,7 @@ import type ContextSource from 'business/src/MethodContext';
 class MinimalMethodContext {
   source: ContextSource;
   user: ?User;
+  username: ?String;
   access: ?Access;
   originalQuery: ?{};
 

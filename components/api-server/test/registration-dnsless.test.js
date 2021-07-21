@@ -17,6 +17,7 @@ const { produceMongoConnection } = require('api-server/test/test-helpers');
 const { Notifications } = require('messages');
 const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers');
 const ErrorIds = require('errors/src/ErrorIds');
+const { ApiEndpoint } = require('utils');
 
 describe('[BMM2] registration: DNS-less', () => {
   let config;
@@ -97,8 +98,7 @@ describe('[BMM2] registration: DNS-less', () => {
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
         const initUser = new User(user);
-        initUser.token = personalAccess.token;
-        assert.equal(res.body.apiEndpoint, initUser.getApiEndpoint());
+        assert.equal(res.body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
       });
       it('[LPLP] Valid access token exists in the response', async function () {
         assert.exists(res.body.apiEndpoint);

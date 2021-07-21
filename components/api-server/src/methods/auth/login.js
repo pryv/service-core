@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 const commonFns = require('api-server/src/methods/helpers/commonFunctions');
-const utils = require('utils');
+const { ApiEndpoint } = require('utils');
 const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
@@ -131,7 +131,7 @@ module.exports = async function (api, userAccessesStorage, sessionsStorage, user
 
   function addApiEndpoint(context, params, result, next) {
     if (result.token) {
-      result.apiEndpoint = context.user.buildApiEndpoint(result.token);
+      result.apiEndpoint = ApiEndpoint.build(context.username, result.token);
     }
     next();
   }
