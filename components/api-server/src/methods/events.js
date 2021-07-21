@@ -61,7 +61,7 @@ const SystemStream = require('business/src/system-streams/SystemStream');
 // for events. 
 const typeRepo = new TypeRepository(); 
 
-const { Tags, FORMAT_HTTP_HEADERS, getTracer } = require('tracing');
+const { ah } = require('tracing');
 
 /**
  * Events API methods implementations.
@@ -102,8 +102,6 @@ module.exports = async function (
 
   const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
-  const tracer = getTracer();
-
   // RETRIEVAL
   api.register('events.get',
     eventsGetUtil.coerceStreamsParam,
@@ -130,9 +128,8 @@ module.exports = async function (
 
   // the two tasks are joined as '*' replaced have their permissions checked 
   async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const span = tracer.startSpan('streamQueries', { childOf: context.tracing.apiSpan });
-    context.tracing.streamQueries = span;
-    context.tracing.spans.push(span);
+    const { tracing } = ah.getRequestContext().data;
+    tracing.startSpan('streamQueries');
     const unAuthorizedStreams = [];
     const unAccessibleStreams = [];
 
@@ -240,8 +237,8 @@ module.exports = async function (
 
     // delete streamQueries with no inclusions 
     params.streams = params.streams.filter(streamQuery => streamQuery.any || streamQuery.and);
-    context.tracing.streamQueries.finish();
-    context.tracing.spans.pop();
+    const { tracing } = ah.getRequestContext().data;
+    tracing.finishSpan('streamQueries');
     next();
   }
 

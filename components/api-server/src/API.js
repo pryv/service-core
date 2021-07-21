@@ -13,8 +13,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-const { Tags, FORMAT_HTTP_HEADERS, getTracer } = require('tracing');
-const tracer = getTracer();
+const { Tags, ah } = require('tracing');
 
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
 
@@ -185,7 +184,8 @@ class API {
     if (methodList == null) 
       return callback(errors.invalidMethod(context.methodId), null);
 
-    context = initTracingSpan(context, params);
+    const { tracing } = ah.getRequestContext().data;
+    initTracingSpan(tracing, context, params);
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -196,7 +196,7 @@ class API {
       }
     }, function (err) {
       if (err != null) {
-        context = setErrorToTracingSpan(context, err);
+        context = setErrorToTracingSpan(tracing, context, err);
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
@@ -207,8 +207,8 @@ class API {
           await audit.validApiCall(context, result);
         });
       }
-      context.tracing.apiSpan.finish();
-      context.tracing.rootSpan.finish();
+      tracing.finishSpan(context.methodId);
+      tracing.finishSpan('express');
       callback(null, result);
     });
   }
@@ -231,22 +231,16 @@ function matches(idFilter: string, id: string) {
   return id.startsWith(filterWithoutWildcard);
 }
 
-function initTracingSpan(context: MethodContext, params: {}): MethodContext {
-  const span = tracer.startSpan(context.methodId, { 
-    childOf: context.tracing.rootSpan,
-    tags: params,
-  });
-  if (context.username != null) span.setTag('username', context.username);
-  context.tracing.spans.push(span);
-  context.tracing.lastSpan = span;
-  context.tracing.apiSpan = span;
-  return context;
+function initTracingSpan(tracing: {}, context: MethodContext, params: {}): void {
+  const spanName: string = context.methodId;
+  tracing.startSpan(spanName, null, params);
+  if (context.username != null) tracing.tagSpan(spanName, 'username', context.username);
 }
 
-function setErrorToTracingSpan(context: MethodContext, err): MethodContext {
-  context.tracing.apiSpan.setTag(Tags.ERROR, true);
-  context.tracing.apiSpan.setTag('errorId', err.id);
-  context.tracing.apiSpan.setTag(Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
-  return context;
+function setErrorToTracingSpan(tracing: {}, context: MethodContext, err): void {
+  const spanName: string = context.methodId;
+  tracing.tagSpan(spanName, Tags.ERROR, true);
+  tracing.tagSpan(spanName, 'errorId', err.id);
+  tracing.tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
 }
 

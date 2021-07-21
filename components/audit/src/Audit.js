@@ -20,7 +20,7 @@ const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
 const { AuditAccessIds } = require('./MethodContextUtils');
 
-const { getTracer } = require('tracing');
+const { ah } = require('tracing');
 
 /**
  * EventEmitter interface is just for tests syncing for now
@@ -57,27 +57,29 @@ class Audit {
       storageFilter: config.get('audit:storage:filter'),
     });
     logger.info('Audit started');
-    this.tracer = getTracer();
   }
 
   async validApiCall(context, result) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
-    const span = this.tracer.startSpan('audit.validApiCall', { childOf: context.tracing.rootSpan });
+    const { tracing } = ah.getRequestContext().data;
+    tracing.startSpan('audit.validApiCall');
 
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
     event.type = CONSTANTS.EVENT_TYPE_VALID;
     await this.eventForUser(userId, event, methodId);
-    span.finish();
+    
+    tracing.finishSpan('audit.validApiCall');
   }
 
   async errorApiCall(context, error) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
-    const span = this.tracer.startSpan('audit.errorApiCall', { childOf: context.tracing.rootSpan });
+    const { tracing } = ah.getRequestContext().data;
+    tracing.startSpan('audit.errorApiCall');
 
     const userId = context?.user?.id;
   
@@ -89,8 +91,8 @@ class Audit {
     event.content.id = error.id;
     event.content.message = error.message;
 
-    this.eventForUser(userId, event, methodId);
-    span.finish();
+    await this.eventForUser(userId, event, methodId);
+    tracing.finishSpan('audit.errorApiCall');
   }
 
   async eventForUser(userId, event) {

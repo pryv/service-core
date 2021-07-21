@@ -16,7 +16,7 @@ const { getLogger, notifyAirbrake } = require('@pryv/boiler');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-
+const { ah } = require('tracing');
 
 (async () => {
   await commonMeta.loadSettings();
@@ -43,12 +43,12 @@ function produceHandleErrorMiddleware(logging: any) {
       error = errorsFactory.invalidRequestStructure(error.message);
     }
 
-    if (req.context != null) { // context is not initialized in case of malformed JSON
-      if (isAuditActive) { 
-        await audit.errorApiCall(req.context, error);
-      }
-      req.context.tracing.rootSpan.finish();
+    if (req.context != null && isAuditActive) { // context is not initialized in case of malformed JSON
+      await audit.errorApiCall(req.context, error);
     }
+
+    const { tracing } = ah.getRequestContext().data;
+    tracing.finishSpan('express');
 
     errorHandling.logError(error, req, logger);
 
