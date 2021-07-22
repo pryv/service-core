@@ -6,14 +6,12 @@
  */
 // @flow
 
-const LRU = require('lru-cache');
 const bluebird = require('bluebird');
 
 const storage = require('storage');
 const { getUsersRepository } = require('business/src/users');
 const { PendingUpdate } = require('./pending_updates');
 
-import type { LRUCache }  from 'lru-cache';
 import type { Operation }  from './controller';
 
 // Operation that flushes the update to MongoDB. 
@@ -88,38 +86,25 @@ const USER_LOOKUP_CACHE_SIZE = 1000;
 // cache to speed up these lookups and load MongoDB less. 
 // 
 class CustomUsersRepository {
-  db: storage.StorageLayer;
-  cache: LRUCache<string, User>;
-
+  
   constructor(db: storage.StorageLayer) {
-    this.db = db;
-    
-    this.cache = new LRU({ max: USER_LOOKUP_CACHE_SIZE });
    
   }
-  async resolve(name: string): Promise<User> {
-    const cache = this.cache;
-    
-    if (cache.has(name)) {
-      const user = cache.get(name);
-      if (user != null) return user;
-    }
-    
-    const user = await this.resolveFromDB(name);
-    
-    cache.set(name, user);
-    
-    return user;
-  }
-  async resolveFromDB(name: string): Promise<User> {
-    const usersRepository = await getUsersRepository(); 
-    const user = await usersRepository.getAccountByUsername(name, true);
+  async resolve(name: string): Promise<?User> {
+    const usersRepository = await getUsersRepository();
+    const userId = await usersRepository.getUserIdForUserName(name);
+    if (userId == null) return null; 
+    const user = { 
+      id: userId,
+      name: name
+    };
     return user;
   }
 }
 
 type User = {
   id: string, 
+  name: string,
 }
 
 module.exports = {
