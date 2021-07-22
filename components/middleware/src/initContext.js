@@ -39,7 +39,6 @@ module.exports = function initContext(
       storageLayer.events,
       req.headers,
       req.query,
-      req.rootSpan,
     );
     
     const userRetrieved = req.context.retrieveUser();

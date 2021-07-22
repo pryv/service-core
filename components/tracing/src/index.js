@@ -9,7 +9,6 @@
 const { initTracer: initJaegerTracer } = require('jaeger-client');
 const { Tags, FORMAT_HTTP_HEADERS } = require('opentracing');
 const ah = require('./hooks');
-module.exports.ah = ah;
 
 let tracerSingleton;
 function getTracer() {
@@ -17,7 +16,6 @@ function getTracer() {
   tracerSingleton = initTracer('api-server');
   return tracerSingleton;
 }
-module.exports.getTracer = getTracer;
 
 function initTracer(serviceName) {
   const config = {
@@ -43,18 +41,52 @@ function initTracer(serviceName) {
   return initJaegerTracer(config, {}); //options);
 }
 
+module.exports.startSpan = (name: string, parent: ?{}, tags: ?{}): void => {
+  const context = getContext();
+  context.data.tracing.startSpan(name, parent, tags);
+}
+
+module.exports.finishSpan = (name: string) => {
+  const context = getContext();
+  context.data.tracing.finishSpan(name);
+}
+
+module.exports.tagSpan = (name: string, key: string, value: string): void => {
+  const context = getContext();
+  context.data.tracing.tagSpan(name, key, value);
+}
+
+function getContext(): {} {
+  let context = ah.getRequestContext();
+  if (context == null) {
+    context = ah.createRequestContext({
+      tracing: new Tracing(),
+    });
+  }
+  return context;
+}
+
+/**
+ * Starts a root span
+ */
+module.exports.initRootSpan = (name: string, tags: ?{}): void => {
+  const tracer = getTracer();
+  const tracing = new Tracing();
+    tracing.startSpan(name, null, tags);
+    ah.createRequestContext({
+      tracing,
+    });
+}
+
 /**
  * Returns an ExpressJS middleware that starts a span and attaches it to the request parameter
- * 
- * @param {*} spanName 
- * @param {*} propertyName 
  */
-module.exports.tracingMiddleware = (spanName: string = 'express', tags: ?{}, log: ?{}): () => void => {
+module.exports.tracingMiddleware = (name: string = 'express', tags: ?{}): () => void => {
   const tracer = getTracer();
 
   return function (req, res, next): void {
     const tracing = new Tracing();
-    tracing.startSpan('express', null, tags);
+    tracing.startSpan(name, null, tags);
     ah.createRequestContext({
       tracing,
     });
@@ -93,17 +125,17 @@ class Tracing {
     }
     span.setTag(key, value);
   }
-  logSpan(log: {}): void {
+  logSpan(): void {
 
   }
-  finishSpan(name: ?string): {} {
     console.log('finishin span wid name', name);
+  finishSpan(name: ?string): void {
     let span;
     if (name == null) {
       span = this.spansStack.pop();
     } else {
       const index = this.spansStack.findIndex(span => span._operationName === name);
-      if (index < 0) throw new Error(`finishing span that does not exists ${name}`);
+      if (index < 0) throw new Error(`finishing span that does not exists "${name}"`);
       [span] = this.spansStack.splice(index, 1);
     }
     span.finish();

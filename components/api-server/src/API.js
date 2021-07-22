@@ -13,7 +13,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-const { Tags, ah } = require('tracing');
+const { Tags, startSpan, finishSpan, tagSpan } = require('tracing');
 
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
 
@@ -184,8 +184,7 @@ class API {
     if (methodList == null) 
       return callback(errors.invalidMethod(context.methodId), null);
 
-    const { tracing } = ah.getRequestContext().data;
-    initTracingSpan(tracing, context, params);
+    initTracingSpan(context, params);
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -207,8 +206,8 @@ class API {
           await audit.validApiCall(context, result);
         });
       }
-      tracing.finishSpan(context.methodId);
-      tracing.finishSpan('express');
+      finishSpan(context.methodId);
+      finishSpan('express');
       callback(null, result);
     });
   }
@@ -231,16 +230,16 @@ function matches(idFilter: string, id: string) {
   return id.startsWith(filterWithoutWildcard);
 }
 
-function initTracingSpan(tracing: {}, context: MethodContext, params: {}): void {
+function initTracingSpan(context: MethodContext, params: {}): void {
   const spanName: string = context.methodId;
-  tracing.startSpan(spanName, null, params);
-  if (context.username != null) tracing.tagSpan(spanName, 'username', context.username);
+  startSpan(spanName, null, params);
+  if (context.username != null) tagSpan(spanName, 'username', context.username);
 }
 
 function setErrorToTracingSpan(tracing: {}, context: MethodContext, err): void {
   const spanName: string = context.methodId;
-  tracing.tagSpan(spanName, Tags.ERROR, true);
-  tracing.tagSpan(spanName, 'errorId', err.id);
-  tracing.tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
+  tagSpan(spanName, Tags.ERROR, true);
+  tagSpan(spanName, 'errorId', err.id);
+  tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
 }
 

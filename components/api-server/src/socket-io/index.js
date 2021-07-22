@@ -24,7 +24,7 @@ const Paths = require('../routes/Paths');
 
 const ChangeNotifier = require('./change_notifier');
 
-const { getTracer } = require('tracing');
+const { initRootSpan } = require('tracing');
 const { getAPIVersion } = require('middleware/src/project_version');
 
 import type { StorageLayer } from 'storage';
@@ -57,7 +57,6 @@ function setupSocketIO(
     nameSpaceContext.onConnect(socket);
   });
 
-  const tracer = getTracer();
   const hostname: string = require('os').hostname();
   
   // add a middelware for authentication 
@@ -80,15 +79,11 @@ function setupSocketIO(
         query.auth,
         customAuthStepFn,
         storageLayer.events,
-        null,
-        null,
-        tracer.startSpan('socket.io', {
-          tags: {
-            apiVersion,
-            hostname,
-          }
-        })
       );
+      initRootSpan('socket.io', {
+        apiVersion,
+        hostname,
+      });
       // Load user, init the namespace
       await context.retrieveUser();
 

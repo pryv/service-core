@@ -61,7 +61,7 @@ const SystemStream = require('business/src/system-streams/SystemStream');
 // for events. 
 const typeRepo = new TypeRepository(); 
 
-const { ah } = require('tracing');
+const { startSpan, finishSpan } = require('tracing');
 
 /**
  * Events API methods implementations.
@@ -128,8 +128,7 @@ module.exports = async function (
 
   // the two tasks are joined as '*' replaced have their permissions checked 
   async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const { tracing } = ah.getRequestContext().data;
-    tracing.startSpan('streamQueries');
+    startSpan('streamQueries');
     const unAuthorizedStreams = [];
     const unAccessibleStreams = [];
 
@@ -237,8 +236,7 @@ module.exports = async function (
 
     // delete streamQueries with no inclusions 
     params.streams = params.streams.filter(streamQuery => streamQuery.any || streamQuery.and);
-    const { tracing } = ah.getRequestContext().data;
-    tracing.finishSpan('streamQueries');
+    finishSpan('streamQueries');
     next();
   }
 

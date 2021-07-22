@@ -16,7 +16,7 @@ const { getLogger, notifyAirbrake } = require('@pryv/boiler');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-const { ah } = require('tracing');
+const { finishSpan } = require('tracing');
 
 (async () => {
   await commonMeta.loadSettings();
@@ -47,8 +47,7 @@ function produceHandleErrorMiddleware(logging: any) {
       await audit.errorApiCall(req.context, error);
     }
 
-    const { tracing } = ah.getRequestContext().data;
-    tracing.finishSpan('express');
+    finishSpan('express');
 
     errorHandling.logError(error, req, logger);
 
