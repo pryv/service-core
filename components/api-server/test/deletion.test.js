@@ -190,7 +190,7 @@ describe('DELETE /users/:username', async () => {
           assert.equal(res.body.userDeletion.username, username1);
         });
         it(`[${testIDs[i][1]}] should delete user entries from impacted collections`, async function() {
-          const user = await usersRepository.getById(username1);
+          const user = await usersRepository.getUserById(username1);
           assert.notExists(user);
 
           const dbCollections = [
@@ -234,7 +234,7 @@ describe('DELETE /users/:username', async () => {
           assert.isFalse(userFileExists);
         });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
-          const user = await usersRepository.getById(username2);
+          const user = await usersRepository.getUserById(username2);
           assert.exists(user);
 
           const dbCollections = [

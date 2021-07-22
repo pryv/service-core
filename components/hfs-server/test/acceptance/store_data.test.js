@@ -291,7 +291,7 @@ describe('Storing data in a HF series', function() {
         attrs
       );
       const usersRepository = await getUsersRepository(); 
-      const user: User = await usersRepository.getById(userId);
+      const user: User = await usersRepository.getUserById(userId);
       assert.isNotNull(user);
 
       const event = await bluebird.fromCallback(
@@ -788,7 +788,7 @@ describe('Storing data in a HF series', function() {
         );
 
         const usersRepository = await getUsersRepository(); 
-        const user: User = await usersRepository.getById(userId);
+        const user: User = await usersRepository.getUserById(userId);
 
         assert.isNotNull(user);
           

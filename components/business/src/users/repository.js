@@ -64,7 +64,7 @@ class UsersRepository {
 
     const users: Array<User> = [];
     for (const userIdObject of userIdObjects) {
-      const user = await this.getById(userIdObject.userId, true);
+      const user = await this.getUserById(userIdObject.userId, true);
       users.push(user);
     }
     return users;
@@ -93,7 +93,7 @@ class UsersRepository {
     }
     return users;
   }
-  async getUserIdForUserName(username: string) {
+  async getUserIdForUsername(username: string) {
     let userId = cache.get(cache.NS.USERID_BY_USERNAME, username);
     if (! userId) {
       const userIdEvent = await bluebird.fromCallback(
@@ -120,7 +120,7 @@ class UsersRepository {
     }
     return userId;
   }
-  async getById(userId: string, getAll: boolean): Promise<?User> {
+  async getUserById(userId: string, getAll: boolean): Promise<?User> {
     getAll = true; // !!!!! <=== discuss with Ilia .. what was it used for ? 
     const cachedUser = cache.get(cache.NS.USER_BY_ID, userId);
     if (cachedUser) { 
@@ -154,10 +154,10 @@ class UsersRepository {
     const user = new User({ id: userId, events: userAccountEvents });
     return cache.set(cache.NS.USER_BY_ID, userId, user);
   }
-  async getAccountByUsername(username: string, getAll: boolean): Promise<?User> {
-    let userId = await this.getUserIdForUserName(username);
+  async getUserByUsername(username: string, getAll: boolean): Promise<?User> {
+    let userId = await this.getUserIdForUsername(username);
     if (userId) {
-      const user = await this.getById(userId, getAll);
+      const user = await this.getUserById(userId, getAll);
       if (! user) {
          cache.unset(cache.NS.USERID_BY_USERNAME, username);
       }

@@ -159,7 +159,7 @@ describe('account', function () {
             });
           },
           async function verifyData () {           
-            const retrievedUser = await usersRepository.getAccountByUsername(user.username, true);
+            const retrievedUser = await usersRepository.getUserByUsername(user.username, true);
             validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
           }
         ], done);
@@ -231,7 +231,7 @@ describe('account', function () {
       assert.approximately(storageUsed.attachedFiles, initialStorageUsed.attachedFiles +
         newAtt.size, filesystemBlockSize);
       const updatedStorageUsed = storageUsed;
-      const retrievedUser = await usersRepository.getById(user.id);
+      const retrievedUser = await usersRepository.getUserById(user.id);
       assert.deepEqual(retrievedUser.storageUsed, updatedStorageUsed);
     });
 
@@ -277,7 +277,7 @@ describe('account', function () {
         newAtt = testData.attachments.image;
       async.series([
         async function checkInitial () {
-          const retrievedUser = await usersRepository.getById(user.id);
+          const retrievedUser = await usersRepository.getUserById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
         },
         function addAttachment(stepDone) {
@@ -289,7 +289,7 @@ describe('account', function () {
               });
         },
         async function checkUpdated () {
-          const retrievedUser = await usersRepository.getById(user.id);
+          const retrievedUser = await usersRepository.getUserById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
           retrievedUser.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
           retrievedUser.storageUsed.attachedFiles.should.be.approximately(

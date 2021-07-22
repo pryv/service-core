@@ -92,7 +92,7 @@ class CustomUsersRepository {
   }
   async resolve(name: string): Promise<?UserDef> {
     const usersRepository = await getUsersRepository();
-    const userId = await usersRepository.getUserIdForUserName(name);
+    const userId = await usersRepository.getUserIdForUsername(name);
     if (userId == null) return null; 
     const user = { 
       id: userId,

@@ -128,7 +128,7 @@ class MethodContext {
     this.stores = await getStores();
     const usersRepository = await getUsersRepository();
     this.user = { 
-      id: await usersRepository.getUserIdForUserName(this.user.username),
+      id: await usersRepository.getUserIdForUsername(this.user.username),
       username: this.user.username
     };
     if (! this.user.id ) throw errors.unknownResource('user', this.user.username);
@@ -140,7 +140,7 @@ class MethodContext {
     try {
       // get user details
       const usersRepository = await getUsersRepository();
-      const user = await usersRepository.getAccountByUsername(this.user.username, true);
+      const user = await usersRepository.getUserByUsername(this.user.username, true);
       if (! user) throw errors.unknownResource('user', this.user.username);
       return user;
     } catch (err) {
