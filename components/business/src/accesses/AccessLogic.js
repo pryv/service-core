@@ -510,10 +510,19 @@ Object.freeze(PermissionLevels);
     if (streamIdFull == null) streamIdFull = '*'; // to be investgated why this happens
 
     if (this.isPersonal()) return 'manage';
-    
-    const chachedLevel = this._streamPermissionLevelCache[streamIdFull];
-    if (chachedLevel) return chachedLevel;
+    const cachedLevel = this._streamPermissionLevelCache[streamIdFull];
+    if (cachedLevel) { 
+      return cachedLevel.level;
+    }
 
+    const permissions = await this._getStreamPermissions(streamIdFull);
+    this._streamPermissionLevelCache[streamIdFull] = permissions;
+
+    return permissions ? permissions.level : null;
+  }
+
+  async _getStreamPermissions(streamIdFull) {
+    
     const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamIdFull);
 
     let currentStream = (streamId !== '*') ? streamId : null; 
@@ -522,7 +531,8 @@ Object.freeze(PermissionLevels);
 
     while (currentStream) {
       const permissions = this.getStreamPermission(storeId, currentStream);
-      if (permissions) return permissions.level; // found  
+      if (permissions)  return permissions; // found  
+    
       // not found, look for parent
       const stream = await stores.streams.getOne(this._userId, currentStream, storeId);
       currentStream = stream ? stream.parentId : null;
@@ -534,9 +544,7 @@ Object.freeze(PermissionLevels);
     if (SystemStreamsSerializer.isAccountStreamId(streamId)) return null;
     
     const permissions = this.getStreamPermission(storeId, '*'); // found nothing finaly.. look for global access level if any
-    const permission = permissions ? permissions.level : null;
-    this._streamPermissionLevelCache[streamIdFull] = permission;
-    return permission;
+    return permissions;
   }
 
   /**

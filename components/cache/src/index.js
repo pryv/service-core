@@ -8,6 +8,14 @@ const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 const _cache = {};
 
 const logger = getLogger('cache');
+const debug = {};
+for (const key of ['set', 'get', 'unset', 'clear']) {
+  const logg = logger.getLogger(key);
+  debug[key] = function() {
+    logg.debug(...arguments);
+  }
+}
+
 const config = getConfigUnsafe(true);
 
 function getNameSpace(namespace) {
@@ -19,19 +27,19 @@ function set(namespace, key, value) {
   if (key == null) throw new Error('Null key for' + namespace);
   if (config.get('caching:isActive') !== true) return;
   getNameSpace(namespace)[key] = value;
-  logger.debug('set', namespace, key);
+  debug.set(namespace, key);
   return value;
 }
 
 function unset(namespace, key) {
   if (key == null) throw new Error('Null key for' + namespace);
   delete getNameSpace(namespace)[key];
-  logger.debug('unset', namespace, key);
+  debug.unset(namespace, key);
 }
 
 function get(namespace, key) {
   if (key == null) throw new Error('Null key for' + namespace);
-  logger.debug('get', namespace, key);
+  debug.get(namespace, key);
   return getNameSpace(namespace)[key];
 }
 
@@ -43,6 +51,7 @@ function clear(namespace) {
   } else {
     delete _cache[namespace];
   }
+  debug.get(namespace);
 }
 
 const NS = {
