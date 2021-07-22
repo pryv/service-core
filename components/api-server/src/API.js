@@ -184,7 +184,7 @@ class API {
     if (methodList == null) 
       return callback(errors.invalidMethod(context.methodId), null);
 
-    startSpan(context.methodId, null, params);
+    const ahContext = startSpan(context.methodId, null, params);
     if (context.username != null) tagSpan(context.methodId, 'username', context.username);
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
@@ -196,8 +196,9 @@ class API {
       }
     }, function (err) {
       if (err != null) {
-        setErrorToTracingSpan(context.methodId, err);
-        finishSpan(context.methodId);
+        setErrorToTracingSpan(context.methodId, err, ahContext);
+        finishSpan(context.methodId, ahContext);
+        finishSpan('express', ahContext);
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
@@ -208,8 +209,8 @@ class API {
           await audit.validApiCall(context, result);
         });
       }
-      finishSpan(context.methodId);
-      finishSpan('express');
+      finishSpan(context.methodId, ahContext);
+      finishSpan('express', ahContext);
       callback(null, result);
     });
   }
@@ -218,6 +219,7 @@ class API {
   
   getMethodKeys(): Array<string> {
     const methodMap = this.map; 
+    
     return Array.from(methodMap.keys()); 
   }
 }
@@ -231,9 +233,9 @@ function matches(idFilter: string, id: string) {
   return id.startsWith(filterWithoutWildcard);
 }
 
-function setErrorToTracingSpan(spanName: string, err: Error): void {
-  tagSpan(spanName, Tags.ERROR, true);
-  tagSpan(spanName, 'errorId', err.id);
-  tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
+function setErrorToTracingSpan(spanName: string, err: Error, ahContext: {}): void {
+  tagSpan(spanName, Tags.ERROR, true, ahContext);
+  tagSpan(spanName, 'errorId', err.id, ahContext);
+  tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500, ahContext);
 }
 

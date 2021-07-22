@@ -48,7 +48,6 @@ function produceHandleErrorMiddleware(logging: any) {
     }
 
     errorHandling.logError(error, req, logger);
-    finishSpan('express');
 
     if (! error.dontNotifyAirbrake) {
       notifyAirbrake(error);

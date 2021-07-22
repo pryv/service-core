@@ -80,23 +80,19 @@ function setupSocketIO(
         customAuthStepFn,
         storageLayer.events,
       );
-      initRootSpan('socket.io', 
-        {
-          apiVersion,
-          hostname
-        },
-        async () => {
-          // Load user, init the namespace
-          await context.retrieveUser();
+      initRootSpan('socket.io', {
+        apiVersion,
+        hostname,
+      });
+      // Load user, init the namespace
+      await context.retrieveUser();
 
-          // Load access
-          await context.retrieveExpandedAccess(storageLayer);
+      // Load access
+      await context.retrieveExpandedAccess(storageLayer);
 
-          // attach context to socket for further usage.
-          socket.methodContext = context;
-          next(null, true);
-        });
-      
+      // attach context to socket for further usage.
+      socket.methodContext = context;
+      next(null, true);
     } catch (err) {
       next(err, false);
     }

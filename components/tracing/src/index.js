@@ -9,9 +9,6 @@
 const { initTracer: initJaegerTracer } = require('jaeger-client');
 const { Tags, FORMAT_HTTP_HEADERS } = require('opentracing');
 const ah = require('./hooks');
-const cuid = require('cuid');
-const { AsyncLocalStorage } = require('async_hooks');
-const asyncLocalStorage = new AsyncLocalStorage();
 
 let tracerSingleton;
 function getTracer() {
@@ -45,25 +42,23 @@ function initTracer(serviceName) {
 }
 
 module.exports.startSpan = (name: string, parent: ?{}, tags: ?{}): {} => {
-  const context = asyncLocalStorage.getStore();
-  if (context == null) return;
-  context.tracing.startSpan(name, parent, tags);
+  const context = getContext(name + ' start');
+  context.data.tracing.startSpan(name, parent, tags);
+  return context;
 }
 
-module.exports.finishSpan = (name: string) => {
-  const context = asyncLocalStorage.getStore();
-  if (context == null) return;
-  context.tracing.finishSpan(name);
+module.exports.finishSpan = (name: string, context: {}) => {
+  if (context == null) context = getContext(name + ' finish');
+  context.data.tracing.finishSpan(name);
 }
 
-module.exports.tagSpan = (name: string, key: string, value: string): void => {
-  const context = asyncLocalStorage.getStore();
-  if (context == null) return;
-  context.tracing.tagSpan(name, key, value);
+module.exports.tagSpan = (name: string, key: string, value: string, context: {}): void => {
+  if (context == null) context = getContext(name + ' tag ' + key + ':' + value);
+  context.data.tracing.tagSpan(name, key, value);
 }
 
 function getContext(name): {} {
-  let context = asyncLocalStorage.getStore();
+  let context = ah.getRequestContext();
   if (context == null) {
     console.log('creatin context', name)
     context = ah.createRequestContext({
@@ -76,19 +71,13 @@ function getContext(name): {} {
 /**
  * Starts a root span
  */
-module.exports.initRootSpan = (name: string, tags: ?{}, callback: Function): void => {
+module.exports.initRootSpan = (name: string, tags: ?{}): void => {
   const tracer = getTracer();
   const tracing = new Tracing();
-  tracing.startSpan(name, null, tags);
+    tracing.startSpan(name, null, tags);
     ah.createRequestContext({
       tracing,
     });
-  asyncLocalStorage.run(cuid(), () => {
-    asyncLocalStorage.enterWith({
-      tracing,
-    });
-    callback();
-  });
 }
 
 /**
@@ -100,12 +89,10 @@ module.exports.tracingMiddleware = (name: string = 'express', tags: ?{}): () => 
   return function (req, res, next): void {
     const tracing = new Tracing();
     tracing.startSpan(name, null, tags);
-    asyncLocalStorage.run(cuid(), () => {
-      asyncLocalStorage.enterWith({
-        tracing,
-      });
-      next();
+    ah.createRequestContext({
+      tracing,
     });
+    next();
   }
 }
 
