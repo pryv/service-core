@@ -83,3 +83,8 @@ custom:
 
 stores:
   loadExternal: []
+
+caching:
+  isActive: true
+  localStreams: true
+  accesses: true

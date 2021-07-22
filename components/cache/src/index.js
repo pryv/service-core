@@ -4,10 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 const _cache = {};
 
 const logger = getLogger('cache');
+const config = getConfigUnsafe(true);
 
 function getNameSpace(namespace) {
   if (namespace == null) console.log('XXXX', new Error('Null namespace'));
@@ -16,6 +17,7 @@ function getNameSpace(namespace) {
 
 function set(namespace, key, value) {
   if (key == null) throw new Error('Null key for' + namespace);
+  if (config.get('caching:isActive') !== true) return;
   getNameSpace(namespace)[key] = value;
   logger.debug('set', namespace, key);
   return value;
@@ -33,6 +35,14 @@ function get(namespace, key) {
   return getNameSpace(namespace)[key];
 }
 
+function clear(namespace) {
+  if (namespace == null) { // clear all
+    for (const ns of Object.keys(NS)) delete _cache[ns];
+  } else {
+    delete _cache[namespace];
+  }
+}
+
 const NS = {
   USERID_BY_USERNAME: 'userIdByUsername',
   LOCAL_STORE_STREAMS_BY_USERID: 'localStoreStreamsByUser',
@@ -44,5 +54,6 @@ module.exports = {
   set,
   unset,
   get,
+  clear,
   NS 
 }
