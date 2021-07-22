@@ -37,7 +37,9 @@ function get(namespace, key) {
 
 function clear(namespace) {
   if (namespace == null) { // clear all
-    for (const ns of Object.keys(NS)) delete _cache[ns];
+    for (const ns of Object.values(NS)) {
+      delete _cache[ns];
+    }
   } else {
     delete _cache[namespace];
   }

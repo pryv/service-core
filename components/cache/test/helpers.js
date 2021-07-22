@@ -81,7 +81,7 @@ async function initCore() {
     app.storageLayer.streams, 
     app.storageLayer.events, 
     app.storageLayer.eventFiles, 
-    this.notificationBus, 
+    notifications, 
     app.logging, 
     app.config.get('versioning'), 
     app.config.get('updates'));

@@ -81,7 +81,12 @@ describe('Cache', function() {
       .query({streams: ['other']});
   });
 
-  it('Second get stream must be faster that first one', async () => {
+  this.beforeAll(() => {
+    // make sure config is clean;
+    config.injectTestConfig({});
+  });
+
+  it('[FELT] Second get stream must be faster that first one', async () => {
     let t1 = hrtime();
     const res1 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
     t1 = hrtime(t1);
@@ -93,15 +98,38 @@ describe('Cache', function() {
     assert.equal(res2.status, 200);
 
     config.injectTestConfig({caching: {isActive : false }});
-    cache.clear(cache.NS.LOCAL_STORE_STREAMS_BY_USERID);
+    cache.clear();
 
     let t3 = hrtime();
     const res3 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
     t3 =  hrtime(t3);
   
-    assert.isBelow(t2,t1, 'second streams.get should be faster when cache is activated');
-    assert.isAbove(t3,t2, 'third streams.get should be longer when cache is deactivateds');
+    const data = `first-with-cache: ${t1}, second-with-cache: ${t2}, no-cache: ${t3}  => `;
+    assert.isBelow(t2,t1, 'second-with-cache streams.get should be faster than first-with-cache' + data);
+    assert.isAbove(t3,t1, 'no-cache streams.get should be longer than first-with-cache' + data);
+    assert.isAbove(t3,t2 * 1.5 , 'cache streams.get should be at least 50% longer than second-with-cache ' + data);
   });
+
+  it('[XDP6] Cache should reset permissions on stream structure change when moving a stream in and out ', async () => {
+    const res1 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
+    assert(res1.status, 403);
+    // move stream T as child of A
+    const res2 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).query({parentId: 'A'});
+    assert(res2.status, 200);
+
+    const res3 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
+    assert(res3.status, 200);
+
+    // move stream T out of A
+    const res4 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).query({parentId: null});
+    assert(res4.status, 200);
+
+    //console.log(cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, username + '/' + appAccess.token));
+
+    const res5 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
+    assert(res5.status, 403);
+  });
+
 
 });
 
