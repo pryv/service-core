@@ -47,8 +47,6 @@ function produceHandleErrorMiddleware(logging: any) {
       await audit.errorApiCall(req.context, error);
     }
 
-    finishSpan('express');
-
     errorHandling.logError(error, req, logger);
 
     if (! error.dontNotifyAirbrake) {

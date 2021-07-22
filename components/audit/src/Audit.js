@@ -70,7 +70,7 @@ class Audit {
     event.type = CONSTANTS.EVENT_TYPE_VALID;
     await this.eventForUser(userId, event, methodId);
     
-    inishSpan('audit.validApiCall');
+    finishSpan('audit.validApiCall');
   }
 
   async errorApiCall(context, error) {

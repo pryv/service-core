@@ -184,7 +184,8 @@ class API {
     if (methodList == null) 
       return callback(errors.invalidMethod(context.methodId), null);
 
-    initTracingSpan(context, params);
+    const ahContext = startSpan(context.methodId, null, params);
+    if (context.username != null) tagSpan(context.methodId, 'username', context.username);
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -195,7 +196,9 @@ class API {
       }
     }, function (err) {
       if (err != null) {
-        context = setErrorToTracingSpan(tracing, context, err);
+        setErrorToTracingSpan(context.methodId, err, ahContext);
+        finishSpan(context.methodId, ahContext);
+        finishSpan('express', ahContext);
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
@@ -206,8 +209,8 @@ class API {
           await audit.validApiCall(context, result);
         });
       }
-      finishSpan(context.methodId);
-      finishSpan('express');
+      finishSpan(context.methodId, ahContext);
+      finishSpan('express', ahContext);
       callback(null, result);
     });
   }
@@ -230,16 +233,9 @@ function matches(idFilter: string, id: string) {
   return id.startsWith(filterWithoutWildcard);
 }
 
-function initTracingSpan(context: MethodContext, params: {}): void {
-  const spanName: string = context.methodId;
-  startSpan(spanName, null, params);
-  if (context.username != null) tagSpan(spanName, 'username', context.username);
-}
-
-function setErrorToTracingSpan(tracing: {}, context: MethodContext, err): void {
-  const spanName: string = context.methodId;
-  tagSpan(spanName, Tags.ERROR, true);
-  tagSpan(spanName, 'errorId', err.id);
-  tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
+function setErrorToTracingSpan(spanName: string, err: Error, ahContext: {}): void {
+  tagSpan(spanName, Tags.ERROR, true, ahContext);
+  tagSpan(spanName, 'errorId', err.id, ahContext);
+  tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500, ahContext);
 }
 

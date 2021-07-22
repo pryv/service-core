@@ -41,18 +41,19 @@ function initTracer(serviceName) {
   return initJaegerTracer(config, {}); //options);
 }
 
-module.exports.startSpan = (name: string, parent: ?{}, tags: ?{}): void => {
-  const context = getContext(name + 'start');
+module.exports.startSpan = (name: string, parent: ?{}, tags: ?{}): {} => {
+  const context = getContext(name + ' start');
   context.data.tracing.startSpan(name, parent, tags);
+  return context;
 }
 
-module.exports.finishSpan = (name: string) => {
-  const context = getContext(name + 'finish');
+module.exports.finishSpan = (name: string, context: {}) => {
+  if (context == null) context = getContext(name + ' finish');
   context.data.tracing.finishSpan(name);
 }
 
-module.exports.tagSpan = (name: string, key: string, value: string): void => {
-  const context = getContext(name + 'tag' + key + value);
+module.exports.tagSpan = (name: string, key: string, value: string, context: {}): void => {
+  if (context == null) context = getContext(name + ' tag ' + key + ':' + value);
   context.data.tracing.tagSpan(name, key, value);
 }
 
@@ -111,7 +112,7 @@ class Tracing {
     console.log('start span', name, 'spans present', this.lastIndex+1)
     if (this.lastIndex > -1) parent = parent ?? this.spansStack[this.lastIndex];
     const options = {};
-    if (parent != null) options.childOf = parent;
+    if (parent != null) {options.childOf = parent; console.log('wid parent', parent._operationName);}
     if (tags != null) options.tags = tags;
     const newSpan = this.tracer.startSpan(name, options);
     this.spansStack.push(newSpan);
