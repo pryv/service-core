@@ -34,7 +34,6 @@ function get(namespace, key) {
 }
 
 const NS = {
-  USER_BY_ID: 'userById',
   USERID_BY_USERNAME: 'userIdByUsername',
   LOCAL_STORE_STREAMS_BY_USERID: 'localStoreStreamsByUser',
   ACCESS_LOGIC_BY_USERIDTOKEN: 'access_Logic_BY_USERIDTOKEN',

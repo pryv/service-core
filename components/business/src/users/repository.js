@@ -122,10 +122,6 @@ class UsersRepository {
   }
   async getUserById(userId: string, getAll: boolean): Promise<?User> {
     getAll = true; // !!!!! <=== discuss with Ilia .. what was it used for ? 
-    const cachedUser = cache.get(cache.NS.USER_BY_ID, userId);
-    if (cachedUser) { 
-      return cachedUser;
-    }
 
     let userAccountStreamsIds: ?Map<string, SystemStream>;
     if (getAll) {
@@ -152,7 +148,7 @@ class UsersRepository {
       return null;
     }
     const user = new User({ id: userId, events: userAccountEvents });
-    return cache.set(cache.NS.USER_BY_ID, userId, user);
+    return user;
   }
   async getUserByUsername(username: string, getAll: boolean): Promise<?User> {
     let userId = await this.getUserIdForUsername(username);
@@ -252,7 +248,6 @@ class UsersRepository {
   }
   async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
     cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
-    cache.unset(cache.NS.USER_BY_ID, user.id);
     // first explicitly create a collection, because it would fail in the transation
     await bluebird.fromCallback(
       cb => this.eventsStorage.database.getCollection(this.collectionInfo, cb),
@@ -301,7 +296,6 @@ class UsersRepository {
   }
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
     // invalidate caches
-    cache.unset(cache.NS.USER_BY_ID, user.id);
     cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
     this.checkDuplicates(update);
 
@@ -343,10 +337,6 @@ class UsersRepository {
     }, getTransactionOptions());
   }
   async deleteOne(userId: string): Promise<number> {
-    const cachedUser = cache.get(cache.NS.USER_BY_ID, userId);
-    cache.unset(cache.NS.USER_BY_ID, userId);
-    if (cachedUser != null)
-      cache.unset(cache.NS.USERID_BY_USERNAME, cachedUser.username);
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
     return await bluebird.fromCallback(
       cb => this.eventsStorage.database.deleteMany(
