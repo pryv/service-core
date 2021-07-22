@@ -44,7 +44,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
           return next(getCreationOrUpdateError(err, params));
         }
         result.followedSlice = newSlice;
-        notifications.followedSlicesChanged(context.user);
+        notifications.followedSlicesChanged(context.user.username);
         next();
       });
     });
@@ -78,7 +78,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
               }
 
               result.followedSlice = updatedSlice;
-              notifications.followedSlicesChanged(context.user);
+              notifications.followedSlicesChanged(context.user.username);
               stepDone();
             });
         }
@@ -122,7 +122,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
           if (err) { return next(errors.unexpectedError(err)); }
 
           result.followedSliceDeletion = {id: params.id};
-          notifications.followedSlicesChanged(context.user);
+          notifications.followedSlicesChanged(context.user.username);
           next();
         });
       });

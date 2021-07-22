@@ -244,7 +244,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
         params.update,
         accessId,
       );
-      notifications.accountChanged(context.user);
+      notifications.accountChanged(context.user.username);
     } catch (err) {
       return next(err);
     }

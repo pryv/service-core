@@ -37,17 +37,15 @@ class ChangeNotifier {
     
     for (const [from, to] of messageMap) {
       source.on(from, 
-        (user) => this.extractAndDeliver(to, user));
+        (username) => this.extractAndDeliver(to, username));
     }
   }
   
   // Extracts information from the user object and #delivers the message. 
   // 
-  extractAndDeliver(message: string, user: User) {
-    const userName = user.username;
+  extractAndDeliver(message: string, username: string) {
     const sink = this.sink; 
-    
-    sink.deliver(userName, message);
+    sink.deliver(username, message);
   }
 }
 module.exports = ChangeNotifier;
