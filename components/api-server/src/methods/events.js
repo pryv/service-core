@@ -128,7 +128,7 @@ module.exports = async function (
 
   // the two tasks are joined as '*' replaced have their permissions checked 
   async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    startSpan('streamQueries');
+    context.tracing.startSpan('streamQueries');
     const unAuthorizedStreams = [];
     const unAccessibleStreams = [];
 
@@ -236,7 +236,7 @@ module.exports = async function (
 
     // delete streamQueries with no inclusions 
     params.streams = params.streams.filter(streamQuery => streamQuery.any || streamQuery.and);
-    finishSpan('streamQueries');
+    context.tracing.finishSpan('streamQueries');
     next();
   }
 

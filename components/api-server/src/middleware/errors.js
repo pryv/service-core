@@ -43,8 +43,10 @@ function produceHandleErrorMiddleware(logging: any) {
       error = errorsFactory.invalidRequestStructure(error.message);
     }
 
-    if (req.context != null && isAuditActive) { // context is not initialized in case of malformed JSON
-      await audit.errorApiCall(req.context, error);
+    if (req.context != null) { // context is not initialized in case of malformed JSON
+      
+      if (isAuditActive) await audit.errorApiCall(req.context, error);
+      req.context.tracing.finishSpan('express');
     }
 
     errorHandling.logError(error, req, logger);
@@ -52,6 +54,7 @@ function produceHandleErrorMiddleware(logging: any) {
     if (! error.dontNotifyAirbrake) {
       notifyAirbrake(error);
     }
+    
 
     res
       .status(error.httpStatus || 500)

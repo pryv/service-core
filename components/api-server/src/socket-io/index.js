@@ -79,11 +79,14 @@ function setupSocketIO(
         query.auth,
         customAuthStepFn,
         storageLayer.events,
+        null,
+        null,
+        initRootSpan('socket.io', {
+          apiVersion,
+          hostname,
+        }),
       );
-      initRootSpan('socket.io', {
-        apiVersion,
-        hostname,
-      });
+      
       // Load user, init the namespace
       await context.retrieveUser();
 

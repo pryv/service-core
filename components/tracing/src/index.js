@@ -41,43 +41,14 @@ function initTracer(serviceName) {
   return initJaegerTracer(config, {}); //options);
 }
 
-module.exports.startSpan = (name: string, parent: ?{}, tags: ?{}): {} => {
-  const context = getContext(name + ' start');
-  context.data.tracing.startSpan(name, parent, tags);
-  return context;
-}
-
-module.exports.finishSpan = (name: string, context: {}) => {
-  if (context == null) context = getContext(name + ' finish');
-  context.data.tracing.finishSpan(name);
-}
-
-module.exports.tagSpan = (name: string, key: string, value: string, context: {}): void => {
-  if (context == null) context = getContext(name + ' tag ' + key + ':' + value);
-  context.data.tracing.tagSpan(name, key, value);
-}
-
-function getContext(name): {} {
-  let context = ah.getRequestContext();
-  if (context == null) {
-    console.log('creatin context', name)
-    context = ah.createRequestContext({
-      tracing: new Tracing(),
-    });
-  } else { console.log('found context', name) }
-  return context;
-}
-
 /**
  * Starts a root span
  */
 module.exports.initRootSpan = (name: string, tags: ?{}): void => {
   const tracer = getTracer();
   const tracing = new Tracing();
-    tracing.startSpan(name, null, tags);
-    ah.createRequestContext({
-      tracing,
-    });
+  tracing.startSpan(name, null, tags);
+  return tracing;
 }
 
 /**
@@ -89,11 +60,19 @@ module.exports.tracingMiddleware = (name: string = 'express', tags: ?{}): () => 
   return function (req, res, next): void {
     const tracing = new Tracing();
     tracing.startSpan(name, null, tags);
-    ah.createRequestContext({
-      tracing,
-    });
+    req.tracing = tracing;
     next();
   }
+}
+
+module.exports.startApiCall = (context, params, result, next) => {
+  context.tracing.startSpan(context.methodId, null, params);
+  if (context.username != null) context.tracing.tagSpan(context.methodId, 'username', context.username);
+  next();
+}
+module.exports.finishApiCall = (context, params, result, next) => {
+  context.tracing.finishSpan(context.methodId);
+  next();
 }
 
 class Tracing {
@@ -109,7 +88,7 @@ class Tracing {
   }
 
   startSpan(name: string, parent: ?{}, tags: ?{}): void {
-    console.log('start span', name, 'spans present', this.lastIndex+1)
+    console.log('started span', name, ', spans present', this.lastIndex+2)
     if (this.lastIndex > -1) parent = parent ?? this.spansStack[this.lastIndex];
     const options = {};
     if (parent != null) {options.childOf = parent; console.log('wid parent', parent._operationName);}
@@ -131,7 +110,6 @@ class Tracing {
 
   }
   finishSpan(name: ?string): void {
-    console.log('finishin span wid name', name, 'spans left:', this.lastIndex+1);
     let span;
     if (name == null) {
       span = this.spansStack.pop();
@@ -142,6 +120,7 @@ class Tracing {
     }
     span.finish();
     this.lastIndex--;
+    console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
   }
 }
 

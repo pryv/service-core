@@ -69,7 +69,7 @@ class MethodContext {
   methodId: ?string;
   stores: Store;
 
-  tracing: Tracing;
+  tracing: ?Tracing;
 
   /**
    * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
@@ -84,7 +84,7 @@ class MethodContext {
     eventsStorage: ?StorageLayer,
     headers: Map<string, any>,
     query: ?{},
-    rootSpan: ?{},
+    tracing: ?Tracing,
   ) {
     this.source = source;
     this.username = username;
@@ -107,10 +107,7 @@ class MethodContext {
     if (headers != null) {
       this.disableBackwardCompatibility = headers['disable-backward-compatibility-prefix'] || false;
     }
-    this.tracing = { 
-      rootSpan,
-      spans: [],
-     };
+    this.tracing = tracing;
   }
 
   // Extracts access token and optional caller id from the given auth string, 

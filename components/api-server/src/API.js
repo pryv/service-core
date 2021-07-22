@@ -13,7 +13,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-const { Tags, startSpan, finishSpan, tagSpan } = require('tracing');
+const { Tags, startSpan, finishSpan, tagSpan, startApiCall, finishApiCall } = require('tracing');
 
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
 
@@ -97,6 +97,8 @@ class API {
       if (idMethodFns == null) 
         throw new Error('AF: methodMap must contain id at this point.');
       
+      idMethodFns.push(startApiCall);
+
       // append registered functions
       for (const fn of fns) {
         // Syntax allows strings in the function list, which means that the 
@@ -123,6 +125,8 @@ class API {
           idMethodFns.push(fn);
         }
       }
+
+      idMethodFns.push(finishApiCall);
     } 
     else {
       // assert: wildcardAt >= 0
@@ -178,14 +182,15 @@ class API {
   // ------------------------------------------------------------ handling calls
   
   call(context: MethodContext, params: mixed, callback: ApiCallback) {
+    const methodId: string = context.methodId;
     const methodMap = this.map; 
-    const methodList = methodMap.get(context.methodId);
+    const methodList = methodMap.get(methodId);
 
     if (methodList == null) 
-      return callback(errors.invalidMethod(context.methodId), null);
+      return callback(errors.invalidMethod(methodId), null);
 
-    const ahContext = startSpan(context.methodId, null, params);
-    if (context.username != null) tagSpan(context.methodId, 'username', context.username);
+    
+    const tracing = context.tracing;
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -196,9 +201,8 @@ class API {
       }
     }, function (err) {
       if (err != null) {
-        setErrorToTracingSpan(context.methodId, err, ahContext);
-        finishSpan(context.methodId, ahContext);
-        finishSpan('express', ahContext);
+        setErrorToTracingSpan(methodId, err, tracing);
+        tracing.finishSpan(methodId);
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
@@ -207,10 +211,9 @@ class API {
       if (isAuditActive) {
         result.onEnd(async function() {
           await audit.validApiCall(context, result);
+          tracing.finishSpan('express');
         });
       }
-      finishSpan(context.methodId, ahContext);
-      finishSpan('express', ahContext);
       callback(null, result);
     });
   }
@@ -233,9 +236,9 @@ function matches(idFilter: string, id: string) {
   return id.startsWith(filterWithoutWildcard);
 }
 
-function setErrorToTracingSpan(spanName: string, err: Error, ahContext: {}): void {
-  tagSpan(spanName, Tags.ERROR, true, ahContext);
-  tagSpan(spanName, 'errorId', err.id, ahContext);
-  tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500, ahContext);
+function setErrorToTracingSpan(spanName: string, err: Error, tracing: {}): void {
+  tracing.tagSpan(spanName, Tags.ERROR, true);
+  tracing.tagSpan(spanName, 'errorId', err.id);
+  tracing.tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
 }
 

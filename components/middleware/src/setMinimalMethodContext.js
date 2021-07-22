@@ -24,10 +24,7 @@ class MinimalMethodContext {
     }
     this.originalQuery = _.cloneDeep(req.query);
     if (this.originalQuery?.auth) delete this.originalQuery.auth;
-    this.tracing = { 
-      rootSpan: req.rootSpan,
-      spans: [],
-    };
+    this.tracing = req.tracing;
   }
 }
 

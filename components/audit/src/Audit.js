@@ -63,21 +63,21 @@ class Audit {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
-    startSpan('audit.validApiCall');
+    context.tracing.startSpan('audit.validApiCall');
 
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
     event.type = CONSTANTS.EVENT_TYPE_VALID;
     await this.eventForUser(userId, event, methodId);
     
-    finishSpan('audit.validApiCall');
+    context.tracing.finishSpan('audit.validApiCall');
   }
 
   async errorApiCall(context, error) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
-    startSpan('audit.errorApiCall');
+    context.tracing.startSpan('audit.errorApiCall');
 
     const userId = context?.user?.id;
   
@@ -90,7 +90,7 @@ class Audit {
     event.content.message = error.message;
 
     await this.eventForUser(userId, event, methodId);
-    finishSpan('audit.errorApiCall');
+    context.tracing.finishSpan('audit.errorApiCall');
   }
 
   async eventForUser(userId, event) {
