@@ -225,7 +225,7 @@ class MetadataLoader {
     return bluebird.fromCallback((returnValueCallback) => {
       async.series(
         [
-          (next) => toCallback(methodContext.retrieveUser(), next),
+          (next) => toCallback(methodContext.init(), next),
           (next) => toCallback(methodContext.retrieveExpandedAccess(storage), next), 
           function loadEvent(done) { // result is used in success handler!
             const user = methodContext.user; 

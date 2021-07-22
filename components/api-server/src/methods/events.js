@@ -577,7 +577,7 @@ module.exports = async function (
 
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(
-        context.user.username,
+        context.username,
         [{ update: { 
             key: streamIdWithoutPrefix,
             value: context.newEvent.content,

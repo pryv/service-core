@@ -122,14 +122,26 @@ class MethodContext {
     }
   }
 
-  // Load the user identified by `this.username`, storing it in `this.user`.
+  // Load the userId and stores 
+  async init() {
+    this.stores = await getStores();
+    const usersRepository = await getUsersRepository();
+    this.user = { 
+      id: await usersRepository.getUserIdForUserName(this.username),
+      username: this.username
+    };
+    if (! this.user.id ) throw errors.unknownResource('user', this.username);
+  }
+
+  // Retrieve the userBusiness
   async retrieveUser() {
+    this.stores = await getStores();
     try {
-      this.stores = await getStores();
       // get user details
       const usersRepository = await getUsersRepository();
-      this.user = await usersRepository.getAccountByUsername(this.username, true);
-      if (! this.user) throw errors.unknownResource('user', this.username);
+      const user = await usersRepository.getAccountByUsername(this.username, true);
+      if (! user) throw errors.unknownResource('user', this.username);
+      return user;
     } catch (err) {
       throw errors.unknownResource('user', this.username);
     }

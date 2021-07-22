@@ -136,8 +136,9 @@ module.exports = async function (api, userAccessesStorage, sessionsStorage, user
     next();
   }
 
-  function setAdditionalInfo(context, params, result, next) {
-    result.preferredLanguage = context.user.language;
+  async function setAdditionalInfo(context, params, result, next) {
+    const userBusiness = await context.retrieveUser();
+    result.preferredLanguage = userBusiness.language;
     next();
   }
 

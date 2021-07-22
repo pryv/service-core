@@ -53,11 +53,14 @@ module.exports = async function (
 
   async function loadUserToMinimalMethodContext(minimalMethodContext, params, result, next) {
     try {
-      minimalMethodContext.user = await usersRepository.getAccountByUsername(params.username, true);
-
-      if (minimalMethodContext.user == null) {
+      const userId = await usersRepository.getUserIdForUserName(params.username);
+      if (userId == null) {
         return next(errors.unknownResource('user', params.username));
       }
+      minimalMethodContext.user = {
+        id: userId,
+        username: params.username
+      };
       next();
     } catch (err) {
       return next(errors.unexpectedError(err));

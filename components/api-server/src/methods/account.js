@@ -44,9 +44,10 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
   api.register('account.get',
     commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.get.params),
+    addUserBusinessToContext,
     async function (context, params, result, next) {
       try {
-        result.account = context.user.getLegacyAccount();
+        result.account = context.userBusiness.getLegacyAccount();
         next();
       } catch (err) {
         return next(errors.unexpectedError(err));
@@ -62,6 +63,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
     validateThatAllFieldsAreEditable,
     notifyServiceRegister,
     updateAccount,
+    addUserBusinessToContext,
     buildResultData,
   );
 
@@ -93,6 +95,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
     commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,
+    addUserBusinessToContext,
     addNewPasswordParameter,
     updateAccount
   );
@@ -117,11 +120,14 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
     commonFns.getParamsValidation(methodsSchema.requestPasswordReset.params),
     requireTrustedAppFn,
     generatePasswordResetRequest,
+    addUserBusinessToContext,
     sendPasswordResetMail,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_REQUEST));
 
+  
+
   function generatePasswordResetRequest(context, params, result, next) {
-    const username = context.user.username;
+    const username = context.username;
     if (username == null) {
       return next(new Error('AF: username is not empty.'));
     }
@@ -133,6 +139,11 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
     });
   }
 
+  async function addUserBusinessToContext(context, params, result, next) {
+    context.userBusiness = await context.retrieveUser();
+    next();
+  }
+
   function sendPasswordResetMail(context, params, result, next) {
     // Skip this step if reset mail is deactivated
     const isMailActivated = emailSettings.enabled;
@@ -142,8 +153,8 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
     }
 
     const recipient = {
-      email: context.user.email,
-      name: context.user.username,
+      email: context.userBusiness.email,
+      name: context.userBusiness.username,
       type: 'to'
     };
 
@@ -153,7 +164,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
     };
 
     mailing.sendmail(emailSettings, emailSettings.resetPasswordTemplate,
-      recipient, substitutions, context.user.language, next);
+      recipient, substitutions, context.userBusiness.language, next);
   }
 
   // RESET PASSWORD
@@ -162,13 +173,14 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
     commonFns.getParamsValidation(methodsSchema.resetPassword.params),
     requireTrustedAppFn,
     checkResetToken,
+    addUserBusinessToContext,
     addNewPasswordParameter,
     updateAccount,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
   );
 
   function checkResetToken(context, params, result, next) {
-    const username = context.user.username;
+    const username = context.username;
     if (username == null) {
       return next(new Error('AF: username is not empty.'));
     }
@@ -187,7 +199,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
   }
 
   function addNewPasswordParameter (context, params, result, next) {
-    if (!context.user.passwordHash) {
+    if (!context.userBusiness.passwordHash) {
       return next(errors.unexpectedError());
     }
     params.update = { password: params.newPassword };
@@ -213,7 +225,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
         })
       }
       await serviceRegisterConn.updateUserInServiceRegister(
-        context.user.username,
+        context.username,
         operations,
         true,
         false,
@@ -250,7 +262,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
     Object.keys(params.update).forEach(key => {
       context.user[key] = params.update[key];
     });
-    result.account = context.user.getLegacyAccount();
+    result.account = context.userBusiness.getLegacyAccount();
     next();
   }
 };

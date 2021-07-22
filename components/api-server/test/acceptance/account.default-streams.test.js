@@ -190,7 +190,6 @@ describe('Account with system streams', function () {
         const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
 
-        console.log('XXXXX user repo', res.body, emailAccountEvent);
         assert.equal(res.body.account.username, usernameAccountEvent.content);
         assert.equal(res.body.account.email, emailAccountEvent.content);
         assert.equal(res.body.account.language, languageAccountEvent.content);

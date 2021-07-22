@@ -218,7 +218,6 @@ class Registration {
     result: Result,
     next: ApiCallback
   ) {
-    console.log('XXXXXXX', context);
     result.username =  context.newUser.username;
     result.apiEndpoint = ApiEndpoint.build(context.newUser.username, context.newUser.token);
     next();

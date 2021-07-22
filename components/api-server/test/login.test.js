@@ -342,7 +342,7 @@ describe('auth', function() {
           checkNoUnwantedCookie(res);
           should.exist(res.body.preferredLanguage);
           assert.strictEqual(res.body.preferredLanguage, user.language);
-
+          
           should.not.exist(res.body._private);
 
           done();

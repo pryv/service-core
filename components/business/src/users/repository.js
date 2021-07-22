@@ -93,6 +93,33 @@ class UsersRepository {
     }
     return users;
   }
+  async getUserIdForUserName(username: string) {
+    let userId = cache.get(cache.NS.USERID_BY_USERNAME, username);
+    if (! userId) {
+      const userIdEvent = await bluebird.fromCallback(
+        cb => this.eventsStorage.database.findOne(
+          this.collectionInfo,
+          this.eventsStorage.applyQueryToDB(
+            {
+              $and: [
+                {
+                  streamIds: {
+                    $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME],
+                  },
+                },
+                { content: { $eq: username } },
+              ],
+            },
+          ),
+          null,
+          cb,
+        ),
+      );
+      userId = userIdEvent?.userId;
+      cache.set(cache.NS.USERID_BY_USERNAME, username, userId);
+    }
+    return userId;
+  }
   async getById(userId: string, getAll: boolean): Promise<?User> {
     getAll = true; // !!!!! <=== discuss with Ilia .. what was it used for ? 
 
@@ -129,31 +156,7 @@ class UsersRepository {
     return cache.set(cache.NS.USER_BY_ID, userId, user);
   }
   async getAccountByUsername(username: string, getAll: boolean): Promise<?User> {
-    let userId = cache.get(cache.NS.USERID_BY_USERNAME, username);
-    if (! userId) {
-      const userIdEvent = await bluebird.fromCallback(
-        cb => this.eventsStorage.database.findOne(
-          this.collectionInfo,
-          this.eventsStorage.applyQueryToDB(
-            {
-              $and: [
-                {
-                  streamIds: {
-                    $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME],
-                  },
-                },
-                { content: { $eq: username } },
-              ],
-            },
-          ),
-          null,
-          cb,
-        ),
-      );
-      userId = userIdEvent?.userId;
-      cache.set(cache.NS.USERID_BY_USERNAME, username, userId);
-    }
-
+    let userId = await this.getUserIdForUserName(username);
     if (userId) {
       const user = await this.getById(userId, getAll);
       if (! user) {

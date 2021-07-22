@@ -74,8 +74,9 @@ function setupSocketIO(
         customAuthStepFn,
         storageLayer.events
       );
-      // Load user, init the namespace
-      await context.retrieveUser();
+
+      // Initailizing Context
+      await context.init();
 
       // Load access
       await context.retrieveExpandedAccess(storageLayer);
