@@ -122,7 +122,6 @@ class UsersRepository {
   }
   async getById(userId: string, getAll: boolean): Promise<?User> {
     getAll = true; // !!!!! <=== discuss with Ilia .. what was it used for ? 
-
     const cachedUser = cache.get(cache.NS.USER_BY_ID, userId);
     if (cachedUser) { 
       return cachedUser;

@@ -351,7 +351,7 @@ class Connection {
     const methodContext = this.methodContext;
 
     // FLOW MethodContext will need to be rewritten as a class...
-    const userName = methodContext.username;   
+    const userName = methodContext.user.username;   
 
     // Accept streamQueries in JSON format for socket.io
     methodContext.acceptStreamsQueryNonStringified = true;

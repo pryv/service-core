@@ -49,8 +49,10 @@ class Registration {
    */
   async prepareUserData(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     context.newUser = new User(params);
-    context.username = context.newUser.username;
-    context.user = { id: context.newUser.id };
+    context.user = { 
+      id: context.newUser.id,
+      username: context.newUser.username
+    };
     next();
   }
 
@@ -154,7 +156,7 @@ class Registration {
     if (context.newUser.username === 'recla') {
       result.id = 'dummy-test-user';
       context.newUser.id = result.id;
-      context.username = context.newUser.username;
+      context.user.username = context.newUser.username;
       return next();
     }
 

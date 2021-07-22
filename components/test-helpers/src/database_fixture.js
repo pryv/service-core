@@ -492,7 +492,7 @@ class FixtureSession extends FixtureTreeNode implements ChildResource {
       _id: generateId(), 
       expires: getNewExpirationDate(), 
       data: {
-        username: this.context.userName, 
+        username: this.context.user.username, 
         appId: Charlatan.App.name(), 
       },
     };

@@ -9,7 +9,7 @@
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-import type { Access, User, Stream } from 'storage';
+import type { Access, Stream } from 'storage';
 
 const AccessLogic = require('./accesses/AccessLogic');
 const APIError = require('errors').APIError;
@@ -33,6 +33,10 @@ export type ContextSource = {
   ip?: string
 }
 
+type UserDef = {
+  id: ?string, 
+  username: string,
+}
 
 export type AuthenticationData = {
   accessToken: string,
@@ -46,12 +50,10 @@ const ACCESS_TYPE_PERSONAL = 'personal';
 
 
 class MethodContext {
-  // Username of the user making the request. 
-  username: string;
-
+  
   source: ContextSource;
 
-  user: ?User;
+  user: UserDef;
   access: ?Access;
   streams: ?Array<Stream>;
 
@@ -84,9 +86,8 @@ class MethodContext {
     query: ?{},
   ) {
     this.source = source;
-    this.username = username;
 
-    this.user = null;
+    this.user = { id: null, username: username};
     this.stores = null;
     this.access = null;
 
@@ -127,10 +128,10 @@ class MethodContext {
     this.stores = await getStores();
     const usersRepository = await getUsersRepository();
     this.user = { 
-      id: await usersRepository.getUserIdForUserName(this.username),
-      username: this.username
+      id: await usersRepository.getUserIdForUserName(this.user.username),
+      username: this.user.username
     };
-    if (! this.user.id ) throw errors.unknownResource('user', this.username);
+    if (! this.user.id ) throw errors.unknownResource('user', this.user.username);
   }
 
   // Retrieve the userBusiness
@@ -139,11 +140,11 @@ class MethodContext {
     try {
       // get user details
       const usersRepository = await getUsersRepository();
-      const user = await usersRepository.getAccountByUsername(this.username, true);
-      if (! user) throw errors.unknownResource('user', this.username);
+      const user = await usersRepository.getAccountByUsername(this.user.username, true);
+      if (! user) throw errors.unknownResource('user', this.user.username);
       return user;
     } catch (err) {
-      throw errors.unknownResource('user', this.username);
+      throw errors.unknownResource('user', this.user.username);
     }
   }
 

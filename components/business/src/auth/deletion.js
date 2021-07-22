@@ -80,7 +80,7 @@ class Deletion {
       return next(errors.unknownResource('user', params.username));
     }
     context.user = { id: user.id };
-    context.username = user.username;
+    context.user.username = user.username;
     next();
   }
 
@@ -203,7 +203,7 @@ class Deletion {
 
       await bluebird.fromCallback((cb) =>
         this.storageLayer.sessions.remove(
-          { 'data.username': { $eq: context.username } },
+          { 'data.username': { $eq: context.user.username } },
           cb
         )
       );
@@ -211,7 +211,7 @@ class Deletion {
       this.logger.error(error, error);
       return next(errors.unexpectedError(error));
     }
-    result.userDeletion = { username: context.username };
+    result.userDeletion = { username: context.user.username };
     next();
   }
 

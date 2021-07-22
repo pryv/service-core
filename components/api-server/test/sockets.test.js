@@ -472,7 +472,7 @@ describe('Socket.IO', function () {
   
       // Aggregate user data to be more contextual
       const user = {
-        name: testData.users[0].username,
+        username: testData.users[0].username,
         token: token, 
       };
   
@@ -501,7 +501,7 @@ describe('Socket.IO', function () {
   
     // Connect to `server` using `user` as credentials. 
     function connectTo(server: Server, user: User): SocketIO$Client {
-      const namespace = `/${user.name}`;
+      const namespace = `/${user.username}`;
       const params = { auth: user.token, resource: namespace };
   
       const url = server.url(namespace) + 

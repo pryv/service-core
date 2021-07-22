@@ -104,7 +104,7 @@ module.exports = async function produceAccessesApiMethods(
             accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);  
           }
         }
-        accesses[i].apiEndpoint = ApiEndpoint.build(context.username, accesses[i].token); 
+        accesses[i].apiEndpoint = ApiEndpoint.build(context.user.username, accesses[i].token); 
       }
 
       result.accesses = accesses;
@@ -363,8 +363,8 @@ module.exports = async function produceAccessesApiMethods(
       }
 
       result.access = newAccess;
-      result.access.apiEndpoint = ApiEndpoint.build(context.username, result.access.token);
-      notifications.accessesChanged(context.username);
+      result.access.apiEndpoint = ApiEndpoint.build(context.user.username, result.access.token);
+      notifications.accessesChanged(context.user.username);
       next();
     });
   }
@@ -403,7 +403,7 @@ module.exports = async function produceAccessesApiMethods(
         delete updatedAccess.deleted;
 
         result.access = updatedAccess;
-        notifications.accessesChanged(context.username);
+        notifications.accessesChanged(context.user.username);
         next();
       });
   }
@@ -510,7 +510,7 @@ module.exports = async function produceAccessesApiMethods(
       return next(errors.unexpectedError(err));
     }
     result.accessDeletion = {id: params.id};
-    notifications.accessesChanged(context.username);
+    notifications.accessesChanged(context.user.username);
     next();
   }
 

@@ -103,7 +103,7 @@ module.exports = function (api: API, logging, storageLayer: StorageLayer) {
         // Batchcalls have specific error handling hence the custom request context
         const reqContext = {
           method: call.method + ' (within batch)',
-          url: 'pryv://' + context.username
+          url: 'pryv://' + context.user.username
         };
         errorHandling.logError(err, reqContext, logger);
         

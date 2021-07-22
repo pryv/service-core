@@ -127,7 +127,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
   
 
   function generatePasswordResetRequest(context, params, result, next) {
-    const username = context.username;
+    const username = context.user.username;
     if (username == null) {
       return next(new Error('AF: username is not empty.'));
     }
@@ -180,7 +180,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
   );
 
   function checkResetToken(context, params, result, next) {
-    const username = context.username;
+    const username = context.user.username;
     if (username == null) {
       return next(new Error('AF: username is not empty.'));
     }
@@ -225,7 +225,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
         })
       }
       await serviceRegisterConn.updateUserInServiceRegister(
-        context.username,
+        context.user.username,
         operations,
         true,
         false,

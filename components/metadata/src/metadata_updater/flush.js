@@ -90,21 +90,21 @@ class CustomUsersRepository {
   constructor(db: storage.StorageLayer) {
    
   }
-  async resolve(name: string): Promise<?User> {
+  async resolve(name: string): Promise<?UserDef> {
     const usersRepository = await getUsersRepository();
     const userId = await usersRepository.getUserIdForUserName(name);
     if (userId == null) return null; 
     const user = { 
       id: userId,
-      name: name
+      username: name
     };
     return user;
   }
 }
 
-type User = {
+type UserDef = {
   id: string, 
-  name: string,
+  username: string,
 }
 
 module.exports = {

@@ -131,7 +131,7 @@ module.exports = async function (api, userAccessesStorage, sessionsStorage, user
 
   function addApiEndpoint(context, params, result, next) {
     if (result.token) {
-      result.apiEndpoint = ApiEndpoint.build(context.username, result.token);
+      result.apiEndpoint = ApiEndpoint.build(context.user.username, result.token);
     }
     next();
   }
