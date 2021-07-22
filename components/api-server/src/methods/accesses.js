@@ -379,36 +379,6 @@ module.exports = async function produceAccessesApiMethods(
     next(errors.goneResource('accesses.update has been removed'));
   }
 
-  // Updates the access in `params.id` with the attributes in `params.update`.
-  // 
-  function updatePersonalAccess(context, params, result, next) {
-    const accessesRepository = storageLayer.accesses;
-
-    accessesRepository.updateOne(context.user, { id: params.id }, params.update,
-      function (err, updatedAccess) {
-        if (err != null) {
-          // Expecting a duplicate error
-          if (err.isDuplicateIndex('type') && err.isDuplicateIndex('name')) {
-            return next(errors.itemAlreadyExists('access',
-              { type: params.resource.type, name: params.update.name }));
-          }
-          // Any other error
-          return next(errors.unexpectedError(err));
-        }
-
-        // cleanup internal fields
-        delete updatedAccess.calls;
-
-        // cleanup deleted
-        delete updatedAccess.deleted;
-
-        result.access = updatedAccess;
-        notifications.accessesChanged(context.user.username);
-        next();
-      });
-  }
-
-  
   // DELETION
 
   api.register('accesses.delete',
