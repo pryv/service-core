@@ -51,9 +51,12 @@ module.exports.getHookedTracer = (name: string, tags: ?{}): HookedTracer  => {
 class HookedTracer {
   tracing: ?Tracing;
   name: string;
+  running: boolean;
+
   constructor(tracing: ?Tracing, name: string, tags: ?{}) {
     this.tracing = tracing;
     this.name = name;
+    this.running = true;
     if (tracing == null) {
       //console.log('Null request Context', name);
     } else {
@@ -63,6 +66,7 @@ class HookedTracer {
   }
 
   tag(tags: ?{}) {
+    if (! this.running) throw new Error('Cannot tag a finished span ' + this.name);
     if (tags == null) return;
     for (const [key, value] of Object.entries(tags)) {
       if (this.tracing != null) {
@@ -71,17 +75,32 @@ class HookedTracer {
     }
   }
 
+  finishOnCallBack(cb: FinishCallback): FinishCallback {
+    return function(err, result) {
+      if (err != null) { 
+        const tags = {'errorId': err.id};
+        tags[Tags.ERROR] = true;
+        this.tag(tags);
+      }
+      this.finish();
+      cb(err, result);
+    }
+  }
+
   finish(tags: ?{}) { 
+    if (! this.running) throw new Error('Cannot finish a finished span ' + this.name);
     if (this.tracing == null) {
       //console.log('FInishing null tracer', this.name);
       return;
     }
     //console.log('FInishing span', this.name);
     this.tag(tags);
+    this.running = false;
     this.tracing.finishSpan(this.name);
   }
 }
 
+type FinishCallback = (err?: Error | null, result?: mixed) => mixed;
 
 /**
  * Starts a root span. For socket.io usage.
