@@ -7,44 +7,40 @@
 // @flow
 
 const { initTracer: initJaegerTracer } = require('jaeger-client');
-const { Tags, FORMAT_HTTP_HEADERS } = require('opentracing');
-const ah = require('./hooks');
 
+// used to apply filters compliant with open tracing standards
+const { Tags } = require('opentracing');
+
+const TRACING_NAME: string = 'api-server';
+
+/**
+ * The jaeger tracer singleton
+ */
 let tracerSingleton;
-function getTracer() {
+function getTracer(): {} {
   if (tracerSingleton != null) return tracerSingleton;
-  tracerSingleton = initTracer('api-server');
+  tracerSingleton = initTracer(TRACING_NAME);
   return tracerSingleton;
 }
 
-function initTracer(serviceName) {
+/**
+ * Starts jaeger tracer
+ */
+function initTracer(serviceName: string) {
   const config = {
     serviceName: serviceName,
-    sampler: {
+    sampler: { // Tracing all spans. See https://www.jaegertracing.io/docs/1.7/sampling/#client-sampling-configuration
       type: "const",
       param: 1,
     },
-    reporter: {
-      logSpans: true,
-    },
   };
-  /*const options = {
-    logger: {
-      info(msg) {
-        console.log("INFO ", msg);
-      },
-      error(msg) {
-        console.log("ERROR", msg);
-      },
-    },
-  };*/
-  return initJaegerTracer(config, {}); //options);
+  return initJaegerTracer(config, {});
 }
 
 /**
- * Starts a root span
+ * Starts a root span. For socket.io usage.
  */
-module.exports.initRootSpan = (name: string, tags: ?{} = {}): void => {
+module.exports.initRootSpan = (name: string, tags: ?{} = {}): Tracing => {
   const tracer = getTracer();
   const tracing = new Tracing();
   tracing.startSpan(name, { tags });
@@ -52,12 +48,12 @@ module.exports.initRootSpan = (name: string, tags: ?{} = {}): void => {
 }
 
 /**
- * Returns an ExpressJS middleware that starts a span and attaches it to the request parameter
+ * Returns an ExpressJS middleware that starts a span and attaches the "tracing" object to the request parameter.
  */
-module.exports.tracingMiddleware = (name: string = 'express', tags: ?{}): () => void => {
+module.exports.tracingMiddleware = (name: string = 'express', tags: ?{}): Function => {
   const tracer = getTracer();
 
-  return function (req, res, next): void {
+  return function (req: express$Request, res: express$Response, next: express$NextFunction): void {
     const tracing = new Tracing();
     tracing.startSpan(name, tags);
     req.tracing = tracing;
@@ -65,26 +61,49 @@ module.exports.tracingMiddleware = (name: string = 'express', tags: ?{}): () => 
   }
 }
 
-module.exports.setErrorToTracingSpan = (spanName: string, err: Error, tracing: {}): void => {
+/**
+ * Tags a span with error data
+ */
+module.exports.setErrorToTracingSpan = (spanName: string, err: Error, tracing: Tracing): void => {
   tracing.tagSpan(spanName, Tags.ERROR, true);
   tracing.tagSpan(spanName, 'errorId', err.id);
   tracing.tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
 }
 
-module.exports.startApiCall = (context, params, result, next) => {
+/**
+ * Starts a span with the "context.methodId" name on "context.tracing".
+ * Used in api-server/src/API.js#register
+ */
+module.exports.startApiCall = (context, params, result, next): void => {
   context.tracing.startSpan(context.methodId, params);
   if (context.username != null) context.tracing.tagSpan(context.methodId, 'username', context.username);
   next();
 }
-module.exports.finishApiCall = (context, params, result, next) => {
+/**
+ * Finishes a span with the "context.methodId" name on "context.tracing".
+ * Used in api-server/src/API.js#register
+ */
+module.exports.finishApiCall = (context, params, result, next): void => {
   context.tracing.finishSpan(context.methodId);
   next();
 }
 
+/**
+ * Object implementing 
+ */
 class Tracing {
 
+  /**
+   * the jaeger tracer
+   */
   tracer: {};
+  /**
+   * used to track the top span to set the parent in startSpan()
+   */
   spansStack: Array<{}>;
+  /**
+   * index of the top stack element. To avoid using length-1
+   */
   lastIndex: number;
 
   constructor () {
@@ -93,6 +112,10 @@ class Tracing {
     this.lastIndex = -1;
   }
 
+  /**
+   * Starts a new span with the given name and tags.
+   * The span is a child of the latest span if there is one.
+   */
   startSpan(name: string, tags: ?{}): void {
     console.log('started span', name, ', spans present', this.lastIndex+2)
     const options = {};
@@ -106,6 +129,9 @@ class Tracing {
     this.spansStack.push(newSpan);
     this.lastIndex++;
   }
+  /**
+   * Tags an existing span. Used mainly for errors, by setErrorToTracingSpan()
+   */
   tagSpan(name: ?string, key: string, value: string): void {
     let span;
     if (name == null) {
@@ -115,9 +141,15 @@ class Tracing {
     }
     span.setTag(key, value);
   }
+  /**
+   * Adds a log to the span. Not implemented.
+   */
   logSpan(): void {
 
   }
+  /**
+   * Finishes the span with the given name. Throws an error if no span with such a name exists.
+   */
   finishSpan(name: ?string): void {
     let span;
     if (name == null) {
@@ -132,8 +164,3 @@ class Tracing {
     console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
   }
 }
-
-
-
-module.exports.Tags = Tags;
-module.exports.FORMAT_HTTP_HEADERS = FORMAT_HTTP_HEADERS;

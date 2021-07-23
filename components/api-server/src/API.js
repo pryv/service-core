@@ -13,7 +13,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-const { Tags, startApiCall, finishApiCall, setErrorToTracingSpan } = require('tracing');
+const { startApiCall, finishApiCall, setErrorToTracingSpan } = require('tracing');
 
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
 

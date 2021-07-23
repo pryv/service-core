@@ -16,8 +16,6 @@ const { getLogger, notifyAirbrake } = require('@pryv/boiler');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-const { finishSpan } = require('tracing');
-
 (async () => {
   await commonMeta.loadSettings();
 })();
