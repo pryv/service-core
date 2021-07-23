@@ -6,6 +6,9 @@
  */
 // @flow
 
+// Always require application first to be sure boiler is initialized
+const { getApplication } = require('api-server/src/application');
+
 const http = require('http');
 const bluebird = require('bluebird');
 const EventEmitter = require('events');
@@ -14,7 +17,6 @@ const utils = require('utils');
 const { axonMessaging } = require('messages');
 
 const { Notifications } = require('messages');
-const { getApplication } = require('api-server/src/application');
 
 const { getUsersRepository } = require('business/src/users');
 

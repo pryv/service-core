@@ -99,6 +99,7 @@ class API {
       
       idMethodFns.push(startApiCall);
 
+      let unanmedCount = 1;
       // append registered functions
       for (const fn of fns) {
         // Syntax allows strings in the function list, which means that the 
@@ -122,7 +123,10 @@ class API {
         }
         else {
           // assert: _.isFunction(fn)
+          const fnName = fn.name || id + '.unamed' + unanmedCount++;
+          idMethodFns.push((context, params, result, next) => { context.tracing.startSpan(fnName, params); next()} );
           idMethodFns.push(fn);
+          idMethodFns.push((context, params, result, next) => { context.tracing.finishSpan(fnName); next()} );
         }
       }
 
