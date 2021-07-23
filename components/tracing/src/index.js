@@ -76,13 +76,14 @@ class HookedTracer {
   }
 
   finishOnCallBack(cb: FinishCallback): FinishCallback {
+    const that = this;
     return function(err, result) {
       if (err != null) { 
         const tags = {'errorId': err.id};
         tags[Tags.ERROR] = true;
-        this.tag(tags);
+        that.tag(tags);
       }
-      this.finish();
+      that.finish();
       cb(err, result);
     }
   }
@@ -90,10 +91,9 @@ class HookedTracer {
   finish(tags: ?{}) { 
     if (! this.running) throw new Error('Cannot finish a finished span ' + this.name);
     if (this.tracing == null) {
-      //console.log('FInishing null tracer', this.name);
       return;
     }
-    //console.log('FInishing span', this.name);
+
     this.tag(tags);
     this.running = false;
     this.tracing.finishSpan(this.name);
