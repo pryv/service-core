@@ -43,11 +43,14 @@ export type AuthenticationData = {
   callerId?: string,
 }
 
+export type Tracing = {
+  rootSpan: {},
+  apiSpan: ?{},
+  spans: ?Array<{}>,
+};
+
 const AUTH_SEPARATOR = ' ';
 const ACCESS_TYPE_PERSONAL = 'personal';
-
-
-
 
 class MethodContext {
   
@@ -71,6 +74,8 @@ class MethodContext {
   methodId: ?string;
   stores: Store;
 
+  tracing: ?Tracing;
+
   /**
    * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
    */
@@ -84,6 +89,7 @@ class MethodContext {
     eventsStorage: ?StorageLayer,
     headers: Map<string, any>,
     query: ?{},
+    tracing: ?Tracing,
   ) {
     this.source = source;
 
@@ -105,6 +111,7 @@ class MethodContext {
     if (headers != null) {
       this.disableBackwardCompatibility = headers['disable-backward-compatibility-prefix'] || false;
     }
+    this.tracing = tracing;
   }
 
   // Extracts access token and optional caller id from the given auth string, 

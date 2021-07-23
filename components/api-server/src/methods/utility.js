@@ -12,7 +12,7 @@ const methodsSchema = require('../schema/generalMethods');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 
 import type API  from '../API';
 import type { StorageLayer } from 'storage';
@@ -30,10 +30,17 @@ type ApiCall = {
  *
  * @param api
  */
-module.exports = function (api: API, logging, storageLayer: StorageLayer) {
+module.exports = async function (api: API, logging, storageLayer: StorageLayer) {
 
   const logger = getLogger('methods:batch');
+  const config = await getConfig();
 
+  const isOpenSource = config.get('openSource:isActive');
+  const isAuditActive = (! isOpenSource) && config.get('audit:active');
+  let audit;
+  if (isAuditActive) {
+    audit = require('audit');
+  }
   api.register('getAccessInfo',
     commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
     getAccessInfo);
@@ -97,6 +104,9 @@ module.exports = function (api: API, logging, storageLayer: StorageLayer) {
         const result: Result = await bluebird.fromCallback(
           (cb) => api.call(freshContext, call.params, cb));
         
+        // audit log
+        if (isAuditActive) await audit.validApiCall(freshContext, result);
+
         return await bluebird.fromCallback(
           (cb) => result.toObject(cb));
       } catch(err) {
@@ -106,6 +116,9 @@ module.exports = function (api: API, logging, storageLayer: StorageLayer) {
           url: 'pryv://' + context.user.username
         };
         errorHandling.logError(err, reqContext, logger);
+
+        // audit log
+        if (isAuditActive) await audit.errorApiCall(freshContext, err);
         
         return {error: errorHandling.getPublicErrorData(err)};
       }

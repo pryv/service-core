@@ -3,6 +3,13 @@ logs:
   console:
     active: true
     level: info
+  file:
+    active: true
+    path: "var-pryv/logs/core.log"
+    level: info
+    isRotated: false
+    rotation:
+      days: 14
 auth:
   adminAccessKey: CHANGE_ME_WITH_SOMETHING
   trustedApps: "*@https://pryv.github.io*, *@https://*.rec.la*"

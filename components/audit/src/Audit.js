@@ -27,6 +27,7 @@ class Audit {
   _storage;
   _syslog;
   filter;
+  tracer: {};
 
   /**
    * Requires to call async init() to use
@@ -60,15 +61,22 @@ class Audit {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
+    context.tracing.startSpan('audit.validApiCall');
+
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
     event.type = CONSTANTS.EVENT_TYPE_VALID;
-    this.eventForUser(userId, event, methodId);
+    await this.eventForUser(userId, event, methodId);
+    
+    context.tracing.finishSpan('audit.validApiCall');
   }
 
   async errorApiCall(context, error) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
+
+    context.tracing.startSpan('audit.errorApiCall');
+
     const userId = context?.user?.id;
   
     if (context.access?.id == null) {
@@ -79,7 +87,8 @@ class Audit {
     event.content.id = error.id;
     event.content.message = error.message;
 
-    this.eventForUser(userId, event, methodId);
+    await this.eventForUser(userId, event, methodId);
+    context.tracing.finishSpan('audit.errorApiCall');
   }
 
   async eventForUser(userId, event) {

@@ -71,7 +71,6 @@ module.exports = async function (
   auditSettings, updatesSettings, openSourceSettings
 ) {
 
-
   const usersRepository = await getUsersRepository(); 
   const config = await getConfig();
   const stores = await getStores();
@@ -127,6 +126,7 @@ module.exports = async function (
 
   // the two tasks are joined as '*' replaced have their permissions checked 
   async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    context.tracing.startSpan('streamQueries');
     const unAuthorizedStreams = [];
     const unAccessibleStreams = [];
 
@@ -234,6 +234,7 @@ module.exports = async function (
 
     // delete streamQueries with no inclusions 
     params.streams = params.streams.filter(streamQuery => streamQuery.any || streamQuery.and);
+    context.tracing.finishSpan('streamQueries');
     next();
   }
 
