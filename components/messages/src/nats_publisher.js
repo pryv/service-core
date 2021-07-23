@@ -8,6 +8,8 @@
 
 const NATS = require('nats');
 const { encode } = require('./nats_wire_message');
+const { getLogger } = require('@pryv/boiler');
+
 
 import type { MessageSink }  from 'messages';
 
@@ -16,6 +18,7 @@ import type { MessageSink }  from 'messages';
 //
 class NatsPublisher implements MessageSink {
   conn: NATS.Client;
+  logger: any;
 
   // Provides a function to apply to the channel name
   channelFormat: (string) => string;
@@ -24,10 +27,12 @@ class NatsPublisher implements MessageSink {
   // 'nats://nats.io:4222') 
   //
   constructor(natsUri: string, channelFormat?: (string) => string) {
+    this.logger = getLogger('nats').getLogger('publisher');
     this.conn = NATS.connect({
       url: natsUri, 
       'preserveBuffers': true,
     });
+    this.logger.debug('Connected', new Error());
     this.channelFormat = channelFormat || (a => {return a;});
   }
 

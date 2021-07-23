@@ -9,6 +9,8 @@
 const awaiting = require('awaiting');
 const NATS = require('nats');
 const { decode } = require('./nats_wire_message');
+const { getLogger } = require('@pryv/boiler');
+
 
 import type { MessageSink }  from 'messages';
 
@@ -18,6 +20,7 @@ import type { MessageSink }  from 'messages';
 class NatsSubscriber {
   conn: NATS.Client;
   sink: MessageSink; 
+  logger: any;
   
   // What user we subscribed to - or `null` if no subscription was made yet. 
   subscriptionUser: ?string; 
@@ -35,10 +38,12 @@ class NatsSubscriber {
   //    await subscriber.subscribe('USERNAME')
   // 
   constructor(natsUri: string, sink: MessageSink, channelFormat?: (string) => string) {
+    this.logger = getLogger('nats:subscriber');
     this.conn = NATS.connect({
       url: natsUri, 
       'preserveBuffers': true,
     });
+    this.logger.debug('Connected');
     this.sink = sink; 
     this.channelFormat = channelFormat || (a => {return a;});
     

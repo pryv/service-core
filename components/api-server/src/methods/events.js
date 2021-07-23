@@ -42,6 +42,9 @@ const { getLogger, getConfig } = require('@pryv/boiler');
 const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('messages').NATS_UPDATE_EVENT;
 const NATS_DELETE_EVENT = require('messages').NATS_DELETE_EVENT;
+
+const { pubsub } = require('messages');
+
 const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
@@ -896,11 +899,10 @@ module.exports = async function (
       const isDelete: boolean = result.eventDeletion ? true : false;
       // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId: string = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
-      const subject: string = isDelete ? NATS_DELETE_EVENT : NATS_UPDATE_EVENT;
-      natsPublisher.deliver(subject, {
-        username: context.user.username,
-        event: updatedEventId,
-      });
+      const subject: string = isDelete ? pubsub.NATS_DELETE_EVENT : pubsub.NATS_UPDATE_EVENT;
+      const payload = { username: context.user.username, event: updatedEventId }
+      natsPublisher.deliver(subject, payload);
+      //pubsub.emit(subject)
     }
 
     function isSeriesEvent(event: Event): boolean {
