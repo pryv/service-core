@@ -72,19 +72,13 @@ function setupSocketIO(
         name: 'socket.io',
         ip:  socket.handshake.headers['x-forwarded-for'] || socket.request.connection.remoteAddress
       }
-      const apiVersion: string = await getAPIVersion(); // move this above when possible
+      
       const context = new MethodContext(
         contextSource,
         userName,
         query.auth,
         customAuthStepFn,
         storageLayer.events,
-        null,
-        null,
-        initRootSpan('socket.io', {
-          apiVersion,
-          hostname,
-        }),
       );
       
       // Load user, init the namespace
@@ -126,7 +120,3 @@ function setupSocketIO(
 
 }
 module.exports = setupSocketIO; 
-
-
-
-

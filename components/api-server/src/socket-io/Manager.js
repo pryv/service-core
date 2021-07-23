@@ -16,6 +16,8 @@ const { USERNAME_REGEXP_STR } = require('../schema/helpers');
   await commonMeta.loadSettings();
 })();
 
+const { initRootSpan, setErrorToTracingSpan } = require('tracing');
+
 const MethodContext = require('business').MethodContext;
 import type API  from '../API';
 
@@ -303,6 +305,7 @@ class Connection {
   methodContext: MethodContext;
   api: API; 
   logger; 
+  apiVersion: string;
   
   constructor(
     logger, 
@@ -330,6 +333,14 @@ class Connection {
   // Called when the socket wants to call a Pryv IO method. 
   // 
   async onMethodCall(callData: SocketIO$CallData, callback: (err: mixed, res: any) => mixed) {
+
+    const methodContext = this.methodContext;
+
+    methodContext.tracing = initRootSpan('socket.io', {
+      //apiVersion,
+      //hostname,
+    });
+
     const api = this.api; 
     const logger = this.logger;
     
@@ -344,23 +355,17 @@ class Connection {
     callback = callback || callData.data[2];
     //if (callback == null) callback = function (err: any, res: any) { }; // eslint-disable-line no-unused-vars
 
-    // Make sure that we have a callback here. 
-   
-    this.methodContext.methodId = apiMethod;
+    methodContext.methodId = apiMethod;
     
-    const methodContext = this.methodContext;
-
     // FLOW MethodContext will need to be rewritten as a class...
     const userName = methodContext.username;   
 
     // Accept streamQueries in JSON format for socket.io
     methodContext.acceptStreamsQueryNonStringified = true;
-    
-    const answer = bluebird.fromCallback(
-      (cb) => api.call(methodContext, params, cb));
       
     try {
-      const result = await answer; 
+      const result = await bluebird.fromCallback(
+        (cb) => api.call(methodContext, params, cb));; 
       
       if (result == null) 
         throw new Error('AF: either err or result must be non-null');
@@ -368,6 +373,9 @@ class Connection {
       const obj = await bluebird.fromCallback(
         (cb) => result.toObject(cb));
         
+      // good ending
+      methodContext.tracing.finishSpan('socket.io');
+      
       return callback(null, commonMeta.setCommonMeta(obj));
     }
     catch (err) {
@@ -376,6 +384,11 @@ class Connection {
         method: apiMethod,
         body: params
       }, logger);
+
+      // bad ending
+      setErrorToTracingSpan('socket.io', err, methodContext.tracing);
+      methodContext.tracing.finishSpan('socket.io');
+
       return callback(
         commonMeta.setCommonMeta({ error: errorHandling.getPublicErrorData(err) }));
     }

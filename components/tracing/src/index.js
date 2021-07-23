@@ -44,10 +44,10 @@ function initTracer(serviceName) {
 /**
  * Starts a root span
  */
-module.exports.initRootSpan = (name: string, tags: ?{}): void => {
+module.exports.initRootSpan = (name: string, tags: ?{} = {}): void => {
   const tracer = getTracer();
   const tracing = new Tracing();
-  tracing.startSpan(name, tags);
+  tracing.startSpan(name, { tags });
   return tracing;
 }
 
