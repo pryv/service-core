@@ -104,7 +104,6 @@ module.exports = async function (api: API, logging, storageLayer: StorageLayer) 
         const result: Result = await bluebird.fromCallback(
           (cb) => api.call(freshContext, call.params, cb));
         
-        // audit log
         if (isAuditActive) await audit.validApiCall(freshContext, result);
 
         return await bluebird.fromCallback(
@@ -117,7 +116,6 @@ module.exports = async function (api: API, logging, storageLayer: StorageLayer) 
         };
         errorHandling.logError(err, reqContext, logger);
 
-        // audit log
         if (isAuditActive) await audit.errorApiCall(freshContext, err);
         
         return {error: errorHandling.getPublicErrorData(err)};
