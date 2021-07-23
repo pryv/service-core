@@ -13,6 +13,8 @@ const { Tags } = require('opentracing');
 
 const TRACING_NAME: string = 'api-server';
 
+const ah = require('./hooks');
+
 /**
  * The jaeger tracer singleton
  */
@@ -36,6 +38,50 @@ function initTracer(serviceName: string) {
   };
   return initJaegerTracer(config, {});
 }
+
+/**
+ * return currentTracer or null if not available
+ */
+module.exports.getHookedTracer = (name: string, tags: ?{}): HookedTracer  => {
+  const requestContext = ah.getRequestContext();
+  //console.log(requestContext);
+  return new HookedTracer(requestContext?.data?.tracing, name, tags);
+}
+
+class HookedTracer {
+  tracing: ?Tracing;
+  name: string;
+  constructor(tracing: ?Tracing, name: string, tags: ?{}) {
+    this.tracing = tracing;
+    this.name = name;
+    if (tracing == null) {
+      //console.log('Null request Context', name);
+    } else {
+      //console.log('Start', name);
+      this.tracing.startSpan(this.name, tags);
+    }
+  }
+
+  tag(tags: ?{}) {
+    if (tags == null) return;
+    for (const [key, value] of Object.entries(tags)) {
+      if (this.tracing != null) {
+        this.tracing.tagSpan(this.name, key, value);
+      }
+    }
+  }
+
+  finish(tags: ?{}) { 
+    if (this.tracing == null) {
+      //console.log('FInishing null tracer', this.name);
+      return;
+    }
+    //console.log('FInishing span', this.name);
+    this.tag(tags);
+    this.tracing.finishSpan(this.name);
+  }
+}
+
 
 /**
  * Starts a root span. For socket.io usage.
@@ -110,6 +156,8 @@ class Tracing {
     this.tracer = getTracer();
     this.spansStack = [];
     this.lastIndex = -1;
+    // register tracer to Asynchronous Hooks 
+    ah.createRequestContext({ tracing: this });
   }
 
   /**

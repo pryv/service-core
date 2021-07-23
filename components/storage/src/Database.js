@@ -12,6 +12,7 @@ const lodash = require('lodash');
 const bluebird = require('bluebird');
 
 const { getLogger } = require('@pryv/boiler');
+const { getHookedTracer } = require('tracing');
 
 import type { Db as MongoDB, Collection }  from 'mongodb';
 
@@ -147,11 +148,13 @@ class Database {
   // Internal function. 
   // 
   async getCollection(collectionInfo: CollectionInfo, callback: GetCollectionCallback) {
+    const trace = getHookedTracer('db:getCollection:' + collectionInfo.name);
     try {    
       // Make sure we have a connect
       await bluebird.fromCallback( 
         cb => this.ensureConnect(cb) ); 
       if (this.collectionConnectionsCache[collectionInfo.name]) {
+        trace.finish({comment: 'cached'});
         return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
       }
         
@@ -166,6 +169,7 @@ class Database {
       
       this.collectionConnectionsCache[collectionInfo.name] = collection;
       // returning the collection.
+      trace.finish({comment: 'loaded'});
       return callback(null, collection);
     }
     catch (err) {
@@ -287,6 +291,7 @@ class Database {
    * @param {Function} callback
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
+    const trace = getHookedTracer('db:find:' + collectionInfo.name);
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
