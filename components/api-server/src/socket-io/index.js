@@ -24,9 +24,6 @@ const Paths = require('../routes/Paths');
 
 const ChangeNotifier = require('./change_notifier');
 
-const { initRootSpan } = require('tracing');
-const { getAPIVersion } = require('middleware/src/project_version');
-
 import type { StorageLayer } from 'storage';
 import type { CustomAuthFunction } from 'business';
 
@@ -56,8 +53,6 @@ function setupSocketIO(
     const nameSpaceContext = await manager.ensureInitNamespace(socket.nsp.name);
     nameSpaceContext.onConnect(socket);
   });
-
-  const hostname: string = require('os').hostname();
   
   // add a middelware for authentication 
   // add middelware for authentication 

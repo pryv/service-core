@@ -16,6 +16,7 @@ const { USERNAME_REGEXP_STR } = require('../schema/helpers');
   await commonMeta.loadSettings();
 })();
 
+const { getAPIVersion } = require('middleware/src/project_version');
 const { initRootSpan, setErrorToTracingSpan } = require('tracing');
 
 const MethodContext = require('business').MethodContext;
@@ -66,6 +67,8 @@ class Manager implements MessageSink {
   storageLayer: StorageLayer;
   customAuthStepFn: Object;
   isOpenSource: boolean;
+  apiVersion: string;
+  hostname: string;
 
   constructor(
     logger, io: SocketIO$Server, api: API, storageLayer: StorageLayer, customAuthStepFn: Object,
@@ -78,6 +81,7 @@ class Manager implements MessageSink {
     this.contexts = new Map(); 
     this.storageLayer = storageLayer;
     this.customAuthStepFn = customAuthStepFn;
+    this.hostname = require('os').hostname();
   }
   
   // Returns true if the `candidate` could be a username on a lexical level. 
@@ -122,8 +126,10 @@ class Manager implements MessageSink {
     }
   }
   
-  async ensureInitNamespace(namespaceName: string): NamespaceContext {  
+  async ensureInitNamespace(namespaceName: string): Promise<NamespaceContext> {  
     
+    await initAsyncProps.call(this);
+
     let username = this.extractUsername(namespaceName);
     let context = this.contexts.get(username);
     // Value is not missing, return it. 
@@ -135,12 +141,24 @@ class Manager implements MessageSink {
         username,
         this.io.of(namespaceName), 
         this.api,
-        sink, this.logger, this.isOpenSource);
+        sink,
+        this.logger,
+        this.isOpenSource,
+        this.apiVersion,
+        this.hostname,
+      );
 
       this.contexts.set(username, context);
     }  
     await context.open();
     return context;
+
+    /**
+     * putting this here because putting it above requires rendering too much code async. I'm sorry.
+     */
+    async function initAsyncProps() {
+      if (this.apiVersion == null) this.apiVersion = await getAPIVersion();
+    }
   }
     
   // Given a `userName` and a `message`, delivers the `message` as a socket.io
@@ -171,6 +189,8 @@ class NamespaceContext {
   api: API; 
   sink: MessageSink;
   logger; 
+  apiVersion: string;
+  hostname: string;
   
   connections: Map<SocketIO$SocketId, Connection>; 
   natsSubscriber: ?NatsSubscriber; 
@@ -181,7 +201,9 @@ class NamespaceContext {
     api: API, 
     sink: MessageSink, 
     logger,
-    isOpenSource: Boolean
+    isOpenSource: Boolean,
+    apiVersion: string,
+    hostname: string,
   ) {
     this.username = username; 
     this.socketNs = socketNs; 
@@ -191,6 +213,8 @@ class NamespaceContext {
     this.isOpenSource = isOpenSource;
     this.connections = new Map(); 
     this.natsSubscriber = null;
+    this.apiVersion = apiVersion;
+    this.hostname = hostname;
   }
     
 
@@ -200,7 +224,9 @@ class NamespaceContext {
   addConnection(socket: SocketIO$Socket) {  
     // This will represent state that we keep for every connection. 
     const connection = new Connection(
-      this.logger, socket, this, socket.methodContext, this.api);
+      this.logger, socket, this, socket.methodContext, this.api,
+      this.apiVersion, this.hostname,
+    );
 
     // Permanently store the connection in this namespace.
     this.storeConnection(connection);
@@ -306,17 +332,21 @@ class Connection {
   api: API; 
   logger; 
   apiVersion: string;
+  hostname: string;
   
   constructor(
     logger, 
     socket: SocketIO$Socket, 
     namespaceContext: NamespaceContext,
-    methodContext: MethodContext, api: API
+    methodContext: MethodContext, api: API,
+    apiVersion: string, hostname: string,
   ) {
     this.socket = socket; 
     this.methodContext = methodContext;
     this.api = api; 
     this.logger = logger; 
+    this.apiVersion = apiVersion;
+    this.hostname = hostname;
   }
   
   // This should be used as a key when storing the connection inside a Map. 
@@ -337,8 +367,8 @@ class Connection {
     const methodContext = this.methodContext;
 
     methodContext.tracing = initRootSpan('socket.io', {
-      //apiVersion,
-      //hostname,
+      apiVersion: this.apiVersion,
+      hostname: this.hostname,
     });
 
     const api = this.api; 
