@@ -13,7 +13,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-const { Tags, startSpan, finishSpan, tagSpan, startApiCall, finishApiCall } = require('tracing');
+const { Tags, startApiCall, finishApiCall, setErrorToTracingSpan } = require('tracing');
 
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
 
@@ -235,10 +235,3 @@ function matches(idFilter: string, id: string) {
   const filterWithoutWildcard = idFilter.slice(0, -1);
   return id.startsWith(filterWithoutWildcard);
 }
-
-function setErrorToTracingSpan(spanName: string, err: Error, tracing: {}): void {
-  tracing.tagSpan(spanName, Tags.ERROR, true);
-  tracing.tagSpan(spanName, 'errorId', err.id);
-  tracing.tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
-}
-

@@ -47,7 +47,7 @@ function initTracer(serviceName) {
 module.exports.initRootSpan = (name: string, tags: ?{}): void => {
   const tracer = getTracer();
   const tracing = new Tracing();
-  tracing.startSpan(name, null, tags);
+  tracing.startSpan(name, tags);
   return tracing;
 }
 
@@ -59,14 +59,20 @@ module.exports.tracingMiddleware = (name: string = 'express', tags: ?{}): () => 
 
   return function (req, res, next): void {
     const tracing = new Tracing();
-    tracing.startSpan(name, null, tags);
+    tracing.startSpan(name, tags);
     req.tracing = tracing;
     next();
   }
 }
 
+module.exports.setErrorToTracingSpan = (spanName: string, err: Error, tracing: {}): void => {
+  tracing.tagSpan(spanName, Tags.ERROR, true);
+  tracing.tagSpan(spanName, 'errorId', err.id);
+  tracing.tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
+}
+
 module.exports.startApiCall = (context, params, result, next) => {
-  context.tracing.startSpan(context.methodId, null, params);
+  context.tracing.startSpan(context.methodId, params);
   if (context.username != null) context.tracing.tagSpan(context.methodId, 'username', context.username);
   next();
 }
@@ -87,11 +93,14 @@ class Tracing {
     this.lastIndex = -1;
   }
 
-  startSpan(name: string, parent: ?{}, tags: ?{}): void {
+  startSpan(name: string, tags: ?{}): void {
     console.log('started span', name, ', spans present', this.lastIndex+2)
-    if (this.lastIndex > -1) parent = parent ?? this.spansStack[this.lastIndex];
     const options = {};
-    if (parent != null) {options.childOf = parent; console.log('wid parent', parent._operationName);}
+    if (this.lastIndex > -1) { 
+      const parent = this.spansStack[this.lastIndex];
+      options.childOf = parent; 
+      console.log('wid parent', parent._operationName);
+    }
     if (tags != null) options.tags = tags;
     const newSpan = this.tracer.startSpan(name, options);
     this.spansStack.push(newSpan);

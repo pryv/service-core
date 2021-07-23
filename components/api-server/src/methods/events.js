@@ -61,8 +61,6 @@ const SystemStream = require('business/src/system-streams/SystemStream');
 // for events. 
 const typeRepo = new TypeRepository(); 
 
-const { startSpan, finishSpan } = require('tracing');
-
 /**
  * Events API methods implementations.
  * @param auditSettings

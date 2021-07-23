@@ -20,8 +20,6 @@ const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
 const { AuditAccessIds } = require('./MethodContextUtils');
 
-const { startSpan, finishSpan } = require('tracing');
-
 /**
  * EventEmitter interface is just for tests syncing for now
  */
