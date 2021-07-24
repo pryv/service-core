@@ -22,6 +22,8 @@ const tables = {
   events: events.dbSchema
 }
 
+const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25,  25,  50,  50, 100];
+
 class UserDatabase {
   /**
    * sqlite3 instance
@@ -157,17 +159,17 @@ class UserDatabase {
         statement();
         return;
       } catch (error) {
-        if (err.code !== 'SQLITE_BUSY') { // ignore 
-          throw err;
+        if (error.code !== 'SQLITE_BUSY') { // ignore 
+          throw error;
         }
-        const waitTime = i > (WAIT_LIST_MS.length - 1) ? 100 : WAIT_LIST[i];
+        const waitTime = i > (WAIT_LIST_MS.length - 1) ? 100 : WAIT_LIST_MS[i];
         await new Promise((r) => setTimeout(r, waitTime));
       }
     }
     throw new Error('Failed write action on Audit after ' + retries + ' rertries');
   }
 }
-const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25,  25,  50,  50, 100];
+
 
 
 
