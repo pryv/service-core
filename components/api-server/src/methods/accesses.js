@@ -464,7 +464,7 @@ module.exports = async function produceAccessesApiMethods(
     // remove from cache
     for (const idToDelete of idsToDelete) {
       const accessToDelete = cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, context.user.id + '/' + idToDelete.id);
-      if (accessToDelete) {
+      if (accessToDelete != null) {
         cache.unset(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, context.user.id + '/' + accessToDelete.token);
         cache.unset(cache.NS.ACCESS_LOGIC_BY_USERIDACCESSID, context.user.id + '/' +  accessToDelete.id);
      }

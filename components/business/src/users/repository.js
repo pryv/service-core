@@ -64,7 +64,7 @@ class UsersRepository {
 
     const users: Array<User> = [];
     for (const userIdObject of userIdObjects) {
-      const user = await this.getUserById(userIdObject.userId, true);
+      const user = await this.getUserById(userIdObject.userId);
       users.push(user);
     }
     return users;
@@ -120,15 +120,8 @@ class UsersRepository {
     }
     return userId;
   }
-  async getUserById(userId: string, getAll: boolean): Promise<?User> {
-    getAll = true; // !!!!! <=== discuss with Ilia .. what was it used for ? 
-
-    let userAccountStreamsIds: ?Map<string, SystemStream>;
-    if (getAll) {
-      userAccountStreamsIds = SystemStreamsSerializer.getAccountMap();
-    } else {
-      userAccountStreamsIds = SystemStreamsSerializer.getReadableAccountMap();
-    }
+  async getUserById(userId: string): Promise<?User> {
+    const userAccountStreamsIds =  SystemStreamsSerializer.getAccountMap();
     
     const query: {} = {
       $and: [
@@ -150,10 +143,10 @@ class UsersRepository {
     const user = new User({ id: userId, events: userAccountEvents });
     return user;
   }
-  async getUserByUsername(username: string, getAll: boolean): Promise<?User> {
+  async getUserByUsername(username: string): Promise<?User> {
     let userId = await this.getUserIdForUsername(username);
     if (userId) {
-      const user = await this.getUserById(userId, getAll);
+      const user = await this.getUserById(userId);
       if (! user) {
          cache.unset(cache.NS.USERID_BY_USERNAME, username);
       }
@@ -162,7 +155,7 @@ class UsersRepository {
     return null;
   }
 
-  async getStorageUsedFor(userId: string): Promise<?any>  {
+  async getStorageUsedByUserId(userId: string): Promise<?any>  {
     return {
       dbDocuments: await this.getOnePropertyValue(userId, 'dbDocuments') || 0,
       attachedFiles: await this.getOnePropertyValue(userId, 'attachedFiles') || 0
@@ -297,8 +290,7 @@ class UsersRepository {
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
     // invalidate caches
     cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
-    this.checkDuplicates(update);
-
+   
     await this.checkDuplicates(update);
     
     // change password into hash if it exists

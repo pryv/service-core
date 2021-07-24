@@ -1143,7 +1143,7 @@ module.exports = async function (
         size: file.size
       });
       
-      const storagedUsed = await usersRepository.getStorageUsedFor(context.user.id);
+      const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
 
       // approximately update account storage size
       storagedUsed.attachedFiles += file.size;
@@ -1278,7 +1278,7 @@ module.exports = async function (
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       async function () {
-        const storagedUsed = await usersRepository.getStorageUsedFor(context.user.id);
+        const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
 
         // If needed, approximately update account storage size
         if (! storagedUsed || !storagedUsed.attachedFiles) {
@@ -1338,7 +1338,7 @@ module.exports = async function (
 
         await bluebird.fromCallback(cb => userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, cb));
 
-        const storagedUsed = await usersRepository.getStorageUsedFor(context.user.id);
+        const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
 
         // approximately update account storage size
         storagedUsed.attachedFiles -= deletedAtt.size;

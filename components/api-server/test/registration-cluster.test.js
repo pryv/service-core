@@ -149,11 +149,11 @@ describe('registration: cluster', function() {
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = _.merge(buildValidationRequest(userData), { uniqueFields: { email: userData.email } });
         firstRegistrationRequest = buildRegistrationRequest(userData);
-        firstUser = await usersRepository.getUserByUsername(userData.username, true);
+        firstUser = await usersRepository.getUserByUsername(userData.username);
         oldEmail = userData.email;
         userData.email = charlatan.Internet.email();
         res = await request.post(methodPath).send(userData);
-        secondUser = await usersRepository.getUserByUsername(userData.username, true);
+        secondUser = await usersRepository.getUserByUsername(userData.username);
       });
       it('[QV8Z] should respond with status 201', () => {
         assert.equal(res.status, 201);
@@ -162,7 +162,7 @@ describe('registration: cluster', function() {
         const body = res.body;
         assert.equal(body.username, userData.username);
         const usersRepository = await getUsersRepository(); 
-        const user = await usersRepository.getUserByUsername(userData.username, true);
+        const user = await usersRepository.getUserByUsername(userData.username);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
 
