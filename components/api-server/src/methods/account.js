@@ -140,7 +140,14 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
   }
 
   async function addUserBusinessToContext(context, params, result, next) {
-    context.userBusiness = await context.retrieveUser();
+    try {
+      // get user details
+      const usersRepository = await getUsersRepository();
+      context.userBusiness = await usersRepository.getUserByUsername(context.user.username);
+      if (! context.userBusiness) return next(errors.unknownResource('user', context.user.username));
+    } catch (err) {
+      return next(err);
+    }
     next();
   }
 

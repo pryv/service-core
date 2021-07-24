@@ -166,7 +166,7 @@ class UsersRepository {
     const res = await bluebird.fromCallback( 
       cb => this.eventsStorage.find(
         { id: userId}, 
-        { streamIds: {$in: [SystemStreamsSerializer.getStreamIdForProperty(propertyKey)] } }, 
+        { streamIds: {$in: [SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(propertyKey)] } }, 
         {limit: 1},
         cb));
     if (! res || ! res[0]) return null;
