@@ -133,9 +133,6 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         const inResult = treeUtils.findById(streams, listableFullStreamId);
         if (inResult) {
           const copy = _.cloneDeep(inResult);
-          if (! copy.parentId || ! await context.access.canListStream(copy.parentId)) {
-            copy.parentId = null;
-          }
           filteredStreams.push(copy);
         } else {
           if (storeId === 'local' && listable.storeId !== 'local') {
@@ -155,6 +152,13 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       }
       streams = filteredStreams;
     } 
+
+    // remove non visible parenIds from 
+    for (const rootStream of streams) { 
+      if ((rootStream.parentId != null)|| ! await context.access.canListStream(rootStream.parentId)) {
+        rootStream.parentId = null;
+      }
+    };
 
     // if request was made on parentId .. return only the children
     if (params.parentId && streams.length === 1) {

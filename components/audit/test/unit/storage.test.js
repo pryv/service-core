@@ -7,7 +7,7 @@
 
 /* global assert, cuid, audit, config, initTests*/
 
-describe('Storage', () => {
+describe('Audit Storage', () => {
   let userid = cuid();
   let createdBy = cuid();
 
@@ -54,5 +54,8 @@ describe('Storage', () => {
       assert.equal(actions.length, 2);
       assert.equal(accesses.length, 2);
     });
-  })
+  });
+
+
+  
 });

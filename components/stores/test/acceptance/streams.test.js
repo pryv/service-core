@@ -92,4 +92,16 @@ describe('Stores Streams', function() {
     assert.equal(streams[3].children.length,1);
   });
 
+
+  it('[3ZTM] Root streams must have null parentIds "*"', async () => {
+    const res = await coreRequest
+      .get(streamsPath)
+      .set('Authorization', appAccessDummy.token)
+      .query({});
+    const streams = res.body.streams;
+    for (const stream of streams) {
+      assert.notExists(stream.parentId);
+    }
+  });
+
 });
