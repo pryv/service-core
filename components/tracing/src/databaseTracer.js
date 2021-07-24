@@ -5,7 +5,11 @@
  * Proprietary and confidential
  */
 
-const { getHookedTracer } = require('tracing');
+/**
+ * Patch a Database instance and to add tracing functions
+ */
+
+const { getHookedTracer } = require('./HookedTracer');
 
 module.exports = function patch(db) {
   const functionsToPatch = getAllFuncs(db);

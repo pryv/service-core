@@ -24,6 +24,8 @@ const { getStores, StreamsUtils } = require('stores');
 
 const cache = require('cache');
 
+const { DummyTracing } = require('tracing');
+
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
 
@@ -43,11 +45,6 @@ export type AuthenticationData = {
   callerId?: string,
 }
 
-export type Tracing = {
-  rootSpan: {},
-  apiSpan: ?{},
-  spans: ?Array<{}>,
-};
 
 const AUTH_SEPARATOR = ' ';
 const ACCESS_TYPE_PERSONAL = 'personal';
@@ -74,7 +71,7 @@ class MethodContext {
   methodId: ?string;
   stores: Store;
 
-  tracing: ?Tracing;
+  _tracing: ?Tracing;
 
   /**
    * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
@@ -111,8 +108,21 @@ class MethodContext {
     if (headers != null) {
       this.disableBackwardCompatibility = headers['disable-backward-compatibility-prefix'] || false;
     }
-    this.tracing = tracing;
+    this._tracing = tracing;
   }
+
+  get tracing() {
+    if (this._tracing == null) {
+      console.log('XXXXXXX >>>>>> Null tracer', new Error());
+      this._tracing = new DummyTracing();
+    }
+    return this._tracing;
+  }
+
+  set tracing(tracing) {
+    this._tracing = tracing;
+  }
+
 
   // Extracts access token and optional caller id from the given auth string, 
   // assigning to `this.accessToken` and `this.callerId`.

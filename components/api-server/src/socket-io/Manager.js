@@ -405,6 +405,8 @@ class Connection {
         
       // good ending
       methodContext.tracing.finishSpan('socket.io');
+      // remove tracing for next call
+      methodContext.tracing = null;
       
       return callback(null, commonMeta.setCommonMeta(obj));
     }

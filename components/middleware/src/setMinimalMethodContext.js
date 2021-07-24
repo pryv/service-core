@@ -8,7 +8,7 @@
 const _ = require('lodash');
 
 import type ContextSource from 'business/src/MethodContext';
-import type Tracing from 'business/src/MethodContext';
+const { DummyTracing } = require('tracing');
 
 class MinimalMethodContext {
   source: ContextSource;
@@ -16,7 +16,7 @@ class MinimalMethodContext {
   username: ?String;
   access: ?Access;
   originalQuery: ?{};
-  tracing: Tracing;
+  _tracing: Tracing;
 
   constructor(req: express$Request) {
     this.source =  {
@@ -25,8 +25,23 @@ class MinimalMethodContext {
     }
     this.originalQuery = _.cloneDeep(req.query);
     if (this.originalQuery?.auth) delete this.originalQuery.auth;
-    this.tracing = req.tracing;
+    this._tracing = req.tracing;
   }
+
+
+  
+  get tracing() {
+    if (this._tracing == null) {
+      console.log('Null tracer');
+      this._tracing = new DummyTracing();
+    }
+    return this._tracing;
+  }
+
+  set tracing(tracing) {
+    this._tracing = tracing;
+  }
+
 }
 
 /**

@@ -6,122 +6,39 @@
  */
 // @flow
 
-const { initTracer: initJaegerTracer } = require('jaeger-client');
-
 // used to apply filters compliant with open tracing standards
 const { Tags } = require('opentracing');
 
-const TRACING_NAME: string = 'api-server';
+const { Tracing, DummyTracing } = require('./Tracing');
+const { getHookerTracer } = require('./HookedTracer');
 
-const ah = require('./hooks');
 
-/**
- * The jaeger tracer singleton
- */
-let tracerSingleton;
-function getTracer(): {} {
-  if (tracerSingleton != null) return tracerSingleton;
-  tracerSingleton = initTracer(TRACING_NAME);
-  return tracerSingleton;
-}
+const dataBaseTracer = require('./databaseTracer');
 
-/**
- * Starts jaeger tracer
- */
-function initTracer(serviceName: string) {
-  const config = {
-    serviceName: serviceName,
-    sampler: { // Tracing all spans. See https://www.jaegertracing.io/docs/1.7/sampling/#client-sampling-configuration
-      type: "const",
-      param: 1,
-    },
-  };
-  return initJaegerTracer(config, {});
-}
 
-/**
- * return currentTracer or null if not available
- */
-module.exports.getHookedTracer = (name: string, tags: ?{}): HookedTracer  => {
-  const requestContext = ah.getRequestContext();
-  //console.log(requestContext);
-  return new HookedTracer(requestContext?.data?.tracing, name, tags);
-}
+module.exports.DummyTracing = DummyTracing;
 
-class HookedTracer {
-  tracing: ?Tracing;
-  name: string;
-  running: boolean;
+module.exports.dataBaseTracer = dataBaseTracer;
 
-  constructor(tracing: ?Tracing, name: string, tags: ?{}) {
-    this.tracing = tracing;
-    this.name = name;
-    this.running = true;
-    if (tracing == null) {
-      //console.log('Null request Context', name);
-    } else {
-      //console.log('Start', name);
-      this.tracing.startSpan(this.name, tags);
-    }
-  }
-
-  tag(tags: ?{}) {
-    if (! this.running) throw new Error('Cannot tag a finished span ' + this.name);
-    if (tags == null) return;
-    for (const [key, value] of Object.entries(tags)) {
-      if (this.tracing != null) {
-        this.tracing.tagSpan(this.name, key, value);
-      }
-    }
-  }
-
-  finishOnCallBack(cb: FinishCallback): FinishCallback {
-    const that = this;
-    return function(err, result) {
-      if (err != null) { 
-        const tags = {'errorId': err.id};
-        tags[Tags.ERROR] = true;
-        that.tag(tags);
-      }
-      that.finish();
-      cb(err, result);
-    }
-  }
-
-  finish(tags: ?{}) { 
-    if (! this.running) throw new Error('Cannot finish a finished span ' + this.name);
-    if (this.tracing == null) {
-      return;
-    }
-
-    this.tag(tags);
-    this.running = false;
-    this.tracing.finishSpan(this.name);
-  }
-}
-
-type FinishCallback = (err?: Error | null, result?: mixed) => mixed;
+module.exports.getHookerTracer = getHookerTracer;
 
 /**
  * Starts a root span. For socket.io usage.
  */
-module.exports.initRootSpan = (name: string, tags: ?{} = {}): Tracing => {
-  const tracer = getTracer();
+function initRootSpan (name: string, tags: ?{} = {}): Tracing {
   const tracing = new Tracing();
   tracing.startSpan(name, { tags });
   return tracing;
-}
+};
+module.exports.initRootSpan = initRootSpan;
 
 /**
  * Returns an ExpressJS middleware that starts a span and attaches the "tracing" object to the request parameter.
  */
 module.exports.tracingMiddleware = (name: string = 'express', tags: ?{}): Function => {
-  const tracer = getTracer();
-
   return function (req: express$Request, res: express$Response, next: express$NextFunction): void {
-    const tracing = new Tracing();
-    tracing.startSpan(name, tags);
-    req.tracing = tracing;
+    if (req.tracing != null) { console.log('XXXXX tracing already set', new Error()); return next();}
+    req.tracing = initRootSpan (name, tags);
     next();
   }
 }
@@ -151,83 +68,4 @@ module.exports.startApiCall = (context, params, result, next): void => {
 module.exports.finishApiCall = (context, params, result, next): void => {
   context.tracing.finishSpan(context.methodId);
   next();
-}
-
-/**
- * Object implementing 
- */
-class Tracing {
-
-  /**
-   * the jaeger tracer
-   */
-  tracer: {};
-  /**
-   * used to track the top span to set the parent in startSpan()
-   */
-  spansStack: Array<{}>;
-  /**
-   * index of the top stack element. To avoid using length-1
-   */
-  lastIndex: number;
-
-  constructor () {
-    this.tracer = getTracer();
-    this.spansStack = [];
-    this.lastIndex = -1;
-    // register tracer to Asynchronous Hooks 
-    ah.createRequestContext({ tracing: this });
-  }
-
-  /**
-   * Starts a new span with the given name and tags.
-   * The span is a child of the latest span if there is one.
-   */
-  startSpan(name: string, tags: ?{}): void {
-    //console.log('started span', name, ', spans present', this.lastIndex+2)
-    const options = {};
-    if (this.lastIndex > -1) { 
-      const parent = this.spansStack[this.lastIndex];
-      options.childOf = parent; 
-      //console.log('wid parent', parent._operationName);
-    }
-    if (tags != null) options.tags = tags;
-    const newSpan = this.tracer.startSpan(name, options);
-    this.spansStack.push(newSpan);
-    this.lastIndex++;
-  }
-  /**
-   * Tags an existing span. Used mainly for errors, by setErrorToTracingSpan()
-   */
-  tagSpan(name: ?string, key: string, value: string): void {
-    let span;
-    if (name == null) {
-      span = this.spansStack[lastIndex];
-    } else {
-      span = this.spansStack.find(span => span._operationName === name);
-    }
-    span.setTag(key, value);
-  }
-  /**
-   * Adds a log to the span. Not implemented.
-   */
-  logSpan(): void {
-
-  }
-  /**
-   * Finishes the span with the given name. Throws an error if no span with such a name exists.
-   */
-  finishSpan(name: ?string): void {
-    let span;
-    if (name == null) {
-      span = this.spansStack.pop();
-    } else {
-      const index = this.spansStack.findIndex(span => span._operationName === name);
-      if (index < 0) throw new Error(`finishing span that does not exists "${name}"`);
-      [span] = this.spansStack.splice(index, 1);
-    }
-    span.finish();
-    this.lastIndex--;
-    //console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
-  }
 }
