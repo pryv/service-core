@@ -19,10 +19,10 @@ class PubSub extends EventEmitter {
     super();
   }
 
-  emit(eventName, ...args) {
-    deliverToNats(eventName, args);
-    super.emit(...arguments);
-    logger.debug('emit', ...arguments);
+  emit(eventName, payload) {
+    deliverToNats(eventName, payload);
+    super.emit(eventName, payload);
+    logger.debug('emit', payload);
   }
 
 }

@@ -18,11 +18,7 @@ const methodsSchema = require('../schema/webhooksMethods');
 const Webhook = require('business').webhooks.Webhook;
 const WebhooksRepository = require('business').webhooks.Repository;
 
-const { NatsPublisher } = require('messages');
-const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
-const NATS_WEBHOOKS_CREATE_CHANNEL = require('messages').NATS_WEBHOOKS_CREATE;
-const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('messages').NATS_WEBHOOKS_ACTIVATE;
-const NATS_WEBHOOKS_DELETE_CHANNEL = require('messages').NATS_WEBHOOKS_DELETE;
+const { pubsub } = require('messages');
 
 import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'business';
@@ -51,8 +47,7 @@ module.exports = function produceWebhooksApiMethods(
   storageLayer: StorageLayer) {
 
   const webhooksRepository: WebhooksRepository = new WebhooksRepository(storageLayer.webhooks, storageLayer.events);
-  const natsPublisher: NatsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
-
+  
   // RETRIEVAL
 
   api.register('webhooks.get',
@@ -137,7 +132,7 @@ module.exports = function produceWebhooksApiMethods(
   }
 
   async function bootWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
-    natsPublisher.deliver(NATS_WEBHOOKS_CREATE_CHANNEL, _.extend(
+    pubsub.emit(pubsub.NATS_WEBHOOKS_CREATE, _.extend(
       { username: context.user.username }, 
       { webhook: result.webhook })
     );
@@ -192,7 +187,7 @@ module.exports = function produceWebhooksApiMethods(
   }
 
   async function reactivateWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
-    natsPublisher.deliver(NATS_WEBHOOKS_ACTIVATE_CHANNEL, _.extend(
+    pubsub.emit(pubsub.NATS_WEBHOOKS_ACTIVATE, _.extend(
       { username: context.user.username }, 
       { webhook: result.webhook })
     );
@@ -238,7 +233,7 @@ module.exports = function produceWebhooksApiMethods(
   async function turnOffWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
     const username: string = context.user.username;
     const webhookId: string = params.id;
-    natsPublisher.deliver(NATS_WEBHOOKS_DELETE_CHANNEL, {
+    pubsub.emit(pubsub.NATS_WEBHOOKS_DELETE, {
       username: username,
       webhook: {
         id: webhookId,

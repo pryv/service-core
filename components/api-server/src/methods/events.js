@@ -39,10 +39,6 @@ const {TypeRepository, isSeriesType} = require('business').types;
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 
-const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('messages').NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('messages').NATS_DELETE_EVENT;
-
 const { pubsub } = require('messages');
 
 const { ResultError } = require('influx');
@@ -88,18 +84,12 @@ module.exports = async function (
   const logger = getLogger('methods:events');
 
   const STREAM_ID_ACTIVE: string = SystemStreamsSerializer.options.STREAM_ID_ACTIVE;
-  
-  let natsPublisher;
-  if (!openSourceSettings.isActive) {
-    const { NatsPublisher } = require('messages');
-    natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
-  }
 
-    // initialize service-register connection
-    let serviceRegisterConn = {};
-    if (! config.get('dnsLess:isActive')) {
-      serviceRegisterConn = getServiceRegisterConn();
-    }
+  // initialize service-register connection
+  let serviceRegisterConn = {};
+  if (! config.get('dnsLess:isActive')) {
+    serviceRegisterConn = getServiceRegisterConn();
+  }
 
   const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
@@ -902,8 +892,7 @@ module.exports = async function (
       const updatedEventId: string = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
       const subject: string = isDelete ? pubsub.NATS_DELETE_EVENT : pubsub.NATS_UPDATE_EVENT;
       const payload = { username: context.user.username, event: updatedEventId }
-      natsPublisher.deliver(subject, payload);
-      //pubsub.emit(subject)
+      pubsub.emit(subject, payload)
     }
 
     function isSeriesEvent(event: Event): boolean {
