@@ -166,8 +166,9 @@ class Manager implements MessageSink {
   // 
   // Part of the MessageSink implementation.
   //
-  deliver(userName: string, message: string | {}): void {
-    const context = this.contexts.get(userName);
+  deliver(username: string, message: string | {}): void {
+    console.log('XXXXXX', username, message);
+    const context = this.contexts.get(username);
     if (context == null) return; 
     
     const namespace = context.socketNs;
