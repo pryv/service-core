@@ -511,14 +511,14 @@ Object.freeze(PermissionLevels);
 
     if (this.isPersonal()) return 'manage';
     const cachedLevel = this._streamPermissionLevelCache[streamIdFull];
-    if (cachedLevel) { 
+    if (cachedLevel != null) { 
       return cachedLevel.level;
     }
 
     const permissions = await this._getStreamPermissions(streamIdFull);
     this._streamPermissionLevelCache[streamIdFull] = permissions;
 
-    return permissions ? permissions.level : null;
+    return permissions?.level;
   }
 
   async _getStreamPermissions(streamIdFull) {
@@ -529,9 +529,9 @@ Object.freeze(PermissionLevels);
 
     const stores = await getStores();
 
-    while (currentStream) {
+    while (currentStream != null) {
       const permissions = this.getStreamPermission(storeId, currentStream);
-      if (permissions)  return permissions; // found  
+      if (permissions != null) return permissions; // found  
     
       // not found, look for parent
       const stream = await stores.streams.getOne(this._userId, currentStream, storeId);

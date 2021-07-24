@@ -68,7 +68,7 @@ module.exports = async function (
   }
 
   async function getUserInfoInit(context, params, result, next) {
-    const newStorageUsed = await usersRepository.getStorageUsedFor(context.user.id);
+    const newStorageUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
     result.userInfo = {
       username: context.user.username,
       storageUsed: newStorageUsed

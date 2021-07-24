@@ -39,7 +39,7 @@ function setupSocketIO(
   customAuthStepFn: ?CustomAuthFunction,
   isOpenSource: boolean,
 ) {
- 
+
   const io = socketIO.listen(server, {
     path: Paths.SocketIO
   });
@@ -67,12 +67,13 @@ function setupSocketIO(
         name: 'socket.io',
         ip:  socket.handshake.headers['x-forwarded-for'] || socket.request.connection.remoteAddress
       }
+      
       const context = new MethodContext(
         contextSource,
         userName,
         query.auth,
         customAuthStepFn,
-        storageLayer.events
+        storageLayer.events,
       );
 
       // Initailizing Context
@@ -114,7 +115,3 @@ function setupSocketIO(
 
 }
 module.exports = setupSocketIO; 
-
-
-
-

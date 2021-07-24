@@ -94,7 +94,7 @@ describe('[BMM2] registration: DNS-less', () => {
       it('[VDA8] should respond with a username and apiEndpoint in the request body', async () => {
         assert.equal(res.body.username, registerData.username);
         const usersRepository = await getUsersRepository(); 
-        const user = await usersRepository.getUserByUsername(registerData.username, true);
+        const user = await usersRepository.getUserByUsername(registerData.username);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
         const initUser = new User(user);

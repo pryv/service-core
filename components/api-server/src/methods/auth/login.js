@@ -137,7 +137,10 @@ module.exports = async function (api, userAccessesStorage, sessionsStorage, user
   }
 
   async function setAdditionalInfo(context, params, result, next) {
-    const userBusiness = await context.retrieveUser();
+    // get user details
+    const usersRepository = await getUsersRepository();
+    const userBusiness = await usersRepository.getUserByUsername(context.user.username);
+    if (! userBusiness) return next(errors.unknownResource('user', context.user.username));
     result.preferredLanguage = userBusiness.language;
     next();
   }

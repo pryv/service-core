@@ -156,7 +156,7 @@ class Result {
     if (this.isStreamResult()) {
       const stream: Readable = this.writeStreams(res, successCode);
       stream.on('close', function() { 
-       if (onEndCallBack) onEndCallBack();
+        if (onEndCallBack) onEndCallBack();
       }.bind(this));
     } else {
       this.writeSingle(res, successCode);

@@ -24,6 +24,8 @@ const { getStores, StreamsUtils } = require('stores');
 
 const cache = require('cache');
 
+const { DummyTracing } = require('tracing');
+
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
 
@@ -43,11 +45,9 @@ export type AuthenticationData = {
   callerId?: string,
 }
 
+
 const AUTH_SEPARATOR = ' ';
 const ACCESS_TYPE_PERSONAL = 'personal';
-
-
-
 
 class MethodContext {
   
@@ -71,6 +71,8 @@ class MethodContext {
   methodId: ?string;
   stores: Store;
 
+  _tracing: ?Tracing;
+
   /**
    * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
    */
@@ -84,6 +86,7 @@ class MethodContext {
     eventsStorage: ?StorageLayer,
     headers: Map<string, any>,
     query: ?{},
+    tracing: ?Tracing,
   ) {
     this.source = source;
 
@@ -105,7 +108,21 @@ class MethodContext {
     if (headers != null) {
       this.disableBackwardCompatibility = headers['disable-backward-compatibility-prefix'] || false;
     }
+    this._tracing = tracing;
   }
+
+  get tracing() {
+    if (this._tracing == null) {
+      console.log('XXXXXXX >>>>>> Null tracer', new Error());
+      this._tracing = new DummyTracing();
+    }
+    return this._tracing;
+  }
+
+  set tracing(tracing) {
+    this._tracing = tracing;
+  }
+
 
   // Extracts access token and optional caller id from the given auth string, 
   // assigning to `this.accessToken` and `this.callerId`.
@@ -140,7 +157,7 @@ class MethodContext {
     try {
       // get user details
       const usersRepository = await getUsersRepository();
-      const user = await usersRepository.getUserByUsername(this.user.username, true);
+      const user = await usersRepository.getUserByUsername(this.user.username);
       if (! user) throw errors.unknownResource('user', this.user.username);
       return user;
     } catch (err) {

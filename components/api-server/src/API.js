@@ -13,6 +13,8 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
+const { startApiCall, finishApiCall, setErrorToTracingSpan } = require('tracing');
+
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
 
 // When storing full events.get request instead of streaming it, the maximum
@@ -95,6 +97,9 @@ class API {
       if (idMethodFns == null) 
         throw new Error('AF: methodMap must contain id at this point.');
       
+      idMethodFns.push(startApiCall);
+
+      let unanmedCount = 1;
       // append registered functions
       for (const fn of fns) {
         // Syntax allows strings in the function list, which means that the 
@@ -118,9 +123,14 @@ class API {
         }
         else {
           // assert: _.isFunction(fn)
+          const fnName = fn.name || id + '.unamed' + unanmedCount++;
+          idMethodFns.push((context, params, result, next) => { context.tracing.startSpan(fnName, params); next()} );
           idMethodFns.push(fn);
+          idMethodFns.push((context, params, result, next) => { context.tracing.finishSpan(fnName); next()} );
         }
       }
+
+      idMethodFns.push(finishApiCall);
     } 
     else {
       // assert: wildcardAt >= 0
@@ -176,11 +186,15 @@ class API {
   // ------------------------------------------------------------ handling calls
   
   call(context: MethodContext, params: mixed, callback: ApiCallback) {
+    const methodId: string = context.methodId;
     const methodMap = this.map; 
-    const methodList = methodMap.get(context.methodId);
+    const methodList = methodMap.get(methodId);
 
     if (methodList == null) 
-      return callback(errors.invalidMethod(context.methodId), null);
+      return callback(errors.invalidMethod(methodId), null);
+
+    
+    const tracing = context.tracing;
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -191,16 +205,19 @@ class API {
       }
     }, function (err) {
       if (err != null) {
+        setErrorToTracingSpan(methodId, err, tracing);
+        tracing.finishSpan(methodId);
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
       }
+      
       if (isAuditActive) {
-        result.onEnd(function() {
-          audit.validApiCall(context, result);
+        result.onEnd(async function() {
+          await audit.validApiCall(context, result);
+          tracing.finishSpan('express');
         });
       }
-
       callback(null, result);
     });
   }
@@ -222,5 +239,3 @@ function matches(idFilter: string, id: string) {
   const filterWithoutWildcard = idFilter.slice(0, -1);
   return id.startsWith(filterWithoutWildcard);
 }
-
-
