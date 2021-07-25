@@ -14,6 +14,7 @@ const EventEmitter = require('events');
 // 
 class Notifications extends EventEmitter {
   axonSocket: EventEmitter; 
+  pubsub: {};
   
   // Construct a notifications instance. Normally called by the application 
   // start; one per process. 
@@ -25,25 +26,32 @@ class Notifications extends EventEmitter {
       throw new Error('AF: axonSocket cannot be null');
     
     this.axonSocket = axonSocket;
+    this.pubsub = require('messages').pubsub;
   }
   
   serverReady() {
     this.dispatch('server-ready');
+    this.pubsub.emit('server-ready');
   }
   accountChanged(userName: string) {
     this.dispatch('account-changed', userName);
+    this.pubsub.emit(userName, 'account-changed');
   }
   accessesChanged(userName: string) {
     this.dispatch('accesses-changed', userName);
+    this.pubsub.emit(userName, 'accesses-changed');
   }
   followedSlicesChanged(userName: string) {
     this.dispatch('followed-slices-changed', userName);
+    this.pubsub.emit(userName, 'followed-slices-changed');
   }
   streamsChanged(userName: string) {
     this.dispatch('streams-changed', userName);
+    this.pubsub.emit(userName, 'streams-changed');
   }
   eventsChanged(userName: string) {
     this.dispatch('events-changed', userName);
+    this.pubsub.emit(userName, 'events-changed');
   }
   
   // Send the given `msg` to both internal and external listeners. This is an 

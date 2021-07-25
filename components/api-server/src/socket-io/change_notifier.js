@@ -21,8 +21,9 @@ class ChangeNotifier {
   // Constructs a change notifier; messages flow from `source` (Notifications 
   // bus) to the `sink`. 
   // 
-  constructor(sink: MessageSink) {
+  constructor(sink: MessageSink, name) {
     this.sink = sink; 
+    this.name = name;
   }
   
   // Listens to messages that are of interest to us and forward them to 
@@ -44,6 +45,7 @@ class ChangeNotifier {
   // Extracts information from the user object and #delivers the message. 
   // 
   extractAndDeliver(message: string, username: string) {
+    console.log('extractAndDeliver [' + this.name + '] ', message, username);
     const sink = this.sink; 
     sink.deliver(username, message);
   }

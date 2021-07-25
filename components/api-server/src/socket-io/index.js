@@ -99,17 +99,17 @@ function setupSocketIO(
     const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
       (userName: string): string => { return `${userName}.sok1`; }
     );
-    const changeNotifier = new ChangeNotifier(natsPublisher);
+    const changeNotifier = new ChangeNotifier(natsPublisher, 'Socket');
     changeNotifier.listenTo(notifications);
 
     // Webhooks nats publisher - could be moved if there is a more convenient place.
     const whNatsPublisher = new NatsPublisher(NATS_CONNECTION_URI,
       (userName: string): string => { return `${userName}.wh1`; }
     );
-    const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher);
+    const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher,'Webhooks');
     webhooksChangeNotifier.listenTo(notifications);
   } else {
-    const changeNotifier = new ChangeNotifier(manager);
+    const changeNotifier = new ChangeNotifier(manager, 'OpenSource');
     changeNotifier.listenTo(notifications);
   }
 
