@@ -9,10 +9,8 @@
 const bluebird = require('bluebird');
 const _ = require('lodash');
 
+const { pubsub } = require('messages');
 const { NatsSubscriber } = require('messages');
-const WEBHOOKS_CREATE_CHANNEL: string = require('messages').NATS_WEBHOOKS_CREATE;
-const WEBHOOKS_ACTIVATE_CHANNEL: string = require('messages').NATS_WEBHOOKS_ACTIVATE;
-const WEBHOOKS_DELETE_CHANNEL: string = require('messages').NATS_WEBHOOKS_DELETE;
 
 
 import type { MessageSink } from 'messages';
@@ -30,15 +28,12 @@ type UsernameWebhook = {
   webhook: Webhook,
 };
 
-class WebhooksService implements MessageSink {
+class WebhooksService {
 
-  createListener: NatsSubscriber;
-  deleteListener: NatsSubscriber;
   webhooks: Map<string, Array<Webhook>>;
 
   repository: WebhooksRepository;
   logger;
-  NATS_CONNECTION_URI: string;
 
   apiVersion: string;
   serial: string;
@@ -50,7 +45,7 @@ class WebhooksService implements MessageSink {
     this.logger = params.logger;
     this.repository = new WebhooksRepository(params.storage.webhooks, params.storage.events);
     this.settings = params.settings;
-    
+
     this.NATS_CONNECTION_URI = this.settings.get('nats:uri');
   }
 
@@ -60,9 +55,8 @@ class WebhooksService implements MessageSink {
 
     this.logger.info('Loading service with version ' + this.apiVersion + ' and serial ' + this.serial + '.');
 
-    await this.subscribeToDeleteListener();
-    await this.subscribeToCreateListener();
-    await this.subscribeToActivateListener();
+    await pubsub.init();
+    this.subscribeListeners();
     this.logger.info('Listeners for webhooks creation/deletion up.');
 
     await this.loadWebhooks();
@@ -75,22 +69,12 @@ class WebhooksService implements MessageSink {
 
     await this.initSubscribers();
     this.logger.info(numWebhooks + ' webhook(s) listening to changes from core.');
-
   }
 
-  async subscribeToDeleteListener(): Promise<void> {
-    this.deleteListener = new NatsSubscriber(this.NATS_CONNECTION_URI, this);
-    await this.deleteListener.subscribe(WEBHOOKS_DELETE_CHANNEL);
-  }
-
-  async subscribeToCreateListener(): Promise<void> {
-    this.createListener = new NatsSubscriber(this.NATS_CONNECTION_URI, this);
-    await this.createListener.subscribe(WEBHOOKS_CREATE_CHANNEL);
-  }
-
-  async subscribeToActivateListener(): Promise<void> {
-    this.createListener = new NatsSubscriber(this.NATS_CONNECTION_URI, this);
-    await this.createListener.subscribe(WEBHOOKS_ACTIVATE_CHANNEL);
+  subscribeListeners() {
+    pubsub.on(pubsub.NATS_WEBHOOKS_DELETE, this.onStop.bind(this) );
+    pubsub.on(pubsub.NATS_WEBHOOKS_CREATE, this.onCreate.bind(this));
+    pubsub.on(pubsub.NATS_WEBHOOKS_ACTIVE, this.onActivate.bind(this));
   }
 
   setMeta(): number {
@@ -111,7 +95,6 @@ class WebhooksService implements MessageSink {
     for (const entry of this.webhooks) {
       await bluebird.all(entry[1].map(async (webhook) => {
         await webhook.send(BOOT_MESSAGE);
-
       }));
     }
   }
@@ -125,31 +108,29 @@ class WebhooksService implements MessageSink {
     }
   }
 
-  deliver(channel: string, usernameWebhook: UsernameWebhook): void {
-    switch (channel) {
-      case WEBHOOKS_CREATE_CHANNEL:
-        this.addWebhook(
-          usernameWebhook.username,
-          new Webhook(
-            _.extend({}, usernameWebhook.webhook, {
-              webhooksRepository: this.repository,
-              user: {
-                username: usernameWebhook.username
-              }
-            })
-          )
-        );
-        break;
-      case WEBHOOKS_ACTIVATE_CHANNEL:
-        this.activateWebhook(
-          usernameWebhook.username,
-          usernameWebhook.webhook,
-        );
-        break;
-      case WEBHOOKS_DELETE_CHANNEL:
-        this.stopWebhook(usernameWebhook.username, usernameWebhook.webhook.id);
-        break;
-    }
+  onCreate(usernameWebhook: UsernameWebhook): void {
+    this.addWebhook(
+      usernameWebhook.username,
+      new Webhook(
+        _.extend({}, usernameWebhook.webhook, {
+          webhooksRepository: this.repository,
+          user: {
+            username: usernameWebhook.username
+          }
+        })
+      )
+    );
+  }
+
+  onActivate(usernameWebhook: UsernameWebhook): void {
+    this.activateWebhook(
+      usernameWebhook.username,
+      usernameWebhook.webhook,
+    );
+  }
+
+  onStop(usernameWebhook: UsernameWebhook): void {
+     this.stopWebhook(usernameWebhook.username, usernameWebhook.webhook.id);
   }
 
   async addWebhook(username: string, webhook: Webhook): Promise<void> {
@@ -222,5 +203,4 @@ async function initSubscriberForWebhook(username: string, apiVersion: string, se
   await natsSubscriber.subscribe(username);
   webhook.setNatsSubscriber(natsSubscriber);
 }
-
 module.exports = WebhooksService;
