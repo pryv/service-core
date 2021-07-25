@@ -17,10 +17,23 @@ class PubSub extends EventEmitter {
 
   constructor() {
     super();
+
+    //this.on('removeListener', (eventName, l) => { logger.debug('Removed', eventName, l)});
   }
 
   async init() {
     return await init();
+  }
+
+  /**
+   * Add-on to EventEmmitter that returns a function to be called to 
+   * @returns function
+   */
+  onAndGetRemovable(eventName, listener) {
+    this.on(eventName, listener);
+    return function() {
+      this.off(eventName, listener);
+    }.bind(this);
   }
 
   emit(eventName, payload) {

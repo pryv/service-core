@@ -103,8 +103,11 @@ class WebhooksService {
     for (const entry of this.webhooks) {
       const username: string = entry[0];
       const webhooks: Array<Webhook> = entry[1];
-      const f = initSubscriberForWebhook.bind(this, username, this.apiVersion, this.serial);
-      await bluebird.all(webhooks.map(f));
+      for (const webhook of webhooks) {
+        webhook.startListenting(username);
+      }
+      //const f = initSubscriberForWebhook.bind(this, username, this.apiVersion, this.serial);
+      //await bluebird.all(webhooks.map(f));
     }
   }
 
@@ -140,7 +143,8 @@ class WebhooksService {
       this.webhooks.set(username, userWebhooks);
     }
     userWebhooks.push(webhook);
-    await initSubscriberForWebhook.call(this, username, this.apiVersion, this.serial, webhook);
+    webhook.startListenting(username)
+    //await initSubscriberForWebhook.call(this, username, this.apiVersion, this.serial, webhook);
     this.logger.info(`Loaded webhook ${webhook.id} for ${username}`);
   }
 
