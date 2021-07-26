@@ -14,6 +14,7 @@ var async = require('async'),
     util = require('util');
 
 const { getLogger } = require('@pryv/boiler');
+const { pubsub } = require('messages');
 
 module.exports = InstanceManager;
 
@@ -50,11 +51,20 @@ function InstanceManager(settings) {
         settings.tcpMessaging.port);
   });
 
+  /** 
+  pubsub.init().then(() => {
+    pubsub.once(pubsub.SERVER_READY, (data) => {
+      console.log('XXXXXX pubsub of InstanceManager', pubsub.SERVER_READY, data);
+      //this.emit(pubsub.SERVER_READY);
+      serverReady = true;
+    });
+  });*/
+  
   messagingSocket.on('*', function (message, data) {
     if (message === 'server-ready') {
       serverReady = true;
     }
-    // forward messages to our own listeners
+    console.log('XXXXXX messagingSocket of InstanceManager', message, data);
     this.emit(message, data);
   }.bind(this));
 

@@ -26,6 +26,7 @@ const _ = require('lodash');
 const R = require('ramda');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
+const { pubsub } = require('messages');
 
 describe('accesses (personal)', function () {
 
@@ -46,7 +47,7 @@ describe('accesses (personal)', function () {
 
   // to verify data change notifications
   var accessesNotifCount;
-  server.on('accesses-changed', function () { accessesNotifCount++; });
+  let accessNotifRemover;
 
   function buildApiEndpoint(username, token) {
     return ApiEndpoint.build(username, token);
@@ -54,9 +55,13 @@ describe('accesses (personal)', function () {
 
   before(async function() {
     await getConfig(); // needed for ApiEndpoint.build();
+    await pubsub.init();
   });
 
   before(function (done) {
+    accessNotifRemover = pubsub.onAndGetRemovable(user.username, (event) => { 
+      if (event == pubsub.USERNAME_BASED_ACCESSES_CHANGED) accessesNotifCount++;
+    });
     async.series([
       testData.resetUsers,
       testData.resetStreams,
@@ -73,6 +78,10 @@ describe('accesses (personal)', function () {
         });
       }
     ], done);
+  });
+
+  after(() => {
+    accessNotifRemover();
   });
 
   describe('GET /', function () {
@@ -142,10 +151,12 @@ describe('accesses (personal)', function () {
               schema: methodsSchema.create.result
             });
             createdAccess = res.body.access;
-            should(
-              accessesNotifCount
-            ).be.eql(1, 'accesses notifications');
-            stepDone();
+            setTimeout(() => {
+              should(
+                accessesNotifCount
+              ).be.eql(1, 'accesses notifications');
+              stepDone();
+            }, 50)
           });
         },
         function verifyData(stepDone) {
@@ -238,9 +249,10 @@ describe('accesses (personal)', function () {
               delete expected.modifiedBy;
 
               validation.checkObjectEquality(res.body.access, expected);
-
-              should(accessesNotifCount).be.eql(1, 'accesses notifications');
-              stepDone();
+              setTimeout(() => {
+                should(accessesNotifCount).be.eql(1, 'accesses notifications');
+                stepDone();
+              }, 50);
             });
           },
           function verifyNewStream (stepDone) {
@@ -283,7 +295,10 @@ describe('accesses (personal)', function () {
           validation.check(res, {
             status: 201,
             schema: methodsSchema.create.result
-          }, done);
+          }, function() {
+            // sleep 50ms .. as this call creates a new accessNotifEvent that impacts 4Y3Y counter
+            setTimeout(done, 50);
+          });
         });
       });
 
@@ -313,9 +328,10 @@ describe('accesses (personal)', function () {
         expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
         delete expected.permissions[0].defaultName;
         validation.checkObjectEquality(res.body.access, expected);
-
-        should(accessesNotifCount).be.eql(1, 'accesses notifications');
-        done();
+        setTimeout(() => {
+          should(accessesNotifCount).be.eql(1, 'accesses notifications');
+          done();
+        }, 50);
       });
     });
 
@@ -543,8 +559,10 @@ describe('accesses (personal)', function () {
               schema: methodsSchema.del.result,
               body: {accessDeletion: {id: deletedAccess.id}}
             });
-            should(accessesNotifCount).be.eql(1, 'accesses notifications');
-            stepDone();
+            setTimeout(() => {
+              should(accessesNotifCount).be.eql(1, 'accesses notifications');
+              stepDone();
+            }, 50);
           });
         },
         function verifyData(stepDone) {
@@ -571,8 +589,10 @@ describe('accesses (personal)', function () {
           status: 200,
           schema: methodsSchema.del.result
         });
-        should(accessesNotifCount).be.eql(1, 'accesses notifications');
-        done();
+        setTimeout(() => {
+          should(accessesNotifCount).be.eql(1, 'accesses notifications');
+          done();
+        }, 50);
       });
     });
   

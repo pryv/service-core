@@ -14,7 +14,7 @@ const EventEmitter = require('events');
 // 
 class Notifications extends EventEmitter {
   axonSocket: EventEmitter; 
-  pubsub: {};
+  pubsub: EventEmitter;
   
   // Construct a notifications instance. Normally called by the application 
   // start; one per process. 
@@ -30,16 +30,17 @@ class Notifications extends EventEmitter {
   }
   
   serverReady() {
-    this.dispatch('server-ready');
-    this.pubsub.emit('server-ready');
+    console.log('notifcation >> serverReady');
+    this.dispatch(this.pubsub.SERVER_READY);
+    this.pubsub.emit(this.pubsub.SERVER_READY);
   }
   accountChanged(userName: string) {
     this.dispatch('account-changed', userName);
     this.pubsub.emit(userName, 'account-changed');
   }
   accessesChanged(userName: string) {
-    this.dispatch('accesses-changed', userName);
-    this.pubsub.emit(userName, 'accesses-changed');
+    console.log('notifcation >> accessesChanged', userName);
+    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_ACCESSES_CHANGED);
   }
   followedSlicesChanged(userName: string) {
     this.dispatch('followed-slices-changed', userName);

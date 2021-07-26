@@ -41,7 +41,11 @@ class PubSub extends EventEmitter {
   }
 
   emit(eventName, payload) {
-    deliverToNats(eventName, payload);
+    if (eventName == null) { 
+      console.log('XXXXXX Null eventName for message');
+      throw new Error('Null eventName for message', payload);
+    }
+    //deliverToNats(eventName, payload);
     deliverToNats('pubsub', {eventName: eventName, payload: payload});
     super.emit(eventName, payload); // forward to internal listener
     logger.debug('emit', payload);
@@ -94,7 +98,7 @@ async function deliverToNats(eventName, message) {
 
 async function deliverFromNats(pubsubKey, content) {
   if (pubsubKey !== 'pubsub' || content.eventName == null) {
-    console.log('Recieved wrong message ', pubsub, content);
+    console.log('Received wrong message ', pubsub, content);
     return;
   }
   if (pubsub == null) { 

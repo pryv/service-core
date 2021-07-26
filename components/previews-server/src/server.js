@@ -31,6 +31,7 @@ const middleware = require('middleware');
 const storage = require('storage');
 const utils = require('utils');
 const { axonMessaging } = require('messages');
+const { pubsub } = require('messages');
 
 const ExtensionLoader = utils.extension.ExtensionLoader;
 
@@ -112,7 +113,8 @@ async function start() {
         // all right
         logger.debug(infostr)
         logger.info('Server ready');
-        pubSocket.emit('server-ready');
+        pubSocket.emit(pubsub.SERVER_READY);
+        //pubsub.emit(pubsub.SERVER_READY);
       });
     });
   });

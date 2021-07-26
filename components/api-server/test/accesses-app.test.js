@@ -17,6 +17,7 @@ const _ = require('lodash');
 const should = require('should');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
+const { pubsub } = require('messages');
 
 import type Request  from './helpers';
 
@@ -25,6 +26,7 @@ describe('accesses (app)', function () {
   let helpers, server, validation, storage, testData;
   let additionalTestAccesses, user, access, basePath, accessesNotifCount;
   let request: ?Request = null; // must be set after server instance started
+  let accessNotifRemover;
 
   function buildApiEndpoint(username, token) {
     return ApiEndpoint.build(username, token);
@@ -32,6 +34,7 @@ describe('accesses (app)', function () {
 
   before(async function() {
     await getConfig(); // needed for ApiEndpoint.build();
+    await pubsub.init();
   });
 
 
@@ -152,8 +155,13 @@ describe('accesses (app)', function () {
     access = additionalTestAccesses[0];
     basePath = '/' + user.username + '/accesses';
     
-    // to verify data change notifications
-    server.on('accesses-changed', function () { accessesNotifCount++; });
+    accessNotifRemover = pubsub.onAndGetRemovable(user.username, (event) => { 
+      if (event == pubsub.USERNAME_BASED_ACCESSES_CHANGED) accessesNotifCount++;
+    });
+  });
+
+  after(() => {
+    accessNotifRemover();
   });
 
   function path(id) {
@@ -231,9 +239,10 @@ describe('accesses (app)', function () {
         delete expected.permissions[0].defaultName;
         delete expected.permissions[0].name;
         validation.checkObjectEquality(res.body.access, expected);
-
-        should(accessesNotifCount).be.eql(1, 'accesses notifications');
-        done();
+        setTimeout(() => {
+         should(accessesNotifCount).be.eql(1, 'accesses notifications');
+          done();
+        }, 50);
       });
     });
 
@@ -334,8 +343,10 @@ describe('accesses (app)', function () {
               schema: methodsSchema.del.result,
               body: {accessDeletion: {id: deletedAccess.id}}
             });
-            should(accessesNotifCount).be.eql(1, 'accesses notifications');
-            stepDone();
+            setTimeout(() => {
+              should(accessesNotifCount).be.eql(1, 'accesses notifications');
+              stepDone();
+            }, 50);
           });
         },
         function verifyData(stepDone) {
