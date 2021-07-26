@@ -188,7 +188,6 @@ class Server {
   }
   
   setupSocketIO(server: net$Server) { 
-    const notificationBus = this.notificationBus;
     const api = app.api; 
     const storageLayer = app.storageLayer;
     const config = this.config; 
@@ -198,8 +197,9 @@ class Server {
     const socketIOsetup = require('./socket-io');
     socketIOsetup(
       server, getLogger('socketIO'), 
-      notificationBus, api, 
-      storageLayer, customAuthStepFn,
+      api, 
+      storageLayer, 
+      customAuthStepFn,
       isOpenSource);
     this.logger.debug('socket io setup done');
   }

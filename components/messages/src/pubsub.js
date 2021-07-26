@@ -80,6 +80,7 @@ const pubsub = new PubSub();
 Object.assign(pubsub, C);
 
 async function deliverToNats(eventName, message) {
+  if (message == null) message = ''; // nats does not support null messages
   await init();
   if (natsPublisher == null) return;
   natsPublisher.deliver(eventName, message);

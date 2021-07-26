@@ -9,8 +9,8 @@
 const errorHandling = require('errors').errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
-const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 const { USERNAME_REGEXP_STR } = require('../schema/helpers');
+const { pubsub } = require('messages');
 
 (async () => {
   await commonMeta.loadSettings();
@@ -22,7 +22,6 @@ const { initRootSpan, setErrorToTracingSpan } = require('tracing');
 const MethodContext = require('business').MethodContext;
 import type API  from '../API';
 
-import type { MessageSink }  from 'messages';
 import type { StorageLayer } from 'storage';
 
 type SocketIO$SocketId = string; 
@@ -58,7 +57,7 @@ type SocketIO$Server = {
 // Manages contexts for socket-io. NamespaceContext's are created when the first
 // client connects to a namespace and are then kept forever.  
 // 
-class Manager implements MessageSink {
+class Manager {
   contexts: Map<string, NamespaceContext>; 
   
   logger; 
@@ -127,7 +126,6 @@ class Manager implements MessageSink {
   }
   
   async ensureInitNamespace(namespaceName: string): Promise<NamespaceContext> {  
-    
     await initAsyncProps.call(this);
 
     let username = this.extractUsername(namespaceName);
@@ -135,13 +133,11 @@ class Manager implements MessageSink {
     // Value is not missing, return it. 
     if (typeof context === 'undefined') {
 
-      const sink: MessageSink = this;
 
       context = new NamespaceContext(
         username,
         this.io.of(namespaceName), 
         this.api,
-        sink,
         this.logger,
         this.isOpenSource,
         this.apiVersion,
@@ -160,27 +156,6 @@ class Manager implements MessageSink {
       if (this.apiVersion == null) this.apiVersion = await getAPIVersion();
     }
   }
-    
-  // Given a `userName` and a `message`, delivers the `message` as a socket.io
-  // event to all clients currently connected to the namespace '/USERNAME'.
-  // 
-  // Part of the MessageSink implementation.
-  //
-  deliver(username: string, message: string | {}): void {
-    console.log('XXXXXX', username, message);
-    const context = this.contexts.get(username);
-    if (context == null) return; 
-    
-    const namespace = context.socketNs;
-    if (namespace == null) 
-      throw new Error('AF: namespace should not be null');
-    
-    if (typeof message === 'object') {
-      message = JSON.stringify(message);
-    }
-
-    namespace.emit(message);
-  }
 }
 
 class NamespaceContext {
@@ -188,19 +163,17 @@ class NamespaceContext {
   username: string; 
   socketNs: SocketIO$Namespace;
   api: API; 
-  sink: MessageSink;
   logger; 
   apiVersion: string;
   hostname: string;
   
   connections: Map<SocketIO$SocketId, Connection>; 
-  natsSubscriber: ?NatsSubscriber; 
+  pubsubRemover: ?function; 
   
   constructor(
     username: string, 
     socketNs: SocketIO$Namespace, 
     api: API, 
-    sink: MessageSink, 
     logger,
     isOpenSource: Boolean,
     apiVersion: string,
@@ -209,11 +182,10 @@ class NamespaceContext {
     this.username = username; 
     this.socketNs = socketNs; 
     this.api = api; 
-    this.sink = sink; 
     this.logger = logger; 
     this.isOpenSource = isOpenSource;
     this.connections = new Map(); 
-    this.natsSubscriber = null;
+    this.pubsubRemover = null;
     this.apiVersion = apiVersion;
     this.hostname = hostname;
   }
@@ -247,37 +219,26 @@ class NamespaceContext {
   
   async open() {
     // If we've already got an active subscription, leave it be. 
-    if (this.natsSubscriber != null || this.isOpenSource) return; 
-    this.natsSubscriber = await this.produceNatsSubscriber();
+    if (this.pubsubRemover != null) return; 
+    await pubsub.init();
+    this.pubsubRemover = pubsub.onAndGetRemovable(this.username, this.messageFromPubSub.bind(this) );
   }
-  async produceNatsSubscriber(): Promise<NatsSubscriber> {
-    const sink: MessageSink = this.sink; 
-    const userName = this.username;
-    const { NatsSubscriber } = require('messages');
-    const natsSubscriber = new NatsSubscriber(
-      NATS_CONNECTION_URI, 
-      sink,
-      (username: string): string => {
-        return `${username}.sok1`;
-      }
-    );
-          
-    // We'll await this, since the user will want a connection that has
-    // notifications turned on immediately. 
-    await natsSubscriber.subscribe(userName);
-    
-    return natsSubscriber;
+
+  messageFromPubSub(payload) {
+    const message = pubsubMessageToSocket(payload);
+    if (message != null) {
+      this.socketNs.emit(message);
+    } else {
+      console.log('XXXXXXX Unkown payload', payload);
+    }
   }
   
   // Closes down resources associated with this namespace context. 
   // 
   async close() {
-    const natsSubscriber = this.natsSubscriber;
-
-    if (natsSubscriber == null) return; 
-    this.natsSubscriber = null; 
-    
-    await natsSubscriber.close(); 
+    if (this.pubsubRemover == null) return; 
+    this.pubsubRemover();
+    this.pubsubRemover = null;
   }
 
   // ------------------------------------------------------------ event handlers
@@ -428,5 +389,16 @@ class Connection {
     // NOT REACHED
   }
 }
+
+const messageMap = {};
+messageMap[pubsub.EVENTS_CHANGED] = 'eventsChanged';
+messageMap[pubsub.ACCESSES_CHANGED] = 'accessesChanged';
+messageMap[pubsub.STREAMS_CHANGED] = 'streamsChanged';
+
+function pubsubMessageToSocket(payload) {
+  const key = (typeof payload === 'object') ? JSON.stringify(payload) : payload;
+  return messageMap[key];
+}
+
 
 module.exports = Manager; 

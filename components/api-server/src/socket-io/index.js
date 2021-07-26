@@ -17,12 +17,8 @@ const socketIO = require('socket.io')({
 const MethodContext = require('business').MethodContext;
 import type {ContextSource} from 'business';
 
-const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
-
 const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
-
-const ChangeNotifier = require('./change_notifier');
 
 import type { StorageLayer } from 'storage';
 import type { CustomAuthFunction } from 'business';
@@ -33,8 +29,9 @@ import type { SocketIO$Handshake }  from './Manager';
 // Initializes the SocketIO subsystem. 
 //
 function setupSocketIO(
-  server: net$Server, logger, 
-  notifications: EventEmitter, api: API, 
+  server: net$Server, 
+  logger, 
+  api: API, 
   storageLayer: StorageLayer, 
   customAuthStepFn: ?CustomAuthFunction,
   isOpenSource: boolean,
@@ -92,26 +89,6 @@ function setupSocketIO(
 
   // register wildcard to all namespaces
   dynamicNamespace.use(require('socketio-wildcard')());
-
-  // Setup the chain from notifications -> NATS
-  if (! isOpenSource) {
-    const { NatsPublisher } = require('messages');
-    const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
-      (userName: string): string => { return `${userName}.sok1`; }
-    );
-    const changeNotifier = new ChangeNotifier(natsPublisher, 'Socket');
-    changeNotifier.listenTo(notifications);
-
-    // Webhooks nats publisher - could be moved if there is a more convenient place.
-    const whNatsPublisher = new NatsPublisher(NATS_CONNECTION_URI,
-      (userName: string): string => { return `${userName}.wh1`; }
-    );
-    const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher,'Webhooks');
-    webhooksChangeNotifier.listenTo(notifications);
-  } else {
-    const changeNotifier = new ChangeNotifier(manager, 'OpenSource');
-    changeNotifier.listenTo(notifications);
-  }
 
 }
 module.exports = setupSocketIO; 

@@ -12,3 +12,7 @@ module.exports.NATS_WEBHOOKS_DELETE = 'wh.deletes';
 
 module.exports.NATS_UPDATE_EVENT = 'events.update';
 module.exports.NATS_DELETE_EVENT = 'events.delete';
+
+module.exports.EVENTS_CHANGED = 'events-changed';
+module.exports.STREAMS_CHANGED = 'streams-changed';
+module.exports.ACCESSES_CHANGED = 'accesses-changed';
