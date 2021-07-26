@@ -21,6 +21,11 @@ class PubSub extends EventEmitter {
     //this.on('removeListener', (eventName, l) => { logger.debug('Removed', eventName, l)});
   }
 
+  on() {
+    if (! initalized) throw(new Error('Initialize pubsub before registering listeners'));
+    super.on(...arguments);
+  }
+
   async init() {
     return await init();
   }
@@ -51,11 +56,12 @@ class PubSub extends EventEmitter {
 
 // ----- NATS ------//
 
+let initalized = false;
 let initializing = false;
 let natsPublisher = null;
 async function init() {
+  if (initalized) return; 
   while (initializing) { await new Promise(r => setTimeout(r, 50));}
-  if (natsPublisher != null) return;
   initializing = true;
   const config = await getConfig();
   if (! config.get('openSource:isActive')) {
@@ -69,6 +75,7 @@ async function init() {
     await natsSubscriber.subscribe('pubsub');
     loggerNats.debug('Nats Initialized and ready');
   }
+  initalized = true;
   initializing = false;
 }
 

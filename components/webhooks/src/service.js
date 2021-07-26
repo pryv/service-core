@@ -144,7 +144,6 @@ class WebhooksService {
     }
     userWebhooks.push(webhook);
     webhook.startListenting(username)
-    //await initSubscriberForWebhook.call(this, username, this.apiVersion, this.serial, webhook);
     this.logger.info(`Loaded webhook ${webhook.id} for ${username}`);
   }
 

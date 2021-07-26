@@ -19,15 +19,11 @@ import type {ContextSource} from 'business';
 const errors = require('errors').factory;
 const { InfluxRowType } = require('business').types;
 
-const { NatsSubscriber } = require('messages');
-const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('messages').NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('messages').NATS_DELETE_EVENT;
+const { pubsub } = require('messages');
 
 import type { LRUCache }  from 'lru-cache';
 
 import type { TypeRepository, Repository } from 'business';
-import type { MessageSink }  from 'messages';
 
 type UsernameEvent = {
   username: string,
@@ -72,7 +68,7 @@ const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
  * 
  * Caches data about a series first by `accessToken`, then by `eventId`. 
  * */
-class MetadataCache implements MetadataRepository, MessageSink {
+class MetadataCache implements MetadataRepository {
   loader: MetadataRepository;
 
   /**
@@ -86,11 +82,6 @@ class MetadataCache implements MetadataRepository, MessageSink {
 
   config;
 
-  // nats axonMessaging
-  natsUpdateSubscriber: NatsSubscriber;
-  natsDeleteSubscriber: NatsSubscriber;
-  sink: MessageSink;
-  
   constructor(series: Repository, metadataLoader: MetadataRepository, config) {
 
     this.loader = metadataLoader;
@@ -103,24 +94,11 @@ class MetadataCache implements MetadataRepository, MessageSink {
     };
     this.cache = new LRU(options);
 
-    // nats messages
+    // messages
     this.subscribeToNotifications();
   }
 
   // nats messages
-
-  deliver(channel: string, usernameEvent: UsernameEvent): void {
-    switch (channel) {
-      case NATS_DELETE_EVENT:
-        this.dropSeries(usernameEvent);
-      // fall through
-      case NATS_UPDATE_EVENT:
-        this.invalidateEvent(usernameEvent);
-        break;
-      default:
-        break;
-    }
-  }
 
   dropSeries(usernameEvent: UsernameEvent): Promise {
     return this.series.connection.dropMeasurement(
@@ -141,10 +119,9 @@ class MetadataCache implements MetadataRepository, MessageSink {
   }
 
   async subscribeToNotifications() {
-    this.natsUpdateSubscriber = new NatsSubscriber(this.config.get('nats:uri'), this);
-    this.natsDeleteSubscriber = new NatsSubscriber(this.config.get('nats:uri'), this);
-    await this.natsUpdateSubscriber.subscribe(NATS_UPDATE_EVENT);
-    await this.natsDeleteSubscriber.subscribe(NATS_DELETE_EVENT);
+    await pubsub.init();
+    pubsub.on(pubsub.NATS_UPDATE_EVENT, this.invalidateEvent.bind(this) );
+    pubsub.on(pubsub.NATS_DELETE_EVENT, this.dropSeries.bind(this) );   
   }
 
   // cache logic
