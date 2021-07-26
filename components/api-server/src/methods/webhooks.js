@@ -132,7 +132,7 @@ module.exports = function produceWebhooksApiMethods(
   }
 
   async function bootWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
-    pubsub.emit(pubsub.NATS_WEBHOOKS_CREATE, _.extend(
+    pubsub.emit(pubsub.WEBHOOKS_CREATE, _.extend(
       { username: context.user.username }, 
       { webhook: result.webhook })
     );
@@ -187,7 +187,7 @@ module.exports = function produceWebhooksApiMethods(
   }
 
   async function reactivateWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
-    pubsub.emit(pubsub.NATS_WEBHOOKS_ACTIVATE, _.extend(
+    pubsub.emit(pubsub.WEBHOOKS_ACTIVATE, _.extend(
       { username: context.user.username }, 
       { webhook: result.webhook })
     );
@@ -233,7 +233,7 @@ module.exports = function produceWebhooksApiMethods(
   async function turnOffWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
     const username: string = context.user.username;
     const webhookId: string = params.id;
-    pubsub.emit(pubsub.NATS_WEBHOOKS_DELETE, {
+    pubsub.emit(pubsub.WEBHOOKS_DELETE, {
       username: username,
       webhook: {
         id: webhookId,

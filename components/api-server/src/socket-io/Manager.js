@@ -391,9 +391,9 @@ class Connection {
 }
 
 const messageMap = {};
-messageMap[pubsub.EVENTS_CHANGED] = 'eventsChanged';
-messageMap[pubsub.ACCESSES_CHANGED] = 'accessesChanged';
-messageMap[pubsub.STREAMS_CHANGED] = 'streamsChanged';
+messageMap[pubsub.USERNAME_BASED_EVENTS_CHANGED] = 'eventsChanged';
+messageMap[pubsub.USERNAME_BASED_ACCESSES_CHANGED] = 'accessesChanged';
+messageMap[pubsub.USERNAME_BASED_STREAMS_CHANGED] = 'streamsChanged';
 
 function pubsubMessageToSocket(payload) {
   const key = (typeof payload === 'object') ? JSON.stringify(payload) : payload;

@@ -17,7 +17,6 @@ class PubSub extends EventEmitter {
 
   constructor() {
     super();
-
     //this.on('removeListener', (eventName, l) => { logger.debug('Removed', eventName, l)});
   }
 
@@ -80,7 +79,6 @@ async function init() {
 }
 
 // ----- 
-
 
 const pubsub = new PubSub();
 

@@ -6,13 +6,14 @@
  */
 module.exports.NATS_CONNECTION_URI = 'nats://127.0.0.1:4222';
 
-module.exports.NATS_WEBHOOKS_CREATE = 'wh.creates';
-module.exports.NATS_WEBHOOKS_ACTIVATE = 'wh.activates';
-module.exports.NATS_WEBHOOKS_DELETE = 'wh.deletes';
+module.exports.WEBHOOKS_CREATE = 'wh.creates'; // {username, webhook}
+module.exports.WEBHOOKS_ACTIVATE = 'wh.activates'; // {username, webhook}
+module.exports.WEBHOOKS_DELETE = 'wh.deletes'; // {username, webhook}
 
-module.exports.NATS_UPDATE_EVENT = 'events.update';
-module.exports.NATS_DELETE_EVENT = 'events.delete';
+module.exports.UPDATE_EVENTID_USERNAME = 'events.update'; // {username, event: { id }}
+module.exports.DELETE_EVENTID_USERNAME = 'events.delete'; // {username, event: { id }}
 
-module.exports.EVENTS_CHANGED = 'events-changed';
-module.exports.STREAMS_CHANGED = 'streams-changed';
-module.exports.ACCESSES_CHANGED = 'accesses-changed';
+// usernamed-based events
+module.exports.USERNAME_BASED_EVENTS_CHANGED = 'events-changed'; 
+module.exports.USERNAME_BASED_STREAMS_CHANGED = 'streams-changed';
+module.exports.USERNAME_BASED_ACCESSES_CHANGED = 'accesses-changed';

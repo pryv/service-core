@@ -10,7 +10,6 @@ const bluebird = require('bluebird');
 const _ = require('lodash');
 
 const { pubsub } = require('messages');
-const { NatsSubscriber } = require('messages');
 
 
 import type { MessageSink } from 'messages';
@@ -72,8 +71,8 @@ class WebhooksService {
   }
 
   subscribeListeners() {
-    pubsub.on(pubsub.NATS_WEBHOOKS_DELETE, this.onStop.bind(this) );
-    pubsub.on(pubsub.NATS_WEBHOOKS_CREATE, this.onCreate.bind(this));
+    pubsub.on(pubsub.WEBHOOKS_DELETE, this.onStop.bind(this) );
+    pubsub.on(pubsub.WEBHOOKS_CREATE, this.onCreate.bind(this));
     pubsub.on(pubsub.NATS_WEBHOOKS_ACTIVE, this.onActivate.bind(this));
   }
 
@@ -106,8 +105,6 @@ class WebhooksService {
       for (const webhook of webhooks) {
         webhook.startListenting(username);
       }
-      //const f = initSubscriberForWebhook.bind(this, username, this.apiVersion, this.serial);
-      //await bluebird.all(webhooks.map(f));
     }
   }
 
@@ -196,14 +193,5 @@ class WebhooksService {
     this.webhooks = await this.repository.getAll();
   }
 
-}
-
-async function initSubscriberForWebhook(username: string, apiVersion: string, serial: string, webhook: Webhook): Promise<void> {
-  const natsSubscriber = new NatsSubscriber(this.NATS_CONNECTION_URI, webhook,
-    function channelForUser(username: string): string {
-      return `${username}.wh1`;
-    });
-  await natsSubscriber.subscribe(username);
-  webhook.setNatsSubscriber(natsSubscriber);
 }
 module.exports = WebhooksService;

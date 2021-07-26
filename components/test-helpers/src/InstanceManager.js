@@ -50,9 +50,6 @@ function InstanceManager(settings) {
         settings.tcpMessaging.port);
   });
 
-  const NATS = require('nats');
-  let nc = NATS.connect({ url: "nats://localhost:4222"});
-
   messagingSocket.on('*', function (message, data) {
     if (message === 'server-ready') {
       serverReady = true;
