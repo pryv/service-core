@@ -5,14 +5,11 @@
  * Proprietary and confidential
  */
 // @flow
-
-const EventEmitter = require('events');
-
 // Notifications class distributes notifications inside the current process and
 // via NATS server to the other api-server processes. Notifications are also
 // sent to the axon PUB socket; this is mostly used by the tests. 
 // 
-class Notifications extends EventEmitter {
+class Notifications {
   axonSocket: EventEmitter; 
   pubsub: {};
   
@@ -20,7 +17,6 @@ class Notifications extends EventEmitter {
   // start; one per process. 
   // 
   constructor(axonSocket: EventEmitter) {
-    super();
     
     if (axonSocket == null)
       throw new Error('AF: axonSocket cannot be null');
@@ -30,41 +26,41 @@ class Notifications extends EventEmitter {
   }
   
   serverReady() {
-    this.dispatch('server-ready');
-    this.pubsub.emit('server-ready');
+    this.axonPublish('axon-server-ready');
+    this.pubsub.emit(this.pubsub.SERVER_READY);
   }
   accountChanged(userName: string) {
-    this.dispatch('account-changed', userName);
-    this.pubsub.emit(userName, 'account-changed');
+    this.axonPublish('axon-account-changed', userName);
+    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
   }
   accessesChanged(userName: string) {
-    this.dispatch('accesses-changed', userName);
-    this.pubsub.emit(userName, 'accesses-changed');
+    this.axonPublish('axon-accesses-changed', userName);
+    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_ACCESSES_CHANGED);
   }
   followedSlicesChanged(userName: string) {
-    this.dispatch('followed-slices-changed', userName);
-    this.pubsub.emit(userName, 'followed-slices-changed');
+    this.axonPublish('axon-followed-slices-changed', userName);
+    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
   }
   streamsChanged(userName: string) {
-    this.dispatch('streams-changed', userName);
-    this.pubsub.emit(userName, 'streams-changed');
+    this.axonPublish('axon-streams-changed', userName);
+    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_STREAMS_CHANGED);
   }
   eventsChanged(userName: string) {
-    this.dispatch('events-changed', userName);
-    this.pubsub.emit(userName, 'events-changed');
+    this.axonPublish('axon-events-changed', userName);
+    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_EVENTS_CHANGED);
   }
   
   // Send the given `msg` to both internal and external listeners. This is an 
   // internal API, you probably want to use one of the other methods here. 
   //
-  dispatch(msg: string, ...msgParts: Array<mixed>) {
-    // Send the message to all listeners in-process
-    this.emit(msg, ...msgParts);
-    
-    // And to all listeners on the axon PUB socket
+  axonPublish(msg: string, ...msgParts: Array<mixed>) {
     this.axonSocket.emit(msg, ...msgParts);
   }
 }
+
+
+
+
 
 module.exports = Notifications;
 

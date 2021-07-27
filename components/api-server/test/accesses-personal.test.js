@@ -46,7 +46,7 @@ describe('accesses (personal)', function () {
 
   // to verify data change notifications
   var accessesNotifCount;
-  server.on('accesses-changed', function () { accessesNotifCount++; });
+  server.on('axon-accesses-changed', function () { accessesNotifCount++; });
 
   function buildApiEndpoint(username, token) {
     return ApiEndpoint.build(username, token);

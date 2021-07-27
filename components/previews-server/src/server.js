@@ -112,7 +112,7 @@ async function start() {
         // all right
         logger.debug(infostr)
         logger.info('Server ready');
-        pubSocket.emit('server-ready');
+        pubSocket.emit('axon-server-ready');
       });
     });
   });

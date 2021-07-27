@@ -13,6 +13,8 @@ const assert = require('chai').assert;
 
 const { Notifications } = require('messages');
 
+const { pubsub } = require('messages');
+
 describe('Notifications', () => {
   let axonMsgs = []; 
   let emittedMsgs = []; 
@@ -31,16 +33,18 @@ describe('Notifications', () => {
   // Class under test
   const notifications = new Notifications(axonSocket); 
   
-  // intercept internal events
-  const eventNames = [
-    'server-ready', 'account-changed', 'accesses-changed', 'followed-slices-changed', 
-    'streams-changed', 'events-changed',
-  ];
-  for (const name of eventNames) {
-    notifications.on(name, (...args) => {
-      emittedMsgs.push([name].concat(args));
+  before(async () => {
+    await pubsub.init();
+     // intercept internal events
+    pubsub.on(pubsub.SERVER_READY, (message) => {
+      emittedMsgs.push(pubsub.SERVER_READY);
     });
-  }
+
+    pubsub.on('USERNAME', (message) => {
+      emittedMsgs.push(message);
+    });
+  });
+ 
   
   describe('#serverReady', () => {
     beforeEach(() => {
@@ -48,10 +52,10 @@ describe('Notifications', () => {
     });
 
     it('[B76G] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, ['server-ready']);
+      assert.deepInclude(emittedMsgs, pubsub.SERVER_READY);
     });
     it('[SRAU] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, ['server-ready']);
+      assert.deepInclude(axonMsgs, ['axon-server-ready']);
     });
   });
   describe('#accountChanged', () => {
@@ -60,10 +64,10 @@ describe('Notifications', () => {
     });
 
     it('[P6ZD] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, [ 'account-changed', 'USERNAME' ]);
+      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     });
     it('[Q96S] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, [ 'account-changed', 'USERNAME' ]);
+      assert.deepInclude(axonMsgs, [ 'axon-account-changed', 'USERNAME' ]);
     });
   });
   describe('#accessesChanged', () => {
@@ -72,10 +76,10 @@ describe('Notifications', () => {
     });
 
     it('[P5CG] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, [ 'accesses-changed', 'USERNAME' ]);
+      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     });
     it('[VSN6] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, [ 'accesses-changed', 'USERNAME' ]);
+      assert.deepInclude(axonMsgs, [ 'axon-accesses-changed', 'USERNAME' ]);
     });
   });
   describe('#followedSlicesChanged', () => {
@@ -84,10 +88,10 @@ describe('Notifications', () => {
     });
 
     it('[VU4A] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, [ 'followed-slices-changed', 'USERNAME' ]);
+      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
     });
     it('[UD2B] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, [ 'followed-slices-changed', 'USERNAME' ]);
+      assert.deepInclude(axonMsgs, [ 'axon-followed-slices-changed', 'USERNAME' ]);
     });
   });
   describe('#streamsChanged', () => {
@@ -96,10 +100,10 @@ describe('Notifications', () => {
     });
 
     it('[LDUQ] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, [ 'streams-changed', 'USERNAME' ]);
+      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_STREAMS_CHANGED);
     });
     it('[BUR1] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, [ 'streams-changed', 'USERNAME' ]);
+      assert.deepInclude(axonMsgs, [ 'axon-streams-changed', 'USERNAME' ]);
     });
   });
   describe('#eventsChanged', () => {
@@ -108,10 +112,10 @@ describe('Notifications', () => {
     });
 
     it('[N8RI] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, [ 'events-changed', 'USERNAME' ]);
+      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     });
     it('[TRMW] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, [ 'events-changed', 'USERNAME' ]);
+      assert.deepInclude(axonMsgs, [ 'axon-events-changed', 'USERNAME' ]);
     });
   });
 });

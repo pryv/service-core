@@ -400,7 +400,7 @@ describe('root', function() {
     before(function () {
       eventsNotifCount = 0;
       
-      server.on('events-changed', function () {
+      server.on('axon-events-changed', function () {
         eventsNotifCount++;
       });
     });

@@ -51,7 +51,7 @@ function InstanceManager(settings) {
   });
 
   messagingSocket.on('*', function (message, data) {
-    if (message === 'server-ready') {
+    if (message === 'axon-server-ready') {
       serverReady = true;
     }
     // forward messages to our own listeners

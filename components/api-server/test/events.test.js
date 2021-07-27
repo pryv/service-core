@@ -47,7 +47,7 @@ describe('events', function () {
 
   // to verify data change notifications
   var eventsNotifCount;
-  server.on('events-changed', function () { eventsNotifCount++; });
+  server.on('axon-events-changed', function () { eventsNotifCount++; });
 
   before(function (done) {
     async.series([

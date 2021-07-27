@@ -38,7 +38,7 @@ describe('account', function () {
 
   // to verify data change notifications
   var accountNotifCount;
-  server.on('account-changed', function () { accountNotifCount++; });
+  server.on('axon-account-changed', function () { accountNotifCount++; });
 
   before(function (done) {
     async.series([
