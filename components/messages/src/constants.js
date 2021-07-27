@@ -13,8 +13,8 @@ module.exports.WEBHOOKS_CREATE = 'wh.creates'; // {username, webhook}
 module.exports.WEBHOOKS_ACTIVATE = 'wh.activates'; // {username, webhook}
 module.exports.WEBHOOKS_DELETE = 'wh.deletes'; // {username, webhook}
 
-module.exports.UPDATE_EVENTID_USERNAME = 'events.update'; // {username, event: { id }}
-module.exports.DELETE_EVENTID_USERNAME = 'events.delete'; // {username, event: { id }}
+module.exports.SERIES_UPDATE_EVENTID_USERNAME = 'events.update'; // {username, event: { id }}
+module.exports.SERIES_DELETE_EVENTID_USERNAME = 'events.delete'; // {username, event: { id }}
 
 // usernamed-based events
 module.exports.USERNAME_BASED_EVENTS_CHANGED = 'events-changed'; 

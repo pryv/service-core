@@ -890,7 +890,7 @@ module.exports = async function (
       const isDelete: boolean = result.eventDeletion ? true : false;
       // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId: string = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
-      const subject: string = isDelete ? pubsub.DELETE_EVENTID_USERNAME : pubsub.UPDATE_EVENTID_USERNAME;
+      const subject: string = isDelete ? pubsub.SERIES_DELETE_EVENTID_USERNAME : pubsub.SERIES_UPDATE_EVENTID_USERNAME;
       const payload = { username: context.user.username, event: updatedEventId }
       pubsub.emit(subject, payload)
     }

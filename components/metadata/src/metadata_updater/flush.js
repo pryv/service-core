@@ -72,6 +72,7 @@ class Flush implements Operation {
       modified: request.timestamp,
      
     };
+    // ADD AUDIT HERE ??
 
     await bluebird.fromCallback(
             cb => db.events.updateOne(user, query, updatedData, cb));
