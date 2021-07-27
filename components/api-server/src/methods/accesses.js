@@ -57,7 +57,7 @@ type UpdatesSettingsHolder = {
 
 module.exports = async function produceAccessesApiMethods(
   api: API, 
-  notifications: Notifications, 
+  notifyTests: Notifications, 
   updatesSettings: UpdatesSettingsHolder, 
   storageLayer: StorageLayer) 
 {
@@ -364,7 +364,7 @@ module.exports = async function produceAccessesApiMethods(
 
       result.access = newAccess;
       result.access.apiEndpoint = ApiEndpoint.build(context.user.username, result.access.token);
-      notifications.accessesChanged(context.user.username);
+      notifyTests.accessesChanged(context.user.username);
       next();
     });
   }
@@ -480,7 +480,7 @@ module.exports = async function produceAccessesApiMethods(
       return next(errors.unexpectedError(err));
     }
     result.accessDeletion = {id: params.id};
-    notifications.accessesChanged(context.user.username);
+    notifyTests.accessesChanged(context.user.username);
     next();
   }
 

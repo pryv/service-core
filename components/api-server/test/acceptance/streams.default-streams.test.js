@@ -54,15 +54,15 @@ describe("System streams", function () {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifications = new Notifications(axonSocket);
+    const notifyTests = new Notifications(axonSocket);
     
-    notifications.serverReady();
+    notifyTests.serverReady();
     require("api-server/src/methods/streams")(
       app.api,
       app.storageLayer.streams,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
-      notifications,
+      notifyTests,
       app.logging,
       app.config.get('versioning'),
       app.config.get('updates'));

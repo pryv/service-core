@@ -49,19 +49,19 @@ describe('[BMM2] registration: DNS-less', () => {
     );
 
     // get events for a small test of valid token
-    // Initialize notifications dependency
+    // Initialize notifyTests dependency
     let axonMsgs = [];
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifications = new Notifications(axonSocket);
+    const notifyTests = new Notifications(axonSocket);
     await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
       app.config.get('auth'),
       app.config.get('service:eventTypes'),
-      notifications,
+      notifyTests,
       app.logging,
       app.config.get('versioning'),
       app.config.get('updates'),

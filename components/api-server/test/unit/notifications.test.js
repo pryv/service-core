@@ -31,7 +31,7 @@ describe('Notifications', () => {
   };
   
   // Class under test
-  const notifications = new Notifications(axonSocket); 
+  const notifyTests = new Notifications(axonSocket); 
   
   before(async () => {
     await pubsub.init();
@@ -48,7 +48,7 @@ describe('Notifications', () => {
   
   describe('#serverReady', () => {
     beforeEach(() => {
-      notifications.serverReady();
+      notifyTests.serverReady();
     });
 
     it('[B76G] notifies internal listeners', () => {
@@ -60,7 +60,7 @@ describe('Notifications', () => {
   });
   describe('#accountChanged', () => {
     beforeEach(() => {
-      notifications.accountChanged('USERNAME');
+      notifyTests.accountChanged('USERNAME');
     });
 
     it('[P6ZD] notifies internal listeners', () => {
@@ -72,7 +72,7 @@ describe('Notifications', () => {
   });
   describe('#accessesChanged', () => {
     beforeEach(() => {
-      notifications.accessesChanged('USERNAME');
+      notifyTests.accessesChanged('USERNAME');
     });
 
     it('[P5CG] notifies internal listeners', () => {
@@ -84,7 +84,7 @@ describe('Notifications', () => {
   });
   describe('#followedSlicesChanged', () => {
     beforeEach(() => {
-      notifications.followedSlicesChanged('USERNAME');
+      notifyTests.followedSlicesChanged('USERNAME');
     });
 
     it('[VU4A] notifies internal listeners', () => {
@@ -96,7 +96,7 @@ describe('Notifications', () => {
   });
   describe('#streamsChanged', () => {
     beforeEach(() => {
-      notifications.streamsChanged('USERNAME');
+      notifyTests.streamsChanged('USERNAME');
     });
 
     it('[LDUQ] notifies internal listeners', () => {
@@ -108,7 +108,7 @@ describe('Notifications', () => {
   });
   describe('#eventsChanged', () => {
     beforeEach(() => {
-      notifications.eventsChanged('USERNAME');
+      notifyTests.eventsChanged('USERNAME');
     });
 
     it('[N8RI] notifies internal listeners', () => {

@@ -106,15 +106,15 @@ describe('Account with system streams', function () {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifications = new Notifications(axonSocket);
-    notifications.serverReady();
+    const notifyTests = new Notifications(axonSocket);
+    notifyTests.serverReady();
     require("api-server/src/methods/account")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.passwordResetRequests,
       app.config.get('auth'),
       app.config.get('services'),
-      notifications,
+      notifyTests,
       app.logging);
     await require("api-server/src/methods/events")(
       app.api,
@@ -122,7 +122,7 @@ describe('Account with system streams', function () {
       app.storageLayer.eventFiles,
       app.config.get('auth'),
       app.config.get('service:eventTypes'),
-      notifications,
+      notifyTests,
       app.logging,
       app.config.get('versioning'),
       app.config.get('updates'),

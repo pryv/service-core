@@ -25,10 +25,10 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
  * @param passwordResetRequestsStorage
  * @param authSettings
  * @param servicesSettings Must contain `email` and `register`
- * @param notifications
+ * @param notifyTests
  */
 module.exports = async function (api, userEventsStorage, passwordResetRequestsStorage,
-  authSettings, servicesSettings, notifications, logging) {
+  authSettings, servicesSettings, notifyTests, logging) {
 
   var emailSettings = servicesSettings.email,
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
@@ -251,7 +251,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
         params.update,
         accessId,
       );
-      notifications.accountChanged(context.user.username);
+      notifyTests.accountChanged(context.user.username);
     } catch (err) {
       return next(err);
     }

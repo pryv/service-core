@@ -61,8 +61,8 @@ async function initCore() {
   const axonSocket = {
     emit: (...args) => axonMsgs.push(args),
   };
-  const notifications = new Notifications(axonSocket);
-  notifications.serverReady();
+  const notifyTests = new Notifications(axonSocket);
+  notifyTests.serverReady();
 
   require('api-server/src/methods/events')(
     app.api,
@@ -70,7 +70,7 @@ async function initCore() {
     app.storageLayer.eventFiles,
     app.config.get('auth'),
     app.config.get('service:eventTypes'),
-    notifications,
+    notifyTests,
     app.logging,
     app.config.get('versioning'),
     app.config.get('updates'),
@@ -81,7 +81,7 @@ async function initCore() {
     app.storageLayer.streams, 
     app.storageLayer.events, 
     app.storageLayer.eventFiles, 
-    notifications, 
+    notifyTests, 
     app.logging, 
     app.config.get('versioning'), 
     app.config.get('updates'));
@@ -97,7 +97,7 @@ async function initCore() {
     config.get('services'));
   require('api-server/src/methods/accesses')(
     app.api, 
-    notifications, 
+    notifyTests, 
     app.getUpdatesSettings(), 
     app.storageLayer);
   global.coreRequest = supertest(app.expressApp);

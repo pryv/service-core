@@ -35,13 +35,13 @@ SystemStreamsSerializer.getSerializer(); // ensure it's loaded
  * @param userStreamsStorage
  * @param userEventsStorage
  * @param userEventFilesStorage
- * @param notifications
+ * @param notifyTests
  * @param logging
  * @param auditSettings
  * @param updatesSettings
  */
 module.exports = async function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
-  notifications, logging, auditSettings, updatesSettings) {
+  notifyTests, logging, auditSettings, updatesSettings) {
 
   const config = await getConfig();
 
@@ -251,7 +251,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       }
 
       result.stream = newStream;
-      notifications.streamsChanged(context.user.username);
+      notifyTests.streamsChanged(context.user.username);
       next();
     });
   }
@@ -347,7 +347,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         }
 
         result.stream = updatedStream;
-        notifications.streamsChanged(context.user.username);
+        notifyTests.streamsChanged(context.user.username);
         next();
       });
   }
@@ -394,7 +394,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         if (err) { return next(errors.unexpectedError(err)); }
 
         result.stream = updatedStream;
-        notifications.streamsChanged(context.user.username);
+        notifyTests.streamsChanged(context.user.username);
         next();
       });
   }
@@ -492,7 +492,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-                  notifications.eventsChanged(context.user.username);
+                  notifyTests.eventsChanged(context.user.username);
                   subStepDone();
                 });
             },
@@ -660,7 +660,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-                  notifications.eventsChanged(context.user.username);
+                  notifyTests.eventsChanged(context.user.username);
                   subStepDone();
                 });
             }
@@ -676,7 +676,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
               return stepDone(errors.unexpectedError(err));
             }
             result.streamDeletion = { id: params.id };
-            notifications.streamsChanged(context.user.username);
+            notifyTests.streamsChanged(context.user.username);
             stepDone();
           });
       }

@@ -66,7 +66,7 @@ const typeRepo = new TypeRepository();
  */
 module.exports = async function (
   api, userEventsStorage, userEventFilesStorage,
-  authSettings, eventTypesUrl, notifications, logging,
+  authSettings, eventTypesUrl, notifyTests, logging,
   auditSettings, updatesSettings, openSourceSettings
 ) {
 
@@ -882,7 +882,7 @@ module.exports = async function (
   }
 
   function notify(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    notifications.eventsChanged(context.user.username);
+    notifyTests.eventsChanged(context.user.username);
 
     // notify is called by create, update and delete
     // depending on the case the event properties will be found in context or event
@@ -1338,7 +1338,7 @@ module.exports = async function (
           storagedUsed,
           'system',
         );
-        notifications.eventsChanged(context.user.username);
+        notifyTests.eventsChanged(context.user.username);
         next();
       } catch (err) {
         next(err);

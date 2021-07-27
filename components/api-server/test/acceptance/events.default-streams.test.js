@@ -101,16 +101,16 @@ describe("Events of system streams", () => {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifications = new Notifications(axonSocket);
+    const notifyTests = new Notifications(axonSocket);
     
-    notifications.serverReady();
+    notifyTests.serverReady();
     await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
       app.config.get('auth'),
       app.config.get('service:eventTypes'),
-      notifications,
+      notifyTests,
       app.logging,
       app.config.get('versioning'),
       app.config.get('updates'),
