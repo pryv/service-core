@@ -18,6 +18,7 @@ const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
 const { getApplication } = require('api-server/src/application');
 const { Notifications } = require('messages');
+const { pubsub } = require('messages');
 const AccessLogic = require('business/src/accesses/AccessLogic');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
@@ -92,7 +93,7 @@ describe("Accesses with account streams", function () {
       emit: (...args) => axonMsgs.push(args),
     };
     const notifyTests = new Notifications(axonSocket);
-    notifyTests.serverReady();
+    pubsub.emit(pubsub.SERVER_READY);
     require("api-server/src/methods/accesses")(
       app.api,
       notifyTests,

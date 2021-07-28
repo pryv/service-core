@@ -10,6 +10,7 @@ var errors = require('errors').factory,
   methodsSchema = require('../schema/accountMethods');
 
 const { getConfig } = require('@pryv/boiler');
+const { pubsub } = require('messages');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
@@ -251,7 +252,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
         params.update,
         accessId,
       );
-      notifyTests.accountChanged(context.user.username);
+      pubsub.emit(context.user.username, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     } catch (err) {
       return next(err);
     }

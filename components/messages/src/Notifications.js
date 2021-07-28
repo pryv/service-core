@@ -23,31 +23,26 @@ class Notifications {
     
     this.axonSocket = axonSocket;
     this.pubsub = require('messages').pubsub;
+    this.pubsub.setTestNotifier(this);
   }
   
   serverReady() {
     this.axonPublish('axon-server-ready');
-    this.pubsub.emit(this.pubsub.SERVER_READY);
   }
   accountChanged(userName: string) {
     this.axonPublish('axon-account-changed', userName);
-    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
   }
   accessesChanged(userName: string) {
     this.axonPublish('axon-accesses-changed', userName);
-    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_ACCESSES_CHANGED);
   }
   followedSlicesChanged(userName: string) {
     this.axonPublish('axon-followed-slices-changed', userName);
-    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
   }
   streamsChanged(userName: string) {
     this.axonPublish('axon-streams-changed', userName);
-    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_STREAMS_CHANGED);
   }
   eventsChanged(userName: string) {
     this.axonPublish('axon-events-changed', userName);
-    this.pubsub.emit(userName, this.pubsub.USERNAME_BASED_EVENTS_CHANGED);
   }
   
   // Send the given `msg` to both internal and external listeners. This is an 

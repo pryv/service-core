@@ -41,8 +41,9 @@ class PubSub extends EventEmitter {
   }
 
   emit(eventName, payload) {
-    deliverToNats(eventName, payload);
+    //deliverToNats(eventName, payload);
     deliverToNats('pubsub', {eventName: eventName, payload: payload});
+    if (this.testNotifier) deliverToTests(this.testNotifier, eventName, payload)
     super.emit(eventName, payload); // forward to internal listener
     logger.debug('emit', payload);
   }
@@ -50,6 +51,10 @@ class PubSub extends EventEmitter {
   _emit(eventName, payload) {
     super.emit(eventName, payload); // forward to internal listener
     logger.debug('_emit', eventName, payload);
+  }
+
+  setTestNotifier(testNotifier) {
+    this.testNotifier = testNotifier;
   }
 }
 
@@ -61,6 +66,7 @@ let natsPublisher = null;
 async function init() {
   if (initalized) return; 
   while (initializing) { await new Promise(r => setTimeout(r, 50));}
+  if (initalized) return; 
   initializing = true;
   const config = await getConfig();
   if (! config.get('openSource:isActive')) {
@@ -101,8 +107,30 @@ async function deliverFromNats(pubsubKey, content) {
     console.log('XXXXXX PubSub not yet initalized'); 
     return; 
   }
-  loggerNats.error('deliverFromNats', pubsubKey, content);
   pubsub._emit(content.eventName, content.payload);
+}
+
+// ----- TEST
+
+function deliverToTests(testNotifier, eventName, payload) {
+  if (payload === C.USERNAME_BASED_EVENTS_CHANGED) {
+    testNotifier.eventsChanged(eventName);
+  }
+  if (payload === C.USERNAME_BASED_STREAMS_CHANGED) {
+    testNotifier.streamsChanged(eventName);
+  }
+  if (payload === C.USERNAME_BASED_FOLLOWEDSLICES_CHANGED) {
+    testNotifier.followedSlicesChanged(eventName);
+  }
+  if (payload == C.USERNAME_BASED_ACCESSES_CHANGED) {
+    testNotifier.accessesChanged(eventName);
+  }
+  if (payload == C.USERNAME_BASED_ACCOUNT_CHANGED) {
+    testNotifier.accountChanged(eventName);
+  }
+  if (eventName == C.SERVER_READY) {
+    testNotifier.serverReady();
+  }
 }
 
 

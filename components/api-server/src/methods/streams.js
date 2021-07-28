@@ -26,6 +26,8 @@ const logger = getLogger('methods:streams');
 const { getStores, StreamsUtils } = require('stores');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 
+const { pubsub } = require('messages');
+
 SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 
 /**
@@ -251,7 +253,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
       }
 
       result.stream = newStream;
-      notifyTests.streamsChanged(context.user.username);
+      pubsub.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
       next();
     });
   }
@@ -347,7 +349,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         }
 
         result.stream = updatedStream;
-        notifyTests.streamsChanged(context.user.username);
+        pubsub.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
         next();
       });
   }
@@ -394,7 +396,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
         if (err) { return next(errors.unexpectedError(err)); }
 
         result.stream = updatedStream;
-        notifyTests.streamsChanged(context.user.username);
+        pubsub.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
         next();
       });
   }
@@ -492,7 +494,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-                  notifyTests.eventsChanged(context.user.username);
+                  pubsub.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
                   subStepDone();
                 });
             },
@@ -660,7 +662,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-                  notifyTests.eventsChanged(context.user.username);
+                  pubsub.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
                   subStepDone();
                 });
             }
@@ -676,7 +678,7 @@ module.exports = async function (api, userStreamsStorage, userEventsStorage, use
               return stepDone(errors.unexpectedError(err));
             }
             result.streamDeletion = { id: params.id };
-            notifyTests.streamsChanged(context.user.username);
+            pubsub.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
             stepDone();
           });
       }

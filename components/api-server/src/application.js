@@ -49,6 +49,7 @@ const { Extension, ExtensionLoader } = require('utils').extension;
 
 const { getAPIVersion } = require('middleware/src/project_version');
 const { tracingMiddleware } = require('tracing');
+const { pubsub } = require('messages');
 
 logger.debug('Loading app');
 
@@ -111,6 +112,8 @@ class Application {
 
     this.api = new API(); 
     this.systemAPI = new API(); 
+
+    await pubsub.init();
     
     this.produceStorageSubsystem(); 
     await this.createExpressApp();

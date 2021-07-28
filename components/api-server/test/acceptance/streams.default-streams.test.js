@@ -14,6 +14,7 @@ const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
 const { Notifications } = require('messages');
+const { pubsub } = require('messages');
 const { databaseFixture } = require('test-helpers');
 const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
@@ -56,7 +57,7 @@ describe("System streams", function () {
     };
     const notifyTests = new Notifications(axonSocket);
     
-    notifyTests.serverReady();
+    pubsub.emit(pubsub.SERVER_READY);
     require("api-server/src/methods/streams")(
       app.api,
       app.storageLayer.streams,

@@ -19,6 +19,7 @@ const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
 const { getApplication } = require('api-server/src/application');
 const { Notifications } = require('messages');
+const { pubsub } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
@@ -97,13 +98,14 @@ describe("Events of system streams", () => {
     await app.initiate();
 
     // Initialize notifications dependency
+
     let axonMsgs = [];
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
     const notifyTests = new Notifications(axonSocket);
     
-    notifyTests.serverReady();
+    pubsub.emit(pubsub.SERVER_READY);
     await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,

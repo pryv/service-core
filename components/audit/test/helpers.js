@@ -21,6 +21,7 @@ const supertest = require('supertest');
 const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
 const { Notifications } = require('messages');
+const { pubsub } = require('messages');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
 const { AuditAccessIds } = require('audit/src/MethodContextUtils');
 
@@ -66,7 +67,7 @@ async function initCore() {
     emit: (...args) => axonMsgs.push(args),
   };
   const notifyTests = new Notifications(axonSocket);
-  notifyTests.serverReady();
+  pubsub.emit(pubsub.SERVER_READY);
 
   require('api-server/src/methods/events')(
     app.api,

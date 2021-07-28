@@ -31,7 +31,7 @@ describe('Notifications', () => {
   };
   
   // Class under test
-  const notifyTests = new Notifications(axonSocket); 
+  let notifyTests = null; 
   
   before(async () => {
     await pubsub.init();
@@ -43,12 +43,15 @@ describe('Notifications', () => {
     pubsub.on('USERNAME', (message) => {
       emittedMsgs.push(message);
     });
+
+    // attach "fake" axonSocket to pubsub.
+    notifyTests = new Notifications(axonSocket); 
   });
  
   
   describe('#serverReady', () => {
     beforeEach(() => {
-      notifyTests.serverReady();
+      pubsub.emit(pubsub.SERVER_READY);
     });
 
     it('[B76G] notifies internal listeners', () => {
@@ -60,7 +63,7 @@ describe('Notifications', () => {
   });
   describe('#accountChanged', () => {
     beforeEach(() => {
-      notifyTests.accountChanged('USERNAME');
+      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     });
 
     it('[P6ZD] notifies internal listeners', () => {
@@ -72,7 +75,7 @@ describe('Notifications', () => {
   });
   describe('#accessesChanged', () => {
     beforeEach(() => {
-      notifyTests.accessesChanged('USERNAME');
+      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     });
 
     it('[P5CG] notifies internal listeners', () => {
@@ -84,7 +87,7 @@ describe('Notifications', () => {
   });
   describe('#followedSlicesChanged', () => {
     beforeEach(() => {
-      notifyTests.followedSlicesChanged('USERNAME');
+      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
     });
 
     it('[VU4A] notifies internal listeners', () => {
@@ -96,7 +99,7 @@ describe('Notifications', () => {
   });
   describe('#streamsChanged', () => {
     beforeEach(() => {
-      notifyTests.streamsChanged('USERNAME');
+      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_STREAMS_CHANGED);
     });
 
     it('[LDUQ] notifies internal listeners', () => {
@@ -108,7 +111,7 @@ describe('Notifications', () => {
   });
   describe('#eventsChanged', () => {
     beforeEach(() => {
-      notifyTests.eventsChanged('USERNAME');
+      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_EVENTS_CHANGED);
     });
 
     it('[N8RI] notifies internal listeners', () => {

@@ -9,6 +9,7 @@ var async = require('async'),
     errors = require('errors').factory,
     methodsSchema = require('../schema/followedSlicesMethods');
 
+const { pubsub } = require('messages');
 /**
  * Followed slices methods implementations.
  * TODO: refactor methods as chains of functions
@@ -44,7 +45,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifyTests){
           return next(getCreationOrUpdateError(err, params));
         }
         result.followedSlice = newSlice;
-        notifyTests.followedSlicesChanged(context.user.username);
+        pubsub.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
         next();
       });
     });
@@ -78,7 +79,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifyTests){
               }
 
               result.followedSlice = updatedSlice;
-              notifyTests.followedSlicesChanged(context.user.username);
+              pubsub.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
               stepDone();
             });
         }
@@ -122,7 +123,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifyTests){
           if (err) { return next(errors.unexpectedError(err)); }
 
           result.followedSliceDeletion = {id: params.id};
-          notifyTests.followedSlicesChanged(context.user.username);
+          pubsub.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
           next();
         });
       });

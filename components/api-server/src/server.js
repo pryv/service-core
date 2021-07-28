@@ -17,6 +17,7 @@ const utils = require('utils');
 const { axonMessaging } = require('messages');
 
 const { Notifications } = require('messages');
+const { pubsub } = require('messages');
 
 const { getUsersRepository } = require('business/src/users');
 
@@ -83,7 +84,7 @@ class Server {
     }
 
     this.logger.info('Server ready. API Version: ' + apiVersion);
-    this.notificationBus.serverReady();
+    pubsub.emit(pubsub.SERVER_READY);
     this.logger.debug('start completed');
   }
 

@@ -29,6 +29,7 @@ const cache = require('cache');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStores } = require('stores');
+const { pubsub } = require('messages');
 
 const { changeStreamIdsInPermissions } = require('./helpers/backwardCompatibility');
 
@@ -364,7 +365,8 @@ module.exports = async function produceAccessesApiMethods(
 
       result.access = newAccess;
       result.access.apiEndpoint = ApiEndpoint.build(context.user.username, result.access.token);
-      notifyTests.accessesChanged(context.user.username);
+      
+      pubsub.emit(context.user.username, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
       next();
     });
   }
@@ -480,7 +482,7 @@ module.exports = async function produceAccessesApiMethods(
       return next(errors.unexpectedError(err));
     }
     result.accessDeletion = {id: params.id};
-    notifyTests.accessesChanged(context.user.username);
+    pubsub.emit(context.user.username, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     next();
   }
 
