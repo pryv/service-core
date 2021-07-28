@@ -58,15 +58,7 @@ describe("System streams", function () {
     const notifyTests = new Notifications(axonSocket);
     
     pubsub.emit(pubsub.SERVER_READY);
-    require("api-server/src/methods/streams")(
-      app.api,
-      app.storageLayer.streams,
-      app.storageLayer.events,
-      app.storageLayer.eventFiles,
-      notifyTests,
-      app.logging,
-      app.config.get('versioning'),
-      app.config.get('updates'));
+    require("api-server/src/methods/streams")(app.api);
   
     request = supertest(app.expressApp);
   });
