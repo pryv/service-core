@@ -100,25 +100,10 @@ class Server {
     const l = (topic) => getLogger(topic);
     const config = this.config;
     
-    await require('./methods/system')(app.systemAPI,
-      app.storageLayer.accesses, 
-      config.get('services'), 
-      app.api, 
-      app.logging, 
-      app.storageLayer);
-    
-    require('./methods/utility')(app.api, app.logging, app.storageLayer);
-
-    await require('./methods/auth/login')(app.api, 
-      app.storageLayer.accesses, 
-      app.storageLayer.sessions, 
-      app.storageLayer.events, 
-      config.get('auth'));
-    
-    await require('./methods/auth/register')(app.api, 
-      app.logging, 
-      app.storageLayer, 
-      config.get('services'));
+    await require('./methods/system')(app.systemAPI, app.api);
+    require('./methods/utility')(app.api);
+    await require('./methods/auth/login')(app.api);
+    await require('./methods/auth/register')(app.api);
 
     require('./methods/auth/delete')(app.api,
       app.logging,
@@ -127,7 +112,6 @@ class Server {
 
     require('./methods/accesses')(
       app.api, 
-      this.notificationBus, 
       app.getUpdatesSettings(), 
       app.storageLayer);
 
@@ -147,14 +131,7 @@ class Server {
       app.storageLayer,
     );
 
-    require('./methods/account')(app.api, 
-      app.storageLayer.events, 
-      app.storageLayer.passwordResetRequests, 
-      config.get('auth'), 
-      config.get('services'), 
-      this.notificationBus,
-      app.logging
-    );
+    require('./methods/account')(app.api);
 
     require('./methods/followedSlices')(app.api, app.storageLayer.followedSlices, this.notificationBus);
 

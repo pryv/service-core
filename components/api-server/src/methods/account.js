@@ -11,6 +11,7 @@ var errors = require('errors').factory,
 
 const { getConfig } = require('@pryv/boiler');
 const { pubsub } = require('messages');
+const { getStorageLayer } = require('storage');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
@@ -26,10 +27,14 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
  * @param passwordResetRequestsStorage
  * @param authSettings
  * @param servicesSettings Must contain `email` and `register`
- * @param notifyTests
  */
-module.exports = async function (api, userEventsStorage, passwordResetRequestsStorage,
-  authSettings, servicesSettings, notifyTests, logging) {
+module.exports = async function (api) {
+  const config = await getConfig();
+  const authSettings = config.get('auth');
+  const servicesSettings = config.get('services');
+
+  const storageLayer = await getStorageLayer();
+  const passwordResetRequestsStorage = storageLayer.passwordResetRequests;
 
   var emailSettings = servicesSettings.email,
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
@@ -38,7 +43,7 @@ module.exports = async function (api, userEventsStorage, passwordResetRequestsSt
   const serviceRegisterConn = getServiceRegisterConn();
   const usersRepository = await getUsersRepository(); 
 
-  const isDnsLess = (await getConfig()).get('dnsLess:isActive') === true;
+  const isDnsLess = config.get('dnsLess:isActive') === true;
 
   // RETRIEVAL
 

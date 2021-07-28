@@ -14,23 +14,24 @@ const Registration = require('business/src/auth/registration');
 const { getUsersRepository } = require('business/src/users');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+const { getLogger, getConfig } = require('@pryv/boiler');
+const { getStorageLayer } = require('storage');
 
 import type { MethodContext } from 'business';
 import type Result  from '../Result';
 import type { ApiCallback }  from '../API';
 
-
 /**
  * Auth API methods implementations.
  *
  * @param api
- * @param userAccessesStorage
- * @param sessionsStorage
- * @param authSettings
  */
-module.exports = async function (api, logging, storageLayer, servicesSettings) {
-
-  const isDnsLess = getConfigUnsafe().get('dnsLess:isActive');
+module.exports = async function (api) {
+  const config = await getConfig();
+  const logging = await getLogger('register');
+  const storageLayer = await getStorageLayer();
+  const servicesSettings = config.get('services')
+  const isDnsLess = config.get('dnsLess:isActive');
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);

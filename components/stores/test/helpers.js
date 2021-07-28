@@ -84,7 +84,6 @@ async function initCore() {
     app.config.get('updates'));
   require('api-server/src/methods/accesses')(
     app.api, 
-    notifyTests, 
     app.getUpdatesSettings(), 
     app.storageLayer);
   global.coreRequest = supertest(app.expressApp);

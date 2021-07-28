@@ -41,12 +41,7 @@ describe('[BMM2] registration: DNS-less', () => {
     app = getApplication(true);
     await app.initiate();
 
-    await require('api-server/src/methods/auth/register')(
-      app.api,
-      app.logging,
-      app.storageLayer,
-      app.config.get('services'),
-    );
+    await require('api-server/src/methods/auth/register')(app.api);
 
     // get events for a small test of valid token
     // Initialize notifyTests dependency

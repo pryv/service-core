@@ -38,7 +38,6 @@ import type { MethodContext } from 'business';
 
 import type API  from '../API';
 import type { ApiCallback }  from '../API';
-import type Notifications  from '../Notifications';
 import type Result  from '../Result';
 
 type Permission = {
@@ -57,8 +56,7 @@ type UpdatesSettingsHolder = {
 }
 
 module.exports = async function produceAccessesApiMethods(
-  api: API, 
-  notifyTests: Notifications, 
+  api: API,  
   updatesSettings: UpdatesSettingsHolder, 
   storageLayer: StorageLayer) 
 {

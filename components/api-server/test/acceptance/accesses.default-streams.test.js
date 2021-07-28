@@ -96,7 +96,6 @@ describe("Accesses with account streams", function () {
     pubsub.emit(pubsub.SERVER_READY);
     require("api-server/src/methods/accesses")(
       app.api,
-      notifyTests,
       app.getUpdatesSettings,
       app.storageLayer);
     

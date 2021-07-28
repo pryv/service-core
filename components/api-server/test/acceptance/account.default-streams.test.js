@@ -108,14 +108,7 @@ describe('Account with system streams', function () {
     };
     const notifyTests = new Notifications(axonSocket);
     pubsub.emit(pubsub.SERVER_READY);
-    require("api-server/src/methods/account")(
-      app.api,
-      app.storageLayer.events,
-      app.storageLayer.passwordResetRequests,
-      app.config.get('auth'),
-      app.config.get('services'),
-      notifyTests,
-      app.logging);
+    await require("api-server/src/methods/account")(app.api);
     await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,

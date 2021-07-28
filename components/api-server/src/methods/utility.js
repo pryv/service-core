@@ -15,7 +15,6 @@ const bluebird = require('bluebird');
 const { getLogger, getConfig } = require('@pryv/boiler');
 
 import type API  from '../API';
-import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'business';
 import type Result  from '../Result';
 import type { ApiCallback }  from '../API';
@@ -30,7 +29,7 @@ type ApiCall = {
  *
  * @param api
  */
-module.exports = async function (api: API, logging, storageLayer: StorageLayer) {
+module.exports = async function (api: API) {
 
   const logger = getLogger('methods:batch');
   const config = await getConfig();

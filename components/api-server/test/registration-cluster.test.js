@@ -70,12 +70,7 @@ describe('registration: cluster', function() {
     app = getApplication();
     await app.initiate();
 
-    await require('../src/methods/auth/register')(
-      app.api,
-      app.logging,
-      app.storageLayer,
-      app.config.get('services')
-    );
+    await require('../src/methods/auth/register')(app.api);
 
     request = supertest(app.expressApp);
 

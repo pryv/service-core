@@ -11,20 +11,23 @@ const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
 const { getUsersRepository, UserRepositoryOptions } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
-
+const { getStorageLayer } = require('storage');
+const { getLogger, getConfig } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 /**
  * Auth API methods implementations.
  *
  * @param api
- * @param userAccessesStorage
- * @param sessionsStorage
- * @param authSettings
  */
-module.exports = async function (api, userAccessesStorage, sessionsStorage, userEventsStorage, authSettings) {
+module.exports = async function (api) {
   const usersRepository = await getUsersRepository(); 
-  
+  const storageLayer = await getStorageLayer();
+  const userAccessesStorage = storageLayer.accesses;
+  const sessionsStorage = storageLayer.sessions;
+  const config = await getConfig();
+  const authSettings =  config.get('auth');
+
   api.register('auth.login',
     commonFns.getParamsValidation(methodsSchema.login.params),
     commonFns.getTrustedAppCheck(authSettings),

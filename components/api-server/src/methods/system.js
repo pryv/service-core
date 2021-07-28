@@ -11,6 +11,8 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const bluebird = require('bluebird');
+const { getStorageLayer } = require('storage');
+const { getConfig, getLogger } = require('@pryv/boiler');
 const { getUsersRepository } = require('business/src/users');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
@@ -18,21 +20,18 @@ const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUti
 
 /**
  * @param systemAPI
- * @param usersStorage
- * @param userAccessesStorage
- * @param servicesSettings Must contain `email`
  * @param api The user-facing API, used to compute usage stats per method
- * @param logging
- * @param storageLayer
  */
 module.exports = async function (
-  systemAPI, userAccessesStorage, servicesSettings, api,
-  logging, storageLayer
+  systemAPI, api
 ) {
-
-  const registration = new Registration(logging, storageLayer, servicesSettings);
+  const config = await getConfig();
+  const logger = getLogger('system');
+  const storageLayer = await getStorageLayer();
+  const registration = new Registration(logger, storageLayer, config.get('services'));
   const usersRepository = await getUsersRepository(); 
   const userProfileStorage = storageLayer.profile;
+  const userAccessesStorage = storageLayer.accesses;
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
