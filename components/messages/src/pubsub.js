@@ -56,10 +56,6 @@ class PubSub extends EventEmitter {
   setTestNotifier(testNotifier) {
     this.testNotifier = testNotifier;
   }
-
-  getTestNotifier() {
-    return this.testNotifier;
-  }
 }
 
 // ----- NATS ------//

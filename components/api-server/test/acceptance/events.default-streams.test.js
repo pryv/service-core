@@ -18,7 +18,7 @@ const { getConfig } = require('@pryv/boiler');
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
 const { getApplication } = require('api-server/src/application');
-const { Notifications } = require('messages');
+
 const { pubsub } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { databaseFixture } = require('test-helpers');
@@ -103,7 +103,7 @@ describe("Events of system streams", () => {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifyTests = new Notifications(axonSocket);
+    pubsub.setTestNotifier(axonSocket);
     
     pubsub.emit(pubsub.SERVER_READY);
     await require("api-server/src/methods/events")(app.api);

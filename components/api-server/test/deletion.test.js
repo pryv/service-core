@@ -24,7 +24,8 @@ const {
   produceMongoConnection,
   produceInfluxConnection,
 } = require('api-server/test/test-helpers');
-const { Notifications } = require('messages');
+
+const { pubsub } = require('messages');
 const bluebird = require('bluebird');
 
 let app;
@@ -57,7 +58,7 @@ describe('DELETE /users/:username', async () => {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifyTests = new Notifications(axonSocket);
+    pubsub.setTestNotifier(axonSocket);
     await require('api-server/src/methods/events')(app.api);
 
     request = supertest(app.expressApp);

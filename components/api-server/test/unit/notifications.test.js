@@ -11,7 +11,6 @@ require('./test-helper');
 
 const assert = require('chai').assert;
 
-const { Notifications } = require('messages');
 
 const { pubsub } = require('messages');
 
@@ -30,8 +29,6 @@ describe('Notifications', () => {
     emit: (...args) => axonMsgs.push(args),
   };
   
-  // Class under test
-  let notifyTests = null; 
   
   before(async () => {
     await pubsub.init();
@@ -45,7 +42,7 @@ describe('Notifications', () => {
     });
 
     // attach "fake" axonSocket to pubsub.
-    notifyTests = new Notifications(axonSocket); 
+    pubsub.setTestNotifier(axonSocket); 
   });
  
   

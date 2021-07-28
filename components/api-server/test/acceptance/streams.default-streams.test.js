@@ -13,7 +13,7 @@ const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
-const { Notifications } = require('messages');
+
 const { pubsub } = require('messages');
 const { databaseFixture } = require('test-helpers');
 const validation = require('api-server/test/helpers').validation;
@@ -55,7 +55,7 @@ describe("System streams", function () {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifyTests = new Notifications(axonSocket);
+    pubsub.setTestNotifier(axonSocket);
     
     pubsub.emit(pubsub.SERVER_READY);
     require("api-server/src/methods/streams")(app.api);

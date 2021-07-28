@@ -14,7 +14,8 @@ const { getConfig } = require('@pryv/boiler');
 const { getUsersRepository, User } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
-const { Notifications } = require('messages');
+
+const { pubsub } = require('messages');
 const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers');
 const ErrorIds = require('errors/src/ErrorIds');
 const { ApiEndpoint } = require('utils');
@@ -49,7 +50,7 @@ describe('[BMM2] registration: DNS-less', () => {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifyTests = new Notifications(axonSocket);
+    pubsub.setTestNotifier(axonSocket);
     await require("api-server/src/methods/events")(app.api);
     
     request = supertest(app.expressApp);

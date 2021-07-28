@@ -19,7 +19,7 @@ const storage = require('storage');
 const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
 
-const { Notifications } = require('messages');
+
 const { pubsub } = require('messages');
 
 let initTestsDone = false;
@@ -58,7 +58,7 @@ async function initCore() {
   const axonSocket = {
     emit: (...args) => axonMsgs.push(args),
   };
-  const notifyTests = new Notifications(axonSocket);
+  pubsub.setTestNotifier(axonSocket);
   pubsub.emit(pubsub.SERVER_READY);
 
   await require('api-server/src/methods/events')(app.api);

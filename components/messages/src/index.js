@@ -14,7 +14,6 @@ module.exports = {
   NatsPublisher: require('./nats_publisher'),
   NatsSubscriber: require('./nats_subscriber'),
   axonMessaging: require('./axon_messaging'),
-  Notifications: require('./Notifications'),
   pubsub: require('./pubsub'),
 }
 

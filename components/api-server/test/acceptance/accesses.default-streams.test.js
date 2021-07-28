@@ -17,7 +17,7 @@ const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
 const { getApplication } = require('api-server/src/application');
-const { Notifications } = require('messages');
+
 const { pubsub } = require('messages');
 const AccessLogic = require('business/src/accesses/AccessLogic');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -92,7 +92,7 @@ describe("Accesses with account streams", function () {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifyTests = new Notifications(axonSocket);
+    pubsub.setTestNotifier(axonSocket);
     pubsub.emit(pubsub.SERVER_READY);
     await require('api-server/src/methods/accesses')(app.api);
     

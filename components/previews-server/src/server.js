@@ -90,30 +90,22 @@ async function start() {
   module.exports = server;
 
   // Go
+  const testNotifier = await axonMessaging.getTestNotifier();
 
-  axonMessaging.openPubSocket(config.get('tcpMessaging'), function (err, pubSocket) {
-    if (err) {
-      logger.error('Error setting up TCP pub socket: ' + err);
-      process.exit(1);
-    }
-    logger.info('TCP pub socket ready on ' + config.get('tcpMessaging:host') + ':' +
-      config.get('tcpMessaging:port'));
+  database.waitForConnection(function () {
+    const backlog = 512;
+    server.listen(config.get('http:port'), config.get('http:ip'), backlog, function () {
+      var address = server.address();
+      var protocol = server.key ? 'https' : 'http';
+      server.url = protocol + '://' + address.address + ':' + address.port;
+      const infostr =  'Preview server v' + require('../package.json').version +
+      ' [' + expressApp.settings.env + '] listening on ' + server.url;
+      logger.info(infostr);
 
-    database.waitForConnection(function () {
-      const backlog = 512;
-      server.listen(config.get('http:port'), config.get('http:ip'), backlog, function () {
-        var address = server.address();
-        var protocol = server.key ? 'https' : 'http';
-        server.url = protocol + '://' + address.address + ':' + address.port;
-        const infostr =  'Preview server v' + require('../package.json').version +
-        ' [' + expressApp.settings.env + '] listening on ' + server.url;
-        logger.info(infostr);
-
-        // all right
-        logger.debug(infostr)
-        logger.info('Server ready');
-        pubSocket.emit('axon-server-ready');
-      });
+      // all right
+      logger.debug(infostr)
+      logger.info('Server ready');
+      testNotifier.emit('axon-server-ready');
     });
   });
 
