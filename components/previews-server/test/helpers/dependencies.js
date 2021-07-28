@@ -18,6 +18,6 @@ var deps = module.exports = testHelpers.dependencies;
 deps.settings = getConfigUnsafe(true).get();
 deps.instanceManager = new InstanceManager({
   serverFilePath: __dirname + '/../../src/server.js',
-  tcpMessaging: deps.settings.tcpMessaging,
+  axonMessaging: deps.settings.axonMessaging,
   logging: deps.logging
 });

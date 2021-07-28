@@ -19,7 +19,7 @@ exports.getTestNotifier = async function() {
   const logger = getLogger('test-messaging')
   initializing = true;
   const config = await getConfig();
-  const axonSettings = config.get('tcpMessaging');
+  const axonSettings = config.get('axonMessaging');
 
   try { 
     axonSocket = await openPubSocket(axonSettings);

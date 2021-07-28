@@ -22,7 +22,7 @@ services:
   register:
     url: http://localhost:5123
     key: test-system-key
-tcpMessaging:
+axonMessaging:
   enabled: true
 reporting:
   licenseName: pryv.io-test-license

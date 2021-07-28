@@ -37,7 +37,7 @@ customExtensions:
   defaultFolder: 'REPLACE ME'
   customAuthStepFn: ''
 
-tcpMessaging:
+axonMessaging:
   enabled: false
   host: 'localhost'
   port: 4000

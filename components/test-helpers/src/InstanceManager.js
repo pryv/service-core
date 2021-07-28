@@ -29,7 +29,7 @@ let spawnCounter = 0;
  *
  * Usage: just call `server.ensureStarted(settings, callback)` before running tests.
  *
- * @param {Object} settings Must contain `serverFilePath`, `tcpMessaging` and `logging`
+ * @param {Object} settings Must contain `serverFilePath`, `axonMessaging` and `logging`
  * @constructor
  */
 function InstanceManager(settings) {
@@ -45,9 +45,9 @@ function InstanceManager(settings) {
 
   // setup TCP axonMessaging subscription
 
-  messagingSocket.bind(+settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
-    logger.debug('TCP sub socket ready on ' + settings.tcpMessaging.host + ':' +
-        settings.tcpMessaging.port);
+  messagingSocket.bind(+settings.axonMessaging.port, settings.axonMessaging.host, function () {
+    logger.debug('TCP sub socket ready on ' + settings.axonMessaging.host + ':' +
+        settings.axonMessaging.port);
   });
 
   messagingSocket.on('*', function (message, data) {
@@ -119,7 +119,7 @@ function InstanceManager(settings) {
    */
   this.setup = function() {
     // adjust config settings for test instance
-    serverSettings.tcpMessaging.pubConnectInsteadOfBind = true;
+    serverSettings.axonMessaging.pubConnectInsteadOfBind = true;
 
     this.url = 'http://' + serverSettings.http.ip + ':' + serverSettings.http.port;
   };

@@ -111,7 +111,7 @@ class SpawnContext {
       http: {
         port: port // use this port for http/express
       },
-      tcpMessaging: {
+      axonMessaging: {
         enabled: true,
         // for spawner, we boot api-servers before their Server holder objects
         // so the api-server needs to listen on a socket before Server facade

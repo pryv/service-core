@@ -110,30 +110,24 @@ async function deliverFromNats(pubsubKey, content) {
   pubsub._emit(content.eventName, content.payload);
 }
 
-// ----- TEST
+// ----- TEST Messaging
+
+const testMessageMap = {};
+testMessageMap[C.USERNAME_BASED_EVENTS_CHANGED] = 'axon-events-changed';
+testMessageMap[C.USERNAME_BASED_STREAMS_CHANGED] = 'axon-streams-changed';
+testMessageMap[C.USERNAME_BASED_FOLLOWEDSLICES_CHANGED] = 'axon-followed-slices-changed';
+testMessageMap[C.USERNAME_BASED_ACCESSES_CHANGED] = 'axon-accesses-changed';
+testMessageMap[C.USERNAME_BASED_ACCOUNT_CHANGED] = 'axon-account-changed';
 
 function deliverToTests(testNotifier, eventName, payload) {
-  if (payload === C.USERNAME_BASED_EVENTS_CHANGED) {
-    testNotifier.emit('axon-events-changed', eventName);
-  }
-  if (payload === C.USERNAME_BASED_STREAMS_CHANGED) {
-    testNotifier.emit('axon-streams-changed', eventName);
-  }
-  if (payload === C.USERNAME_BASED_FOLLOWEDSLICES_CHANGED) {
-    testNotifier.emit('axon-followed-slices-changed', eventName);
-  }
-  if (payload == C.USERNAME_BASED_ACCESSES_CHANGED) {
-    testNotifier.emit('axon-accesses-changed', eventName);
-  }
-  if (payload == C.USERNAME_BASED_ACCOUNT_CHANGED) {
-    testNotifier.emit('axon-account-changed', eventName);
-  }
   if (eventName == C.SERVER_READY) {
-    testNotifier.emit('axon-server-ready');
+    return testNotifier.emit('axon-server-ready');
+  }
+  const testMessageKey = testMessageMap[payload];
+  if (testMessageKey) {
+    testNotifier.emit(testMessageKey, eventName);
   }
 }
-
-
 
 module.exports = pubsub;
 
