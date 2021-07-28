@@ -106,18 +106,7 @@ describe("Events of system streams", () => {
     const notifyTests = new Notifications(axonSocket);
     
     pubsub.emit(pubsub.SERVER_READY);
-    await require("api-server/src/methods/events")(
-      app.api,
-      app.storageLayer.events,
-      app.storageLayer.eventFiles,
-      app.config.get('auth'),
-      app.config.get('service:eventTypes'),
-      notifyTests,
-      app.logging,
-      app.config.get('versioning'),
-      app.config.get('updates'),
-      app.config.get('openSource'),
-      app.config.get('services'));
+    await require("api-server/src/methods/events")(app.api);
 
     request = supertest(app.expressApp);
   });

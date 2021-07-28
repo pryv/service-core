@@ -63,16 +63,20 @@ const typeRepo = new TypeRepository();
 
 /**
  * Events API methods implementations.
- * @param auditSettings
+ * @param api
  */
-module.exports = async function (
-  api, userEventsStorage, userEventFilesStorage,
-  authSettings, eventTypesUrl, notifyTests, logging,
-  auditSettings, updatesSettings, openSourceSettings
-) {
-
-  const usersRepository = await getUsersRepository(); 
+module.exports = async function (api) 
+{
   const config = await getConfig();
+  const storageLayer = await getStorageLayer();
+  const userEventsStorage = storageLayer.events;
+  const userEventFilesStorage = storageLayer.eventFiles;
+  const authSettings = config.get('auth');
+  const eventTypesUrl = config.get('service:eventTypes');
+  const auditSettings = config.get('versioning');
+  const updatesSettings = config.get('updates');
+  const openSourceSettings = config.get('openSource')
+  const usersRepository = await getUsersRepository(); 
   const stores = await getStores();
   
   // Initialise the project version as soon as we can. 

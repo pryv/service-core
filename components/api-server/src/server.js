@@ -34,7 +34,6 @@ let apiVersion;
 // 
 class Server {
   isOpenSource: boolean;
-  isDnsLess: Boolean;
   logger; 
   config;
   
@@ -60,7 +59,6 @@ class Server {
     this.config = config;
    
     this.isOpenSource = config.get('openSource:isActive');
-    this.isDnsLess = config.get('dnsLess:isActive');
     const defaultParam = this.findDefaultParam();
     if (defaultParam != null) {
       this.logger.error(`Config parameter "${defaultParam}" has a default value, please change it`);
@@ -76,7 +74,7 @@ class Server {
 
     // Setup HTTP and register server; setup Socket.IO.
     const server: net$Server = http.createServer(app.expressApp);
-    this.setupSocketIO(server); 
+    await this.setupSocketIO(server); 
     await this.startListen(server);
 
     if (! this.isOpenSource) {
@@ -96,10 +94,7 @@ class Server {
   
   // Requires and registers all API methods. 
   // 
-  async registerApiMethods() {
-    const l = (topic) => getLogger(topic);
-    const config = this.config;
-    
+  async registerApiMethods() {    
     await require('./methods/system')(app.systemAPI, app.api);
     await require('./methods/utility')(app.api);
     await require('./methods/auth/login')(app.api);
@@ -117,40 +112,20 @@ class Server {
     await require('./methods/followedSlices')(app.api);
     await require('./methods/profile')(app.api);
     await require('./methods/streams')(app.api);
-
-    await require('./methods/events')(app.api, 
-      app.storageLayer.events, 
-      app.storageLayer.eventFiles, 
-      config.get('auth'), 
-      config.get('service:eventTypes'), 
-      this.notificationBus, 
-      app.logging,
-      config.get('versioning'),
-      config.get('updates'), 
-      config.get('openSource'), 
-      config.get('services'));
+    await require('./methods/events')(app.api);
       
     if (! this.isOpenSource) {
       require('audit/src/methods/audit-logs')(app.api)
     }
 
-    this.logger.debug('api method registered');
+    this.logger.debug('api methods registered');
   }
   
-  setupSocketIO(server: net$Server) { 
+  async setupSocketIO(server: net$Server) { 
     const api = app.api; 
-    const storageLayer = app.storageLayer;
-    const config = this.config; 
     const customAuthStepFn = app.getCustomAuthFunction('server.js');
-    const isOpenSource = this.isOpenSource;
-        
     const socketIOsetup = require('./socket-io');
-    socketIOsetup(
-      server, getLogger('socketIO'), 
-      api, 
-      storageLayer, 
-      customAuthStepFn,
-      isOpenSource);
+    await socketIOsetup(server, api, customAuthStepFn);
     this.logger.debug('socket io setup done');
   }
   
@@ -162,7 +137,6 @@ class Server {
     
     const port = config.get('http:port');
     const hostname = config.get('http:ip'); 
-    
     
     // All listen() methods can take a backlog parameter to specify the maximum
     // length of the queue of pending connections. The actual length will be

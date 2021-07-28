@@ -19,6 +19,8 @@ import type {ContextSource} from 'business';
 
 const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
+const { getConfig, getLogger } = require('@pryv/boiler');
+const { getStorageLayer } = require('storage');
 
 import type { StorageLayer } from 'storage';
 import type { CustomAuthFunction } from 'business';
@@ -28,14 +30,16 @@ import type { SocketIO$Handshake }  from './Manager';
 
 // Initializes the SocketIO subsystem. 
 //
-function setupSocketIO(
+async function setupSocketIO(
   server: net$Server, 
-  logger, 
   api: API, 
-  storageLayer: StorageLayer, 
   customAuthStepFn: ?CustomAuthFunction,
-  isOpenSource: boolean,
 ) {
+  const config = await getConfig();
+  const logger = getLogger('socketIO');
+  const storageLayer = await getStorageLayer();
+  const isOpenSource = config.get('openSource:isActive');
+
 
   const io = socketIO.listen(server, {
     path: Paths.SocketIO

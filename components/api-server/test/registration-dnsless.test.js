@@ -50,18 +50,7 @@ describe('[BMM2] registration: DNS-less', () => {
       emit: (...args) => axonMsgs.push(args),
     };
     const notifyTests = new Notifications(axonSocket);
-    await require("api-server/src/methods/events")(
-      app.api,
-      app.storageLayer.events,
-      app.storageLayer.eventFiles,
-      app.config.get('auth'),
-      app.config.get('service:eventTypes'),
-      notifyTests,
-      app.logging,
-      app.config.get('versioning'),
-      app.config.get('updates'),
-      app.config.get('openSource'),
-      app.config.get('services'));
+    await require("api-server/src/methods/events")(app.api);
     
     request = supertest(app.expressApp);
   });
