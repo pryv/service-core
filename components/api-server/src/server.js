@@ -245,10 +245,10 @@ class Server {
     if (process.env.NODE_ENV === 'test' && instanceTestSetup !== null) {
       logger.debug('specific test setup ');
       try {
-        const axonSocket = this.notificationBus.axonSocket;
+        const testNotifier = pubsub.getTestNotifier();
         
         require('test-helpers')
-          .instanceTestSetup.execute(instanceTestSetup, axonSocket);
+          .instanceTestSetup.execute(instanceTestSetup, testNotifier);
       } catch (err) {
         logger.error(err);
         logger.warn('Error executing instance test setup instructions: ' + err.message);

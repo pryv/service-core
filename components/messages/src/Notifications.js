@@ -10,8 +10,6 @@
 // sent to the axon PUB socket; this is mostly used by the tests. 
 // 
 class Notifications {
-  axonSocket: EventEmitter; 
-  pubsub: {};
   
   // Construct a notifications instance. Normally called by the application 
   // start; one per process. 
@@ -21,41 +19,11 @@ class Notifications {
     if (axonSocket == null)
       throw new Error('AF: axonSocket cannot be null');
     
-    this.axonSocket = axonSocket;
-    this.pubsub = require('messages').pubsub;
-    this.pubsub.setTestNotifier(this);
+    const pubsub = require('messages').pubsub;
+    pubsub.setTestNotifier(axonSocket);
   }
-  
-  serverReady() {
-    this.axonPublish('axon-server-ready');
-  }
-  accountChanged(userName: string) {
-    this.axonPublish('axon-account-changed', userName);
-  }
-  accessesChanged(userName: string) {
-    this.axonPublish('axon-accesses-changed', userName);
-  }
-  followedSlicesChanged(userName: string) {
-    this.axonPublish('axon-followed-slices-changed', userName);
-  }
-  streamsChanged(userName: string) {
-    this.axonPublish('axon-streams-changed', userName);
-  }
-  eventsChanged(userName: string) {
-    this.axonPublish('axon-events-changed', userName);
-  }
-  
-  // Send the given `msg` to both internal and external listeners. This is an 
-  // internal API, you probably want to use one of the other methods here. 
-  //
-  axonPublish(msg: string, ...msgParts: Array<mixed>) {
-    this.axonSocket.emit(msg, ...msgParts);
-  }
+
 }
-
-
-
-
 
 module.exports = Notifications;
 

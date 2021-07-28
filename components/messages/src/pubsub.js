@@ -56,6 +56,10 @@ class PubSub extends EventEmitter {
   setTestNotifier(testNotifier) {
     this.testNotifier = testNotifier;
   }
+
+  getTestNotifier() {
+    return this.testNotifier;
+  }
 }
 
 // ----- NATS ------//
@@ -114,22 +118,22 @@ async function deliverFromNats(pubsubKey, content) {
 
 function deliverToTests(testNotifier, eventName, payload) {
   if (payload === C.USERNAME_BASED_EVENTS_CHANGED) {
-    testNotifier.eventsChanged(eventName);
+    testNotifier.emit('axon-events-changed', eventName);
   }
   if (payload === C.USERNAME_BASED_STREAMS_CHANGED) {
-    testNotifier.streamsChanged(eventName);
+    testNotifier.emit('axon-streams-changed', eventName);
   }
   if (payload === C.USERNAME_BASED_FOLLOWEDSLICES_CHANGED) {
-    testNotifier.followedSlicesChanged(eventName);
+    testNotifier.emit('axon-followed-slices-changed', eventName);
   }
   if (payload == C.USERNAME_BASED_ACCESSES_CHANGED) {
-    testNotifier.accessesChanged(eventName);
+    testNotifier.emit('axon-accesses-changed', eventName);
   }
   if (payload == C.USERNAME_BASED_ACCOUNT_CHANGED) {
-    testNotifier.accountChanged(eventName);
+    testNotifier.emit('axon-account-changed', eventName);
   }
   if (eventName == C.SERVER_READY) {
-    testNotifier.serverReady();
+    testNotifier.emit('axon-server-ready');
   }
 }
 

@@ -177,7 +177,7 @@ describe('system (ex-register)', function () {
               .reply(200, function (uri, body) {
                 body.message.global_merge_vars[0].content.should.be.equal('mr-dupotager');
                 body.template_name.should.match(/welcome/);
-                this.context.messagingSocket.emit('mail-sent1');
+                this.context.testNotifier.emit('mail-sent1');
               }.bind(this));
           }
         });
@@ -236,7 +236,7 @@ describe('system (ex-register)', function () {
         execute: function () {
           require('nock')(this.context.url).post(this.context.sendMessagePath)
             .reply(200, function () {
-              this.context.messagingSocket.emit('mail-sent2');
+              this.context.testNotifier.emit('mail-sent2');
             }.bind(this));
         }
       });
