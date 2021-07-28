@@ -82,21 +82,11 @@ async function initCore() {
     app.config.get('openSource'),
     app.config.get('services'));
 
-  require('api-server/src/methods/streams')(app.api, 
-    app.storageLayer.streams, 
-    app.storageLayer.events, 
-    app.storageLayer.eventFiles, 
-    this.notificationBus, 
-    app.logging, 
-    app.config.get('versioning'), 
-    app.config.get('updates'));
+  await require('api-server/src/methods/streams')(app.api);
   require('api-server/src/methods/service')(app.api);
   await require('api-server/src/methods/auth/login')(app.api);
   await require('api-server/src/methods/auth/register')(app.api);
-  require('api-server/src/methods/accesses')(
-    app.api, 
-    app.getUpdatesSettings(), 
-    app.storageLayer);
+  await require('api-server/src/methods/accesses')(app.api);
   require('audit/src/methods/audit-logs')(app.api);
   global.coreRequest = supertest(app.expressApp);
 }

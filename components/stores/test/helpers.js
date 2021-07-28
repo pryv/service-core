@@ -74,18 +74,8 @@ async function initCore() {
     app.config.get('openSource'),
     app.config.get('services'));
 
-  require('api-server/src/methods/streams')(app.api, 
-    app.storageLayer.streams, 
-    app.storageLayer.events, 
-    app.storageLayer.eventFiles, 
-    this.notificationBus, 
-    app.logging, 
-    app.config.get('versioning'), 
-    app.config.get('updates'));
-  require('api-server/src/methods/accesses')(
-    app.api, 
-    app.getUpdatesSettings(), 
-    app.storageLayer);
+  await require('api-server/src/methods/streams')(app.api);
+  await require('api-server/src/methods/accesses')(app.api);
   global.coreRequest = supertest(app.expressApp);
 }
 

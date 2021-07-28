@@ -52,12 +52,7 @@ describe('DELETE /users/:username', async () => {
     app = getApplication();
     await app.initiate();
 
-    require('../src/methods/auth/delete')(
-      app.api,
-      app.logging,
-      app.storageLayer,
-      app.config
-    );
+    await require('../src/methods/auth/delete')(app.api);
     let axonMsgs = [];
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),

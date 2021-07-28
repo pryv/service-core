@@ -30,6 +30,7 @@ const cache = require('cache');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStores } = require('stores');
 const { pubsub } = require('messages');
+const { getStorageLayer } = require('storage');
 
 const { changeStreamIdsInPermissions } = require('./helpers/backwardCompatibility');
 
@@ -55,16 +56,17 @@ type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
 }
 
-module.exports = async function produceAccessesApiMethods(
-  api: API,  
-  updatesSettings: UpdatesSettingsHolder, 
-  storageLayer: StorageLayer) 
+module.exports = async function produceAccessesApiMethods(api: API)
 {
   const config = await getConfig();
   const logger = getLogger('methods:accesses');
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
   const stores = await getStores();
+  const storageLayer = await getStorageLayer();
+  const updatesSettings: UpdatesSettingsHolder = {
+    ignoreProtectedFields: config.get('updates:ignoreProtectedFields'),
+  }
 
   const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 

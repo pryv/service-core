@@ -94,10 +94,7 @@ describe("Accesses with account streams", function () {
     };
     const notifyTests = new Notifications(axonSocket);
     pubsub.emit(pubsub.SERVER_READY);
-    require("api-server/src/methods/accesses")(
-      app.api,
-      app.getUpdatesSettings,
-      app.storageLayer);
+    await require('api-server/src/methods/accesses')(app.api);
     
     await require("api-server/src/methods/events")(
       app.api,

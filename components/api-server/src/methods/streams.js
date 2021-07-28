@@ -25,8 +25,8 @@ const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
 const { getStores, StreamsUtils } = require('stores');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
-
 const { pubsub } = require('messages');
+const { getStorageLayer } = require('storage');
 
 SystemStreamsSerializer.getSerializer(); // ensure it's loaded
 
@@ -42,11 +42,14 @@ SystemStreamsSerializer.getSerializer(); // ensure it's loaded
  * @param auditSettings
  * @param updatesSettings
  */
-module.exports = async function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
-  notifyTests, logging, auditSettings, updatesSettings) {
-
+module.exports = async function (api) {
   const config = await getConfig();
-
+  const storageLayer = await getStorageLayer();
+  const userStreamsStorage = storageLayer.streams;
+  const userEventsStorage = storageLayer.events;
+  const userEventFilesStorage = storageLayer.eventFiles;
+  const auditSettings = config.get('versioning');
+  const updatesSettings = config.get('updates');
   const stores = await getStores();
 
   const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');

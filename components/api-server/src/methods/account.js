@@ -23,16 +23,11 @@ const Registration = require('business/src/auth/registration'),
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
   /**
  * @param api
- * @param usersStorage
- * @param passwordResetRequestsStorage
- * @param authSettings
- * @param servicesSettings Must contain `email` and `register`
  */
 module.exports = async function (api) {
   const config = await getConfig();
   const authSettings = config.get('auth');
   const servicesSettings = config.get('services');
-
   const storageLayer = await getStorageLayer();
   const passwordResetRequestsStorage = storageLayer.passwordResetRequests;
 

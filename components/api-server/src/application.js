@@ -218,20 +218,7 @@ class Application {
     // for various database models. 
     this.storageLayer = storage.getStorageLayerSync()
   }
-  
-  // Returns the settings for updating entities
-  // 
-  getUpdatesSettings(): UpdatesSettingsHolder {
-    return {
-      ignoreProtectedFields: this.config.get('updates:ignoreProtectedFields'),
-    };
-  }
 
-  getWebhooksSettings(): WebhooksSettingsHolder {
-    return this.config.get('webhooks');
-  }
-
-  
    // Returns the custom auth function if one was configured. Otherwise returns
   // null. 
   // 

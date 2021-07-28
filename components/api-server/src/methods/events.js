@@ -38,6 +38,7 @@ const { getAPIVersion } = require('middleware/src/project_version');
 const {TypeRepository, isSeriesType} = require('business').types;
 
 const { getLogger, getConfig } = require('@pryv/boiler');
+const { getStorageLayer } = require('storage');
 
 const { pubsub } = require('messages');
 

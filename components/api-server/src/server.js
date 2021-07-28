@@ -101,50 +101,22 @@ class Server {
     const config = this.config;
     
     await require('./methods/system')(app.systemAPI, app.api);
-    require('./methods/utility')(app.api);
+    await require('./methods/utility')(app.api);
     await require('./methods/auth/login')(app.api);
     await require('./methods/auth/register')(app.api);
-
-    require('./methods/auth/delete')(app.api,
-      app.logging,
-      app.storageLayer,
-      config);
-
-    require('./methods/accesses')(
-      app.api, 
-      app.getUpdatesSettings(), 
-      app.storageLayer);
-
+    await require('./methods/auth/delete')(app.api);
+    await require('./methods/accesses')(app.api);
     require('./methods/service')(app.api);
 
     if (! this.isOpenSource) {
-      require('./methods/webhooks')(
-        app.api, l('methods/webhooks'),
-        app.getWebhooksSettings(),
-        app.storageLayer,
-      );
+      await require('./methods/webhooks')(app.api);
     }
 
-    require('./methods/trackingFunctions')(
-      app.api,
-      l('methods/trackingFunctions'),
-      app.storageLayer,
-    );
-
-    require('./methods/account')(app.api);
-
-    require('./methods/followedSlices')(app.api, app.storageLayer.followedSlices, this.notificationBus);
-
-    require('./methods/profile')(app.api, app.storageLayer.profile);
-
-    require('./methods/streams')(app.api, 
-      app.storageLayer.streams, 
-      app.storageLayer.events, 
-      app.storageLayer.eventFiles, 
-      this.notificationBus, 
-      app.logging, 
-      config.get('versioning'), 
-      config.get('updates'));
+    await require('./methods/trackingFunctions')(app.api);
+    await require('./methods/account')(app.api);
+    await require('./methods/followedSlices')(app.api);
+    await require('./methods/profile')(app.api);
+    await require('./methods/streams')(app.api);
 
     await require('./methods/events')(app.api, 
       app.storageLayer.events, 

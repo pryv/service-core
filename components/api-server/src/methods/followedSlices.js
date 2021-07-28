@@ -10,16 +10,16 @@ var async = require('async'),
     methodsSchema = require('../schema/followedSlicesMethods');
 
 const { pubsub } = require('messages');
+const { getStorageLayer } = require('storage');
 /**
  * Followed slices methods implementations.
  * TODO: refactor methods as chains of functions
  *
  * @param api
- * @param userFollowedSlicesStorage
- * @param notifyTests
  */
-module.exports = function (api, userFollowedSlicesStorage, notifyTests){
-
+module.exports = async function (api){
+  const storageLayer = await getStorageLayer();
+  userFollowedSlicesStorage = storageLayer.followedSlices;
 
   // RETRIEVAL
 
