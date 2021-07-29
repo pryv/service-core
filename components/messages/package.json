@@ -11,6 +11,7 @@
     "test": "NODE_ENV=test ../../node_modules/.bin/mocha --reporter=dot test/**/*.test.js --exit"
   },
   "dependencies": {
+    "eventemitter2": "^6.4.4",
     "msgpack5": "^3.6.1",
     "nats": "^0.7"
   }

@@ -5,6 +5,7 @@
  * Proprietary and confidential
  */
 
+const { EventEmitter2 } = require('eventemitter2');
 const EventEmitter = require('events');
 const { getConfig,  getLogger } = require('@pryv/boiler');
 const logger = getLogger('messages:pubsub');
@@ -13,10 +14,10 @@ const C = require('./constants');
 
 // Generic implementation of pub / sub messaging
 
-class PubSub extends EventEmitter {
+class PubSub extends EventEmitter2 {
 
   constructor() {
-    super();
+    super({wildcard: true, delimiter: '.', verboseMemoryLeak: true});
     //this.on('removeListener', (eventName, l) => { logger.debug('Removed', eventName, l)});
   }
 
@@ -34,13 +35,31 @@ class PubSub extends EventEmitter {
    * @returns function
    */
   onAndGetRemovable(eventName, listener) {
+    console.log('XXXX onAndGetRemovable', eventName);
     this.on(eventName, listener);
     return function() {
       this.off(eventName, listener);
     }.bind(this);
   }
 
+  emitKeyBased(definition, key, payload) {
+    if (definition?.eventMask == null || definition?.eventName == null) { throw new Error('Invalid onKeybased definition ' + JSON.stringify(definition) + ' key: ' + key);}
+    const eventName = definition.eventMask.replace('{key}', key);
+    const newPayload = {key: key, eventName: definition.eventName, payload: payload};
+    return this.emit(eventName, newPayload);
+  };
+
+  /**
+   * @returns a removable function !!  
+   */
+  onKeyBased(definition, key, listener) {
+    if (definition?.eventMask == null) { throw new Error('Invalid onKeybased definition ' + JSON.stringify(definition) + ' key: ' + key)}
+    const eventName = definition.eventMask.replace('{key}', key);
+    return this.onAndGetRemovable(eventName, listener);
+  }
+
   emit(eventName, payload) {
+    console.log('XXXX emit', eventName, payload);
     //deliverToNats(eventName, payload);
     deliverToNats('pubsub', {eventName: eventName, payload: payload});
     if (this.testNotifier) deliverToTests(this.testNotifier, eventName, payload)
@@ -113,7 +132,7 @@ async function deliverFromNats(pubsubKey, content) {
 // ----- TEST Messaging
 
 const testMessageMap = {};
-testMessageMap[C.USERNAME_BASED_EVENTS_CHANGED] = 'axon-events-changed';
+testMessageMap[C.USERNAME_BASED_EVENTS_CHANGED.eventName] = 'axon-events-changed';
 testMessageMap[C.USERNAME_BASED_STREAMS_CHANGED] = 'axon-streams-changed';
 testMessageMap[C.USERNAME_BASED_FOLLOWEDSLICES_CHANGED] = 'axon-followed-slices-changed';
 testMessageMap[C.USERNAME_BASED_ACCESSES_CHANGED] = 'axon-accesses-changed';
@@ -126,6 +145,10 @@ function deliverToTests(testNotifier, eventName, payload) {
   const testMessageKey = testMessageMap[payload];
   if (testMessageKey) {
     testNotifier.emit(testMessageKey, eventName);
+  }
+  const testMessageKey2 = testMessageMap[payload.eventName];
+  if (testMessageKey2) {
+    testNotifier.emit(testMessageKey2, payload.key);
   }
 }
 

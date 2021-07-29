@@ -221,11 +221,15 @@ class NamespaceContext {
     // If we've already got an active subscription, leave it be. 
     if (this.pubsubRemover != null) return; 
     await pubsub.init();
-    this.pubsubRemover = pubsub.onAndGetRemovable(this.username, this.messageFromPubSub.bind(this) );
+    this.pubsubRemover = pubsub.onKeyBased(pubsub.USERNAME_BASED_ALL, this.username, this.messageFromPubSub.bind(this) );
+
+    pubsub.on(this.username, function (message) {
+      this.messageFromPubSub({eventName: message});
+    }.bind(this) );
   }
 
   messageFromPubSub(payload) {
-    const message = pubsubMessageToSocket(payload);
+    const message = pubsubMessageToSocket(payload.eventName);
     if (message != null) {
       this.socketNs.emit(message);
     } else {
@@ -391,7 +395,7 @@ class Connection {
 }
 
 const messageMap = {};
-messageMap[pubsub.USERNAME_BASED_EVENTS_CHANGED] = 'eventsChanged';
+messageMap[pubsub.USERNAME_BASED_EVENTS_CHANGED.eventName] = 'eventsChanged';
 messageMap[pubsub.USERNAME_BASED_ACCESSES_CHANGED] = 'accessesChanged';
 messageMap[pubsub.USERNAME_BASED_STREAMS_CHANGED] = 'streamsChanged';
 

@@ -37,7 +37,12 @@ describe('Notifications', () => {
       emittedMsgs.push(pubsub.SERVER_READY);
     });
 
-    pubsub.on('USERNAME', (message) => {
+    pubsub.onKeyBased(pubsub.USERNAME_BASED_ALL, 'USERNAME', (message) => {
+      console.log('XXXXX rececived', message);
+      emittedMsgs.push(message.eventName);
+    });
+    // remove following when transition is done;
+    pubsub.on('USERNAME',  (message) => {
       emittedMsgs.push(message);
     });
 
@@ -108,11 +113,11 @@ describe('Notifications', () => {
   });
   describe('#eventsChanged', () => {
     beforeEach(() => {
-      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_EVENTS_CHANGED);
+      pubsub.emitKeyBased(pubsub.USERNAME_BASED_EVENTS_CHANGED, 'USERNAME', {id: 'fakeEventId'});
     });
 
     it('[N8RI] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_EVENTS_CHANGED.eventName);
     });
     it('[TRMW] notifies axon listeners', () => {
       assert.deepInclude(axonMsgs, [ 'axon-events-changed', 'USERNAME' ]);

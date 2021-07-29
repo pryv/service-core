@@ -497,7 +497,7 @@ module.exports = async function (api) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-                  pubsub.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+                  pubsub.emitKeyBased(pubsub.USERNAME_BASED_EVENTS_CHANGED, context.user.username, {id: 'fakeEventId'});
                   subStepDone();
                 });
             },
@@ -665,7 +665,7 @@ module.exports = async function (api) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-                  pubsub.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+                  pubsub.emitKeyBased(pubsub.USERNAME_BASED_EVENTS_CHANGED, context.user.username, {id: 'fakeEventId'});
                   subStepDone();
                 });
             }
