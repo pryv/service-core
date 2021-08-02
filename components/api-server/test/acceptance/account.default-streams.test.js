@@ -107,7 +107,7 @@ describe('Account with system streams', function () {
       emit: (...args) => axonMsgs.push(args),
     };
     pubsub.setTestNotifier(axonSocket);
-    pubsub.emit(pubsub.SERVER_READY);
+    pubsub.status.emit(pubsub.SERVER_READY);
     await require("api-server/src/methods/account")(app.api);
     await require("api-server/src/methods/events")(app.api);
     request = supertest(app.expressApp);

@@ -107,8 +107,9 @@ class Webhook implements MessageSink {
     this.runsSize = params.runsSize || 50;
   }
 
-  startListenting(username: string) {
+  async startListenting(username: string) {
     if (this.pubsubTurnOffListener != null) { throw new Error('Cannot listen twice'); }
+    await pubsub.notifications.init();
     this.pubsubTurnOffListener = pubsub.notifications.onAndGetRemovable(username,
       function named(payload) { this.send(payload.eventName); }.bind(this)
     ); 

@@ -31,9 +31,10 @@ describe('Notifications', () => {
   
   
   before(async () => {
-    await pubsub.init();
+    await pubsub.status.init();
+    await pubsub.notifications.init();
      // intercept internal events
-    pubsub.notifications.on(pubsub.SERVER_READY, (message) => {
+    pubsub.status.on(pubsub.SERVER_READY, (message) => {
       emittedMsgs.push(pubsub.SERVER_READY);
     });
 
@@ -48,7 +49,7 @@ describe('Notifications', () => {
   
   describe('#serverReady', () => {
     beforeEach(() => {
-      pubsub.emit(pubsub.SERVER_READY);
+      pubsub.status.emit(pubsub.SERVER_READY);
     });
 
     it('[B76G] notifies internal listeners', () => {
@@ -60,7 +61,7 @@ describe('Notifications', () => {
   });
   describe('#accountChanged', () => {
     beforeEach(() => {
-      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
+      pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     });
 
     it('[P6ZD] notifies internal listeners', () => {
@@ -72,7 +73,7 @@ describe('Notifications', () => {
   });
   describe('#accessesChanged', () => {
     beforeEach(() => {
-      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_ACCESSES_CHANGED);
+      pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     });
 
     it('[P5CG] notifies internal listeners', () => {
@@ -84,7 +85,7 @@ describe('Notifications', () => {
   });
   describe('#followedSlicesChanged', () => {
     beforeEach(() => {
-      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
+      pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
     });
 
     it('[VU4A] notifies internal listeners', () => {
@@ -96,7 +97,7 @@ describe('Notifications', () => {
   });
   describe('#streamsChanged', () => {
     beforeEach(() => {
-      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_STREAMS_CHANGED);
+      pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_STREAMS_CHANGED);
     });
 
     it('[LDUQ] notifies internal listeners', () => {
@@ -108,7 +109,7 @@ describe('Notifications', () => {
   });
   describe('#eventsChanged', () => {
     beforeEach(() => {
-      pubsub.emit('USERNAME', pubsub.USERNAME_BASED_EVENTS_CHANGED);
+      pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_EVENTS_CHANGED);
     });
 
     it('[N8RI] notifies internal listeners', () => {

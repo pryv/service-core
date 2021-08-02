@@ -1,32 +1,43 @@
+/**
+ * @license
+ * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 
 
 // nats publisher / subscriber 
 
 const awaiting = require('awaiting');
 const NATS = require('nats');
-const { encode } = require('./nats_wire_message');
+const { encode, decode } = require('./nats_wire_message');
 const { getConfig,  getLogger } = require('@pryv/boiler');
 const logger = getLogger('messages:pubsub:nats');
 
 let natsConnection = null;
 async function init() {
+  if (natsConnection != null) return;
   const natsUri = (await getConfig()).get('nats:uri');
-  NATS.connect({url: natsUri, 'preserveBuffers': true});
+  natsConnection = NATS.connect({url: natsUri, 'preserveBuffers': true});
 }
 
-function deliver(scopeName, eventName, payload) {
+async function deliver(scopeName, eventName, payload) {
+  await init();
+  logger.debug('deliver', scopeName, eventName, payload);
   if (payload == null) payload = ''; // nats does not support null messages
   if (natsConnection == null) return;
   natsConnection.publish(scopeName, encode({eventName: eventName, payload: payload}));
-  logger.debug('deliver', eventName, message);
 }
 
 async function subscribe(scopeName, pubsub) {
-  const subscribed = awaiting.event(conn, 'subscribe');
-  natsConnection.subscribe(channelName, (buf) => { 
+  await init();
+  logger.debug('subscribe', scopeName);
+  const subscribed = awaiting.event(natsConnection, 'subscribe');
+  natsConnection.subscribe(scopeName, (buf) => { 
     const msg = decode(buf);
+    logger.debug('received', scopeName, msg);
     if (msg.eventName == null) {
-      console.log('Recieved wrong message ', pubsub, msg);
+      console.log('Received wrong message ', pubsub, msg);
       return;
     }
     pubsub._emit(msg.eventName, msg.payload);

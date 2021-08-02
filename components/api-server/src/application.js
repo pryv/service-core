@@ -112,8 +112,6 @@ class Application {
 
     this.api = new API(); 
     this.systemAPI = new API(); 
-
-    await pubsub.init();
     
     this.produceStorageSubsystem(); 
     await this.createExpressApp();

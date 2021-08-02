@@ -93,7 +93,7 @@ describe("Accesses with account streams", function () {
       emit: (...args) => axonMsgs.push(args),
     };
     pubsub.setTestNotifier(axonSocket);
-    pubsub.emit(pubsub.SERVER_READY);
+    pubsub.status.emit(pubsub.SERVER_READY);
     await require('api-server/src/methods/accesses')(app.api);
     
     await require("api-server/src/methods/events")(app.api);

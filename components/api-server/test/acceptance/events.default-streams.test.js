@@ -105,7 +105,7 @@ describe("Events of system streams", () => {
     };
     pubsub.setTestNotifier(axonSocket);
     
-    pubsub.emit(pubsub.SERVER_READY);
+    pubsub.status.emit(pubsub.SERVER_READY);
     await require("api-server/src/methods/events")(app.api);
 
     request = supertest(app.expressApp);

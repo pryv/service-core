@@ -57,7 +57,7 @@ describe("System streams", function () {
     };
     pubsub.setTestNotifier(axonSocket);
     
-    pubsub.emit(pubsub.SERVER_READY);
+    pubsub.status.emit(pubsub.SERVER_READY);
     require("api-server/src/methods/streams")(app.api);
   
     request = supertest(app.expressApp);

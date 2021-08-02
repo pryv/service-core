@@ -78,7 +78,7 @@ class Server {
     }
 
     this.logger.info('Server ready. API Version: ' + apiVersion);
-    pubsub.notifications.emit(pubsub.SERVER_READY);
+    pubsub.status.emit(pubsub.SERVER_READY);
     this.logger.debug('start completed');
   }
 

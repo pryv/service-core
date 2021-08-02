@@ -7,12 +7,7 @@
 
 // @flow
 
-import type { MessageSink } from './message_sink';
-export type { MessageSink };
-
 module.exports = {
-  NatsPublisher: require('./nats_publisher'),
-  NatsSubscriber: require('./nats_subscriber'),
   axonMessaging: require('./axon_messaging'),
   pubsub: require('./pubsub'),
 }

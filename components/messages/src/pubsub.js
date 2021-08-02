@@ -6,9 +6,10 @@
  */
 
 const EventEmitter = require('events');
-const { getConfig,  getLogger } = require('@pryv/boiler');
+const { getConfigUnsafe,  getLogger } = require('@pryv/boiler');
 const logger = getLogger('messages:pubsub');
-const C = require('./constants');
+const CONSTANTS = require('./constants');
+const isOpenSource = getConfigUnsafe(true).get('openSource:isActive');
 
 // Generic implementation of pub / sub messaging
 
@@ -24,7 +25,7 @@ class PubSub extends EventEmitter {
   constructor(scopeName, options = {}) {
     super();
     this.options = Object.assign({
-      useNats: false,
+      useNats: true,
       forwardToTests: false
     }, options);
     
@@ -33,7 +34,12 @@ class PubSub extends EventEmitter {
     this.initalized = false;
     this.initializing = false;
     this.testNotifier = globalTestNotifier;
-    this.nats = null;
+    
+    if (! isOpenSource && this.options.useNats) {
+      this.nats = require('./nats_pubsub');
+    } else {
+      this.nats = null;
+    }
   }
 
   on() {
@@ -53,19 +59,20 @@ class PubSub extends EventEmitter {
   }
 
   emit(eventName, payload) {
-    if (this.options.useNats && this.nats != null)
-      this.nats.deliverToNats(this.scopeName, {eventName: eventName, payload: payload});
-
+    super.emit(eventName, payload); // forward to internal listener 
+    this.logger.debug('emit', eventName, payload, this.options, {natsIsDefined: (this.nats != null)});
+    
     if (this.options.forwardToTests)
-      deliverToTests(eventName, payload);
+      forwardToTests(eventName, payload);
 
-    super.emit(eventName, payload); // forward to internal listener
-    logger.debug('emit', payload);
+    if (this.nats != null) {
+      this.nats.deliver(this.scopeName, eventName, payload);
+    }
   }
 
   _emit(eventName, payload) {
     super.emit(eventName, payload); // forward to internal listener
-    logger.debug('_emit', eventName, payload);
+    this.logger.debug('_emit', eventName, payload);
   }
 
   async init() {
@@ -73,14 +80,13 @@ class PubSub extends EventEmitter {
     while (this.initializing) { await new Promise(r => setTimeout(r, 50));}
     if (this.initalized) return; 
     this.initializing = true;
-    const config = await getConfig();
-    if (! config.get('openSource:isActive') && this.options.useNats) {
-      this.nats = require('./nats_pubsub');
+    if (this.nats != null) {
       await this.nats.init();
       await this.nats.subscribe(this.scopeName, this);
     }
     this.initalized = true;
     this.initializing = false;
+    this.logger.debug('Initialized');
   }
 
 }
@@ -89,19 +95,20 @@ class PubSub extends EventEmitter {
 // ----- TEST Messaging
 
 const testMessageMap = {};
-testMessageMap[C.USERNAME_BASED_EVENTS_CHANGED] = 'axon-events-changed';
-testMessageMap[C.USERNAME_BASED_STREAMS_CHANGED] = 'axon-streams-changed';
-testMessageMap[C.USERNAME_BASED_FOLLOWEDSLICES_CHANGED] = 'axon-followed-slices-changed';
-testMessageMap[C.USERNAME_BASED_ACCESSES_CHANGED] = 'axon-accesses-changed';
-testMessageMap[C.USERNAME_BASED_ACCOUNT_CHANGED] = 'axon-account-changed';
+testMessageMap[CONSTANTS.USERNAME_BASED_EVENTS_CHANGED] = 'axon-events-changed';
+testMessageMap[CONSTANTS.USERNAME_BASED_STREAMS_CHANGED] = 'axon-streams-changed';
+testMessageMap[CONSTANTS.USERNAME_BASED_FOLLOWEDSLICES_CHANGED] = 'axon-followed-slices-changed';
+testMessageMap[CONSTANTS.USERNAME_BASED_ACCESSES_CHANGED] = 'axon-accesses-changed';
+testMessageMap[CONSTANTS.USERNAME_BASED_ACCOUNT_CHANGED] = 'axon-account-changed';
 
 let globalTestNotifier = null;
 function setTestNotifier(testNotifier) {
   globalTestNotifier = testNotifier;
 }
 
-function deliverToTests(testNotifier, eventName, payload) {
-  if (eventName == C.SERVER_READY) {
+function forwardToTests(eventName, payload) {
+  if (eventName == CONSTANTS.SERVER_READY) {
+    
     return globalTestNotifier.emit('axon-server-ready');
   }
   const testMessageKey = testMessageMap[payload];
@@ -113,18 +120,15 @@ function deliverToTests(testNotifier, eventName, payload) {
 // ---- Exports
 
 const pubsub = {
+  status: new PubSub('status', {forwardToTests: true}),
   webhooks: new PubSub('webhooks'),
   series: new PubSub('series'),
-  notifications: new PubSub('notifcations', {forwardToTests: true}),
+  notifications: new PubSub('notifications', {forwardToTests: true}),
   cache: new PubSub('cache'),
   setTestNotifier,
 }
 
-pubsub.init = async function init() {
-  await pubsub.webhooks.init();
-  await pubsub.notifications.init();
-  await pubsub.cache.init();
-}
+Object.assign(pubsub, CONSTANTS);
 
 module.exports = pubsub;
 

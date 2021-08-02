@@ -220,7 +220,7 @@ class NamespaceContext {
   async open() {
     // If we've already got an active subscription, leave it be. 
     if (this.pubsubRemover != null) return; 
-    await pubsub.init();
+    await pubsub.notifications.init();
     this.pubsubRemover = pubsub.notifications.onAndGetRemovable(this.username, this.messageFromPubSub.bind(this) );
   }
 
