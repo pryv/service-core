@@ -256,7 +256,7 @@ module.exports = async function (api) {
       }
 
       result.stream = newStream;
-      pubsub.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
       next();
     });
   }
@@ -352,7 +352,7 @@ module.exports = async function (api) {
         }
 
         result.stream = updatedStream;
-        pubsub.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
+        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
         next();
       });
   }
@@ -399,7 +399,7 @@ module.exports = async function (api) {
         if (err) { return next(errors.unexpectedError(err)); }
 
         result.stream = updatedStream;
-        pubsub.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
+        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
         next();
       });
   }
@@ -497,7 +497,7 @@ module.exports = async function (api) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-                  pubsub.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+                  pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
                   subStepDone();
                 });
             },
@@ -665,7 +665,7 @@ module.exports = async function (api) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-                  pubsub.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+                  pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
                   subStepDone();
                 });
             }
@@ -681,7 +681,7 @@ module.exports = async function (api) {
               return stepDone(errors.unexpectedError(err));
             }
             result.streamDeletion = { id: params.id };
-            pubsub.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
+            pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
             stepDone();
           });
       }

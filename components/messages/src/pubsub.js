@@ -8,25 +8,37 @@
 const EventEmitter = require('events');
 const { getConfig,  getLogger } = require('@pryv/boiler');
 const logger = getLogger('messages:pubsub');
-const loggerNats = logger.getLogger('nats');
 const C = require('./constants');
 
 // Generic implementation of pub / sub messaging
 
 class PubSub extends EventEmitter {
+  options;
+  testNotifier;
+  nats; 
+  initalized;
+  initializing;
+  scopeName;
+  logger;
 
-  constructor() {
+  constructor(scopeName, options = {}) {
     super();
-    //this.on('removeListener', (eventName, l) => { logger.debug('Removed', eventName, l)});
+    this.options = Object.assign({
+      useNats: false,
+      forwardToTests: false
+    }, options);
+    
+    this.scopeName = scopeName;
+    this.logger = logger.getLogger(this.scopeName);
+    this.initalized = false;
+    this.initializing = false;
+    this.testNotifier = globalTestNotifier;
+    this.nats = null;
   }
 
   on() {
-    if (! initalized) throw(new Error('Initialize pubsub before registering listeners'));
+    if (! this.initalized) throw(new Error('Initialize pubsub before registering listeners'));
     super.on(...arguments);
-  }
-
-  async init() {
-    return await init();
   }
 
   /**
@@ -41,9 +53,12 @@ class PubSub extends EventEmitter {
   }
 
   emit(eventName, payload) {
-    //deliverToNats(eventName, payload);
-    deliverToNats('pubsub', {eventName: eventName, payload: payload});
-    if (this.testNotifier) deliverToTests(this.testNotifier, eventName, payload)
+    if (this.options.useNats && this.nats != null)
+      this.nats.deliverToNats(this.scopeName, {eventName: eventName, payload: payload});
+
+    if (this.options.forwardToTests)
+      deliverToTests(eventName, payload);
+
     super.emit(eventName, payload); // forward to internal listener
     logger.debug('emit', payload);
   }
@@ -53,62 +68,23 @@ class PubSub extends EventEmitter {
     logger.debug('_emit', eventName, payload);
   }
 
-  setTestNotifier(testNotifier) {
-    this.testNotifier = testNotifier;
+  async init() {
+    if (this.initalized) return; 
+    while (this.initializing) { await new Promise(r => setTimeout(r, 50));}
+    if (this.initalized) return; 
+    this.initializing = true;
+    const config = await getConfig();
+    if (! config.get('openSource:isActive') && this.options.useNats) {
+      this.nats = require('./nats_pubsub');
+      await this.nats.init();
+      await this.nats.subscribe(this.scopeName, this);
+    }
+    this.initalized = true;
+    this.initializing = false;
   }
+
 }
 
-// ----- NATS ------//
-
-let initalized = false;
-let initializing = false;
-let natsPublisher = null;
-async function init() {
-  if (initalized) return; 
-  while (initializing) { await new Promise(r => setTimeout(r, 50));}
-  if (initalized) return; 
-  initializing = true;
-  const config = await getConfig();
-  if (! config.get('openSource:isActive')) {
-    const { NatsPublisher, NatsSubscriber } = require('messages');
-    natsPublisher = new NatsPublisher(C.NATS_CONNECTION_URI);
-
-    const natsSubscriber = new NatsSubscriber(
-      C.NATS_CONNECTION_URI, 
-      { deliver: deliverFromNats}
-    );
-    await natsSubscriber.subscribe('pubsub');
-    loggerNats.debug('Nats Initialized and ready');
-  }
-  initalized = true;
-  initializing = false;
-}
-
-// ----- 
-
-const pubsub = new PubSub();
-
-Object.assign(pubsub, C);
-
-async function deliverToNats(eventName, message) {
-  if (message == null) message = ''; // nats does not support null messages
-  await init();
-  if (natsPublisher == null) return;
-  natsPublisher.deliver(eventName, message);
-  loggerNats.debug('deliver', eventName, message);
-} 
-
-async function deliverFromNats(pubsubKey, content) {
-  if (pubsubKey !== 'pubsub' || content.eventName == null) {
-    console.log('Recieved wrong message ', pubsub, content);
-    return;
-  }
-  if (pubsub == null) { 
-    console.log('XXXXXX PubSub not yet initalized'); 
-    return; 
-  }
-  pubsub._emit(content.eventName, content.payload);
-}
 
 // ----- TEST Messaging
 
@@ -119,14 +95,35 @@ testMessageMap[C.USERNAME_BASED_FOLLOWEDSLICES_CHANGED] = 'axon-followed-slices-
 testMessageMap[C.USERNAME_BASED_ACCESSES_CHANGED] = 'axon-accesses-changed';
 testMessageMap[C.USERNAME_BASED_ACCOUNT_CHANGED] = 'axon-account-changed';
 
+let globalTestNotifier = null;
+function setTestNotifier(testNotifier) {
+  globalTestNotifier = testNotifier;
+}
+
 function deliverToTests(testNotifier, eventName, payload) {
   if (eventName == C.SERVER_READY) {
-    return testNotifier.emit('axon-server-ready');
+    return globalTestNotifier.emit('axon-server-ready');
   }
   const testMessageKey = testMessageMap[payload];
   if (testMessageKey) {
-    testNotifier.emit(testMessageKey, eventName);
+    globalTestNotifier.emit(testMessageKey, eventName);
   }
+}
+
+// ---- Exports
+
+const pubsub = {
+  webhooks: new PubSub('webhooks'),
+  series: new PubSub('series'),
+  notifications: new PubSub('notifcations', {forwardToTests: true}),
+  cache: new PubSub('cache'),
+  setTestNotifier,
+}
+
+pubsub.init = async function init() {
+  await pubsub.webhooks.init();
+  await pubsub.notifications.init();
+  await pubsub.cache.init();
 }
 
 module.exports = pubsub;

@@ -71,9 +71,9 @@ class WebhooksService {
   }
 
   subscribeListeners() {
-    pubsub.on(pubsub.WEBHOOKS_DELETE, this.onStop.bind(this) );
-    pubsub.on(pubsub.WEBHOOKS_CREATE, this.onCreate.bind(this));
-    pubsub.on(pubsub.WEBHOOKS_ACTIVATE, this.onActivate.bind(this));
+    pubsub.webhooks.on(pubsub.WEBHOOKS_DELETE, this.onStop.bind(this) );
+    pubsub.webhooks.on(pubsub.WEBHOOKS_CREATE, this.onCreate.bind(this));
+    pubsub.webhooks.on(pubsub.WEBHOOKS_ACTIVATE, this.onActivate.bind(this));
   }
 
   setMeta(): number {

@@ -252,7 +252,7 @@ module.exports = async function (api) {
         params.update,
         accessId,
       );
-      pubsub.emit(context.user.username, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     } catch (err) {
       return next(err);
     }

@@ -120,8 +120,8 @@ class MetadataCache implements MetadataRepository {
 
   async subscribeToNotifications() {
     await pubsub.init();
-    pubsub.on(pubsub.SERIES_UPDATE_EVENTID_USERNAME, this.invalidateEvent.bind(this) );
-    pubsub.on(pubsub.SERIES_DELETE_EVENTID_USERNAME, this.dropSeries.bind(this) );   
+    pubsub.series.on(pubsub.SERIES_UPDATE_EVENTID_USERNAME, this.invalidateEvent.bind(this) );
+    pubsub.series.on(pubsub.SERIES_DELETE_EVENTID_USERNAME, this.dropSeries.bind(this) );   
   }
 
   // cache logic

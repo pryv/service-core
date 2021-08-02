@@ -887,7 +887,7 @@ module.exports = async function (api)
   }
 
   function notify(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    pubsub.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+    pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
 
     // notify is called by create, update and delete
     // depending on the case the event properties will be found in context or event
@@ -1343,7 +1343,7 @@ module.exports = async function (api)
           storagedUsed,
           'system',
         );
-        pubsub.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
         next();
       } catch (err) {
         next(err);

@@ -366,7 +366,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
       result.access = newAccess;
       result.access.apiEndpoint = ApiEndpoint.build(context.user.username, result.access.token);
       
-      pubsub.emit(context.user.username, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
       next();
     });
   }
@@ -482,7 +482,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
       return next(errors.unexpectedError(err));
     }
     result.accessDeletion = {id: params.id};
-    pubsub.emit(context.user.username, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
+    pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     next();
   }
 

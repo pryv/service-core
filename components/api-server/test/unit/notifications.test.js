@@ -33,11 +33,11 @@ describe('Notifications', () => {
   before(async () => {
     await pubsub.init();
      // intercept internal events
-    pubsub.on(pubsub.SERVER_READY, (message) => {
+    pubsub.notifications.on(pubsub.SERVER_READY, (message) => {
       emittedMsgs.push(pubsub.SERVER_READY);
     });
 
-    pubsub.on('USERNAME', (message) => {
+    pubsub.notifications.on('USERNAME', (message) => {
       emittedMsgs.push(message);
     });
 

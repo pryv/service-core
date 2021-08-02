@@ -45,7 +45,7 @@ module.exports = async function (api){
           return next(getCreationOrUpdateError(err, params));
         }
         result.followedSlice = newSlice;
-        pubsub.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
+        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
         next();
       });
     });
@@ -79,7 +79,7 @@ module.exports = async function (api){
               }
 
               result.followedSlice = updatedSlice;
-              pubsub.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
+              pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
               stepDone();
             });
         }
@@ -123,7 +123,7 @@ module.exports = async function (api){
           if (err) { return next(errors.unexpectedError(err)); }
 
           result.followedSliceDeletion = {id: params.id};
-          pubsub.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
+          pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
           next();
         });
       });
