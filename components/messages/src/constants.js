@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-module.exports.NATS_CONNECTION_URI = 'nats://127.0.0.1:4222';
 
 module.exports.SERVER_READY = 'server-ready';
 
@@ -22,3 +21,8 @@ module.exports.USERNAME_BASED_STREAMS_CHANGED = 'streams-changed';
 module.exports.USERNAME_BASED_ACCESSES_CHANGED = 'accesses-changed';
 module.exports.USERNAME_BASED_ACCOUNT_CHANGED = 'account-changed';
 module.exports.USERNAME_BASED_FOLLOWEDSLICES_CHANGED = 'followed-slices-changed';
+
+// pubsub working mode
+module.exports.NATS_MODE_ALL = 'all'; // all messages matching are serialized 
+module.exports.NATS_MODE_KEY = 'key'; // subscriptions and emit are bound to a key (eg username)
+module.exports.NATS_MODE_NONE = 'none'; // don't use nats

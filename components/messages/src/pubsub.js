@@ -15,35 +15,41 @@ const isOpenSource = getConfigUnsafe(true).get('openSource:isActive');
 
 class PubSub extends EventEmitter {
   options;
-  testNotifier;
   nats; 
-  initalized;
-  initializing;
   scopeName;
   logger;
+  natsKeySidMap; // map that contains subscriptions IDs to Map
 
   constructor(scopeName, options = {}) {
     super();
     this.options = Object.assign({
-      useNats: true,
+      nats: CONSTANTS.NATS_MODE_ALL,
       forwardToTests: false
     }, options);
     
     this.scopeName = scopeName;
     this.logger = logger.getLogger(this.scopeName);
-    this.initalized = false;
-    this.initializing = false;
-    this.testNotifier = globalTestNotifier;
+    this.natsKeySidMap = {};
     
-    if (! isOpenSource && this.options.useNats) {
+    if (! isOpenSource && (this.options.nats != CONSTANTS.NATS_MODE_NONE)) {
       this.nats = require('./nats_pubsub');
+      if (this.options.nats == CONSTANTS.NATS_MODE_ALL) {
+        this.nats.subscribe(this.scopeName, this);
+      }
     } else {
       this.nats = null;
     }
   }
 
   on() {
-    if (! this.initalized) throw(new Error('Initialize pubsub before registering listeners'));
+    if ((this.nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY)) {
+      const key = arguments[0];
+      if (this.natsKeySidMap[key] != null) throw new Error('Cannot subscribe twice to the same key ' + key );
+
+      this.nats.subscribe(this.scopeName + '.' + key, this).then((sid) => {
+        this.natsKeySidMap[key] = sid;
+      });
+    }
     super.on(...arguments);
   }
 
@@ -55,6 +61,11 @@ class PubSub extends EventEmitter {
     this.on(eventName, listener);
     return function() {
       this.off(eventName, listener);
+      if ((this.nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY) && (this.natsKeySidMap[eventName] != null)) {
+        this.logger.debug('off', eventName, this.natsKeySidMap[eventName]);
+        this.nats.unsubscribe(this.natsKeySidMap[eventName]);
+        delete this.natsKeySidMap[eventName];
+      }
     }.bind(this);
   }
 
@@ -66,7 +77,8 @@ class PubSub extends EventEmitter {
       forwardToTests(eventName, payload);
 
     if (this.nats != null) {
-      this.nats.deliver(this.scopeName, eventName, payload);
+      if (this.options.nats == CONSTANTS.NATS_MODE_ALL) this.nats.deliver(this.scopeName, eventName, payload);
+      if (this.options.nats == CONSTANTS.NATS_MODE_KEY) this.nats.deliver(this.scopeName + '.' + eventName, eventName, payload); 
     }
   }
 
@@ -76,17 +88,7 @@ class PubSub extends EventEmitter {
   }
 
   async init() {
-    if (this.initalized) return; 
-    while (this.initializing) { await new Promise(r => setTimeout(r, 50));}
-    if (this.initalized) return; 
-    this.initializing = true;
-    if (this.nats != null) {
-      await this.nats.init();
-      await this.nats.subscribe(this.scopeName, this);
-    }
-    this.initalized = true;
-    this.initializing = false;
-    this.logger.debug('Initialized');
+    console.log('Depcreated !!!!');
   }
 
 }
@@ -107,8 +109,7 @@ function setTestNotifier(testNotifier) {
 }
 
 function forwardToTests(eventName, payload) {
-  if (eventName == CONSTANTS.SERVER_READY) {
-    
+  if (eventName == CONSTANTS.SERVER_READY) { 
     return globalTestNotifier.emit('axon-server-ready');
   }
   const testMessageKey = testMessageMap[payload];
@@ -123,8 +124,8 @@ const pubsub = {
   status: new PubSub('status', {forwardToTests: true}),
   webhooks: new PubSub('webhooks'),
   series: new PubSub('series'),
-  notifications: new PubSub('notifications', {forwardToTests: true}),
-  cache: new PubSub('cache'),
+  notifications: new PubSub('notifications', {nats: CONSTANTS.NATS_MODE_KEY, forwardToTests: true}),
+  cache: new PubSub('cache', {nats: CONSTANTS.NATS_MODE_KEY}),
   setTestNotifier,
 }
 

@@ -33,7 +33,7 @@ async function subscribe(scopeName, pubsub) {
   await init();
   logger.debug('subscribe', scopeName);
   const subscribed = awaiting.event(natsConnection, 'subscribe');
-  natsConnection.subscribe(scopeName, (buf) => { 
+  const sid = natsConnection.subscribe(scopeName, (buf) => { 
     const msg = decode(buf);
     logger.debug('received', scopeName, msg);
     if (msg.eventName == null) {
@@ -43,11 +43,20 @@ async function subscribe(scopeName, pubsub) {
     pubsub._emit(msg.eventName, msg.payload);
   });
   // Wait until subscription is done. 
-  return subscribed;
+  await subscribed;
+  return sid;
+}
+
+async function unsubscribe(sid) {
+  logger.debug('unsubscribe', sid);
+  return new Promise((resolve) => { 
+    natsConnection.unsubscribe(sid, resolve);
+  })
 }
 
 module.exports = {
   init,
   deliver,
-  subscribe
+  subscribe,
+  unsubscribe
 }

@@ -7,7 +7,6 @@
 // @flow
 require('test-helpers/src/api-server-tests-config');
 require('api-server/test/unit/test-helper');
-const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 
 const chai = require('chai');
 const assert = chai.assert;
@@ -17,40 +16,35 @@ const NATS = require('nats');
 
 /* global describe, it */
 
-const { NatsPublisher } = require('messages');
+const natsPubsub = require('../src/nats_pubsub');
 const { decode } = require('messages/src/nats_wire_message');
+const { getConfig } = require('@pryv/boiler');
 
 describe('NatsPublisher', () => {
-  it('[S386] should construct', () => {
-    // For this to work, you must run the 'gnatsd' service on localhost. 
-    new NatsPublisher(NATS_CONNECTION_URI);
-  });
-  
-  function connect() {
-    return new NatsPublisher(
-      NATS_CONNECTION_URI,
-      (userName) => { return `${userName}.sok1`; }
-    );
-  }
-  function waitForConnect(natsConnection): Promise<void> {
-    return new bluebird((resolve, reject) => {
-      natsConnection.on('connect', resolve);
-      natsConnection.on('error', reject); 
-    });
-  }
-  
-  it('[I21M] delivers messages to "USERNAME.sok1"', (done) => {
-    const p = connect();
-    const rawClient = NATS.connect({
-      url: NATS_CONNECTION_URI, 
+  let rawClient;
+
+  before(async () => {
+    const natsUri = (await getConfig()).get('nats:uri');
+     rawClient = NATS.connect({
+     url: natsUri, 
       'preserveBuffers': true 
     });
+  });
+
+  it('[S386] should construct', async () => {                       
+    await natsPubsub.init();
+  });
+  
+  
+  it('[I21M] delivers messages to "USERNAME"', (done) => {
+
     
-    const sid = rawClient.subscribe('foobar.sok1', (msg) => {
+    
+    const sid = rawClient.subscribe('foobar', (buf) => {
       try {
         rawClient.unsubscribe(sid);
-        
-        assert.deepEqual(decode(msg), 'onTestMessage');
+        const msg = decode(buf);
+        assert.deepEqual(msg.eventName, 'onTestMessage');
         
         done(); 
       } catch(err) { 
@@ -58,11 +52,13 @@ describe('NatsPublisher', () => {
       }
     });
     
-    waitForConnect(rawClient)
-      .then(() => p.deliver('foobar', 'onTestMessage'))
-      .catch(err => done(err));
+    natsPubsub.deliver('foobar', 'onTestMessage');
 
     // If this test times out, then message delivery doesn't work. 
   });
+
+
+
+
 });
 
