@@ -54,11 +54,27 @@ function clear(namespace) {
   debug.get(namespace);
 }
 
+function setForUserId(userId, namespace, key, value) {
+  return set('user:' + userId, namespace + ':' + key, value);
+}
+
+function unsetForUserId(userId, namespace, key) {
+  return unset('user:' + userId, namespace + ':' + key);
+}
+
+function getForUserId(userId, namespace, key) {
+  return get('user:' + userId, namespace + ':' + key)
+}
+
+function clearUserId(userId) {
+  clear('user:' + userId);
+}
+
 const NS = {
   USERID_BY_USERNAME: 'userIdByUsername',
-  LOCAL_STORE_STREAMS_BY_USERID: 'localStoreStreamsByUser',
-  ACCESS_LOGIC_BY_USERIDTOKEN: 'access_Logic_BY_USERIDTOKEN',
-  ACCESS_LOGIC_BY_USERIDACCESSID: 'access_Logic_BY_USERIDACCESSID',
+  STREAMS_FOR_USERID: 'localStoreStreamsByUser',
+  ACCESS_LOGIC_FOR_USERID_BY_TOKEN: 'ACCESS_LOGIC_FOR_USERID_BY_TOKEN',
+  ACCESS_LOGIC_FOR_USERID_BY_ACCESSIS: 'ACCESS_LOGIC_FOR_USERID_BY_ACCESSIS',
 }
 
 module.exports = {
@@ -66,5 +82,9 @@ module.exports = {
   unset,
   get,
   clear,
+  setForUserId,
+  unsetForUserId,
+  getForUserId,
+  clearUserId,
   NS 
 }

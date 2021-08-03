@@ -113,37 +113,22 @@ describe('Cache', function() {
   it('[XDP6] Cache should reset permissions on stream structure change when moving a stream in and out ', async () => {
     const res1 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
     assert.equal(res1.status, 403, 'should fail accessing forbiddden stream');
-    console.log('Cache: ', cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, username + '/' + appAccess.token)._streamPermissionLevelCache);
 
     // move stream T as child of A
-    console.log('\n\n***** 2');
     const res2 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).send({parentId: 'A'});
     assert.equal(res2.status, 200);
-    //const res22 = await coreRequest.get(streamsPath).set('Authorization', personalToken).query({});
-    //console.log('Res get streams', res22.body);
 
-    console.log('Cache: ', cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, username + '/' + appAccess.token)._streamPermissionLevelCache);
-    //cache.clear();
-    
-    console.log('\n\n***** 3');
     const res3 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
     assert.equal(res3.status, 200, 'should have access to stream once moved into authorized scope');
 
-    
-
     // move stream T out of A
-    console.log('\n\n***** 4');
     const res4 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).send({parentId: null});
     assert.equal(res4.status, 200);
 
-    console.log('Cache: ', cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, username + '/' + appAccess.token)._streamPermissionLevelCache);
-
-    cache.clear();
-    console.log('\n\n***** 5');
     const res5 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
     console.log(res5.body);
     assert.equal(res5.status, 403, 'should not have acces once move out of authorized scope');
-    console.log('Cache: ', cache.get(cache.NS.ACCESS_LOGIC_BY_USERIDTOKEN, username + '/' + appAccess.token)._streamPermissionLevelCache);
+    console.log('Cache: ', cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token)._streamPermissionLevelCache);
   });
 
 

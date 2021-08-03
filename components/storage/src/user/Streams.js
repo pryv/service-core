@@ -100,7 +100,7 @@ Streams.prototype.countAll = function (user, callback) {
 };
 
 Streams.prototype.insertOne = function (user, stream, callback) {
-  cache.unset(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, user.id);
+  cache.clearUserId(user.id);
   async.series([
     function checkDeletionWithSameId(stepDone) {
       if (! stream.id) { return stepDone(); }
@@ -122,7 +122,11 @@ Streams.prototype.insertOne = function (user, stream, callback) {
 };
 
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {
-  cache.unset(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, user.id);
+  if (typeof updatedData.parentId != 'undefined') {
+    cache.clearUserId(user.id);
+  } else { 
+    cache.unsetForUserId(user.id, cache.NS.STREAMS_FOR_USERID);
+  }
   var self = this;
   if (! updatedData.parentId) {
     doUpdate();
@@ -157,7 +161,7 @@ function checkParentExists(user, parentId, callback) {
  */
 Streams.prototype.delete = function (userOrUserId, query, callback) {
   const userId = userOrUserId.id || userOrUserId;
-  cache.unset(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, userId);
+  cache.clearUserId(userId);
   var update = {
     $set: {deleted: new Date()},
     $unset: {

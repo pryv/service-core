@@ -58,10 +58,10 @@ class LocalDataSource extends DataSource {
 
 class LocalUserStreams extends UserStreams {
   async get(uid, params) {
-    let streams = cache.get(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, uid);
+    let streams = cache.getForUserId(uid, cache.NS.STREAMS_FOR_USERID, 'local');
     if (streams == null) { // get from DB
         streams = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
-        cache.set(cache.NS.LOCAL_STORE_STREAMS_BY_USERID, uid, streams);
+        cache.getForUserId(uid, cache.NS.STREAMS_FOR_USERID, 'local', streams);
     }
     if (! params.hideSystemStreams) {
      streams = streams.concat(SystemStreamUtils.visibleStreamsTree);
