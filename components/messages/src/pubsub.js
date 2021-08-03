@@ -31,24 +31,25 @@ class PubSub extends EventEmitter {
     this.logger = logger.getLogger(this.scopeName);
     this.natsKeySidMap = {};
     
-    if (! isOpenSource && (this.options.nats != CONSTANTS.NATS_MODE_NONE)) {
-      this.nats = require('./nats_pubsub');
-      if (this.options.nats == CONSTANTS.NATS_MODE_ALL) {
-        this.nats.subscribe(this.scopeName, this);
-      }
-    } else {
-      this.nats = null;
+    if (this.options.nats != CONSTANTS.NATS_MODE_NONE) {
+      initNats();
+    }
+    if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_ALL)) {
+      nats.subscribe(this.scopeName, this);
     }
   }
 
   on() {
-    if ((this.nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY)) {
-      const key = arguments[0];
-      if (this.natsKeySidMap[key] != null) throw new Error('Cannot subscribe twice to the same key ' + key );
-
-      this.nats.subscribe(this.scopeName + '.' + key, this).then((sid) => {
-        this.natsKeySidMap[key] = sid;
-      });
+    // nats "keyed" listeners
+    if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY)) {
+      const eventName = arguments[0];
+      if (this.natsKeySidMap[eventName] == null) { // not yet listening .. subscribe
+        nats.subscribe(this.scopeName + '.' + eventName, this).then((sid) => {
+          this.natsKeySidMap[eventName] = {sid: sid, counter: 1};
+        });
+      } else {
+        this.natsKeySidMap[eventName].counter++; // count listners for nats eventName
+      }
     }
     super.on(...arguments);
   }
@@ -61,24 +62,27 @@ class PubSub extends EventEmitter {
     this.on(eventName, listener);
     return function() {
       this.off(eventName, listener);
-      if ((this.nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY) && (this.natsKeySidMap[eventName] != null)) {
+      if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY) && (this.natsKeySidMap[eventName] != null)) {
         this.logger.debug('off', eventName, this.natsKeySidMap[eventName]);
-        this.nats.unsubscribe(this.natsKeySidMap[eventName]);
-        delete this.natsKeySidMap[eventName];
+        this.natsKeySidMap[eventName].counter--;
+        if (this.natsKeySidMap[eventName].counter == 0) { // no more listners .. close nats subscription
+          nats.unsubscribe(this.natsKeySidMap[eventName]);
+          delete this.natsKeySidMap[eventName];
+        }
       }
     }.bind(this);
   }
 
   emit(eventName, payload) {
     super.emit(eventName, payload); // forward to internal listener 
-    this.logger.debug('emit', eventName, payload, this.options, {natsIsDefined: (this.nats != null)});
+    this.logger.debug('emit', eventName, payload, this.options, {natsIsDefined: (nats != null)});
     
     if (this.options.forwardToTests)
       forwardToTests(eventName, payload);
 
-    if (this.nats != null) {
-      if (this.options.nats == CONSTANTS.NATS_MODE_ALL) this.nats.deliver(this.scopeName, eventName, payload);
-      if (this.options.nats == CONSTANTS.NATS_MODE_KEY) this.nats.deliver(this.scopeName + '.' + eventName, eventName, payload); 
+    if (nats != null) {
+      if (this.options.nats == CONSTANTS.NATS_MODE_ALL) nats.deliver(this.scopeName, eventName, payload);
+      if (this.options.nats == CONSTANTS.NATS_MODE_KEY) nats.deliver(this.scopeName + '.' + eventName, eventName, payload); 
     }
   }
 
@@ -87,10 +91,14 @@ class PubSub extends EventEmitter {
     this.logger.debug('_emit', eventName, payload);
   }
 
-  async init() {
-    console.log('Depcreated !!!!');
-  }
+}
 
+// ----- NATS 
+
+let nats = null;
+function initNats() {
+  if (nats != null || isOpenSource) return;
+  nats = require('./nats_pubsub');
 }
 
 
@@ -104,9 +112,7 @@ testMessageMap[CONSTANTS.USERNAME_BASED_ACCESSES_CHANGED] = 'axon-accesses-chang
 testMessageMap[CONSTANTS.USERNAME_BASED_ACCOUNT_CHANGED] = 'axon-account-changed';
 
 let globalTestNotifier = null;
-function setTestNotifier(testNotifier) {
-  globalTestNotifier = testNotifier;
-}
+
 
 function forwardToTests(eventName, payload) {
   if (eventName == CONSTANTS.SERVER_READY) { 
@@ -120,16 +126,40 @@ function forwardToTests(eventName, payload) {
 
 // ---- Exports
 
-const pubsub = {
-  status: new PubSub('status', {forwardToTests: true}),
-  webhooks: new PubSub('webhooks'),
-  series: new PubSub('series'),
-  notifications: new PubSub('notifications', {nats: CONSTANTS.NATS_MODE_KEY, forwardToTests: true}),
-  cache: new PubSub('cache', {nats: CONSTANTS.NATS_MODE_KEY}),
-  setTestNotifier,
+class PubSubExport {
+  _status;
+  _webhooks;
+  _series;
+  _notifications;
+  _cache;
+  get status() {
+    if (this._status == null) this._status =  new PubSub('status', {forwardToTests: true});
+    return this._status;
+  }
+  get webhooks() {
+    if (this._webhooks == null) this._webhooks =  new PubSub('webhooks');
+    return this._webhooks;
+  }
+  get series() {
+    if (this._series == null) this._series =  new PubSub('series');
+    return this._series;
+  }
+  get notifications() {
+    if (this._notifications == null) this._notifications =  new PubSub('notifications', {nats: CONSTANTS.NATS_MODE_KEY, forwardToTests: true});
+    return this._notifications;
+  }
+  get cache() {
+    if (this._cache == null) this._cache =  new PubSub('cache', {nats: CONSTANTS.NATS_MODE_KEY});
+    return this._cache;
+  }
+  setTestNotifier(testNotifier) {
+    globalTestNotifier = testNotifier;
+  }
 }
 
-Object.assign(pubsub, CONSTANTS);
+const pubSubExport = new PubSubExport();
 
-module.exports = pubsub;
+Object.assign(pubSubExport, CONSTANTS);
+
+module.exports = pubSubExport;
 

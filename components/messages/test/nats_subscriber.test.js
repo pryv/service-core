@@ -46,8 +46,8 @@ describe('NatsSubscriber', () => {
     // Connects NatsSubscriber to user 'foobar'
     beforeEach(async () => {
       msgs = [];
+      if (natsSID) { natsPubsub.unsubscribe(natsSID); }
       natsSID = await subscriber('foobar', msgs);
-      console.log('Subscribed ' + natsSID);
     });
     // Connects rawClient to NATS
     beforeEach(async () => {
@@ -65,8 +65,6 @@ describe('NatsSubscriber', () => {
     describe('subscribe("USERNAME")', () => {
       it('[4MAI] accepts messages from USERNAME.sok1 and dispatches them to sinks', async () => {
         await rawClient.publish('foobar', encode({eventName: 'onTestMessage'}));
-        //await natsPubsub.deliver('foobar', 'blip');
-        console.log('Published foobar');
         while (msgs.length == 0) { await new Promise((r) => setTimeout(r, 50))}
         
         assert.deepEqual(msgs, ['onTestMessage']);
@@ -87,10 +85,9 @@ describe('NatsSubscriber', () => {
       this.timeout(1000);
       it('[L49E] should unsubscribe from NATS', async () => {
         rawClient.publish('foobar', encode({eventName: 'onTestMessage1'}));
-        console.log('XXXXX', msgs);
         while (msgs.length == 0) { await new Promise((r) => setTimeout(r, 50))}
         
-        await natsPubsub.unsubscribe(natsSID); 
+        natsPubsub.unsubscribe(natsSID); 
         
         rawClient.publish('foobar', encode({eventName: 'onTestMessage2'}));
 

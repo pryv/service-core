@@ -31,8 +31,6 @@ describe('Notifications', () => {
   
   
   before(async () => {
-    await pubsub.status.init();
-    await pubsub.notifications.init();
      // intercept internal events
     pubsub.status.on(pubsub.SERVER_READY, (message) => {
       emittedMsgs.push(pubsub.SERVER_READY);

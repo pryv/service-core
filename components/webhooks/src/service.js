@@ -70,7 +70,6 @@ class WebhooksService {
   }
 
   async subscribeListeners() {
-    await pubsub.webhooks.init();
     pubsub.webhooks.on(pubsub.WEBHOOKS_DELETE, this.onStop.bind(this) );
     pubsub.webhooks.on(pubsub.WEBHOOKS_CREATE, this.onCreate.bind(this));
     pubsub.webhooks.on(pubsub.WEBHOOKS_ACTIVATE, this.onActivate.bind(this));

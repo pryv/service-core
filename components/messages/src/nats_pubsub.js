@@ -46,12 +46,9 @@ async function subscribe(scopeName, pubsub) {
   await subscribed;
   return sid;
 }
-
-async function unsubscribe(sid) {
+ function unsubscribe(sid) {
+  natsConnection.unsubscribe(sid);
   logger.debug('unsubscribe', sid);
-  return new Promise((resolve) => { 
-    natsConnection.unsubscribe(sid, resolve);
-  })
 }
 
 module.exports = {
