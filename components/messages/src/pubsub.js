@@ -39,10 +39,9 @@ class PubSub extends EventEmitter {
     }
   }
 
-  on() {
+  on(eventName, listener) {
     // nats "keyed" listeners
     if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY)) {
-      const eventName = arguments[0];
       if (this.natsKeySidMap[eventName] == null) { // not yet listening .. subscribe
         nats.subscribe(this.scopeName + '.' + eventName, this).then((sid) => {
           this.natsKeySidMap[eventName] = {sid: sid, counter: 1};
@@ -51,7 +50,7 @@ class PubSub extends EventEmitter {
         this.natsKeySidMap[eventName].counter++; // count listners for nats eventName
       }
     }
-    super.on(...arguments);
+    super.on(eventName, listener);
   }
 
   /**
@@ -77,8 +76,7 @@ class PubSub extends EventEmitter {
     super.emit(eventName, payload); // forward to internal listener 
     this.logger.debug('emit', eventName, payload, this.options, {natsIsDefined: (nats != null)});
     
-    if (this.options.forwardToTests)
-      forwardToTests(eventName, payload);
+    if (this.options.forwardToTests) forwardToTests(eventName, payload);
 
     if (nats != null) {
       if (this.options.nats == CONSTANTS.NATS_MODE_ALL) nats.deliver(this.scopeName, eventName, payload);
@@ -126,7 +124,7 @@ function forwardToTests(eventName, payload) {
 
 // ---- Exports
 
-class PubSubExport {
+class PubSubFactory {
   _status;
   _webhooks;
   _series;
@@ -157,9 +155,9 @@ class PubSubExport {
   }
 }
 
-const pubSubExport = new PubSubExport();
+const pubSubFactory = new PubSubFactory();
 
-Object.assign(pubSubExport, CONSTANTS);
+Object.assign(pubSubFactory, CONSTANTS);
 
-module.exports = pubSubExport;
+module.exports = pubSubFactory;
 

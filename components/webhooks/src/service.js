@@ -54,7 +54,7 @@ class WebhooksService {
 
     this.logger.info('Loading service with version ' + this.apiVersion + ' and serial ' + this.serial + '.');
 
-    await this.subscribeListeners();
+    this.subscribeListeners();
     this.logger.info('Listeners for webhooks creation/deletion up.');
 
     await this.loadWebhooks();
@@ -69,7 +69,7 @@ class WebhooksService {
     this.logger.info(numWebhooks + ' webhook(s) listening to changes from core.');
   }
 
-  async subscribeListeners() {
+ subscribeListeners() {
     pubsub.webhooks.on(pubsub.WEBHOOKS_DELETE, this.onStop.bind(this) );
     pubsub.webhooks.on(pubsub.WEBHOOKS_CREATE, this.onCreate.bind(this));
     pubsub.webhooks.on(pubsub.WEBHOOKS_ACTIVATE, this.onActivate.bind(this));
@@ -102,7 +102,7 @@ class WebhooksService {
       const username: string = entry[0];
       const webhooks: Array<Webhook> = entry[1];
       for (const webhook of webhooks) {
-        await webhook.startListenting(username);
+         webhook.startListenting(username);
       }
     }
   }
@@ -139,7 +139,7 @@ class WebhooksService {
       this.webhooks.set(username, userWebhooks);
     }
     userWebhooks.push(webhook);
-    await webhook.startListenting(username)
+    webhook.startListenting(username)
     this.logger.info(`Loaded webhook ${webhook.id} for ${username}`);
   }
 
