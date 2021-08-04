@@ -200,7 +200,7 @@ function methodIdForAction2(action, username) {
   const myRes = {};
   router.handle({ url: saction[1], method: saction[0] }, myRes, function() { });
   //logger.info('******', saction, myRes);
-  return myRes;
+  return myRes.methodId;
 }
 
 const errors = [];
@@ -261,6 +261,7 @@ function eventFromLine(line, username) {
   if (! methodId) {
     return false; // skip
   }
+
   const event = {
     createdBy: 'migration',
     streamIds: [audit.CONSTANTS.ACTION_STREAM_ID_PREFIX + methodId],
