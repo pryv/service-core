@@ -131,7 +131,7 @@ class PubSubFactory {
   _notifications;
   _cache;
   get status() {
-    if (this._status == null) this._status =  new PubSub('status', {forwardToTests: true});
+    if (this._status == null) this._status =  new PubSub('status', {nats: CONSTANTS.NATS_MODE_NONE, forwardToTests: true});
     return this._status;
   }
   get webhooks() {

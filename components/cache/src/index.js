@@ -45,13 +45,14 @@ function get(namespace, key) {
 
 function clear(namespace) {
   if (namespace == null) { // clear all
-    for (const ns of Object.values(NS)) {
+    for (const ns of Object.keys(_cache)) {
+      debug.clear(ns);
       delete _cache[ns];
     }
   } else {
     delete _cache[namespace];
   }
-  debug.get(namespace);
+  debug.clear(namespace);
 }
 
 function setForUserId(userId, namespace, key, value) {
@@ -71,10 +72,10 @@ function clearUserId(userId) {
 }
 
 const NS = {
-  USERID_BY_USERNAME: 'userIdByUsername',
-  STREAMS_FOR_USERID: 'localStoreStreamsByUser',
-  ACCESS_LOGIC_FOR_USERID_BY_TOKEN: 'ACCESS_LOGIC_FOR_USERID_BY_TOKEN',
-  ACCESS_LOGIC_FOR_USERID_BY_ACCESSIS: 'ACCESS_LOGIC_FOR_USERID_BY_ACCESSIS',
+  USERID_BY_USERNAME: 'USERID_BY_USERNAME',
+  STREAMS_FOR_USERID: 'STREAMS',
+  ACCESS_LOGIC_FOR_USERID_BY_TOKEN: 'ACCESS_LOGIC_BY_TOKEN',
+  ACCESS_LOGIC_FOR_USERID_BY_ACCESSID: 'ACCESS_LOGIC_BY_ACCESSID',
 }
 
 module.exports = {

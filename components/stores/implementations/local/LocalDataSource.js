@@ -61,7 +61,7 @@ class LocalUserStreams extends UserStreams {
     let streams = cache.getForUserId(uid, cache.NS.STREAMS_FOR_USERID, 'local');
     if (streams == null) { // get from DB
         streams = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
-        cache.getForUserId(uid, cache.NS.STREAMS_FOR_USERID, 'local', streams);
+        cache.setForUserId(uid, cache.NS.STREAMS_FOR_USERID, 'local', streams);
     }
     if (! params.hideSystemStreams) {
      streams = streams.concat(SystemStreamUtils.visibleStreamsTree);

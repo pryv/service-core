@@ -122,10 +122,10 @@ Streams.prototype.insertOne = function (user, stream, callback) {
 };
 
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {
-  if (typeof updatedData.parentId != 'undefined') {
+  if (typeof updatedData.parentId != 'undefined') { // clear ALL when a stream is moved
     cache.clearUserId(user.id);
-  } else { 
-    cache.unsetForUserId(user.id, cache.NS.STREAMS_FOR_USERID);
+  } else { // only stream Structure
+    cache.unsetForUserId(user.id, cache.NS.STREAMS_FOR_USERID, 'local');
   }
   var self = this;
   if (! updatedData.parentId) {

@@ -87,27 +87,54 @@ describe('Cache', function() {
   });
 
   it('[FELT] Second get stream must be faster that first one', async () => {
-    let t1 = hrtime();
-    const res1 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
-    t1 = hrtime(t1);
-    assert.equal(res1.status, 200);
+    function isEmpty() {
+      assert.notExists(cache.getForUserId(username, cache.NS.STREAMS_FOR_USERID, 'local'));
+      assert.notExists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token));
+      assert.notExists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, appAccess.id));
+      assert.notExists(cache.get(cache.NS.USERID_BY_USERNAME, username));
+    }
 
-    let t2 = hrtime();
-    const res2 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
-    t2 = hrtime(t2);
-    assert.equal(res2.status, 200);
+    function isFull() {
+      assert.exists(cache.getForUserId(username, cache.NS.STREAMS_FOR_USERID, 'local'));
+      assert.exists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token));
+      assert.exists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, appAccess.id));
+      assert.exists(cache.get(cache.NS.USERID_BY_USERNAME, username));
+    }
 
-    config.injectTestConfig({caching: {isActive : false }});
-    cache.clear();
+    // loop 3 times and calculate average time
+    let t1 = 0;
+    let t2 = 0;
+    const loop = 3;
+    for (let i = 0; i < loop; i++) {
+      cache.clear(); // reset cache fully
+      isEmpty();
+      const st1 = hrtime();
+      const res1 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
+      t1 += hrtime(st1)/loop;
+      assert.equal(res1.status, 200);
 
-    let t3 = hrtime();
-    const res3 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
-    t3 =  hrtime(t3);
+      isFull();
+      const st2 = hrtime();
+      const res2 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
+      t2 += hrtime(st2)/loop;
+      assert.equal(res2.status, 200);
+    }
+    config.injectTestConfig({caching: {isActive : false }}); // deactivate cache
+    cache.clear(); // reset cache fully
+
+    let t3 = 0;
+    for (let i = 0; i < loop; i++) {
+      const st3 = hrtime();
+      const res3 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
+      t3 +=  hrtime(st3)/loop;
+      assert.equal(res3.status, 200);
+      isEmpty();
+    }
   
     const data = `first-with-cache: ${t1}, second-with-cache: ${t2}, no-cache: ${t3}  => `;
     assert.isBelow(t2,t1, 'second-with-cache streams.get should be faster than first-with-cache' + data);
+    assert.isAbove(t3,t2 * 1.5, 'cache streams.get should be at least 40% longer than second-with-cache ' + data);
     assert.isAbove(t3,t1, 'no-cache streams.get should be longer than first-with-cache' + data);
-    assert.isAbove(t3,t2 * 1.5 , 'cache streams.get should be at least 50% longer than second-with-cache ' + data);
   });
 
   it('[XDP6] Cache should reset permissions on stream structure change when moving a stream in and out ', async () => {
@@ -126,9 +153,7 @@ describe('Cache', function() {
     assert.equal(res4.status, 200);
 
     const res5 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
-    console.log(res5.body);
     assert.equal(res5.status, 403, 'should not have acces once move out of authorized scope');
-    console.log('Cache: ', cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token)._streamPermissionLevelCache);
   });
 
 

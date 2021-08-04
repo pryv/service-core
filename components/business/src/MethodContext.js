@@ -216,7 +216,7 @@ class MethodContext {
       
     this.access = new AccessLogic(this.user.id, access);
     cache.setForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, this.access.token, this.access);
-    cache.setForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSIS, this.access.id, this.access);
+    cache.setForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, this.access.id, this.access);
   }
 
   // Internal: Loads `this.access`. 
@@ -255,7 +255,7 @@ class MethodContext {
   // 
   async retrieveAccessFromId(storage: StorageLayer, accessId: string): Promise<Access> {
 
-    this.access = cache.getForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSIS, accessId);
+    this.access = cache.getForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, accessId);
 
     if (this.access == null) {
       await this._retrieveAccess(storage, { id: accessId });
