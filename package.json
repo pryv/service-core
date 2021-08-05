@@ -50,7 +50,7 @@
     "**/xmlhttprequest-ssl": "^1.6.2"
   },
   "dependencies": {
-    "@pryv/boiler": "https://github.com/pryv/lib-node-boiler.git",
+    "@pryv/boiler": "https://github.com/pryv/lib-node-boiler.git#1.0.4",
     "async": "^2.5.0",
     "awaiting": "^3.0.0",
     "axon": "2.0.x",
@@ -68,7 +68,6 @@
     "influx": "^5.0.6",
     "jaeger-client": "^3.18.1",
     "js-yaml": "^3.11.0",
-    "lib-reporting": "git+ssh://git@github.com:pryv/lib-reporting.git",
     "lodash": "^4.17.4",
     "lru-cache": "6.x",
     "mkdirp": "1.0.4",

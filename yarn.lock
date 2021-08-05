@@ -1213,9 +1213,9 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
-"@pryv/boiler@https://github.com/pryv/lib-node-boiler.git":
-  version "1.0.3"
-  resolved "https://github.com/pryv/lib-node-boiler.git#b5c44e63f93132403fef4e8c17980076ce6abd0c"
+"@pryv/boiler@https://github.com/pryv/lib-node-boiler.git#1.0.4":
+  version "1.0.4"
+  resolved "https://github.com/pryv/lib-node-boiler.git#4ff2b1e9d85a011a28e4f0d20fb5affc79660f04"
   dependencies:
     "@airbrake/node" "^1.4.2"
     debug "^4.3.1"
@@ -4761,13 +4761,6 @@ levn@^0.4.1:
 "lib-reporting@git+ssh://git@github.com/pryv/lib-reporting":
   version "1.0.1"
   resolved "git+ssh://git@github.com/pryv/lib-reporting#1fafe89f5a624a22ccd9cb8fd79a28f9211d5a4e"
-  dependencies:
-    bluebird "^3.7.2"
-    superagent "^5.2.2"
-
-"lib-reporting@git+ssh://git@github.com:pryv/lib-reporting.git":
-  version "1.0.1"
-  resolved "git+ssh://git@github.com:pryv/lib-reporting.git#1fafe89f5a624a22ccd9cb8fd79a28f9211d5a4e"
   dependencies:
     bluebird "^3.7.2"
     superagent "^5.2.2"

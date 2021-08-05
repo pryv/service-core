@@ -63,7 +63,7 @@ class PubSub extends EventEmitter {
     return function() {
       this.off(eventName, listener);
       if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY) && (this.natsSubscriptionMap[eventName] != null)) {
-        this.logger.debug('off', eventName, this.natsSubscriptionMap[eventName]);
+        this.logger.debug('off', eventName);
         this.natsSubscriptionMap[eventName].counter--;
         if (this.natsSubscriptionMap[eventName].counter == 0) { // no more listeners .. close nats subscription
           this.natsSubscriptionMap[eventName].sub.unsubscribe();
