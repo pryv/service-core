@@ -11,7 +11,8 @@ require('api-server/test/unit/test-helper');
 const chai = require('chai');
 const assert = chai.assert;
 
-const NATS = require('nats');
+const { connect, JSONCodec } = require('nats');
+const { encode, decode } = JSONCodec();
 
 const { getConfig } = require('@pryv/boiler');
 
@@ -20,7 +21,6 @@ const { getConfig } = require('@pryv/boiler');
 const { ConditionVariable } = require('test-helpers').syncPrimitives;
 
 const natsPubsub = require('../src/nats_pubsub');
-const { encode } = require('messages/src/nats_wire_message');
 
 describe('NatsSubscriber', () => {
   it('[DMMP] should construct', async () => {
@@ -39,22 +39,19 @@ describe('NatsSubscriber', () => {
   describe('when subscribed to "foobar"', () => {
     let msgs;
     let rawClient;
-    let natsSID;
+    let natsSUB;
 
-    
-    
     // Connects NatsSubscriber to user 'foobar'
     beforeEach(async () => {
       msgs = [];
-      if (natsSID) { natsPubsub.unsubscribe(natsSID); }
-      natsSID = await subscriber('foobar', msgs);
+      if (natsSUB) { natsSUB.unsubscribe(); }
+      natsSUB = await subscriber('foobar', msgs);
     });
     // Connects rawClient to NATS
     beforeEach(async () => {
       const natsUri = (await getConfig()).get('nats:uri');
-       rawClient = NATS.connect({
-       url: natsUri, 
-        'preserveBuffers': true 
+      rawClient = await connect({
+       servers: natsUri, 
       });
     });
     
@@ -86,8 +83,7 @@ describe('NatsSubscriber', () => {
       it('[L49E] should unsubscribe from NATS', async () => {
         rawClient.publish('foobar', encode({eventName: 'onTestMessage1'}));
         while (msgs.length == 0) { await new Promise((r) => setTimeout(r, 50))}
-        
-        natsPubsub.unsubscribe(natsSID); 
+        natsSUB.unsubscribe();
         
         rawClient.publish('foobar', encode({eventName: 'onTestMessage2'}));
 
@@ -99,34 +95,3 @@ describe('NatsSubscriber', () => {
     });
   });
 });
-
-class ArraySink implements MessageSink {
-  // Messages that were delivered to this sink. 
-  msgs: Array<string>; 
-  
-  // Broadcasted to when a new message arrives.
-  cvNewMessage: ConditionVariable;
-  
-  constructor() {
-    this.msgs = []; 
-    this.cvNewMessage = new ConditionVariable(); 
-  }
-  
-  deliver(userName: string, message: string | {}): void {
-    if (typeof message === 'object') {
-      message = JSON.stringify(message);
-    }
-    this.msgs.push(message);
-    this.cvNewMessage.broadcast(); 
-  }
-  
-  async notEmpty() {
-    const msgs = this.msgs; 
-    const cvNewMessage = this.cvNewMessage;
-    const timeoutMs = 1000; 
-    
-    if (msgs.length>0) return; 
-    
-    await cvNewMessage.wait(timeoutMs);
-  }
-}

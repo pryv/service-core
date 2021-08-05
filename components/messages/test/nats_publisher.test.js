@@ -11,23 +11,25 @@ require('api-server/test/unit/test-helper');
 const chai = require('chai');
 const assert = chai.assert;
 
-const NATS = require('nats');
+const { connect, JSONCodec } = require('nats');
+const { encode, decode } = JSONCodec();
 
 /* global describe, it */
 
 const natsPubsub = require('../src/nats_pubsub');
-const { decode } = require('messages/src/nats_wire_message');
 const { getConfig } = require('@pryv/boiler');
 
+//function decode(x) {return x};
+
 describe('NatsPublisher', () => {
-  let rawClient;
+  let natsConnection;
 
   before(async () => {
     const natsUri = (await getConfig()).get('nats:uri');
-     rawClient = NATS.connect({
-     url: natsUri, 
-      'preserveBuffers': true 
+    natsConnection = await connect({
+     servers: natsUri
     });
+
   });
 
   it('[S386] should construct', async () => {                       
@@ -36,24 +38,18 @@ describe('NatsPublisher', () => {
   
   
   it('[I21M] delivers messages to "USERNAME"', (done) => {
-
     
-    
-    const sid = rawClient.subscribe('foobar', (buf) => {
-      try {
-        rawClient.unsubscribe(sid);
-        const msg = decode(buf);
+    const sub = natsConnection.subscribe('foobar');
+    (async () => {
+      for await (const m of sub) {
+        const msg = decode(m.data);
         assert.deepEqual(msg.eventName, 'onTestMessage');
-        
-        done(); 
-      } catch(err) { 
-        done(err); 
+        sub.unsubscribe();
+        done();
       }
-    });
-    
-    natsPubsub.deliver('foobar', 'onTestMessage');
+    })();
 
-    // If this test times out, then message delivery doesn't work. 
+    natsPubsub.deliver('foobar', 'onTestMessage');
   });
 
 

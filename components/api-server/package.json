@@ -18,7 +18,6 @@
     "update-event-types": "scripts/update-event-types.bash"
   },
   "dependencies": {
-    "@pryv/boiler": "https://github.com/pryv/lib-node-boiler.git",
     "awaiting": "^3.0",
     "lib-reporting": "git+ssh://git@github.com/pryv/lib-reporting",
     "multistream": "^2.1.0",

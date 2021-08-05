@@ -8,17 +8,16 @@
 
 // nats publisher / subscriber 
 
-const awaiting = require('awaiting');
-const NATS = require('nats');
-const { encode, decode } = require('./nats_wire_message');
-const { getConfig,  getLogger } = require('@pryv/boiler');
+const { connect, JSONCodec } = require('nats');
+const { encode, decode } = JSONCodec();
+const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('messages:pubsub:nats');
 
 let natsConnection = null;
 async function init() {
   if (natsConnection != null) return;
   const natsUri = (await getConfig()).get('nats:uri');
-  natsConnection = NATS.connect({url: natsUri, 'preserveBuffers': true});
+  natsConnection = await connect({ servers: natsUri, noEcho: true });
 }
 
 async function deliver(scopeName, eventName, payload) {
@@ -26,34 +25,29 @@ async function deliver(scopeName, eventName, payload) {
   logger.debug('deliver', scopeName, eventName, payload);
   if (payload == null) payload = ''; // nats does not support null messages
   if (natsConnection == null) return;
-  natsConnection.publish(scopeName, encode({eventName: eventName, payload: payload}));
+  natsConnection.publish(scopeName, encode({ eventName: eventName, payload: payload }));
 }
 
 async function subscribe(scopeName, pubsub) {
   await init();
   logger.debug('subscribe', scopeName);
-  const subscribed = awaiting.event(natsConnection, 'subscribe');
-  const sid = natsConnection.subscribe(scopeName, (buf) => { 
-    const msg = decode(buf);
-    logger.debug('received', scopeName, msg);
-    if (msg.eventName == null) {
-      console.log('Received wrong message ', pubsub, msg);
-      return;
+  const sub = natsConnection.subscribe(scopeName);
+  (async () => {
+    for await (const m of sub) {
+      const msg = decode(m.data);
+      logger.debug('received', scopeName, msg);
+      if (msg.eventName == null) {
+        console.log('Received wrong message ', pubsub, msg);
+        return;
+      }
+      pubsub._emit(msg.eventName, msg.payload);
     }
-    pubsub._emit(msg.eventName, msg.payload);
-  });
-  // Wait until subscription is done. 
-  await subscribed;
-  return sid;
-}
- function unsubscribe(sid) {
-  natsConnection.unsubscribe(sid);
-  logger.debug('unsubscribe', sid);
+  })();
+  return sub;
 }
 
 module.exports = {
   init,
   deliver,
-  subscribe,
-  unsubscribe
+  subscribe
 }

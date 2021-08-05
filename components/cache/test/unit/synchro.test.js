@@ -9,8 +9,8 @@ const synchro = require('../../src/synchro');
 const { pubsub } = require('messages');
 const { getConfig } = require('@pryv/boiler');
 
-const NATS = require('nats');
-const { encode } = require('messages/src/nats_wire_message');
+const { connect, JSONCodec } = require('nats');
+const { encode, decode } = JSONCodec();
 
 describe('Synchro', function () {
 
@@ -18,9 +18,9 @@ describe('Synchro', function () {
 
   before(async () => {
     const natsUri = (await getConfig()).get('nats:uri');
-    natsClient = NATS.connect({
-     url: natsUri, 
-      'preserveBuffers': true 
+    natsClient = await connect({
+     servers: natsUri, 
+     json: true 
     });
   });
 
@@ -43,7 +43,7 @@ describe('Synchro', function () {
     assert.notExists(synchro.listenerMap['toto'], 'should be removed');
   });
 
-  it('[OKHQ] Listners should not receive "internal" messages', () => {
+  it('[OKHQ] Listners should not receive "internal" messages', async () => {
     cache.setForUserId('toto', 'test', 'titi');
     assert.exists(synchro.listenerMap['toto'], 'should be registered');
     pubsub.cache.emit('toto', {action: 'clear'});

@@ -18,7 +18,7 @@ class PubSub extends EventEmitter {
   nats; 
   scopeName;
   logger;
-  natsKeySidMap; // map that contains subscriptions IDs to Map
+  natsSubscriptionMap; // map that contains nats subscriptions by key
 
   constructor(scopeName, options = {}) {
     super();
@@ -30,7 +30,7 @@ class PubSub extends EventEmitter {
     
     this.scopeName = scopeName;
     this.logger = logger.getLogger(this.scopeName);
-    this.natsKeySidMap = {};
+    this.natsSubscriptionMap = {};
     
     if (this.options.nats != CONSTANTS.NATS_MODE_NONE) {
       initNats();
@@ -43,12 +43,12 @@ class PubSub extends EventEmitter {
   on(eventName, listener) {
     // nats "keyed" listeners
     if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY)) {
-      if (this.natsKeySidMap[eventName] == null) { // not yet listening .. subscribe
-        nats.subscribe(this.scopeName + '.' + eventName, this).then((sid) => {
-          this.natsKeySidMap[eventName] = {sid: sid, counter: 1};
+      if (this.natsSubscriptionMap[eventName] == null) { // not yet listening .. subscribe
+        nats.subscribe(this.scopeName + '.' + eventName, this).then((sub) => {
+          this.natsSubscriptionMap[eventName] = {sub: sub, counter: 1};
         });
       } else {
-        this.natsKeySidMap[eventName].counter++; // count listners for nats eventName
+        this.natsSubscriptionMap[eventName].counter++; // count listners for nats eventName
       }
     }
     super.on(eventName, listener);
@@ -62,12 +62,12 @@ class PubSub extends EventEmitter {
     this.on(eventName, listener);
     return function() {
       this.off(eventName, listener);
-      if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY) && (this.natsKeySidMap[eventName] != null)) {
-        this.logger.debug('off', eventName, this.natsKeySidMap[eventName]);
-        this.natsKeySidMap[eventName].counter--;
-        if (this.natsKeySidMap[eventName].counter == 0) { // no more listners .. close nats subscription
-          nats.unsubscribe(this.natsKeySidMap[eventName]);
-          delete this.natsKeySidMap[eventName];
+      if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY) && (this.natsSubscriptionMap[eventName] != null)) {
+        this.logger.debug('off', eventName, this.natsSubscriptionMap[eventName]);
+        this.natsSubscriptionMap[eventName].counter--;
+        if (this.natsSubscriptionMap[eventName].counter == 0) { // no more listeners .. close nats subscription
+          this.natsSubscriptionMap[eventName].sub.unsubscribe();
+          delete this.natsSubscriptionMap[eventName];
         }
       }
     }.bind(this);
