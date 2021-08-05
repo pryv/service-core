@@ -102,7 +102,7 @@ class Tracing {
   /**
    * Finishes the span with the given name. Throws an error if no span with such a name exists.
    */
-  finishSpan(name: ?string): void {
+  finishSpan(name: ?string, forceName: ?string): void {
     let span;
     if (name == null) {
       span = this.spansStack.pop();
@@ -111,6 +111,7 @@ class Tracing {
       if (index < 0) throw new Error(`finishing span that does not exists "${name}"`);
       [span] = this.spansStack.splice(index, 1);
     }
+    if (forceName != null) span._operationName = forceName;
     span.finish();
     this.lastIndex--;
     //console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
