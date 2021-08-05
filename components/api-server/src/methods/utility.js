@@ -19,6 +19,8 @@ import type { MethodContext } from 'business';
 import type Result  from '../Result';
 import type { ApiCallback }  from '../API';
 
+const { Permission } = require('business/src/accesses');
+
 type ApiCall = {
   method: string,
   params: mixed,
@@ -45,16 +47,18 @@ module.exports = async function (api: API) {
     getAccessInfo);
 
   function getAccessInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const accessInfoProps = ['id', 'token', 'type', 'name', 'deviceName', 'permissions',
+    const accessInfoProps: Array<string> = ['id', 'token', 'type', 'name', 'deviceName', 'permissions',
       'lastUsed', 'expires', 'deleted', 'clientData',
       'created', 'createdBy', 'modified', 'modifiedBy', 'calls'
     ];
-    const userProps = ['username'];
+    const userProps: Array<string> = ['username'];
     
     for (const prop of accessInfoProps) {
       const accessProp = context.access[prop];
       if (accessProp != null) result[prop] = accessProp;
     }
+
+    if (result.permissions != null) result.permissions = filterNonePermissions(result.permissions);
 
     result.user = {};
     for (const prop of userProps) {
@@ -63,6 +67,17 @@ module.exports = async function (api: API) {
     }
   
     next();
+
+    /**
+     * Remove permissions with level="none" from given array
+     */
+    function filterNonePermissions(permissions: Array<Permission>): Array<Permission> {
+      const filteredPermissions: Array<Permission> = [];
+      for (const perm of permissions) {
+        if (perm.level !== 'none') filteredPermissions.push(perm);
+      }
+      return filteredPermissions;
+    }
   }
 
   api.register('callBatch',

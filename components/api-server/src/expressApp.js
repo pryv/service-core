@@ -16,14 +16,17 @@ const Paths = require('./routes/Paths');
 
 const { getAPIVersion } = require('middleware/src/project_version');
 
+const { getConfig } = require('@pryv/boiler');
+
 // ------------------------------------------------------------ express app init
 
 // Creates and returns an express application with a standard set of middleware. 
 // `version` should be the version string you want to show to API clients. 
 // 
-async function expressAppInit(isDnsLess: boolean, logging) {
+async function expressAppInit(logging) {
   const version = await getAPIVersion();
-  var app = express(); // register common middleware
+  const config = await getConfig();
+  const app = express(); // register common middleware
   const commonHeadersMiddleware = await middleware.commonHeaders();
   const requestTraceMiddleware = middleware.requestTrace(app, logging);
 
@@ -41,12 +44,12 @@ async function expressAppInit(isDnsLess: boolean, logging) {
     .filter(e => e.indexOf(Paths.Params.Username) < 0)
     .value(); 
 
-  if (!isDnsLess)
+  if (!config.get('dnsLess:isActive'))
     app.use(middleware.subdomainToPath(ignorePaths));
 
   // Parse JSON bodies: 
   app.use(bodyParser.json({
-    limit: '10mb'}));
+    limit: config.get('uploads:maxSizeMb') + 'mb'}));
 
   // This object will contain key-value pairs, where the value can be a string
   // or array (when extended is false), or any type (when extended is true).
