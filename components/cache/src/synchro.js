@@ -20,7 +20,6 @@ function trackChangesForUserId(userId) {
 
 // unregister listner
 function removeChangeTracker(userId) {
-  console.log('XXXX removeChangeTracker', userId);
   if (listenerMap[userId] == null) return;
   listenerMap[userId](); // remove listener
   delete listenerMap[userId];
@@ -28,7 +27,6 @@ function removeChangeTracker(userId) {
 
 // listener 
 function handleMessage(userId, msg) {
-  console.log('XXXXXX handleMessage', msg);
   if (msg.action == 'unset') {
     return cache.unset('user:' + userId, msg.key);
   }
