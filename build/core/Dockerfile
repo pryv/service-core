@@ -3,10 +3,10 @@ FROM pryvio/intermediate-core:latest
 ARG DATA_DIR="/app/data"
 
 # ================================ Gnats =======================================
-# Download and expand the gnatsd binary
-WORKDIR /var/spool/gnatsd
-RUN sh /app/bin/scripts/setup-gnatsd.sh
-RUN mv ./gnatsd/gnatsd-v1.0.4-linux-amd64/gnatsd /usr/local/bin/
+# Download and expand the nats-server binary
+WORKDIR /var/spool/nats-server
+RUN sh /app/bin/scripts/setup-nats-server.sh
+RUN mv ./nats-server/nats-server-v2.3.4-linux-amd64/nats-server /usr/local/bin/
 # ================================ Gnats end =======================================
 
 # Create the data space (attachments/previews)

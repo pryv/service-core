@@ -33,7 +33,7 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.TECH_PRYV_SSH_KEY }}
 
-    - name: Install & run gnatsd, mongodb, influxdb
+    - name: Install & run nats-server, mongodb, influxdb
       run: sh build/build-dev
       
     - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install

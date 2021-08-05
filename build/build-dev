@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # This file installs all dependencies needed to run core for tests
 
-# Install gnatsd - the duplicate of ./core/gnatsd.sh file that consists of docker
+# Install nats-server - the duplicate of ./core/nats-server.sh file that consists of docker
 # run commands
-sh ./scripts/setup-gnatsd.sh
+sh ./scripts/setup-nats-server.sh
 
 # Install mongodb
 bash ./scripts/setup-dev-env.bash
@@ -19,8 +19,8 @@ sudo apt-get install graphicsmagick
 # but in the isolated environment like docker it is ok, but for local machine 
 # installation could cause confusion
 
-# Start gnatsd (the same as `yarn nats`, just in the background)
-./gnatsd/gnatsd-v1.0.4-linux-amd64/gnatsd &
+# Start nats-server (the same as `yarn nats`, just in the background)
+./nats-server/nats-server-v2.3.4-linux-amd64/nats-server &
 
 # Start Influx db and verify the status
 sudo service influxdb start

@@ -26,7 +26,7 @@
     "license": "node_modules/.bin/source-licenser licensing/config.yml licensing/LICENSE.src ./",
     "local": "cd dist/components/api-server && NODE_ENV=development nodemon bin/server",
     "metadata": "cd dist/components/metadata && bin/metadata",
-    "nats": "gnatsd",
+    "nats": "nats-server",
     "output-test-results": "node scripts/test-results/test-results.js",
     "previews": "cd dist/components/previews-server && npm start",
     "release": "scripts/prepare_dist && node_modules/.bin/babel ./components --verbose --out-dir=dist/components --copy-files",
