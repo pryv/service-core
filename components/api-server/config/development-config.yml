@@ -7,8 +7,8 @@ logs:
     active: true
     path: "var-pryv/logs/core.log"
     level: info
-    isRotated: false
     rotation:
+      isActive: true
       days: 14
 auth:
   adminAccessKey: CHANGE_ME_WITH_SOMETHING

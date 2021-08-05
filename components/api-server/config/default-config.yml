@@ -88,3 +88,18 @@ caching:
   isActive: true
   localStreams: true
   accesses: true
+
+logs:
+  console:
+    active: false
+    level: info
+  file:
+    active: false
+    path: "var-pryv/logs/core.log"
+    level: info
+    rotation:
+      isActive: true
+      days: 14
+
+uploads:
+  maxSizeMb: 50

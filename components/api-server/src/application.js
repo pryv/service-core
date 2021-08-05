@@ -166,9 +166,7 @@ class Application {
   }
 
   async createExpressApp(): Promise<express$Application> {
-    this.expressApp = await expressAppInit( 
-      this.config.get('dnsLess:isActive'), 
-      this.logging);
+    this.expressApp = await expressAppInit(this.logging);
   }
 
   initiateRoutes() {

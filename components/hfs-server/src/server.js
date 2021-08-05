@@ -126,7 +126,7 @@ class Server {
     const config = this.config;
     const traceEnabled = config.get('trace:enable'); 
         
-    var app = express(); 
+    const app = express(); 
     
     app.disable('x-powered-by');
     
@@ -137,7 +137,7 @@ class Server {
     }
     app.use(middleware.subdomainToPath([]));
     app.use(middleware.requestTrace(express, logger));
-    app.use(bodyParser.json({ limit: '10mb' }));
+    app.use(bodyParser.json({ limit: config.get('uploads:maxSizeMb') + 'mb' }));
     app.use(middleware.override);
     app.use(await middleware.commonHeaders());
     app.all('/*', getAuth);
