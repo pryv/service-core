@@ -11,7 +11,6 @@ require('api-server/test/unit/test-helper');
 const chai = require('chai');
 const assert = chai.assert;
 
-const bluebird = require('bluebird');
 const NATS = require('nats');
 
 /* global describe, it */

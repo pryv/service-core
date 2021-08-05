@@ -24,7 +24,8 @@ class PubSub extends EventEmitter {
     super();
     this.options = Object.assign({
       nats: CONSTANTS.NATS_MODE_ALL,
-      forwardToTests: false
+      forwardToTests: false,
+      forwardToInternal: true,
     }, options);
     
     this.scopeName = scopeName;
@@ -73,8 +74,8 @@ class PubSub extends EventEmitter {
   }
 
   emit(eventName, payload) {
-    super.emit(eventName, payload); // forward to internal listener 
-    this.logger.debug('emit', eventName, payload, this.options, {natsIsDefined: (nats != null)});
+    this.logger.debug('emit', eventName, payload, this.options);
+    if (this.options.forwardToInternal) super.emit(eventName, payload); // forward to internal listener 
     
     if (this.options.forwardToTests) forwardToTests(eventName, payload);
 
@@ -147,7 +148,7 @@ class PubSubFactory {
     return this._notifications;
   }
   get cache() {
-    if (this._cache == null) this._cache =  new PubSub('cache', {nats: CONSTANTS.NATS_MODE_KEY});
+    if (this._cache == null) this._cache =  new PubSub('cache', {nats: CONSTANTS.NATS_MODE_KEY, forwardToInternal: false});
     return this._cache;
   }
   setTestNotifier(testNotifier) {

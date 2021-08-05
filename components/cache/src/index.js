@@ -7,6 +7,9 @@
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 const _cache = {};
 
+let synchro = null;
+
+
 const logger = getLogger('cache');
 const debug = {};
 for (const key of ['set', 'get', 'unset', 'clear']) {
@@ -56,10 +59,12 @@ function clear(namespace) {
 }
 
 function setForUserId(userId, namespace, key, value) {
+  if (synchro != null) synchro.trackChangesForUserId(userId);
   return set('user:' + userId, namespace + ':' + key, value);
 }
 
 function unsetForUserId(userId, namespace, key) {
+  if (synchro != null) synchro.unsetForUserId(userId, namespace + ':' + key);
   return unset('user:' + userId, namespace + ':' + key);
 }
 
@@ -68,6 +73,7 @@ function getForUserId(userId, namespace, key) {
 }
 
 function clearUserId(userId) {
+  if (synchro != null) synchro.clearUserId(userId);
   clear('user:' + userId);
 }
 
@@ -78,7 +84,7 @@ const NS = {
   ACCESS_LOGIC_FOR_USERID_BY_ACCESSID: 'ACCESS_LOGIC_BY_ACCESSID',
 }
 
-module.exports = {
+const cache = {
   set,
   unset,
   get,
@@ -89,3 +95,11 @@ module.exports = {
   clearUserId,
   NS 
 }
+
+// load synchro if needed
+if (! config.get('openSource:isActive')) {
+  synchro = require('./synchro.js');
+  synchro.setCache(cache);
+}
+
+module.exports = cache;
