@@ -74,12 +74,12 @@ class Tracing {
    * The span is a child of the latest span if there is one.
    */
   startSpan(name: string, tags: ?{}): void {
-    console.log('started span', name, ', spans present', this.lastIndex+2)
+    ///console.log('started span', name, ', spans present', this.lastIndex+2)
     const options = {};
     if (this.lastIndex > -1) { 
       const parent = this.spansStack[this.lastIndex];
       options.childOf = parent; 
-      console.log('wid parent', parent._operationName);
+      ///console.log('wid parent', parent._operationName);
     }
     if (tags != null) options.tags = tags;
     const newSpan = this.tracer.startSpan(name, options);
@@ -113,7 +113,7 @@ class Tracing {
     }
     span.finish();
     this.lastIndex--;
-    console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
+    ///console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
   }
 }
 
