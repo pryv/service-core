@@ -28,9 +28,13 @@ module.exports.getHookerTracer = getHookerTracer;
 function initRootSpan (name: string, tags: ?{} = {}): Tracing {
   const tracing = new Tracing();
   tracing.startSpan(name, { tags });
+  setTimeout(() => { 
+    tracing.checkIfFinished();
+  }, 3000);
   return tracing;
 };
 module.exports.initRootSpan = initRootSpan;
+
 
 /**
  * Returns an ExpressJS middleware that starts a span and attaches the "tracing" object to the request parameter.

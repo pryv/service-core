@@ -61,10 +61,13 @@ class Tracing {
    */
   lastIndex: number;
 
+  history: Array<string>;
+
   constructor () {
     this.tracer = getTracer();
     this.spansStack = [];
     this.lastIndex = -1;
+    this.history = [];
     // register tracer to Asynchronous Hooks 
     ah.createRequestContext({ tracing: this });
   }
@@ -74,6 +77,7 @@ class Tracing {
    * The span is a child of the latest span if there is one.
    */
   startSpan(name: string, tags: ?{}): void {
+    this.history.push('start ' + name);
     //console.log('started span', name, ', spans present', this.lastIndex+2)
     const options = {};
 
@@ -81,6 +85,7 @@ class Tracing {
     let trailer = '';
     while (this.spansStack.findIndex(span => span._operationName === name + trailer) >= 0) {
       trailer = (trailer == '') ? 1 : trailer + 1;
+      console.log(name + trailer)
     }
     name = name + trailer;
 
@@ -99,6 +104,7 @@ class Tracing {
    * Tags an existing span. Used mainly for errors, by setErrorToTracingSpan()
    */
   tagSpan(name: ?string, key: string, value: string): void {
+    this.history.push('tag ' + name + ':  ' + key + ' > ' + value);
     let span;
     if (name == null) {
       span = this.spansStack[lastIndex];
@@ -112,6 +118,7 @@ class Tracing {
    * Finishes the span with the given name. Throws an error if no span with such a name exists.
    */
   finishSpan(name: ?string): void {
+    this.history.push('finish ' + name);
     let span;
     if (name == null) {
       span = this.spansStack.pop();
@@ -123,6 +130,13 @@ class Tracing {
     span.finish();
     this.lastIndex--;
     //console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
+  }
+
+  checkIfFinished() {
+    if (this.spansStack != 0) {
+      const remaining = this.spansStack.map(x => x._operationName);
+      console.log(' Not done ', this.history, remaining);
+    }
   }
 }
 

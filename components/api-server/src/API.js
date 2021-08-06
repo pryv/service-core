@@ -127,10 +127,14 @@ class API {
           const fnName = fn.name || id + '.unamed' + unanmedCount++;
           const randomId = cuid();
           idMethodFns.push((context, params, result, next) => { 
-            context[randomId] = context.tracing.startSpan(fnName, params); next()
+            context[randomId] = context.tracing.startSpan(fnName, params); next();
+            //console.log('Start ' + context[randomId]);
           } );
           idMethodFns.push(fn);
-          idMethodFns.push((context, params, result, next) => { context.tracing.finishSpan(context[randomId]); next()} );
+          idMethodFns.push((context, params, result, next) => { 
+            //console.log('Finish ' + context[randomId]);
+            context.tracing.finishSpan(context[randomId]); next()
+          } );
         }
       }
 
