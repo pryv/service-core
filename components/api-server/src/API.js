@@ -139,7 +139,7 @@ class API {
             } catch (e) {
               context.tracing.history.push('**** Thrown >> ' + e);
               context.tracing.finishSpan('fn:' + fnName);
-              finishApiCall(context, params, result, () => {});
+              //finishApiCall(context, params, result, () => {});
               context.tracing.finishSpan('api:' + id);
 
               return next(e);
