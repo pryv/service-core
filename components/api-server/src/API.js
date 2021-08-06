@@ -134,7 +134,7 @@ class API {
                 if (err) {
                   context.tracing.finishSpan('api:' + id);
                 }
-                next(err);
+                return next(err);
               });
             } catch (e) {
               context.tracing.history.push('**** Thrown >> ' + e);
@@ -142,7 +142,7 @@ class API {
               finishApiCall(context, params, result, () => {});
               context.tracing.finishSpan('api:' + id);
 
-              throw (e);
+              return next(e);
             }
             //console.log('Start ' + context[randomId]);
           } );
