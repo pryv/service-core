@@ -17,7 +17,7 @@ let database;
 function _getDatabase(config) {
   if (! database) { 
     database = new Database(config.get('database')); 
-    //dataBaseTracer(database);
+    dataBaseTracer(database);
   }
   return database; 
 }

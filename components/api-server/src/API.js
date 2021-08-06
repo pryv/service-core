@@ -127,13 +127,20 @@ class API {
           const fnName = fn.name || id + '.unamed' + unanmedCount++;
           idMethodFns.push(async (context, params, result, next) => { 
             context.tracing.startSpan('fn:' + fnName, params); 
-            await fn(context, params, result, function (err) {
+
+            try {
+              await fn(context, params, result, function (err) {
+                context.tracing.finishSpan('fn:' + fnName);
+                if (err) {
+                  context.tracing.finishSpan('api:' + id);
+                }
+                next(err);
+              });
+            } catch (e) {
               context.tracing.finishSpan('fn:' + fnName);
-              if (err) {
-                context.tracing.finishSpan('api:' + id);
-              }
-              next(err);
-            });
+              context.tracing.finishSpan('api:' + id);
+              throw (e);
+            }
             //console.log('Start ' + context[randomId]);
           } );
         }
