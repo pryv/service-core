@@ -76,6 +76,12 @@ class Tracing {
   startSpan(name: string, tags: ?{}): void {
     //console.log('started span', name, ', spans present', this.lastIndex+2)
     const options = {};
+
+    const index = this.spansStack.findIndex(span => span._operationName === name);
+    if (index >= 0) { 
+      console.log(this.spansStack.map(s => s._operationName), new Error(`There is already a span with this name "${name}"`));
+    }
+
     if (this.lastIndex > -1) { 
       const parent = this.spansStack[this.lastIndex];
       options.childOf = parent; 

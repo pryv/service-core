@@ -37,7 +37,8 @@
     "upload-test-results": "scripts/test-results/upload.sh",
     "watch": "node_modules/.bin/babel --verbose --watch=./components --out-dir=dist/components --copy-files --source-maps both",
     "webhooks": "cd dist/components/webhooks && bin/server",
-    "c2w": "rm -rf dist && rm -rf components/**/node_modules && yarn setup && yarn release && yarn watch"
+    "c2w": "rm -rf dist && rm -rf components/**/node_modules && yarn setup && yarn release && yarn watch",
+    "tracing": "open http://localhost:16686/; docker run --rm -p 6831:6831/udp -p 6832:6832/udp -p 16686:16686 jaegertracing/all-in-one:1.7 --log-level=debug;"
   },
   "pre-commit": [
     "license"

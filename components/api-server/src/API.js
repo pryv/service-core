@@ -131,6 +131,8 @@ class API {
       }
 
       idMethodFns.push(finishApiCall);
+      idMethodFns.unshift((context, params, result, next) => { context.tracing.startSpan('api:' + id, params); next()} );
+      idMethodFns.push((context, params, result, next) => { context.tracing.finishSpan('api:' + id); next()} );
     } 
     else {
       // assert: wildcardAt >= 0
