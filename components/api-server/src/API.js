@@ -125,15 +125,16 @@ class API {
         else {
           // assert: _.isFunction(fn)
           const fnName = fn.name || id + '.unamed' + unanmedCount++;
-          const randomId = cuid();
-          idMethodFns.push((context, params, result, next) => { 
-            context[randomId] = context.tracing.startSpan(fnName, params); next();
+          idMethodFns.push(async (context, params, result, next) => { 
+            context.tracing.startSpan('fn:' + fnName, params); 
+            await fn(context, params, result, function (err) {
+              context.tracing.finishSpan('fn:' + fnName);
+              if (err) {
+                context.tracing.finishSpan('api:' + id);
+              }
+              next(err);
+            });
             //console.log('Start ' + context[randomId]);
-          } );
-          idMethodFns.push(fn);
-          idMethodFns.push((context, params, result, next) => { 
-            //console.log('Finish ' + context[randomId]);
-            context.tracing.finishSpan(context[randomId]); next()
           } );
         }
       }
