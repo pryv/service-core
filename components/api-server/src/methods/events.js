@@ -176,9 +176,11 @@ module.exports = async function (api)
     }
 
     if (unAuthorizedStreams.length > 0) {
+      context.tracing.finishSpan('streamQueries');
       return next(errors.forbidden('stream [' + unAuthorizedStreams[0] + '] has not sufficent permission to get events'));
     }
     if (unAccessibleStreams.length > 0) {
+      context.tracing.finishSpan('streamQueries');
       return next(errors.unknownReferencedResource(
         'stream' + (unAccessibleStreams.length > 1 ? 's' : ''),
         'streams',
@@ -227,6 +229,7 @@ module.exports = async function (api)
       params.streams = await streamsQueryUtils.expandAndTransformStreamQueries(params.streams, expandStreamInContext);
     } catch (e) {
       console.log(e);
+      context.tracing.finishSpan('streamQueries');
       return next(e);
     }
 
