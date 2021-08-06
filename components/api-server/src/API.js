@@ -137,8 +137,10 @@ class API {
                 next(err);
               });
             } catch (e) {
+              context.tracing.history.push('**** Thrown >> ' + e);
               context.tracing.finishSpan('fn:' + fnName);
               context.tracing.finishSpan('api:' + id);
+
               throw (e);
             }
             //console.log('Start ' + context[randomId]);

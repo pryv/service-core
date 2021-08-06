@@ -44,7 +44,7 @@ function produceHandleErrorMiddleware(logging: any) {
     if (req.context != null) { // context is not initialized in case of malformed JSON
       
       if (isAuditActive) await audit.errorApiCall(req.context, error);
-      //req.context.tracing.finishSpan('express');
+      //req.context.tracing.finishSpan('express1');
     }
 
     errorHandling.logError(error, req, logger);
