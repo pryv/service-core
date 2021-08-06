@@ -12,6 +12,7 @@ const errors = require('errors').factory;
 const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
+const cuid = require('cuid');
 
 const { startApiCall, finishApiCall, setErrorToTracingSpan } = require('tracing');
 
@@ -124,9 +125,12 @@ class API {
         else {
           // assert: _.isFunction(fn)
           const fnName = fn.name || id + '.unamed' + unanmedCount++;
-          idMethodFns.push((context, params, result, next) => { context.tracing.startSpan(fnName, params); next()} );
+          const randomId = cuid();
+          idMethodFns.push((context, params, result, next) => { 
+            context[randomId] = context.tracing.startSpan(fnName, params); next()
+          } );
           idMethodFns.push(fn);
-          idMethodFns.push((context, params, result, next) => { context.tracing.finishSpan(fnName); next()} );
+          idMethodFns.push((context, params, result, next) => { context.tracing.finishSpan(context[randomId]); next()} );
         }
       }
 

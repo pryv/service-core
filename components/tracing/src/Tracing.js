@@ -77,10 +77,12 @@ class Tracing {
     //console.log('started span', name, ', spans present', this.lastIndex+2)
     const options = {};
 
-    const index = this.spansStack.findIndex(span => span._operationName === name);
-    if (index >= 0) { 
-      console.log(this.spansStack.map(s => s._operationName), new Error(`There is already a span with this name "${name}"`));
+    // check if name already exists .. if yes add a trailer
+    let trailer = '';
+    while (this.spansStack.findIndex(span => span._operationName === name + trailer) >= 0) {
+      trailer = (trailer == '') ? 1 : trailer + 1;
     }
+    name = name + trailer;
 
     if (this.lastIndex > -1) { 
       const parent = this.spansStack[this.lastIndex];
@@ -91,6 +93,7 @@ class Tracing {
     const newSpan = this.tracer.startSpan(name, options);
     this.spansStack.push(newSpan);
     this.lastIndex++;
+    return name;
   }
   /**
    * Tags an existing span. Used mainly for errors, by setErrorToTracingSpan()

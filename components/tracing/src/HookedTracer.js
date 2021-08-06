@@ -30,7 +30,7 @@ class HookedTracer {
       //console.log('Null request Context', name);
     } else {
       //console.log('Start', name);
-      this.tracing.startSpan(this.name, tags);
+      this.name = this.tracing.startSpan(this.name, tags);
     }
   }
 
