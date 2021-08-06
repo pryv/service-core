@@ -142,7 +142,7 @@ class API {
               //finishApiCall(context, params, result, () => {});
               context.tracing.finishSpan('api:' + id);
 
-              return next(e);
+              return next(e); // <<--- This I don't get why we don't throw.. 
             }
             //console.log('Start ' + context[randomId]);
           } );
