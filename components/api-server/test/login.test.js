@@ -386,6 +386,9 @@ describe('auth', function() {
             maxsize: 500000,
             maxFiles: 50,
             json: false,
+            rotation: {
+              isActive: false
+            }
           },
         };
         server.ensureStarted.call(server, settings, stepDone);
@@ -417,10 +420,11 @@ describe('auth', function() {
                 if (err) {
                   return stepDone(err);
                 }
+                assert.isAbove(data.length, 10, 'Issue in configuration, logfile is empty. >> ' + logFilePath);
                 const passwordFound = data.indexOf(wrongPasswordData.password);
                 const hiddenPasswordFound = data.indexOf('"password":"(hidden password)"');
-                assert.equal(passwordFound, -1, 'password is present in logs when it should not. >> \n' + data)
-                assert.isAtLeast(hiddenPasswordFound, 0, 'log with hidden password not found.. >> \n' + data)
+                assert.equal(passwordFound, -1, 'password is present in logs when it should not. >> \n' + data);
+                assert.isAtLeast(hiddenPasswordFound, 0, 'log with hidden password not found.. >> \n' + data);
                 stepDone();
               });
             },
