@@ -44,9 +44,9 @@ module.exports = async function (api: API) {
   }
   api.register('getAccessInfo',
     commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
-    getAccessInfo);
+    getAccessInfoApiFn);
 
-  function getAccessInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  function getAccessInfoApiFn(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const accessInfoProps: Array<string> = ['id', 'token', 'type', 'name', 'deviceName', 'permissions',
       'lastUsed', 'expires', 'deleted', 'clientData',
       'created', 'createdBy', 'modified', 'modifiedBy', 'calls'
@@ -82,9 +82,9 @@ module.exports = async function (api: API) {
 
   api.register('callBatch',
     commonFns.getParamsValidation(methodsSchema.callBatch.params),
-    callBatch);
+    callBatchApiFn);
 
-  async function callBatch(context: MethodContext, calls: Array<ApiCall>, result: Result, next: ApiCallback) {
+  async function callBatchApiFn(context: MethodContext, calls: Array<ApiCall>, result: Result, next: ApiCallback) {
 
     let needRefeshForNextcall = true;
     let freshContext: MethodContext = null;
