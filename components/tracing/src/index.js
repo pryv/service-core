@@ -30,7 +30,7 @@ function initRootSpan (name: string, tags: ?{} = {}): Tracing {
   tracing.startSpan(name, { tags });
   setTimeout(() => { 
     tracing.checkIfFinished();
-  }, 3000);
+  }, 5000);
   return tracing;
 };
 module.exports.initRootSpan = initRootSpan;
@@ -39,10 +39,15 @@ module.exports.initRootSpan = initRootSpan;
 /**
  * Returns an ExpressJS middleware that starts a span and attaches the "tracing" object to the request parameter.
  */
-module.exports.tracingMiddleware = (name: string = 'express', tags: ?{}): Function => {
+module.exports.tracingMiddleware = (name: string = 'express1', tags: ?{}): Function => {
   return function (req: express$Request, res: express$Response, next: express$NextFunction): void {
     if (req.tracing != null) { console.log('XXXXX tracing already set', new Error()); return next();}
-    req.tracing = initRootSpan (name, tags);
+    const tracing = initRootSpan (name, tags);
+    res.on('finish', () => { 
+      const extra = req.context?.methodId || req.url;
+      tracing.finishSpan(name , name + ':' + extra); 
+    })
+    req.tracing = tracing;
     next();
   }
 }

@@ -118,7 +118,7 @@ class Application {
     const apiVersion: string = await getAPIVersion();
     const hostname: string = require('os').hostname();
     this.expressApp.use(tracingMiddleware(
-      'express',
+      'express1',
       {
         apiVersion,
         hostname,

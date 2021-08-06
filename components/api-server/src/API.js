@@ -233,7 +233,7 @@ class API {
       if (isAuditActive) {
         result.onEnd(async function() {
           await audit.validApiCall(context, result);
-          tracing.finishSpan('express');
+          //tracing.finishSpan('express');
         });
       }
       callback(null, result);
