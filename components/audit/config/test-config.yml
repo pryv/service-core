@@ -12,6 +12,9 @@ logs:
     active: true
     filename: test-application.log
 
+trace:
+  enable: true
+
 audit: 
   active: true # set to false to fully deactivate
   storage:

@@ -11,5 +11,8 @@
   "scripts": {
     "start": "node bin/server --config config/local.json",
     "test": "NODE_ENV=test ../../node_modules/.bin/mocha -R dot --timeout 8000 'test/acceptance/store_data.test.js' --exit"
+  },
+  "devDependencies": {
+    "mongodb-core": "^3.2.7"
   }
 }

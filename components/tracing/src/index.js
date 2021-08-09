@@ -6,14 +6,15 @@
  */
 // @flow
 
-// used to apply filters compliant with open tracing standards
-const { Tags } = require('opentracing');
+
 
 const { Tracing, DummyTracing } = require('./Tracing');
 const { getHookerTracer } = require('./HookedTracer');
 
 
 const dataBaseTracer = require('./databaseTracer');
+const { getConfigUnsafe } = require('@pryv/boiler');
+const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
 
 
 module.exports.DummyTracing = DummyTracing;
@@ -26,6 +27,7 @@ module.exports.getHookerTracer = getHookerTracer;
  * Starts a root span. For socket.io usage.
  */
 function initRootSpan (name: string, tags: ?{} = {}): Tracing {
+  if (! isTracingEnabled) return new DummyTracing();
   const tracing = new Tracing();
   tracing.startSpan(name, { tags });
   setTimeout(() => { 
@@ -50,31 +52,4 @@ module.exports.tracingMiddleware = (name: string = 'express1', tags: ?{}): Funct
     req.tracing = tracing;
     next();
   }
-}
-
-/**
- * Tags a span with error data
- */
-module.exports.setErrorToTracingSpan = (spanName: string, err: Error, tracing: Tracing): void => {
-  tracing.tagSpan(spanName, Tags.ERROR, true);
-  tracing.tagSpan(spanName, 'errorId', err.id);
-  tracing.tagSpan(spanName, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
-}
-
-/**
- * Starts a span with the "context.methodId" name on "context.tracing".
- * Used in api-server/src/API.js#register
- */
-module.exports.startApiCall = (context, params, result, next): void => {
-  context.tracing.startSpan(context.methodId, params);
-  if (context.username != null) context.tracing.tagSpan(context.methodId, 'username', context.username);
-  next();
-}
-/**
- * Finishes a span with the "context.methodId" name on "context.tracing".
- * Used in api-server/src/API.js#register
- */
-module.exports.finishApiCall = (context, params, result, next): void => {
-  context.tracing.finishSpan(context.methodId);
-  next();
 }
