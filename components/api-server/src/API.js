@@ -12,9 +12,6 @@ const errors = require('errors').factory;
 const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
-const cuid = require('cuid');
-
-const { startApiCall, finishApiCall, setErrorToTracingSpan } = require('tracing');
 
 let audit, isMethodDeclared, isOpenSource, isAuditActive;
 
@@ -97,10 +94,7 @@ class API {
       const idMethodFns = methodMap.get(id);
       if (idMethodFns == null) 
         throw new Error('AF: methodMap must contain id at this point.');
-      
-      idMethodFns.push(startApiCall);
 
-      let unanmedCount = 1;
       // append registered functions
       for (const fn of fns) {
         // Syntax allows strings in the function list, which means that the 
@@ -123,35 +117,9 @@ class API {
           idMethodFns.push(...backrefMethods);
         }
         else {
-          // assert: _.isFunction(fn)
-          const fnName = fn.name || id + '.unamed' + unanmedCount++;
-          idMethodFns.push(async (context, params, result, next) => { 
-            context.tracing.startSpan('fn:' + fnName, params); 
-
-            try {
-              await fn(context, params, result, function (err) {
-                context.tracing.finishSpan('fn:' + fnName);
-                if (err) {
-                  context.tracing.finishSpan('api:' + id);
-                }
-                return next(err);
-              });
-            } catch (e) {
-              context.tracing.history.push('**** Thrown >> ' + e);
-              context.tracing.finishSpan('fn:' + fnName);
-              //finishApiCall(context, params, result, () => {});
-              context.tracing.finishSpan('api:' + id);
-
-              return next(e); // <<--- This I don't get why we don't throw.. 
-            }
-            //console.log('Start ' + context[randomId]);
-          } );
+          idMethodFns.push(fn);
         }
       }
-
-      idMethodFns.push(finishApiCall);
-      idMethodFns.unshift((context, params, result, next) => { context.tracing.startSpan('api:' + id, params); next()} );
-      idMethodFns.push((context, params, result, next) => { context.tracing.finishSpan('api:' + id); next()} );
     } 
     else {
       // assert: wildcardAt >= 0
@@ -210,35 +178,50 @@ class API {
     const methodId: string = context.methodId;
     const methodMap = this.map; 
     const methodList = methodMap.get(methodId);
+    
 
     if (methodList == null) 
       return callback(errors.invalidMethod(methodId), null);
 
     
     const tracing = context.tracing;
-      
+    const tags = (context.username != null) ? {} : {username: context.username};
+    tracing.startSpan('api:' + methodId, tags);
+
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
+
+    let unanmedCount = 0;
     async.forEachSeries(methodList, function (currentFn, next) {
-      try {
-        currentFn(context, params, result, next);
-      } catch (err) {
+
+      // -- Tracing by Function
+      const fnName = 'fn:' + (currentFn.name || methodId + '.unamed' + unanmedCount++);
+      tracing.startSpan(fnName);
+      const nextCloseSpan = function(err) {
+        if (err != null) tracing.setError(fnName, err); 
+        tracing.finishSpan(fnName);
         next(err);
+      }
+      // --- 
+
+      try {
+        currentFn(context, params, result, nextCloseSpan);
+      } catch (err) {
+        nextCloseSpan(err);
       }
     }, function (err) {
       if (err != null) {
-        setErrorToTracingSpan(methodId, err, tracing);
-        tracing.finishSpan(methodId);
+        tracing.setError('api:' + methodId, err);
+        tracing.finishSpan('api:' + methodId);
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
       }
-      
       if (isAuditActive) {
         result.onEnd(async function() {
           await audit.validApiCall(context, result);
-          //tracing.finishSpan('express');
         });
       }
+      tracing.finishSpan('api:' + methodId);
       callback(null, result);
     });
   }

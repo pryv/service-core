@@ -17,7 +17,7 @@ const { pubsub } = require('messages');
 })();
 
 const { getAPIVersion } = require('middleware/src/project_version');
-const { initRootSpan, setErrorToTracingSpan } = require('tracing');
+const { initRootSpan } = require('tracing');
 
 const MethodContext = require('business').MethodContext;
 import type API  from '../API';
@@ -379,7 +379,7 @@ class Connection {
       }, logger);
 
       // bad ending
-      setErrorToTracingSpan('socket.io', err, methodContext.tracing);
+      methodContext.tracing.setError('socket.io', err);
       methodContext.tracing.finishSpan('socket.io');
 
       return callback(

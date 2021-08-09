@@ -7,7 +7,7 @@
 
 
 const { initTracer: initJaegerTracer } = require('jaeger-client');
-
+const { Tags } = require('opentracing');
 
 const ah = require('./hooks');
 
@@ -76,7 +76,7 @@ class Tracing {
    * Starts a new span with the given name and tags.
    * The span is a child of the latest span if there is one.
    */
-  startSpan(name: string, tags: ?{}): void {
+  startSpan(name: string, tags: ?{}, childOf: ?string): void {
     this.history.push('start ' + name);
     //console.log('started span', name, ', spans present', this.lastIndex+2)
     ///console.log('started span', name, ', spans present', this.lastIndex+2)
@@ -86,14 +86,19 @@ class Tracing {
     let trailer = '';
     while (this.spansStack.findIndex(span => span._operationName === name + trailer) >= 0) {
       trailer = (trailer == '') ? 1 : trailer + 1;
-      console.log(name + trailer)
     }
     name = name + trailer;
 
-    if (this.lastIndex > -1) { 
-      const parent = this.spansStack[this.lastIndex];
-      options.childOf = parent; 
-      ///console.log('wid parent', parent._operationName);
+    if (childOf != null) {
+      const index = this.spansStack.findIndex(span => span._operationName === childOf);
+      if (index < 0) throw new Error(`parent span that does not exists "${childOf}"`);
+      options.childOf = this.spansStack[index];
+    } else { // take last item as parent
+      if (this.lastIndex > -1) { 
+        const parent = this.spansStack[this.lastIndex];
+        options.childOf = parent; 
+        ///console.log('wid parent', parent._operationName);
+      }
     }
     if (tags != null) options.tags = tags;
     const newSpan = this.tracer.startSpan(name, options);
@@ -102,7 +107,7 @@ class Tracing {
     return name;
   }
   /**
-   * Tags an existing span. Used mainly for errors, by setErrorToTracingSpan()
+   * Tags an existing span. Used mainly for errors, by setError()
    */
   tagSpan(name: ?string, key: string, value: string): void {
     this.history.push('tag ' + name + ':  ' + key + ' > ' + value);
@@ -112,7 +117,11 @@ class Tracing {
     } else {
       span = this.spansStack.find(span => span._operationName === name);
     }
-    span.setTag(key, value);
+    if (span == null) {
+      console.log('Cannot find Span : ' + name, this.history);
+    } else {
+      span.setTag(key, value);
+    }
   }
   
   /**
@@ -132,6 +141,12 @@ class Tracing {
     span.finish();
     this.lastIndex--;
     ///console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
+  }
+
+  setError(name: ?string, err: Error) {
+    this.tagSpan(name, Tags.ERROR, true);
+    this.tagSpan(name, 'errorId', err.id);
+    this.tagSpan(name, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
   }
 
   checkIfFinished() {
