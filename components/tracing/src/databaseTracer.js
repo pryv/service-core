@@ -10,14 +10,18 @@
  */
 
 const { getHookedTracer } = require('./HookedTracer');
+const { getConfigUnsafe } = require('@pryv/boiler');
+const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
 
 module.exports = function patch(db) {
+  if (! isTracingEnabled) return;
   const functionsToPatch = getAllFuncs(db);
   for (const fInfo of functionsToPatch) {
+    if (fInfo.id === 'getCollection' || fInfo.id === 'getCollectionSafe') continue; // ignores
+
     if (fInfo.params[0] === 'collectionInfo' && fInfo.params.includes('callback')) {
       const callbackIndex = fInfo.params.findIndex(e => 'callback' == e);
       db[fInfo.id + '_'] =  db[fInfo.id];
-     
 
       // replace original function
       db[fInfo.id] = function() {
