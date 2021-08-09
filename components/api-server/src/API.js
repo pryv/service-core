@@ -186,7 +186,8 @@ class API {
     
     const tracing = context.tracing;
     const tags = (context.username != null) ? {} : {username: context.username};
-    tracing.startSpan('api:' + methodId, tags);
+    const apiSpanName = 'api:' + methodId;
+    tracing.startSpan(apiSpanName, tags);
 
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
 
@@ -195,7 +196,7 @@ class API {
 
       // -- Tracing by Function
       const fnName = 'fn:' + (currentFn.name || methodId + '.unamed' + unanmedCount++);
-      tracing.startSpan(fnName);
+      tracing.startSpan(fnName, {}, apiSpanName);
       const nextCloseSpan = function(err) {
         if (err != null) tracing.setError(fnName, err); 
         tracing.finishSpan(fnName);
@@ -210,8 +211,8 @@ class API {
       }
     }, function (err) {
       if (err != null) {
-        tracing.setError('api:' + methodId, err);
-        tracing.finishSpan('api:' + methodId);
+        tracing.setError(apiSpanName, err);
+        tracing.finishSpan(apiSpanName);
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
@@ -221,7 +222,7 @@ class API {
           await audit.validApiCall(context, result);
         });
       }
-      tracing.finishSpan('api:' + methodId);
+      tracing.finishSpan(apiSpanName);
       callback(null, result);
     });
   }
