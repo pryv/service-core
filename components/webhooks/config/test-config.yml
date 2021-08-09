@@ -5,3 +5,5 @@ logs:
     active: false
     level: info
     timestamp: false
+trace:
+  enable: true

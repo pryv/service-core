@@ -1,7 +1,5 @@
 ---
 serviceInfoUrl: file://test/service-info.json
-trace:
-  enable: false
 logs:
   console:
     active: true

@@ -80,4 +80,6 @@ stores:
       name: Faulty Store
       path: ../implementations/faulty # should be fully qualified path
       config: null
+trace:
+  enable: true
     

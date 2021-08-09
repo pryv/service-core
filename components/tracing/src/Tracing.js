@@ -22,7 +22,7 @@ const TRACING_NAME: string = 'api-server';
   const config = {
     serviceName: serviceName,
     sampler: { // Tracing all spans. See https://www.jaegertracing.io/docs/1.7/sampling/#client-sampling-configuration
-      type: "const",
+      type: 'const',
       param: 1,
     },
   };
@@ -161,7 +161,9 @@ class DummyTracing {
   startSpan() {}
   finishSpan() {}
   logSpan() {}
+  setError() {}
 }
+
 
 module.exports.DummyTracing = DummyTracing;
 module.exports.Tracing = Tracing;

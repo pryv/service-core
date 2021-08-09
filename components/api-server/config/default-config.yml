@@ -103,3 +103,6 @@ logs:
 
 uploads:
   maxSizeMb: 50
+
+trace:
+  enable: false

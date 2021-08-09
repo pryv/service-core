@@ -13,6 +13,8 @@ const { getHookerTracer } = require('./HookedTracer');
 
 
 const dataBaseTracer = require('./databaseTracer');
+const { getConfigUnsafe } = require('@pryv/boiler');
+const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
 
 
 module.exports.DummyTracing = DummyTracing;
@@ -25,6 +27,7 @@ module.exports.getHookerTracer = getHookerTracer;
  * Starts a root span. For socket.io usage.
  */
 function initRootSpan (name: string, tags: ?{} = {}): Tracing {
+  if (! isTracingEnabled) return new DummyTracing();
   const tracing = new Tracing();
   tracing.startSpan(name, { tags });
   setTimeout(() => { 
