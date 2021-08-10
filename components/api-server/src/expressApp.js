@@ -73,10 +73,10 @@ function patchApp(app) {
   app.use = function() {
     const newArgs = [];
     for (let i = 0; i < arguments.length; i++) {
-      newArgs.push(patchFunction2(arguments[i]));
+      newArgs.push(patchFunction(arguments[i]));
     }
     console.log(arguments, newArgs);
-    return app.unpatchedUse(...newArgs);
+    return app.unpatchedUse.apply(app, newArgs);
   }
 
 }
@@ -84,9 +84,9 @@ function patchApp(app) {
 function patchFunction(fn) {
   // return fn; 
   if (fn.constructor.name === 'AsyncFunction') {
-    return async function() { return await fn(...arguments); }
+    return async function() { return await fn.apply(this, arguments); }
   } 
-  return function() { return fn(...arguments); }
+  return function() { return fn.apply(this, arguments); }
 }
 
 function patchFunction2(fn) {
