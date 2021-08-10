@@ -25,9 +25,6 @@ const TRACING_NAME: string = 'api-server';
       type: 'const',
       param: 1,
     },
-    reporter: {
-      flushIntervalMs: 10,
-    }
   };
   return initJaegerTracer(config, {});
 }
