@@ -59,3 +59,5 @@ backwardCompatibility:
   systemStreams:
     prefix:
       isActive: false
+trace:
+  enable: true

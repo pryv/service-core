@@ -45,7 +45,7 @@ module.exports.tracingMiddleware = (name: string = 'express1', tags: ?{}): Funct
   return function (req: express$Request, res: express$Response, next: express$NextFunction): void {
     if (req.tracing != null) { console.log('XXXXX tracing already set', new Error()); return next();}
     const tracing = initRootSpan (name, tags);
-    res.on('finish', () => { 
+    res.on('close', () => { 
       const extra = req.context?.methodId || req.url;
       tracing.finishSpan(name , name + ':' + extra); 
     })
