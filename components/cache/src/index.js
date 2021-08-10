@@ -5,6 +5,13 @@
  * Proprietary and confidential
  */
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
+
+//  cache has 2 levels "namespace" & "key"
+//
+//   cache['USERID_BY_USERNAME'][userid] => usename
+//   cache['user:' + username]['STREAMS' + 'local'] => streams
+//   cache['user:' + username]['ACCESS_LOGIC_BY_TOKEN' + access.token] => accessLogic
+//   cache['user:' + username]['ACCESS_LOGIC_BY_ACCESSID' + access.id] => accessLogic
 const _cache = {};
 
 let synchro = null;
