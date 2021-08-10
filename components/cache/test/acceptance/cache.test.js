@@ -87,14 +87,14 @@ describe('Cache', function() {
   });
 
   it('[FELT] Second get stream must be faster that first one', async () => {
-    function isEmpty() {
+    function assertIsEmpty() {
       assert.notExists(cache.getForUserId(username, cache.NS.STREAMS_FOR_USERID, 'local'));
       assert.notExists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token));
       assert.notExists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, appAccess.id));
       assert.notExists(cache.get(cache.NS.USERID_BY_USERNAME, username));
     }
 
-    function isFull() {
+    function assertIsFull() {
       assert.exists(cache.getForUserId(username, cache.NS.STREAMS_FOR_USERID, 'local'));
       assert.exists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token));
       assert.exists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, appAccess.id));
@@ -107,13 +107,13 @@ describe('Cache', function() {
     const loop = 3;
     for (let i = 0; i < loop; i++) {
       cache.clear(); // reset cache fully
-      isEmpty();
+      assertIsEmpty();
       const st1 = hrtime();
       const res1 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
       t1 += hrtime(st1)/loop;
       assert.equal(res1.status, 200);
 
-      isFull();
+      assertIsFull();
       const st2 = hrtime();
       const res2 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
       t2 += hrtime(st2)/loop;
@@ -128,7 +128,7 @@ describe('Cache', function() {
       const res3 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
       t3 +=  hrtime(st3)/loop;
       assert.equal(res3.status, 200);
-      isEmpty();
+      assertIsEmpty();
     }
   
     const data = `first-with-cache: ${t1}, second-with-cache: ${t2}, no-cache: ${t3}  => `;

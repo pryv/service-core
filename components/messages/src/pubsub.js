@@ -32,7 +32,7 @@ class PubSub extends EventEmitter {
     this.logger = logger.getLogger(this.scopeName);
     this.natsSubscriptionMap = {};
     
-    if (this.options.nats != CONSTANTS.NATS_MODE_NONE) {
+    if (isOpenSource && this.options.nats != CONSTANTS.NATS_MODE_NONE) {
       initNats();
     }
     if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_ALL)) {
@@ -96,7 +96,7 @@ class PubSub extends EventEmitter {
 
 let nats = null;
 function initNats() {
-  if (nats != null || isOpenSource) return;
+  if (nats != null) return;
   nats = require('./nats_pubsub');
 }
 
