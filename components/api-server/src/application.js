@@ -69,6 +69,7 @@ class Application {
   logging;
 
   initalized;
+  initializing; 
 
   
   // Normal user API
@@ -90,13 +91,16 @@ class Application {
     this.initalized = false;
     this.isOpenSource = false;
     this.isAuditActive = false;
+    this.initializing = false;
   }
 
   async initiate() {
+    while (this.initializing) { await new Promise(r => setTimeout(r, 50)); }
     if (this.initalized) {
       logger.debug('App was already initialized, skipping');
       return this;
     }
+    this.initializing = true;
     this.produceLogSubsystem();
     logger.debug('Init started');
     await UserLocalDirectory.init();
@@ -131,6 +135,8 @@ class Application {
     logger.debug('Init done');
     this.initalized = true;
     if (this.config.get('showRoutes')) this.helperShowRoutes();
+    this.initializing = false;
+    return this;
   }
 
   /**
