@@ -32,7 +32,7 @@ class PubSub extends EventEmitter {
     this.logger = logger.getLogger(this.scopeName);
     this.natsSubscriptionMap = {};
     
-    if (isOpenSource && this.options.nats != CONSTANTS.NATS_MODE_NONE) {
+    if ((! isOpenSource) && this.options.nats != CONSTANTS.NATS_MODE_NONE) {
       initNats();
     }
     if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_ALL)) {

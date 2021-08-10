@@ -26,37 +26,37 @@ describe('Synchro', function () {
 
   beforeEach(() => {
     // empty eventual listener list
-    for (let userId of Object.keys(synchro.listenerMap)) {
+    for (let userId of Object.keys(synchro.removableListenersMap)) {
       synchro.removeChangeTracker(userId)
     }
   });
 
   it('[LHGV] Should register listener on userId when using setForUserUserId', () => { 
     cache.setForUserId('toto', 'test', 'titi');
-    assert.exists(synchro.listenerMap['toto'], 'should be registered');
+    assert.exists(synchro.removableListenersMap['toto'], 'should be registered');
   });
 
   it('[8M1B] Registered listener should be removed on clearEvent', () => {
     cache.setForUserId('toto', 'test', 'titi');
-    assert.exists(synchro.listenerMap['toto'], 'should be registered');
+    assert.exists(synchro.removableListenersMap['toto'], 'should be registered');
     cache.clearUserId('toto');
-    assert.notExists(synchro.listenerMap['toto'], 'should be removed');
+    assert.notExists(synchro.removableListenersMap['toto'], 'should be removed');
   });
 
   it('[OKHQ] Listners should not receive "internal" messages', async () => {
     cache.setForUserId('toto', 'test', 'titi');
-    assert.exists(synchro.listenerMap['toto'], 'should be registered');
+    assert.exists(synchro.removableListenersMap['toto'], 'should be registered');
     pubsub.cache.emit('toto', {action: 'clear'});
     await new Promise(r => setTimeout(r, 50));
-    assert.exists(synchro.listenerMap['toto'], 'should not be removed');
+    assert.exists(synchro.removableListenersMap['toto'], 'should not be removed');
   });
 
   it('[Y5GA] Listners should receive "nats" messages', async () => {
     cache.setForUserId('toto', 'test', 'titi');
-    assert.exists(synchro.listenerMap['toto'], 'should be registered');
+    await new Promise(r => setTimeout(r, 50));
     natsClient.publish('cache.toto', encode({eventName: 'toto', payload: {action: 'clear'}}));
     await new Promise(r => setTimeout(r, 50));
-    assert.notExists(synchro.listenerMap['toto'], 'should be removed');
+    assert.notExists(synchro.removableListenersMap['toto'], 'should be removed');
   });
 
 });

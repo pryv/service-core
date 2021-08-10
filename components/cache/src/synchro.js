@@ -7,22 +7,22 @@
 const { pubsub } = require('messages');
 let cache = null;
 
-const listenerMap = {};
+const removableListenersMap = {};
 
 
 // ------- listener 
 
 // listen for a userId
 function trackChangesForUserId(userId) {
-  if (listenerMap[userId] != null) return;
-  listenerMap[userId] = pubsub.cache.onAndGetRemovable(userId, (msg) => { handleMessage(userId, msg); });
+  if (removableListenersMap[userId] != null) return;
+  removableListenersMap[userId] = pubsub.cache.onAndGetRemovable(userId, (msg) => { handleMessage(userId, msg); });
 }
 
 // unregister listner
 function removeChangeTracker(userId) {
-  if (listenerMap[userId] == null) return;
-  listenerMap[userId](); // remove listener
-  delete listenerMap[userId];
+  if (removableListenersMap[userId] == null) return;
+  removableListenersMap[userId](); // remove listener
+  delete removableListenersMap[userId];
 }
 
 // listener 
@@ -61,6 +61,6 @@ module.exports = {
   unsetForUserId,
   clearUserId,
   setCache,
-  listenerMap, // exported for tests only
+  removableListenersMap, // exported for tests only
   removeChangeTracker, // exported for tests only
 }
