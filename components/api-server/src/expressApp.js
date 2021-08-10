@@ -27,6 +27,10 @@ async function expressAppInit(logging) {
   const version = await getAPIVersion();
   const config = await getConfig();
   const app = express(); // register common middleware
+
+  patchApp(app);
+
+
   const commonHeadersMiddleware = await middleware.commonHeaders();
   const requestTraceMiddleware = middleware.requestTrace(app, logging);
 
@@ -63,5 +67,36 @@ async function expressAppInit(logging) {
 
   return app;
 }
+
+function patchApp(app) {
+  app.unpatchedUse = app.use;
+  app.use = function() {
+    const newArgs = [];
+    for (let i = 0; i < arguments.length; i++) {
+      newArgs.push(patchFunction2(arguments[i]));
+    }
+    console.log(arguments, newArgs);
+    return app.unpatchedUse(...newArgs);
+  }
+
+}
+
+function patchFunction(fn) {
+  // return fn; 
+  if (fn.constructor.name === 'AsyncFunction') {
+    return async function() { return await fn(...arguments); }
+  } 
+  return function() { return fn(...arguments); }
+}
+
+function patchFunction2(fn) {
+  // return fn; 
+  if (fn.constructor.name === 'AsyncFunction') {
+    return async function(req, res, next) { return await fn(req, res, next); }
+  } 
+  return function(req, res, next) { return fn(req, res, next); }
+}
+
+
 
 module.exports = expressAppInit;
