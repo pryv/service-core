@@ -21,7 +21,7 @@ const { USERNAME_REGEXP_STR } = require('api-server/src/schema/helpers');
  * @return {Function}
  */
 module.exports = function (ignoredPaths: Array<string>) {
-  return function (req: express$Request, res: express$Response, next: express$NextFunction) {
+  return function subdomainToPath (req: express$Request, res: express$Response, next: express$NextFunction) {
     if (isIgnoredPath(req.url)) { return next(); }
 
     if (! req.headers.host) { return next(errors.missingHeader('Host')); }

@@ -17,7 +17,7 @@ var errors = require('errors').factory;
 function checkContentType(/* arguments */) {
   var acceptedTypes = arguments,
       count = acceptedTypes.length;
-  return function (req, res, next) {
+  return function checkContentType(req, res, next) {
     if (count < 1) { return next(); }
 
     var contentType = req.headers['content-type'];
