@@ -43,14 +43,16 @@ function patch(key, app) {
 function patchFunction(fn, spanName) {
   return async function (req, res, next) {
     function nextCloseSpan(err) {
-      req.tracing.finishSpan(spanName)
+      req.tracing.finishSpan(spanName);
       next(err);
     }
     req.tracing.startSpan(spanName, {}, 'express1');
     try {
       return await fn(req, res, nextCloseSpan);
     } catch (e) {
-      console.log(e);
+      console.log('XXXX PatchError', e);
+      req.tracing.finishSpan(spanName);
+      throw e;
     }
   }
 }
