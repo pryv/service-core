@@ -48,7 +48,6 @@ const UserLocalDirectory = require('business').users.UserLocalDirectory;
 const { Extension, ExtensionLoader } = require('utils').extension;
 
 const { getAPIVersion } = require('middleware/src/project_version');
-const { tracingMiddleware } = require('tracing');
 const { pubsub } = require('messages');
 
 logger.debug('Loading app');
@@ -121,13 +120,6 @@ class Application {
     await this.createExpressApp();
     const apiVersion: string = await getAPIVersion();
     const hostname: string = require('os').hostname();
-    this.expressApp.use(tracingMiddleware(
-      'express1',
-      {
-        apiVersion,
-        hostname,
-      }
-    ))
     this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
     const errorsMiddleware = errorsMiddlewareMod(this.logging);

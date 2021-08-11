@@ -18,7 +18,7 @@ const { getAPIVersion } = require('middleware/src/project_version');
 
 const { getConfig } = require('@pryv/boiler');
 
-const { expressTracer } = require('tracing');
+const { initExpressTracer } = require('tracing');
 
 // ------------------------------------------------------------ express app init
 
@@ -30,7 +30,7 @@ async function expressAppInit(logging) {
   const config = await getConfig();
   const app = express(); // register common middleware
 
-  expressTracer(app);
+  initExpressTracer(app);
 
   const commonHeadersMiddleware = await middleware.commonHeaders();
   const requestTraceMiddleware = middleware.requestTrace(app, logging);

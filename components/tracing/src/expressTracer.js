@@ -1,10 +1,14 @@
+/**
+ * @license
+ * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 
-const { getConfigUnsafe } = require('@pryv/boiler');
-const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
 
 module.exports = function patchApp(app) {
-  if (! isTracingEnabled) return;
   if (app.unpatchedUse != null) throw new Error('Already patched');
+
   app.unpatchedUse = app.use;
   app.use = function () {
     const newArgs = [];
@@ -16,8 +20,9 @@ module.exports = function patchApp(app) {
   }
 
   patch('get', app);
-  //patch('post', app);
-
+  patch('post', app);
+  patch('put', app);
+  patch('delete', app);
 }
 
 
