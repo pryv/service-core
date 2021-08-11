@@ -18,6 +18,8 @@ const { getAPIVersion } = require('middleware/src/project_version');
 
 const { getConfig } = require('@pryv/boiler');
 
+const { expressTracer } = require('tracing');
+
 // ------------------------------------------------------------ express app init
 
 // Creates and returns an express application with a standard set of middleware. 
@@ -28,8 +30,7 @@ async function expressAppInit(logging) {
   const config = await getConfig();
   const app = express(); // register common middleware
 
-  patchApp(app);
-
+  expressTracer(app);
 
   const commonHeadersMiddleware = await middleware.commonHeaders();
   const requestTraceMiddleware = middleware.requestTrace(app, logging);
@@ -67,36 +68,5 @@ async function expressAppInit(logging) {
 
   return app;
 }
-
-function patchApp(app) {
-  app.unpatchedUse = app.use;
-  app.use = function() {
-    const newArgs = [];
-    for (let i = 0; i < arguments.length; i++) {
-      newArgs.push(patchFunction(arguments[i]));
-    }
-    console.log(arguments, newArgs);
-    return app.unpatchedUse.apply(app, newArgs);
-  }
-
-}
-
-function patchFunction(fn) {
-  // return fn; 
-  if (fn.constructor.name === 'AsyncFunction') {
-    return async function() { return await fn.apply(this, arguments); }
-  } 
-  return function() { return fn.apply(this, arguments); }
-}
-
-function patchFunction2(fn) {
-  // return fn; 
-  if (fn.constructor.name === 'AsyncFunction') {
-    return async function(req, res, next) { return await fn(req, res, next); }
-  } 
-  return function(req, res, next) { return fn(req, res, next); }
-}
-
-
 
 module.exports = expressAppInit;

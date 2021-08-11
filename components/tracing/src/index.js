@@ -11,7 +11,7 @@
 const { Tracing, DummyTracing } = require('./Tracing');
 const { getHookerTracer } = require('./HookedTracer');
 
-
+const expressTracer = require('./expressTracer');
 const dataBaseTracer = require('./databaseTracer');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
@@ -19,8 +19,8 @@ const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
 
 module.exports.DummyTracing = DummyTracing;
 
+module.exports.expressTracer = expressTracer;
 module.exports.dataBaseTracer = dataBaseTracer;
-
 module.exports.getHookerTracer = getHookerTracer;
 
 /**

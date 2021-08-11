@@ -1,0 +1,61 @@
+
+const { getConfigUnsafe } = require('@pryv/boiler');
+const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
+
+module.exports = function patchApp(app) {
+  if (! isTracingEnabled) return;
+  if (app.unpatchedUse != null) throw new Error('Already patched');
+  app.unpatchedUse = app.use;
+  app.use = function () {
+    const newArgs = [];
+    for (let i = 0; i < arguments.length; i++) {
+      newArgs.push(patchFunction0(arguments[i]));
+    }
+    //console.log(arguments, newArgs);
+    return app.unpatchedUse(...newArgs);
+  }
+
+  patch('get', app);
+  //patch('post', app);
+
+}
+
+
+
+function patch(key, app) {
+  app['legacy_' + key] = app[key];
+  app[key] = function () {
+    const newArgs = [arguments[0]];
+    for (let i = 1; i < arguments.length; i++) {
+      const fn = arguments[i];
+      const spanName = 'e:' + key + ':' + arguments[0] + ':' + (fn.name || ('unnamed.' + i));
+      newArgs.push(patchFunction(fn, spanName));
+    }
+    return app['legacy_' + key](...newArgs);
+  }
+}
+
+function patchFunction(fn, spanName) {
+  return async function (req, res, next) {
+    function nextCloseSpan(err) {
+      console.log('<<' + spanName);
+      next(err);
+    }
+    console.log('>>' + spanName);
+    return await fn(req, res, nextCloseSpan);
+  }
+}
+
+function patchFunction0(fn) {
+  return fn;
+}
+
+// kept for reference
+function patchFunction2(fn) {
+  // return fn; 
+  if (fn.constructor.name === 'AsyncFunction') {
+    return async () => { try { return await fn.apply(null, arguments); } catch (e) { console.log('XXXX', e) } }
+  }
+  return () => { try { return fn.apply(null, arguments); } catch (e) { console.log(e) } }
+}
+
