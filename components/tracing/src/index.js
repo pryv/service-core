@@ -11,7 +11,7 @@
 const { Tracing, DummyTracing } = require('./Tracing');
 const { getHookerTracer } = require('./HookedTracer');
 
-const expressTracer = require('./expressTracer');
+const expressPatch = require('./expressPatch');
 const dataBaseTracer = require('./databaseTracer');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
@@ -56,5 +56,5 @@ function tracingMiddleware (name: string = 'express1', tags: ?{}): Function  {
 
 module.exports.initExpressTracer = function(app) {
   app.use(tracingMiddleware()); // anyway .. initRootSpan will retrun a dummytracer is not enabled
-  if (isTracingEnabled) expressTracer(app);
+  if (isTracingEnabled) expressPatch(app);
 }

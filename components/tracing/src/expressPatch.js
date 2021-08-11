@@ -33,7 +33,7 @@ function patch(key, app) {
     const newArgs = [arguments[0]];
     for (let i = 1; i < arguments.length; i++) {
       const fn = arguments[i];
-      const spanName = 'e:' + key + ':' + arguments[0] + ':' + (fn.name || ('unnamed.' + i));
+      const spanName = 'e:' + key + ':' + arguments[0] + ':' + (fn.name || ('unamed.' + i));
       newArgs.push(patchFunction(fn, spanName));
     }
     return app['legacy_' + key](...newArgs);
@@ -43,11 +43,15 @@ function patch(key, app) {
 function patchFunction(fn, spanName) {
   return async function (req, res, next) {
     function nextCloseSpan(err) {
-      console.log('<<' + spanName);
+      req.tracing.finishSpan(spanName)
       next(err);
     }
-    console.log('>>' + spanName);
-    return await fn(req, res, nextCloseSpan);
+    req.tracing.startSpan(spanName, {}, 'express1');
+    try {
+      return await fn(req, res, nextCloseSpan);
+    } catch (e) {
+      console.log(e);
+    }
   }
 }
 
