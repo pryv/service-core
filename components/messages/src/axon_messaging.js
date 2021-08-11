@@ -21,6 +21,8 @@ exports.getTestNotifier = async function() {
   const config = await getConfig();
   const axonSettings = config.get('axonMessaging');
 
+  if (! axonSettings.enabled) return { emit: () => {}};
+
   try { 
     axonSocket = await openPubSocket(axonSettings);
   } catch(e) {
