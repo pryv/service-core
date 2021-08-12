@@ -77,6 +77,43 @@ function clearUserId(userId) {
   clear('user:' + userId);
 }
 
+//--------------- Streams ---------------//
+function getStreams(userId, key) {
+  return getForUserId(userId, NS.STREAMS_FOR_USERID, key);
+}
+
+function setStreams(userId, key, streams) {
+  setForUserId(userId, NS.STREAMS_FOR_USERID, key, streams);
+}
+
+function unsetStreams(userId, key) {
+  unsetForUserId(userId, NS.STREAMS_FOR_USERID, key);
+}
+
+
+//--------------- Access Logic -----------//
+
+function getAccessLogicForToken(userId, token) {
+  return getForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, token);
+}
+
+function getAccessLogicForId(userId, accessId) {
+  return getForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, accessId);
+}
+
+
+function unsetAccessLogic(userId, accessLogic) {
+  unsetForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, accessLogic.token);
+  unsetForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID,  accessLogic.id);
+}
+
+function setAccessLogic(userId, accessLogic) {
+  setForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, accessLogic.token, accessLogic);
+  setForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, accessLogic.id, accessLogic);
+}
+
+//---------------
+
 const NS = {
   USERID_BY_USERNAME: 'USERID_BY_USERNAME',
   STREAMS_FOR_USERID: 'STREAMS',
@@ -93,6 +130,16 @@ const cache = {
   unsetForUserId,
   getForUserId,
   clearUserId,
+
+  getAccessLogicForId,
+  getAccessLogicForToken,
+  unsetAccessLogic,
+  setAccessLogic,
+
+  setStreams,
+  getStreams,
+  unsetStreams,
+
   NS 
 }
 

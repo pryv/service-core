@@ -88,16 +88,17 @@ describe('Cache', function() {
 
   it('[FELT] Second get stream must be faster that first one', async () => {
     function isEmpty() {
-      assert.notExists(cache.getForUserId(username, cache.NS.STREAMS_FOR_USERID, 'local'));
-      assert.notExists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token));
-      assert.notExists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, appAccess.id));
+      assert.notExists(cache.getStreams(username, 'local'));
+      assert.notExists(cache.getAccessLogicForToken(username, appAccess.token));
+      assert.notExists(cache.getAccessLogicForId(username, appAccess.id));
       assert.notExists(cache.get(cache.NS.USERID_BY_USERNAME, username));
     }
 
     function isFull() {
-      assert.exists(cache.getForUserId(username, cache.NS.STREAMS_FOR_USERID, 'local'));
-      assert.exists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token));
-      assert.exists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, appAccess.id));
+      console.log('IsFull');
+      assert.exists(cache.getStreams(username, 'local'));
+      assert.exists(cache.getAccessLogicForToken(username, appAccess.token));
+      assert.exists(cache.getAccessLogicForId(username, appAccess.id));
       assert.exists(cache.get(cache.NS.USERID_BY_USERNAME, username));
     }
 

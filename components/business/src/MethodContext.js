@@ -215,8 +215,7 @@ class MethodContext {
         'Cannot find access from token.', 403);
       
     this.access = new AccessLogic(this.user.id, access);
-    cache.setForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, this.access.token, this.access);
-    cache.setForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, this.access.id, this.access);
+    cache.setAccessLogic(this.user.id, this.access);
   }
 
   // Internal: Loads `this.access`. 
@@ -229,7 +228,7 @@ class MethodContext {
         'The access token is missing: expected an ' +
         '"Authorization" header or an "auth" query string parameter.');
 
-    this.access = cache.getForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, token);
+    this.access = cache.getAccessLogicForToken(this.user.id, token);
     
     if (this.access == null) { // retreiveing from Db
       await this._retrieveAccess(storage, {token: token})
@@ -255,7 +254,7 @@ class MethodContext {
   // 
   async retrieveAccessFromId(storage: StorageLayer, accessId: string): Promise<Access> {
 
-    this.access = cache.getForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, accessId);
+    this.access = cache.getAccessLogicForId(this.user.id, accessId);
 
     if (this.access == null) {
       await this._retrieveAccess(storage, { id: accessId });
