@@ -89,24 +89,24 @@ function unsetStreams(userId, key) {
 //--------------- Access Logic -----------//
 
 function getAccessLogicForToken(userId, token) {
-  const als = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
-  if (als == null) return null;
-  return als.tokens[token];
+  const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (accessLogics == null) return null;
+  return accessLogics.tokens[token];
 }
 
 function getAccessLogicForId(userId, accessId) {
-  const als = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
-  if (als == null) return null;
-  return als.ids[accessId];
+  const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (accessLogics == null) return null;
+  return accessLogics.ids[accessId];
 }
 
 
 function unsetAccessLogic(userId, accessLogic, doSyncWithOtherInstances = true) {
   if (doSyncWithOtherInstances && synchro != null) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
-  const als = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
-  if (als == null) return ;
-  delete als.tokens[accessLogic.token];
-  delete als.ids[accessLogic.id];
+  const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (accessLogics == null) return ;
+  delete accessLogics.tokens[accessLogic.token];
+  delete accessLogics.ids[accessLogic.id];
 }
 
 function clearAccessLogics(userId) {
@@ -115,16 +115,16 @@ function clearAccessLogics(userId) {
 
 function setAccessLogic(userId, accessLogic) {
   if (synchro != null) synchro.trackChangesForUserId(userId);
-  let als = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
-  if (als == null) {
-    als = {
+  let accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (accessLogics == null) {
+    accessLogics = {
       tokens: {},
       ids: {}
     }
-    set(NS.ACCESS_LOGICS_FOR_USERID, userId, als);
+    set(NS.ACCESS_LOGICS_FOR_USERID, userId, accessLogics);
   }
-  als.tokens[accessLogic.token] = accessLogic;
-  als.ids[accessLogic.id] = accessLogic;
+  accessLogics.tokens[accessLogic.token] = accessLogic;
+  accessLogics.ids[accessLogic.id] = accessLogic;
 }
 
 //---------------
