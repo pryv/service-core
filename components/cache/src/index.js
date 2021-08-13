@@ -61,8 +61,8 @@ function clear(namespace) {
   debug.clear(namespace);
 }
 
-function clearUserId(userId, doSyncWithOtherInstances = true) {
-  if (doSyncWithOtherInstances && synchro != null) synchro.clearUserId(userId);
+function clearUserId(userId, notifyOtherProcesses = true) {
+  if (notifyOtherProcesses && synchro != null) synchro.clearUserId(userId);
   _unsetStreams(userId, 'local'); // for now we hardcode local streams
   clearAccessLogics(userId);
 }
@@ -101,8 +101,8 @@ function getAccessLogicForId(userId, accessId) {
 }
 
 
-function unsetAccessLogic(userId, accessLogic, doSyncWithOtherInstances = true) {
-  if (doSyncWithOtherInstances && synchro != null) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
+function unsetAccessLogic(userId, accessLogic, notifyOtherProcesses = true) {
+  if (notifyOtherProcesses && synchro != null) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return ;
   delete accessLogics.tokens[accessLogic.token];
