@@ -17,14 +17,14 @@ const listenerMap = {};
 
 // listen for a userId
 function trackChangesForUserId(userId) {
-  logger.debug('trackChanges', userId);
+  logger.debug('activate changes for user:', userId);
   if (listenerMap[userId] != null) return;
   listenerMap[userId] = pubsub.cache.onAndGetRemovable(userId, (msg) => { handleMessage(userId, msg); });
 }
 
 // unregister listner
 function removeChangeTracker(userId) {
-  logger.debug('removeChangeTracker', userId);
+  logger.debug('remove changes for user:', userId);
   if (listenerMap[userId] == null) return;
   listenerMap[userId](); // remove listener
   delete listenerMap[userId];

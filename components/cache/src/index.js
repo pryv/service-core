@@ -7,7 +7,8 @@
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 const LRU = require('lru-cache');
 
-const _cache = {};
+const _caches = {};
+const MAX_PER_CACHE_SIZE = 2000; // maximum elements for each cache (namespace)
 
 let synchro = null;
 
@@ -25,7 +26,7 @@ const config = getConfigUnsafe(true);
 
 function getNameSpace(namespace) {
   if (namespace == null) console.log('XXXX', new Error('Null namespace'));
-  return _cache[namespace] || ( _cache[namespace] = new LRU(2000) ); // seting maxsize of 2000 to LRU cache
+  return _caches[namespace] || ( _caches[namespace] = new LRU(MAX_PER_CACHE_SIZE) ); // seting maxsize of 2000 to LRU cache
 }
 
 function set(namespace, key, value) {
@@ -50,18 +51,18 @@ function get(namespace, key) {
 
 function clear(namespace) {
   if (namespace == null) { // clear all
-    for (const ns of Object.keys(_cache)) {
+    for (const ns of Object.keys(_caches)) {
       debug.clear(ns);
-      delete _cache[ns];
+      delete _caches[ns];
     }
   } else {
-    delete _cache[namespace];
+    delete _caches[namespace];
   }
   debug.clear(namespace);
 }
 
-function clearUserId(userId, doSync = true) {
-  if (doSync && synchro != null) synchro.clearUserId(userId);
+function clearUserId(userId, doSyncWithOtherInstances = true) {
+  if (doSyncWithOtherInstances && synchro != null) synchro.clearUserId(userId);
   _unsetStreams(userId, 'local'); // for now we hardcode local streams
   clearAccessLogics(userId);
 }
@@ -100,8 +101,8 @@ function getAccessLogicForId(userId, accessId) {
 }
 
 
-function unsetAccessLogic(userId, accessLogic, doSync = true) {
-  if (doSync && synchro != null) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
+function unsetAccessLogic(userId, accessLogic, doSyncWithOtherInstances = true) {
+  if (doSyncWithOtherInstances && synchro != null) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
   const als = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (als == null) return ;
   delete als.tokens[accessLogic.token];
