@@ -27,7 +27,7 @@ describe('Synchro', function () {
   beforeEach(() => {
     // empty eventual listener list
     for (let userId of Object.keys(synchro.listenerMap)) {
-      synchro.removeChangeTracker(userId)
+      synchro.removeChangesTracker(userId)
     }
   });
 

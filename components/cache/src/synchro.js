@@ -23,7 +23,7 @@ function trackChangesForUserId(userId) {
 }
 
 // unregister listner
-function removeChangeTracker(userId) {
+function removeChangesTracker(userId) {
   logger.debug('remove changes for user:', userId);
   if (listenerMap[userId] == null) return;
   listenerMap[userId](); // remove listener
@@ -37,7 +37,7 @@ function handleMessage(userId, msg) {
     return cache.unsetAccessLogic(userId, {id: msg.accessId, token: msg.accessToken}, false);
   }
   if (msg.action == 'clear') {
-    removeChangeTracker(userId);
+    removeChangesTracker(userId);
     return cache.clearUserId(userId, false);
   }
 }
@@ -51,7 +51,7 @@ function unsetAccessLogic(userId, accessLogic) {
 
 // emit message "clear" to listners
 function clearUserId(userId) {
-  removeChangeTracker(userId);
+  removeChangesTracker(userId);
   pubsub.cache.emit(userId, {action: 'clear'});
 }
 
@@ -68,5 +68,5 @@ module.exports = {
   clearUserId,
   setCache,
   listenerMap, // exported for tests only
-  removeChangeTracker, // exported for tests only
+  removeChangesTracker, // exported for tests only
 }
