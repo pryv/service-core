@@ -5,7 +5,10 @@
  * Proprietary and confidential
  */
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
-const _cache = {};
+const LRU = require('lru-cache');
+
+const _caches = {};
+const MAX_PER_CACHE_SIZE = 2000; // maximum elements for each cache (namespace)
 
 let synchro = null;
 
@@ -23,65 +26,113 @@ const config = getConfigUnsafe(true);
 
 function getNameSpace(namespace) {
   if (namespace == null) console.log('XXXX', new Error('Null namespace'));
-  return _cache[namespace] || ( _cache[namespace] = {} );
+  return _caches[namespace] || ( _caches[namespace] = new LRU(MAX_PER_CACHE_SIZE) ); // seting maxsize of 2000 to LRU cache
 }
 
 function set(namespace, key, value) {
   if (key == null) throw new Error('Null key for' + namespace);
   if (config.get('caching:isActive') !== true) return;
-  getNameSpace(namespace)[key] = value;
+  getNameSpace(namespace).set(key, value);
   debug.set(namespace, key);
   return value;
 }
 
 function unset(namespace, key) {
   if (key == null) throw new Error('Null key for' + namespace);
-  delete getNameSpace(namespace)[key];
+  getNameSpace(namespace).del(key);
   debug.unset(namespace, key);
 }
 
 function get(namespace, key) {
   if (key == null) throw new Error('Null key for' + namespace);
   debug.get(namespace, key);
-  return getNameSpace(namespace)[key];
+  return getNameSpace(namespace).get(key);
 }
 
 function clear(namespace) {
   if (namespace == null) { // clear all
-    for (const ns of Object.keys(_cache)) {
+    for (const ns of Object.keys(_caches)) {
       debug.clear(ns);
-      delete _cache[ns];
+      delete _caches[ns];
     }
   } else {
-    delete _cache[namespace];
+    delete _caches[namespace];
   }
   debug.clear(namespace);
 }
 
-function setForUserId(userId, namespace, key, value) {
+function clearUserId(userId, notifyOtherProcesses = true) {
+  if (notifyOtherProcesses && synchro != null) synchro.clearUserId(userId);
+  _unsetStreams(userId, 'local'); // for now we hardcode local streams
+  clearAccessLogics(userId);
+}
+
+//--------------- Streams ---------------//
+function getStreams(userId, key) {
+  return get(NS.STREAMS_FOR_USERID + key, userId);
+}
+
+function setStreams(userId, key, streams) {
+  if (synchro != null) synchro.trackChangesForUserId(userId); // follow this user
+  set(NS.STREAMS_FOR_USERID + key, userId, streams);
+}
+
+function _unsetStreams(userId, key) {
+  unset(NS.STREAMS_FOR_USERID + key, userId);
+}
+
+function unsetStreams(userId, key) { 
+  clearUserId(userId); // for now we just fully clear this user.. 
+}
+
+
+//--------------- Access Logic -----------//
+
+function getAccessLogicForToken(userId, token) {
+  const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (accessLogics == null) return null;
+  return accessLogics.tokens[token];
+}
+
+function getAccessLogicForId(userId, accessId) {
+  const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (accessLogics == null) return null;
+  return accessLogics.ids[accessId];
+}
+
+
+function unsetAccessLogic(userId, accessLogic, notifyOtherProcesses = true) {
+  if (notifyOtherProcesses && synchro != null) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
+  const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (accessLogics == null) return ;
+  delete accessLogics.tokens[accessLogic.token];
+  delete accessLogics.ids[accessLogic.id];
+}
+
+function clearAccessLogics(userId) {
+  unset(NS.ACCESS_LOGICS_FOR_USERID, userId);
+}
+
+function setAccessLogic(userId, accessLogic) {
   if (synchro != null) synchro.trackChangesForUserId(userId);
-  return set('user:' + userId, namespace + ':' + key, value);
+  let accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (accessLogics == null) {
+    accessLogics = {
+      tokens: {},
+      ids: {}
+    }
+    set(NS.ACCESS_LOGICS_FOR_USERID, userId, accessLogics);
+  }
+  accessLogics.tokens[accessLogic.token] = accessLogic;
+  accessLogics.ids[accessLogic.id] = accessLogic;
 }
 
-function unsetForUserId(userId, namespace, key) {
-  if (synchro != null) synchro.unsetForUserId(userId, namespace + ':' + key);
-  return unset('user:' + userId, namespace + ':' + key);
-}
-
-function getForUserId(userId, namespace, key) {
-  return get('user:' + userId, namespace + ':' + key)
-}
-
-function clearUserId(userId) {
-  if (synchro != null) synchro.clearUserId(userId);
-  clear('user:' + userId);
-}
+//---------------
 
 const NS = {
   USERID_BY_USERNAME: 'USERID_BY_USERNAME',
   STREAMS_FOR_USERID: 'STREAMS',
-  ACCESS_LOGIC_FOR_USERID_BY_TOKEN: 'ACCESS_LOGIC_BY_TOKEN',
-  ACCESS_LOGIC_FOR_USERID_BY_ACCESSID: 'ACCESS_LOGIC_BY_ACCESSID',
+  ACCESS_LOGICS_FOR_USERID: 'ACCESS_LOGICS_BY_USERID'
 }
 
 const cache = {
@@ -89,11 +140,19 @@ const cache = {
   unset,
   get,
   clear,
-  setForUserId,
-  unsetForUserId,
-  getForUserId,
+
   clearUserId,
-  NS 
+
+  getAccessLogicForId,
+  getAccessLogicForToken,
+  unsetAccessLogic,
+  setAccessLogic,
+
+  setStreams,
+  getStreams,
+  unsetStreams,
+
+  NS
 }
 
 // load synchro if needed

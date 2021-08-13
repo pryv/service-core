@@ -125,7 +125,7 @@ Streams.prototype.updateOne = function (user, query, updatedData, callback) {
   if (typeof updatedData.parentId != 'undefined') { // clear ALL when a stream is moved
     cache.clearUserId(user.id);
   } else { // only stream Structure
-    cache.unsetForUserId(user.id, cache.NS.STREAMS_FOR_USERID, 'local');
+    cache.unsetStreams(user.id, 'local');
   }
   var self = this;
   if (! updatedData.parentId) {

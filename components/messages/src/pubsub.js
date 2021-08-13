@@ -98,6 +98,7 @@ let nats = null;
 function initNats() {
   if (nats != null || isOpenSource) return;
   nats = require('./nats_pubsub');
+  logger.debug('initNats');
 }
 
 
