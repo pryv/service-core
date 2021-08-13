@@ -5,6 +5,7 @@
  * Proprietary and confidential
  */
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
+const LRU = require('lru-cache');
 
 const _cache = {};
 
@@ -24,27 +25,27 @@ const config = getConfigUnsafe(true);
 
 function getNameSpace(namespace) {
   if (namespace == null) console.log('XXXX', new Error('Null namespace'));
-  return _cache[namespace] || ( _cache[namespace] = {} );
+  return _cache[namespace] || ( _cache[namespace] = new LRU(2000) ); // seting maxsize of 2000 to LRU cache
 }
 
 function set(namespace, key, value) {
   if (key == null) throw new Error('Null key for' + namespace);
   if (config.get('caching:isActive') !== true) return;
-  getNameSpace(namespace)[key] = value;
+  getNameSpace(namespace).set(key, value);
   debug.set(namespace, key);
   return value;
 }
 
 function unset(namespace, key) {
   if (key == null) throw new Error('Null key for' + namespace);
-  delete getNameSpace(namespace)[key];
+  getNameSpace(namespace).del(key);
   debug.unset(namespace, key);
 }
 
 function get(namespace, key) {
   if (key == null) throw new Error('Null key for' + namespace);
   debug.get(namespace, key);
-  return getNameSpace(namespace)[key];
+  return getNameSpace(namespace).get(key);
 }
 
 function clear(namespace) {
