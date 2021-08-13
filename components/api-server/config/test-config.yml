@@ -24,6 +24,8 @@ services:
     key: test-system-key
 axonMessaging:
   enabled: true
+nats:
+ uri: 'nats://127.0.0.1:4222'
 reporting:
   licenseName: pryv.io-test-license
   templateVersion: 1.0.0

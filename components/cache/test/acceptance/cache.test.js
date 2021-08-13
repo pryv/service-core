@@ -95,7 +95,6 @@ describe('Cache', function() {
     }
 
     function isFull() {
-      console.log('IsFull');
       assert.exists(cache.getStreams(username, 'local'));
       assert.exists(cache.getAccessLogicForToken(username, appAccess.token));
       assert.exists(cache.getAccessLogicForId(username, appAccess.id));

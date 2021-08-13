@@ -5,6 +5,7 @@
  * Proprietary and confidential
  */
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
+
 const _cache = {};
 
 let synchro = null;
@@ -58,58 +59,70 @@ function clear(namespace) {
   debug.clear(namespace);
 }
 
-function setForUserId(userId, namespace, key, value) {
-  if (synchro != null) synchro.trackChangesForUserId(userId);
-  return set('user:' + userId, namespace + ':' + key, value);
-}
-
-function unsetForUserId(userId, namespace, key) {
-  if (synchro != null) synchro.unsetForUserId(userId, namespace + ':' + key);
-  return unset('user:' + userId, namespace + ':' + key);
-}
-
-function getForUserId(userId, namespace, key) {
-  return get('user:' + userId, namespace + ':' + key)
-}
-
-function clearUserId(userId) {
-  if (synchro != null) synchro.clearUserId(userId);
-  clear('user:' + userId);
+function clearUserId(userId, doSync = true) {
+  if (doSync && synchro != null) synchro.clearUserId(userId);
+  _unsetStreams(userId, 'local'); // for now we hardcode local streams
+  clearAccessLogics(userId);
 }
 
 //--------------- Streams ---------------//
 function getStreams(userId, key) {
-  return getForUserId(userId, NS.STREAMS_FOR_USERID, key);
+  return get(NS.STREAMS_FOR_USERID + key, userId);
 }
 
 function setStreams(userId, key, streams) {
-  setForUserId(userId, NS.STREAMS_FOR_USERID, key, streams);
+  if (synchro != null) synchro.trackChangesForUserId(userId); // follow this user
+  set(NS.STREAMS_FOR_USERID + key, userId, streams);
 }
 
-function unsetStreams(userId, key) {
-  unsetForUserId(userId, NS.STREAMS_FOR_USERID, key);
+function _unsetStreams(userId, key) {
+  unset(NS.STREAMS_FOR_USERID + key, userId);
+}
+
+function unsetStreams(userId, key) { 
+  clearUserId(userId); // for now we just fully clear this user.. 
 }
 
 
 //--------------- Access Logic -----------//
 
 function getAccessLogicForToken(userId, token) {
-  return getForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, token);
+  const als = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (als == null) return null;
+  return als.tokens[token];
 }
 
 function getAccessLogicForId(userId, accessId) {
-  return getForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, accessId);
+  const als = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (als == null) return null;
+  return als.ids[accessId];
 }
 
 
-function unsetAccessLogic(userId, accessLogic) {
-  unsetForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, accessLogic.token);
-  unsetForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID,  accessLogic.id);
+function unsetAccessLogic(userId, accessLogic, doSync = true) {
+  if (doSync && synchro != null) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
+  const als = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (als == null) return ;
+  delete als.tokens[accessLogic.token];
+  delete als.ids[accessLogic.id];
+}
+
+function clearAccessLogics(userId) {
+  unset(NS.ACCESS_LOGICS_FOR_USERID, userId);
 }
 
 function setAccessLogic(userId, accessLogic) {
-  setForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, accessLogic.token, accessLogic);
-  setForUserId(userId, NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, accessLogic.id, accessLogic);
+  if (synchro != null) synchro.trackChangesForUserId(userId);
+  let als = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
+  if (als == null) {
+    als = {
+      tokens: {},
+      ids: {}
+    }
+    set(NS.ACCESS_LOGICS_FOR_USERID, userId, als);
+  }
+  als.tokens[accessLogic.token] = accessLogic;
+  als.ids[accessLogic.id] = accessLogic;
 }
 
 //---------------
@@ -117,8 +130,7 @@ function setAccessLogic(userId, accessLogic) {
 const NS = {
   USERID_BY_USERNAME: 'USERID_BY_USERNAME',
   STREAMS_FOR_USERID: 'STREAMS',
-  ACCESS_LOGIC_FOR_USERID_BY_TOKEN: 'ACCESS_LOGIC_BY_TOKEN',
-  ACCESS_LOGIC_FOR_USERID_BY_ACCESSID: 'ACCESS_LOGIC_BY_ACCESSID',
+  ACCESS_LOGICS_FOR_USERID: 'ACCESS_LOGICS_BY_USERID'
 }
 
 const cache = {
@@ -126,9 +138,7 @@ const cache = {
   unset,
   get,
   clear,
-  setForUserId,
-  unsetForUserId,
-  getForUserId,
+
   clearUserId,
 
   getAccessLogicForId,
@@ -140,7 +150,7 @@ const cache = {
   getStreams,
   unsetStreams,
 
-  NS 
+  NS
 }
 
 // load synchro if needed
