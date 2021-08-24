@@ -6,6 +6,9 @@
  */
 /**
  * Inspired from multer/storage/DiskStorage
+ * Add an integrity field to file upload following the subressource integrity schema 
+ *  <algo>-<base64 digest>
+ * https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
  */
 const fs = require('fs');
 const os = require('os');
@@ -92,7 +95,7 @@ class IntegrityStream extends PassThrough {
     this.hashOptionsAlgorythm = hashOptionsAlgorythm;
     this.checksum = crypto.createHash(hashOptionsAlgorythm, hashOptions);
     this.on('finish', () => {
-      this.digest = this.checksum.digest('hex')
+      this.digest = this.checksum.digest('base64')
     });
   }
 
@@ -108,6 +111,6 @@ class IntegrityStream extends PassThrough {
 
   getDigest() {
     if (this.digest == null) throw new Error('Failed computing checksum on event');
-    return this.hashOptionsAlgorythm + ' ' + this.digest;
+    return this.hashOptionsAlgorythm + '-' + this.digest;
   }
 }

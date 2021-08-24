@@ -143,12 +143,20 @@ const attachments = exports.attachments = {
   text: getAttachmentInfo('text', 'text.txt', 'text/plain')
 };
 
+// following https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
+// compute sri with openssl
+// cat FILENAME.js | openssl dgst -sha384 -binary | openssl base64 -A
+// replaces: 'sha256 ' + crypto.createHash('sha256').update(data).digest('hex');
+function getSubresourceIntegrity(filePath) {
+  const algorythm = 'sha256';
+  return algorythm + '-' + childProcess.execSync(`cat "${filePath}" | openssl dgst -${algorythm} -binary | openssl base64 -A`)
+}
 
 
 function getAttachmentInfo(id, filename, type) {
   const filePath = path.join(attachmentsDirPath, filename);
   const data = fs.readFileSync(filePath);
-  const integrity = 'sha256 ' + crypto.createHash('sha256').update(data).digest('hex');
+  const integrity = getSubresourceIntegrity(filePath);
   return {
     id: id,
     filename: filename,
