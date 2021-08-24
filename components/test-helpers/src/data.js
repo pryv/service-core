@@ -23,6 +23,7 @@ const { getUsersRepository, User } = require('business/src/users');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('test-helpers:data');
+const crypto = require('crypto');
 
 // users
 const users = exports.users = require('./data/users');
@@ -142,16 +143,20 @@ const attachments = exports.attachments = {
   text: getAttachmentInfo('text', 'text.txt', 'text/plain')
 };
 
+
+
 function getAttachmentInfo(id, filename, type) {
   const filePath = path.join(attachmentsDirPath, filename);
   const data = fs.readFileSync(filePath);
+  const integrity = 'sha256 ' + crypto.createHash('sha256').update(data).digest('hex');
   return {
     id: id,
     filename: filename,
     path: filePath,
     data: data,
     size: data.length,
-    type: type
+    type: type,
+    integrity: integrity,
   };
 }
 

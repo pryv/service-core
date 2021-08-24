@@ -1024,13 +1024,15 @@ describe('events', function () {
                 id: createdEvent.attachments[0].id,
                 fileName: testData.attachments.document.filename,
                 type: testData.attachments.document.type,
-                size: testData.attachments.document.size
+                size: testData.attachments.document.size,
+                integrity: testData.attachments.document.integrity
               },
               {
                 id: createdEvent.attachments[1].id,
                 fileName: testData.attachments.image.filename,
                 type: testData.attachments.image.type,
-                size: testData.attachments.image.size
+                size: testData.attachments.image.size,
+                integrity: testData.attachments.image.integrity
               }
             ],
             streamIds: data.streamIds,
@@ -1082,7 +1084,8 @@ describe('events', function () {
               id: createdEvent.attachments[0].id,
               fileName: 'file.name.with.many.dots.pdf',
               type: testData.attachments.document.type,
-              size: testData.attachments.document.size
+              size: testData.attachments.document.size,
+              integrity: testData.attachments.document.integrity
             }
           ],
           streamIds: [data.streamIds[0]],
@@ -1164,7 +1167,8 @@ describe('events', function () {
                     id: attachment.id,
                     fileName: testData.attachments.image.filename,
                     type: testData.attachments.image.type,
-                    size: testData.attachments.image.size
+                    size: testData.attachments.image.size,
+                    integrity: testData.attachments.image.integrity
                   }
                 );
               }
@@ -1174,7 +1178,8 @@ describe('events', function () {
                     id: attachment.id,
                     fileName: testData.attachments.text.filename,
                     type: testData.attachments.text.type,
-                    size: testData.attachments.text.size
+                    size: testData.attachments.text.size,
+                    integrity: testData.attachments.text.integrity
                   }
                 );
               }
@@ -1220,7 +1225,8 @@ describe('events', function () {
               id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
               fileName: testData.attachments.text.filename,
               type: testData.attachments.text.type,
-              size: testData.attachments.text.size
+              size: testData.attachments.text.size,
+              integrity: testData.attachments.text.integrity
             });
 
             const attachments = updatedEvent.attachments; 

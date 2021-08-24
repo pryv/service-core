@@ -1139,7 +1139,8 @@ module.exports = async function (api)
         id: fileId,
         fileName: file.originalname,
         type: file.mimetype,
-        size: file.size
+        size: file.size,
+        integrity: file.integrity
       });
       
       const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);

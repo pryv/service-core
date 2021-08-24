@@ -12,6 +12,7 @@ class Attachment {
   type: string;
   size: number;
   readToken: string;
+  integrity: string;
 
   constructor(params: {}) {
     for (const [key, value] of Object.entries(params)) {
