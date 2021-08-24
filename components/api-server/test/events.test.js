@@ -69,7 +69,7 @@ describe('events', function () {
     ], done);
   });
 
-  describe('XXXXGET /', function () {
+  describe('GET /', function () {
 
     before(resetEvents);
 
