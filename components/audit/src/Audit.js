@@ -19,6 +19,7 @@ const validation = require('./validation');
 const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
 const { AuditAccessIds } = require('./MethodContextUtils');
+const util = require('util');
 
 /**
  * EventEmitter interface is just for tests syncing for now
@@ -92,7 +93,7 @@ class Audit {
   }
 
   async eventForUser(userId, event) {
-    logger.debug('eventForUser: ' + userId + ' ' + logger.inspect(event));
+    logger.debug('eventForUser: ' + userId + ' ' + util.inspect(event, {breakLength: Infinity, colors: true}));
 
     const methodId = event.content.action;
 

@@ -50,6 +50,7 @@ const ALL_METHODS = [
   'events.create',
   'events.update',
   'events.delete',
+  'events.getAttachment',
   'events.deleteAttachment',
   'system.createUser',
   'system.deactivateMfa',
@@ -77,10 +78,10 @@ const WITH_USER_METHODS = AUDITED_METHODS.filter(m => ! WITHOUT_USER_METHODS.inc
 
 const allMethodsMap = buildMap(ALL_METHODS);
 
-function isMethodDeclared(methodId) {
-  if (methodId.includes('*')) return true; // including to register for wildcards such as "followedSlices.*", or "*"
-  if (allMethodsMap[methodId]) return true;
-  return false;
+function throwIfMethodIsNotDeclared(methodId) {
+  if (methodId.includes('*')) return; // including to register for wildcards such as "followedSlices.*", or "*"
+  if (allMethodsMap[methodId]) return;
+  throw new Error('Attempting to add a method not declared in audit, methodId: "' + methodId + '". Please add it to components/audit/src/ApiMethods.js#ALL_METHODS')
 }
 
 module.exports = {
@@ -91,7 +92,7 @@ module.exports = {
   WITHOUT_USER_METHODS: WITHOUT_USER_METHODS,
   WITHOUT_USER_METHODS_MAP: buildMap(WITHOUT_USER_METHODS),
   WITH_USER_METHODS: WITH_USER_METHODS,
-  isMethodDeclared: isMethodDeclared,
+  throwIfMethodIsNotDeclared,
 };
 
 /**

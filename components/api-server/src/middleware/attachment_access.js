@@ -13,6 +13,17 @@ const errors = require('errors').factory;
 
 const config = require('@pryv/boiler').getConfigUnsafe(true);
 const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
+
+// -- Audit 
+const isAuditActive = (!  config.get('openSource:isActive')) && config.get('audit:active');
+let audit;
+if (isAuditActive) {
+  const throwIfMethodIsNotDeclared = require('audit/src/ApiMethods').throwIfMethodIsNotDeclared;
+  throwIfMethodIsNotDeclared('events.getAttachment');
+  audit = require('audit');
+}
+// -- end Audit
+
 const fs = require('fs');
 const path = require('path');
 
@@ -77,14 +88,24 @@ async function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
     }
     const fullPath = path.join(attachmentsDirPath, req.context.user.id, req.params.id, req.params.fileId);
     const fsReadStream = fs.createReadStream(fullPath);
-    fsReadStream.pipe(res);
-    fsReadStream.on('error', (err) => {
+
+    // for Audit
+    req.context.originalQuery = req.params;
+
+    const pipedStream = fsReadStream.pipe(res);
+    let streamHasErrors = false;
+    fsReadStream.on('error', async (err) => {
+      streamHasErrors = true;
       try { 
         fsReadStream.unpipe(res);
       } catch(e) {}
+      // error audit is taken in charge by express error management
       next(err);
     });
-    console.log('XXXXX', attachment);
-    // add auditing here 
+    pipedStream.on('finish', async (a) => {
+      if (streamHasErrors) return;
+      if (isAuditActive) await audit.validApiCall(req.context, null);
+      next();
+    });
   });
 }
