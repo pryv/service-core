@@ -12,7 +12,7 @@ const storage = require('storage');
 const errors = require('errors').factory;
 
 const config = require('@pryv/boiler').getConfigUnsafe(true);
-const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
+const pathForAttachment = require('business').users.UserLocalDirectory.pathForAttachment;
 
 // -- Audit 
 const isAuditActive = (!  config.get('openSource:isActive')) && config.get('audit:active');
@@ -86,7 +86,7 @@ async function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
         res.header('Digest', digestAlgo + '=' + sum);
       }
     }
-    const fullPath = path.join(attachmentsDirPath, req.context.user.id, req.params.id, req.params.fileId);
+    const fullPath = pathForAttachment(req.context.user.id, req.params.id, req.params.fileId);
     const fsReadStream = fs.createReadStream(fullPath);
 
     // for Audit
@@ -105,7 +105,7 @@ async function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
     pipedStream.on('finish', async (a) => {
       if (streamHasErrors) return;
       if (isAuditActive) await audit.validApiCall(req.context, null);
-      next();
+      // do not call "next()" 
     });
   });
 }
