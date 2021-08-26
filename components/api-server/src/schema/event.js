@@ -86,7 +86,8 @@ exports.attachments = array(object({
   fileName: string(),
   type: string(),
   size: number(),
-  readToken: string()
+  readToken: string(),
+  integrity: string()
 }, {
   required: [ 'id', 'fileName', 'type', 'size', 'readToken' ],
   additionalProperties: false

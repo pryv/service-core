@@ -11,10 +11,35 @@ const lodash = require('lodash');
 const storage = require('storage');
 const errors = require('errors').factory;
 
+const config = require('@pryv/boiler').getConfigUnsafe(true);
+const pathForAttachment = require('business').users.UserLocalDirectory.pathForAttachment;
+
+// -- Audit 
+const isAuditActive = (!  config.get('openSource:isActive')) && config.get('audit:active');
+let audit;
+if (isAuditActive) {
+  const throwIfMethodIsNotDeclared = require('audit/src/ApiMethods').throwIfMethodIsNotDeclared;
+  throwIfMethodIsNotDeclared('events.getAttachment');
+  audit = require('audit');
+}
+// -- end Audit
+
+const fs = require('fs');
+const path = require('path');
+
 function middlewareFactory(userEventsStorage: storage.user.Events) {
   return lodash.partial(attachmentsAccessMiddleware, userEventsStorage);
 }
 module.exports = middlewareFactory;
+
+// mapping algo codes to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Digest supported codes
+const algoMap = {
+  sha256: 'SHA-256',
+  sha512: 'SHA-512',
+  sha1: 'SHA',
+  sha: 'SHA',
+  md5: 'MD5'
+}
 
 // A middleware that checks permissions to access the file attachment, then
 // translates the request's resource path to match the actual physical path for
@@ -41,16 +66,6 @@ async function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
       return next(errors.forbidden());
     }
 
-    req.url = req.url
-      .replace(req.params.username, req.context.user.id)
-      .replace('/events/', '/');
-      
-    if (req.params.fileName) {
-      // ignore filename (it's just there to help clients build nice URLs)
-      var encodedFileId = encodeURIComponent(req.params.fileId);
-      req.url = req.url.substr(0, req.url.indexOf(encodedFileId) + encodedFileId.length);
-    }
-
     // set response content type (we can't rely on the filename)
     const attachment = event.attachments ?
       _.find(event.attachments, {id: req.params.fileId}) : null;
@@ -60,7 +75,37 @@ async function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
       ));
     }
     res.header('Content-Type', attachment.type);
+    res.header('Content-Length', attachment.size);
+    res.header('Content-Disposition', 'attachment; filename="' + attachment.fileName + '"');
+    if (attachment.integrity) {
+      const splitAt = attachment.integrity.indexOf('-');
+      const algo = attachment.integrity.substr(0, splitAt);
+      const sum = attachment.integrity.substr(splitAt + 1);
+      const digestAlgo = algoMap[algo];
+      if (digestAlgo != null) {
+        res.header('Digest', digestAlgo + '=' + sum);
+      }
+    }
+    const fullPath = pathForAttachment(req.context.user.id, req.params.id, req.params.fileId);
+    const fsReadStream = fs.createReadStream(fullPath);
 
-    next();
+    // for Audit
+    req.context.originalQuery = req.params;
+
+    const pipedStream = fsReadStream.pipe(res);
+    let streamHasErrors = false;
+    fsReadStream.on('error', async (err) => {
+      streamHasErrors = true;
+      try { 
+        fsReadStream.unpipe(res);
+      } catch(e) {}
+      // error audit is taken in charge by express error management
+      next(err);
+    });
+    pipedStream.on('finish', async (a) => {
+      if (streamHasErrors) return;
+      if (isAuditActive) await audit.validApiCall(req.context, null);
+      // do not call "next()" 
+    });
   });
 }

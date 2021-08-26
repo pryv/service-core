@@ -13,7 +13,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-let audit, isMethodDeclared, isOpenSource, isAuditActive;
+let audit, throwIfMethodIsNotDeclared, isOpenSource, isAuditActive;
 
 // When storing full events.get request instead of streaming it, the maximum
 // array size before returning an error.
@@ -53,7 +53,7 @@ class API {
     isAuditActive = (! isOpenSource) && config.get('audit:active');
     if (isAuditActive) {
       audit = require('audit');
-      isMethodDeclared = require('audit/src/ApiMethods').isMethodDeclared;
+      throwIfMethodIsNotDeclared = require('audit/src/ApiMethods').throwIfMethodIsNotDeclared;
     }
   }
   
@@ -74,7 +74,7 @@ class API {
   // - `api.register('events.start', fn1, 'events.create', ...)`
   // 
   register(id: string, ...fns: Array<ApiFunction>) {
-    if (! isOpenSource && ! isMethodDeclared(id)) throw new Error('Attempting to add a method not declared in audit, methodId: "' + id + '". Please add it to components/audit/src/ApiMethods.js#ALL_METHODS')
+    if (isAuditActive) throwIfMethodIsNotDeclared(id);
 
     const methodMap = this.map; 
     const wildcardAt = id.indexOf(WILDCARD);
