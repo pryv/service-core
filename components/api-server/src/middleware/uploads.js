@@ -12,12 +12,12 @@
 
 const filesUploadSupport = require('middleware').filesUploadSupport;
 const multer = require('multer');
-const IntegrityDiskStorage = require('./IntegrityDiskStorage');
+const MulterIntegrityDiskStorage = require('business').integrity.MulterIntegrityDiskStorage;
 
 // ---------------------------------------------------------------- multer setup
 
 // Parse multipart file data into request.files: 
-const storage = IntegrityDiskStorage({
+const storage = MulterIntegrityDiskStorage({
   filename: null, // default filename, random
   destination: null, // operating system's default directory for temporary files is used.
 }); 

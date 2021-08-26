@@ -10,6 +10,7 @@ module.exports = {
   accesses: require('./accesses'),
   series: require('./series'), 
   types: require('./types'), 
+  integrity: require('./integrity'),
   webhooks: {
     Webhook: require('./webhooks/Webhook'),
     Repository: require('./webhooks/repository'),
