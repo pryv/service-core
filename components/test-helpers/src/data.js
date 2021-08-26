@@ -23,7 +23,6 @@ const { getUsersRepository, User } = require('business/src/users');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('test-helpers:data');
-const crypto = require('crypto');
 
 // users
 const users = exports.users = require('./data/users');
@@ -148,8 +147,8 @@ const attachments = exports.attachments = {
 // cat FILENAME.js | openssl dgst -sha384 -binary | openssl base64 -A
 // replaces: 'sha256 ' + crypto.createHash('sha256').update(data).digest('hex');
 function getSubresourceIntegrity(filePath) {
-  const algorythm = 'sha256';
-  return algorythm + '-' + childProcess.execSync(`cat "${filePath}" | openssl dgst -${algorythm} -binary | openssl base64 -A`)
+  const algorithm = 'sha256';
+  return algorithm + '-' + childProcess.execSync(`cat "${filePath}" | openssl dgst -${algorithm} -binary | openssl base64 -A`)
 }
 
 
