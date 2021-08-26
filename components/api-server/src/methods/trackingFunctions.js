@@ -10,6 +10,8 @@ const errorHandling = require('errors').errorHandling;
 const errors = require('errors').factory;
 const string = require('./helpers/string');
 const timestamp = require('unix-timestamp');
+const { getLogger } = require('@pryv/boiler');
+const { getStorageLayer } = require('storage');
 
 import type API  from '../API';
 import type { StorageLayer } from 'storage';
@@ -21,15 +23,11 @@ import type { ApiCallback }  from '../API';
  * Call tracking functions, to be registered after all methods have been registered.
  *
  * @param api
- * @param logger
- * @param storageLayer
  */
-module.exports = function (
-  api: API,
-  logger, 
-  storageLayer: StorageLayer
-) {
-
+module.exports = async function (api: API) 
+{
+  const logger = getLogger('methods:trackingFunctions');
+  const storageLayer = await getStorageLayer();
   const userAccessesStorage = storageLayer.accesses;
 
   api.register('*',

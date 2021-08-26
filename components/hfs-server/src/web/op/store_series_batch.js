@@ -122,7 +122,7 @@ class EventMetaDataCache {
     this.accessToken = accessToken; 
     this.ctx = ctx;
     
-    this.cache = LRU({ max: METADATA_CACHE_SIZE });
+    this.cache = new LRU({ max: METADATA_CACHE_SIZE });
   }
   
   // Loads an event, checks access rights for the current token, then looks 

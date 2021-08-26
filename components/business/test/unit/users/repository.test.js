@@ -13,9 +13,8 @@ const helpers = require('api-server/test/helpers');
 const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('api-server/test/test-helpers');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
-
+const { getUsersRepository, User } = require('business/src/users');
+const { ErrorIds } = require('errors');
 
 describe('Users repository', () => {
   let mongoFixtures;
@@ -39,8 +38,8 @@ describe('Users repository', () => {
       email = charlatan.Internet.email();
       try {
         await mongoFixtures.user(userId, {
-          username: username,
-          email: email,
+          username,
+          email,
           customRegistrationUniqueField: customRegistrationUniqueField
         });
       } catch (err) {
@@ -52,13 +51,12 @@ describe('Users repository', () => {
       await mongoFixtures.clean();
     });
 
-    it('[7C22] must throw a duplicate error when username field is not unique', async () => {
+    it('[7C22] must throw an item already exists error when username field is not unique', async () => {
       try {
-        const usersRepository = new UsersRepository(eventsStorage);
-        const id = charlatan.Lorem.characters(10);
+        const usersRepository = await getUsersRepository(); 
         const userObj: User = new User({
-          id: id,
-          username: username,
+          id: charlatan.Lorem.characters(10),
+          username,
           password: charlatan.Lorem.characters(10),
           email: charlatan.Internet.email(),
         });
@@ -66,38 +64,24 @@ describe('Users repository', () => {
 
         assert.isTrue(false);
       } catch (err) {
-        assert.isNotNull(err);
-        // FLOW: we ensure that err contains the isDuplicate boolean with assert
-        const isDuplicate = err.isDuplicate;
-        assert.isBoolean(isDuplicate);
-        assert.isTrue(isDuplicate);
-        // FLOW: we ensure that err contains the isDuplicateIndex function with assert
-        const isDuplicateIndex = err.isDuplicateIndex;
-        assert.isFunction(isDuplicateIndex);
-        assert.isTrue(isDuplicateIndex('username__unique'));
+        assert.equal(err.id, ErrorIds.ItemAlreadyExists);
+        assert.deepEqual(err.data, { username });
       }
     });
 
-    it('[6CFE] must throw a duplicate error when email field is not unique', async () => {
+    it('[6CFE] must throw an item already exists error when email field is not unique', async () => {
       try {
-        const usersRepository = new UsersRepository(eventsStorage);
+        const usersRepository = await getUsersRepository(); 
         const userObj: User = new User({
           id: charlatan.Lorem.characters(10),
-          email: email
+          username: charlatan.Lorem.characters(10),
+          email,
         });
         await usersRepository.insertOne(userObj);
-        console.log('Test failed because error was not thrown');
         assert.isTrue(false);
       } catch (err) {
-        assert.isNotNull(err);
-        // FLOW: we ensure that err contains the isDuplicate boolean with assert
-        const isDuplicate = err.isDuplicate;
-        assert.isBoolean(isDuplicate);
-        assert.isTrue(isDuplicate);
-        // FLOW: we ensure that err contains the isDuplicateIndex function with assert
-        const isDuplicateIndex = err.isDuplicateIndex;
-        assert.isFunction(isDuplicateIndex);
-        assert.isTrue(isDuplicateIndex('email__unique'));
+        assert.equal(err.id, ErrorIds.ItemAlreadyExists);
+        assert.deepEqual(err.data, { email });
       }
     });
   });

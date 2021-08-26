@@ -17,7 +17,7 @@ const errors = require('errors').factory;
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors').ErrorMessages;
 
-const treeUtils = require('utils').treeUtils;
+const { ApiEndpoint , treeUtils } = require('utils');
 
 const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/accessesMethods');
@@ -25,19 +25,25 @@ const accessSchema = require('../schema/access');
 const string = require('./helpers/string');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-const { getLogger } = require('@pryv/boiler');
+const cache = require('cache');
+
+const { getLogger, getConfig } = require('@pryv/boiler');
+const { getStores } = require('stores');
+const { pubsub } = require('messages');
+const { getStorageLayer } = require('storage');
+
+const { changeStreamIdsInPermissions } = require('./helpers/backwardCompatibility');
 
 import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'business';
 
 import type API  from '../API';
 import type { ApiCallback }  from '../API';
-import type Notifications  from '../Notifications';
 import type Result  from '../Result';
 
 type Permission = {
   streamId: string, 
-  level: 'manage' | 'contribute' | 'read' | 'create-only',
+  level: 'manage' | 'contribute' | 'read' | 'create-only' | 'none',
 };
 type Access = {
   type: 'personal' | 'app' | 'shared',
@@ -50,18 +56,21 @@ type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
 }
 
-module.exports = function produceAccessesApiMethods(
-  api: API, 
-  notifications: Notifications, 
-  updatesSettings: UpdatesSettingsHolder, 
-  storageLayer: StorageLayer) 
+module.exports = async function produceAccessesApiMethods(api: API)
 {
+  const config = await getConfig();
   const logger = getLogger('methods:accesses');
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
+  const stores = await getStores();
+  const storageLayer = await getStorageLayer();
+  const updatesSettings: UpdatesSettingsHolder = {
+    ignoreProtectedFields: config.get('updates:ignoreProtectedFields'),
+  }
+
+  const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
   // RETRIEVAL
-
   api.register('accesses.get',
     commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.get.params),
@@ -69,8 +78,8 @@ module.exports = function produceAccessesApiMethods(
     includeDeletionsIfRequested
   );
 
-  function findAccessibleAccesses(context, params, result, next) {
-    const currentAccess = context.access;
+  async function findAccessibleAccesses(context, params, result, next) {
+    const currentAccess: Access = context.access;
     const accessesRepository = storageLayer.accesses;
     const query = {};
     
@@ -82,45 +91,39 @@ module.exports = function produceAccessesApiMethods(
       query.createdBy = currentAccess.id;
     }
 
-    accessesRepository.find(context.user, query, dbFindOptions, function (err, accesses) {
-      if (err != null) return next(errors.unexpectedError(err)); 
-      
-      // We'll perform a few filter steps on this list, so let's start a chain.
-      let chain = _.chain(accesses);
-        
-      // Filter expired accesses (maybe)
-      chain = maybeFilterExpired(params, chain);
+    try {
+      let accesses: Array<Access> = await bluebird.fromCallback(cb => accessesRepository.find(context.user, query, dbFindOptions, cb));
 
-      // Return the chain result.
-      result.accesses = chain.value();
-
-      // Add apiEndpoind
-      for (let i = 0; i < result.accesses.length; i++) {
-        result.accesses[i].apiEndpoint = context.user.buildApiEndpoint(result.accesses[i].token);
+      if (excludeExpired(params)) {
+        accesses = accesses.filter(a => ! isAccessExpired(a));
       }
 
+      // Add apiEndpoind
+      for (let i = 0; i < accesses.length; i++) {
+        if (accesses[i].permissions != null) { // assert is personal access
+          if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+            accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);  
+          }
+        }
+        accesses[i].apiEndpoint = ApiEndpoint.build(context.user.username, accesses[i].token); 
+      }
+
+      result.accesses = accesses;
+
       next();
-    });
-    
-    // Depending on 'includeExpired' in the query string, adds a filter to
-    // `chain` that filters expired accesses.
-    // 
-    function maybeFilterExpired(params, chain: lodash$Chain<Access>) {
-      const includeExpiredParam = params.includeExpired;
-                  
-      // If we also want to see expired accesses, don't filter them.
-      if (includeExpiredParam === 'true' || includeExpiredParam === '1') 
-        return chain;
-      
-      return chain.reject(
-        a => isAccessExpired(a));
+    } catch (err) {
+      return next(errors.unexpectedError(err)); 
+    }
+
+    function excludeExpired(params: mixed): boolean {
+      return ! params.includeExpired;
     }
   }
 
-  function includeDeletionsIfRequested(context, params, result, next) {
+  async function includeDeletionsIfRequested(context, params, result, next) {
     if (params.includeDeletions == null) { return next(); }
 
-    const currentAccess = context.access;
+    const currentAccess: Access = context.access;
     const accessesRepository = storageLayer.accesses;
 
     const query = {};
@@ -129,19 +132,28 @@ module.exports = function produceAccessesApiMethods(
       query.createdBy = currentAccess.id;
     }
 
-    accessesRepository.findDeletions(context.user, query,  { projection: { calls: 0 } },
-      function (err, deletions) {
-        if (err) { return next(errors.unexpectedError(err)); }
-        result.accessDeletions = deletions;
-        next();
-      });
+    try {
+      const deletions: Array<Access> = await bluebird.fromCallback(cb => accessesRepository.findDeletions(context.user, query,  { projection: { calls: 0 } }, cb));
+
+      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+        for (let access of deletions) {
+          if (access.permissions == null) continue;
+          access.permissions = changeStreamIdsInPermissions(access.permissions);
+        }
+      }
+      result.accessDeletions = deletions;
+
+      next();
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 
 
   // CREATION
 
   const notVisibleAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-  const visibleAccountStreamsIds = Object.keys(SystemStreamsSerializer.getReadableAccountStreams());
+  const visibleAccountStreamsIds = SystemStreamsSerializer.getReadableAccountStreamIds();
 
   api.register('accesses.create',
     commonFns.basicAccessAuthorizationCheck,
@@ -158,19 +170,31 @@ module.exports = function produceAccessesApiMethods(
     next();
   }
 
-  function applyPrerequisitesForCreation(context, params, result, next) {
+  async function applyPrerequisitesForCreation(context, params, result, next) {
     if (params.type === 'personal') {
       return next(errors.forbidden(
         'Personal accesses are created automatically on login.'
       ));
     }
-    
+
+    if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+      params.permissions = changeStreamIdsInPermissions(params.permissions, false);
+    }
+
+    const permissions = params.permissions;
+    for (const permission of permissions) {
+      if (permission.streamId != null) {
+        try {
+          commonFns.isValidStreamIdForQuery(permission.streamId, permission, 'permissions');
+        } catch (err) {
+          return next(errors.invalidRequestStructure(err.message, params.permissions));
+        }
+      } 
+    }
     
     const access = context.access;
-    if (access == null) 
-      return next(errors.unexpectedError('AF: Access must not be null here.'));
       
-    if (! access.canCreateAccess(params)) {
+    if (! await access.canCreateAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
         'to create this new access.'));
@@ -238,59 +262,69 @@ module.exports = function produceAccessesApiMethods(
   // Creates default data structure from permissions if needed, for app
   // authorization. 
   // 
-  function createDataStructureFromPermissions(context, params, result, next) {
+  async function createDataStructureFromPermissions(context, params, result, next) {
     const access = context.access;
-    if (access == null) 
-      return next(errors.unexpectedError('AF: Access must not be null here.'));
 
     if (! access.isPersonal()) return next(); // not needed for personal access
-    if (params.permissions == null) return next(); 
 
-    async.forEachSeries(params.permissions, ensureStream, next);
-    function ensureStream (permission, streamCallback) {
-      if (! permission.defaultName) return streamCallback();
+    for (const permission of params.permissions) {
+      try {
+        await ensureStream(permission);
+      } catch (e) {
+        return next(e);
+      }
+    }
+    return next();
+
+    async function ensureStream (permission) {
+      // We ensure stream Exists only if streamid is != '*' and if a defaultName is providedd
+      if (permission.streamId == null || permission.streamId === '*' || permission.defaultName == null) return ;
+
 
       const streamsRepository = storageLayer.streams;
-      const existingStream = treeUtils.findById(context.streams, permission.streamId);
-      if (existingStream) {
-        if (! existingStream.trashed) { return streamCallback(); }
+  
+      const existingStream = await context.streamForStreamId(permission.streamId);
 
+      if (existingStream != null) {
+        if (! existingStream.trashed) return ; 
+
+        // untrash stream
         const update = {trashed: false};
-        
-        streamsRepository.updateOne(context.user, {id: existingStream.id}, update, function (err) {
-          if (err) { return streamCallback(errors.unexpectedError(err)); }
-          streamCallback();
-        });
-      } else {
-        // create new stream
-        const newStream = {
-          id: permission.streamId,
-          name: permission.defaultName,
-          parentId: null
-        };
-        context.initTrackingProperties(newStream);
-        
-        streamsRepository.insertOne(context.user, newStream, function (err) {
-          if (err != null) {
-            // Duplicate errors
-            if (err.isDuplicateIndex('id')) {
-              // Stream already exists, log & proceed
-              logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
-                  err.message);
-            }
-            else if (err.isDuplicateIndex('name')) {
-              // Not OK: stream exists with same unique key but different id
-              return streamCallback(errors.itemAlreadyExists(
-                'stream', {name: newStream.name}, err
-              ));
-            }
-            else {
-              // Any other error
-              return streamCallback(errors.unexpectedError(err));
-            }
+        try { 
+          await bluebird.fromCallback(cb =>  streamsRepository.updateOne(context.user, {id: existingStream.id}, update, cb));
+        } catch (err) {
+          throw(errors.unexpectedError(err));
+        }
+        return ;
+      }
+
+      if (! commonFns.isValidStreamIdForCreation(permission.streamId)) {
+        return next(errors.invalidRequestStructure(`Error while creating stream for access. Invalid 'permission' parameter, forbidden chartacter(s) in streamId '${permission.streamId}'. StreamId should be of length 1 to 100 chars, with lowercase letters, numbers or dashes.`, permission));
+      }
+
+      // create new stream
+      const newStream = {
+        id: permission.streamId,
+        name: permission.defaultName,
+        parentId: null
+      };
+      context.initTrackingProperties(newStream);
+      
+      try {
+        await bluebird.fromCallback(cb =>  streamsRepository.insertOne(context.user, newStream, cb));
+      } catch (err) {
+          // Duplicate errors
+          if (err.isDuplicateIndex('id')) {
+            // Stream already exists, log & proceed
+            logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' + err.message);
           }
-          streamCallback();
-        });
+          else if (err.isDuplicateIndex('name')) {
+            // Not OK: stream exists with same unique key but different id
+            throw(errors.itemAlreadyExists('stream', {name: newStream.name}, err));
+          } else {
+            // Any other error
+            throw(errors.unexpectedError(err));
+          }
       }
     }
   }
@@ -330,8 +364,9 @@ module.exports = function produceAccessesApiMethods(
       }
 
       result.access = newAccess;
-      result.access.apiEndpoint = context.user.buildApiEndpoint(result.access.token);
-      notifications.accessesChanged(context.username);
+      result.access.apiEndpoint = ApiEndpoint.build(context.user.username, result.access.token);
+      
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
       next();
     });
   }
@@ -346,36 +381,6 @@ module.exports = function produceAccessesApiMethods(
     next(errors.goneResource('accesses.update has been removed'));
   }
 
-  // Updates the access in `params.id` with the attributes in `params.update`.
-  // 
-  function updatePersonalAccess(context, params, result, next) {
-    const accessesRepository = storageLayer.accesses;
-
-    accessesRepository.updateOne(context.user, { id: params.id }, params.update,
-      function (err, updatedAccess) {
-        if (err != null) {
-          // Expecting a duplicate error
-          if (err.isDuplicateIndex('type') && err.isDuplicateIndex('name')) {
-            return next(errors.itemAlreadyExists('access',
-              { type: params.resource.type, name: params.update.name }));
-          }
-          // Any other error
-          return next(errors.unexpectedError(err));
-        }
-
-        // cleanup internal fields
-        delete updatedAccess.calls;
-
-        // cleanup deleted
-        delete updatedAccess.deleted;
-
-        result.access = updatedAccess;
-        notifications.accessesChanged(context.username);
-        next();
-      });
-  }
-
-  
   // DELETION
 
   api.register('accesses.delete',
@@ -407,7 +412,7 @@ module.exports = function produceAccessesApiMethods(
     if (access == null)
       return next(errors.unknownResource('access', params.id));
           
-      if (! currentAccess.canDeleteAccess(access)) {
+      if (! await currentAccess.canDeleteAccess(access)) {
         return next(
           errors.forbidden(
             'Your access token has insufficient permissions to ' +
@@ -458,6 +463,14 @@ module.exports = function produceAccessesApiMethods(
       idsToDelete = idsToDelete.concat(result.relatedDeletions);
     }
 
+    // remove from cache
+    for (const idToDelete of idsToDelete) {
+      const accessToDelete = cache.getAccessLogicForId(context.user.id, idToDelete.id);
+      if (accessToDelete != null) {
+        cache.unsetAccessLogic(context.user.id, accessToDelete);
+     }
+    }
+
     try {
       await bluebird.fromCallback(cb => {
         accessesRepository.delete(context.user,
@@ -468,7 +481,7 @@ module.exports = function produceAccessesApiMethods(
       return next(errors.unexpectedError(err));
     }
     result.accessDeletion = {id: params.id};
-    notifications.accessesChanged(context.username);
+    pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     next();
   }
 
@@ -575,6 +588,7 @@ module.exports = function produceAccessesApiMethods(
     // NOT REACHED
 
     function checkPermission(permission, done) {
+     
       if (permission.streamId === '*') {
         // cleanup ignored properties just in case
         delete permission.defaultName;

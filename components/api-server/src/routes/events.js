@@ -27,13 +27,9 @@ module.exports = function(expressApp: express$Application, app: Application) {
   const config = app.config;
   const storage = app.storageLayer;
 
-  const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
   const filesReadTokenSecret = config.get('auth:filesReadTokenSecret');
 
   const loadAccessMiddleware = middleware.loadAccess(storage);
-
-  const attachmentsStatic = express.static(attachmentsDirPath);
-  
   expressApp.get(Paths.Events + '/',
     setMethodId('events.get'),
     loadAccessMiddleware,
@@ -77,8 +73,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
     setMethodId('events.getAttachment'),
     retrieveAccessFromReadToken, 
     loadAccessMiddleware,
-    attachmentsAccessMiddleware(storage.events), 
-    attachmentsStatic
+    attachmentsAccessMiddleware(storage.events)
   );
 
   // Parses the 'readToken' and verifies that the access referred to by id in 

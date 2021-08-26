@@ -14,7 +14,8 @@ const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
-const { Notifications } = require('messages');
+
+const { pubsub } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfig } = require('@pryv/boiler');
 
@@ -36,8 +37,6 @@ describe('Account with system streams', function () {
   let config;
   let isDnsLess;
 
-  
-
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
       insurancenumber: charlatan.Number.number(4),
@@ -55,27 +54,27 @@ describe('Account with system streams', function () {
     return user;
   }
 
-  async function getActiveEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
+  async function getActiveEvent(streamId, isPrivate = true) {
+    const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
           streamIds: {
             $all: [
               SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
-              streamIdWithDot
+              streamIdWithPrefix
             ]
           }
         }, null, cb));
   }
 
-  async function getNotActiveEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
+  async function getNotActiveEvent (streamId, isPrivate = true) {
+    const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
           $and: [
-            { streamIds: streamIdWithDot },
+            { streamIds: streamIdWithPrefix },
             { streamIds: { $ne: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
           ]
         }, null, cb));
@@ -84,11 +83,10 @@ describe('Account with system streams', function () {
    * Create additional event
    * @param string streamId 
    */
-  async function createAdditionalEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
+  async function createAdditionalEvent (streamIdWithPrefix, content) {
     eventDataForadditionalEvent = {
-      streamIds: [streamIdWithDot],
-      content: charlatan.Lorem.characters(7),
+      streamIds: [streamIdWithPrefix],
+      content: content || charlatan.Lorem.characters(7),
       type: 'string/pryv'
     };
     return await request.post('/' + user.attrs.username + '/events')
@@ -103,34 +101,15 @@ describe('Account with system streams', function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     app = getApplication(true);
     await app.initiate();
-
     // Initialize notifications dependency
     let axonMsgs = [];
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifications = new Notifications(axonSocket);
-    notifications.serverReady();
-    require("api-server/src/methods/account")(
-      app.api,
-      app.storageLayer.events,
-      app.storageLayer.passwordResetRequests,
-      app.config.get('auth'),
-      app.config.get('services'),
-      notifications,
-      app.logging);
-    await require("api-server/src/methods/events")(
-      app.api,
-      app.storageLayer.events,
-      app.storageLayer.eventFiles,
-      app.config.get('auth'),
-      app.config.get('service:eventTypes'),
-      notifications,
-      app.logging,
-      app.config.get('versioning'),
-      app.config.get('updates'),
-      app.config.get('openSource'),
-      app.config.get('services'));
+    pubsub.setTestNotifier(axonSocket);
+    pubsub.status.emit(pubsub.SERVER_READY);
+    await require("api-server/src/methods/account")(app.api);
+    await require("api-server/src/methods/events")(app.api);
     request = supertest(app.expressApp);
   });
 
@@ -152,13 +131,16 @@ describe('Account with system streams', function () {
           (body) => {
             serviceRegisterRequest = body;
             return true;
-          }).times(4).reply(200, { errors: [] });
-        const editableStreamsIds = ['.email', '.language', '.phoneNumber', '.insurancenumber'];
-        const visibleStreamsIds = ['.username', '.email', '.language', '.phoneNumber', '.insurancenumber', '.dbDocuments', '.attachedFiles'];
+          }).times(3).reply(200, { errors: [] });
+        const editableStreamsIds = ['email', 'phoneNumber', 'insurancenumber']
+          .map(SystemStreamsSerializer.addCustomerPrefixToStreamId)
+          .concat([SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]);
+        const visibleStreamsIds = ['username', 'language', 'dbDocuments', 'attachedFiles']
+          .map(SystemStreamsSerializer.addPrivatePrefixToStreamId)
+          .concat(['email', 'phoneNumber', 'insurancenumber'].map(SystemStreamsSerializer.addCustomerPrefixToStreamId));
 
-        let i;
-        for (i = 0; i < editableStreamsIds.length; i++){
-          await createAdditionalEvent(editableStreamsIds[i]);
+        for (const editableStreamsId of editableStreamsIds) {
+          await createAdditionalEvent(editableStreamsId);
         }
 
         allVisibleAccountEvents = await bluebird.fromCallback(
@@ -175,20 +157,20 @@ describe('Account with system streams', function () {
         assert.equal(res.status, 200);
       });
       it('[JUHR] should return account information in the structure that is defined in system streams and only active values', async () => {
-        const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes(
-          SystemStreamsSerializer.addDotToStreamId('username')))[0];
-        const emailAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('email')))[0];
-        const languageAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('language')))[0];
-        const dbDocumentsAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('dbDocuments')))[0];
-        const attachedFilesAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('attachedFiles')))[0];
-        const insurancenumberAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('insurancenumber')))[0];
-        const phoneNumberAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('phoneNumber')))[0];
+        const usernameAccountEvent = allVisibleAccountEvents.find(event => event.streamIds.includes(
+          SystemStreamsSerializer.addPrivatePrefixToStreamId('username')));
+        const emailAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('email')));
+        const languageAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')));
+        const dbDocumentsAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')));
+        const attachedFilesAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles')));
+        const insurancenumberAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
+        const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
 
         assert.equal(res.body.account.username, usernameAccountEvent.content);
         assert.equal(res.body.account.email, emailAccountEvent.content);
@@ -234,7 +216,7 @@ describe('Account with system streams', function () {
         await bluebird.fromCallback(
           (cb) => user.db.events.removeOne({ id: user.attrs.id },
             {
-              streamIds: SystemStreamsSerializer.addDotToStreamId('passwordHash')
+              streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')
             }, cb));
         
         // make sure the event was deleted
@@ -271,7 +253,7 @@ describe('Account with system streams', function () {
         await bluebird.fromCallback(
           (cb) => user.db.events.removeOne({ id: user.attrs.id },
             {
-              streamIds: SystemStreamsSerializer.addDotToStreamId('passwordHash')
+              streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')
             }, cb));
 
         // make sure the event was deleted
@@ -297,7 +279,7 @@ describe('Account with system streams', function () {
   });
 
   describe('PUT /account', () => {
-      describe('and when user tries to modify the username', () => {
+      describe('when updating the username', () => {
         before(async function () {
           await createUser();
           // modify account info
@@ -314,7 +296,7 @@ describe('Account with system streams', function () {
           assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
         });
       });
-      describe('and when user tries to modify non editable fields', () => {
+      describe('when updating non editable fields', () => {
         before(async function () {
           await createUser();
           // modify account info
@@ -331,7 +313,7 @@ describe('Account with system streams', function () {
           assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
         });
       });
-      describe('and when updating a unique field that are already taken', () => {
+      describe('when updating a unique field that is already taken', () => {
         describe('and the field is not unique in mongodb', () => {
           let scope;
           let user2;
@@ -339,9 +321,12 @@ describe('Account with system streams', function () {
             user2 = await createUser();
             await createUser();
             const settings = _.cloneDeep(helpers.dependencies.settings);
-            scope = nock(settings.services.register.url)
+            scope = nock(settings.services.register.url);
             scope.put(`/users`)
-              .reply(200, {});
+              .reply(400, { error: { 
+                id: ErrorIds.ItemAlreadyExists,
+                data: { email: user2.attrs.email },
+            }});
   
             // modify account info
             res = await request.put(basePath)
@@ -358,9 +343,9 @@ describe('Account with system streams', function () {
         });
       });
 
-      describe('and when user tries to edit email or language when non-active fields exists', () => {
-        let newEmail = charlatan.Lorem.characters(7);
-        let newLanguage = charlatan.Lorem.characters(2);
+      describe('when updating email and language and non-active fields exists', () => {
+        const newEmail = charlatan.Internet.email();
+        const newLanguage = charlatan.Lorem.characters(2);
         let activeEmailBefore;
         let notActiveEmailBefore;
         let activeLanguageBefore;
@@ -386,11 +371,11 @@ describe('Account with system streams', function () {
             }).times(3).reply(200, {});
           
           // create additional events
-          await createAdditionalEvent('email');
-          await createAdditionalEvent('language');
+          await createAdditionalEvent(SystemStreamsSerializer.addCustomerPrefixToStreamId('email'), charlatan.Internet.email());
+          await createAdditionalEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('language'));
   
-          activeEmailBefore = await getActiveEvent('email');
-          notActiveEmailBefore = await getNotActiveEvent('email');
+          activeEmailBefore = await getActiveEvent('email', false);
+          notActiveEmailBefore = await getNotActiveEvent('email', false);
           activeLanguageBefore = await getActiveEvent('language');
           notActiveLanguageBefore = await getNotActiveEvent('language');
   
@@ -402,8 +387,8 @@ describe('Account with system streams', function () {
             })
             .set('authorization', access.token);
 
-          activeEmailAfter = await getActiveEvent('email');
-          notActiveEmailAfter = await getNotActiveEvent('email');
+          activeEmailAfter = await getActiveEvent('email', false);
+          notActiveEmailAfter = await getNotActiveEvent('email', false);
           activeLanguageAfter = await getActiveEvent('language');
           notActiveLanguageAfter = await getNotActiveEvent('language');
         });

@@ -22,17 +22,23 @@ const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
+
+let usersRepository = null;
 
 describe('account', function () {
   const user = Object.assign({}, testData.users[0]);
-  const usersRepository = new UsersRepository(storage);
+  
+  before(async () => {
+    usersRepository = await getUsersRepository(); 
+  });
+  
   let basePath = '/' + user.username + '/account';
   let request = null; // must be set after server instance started
 
   // to verify data change notifications
   var accountNotifCount;
-  server.on('account-changed', function () { accountNotifCount++; });
+  server.on('axon-account-changed', function () { accountNotifCount++; });
 
   before(function (done) {
     async.series([
@@ -100,7 +106,7 @@ describe('account', function () {
             scope.put('/users')
               .matchHeader('Authorization', this.context.key)
               .reply(200, function (uri, requestBody) {
-                this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
+                this.context.testNotifier.emit('reg-server-called', requestBody);
               }.bind(this));
           }
         });
@@ -140,7 +146,7 @@ describe('account', function () {
               delete expected.id;
               delete expected.password;
               delete expected.storageUsed;
-
+              
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result,
@@ -153,8 +159,8 @@ describe('account', function () {
             });
           },
           async function verifyData () {           
-            const retrievedUser = await usersRepository.getAccountByUsername(user.username);
-              validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
+            const retrievedUser = await usersRepository.getUserByUsername(user.username);
+            validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
           }
         ], done);
       });
@@ -179,7 +185,7 @@ describe('account', function () {
 
   function getFilesystemBlockSize(done) {
     const testFilePath = './file_test.txt';
-    const testValue = 0;
+    const testValue = '0';
     fs.writeFile(testFilePath, testValue, (err) => {
       if (err) throw err;
 
@@ -225,7 +231,7 @@ describe('account', function () {
       assert.approximately(storageUsed.attachedFiles, initialStorageUsed.attachedFiles +
         newAtt.size, filesystemBlockSize);
       const updatedStorageUsed = storageUsed;
-      const retrievedUser = await usersRepository.getById(user.id);
+      const retrievedUser = await usersRepository.getUserById(user.id);
       assert.deepEqual(retrievedUser.storageUsed, updatedStorageUsed);
     });
 
@@ -271,7 +277,7 @@ describe('account', function () {
         newAtt = testData.attachments.image;
       async.series([
         async function checkInitial () {
-          const retrievedUser = await usersRepository.getById(user.id);
+          const retrievedUser = await usersRepository.getUserById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
         },
         function addAttachment(stepDone) {
@@ -283,7 +289,7 @@ describe('account', function () {
               });
         },
         async function checkUpdated () {
-          const retrievedUser = await usersRepository.getById(user.id);
+          const retrievedUser = await usersRepository.getUserById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
           retrievedUser.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
           retrievedUser.storageUsed.attachedFiles.should.be.approximately(
@@ -418,10 +424,9 @@ describe('account', function () {
         context: settings.services.email,
         execute: function () {
           require('nock')(this.context.url).post('')
-            .reply(200, function (uri, requestBody) {
-              var body = JSON.parse(requestBody);
+            .reply(200, function (uri, body) {
               var token = body.message.global_merge_vars[0].content; // HACK, assume structure 
-              this.context.messagingSocket.emit('password-reset-token', token);
+              this.context.testNotifier.emit('password-reset-token', token);
             }.bind(this));
         }
       });
@@ -501,7 +506,7 @@ describe('account', function () {
         execute: function () {
           require('nock')(this.context.url).post(this.context.sendMessagePath)
             .reply(200, function () {
-              this.context.messagingSocket.emit('password-reset-token');
+              this.context.testNotifier.emit('password-reset-token');
             }.bind(this));
         }
       });

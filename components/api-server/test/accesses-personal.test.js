@@ -12,6 +12,9 @@ const helpers = require('./helpers');
 const ErrorIds = require('errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
+const charlatan = require('charlatan');
+const assert = require('chai').assert;
+const bluebird = require('bluebird');
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/accessesMethods');
 const should = require('should');
@@ -43,7 +46,7 @@ describe('accesses (personal)', function () {
 
   // to verify data change notifications
   var accessesNotifCount;
-  server.on('accesses-changed', function () { accessesNotifCount++; });
+  server.on('axon-accesses-changed', function () { accessesNotifCount++; });
 
   function buildApiEndpoint(username, token) {
     return ApiEndpoint.build(username, token);
@@ -79,10 +82,14 @@ describe('accesses (personal)', function () {
     it('[K5BF] must return all accesses (including personal ones)', function (done) {
       req().get(basePath).end(function (res) {
         const expected = validation
-          .removeDeletions(testData.accesses)
+          .removeDeletions( _.cloneDeep(testData.accesses))
           .map(a =>  _.omit(a, 'calls'));
+        validation.addStoreStreams(expected);
         for (let e of expected) {
           e.apiEndpoint = buildApiEndpoint('userzero', e.token);
+        }
+        for (let e of res.body.accesses) {
+          if (e.id === 'a_0') e.lastUsed = 0;
         }
         validation.check(res, {
           status: 200,
@@ -175,7 +182,7 @@ describe('accesses (personal)', function () {
 
     it('[FPUE] must create a new app access with the sent data, creating/restoring requested streams',
       function (done) {
-        var data = {
+        const data = {
           id: undefined, 
           token: undefined, 
           created: undefined, 
@@ -260,7 +267,7 @@ describe('accesses (personal)', function () {
 
     it('[865I] must accept two app accesses with the same name (app ids) but different device names',
       function (done) {
-        var data = {
+        const data = {
           name: testData.accesses[4].name,
           type: 'app',
           deviceName: 'Calvin\'s Fantastic Cerebral Enhance-o-tron',
@@ -281,7 +288,7 @@ describe('accesses (personal)', function () {
       });
 
     it('[4Y3Y] must ignore erroneous requests to create new streams', function (done) {
-      var data = {
+      const data = {
         id: undefined,          // declare property for flow
         token: undefined,       // declare property for flow 
         name: 'my-sweet-app-id',
@@ -334,7 +341,7 @@ describe('accesses (personal)', function () {
     });
 
     it('[GVC7] must refuse to create new personal accesses (obtained via login only)', function (done) {
-      var data = {
+      const data = {
         token: 'client-defined-token',
         name: 'New Personal Access',
         type: 'personal'
@@ -361,8 +368,27 @@ describe('accesses (personal)', function () {
       });
     });
 
+    it('[00Y3] must return an error if a permission\'s streamId has an invalid format', (done) => {
+      const data = {
+        name: 'Access with slugified streamId permission',
+        permissions: [
+          {
+            streamId: ':az&',
+            level: 'read',
+            defaultName: 'whatever',
+          }
+        ]
+      };
+      req().post(basePath).send(data).end((res) => {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidRequestStructure,
+        }, done);
+      });
+    });
+
     it('[V3AV] must return an error if the sent data is badly formatted', function (done) {
-      var data = {
+      const data = {
         name: 'New Access',
         permissions: [
           {
@@ -377,7 +403,7 @@ describe('accesses (personal)', function () {
     });
 
     it('[HETK] must refuse empty `defaultName` values for streams', function (done) {
-      var data = {
+      const data = {
         name: 'New Access',
         permissions: [
           {
@@ -393,7 +419,7 @@ describe('accesses (personal)', function () {
     });
 
     it('[YG81] must return an error if an access with the same token already exists', function (done) {
-      var data = {
+      const data = {
         token: testData.accesses[1].token,
         name: 'Duplicate',
         permissions: []
@@ -408,7 +434,7 @@ describe('accesses (personal)', function () {
 
     it('[GZTH] must return an error if an access with the same name already exists',
       function (done) {
-        var data = {
+        const data = {
           name: testData.accesses[2].name,
           permissions: []
         };
@@ -423,8 +449,8 @@ describe('accesses (personal)', function () {
 
     it('[4HO6] must return an error if an "app" access with the same name (app id) and device ' +
         'name already exists', function (done) {
-      var existing = testData.accesses[4];
-      var data = {
+      const existing = testData.accesses[4];
+      const data = {
         type: existing.type,
         name: existing.name,
         deviceName: existing.deviceName,
@@ -441,7 +467,7 @@ describe('accesses (personal)', function () {
 
     it('[PO0R] must return an error if the device name is set for a non-app access',
       function (done) {
-        var data = {
+        const data = {
           name: 'Yikki-yikki',
           deviceName: 'Impossible Device'
         };
@@ -463,6 +489,22 @@ describe('accesses (personal)', function () {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.InvalidItemId
+        }, done);
+      });
+    });
+
+    it('[08SK] must return an error if the permission streamId has invalid characters', (done) => {
+      const data = {
+        name: charlatan.Lorem.word(),
+        permissions: [{
+          streamId: 'whdaup "" \/',
+          level: 'read',
+        }],
+      };
+      req().post(basePath).send(data).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidRequestStructure,
         }, done);
       });
     });

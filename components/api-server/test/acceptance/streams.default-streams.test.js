@@ -13,9 +13,12 @@ const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
-const { Notifications } = require('messages');
+
+const { pubsub } = require('messages');
 const { databaseFixture } = require('test-helpers');
+const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe("System streams", function () {
   let app;
@@ -52,18 +55,10 @@ describe("System streams", function () {
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifications = new Notifications(axonSocket);
+    pubsub.setTestNotifier(axonSocket);
     
-    notifications.serverReady();
-    require("api-server/src/methods/streams")(
-      app.api,
-      app.storageLayer.streams,
-      app.storageLayer.events,
-      app.storageLayer.eventFiles,
-      notifications,
-      app.logging,
-      app.config.get('versioning'),
-      app.config.get('updates'));
+    pubsub.status.emit(pubsub.SERVER_READY);
+    require("api-server/src/methods/streams")(app.api);
   
     request = supertest(app.expressApp);
   });
@@ -71,74 +66,90 @@ describe("System streams", function () {
   describe('GET /streams', () => {
     describe('When using a personal access', () => {
       it('[9CGO] Should return all streams - including system ones', async () => {
-        await createUser();
-        res = await request.get(basePath).set('authorization', access.token);
-        assert.deepEqual(res.body.streams, [
+        const expectedRes = [];
+        validation.addStoreStreams(expectedRes)
+        const readableStreams = [
           {
             name: 'account',
-            id: '.account',
+            id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
             parentId: null,
             children: [
               {
                 name: 'Username',
-                id: '.username',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('username'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'Language',
-                id: '.language',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('language'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'Storage used',
-                id: '.storageUsed',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: [
                   {
                     name: 'Db Documents',
-                    id: '.dbDocuments',
-                    parentId: '.storageUsed',
+                    id: SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments'),
+                    parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
                     children: []
                   },
                   {
                     name: 'Attached files',
-                    id: '.attachedFiles',
-                    parentId: '.storageUsed',
+                    id: SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles'),
+                    parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
                     children: []
                   }
                 ]
               },
               {
                 name: 'insurancenumber',
-                id: '.insurancenumber',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'phoneNumber',
-                id: '.phoneNumber',
-                parentId: '.account',
+                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
-              { name: 'Email', id: '.email', parentId: '.account', children: [] },
+              { 
+                name: 'Email',
+                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('email'),
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+                children: []
+              },
             ]
           },
           {
-            id: ".helpers",
-            name: "helpers",
+            id: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
+            name: 'helpers',
             parentId: null,
             children: [
               {
-                id: ".active",
-                name: "Active",
-                parentId: ".helpers",
+                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('active'),
+                name: 'Active',
+                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
                 children: []
-              }
+              },
+
             ] 
           }
-        ]);
+        ];
+
+        const { UserStreams } = require('stores/interfaces/DataSource')
+        UserStreams.applyDefaults(readableStreams);
+
+        expectedRes.push(...readableStreams);
+
+        await createUser();
+        res = await request.get(basePath).set('authorization', access.token);
+
+        assert.deepEqual(res.body.streams, expectedRes);
       });
     });
   });
@@ -151,7 +162,7 @@ describe("System streams", function () {
           res = await request.post(basePath)
             .send({
               name: charlatan.Lorem.characters(7),
-              parentId: '.language',
+              parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('language'),
             })
             .set('authorization', access.token);
         });
@@ -174,7 +185,7 @@ describe("System streams", function () {
           streamData = {
             name: 'lanugage2'
           };
-          res = await request.put(path.join(basePath, 'language'))
+          res = await request.put(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
             .send(streamData)
             .set('authorization', access.token);
         });
@@ -193,7 +204,7 @@ describe("System streams", function () {
       describe('to delete a system stream', () => {
         before(async function () {
           await createUser();
-          res = await request.delete(path.join(basePath, 'language'))
+          res = await request.delete(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
             .set('authorization', access.token);
         });
         it('[1R35] should return status 400', async () => { 

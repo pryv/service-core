@@ -6,14 +6,12 @@
  */
 // @flow
 
-const LRU = require('lru-cache');
 const bluebird = require('bluebird');
 
 const storage = require('storage');
-const UserRepo = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { PendingUpdate } = require('./pending_updates');
 
-import type { LRUCache }  from 'lru-cache';
 import type { Operation }  from './controller';
 
 // Operation that flushes the update to MongoDB. 
@@ -28,14 +26,14 @@ class Flush implements Operation {
   db: storage.StorageLayer;
   
   // User lookup (name -> id)
-  users: UsersRepository;
+  users: CustomUsersRepository;
   
   constructor(update: PendingUpdate, db: storage.StorageLayer, logger) {
     this.update = update; 
     this.db = db;
     this.logger = logger; 
     
-    this.users = new UsersRepository(db);     
+    this.users = new CustomUsersRepository(db);     
   }
   
   // Flushes the information in `this.update` to disk (MongoDB).
@@ -74,6 +72,7 @@ class Flush implements Operation {
       modified: request.timestamp,
      
     };
+    // ADD AUDIT HERE ??
 
     await bluebird.fromCallback(
             cb => db.events.updateOne(user, query, updatedData, cb));
@@ -87,56 +86,29 @@ const USER_LOOKUP_CACHE_SIZE = 1000;
 // Repository to help with looking up users by name. This class will hide a 
 // cache to speed up these lookups and load MongoDB less. 
 // 
-class UsersRepository {
-  db: storage.StorageLayer;
-  cache: LRUCache<string, User>;
-  businessRepository: UserRepo;
+class CustomUsersRepository {
   
   constructor(db: storage.StorageLayer) {
-    this.db = db;
-    
-    this.cache = LRU({
-      max: USER_LOOKUP_CACHE_SIZE
-    });
-    this.businessRepository = new UserRepo(this.db.events);
+   
   }
-  
-  async resolve(name: string): Promise<User> {
-    const cache = this.cache;
-  
-    if (cache.has(name)) {
-      const user = cache.get(name);
-      if (user != null) return user;
-      
-      // NOTE Since the cache is bounded in size, we might have evicted the 
-      //  user in the meantime. If no user is in cache, fall through to the 
-      //  production path. 
-      
-      // FALL THROUGH
-    }
-    
-    const user = await this.resolveFromDB(name);
-    
-    cache.set(name, user);
-    
-    return user; 
-  }
-  
-  /**
-   * get user information by the username
-   * @param string name 
-   */
-  async resolveFromDB (name: string): Promise<User> {
-    const user = await this.businessRepository.getAccountByUsername(name, true);
+  async resolve(name: string): Promise<?UserDef> {
+    const usersRepository = await getUsersRepository();
+    const userId = await usersRepository.getUserIdForUsername(name);
+    if (userId == null) return null; 
+    const user = { 
+      id: userId,
+      username: name
+    };
     return user;
   }
 }
 
-type User = {
+type UserDef = {
   id: string, 
+  username: string,
 }
 
 module.exports = {
   Flush, 
-  UsersRepository,
+  CustomUsersRepository: CustomUsersRepository,
 };

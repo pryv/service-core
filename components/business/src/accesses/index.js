@@ -5,5 +5,7 @@
  * Proprietary and confidential
  */
 module.exports = {
-  AccessLogic: require('./AccessLogic')
+  AccessLogic: require('./AccessLogic'),
+  Access: require('./Access'),
+  Permission: require('./Permission'),
 }

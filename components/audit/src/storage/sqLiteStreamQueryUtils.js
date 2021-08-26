@@ -21,7 +21,7 @@ exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
   
   function processBlock(block) {
     let res = ''; // A OR B
-    const orExists = block.any && block.any.length > 0;
+    const orExists = block.any && block.any.length > 0 && block.any[0] !== '*';
     if (orExists) { 
       if (block.any.length === 1) {
         res += addQuotes(block.any)[0];
@@ -37,6 +37,7 @@ exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
       res += ' NOT ';
       res += addQuotes(block.not).join(' NOT ');
     }
+    if (res === '') res = null;
     return res ;
   }
 }

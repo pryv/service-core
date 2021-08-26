@@ -37,8 +37,6 @@ ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callba
       event.deleted = timestamp.fromDate(event.deleted);
     } 
 
-    event = converters.removeFieldsEnforceUniqueness(event);
-
     this.push(event);
     callback();
   } catch(err) {

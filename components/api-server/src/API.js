@@ -13,7 +13,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-let audit, isMethodDeclared, isOpenSource;
+let audit, throwIfMethodIsNotDeclared, isOpenSource, isAuditActive;
 
 // When storing full events.get request instead of streaming it, the maximum
 // array size before returning an error.
@@ -50,9 +50,10 @@ class API {
     this.filters = []; 
     const config = getConfigUnsafe();
     isOpenSource = config.get('openSource:isActive');
-    if (! isOpenSource) {
+    isAuditActive = (! isOpenSource) && config.get('audit:active');
+    if (isAuditActive) {
       audit = require('audit');
-      isMethodDeclared = require('audit/src/ApiMethods').isMethodDeclared;
+      throwIfMethodIsNotDeclared = require('audit/src/ApiMethods').throwIfMethodIsNotDeclared;
     }
   }
   
@@ -73,7 +74,7 @@ class API {
   // - `api.register('events.start', fn1, 'events.create', ...)`
   // 
   register(id: string, ...fns: Array<ApiFunction>) {
-    if (! isOpenSource && ! isMethodDeclared(id)) throw new Error('Attempting to add a method not declared in audit, methodId: "' + id + '". Please add it to components/audit/src/ApiMethods.js#ALL_METHODS')
+    if (isAuditActive) throwIfMethodIsNotDeclared(id);
 
     const methodMap = this.map; 
     const wildcardAt = id.indexOf(WILDCARD);
@@ -93,7 +94,7 @@ class API {
       const idMethodFns = methodMap.get(id);
       if (idMethodFns == null) 
         throw new Error('AF: methodMap must contain id at this point.');
-      
+
       // append registered functions
       for (const fn of fns) {
         // Syntax allows strings in the function list, which means that the 
@@ -116,7 +117,6 @@ class API {
           idMethodFns.push(...backrefMethods);
         }
         else {
-          // assert: _.isFunction(fn)
           idMethodFns.push(fn);
         }
       }
@@ -175,31 +175,54 @@ class API {
   // ------------------------------------------------------------ handling calls
   
   call(context: MethodContext, params: mixed, callback: ApiCallback) {
+    const methodId: string = context.methodId;
     const methodMap = this.map; 
-    const methodList = methodMap.get(context.methodId);
+    const methodList = methodMap.get(methodId);
+    
 
     if (methodList == null) 
-      return callback(errors.invalidMethod(context.methodId), null);
-      
+      return callback(errors.invalidMethod(methodId), null);
+
+    
+    const tracing = context.tracing;
+    const tags = (context.username != null) ? {} : {username: context.username};
+    const apiSpanName = 'api:' + methodId;
+    tracing.startSpan(apiSpanName, tags);
+
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
+
+    let unanmedCount = 0;
     async.forEachSeries(methodList, function (currentFn, next) {
-      try {
-        currentFn(context, params, result, next);
-      } catch (err) {
+
+      // -- Tracing by Function
+      const fnName = 'fn:' + (currentFn.name || methodId + '.unamed' + unanmedCount++);
+      tracing.startSpan(fnName, {}, apiSpanName);
+      const nextCloseSpan = function(err) {
+        if (err != null) tracing.setError(fnName, err); 
+        tracing.finishSpan(fnName);
         next(err);
+      }
+      // --- 
+
+      try {
+        currentFn(context, params, result, nextCloseSpan);
+      } catch (err) {
+        nextCloseSpan(err);
       }
     }, function (err) {
       if (err != null) {
+        tracing.setError(apiSpanName, err);
+        tracing.finishSpan(apiSpanName);
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
       }
-      if (! isOpenSource) {
-        result.onEnd(function() {
-          audit.validApiCall(context, result);
+      if (isAuditActive) {
+        result.onEnd(async function() {
+          await audit.validApiCall(context, result);
         });
       }
-      
+      tracing.finishSpan(apiSpanName);
       callback(null, result);
     });
   }
@@ -221,5 +244,3 @@ function matches(idFilter: string, id: string) {
   const filterWithoutWildcard = idFilter.slice(0, -1);
   return id.startsWith(filterWithoutWildcard);
 }
-
-

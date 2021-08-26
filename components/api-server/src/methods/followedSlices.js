@@ -9,16 +9,17 @@ var async = require('async'),
     errors = require('errors').factory,
     methodsSchema = require('../schema/followedSlicesMethods');
 
+const { pubsub } = require('messages');
+const { getStorageLayer } = require('storage');
 /**
  * Followed slices methods implementations.
  * TODO: refactor methods as chains of functions
  *
  * @param api
- * @param userFollowedSlicesStorage
- * @param notifications
  */
-module.exports = function (api, userFollowedSlicesStorage, notifications){
-
+module.exports = async function (api){
+  const storageLayer = await getStorageLayer();
+  userFollowedSlicesStorage = storageLayer.followedSlices;
 
   // RETRIEVAL
 
@@ -44,7 +45,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
           return next(getCreationOrUpdateError(err, params));
         }
         result.followedSlice = newSlice;
-        notifications.followedSlicesChanged(context.user);
+        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
         next();
       });
     });
@@ -78,7 +79,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
               }
 
               result.followedSlice = updatedSlice;
-              notifications.followedSlicesChanged(context.user);
+              pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
               stepDone();
             });
         }
@@ -122,7 +123,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
           if (err) { return next(errors.unexpectedError(err)); }
 
           result.followedSliceDeletion = {id: params.id};
-          notifications.followedSlicesChanged(context.user);
+          pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
           next();
         });
       });

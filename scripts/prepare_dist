@@ -14,6 +14,10 @@ rsync -a --delete node_modules/ dist/node_modules/
 
 # for an unkown reason babel is not copying .mocharc.js
 mkdir -p dist/components/audit/
+mkdir -p dist/components/stores/
+mkdir -p dist/components/cache/
 cp components/audit/.mocharc.js dist/components/audit/.mocharc.js
+cp components/stores/.mocharc.js dist/components/stores/.mocharc.js
+cp components/cache/.mocharc.js dist/components/cache/.mocharc.js
 
 echo "done."

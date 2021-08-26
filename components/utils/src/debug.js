@@ -12,3 +12,12 @@ module.exports.log = function log() {
     console.log(util.inspect(arguments[i], {depth: 12, colors: true}));
   }
 }
+
+module.exports.stack = function stack(start = 0, length = 100) {
+  const e = new Error();
+  return e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 ).slice(start + 1, start + length + 1);
+}
+
+module.exports.logstack = function logstack() {
+  this.log(...arguments, this.stack(3, 2));
+}

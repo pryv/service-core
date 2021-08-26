@@ -15,7 +15,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [12.13]
+        node-version: [16.4.1]
 
     steps:
     - name: Download master branch
@@ -31,9 +31,9 @@ jobs:
     - name: Login to github
       uses: webfactory/ssh-agent@v0.4.1
       with:
-        ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
+        ssh-private-key: ${{ secrets.TECH_PRYV_SSH_KEY }}
 
-    - name: Install & run gnatsd, mongodb, influxdb
+    - name: Install & run nats-server, mongodb, influxdb
       run: sh build/build-dev
       
     - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install

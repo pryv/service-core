@@ -37,12 +37,12 @@ exports.clear = function (settings: any) {
 /**
  * @throws Any error encountered deserializing or calling the setup function
  */
-exports.execute = function (testSetup: string, messagingSocket: any) {
+exports.execute = function (testSetup: string, testNotifier: any) {
   var obj = parse(testSetup);
   
   if (obj.context != null) {
     // inject TCP axonMessaging socket to allow passing data back to test process
-    obj.context.messagingSocket = messagingSocket;
+    obj.context.testNotifier = testNotifier;
   }
   
   obj.execute();

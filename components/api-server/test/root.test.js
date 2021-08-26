@@ -310,6 +310,16 @@ describe('root', function() {
       const res = await server.request()
         .get('/' + username + '/access-info')
         .set('Authorization', sharedAccessToken);
+      
+      // extend sharedAccess with audit rights
+      sharedAccess.permissions.push({
+        streamId: ':_audit:access-' + sharedAccess.id, 
+        level: 'read'});
+      sharedAccess.permissions.push({
+        streamId: ':_audit:actions', 
+        limitations: { 'events.get': {streams: { all: [ 'access-' + sharedAccess.id ] } } },
+        level: 'read'});
+
       validation.check(
         res,
         {
@@ -324,8 +334,6 @@ describe('root', function() {
       );
     });
   });
-
-  
 
   describe('Accept Basic Auth request', function () {
 
@@ -390,7 +398,7 @@ describe('root', function() {
     before(function () {
       eventsNotifCount = 0;
       
-      server.on('events-changed', function () {
+      server.on('axon-events-changed', function () {
         eventsNotifCount++;
       });
     });

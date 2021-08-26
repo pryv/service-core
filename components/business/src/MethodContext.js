@@ -9,17 +9,22 @@
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-import type { Access, User, Stream } from 'storage';
+import type { Access, Stream } from 'storage';
 
 const AccessLogic = require('./accesses/AccessLogic');
 const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const treeUtils = require('utils').treeUtils;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
+const { getStores, StreamsUtils } = require('stores');
+
+const cache = require('cache');
+
+const { DummyTracing } = require('tracing');
 
 export type CustomAuthFunctionCallback = (err: any) => void;
 export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
@@ -30,25 +35,25 @@ export type ContextSource = {
   ip?: string
 }
 
+type UserDef = {
+  id: ?string, 
+  username: string,
+}
 
 export type AuthenticationData = {
   accessToken: string,
   callerId?: string,
 }
 
+
 const AUTH_SEPARATOR = ' ';
 const ACCESS_TYPE_PERSONAL = 'personal';
 
-
-
-
 class MethodContext {
-  // Username of the user making the request. 
-  username: string;
-
+  
   source: ContextSource;
 
-  user: ?User;
+  user: UserDef;
   access: ?Access;
   streams: ?Array<Stream>;
 
@@ -63,14 +68,15 @@ class MethodContext {
   // Custom auth function, if one was configured. 
   customAuthStepFn: ?CustomAuthFunction;
 
-  // will contain the list of "found" streams 
-  streamList: ?Array<Stream>;
-  // during an event.create action for multiple streams event, some streamIds might not exists. They will be listed here
-  streamIdsNotFoundList: ?Array<string>;
-  systemStreamsSerializer: object;
-
   methodId: ?string;
-  usersRepository: UsersRepository;
+  stores: Store;
+
+  _tracing: ?Tracing;
+
+  /**
+   * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
+   */
+  disableBackwardCompatibility: boolean;
 
   constructor(
     source: ContextSource,
@@ -78,18 +84,16 @@ class MethodContext {
     auth: ?string,
     customAuthStepFn: ?CustomAuthFunction,
     eventsStorage: ?StorageLayer,
-    headers: ?{},
+    headers: Map<string, any>,
     query: ?{},
+    tracing: ?Tracing,
   ) {
     this.source = source;
-    this.username = username;
 
-    this.user = null;
+    this.user = { id: null, username: username};
+    this.stores = null;
     this.access = null;
-    this.streams = null;
 
-    this.streamList = null;
-    this.streamIdsNotFoundList = [];
     this.customAuthStepFn = customAuthStepFn;
 
     this.accessToken = null;
@@ -97,11 +101,28 @@ class MethodContext {
     this.headers = headers;
 
     this.methodId = null;
-    this.systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
-    this.usersRepository = new UsersRepository(storage.getStorageLayerSync().events);
+    SystemStreamsSerializer.getSerializer(); // ensure it's loaded
     if (auth != null) this.parseAuth(auth);
-    this.originalQuery = query;
+    this.originalQuery = _.cloneDeep(query);
+    if (this.originalQuery?.auth) delete this.originalQuery.auth;
+    if (headers != null) {
+      this.disableBackwardCompatibility = headers['disable-backward-compatibility-prefix'] || false;
+    }
+    this._tracing = tracing;
   }
+
+  get tracing() {
+    if (this._tracing == null) {
+      console.log('XXXXXXX >>>>>> Null tracer', new Error());
+      this._tracing = new DummyTracing();
+    }
+    return this._tracing;
+  }
+
+  set tracing(tracing) {
+    this._tracing = tracing;
+  }
+
 
   // Extracts access token and optional caller id from the given auth string, 
   // assigning to `this.accessToken` and `this.callerId`.
@@ -119,20 +140,32 @@ class MethodContext {
     }
   }
 
-  // Load the user identified by `this.username`, storing it in `this.user`.
+  // Load the userId and stores 
+  async init() {
+    this.stores = await getStores();
+    const usersRepository = await getUsersRepository();
+    this.user = { 
+      id: await usersRepository.getUserIdForUsername(this.user.username),
+      username: this.user.username
+    };
+    if (! this.user.id ) throw errors.unknownResource('user', this.user.username);
+  }
+
+  // Retrieve the userBusiness
   async retrieveUser() {
+    this.stores = await getStores();
     try {
       // get user details
-      this.user = await this.usersRepository.getAccountByUsername(this.username, true);
-      if (!this.user) throw errors.unknownResource('user', this.username);
+      const usersRepository = await getUsersRepository();
+      const user = await usersRepository.getUserByUsername(this.user.username);
+      if (! user) throw errors.unknownResource('user', this.user.username);
+      return user;
     } catch (err) {
-      throw errors.unknownResource('user', this.username);
+      throw errors.unknownResource('user', this.user.username);
     }
   }
 
-  // Retrieves the context's access from its token (auth in constructor) and
-  // expand its permissions (e.g. to include child streams). Also sets
-  // `context.streams`.
+  // Retrieves the context's access from its token (auth in constructor) 
   //
   // If the context's access is already set, the initial step is skipped. This
   // allows callers to implement custom retrieval logic if needed (e.g. using a
@@ -144,7 +177,7 @@ class MethodContext {
   async retrieveExpandedAccess (storage: StorageLayer) {
     try {
       if (this.access == null)
-        await this.retrieveAccess(storage);
+        await this.retrieveAccessFromToken(storage);
 
       const access = this.access;
       if (access == null) throw new Error('AF: this.access != null');
@@ -160,11 +193,7 @@ class MethodContext {
       // those 2 last are executed in callbatch for each call.
 
       // Load the streams we can access.
-      await this.retrieveStreams(storage);
-
-      // And finally, load permissions for non-personal accesses.
-      const streams = this.streams;
-      if (!access.isPersonal()) access.loadPermissions(streams);
+      if (!access.isPersonal()) access.loadPermissions();
     }
     catch (err) {
       if (err != null && !(err instanceof APIError)) {
@@ -176,17 +205,8 @@ class MethodContext {
     }
   }
 
-  // Internal: Loads `this.access`. 
-  // 
-  async retrieveAccess(storage: StorageLayer) {
-    const token = this.accessToken;
-
-    if (token == null)
-      throw errors.invalidAccessToken(
-        'The access token is missing: expected an ' +
-        '"Authorization" header or an "auth" query string parameter.');
-
-    const query = { token: token };
+  // generic retrieve access
+  async _retrieveAccess(storage: StorageLayer, query) {
     const access = await bluebird.fromCallback(
       cb => storage.accesses.findOne(this.user, query, null, cb));
 
@@ -195,13 +215,30 @@ class MethodContext {
         'Cannot find access from token.', 403);
       
     this.access = new AccessLogic(this.user.id, access);
+    cache.setAccessLogic(this.user.id, this.access);
+  }
 
+  // Internal: Loads `this.access`. 
+  // 
+  async retrieveAccessFromToken(storage: StorageLayer) {
+    const token = this.accessToken;
+
+    if (token == null)
+      throw errors.invalidAccessToken(
+        'The access token is missing: expected an ' +
+        '"Authorization" header or an "auth" query string parameter.');
+
+    this.access = cache.getAccessLogicForToken(this.user.id, token);
+    
+    if (this.access == null) { // retreiveing from Db
+      await this._retrieveAccess(storage, {token: token})
+    }
     this.checkAccessValid(this.access);
   }
 
   // Performs validity checks on the given access. You must call this after
   // every access load that needs to return a valid access. Internal function, 
-  // since all the 'retrieveAccess*' methods call it. 
+  // since all the 'retrieveAccessFromToken*' methods call it. 
   // 
   // Returns nothing but throws if an error is detected.
   // 
@@ -216,19 +253,16 @@ class MethodContext {
   // `this.access` and `this.accessToken`. 
   // 
   async retrieveAccessFromId(storage: StorageLayer, accessId: string): Promise<Access> {
-    const query = { id: accessId };
-    const access = await bluebird.fromCallback(
-      cb => storage.accesses.findOne(this.user, query, null, cb));
 
-    if (access == null)
-      throw errors.invalidAccessToken('Cannot find access matching id.');
+    this.access = cache.getAccessLogicForId(this.user.id, accessId);
 
-    this.access = new AccessLogic(this.user.id, access);
-    this.accessToken = access.token;
+    if (this.access == null) {
+      await this._retrieveAccess(storage, { id: accessId });
+    }
 
-    this.checkAccessValid(access);
-
-    return access;
+    this.accessToken = this.access.token;
+    this.checkAccessValid(this.access);
+    return this.access;
   }
 
   // Loads session and touches it (personal sessions only)
@@ -272,33 +306,15 @@ class MethodContext {
       }
     });
   }
-
-  // Loads the users streams as `this.streams`.
-  async retrieveStreams(storage: StorageLayer) {
-    const user = this.user;
-    const streams = await bluebird.fromCallback(
-      cb => storage.streams.find(user, {}, null, cb));
-
-    // get streams ids from the config that should be retrieved
-    const userAccountStreams = this.systemStreamsSerializer.getSystemStreamsList();
-    this.streams = streams.concat(userAccountStreams);
-  }
-
-  // Set this contexts stream by looking in this.streams. DEPRECATED.
-  // used only in the events creation and update
-  setStreamList(streamIds: array) {
-    if (!streamIds || streamIds.length === 0) return;
-
-    streamIds.forEach(function (streamId) {
-      let stream = treeUtils.findById(this.streams, streamId);
-
-      if (stream) {
-        if (!this.streamList) this.streamList = [];
-        this.streamList.push(stream);
-      } else {
-        this.streamIdsNotFoundList.push(streamId);
-      }
-    }.bind(this));
+  
+  /**
+   * Get a Stream for StreamId
+   * @param {identifier} streamId 
+   * @param {identifier} [storeId] - If storeId is null streamId should be fully scoped 
+   * @returns 
+   */
+  async streamForStreamId(streamId: string, storeId: string) {
+    return await this.stores.streams.getOne(this.user.id, streamId, storeId);
   }
 
   initTrackingProperties(item: any, authorOverride: ?string) {

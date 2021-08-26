@@ -4,8 +4,6 @@ logs:
     active: true
     level: info
     colorize: true
-  file:
-    active: false
   airbrake:
     active: false
     projectId: ''
@@ -14,10 +12,5 @@ database:
   host: 127.0.0.1
   port: 27017
   name: pryv-node
-  authUser: ''
-  authPassword: ''
 nats:
   uri: 'nats://127.0.0.1:4222'
-service:
-  info:
-    serial: '20190101'

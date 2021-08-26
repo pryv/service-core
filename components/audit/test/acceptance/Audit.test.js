@@ -349,6 +349,29 @@ describe('Audit', function() {
         assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
+    describe('with a malformed request body', function () {
+      before(async function() {
+        now = Date.now() / 1000;
+        res = await coreRequest
+          .post(eventsPath)
+          .set('Authorization', access.token)
+          .set('Content-Type', 'application/json')
+          .send('{"i am malformed"}');
+      });
+      it('[DZDP] must return 400', function() {
+        assert.equal(res.status, 400);
+      });
+      it('[ZNP4] must not record logs', async function() {
+        res = await coreRequest
+          .get(auditPath)
+          .set('Authorization', access.token)
+          .query({ fromTime: now });
+        assert.equal(res.status, 200);
+        const entries = res.body.auditLogs;
+        assert.exists(entries);
+        assert.equal(entries.length, 0);
+      });
+    });
     
   });
 

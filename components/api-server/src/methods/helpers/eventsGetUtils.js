@@ -17,7 +17,7 @@ const
 
 function coerceStreamsParam (context, params, result, next) {
   if (! params.streams)  {
-    params.streams = null;
+    params.streams = [{any: ['*']}];
     return next();
   }
   // Streams query can also be sent as a JSON string or string of Array
@@ -64,10 +64,10 @@ function transformArrayOfStringsToStreamsQuery (context, params, result, next) {
   next();
 }
 
-function validateStreamsQuery (context, params, result, next) {
+function validateStreamsQueriesAndSetStore (context, params, result, next) {
   if (params.streams === null) return next();
   try {
-    streamsQueryUtils.validateStreamsQuery(params.streams);
+    streamsQueryUtils.validateStreamsQueriesAndSetStore(params.streams);
   } catch (e) {
     return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
   }
@@ -104,6 +104,6 @@ async function applyDefaultsForRetrieval (context, params, result, next) {
 module.exports = {
   coerceStreamsParam,
   applyDefaultsForRetrieval,
-  validateStreamsQuery,
+  validateStreamsQueriesAndSetStore,
   transformArrayOfStringsToStreamsQuery
 }

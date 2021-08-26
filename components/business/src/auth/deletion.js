@@ -10,7 +10,7 @@ const bluebird = require('bluebird');
 const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const errors = require('errors').factory;
 
@@ -29,14 +29,12 @@ class Deletion {
   logger: any;
   storageLayer: any;
   config: any;
-  usersRepository: UsersRepository;
   serviceRegisterConn: ServiceRegister;
 
   constructor(logging: any, storageLayer: any, config: any) {
     this.logger = getLogger('business:deletion');
     this.storageLayer = storageLayer;
     this.config = config;
-    this.usersRepository = new UsersRepository(this.storageLayer.events);
     this.serviceRegisterConn = getServiceRegisterConn();
   }
 
@@ -76,11 +74,13 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    const user = await this.usersRepository.getAccountByUsername(params.username);
+    const usersRepository = await getUsersRepository(); 
+    const user = await usersRepository.getUserByUsername(params.username);
     if (!user || !user.id) {
       return next(errors.unknownResource('user', params.username));
     }
-    context.user = user;
+    context.user = { id: user.id };
+    context.user.username = user.username;
     next();
   }
 
@@ -195,8 +195,9 @@ class Deletion {
             () => {}
           )
         );
-
-      await this.usersRepository.deleteOne(context.user.id);
+      
+      const usersRepository = await getUsersRepository();
+      await usersRepository.deleteOne(context.user.id);
 
       await Promise.all(drops);
 

@@ -4,10 +4,14 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+// @flow
+
 const APIError = require('errors/src/APIError');
 
-var errors = require('errors').factory,
-    validation = require('../../schema/validation');
+const errors = require('errors').factory;
+const validation = require('../../schema/validation');
+
+const { findForbiddenChar, isStreamIdValidForCreation } = require('../../schema/streamId');
 
 exports.requirePersonalAccess = function requirePersonalAccess(context, params, result, next) {
   if (! context.access.isPersonal()) {
@@ -114,6 +118,15 @@ exports.getParamsValidation = function getParamsValidation (paramsSchema) {
     });
   };
 };
+
+exports.isValidStreamIdForQuery = function isValidStreamIdForQuery(streamId: string, parameter: {}, parameterName: string): void {
+  const forbiddenChar: ?string = findForbiddenChar(streamId);
+  if (forbiddenChar != null) throw (new Error(`Error in '${parameterName}' parameter: ${JSON.stringify(parameter)}, forbidden chartacter(s) in streamId '${streamId}'.`));
+}
+
+exports.isValidStreamIdForCreation = function isValidStreamIdForCreation(streamId: string): boolean {
+  return isStreamIdValidForCreation(streamId);
+}
 
 /**
  * Replaces z-schema message and code with a custom message given in the schema

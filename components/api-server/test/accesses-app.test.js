@@ -153,7 +153,7 @@ describe('accesses (app)', function () {
     basePath = '/' + user.username + '/accesses';
     
     // to verify data change notifications
-    server.on('accesses-changed', function () { accessesNotifCount++; });
+    server.on('axon-accesses-changed', function () { accessesNotifCount++; });
   });
 
   function path(id) {

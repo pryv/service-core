@@ -31,7 +31,6 @@ const storage = require('storage');
 const Context = require('./context');
 const Server = require('./server'); 
 
-// Initialize ProjectVersion
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
 
 const opentracing = require('opentracing');
@@ -76,19 +75,15 @@ async function createContext(
 function produceTracer(config, logger) {
   if (! config.get('trace:enable')) 
     return new opentracing.Tracer();
-    
   const traceConfig = {
     'serviceName': 'hfs-server',
     'reporter': {
       'logSpans': true,
-      'agentHost': config.get('trace:agent:host'),
-      'agentPort': config.get('trace:agent:port'), 
-      'flushIntervalMs': config.get('trace:sampler:flushIntervalMs'),
-    },
+        },
     'logger': logger,
     'sampler': {
-      'type': config.get('trace:sampler:type'),
-      'param': config.get('trace:sampler:param'),
+      'type': 'const',
+      'param': 1,
     }
   };
   const tracer = initTracer(traceConfig);

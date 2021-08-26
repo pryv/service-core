@@ -39,11 +39,10 @@ module.exports = function initContext(
       storageLayer.events,
       req.headers,
       req.query,
+      req.tracing,
     );
     
-    const userRetrieved = req.context.retrieveUser();
-    
     // Convert the above promise into a callback. 
-    return userRetrieved.then(() => next()).catch(next);
+    return req.context.init().then(() => next()).catch(next);
   };
 };

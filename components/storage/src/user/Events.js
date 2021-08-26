@@ -4,13 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var BaseStorage = require('./BaseStorage'),
-  converters = require('./../converters'),
-  timestamp = require('unix-timestamp'),
-  util = require('util'),
-  _ = require('lodash'),
-  ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream'),
-  SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const BaseStorage = require('./BaseStorage');
+const converters = require('./../converters');
+const timestamp = require('unix-timestamp');
+const util = require('util');
+const _ = require('lodash');
+const ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 module.exports = Events;
 /**
@@ -24,13 +24,9 @@ module.exports = Events;
  * @constructor
  */
 function Events (database) {
-  // TODO - maybe I should retrieve all and not only account streams here?
-  // So that unicity, indexing would be broader functionality?
-  // get streams ids of account streams from the config
-  this.systemStreamsFlatList = SystemStreamsSerializer.getAllAccountStreams();
-  this.uniqueStreamIdsList = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
-
   Events.super_.call(this, database);
+
+  SystemStreamsSerializer.getSerializer(); // TODO remove to load it correctly in tests
 
   _.extend(this.converters, {
     itemDefaults: [converters.createIdIfMissing],
@@ -38,19 +34,15 @@ function Events (database) {
       endTimeToDB,
       converters.deletionToDB,
       converters.stateToDB,
-      converters.addUniqueFieldIfNeeded
     ],
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData'),
-      // only because __unique field is useful only for db, it is added to the convertors
-      converters.addOrRemoveUniqueFieldIfNeeded
     ],
     itemFromDB: [
       clearEndTime,
       converters.deletionFromDB,
-      converters.removeFieldsEnforceUniqueness
     ],
   });
 
@@ -96,9 +88,9 @@ function clearEndTime (event) {
   return event;
 }
 
-function getDbIndexes (systemStreamsFlatList) {
+function getDbIndexes () {
   // TODO: review indexes against 1) real usage and 2) how Mongo actually uses them
-  let indexes = [
+  const indexes = [
     {
       index: { time: 1 },
       options: {},
@@ -125,55 +117,37 @@ function getDbIndexes (systemStreamsFlatList) {
       options: { partialFilterExpression: { endTime: { $exists: true } } },
     }
   ];
-
-  // for each event group that has to be unique add a rule
-  if (systemStreamsFlatList) {
-    Object.keys(systemStreamsFlatList).forEach(streamIdWithDot => {
-      let streamId = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot);
-      if (systemStreamsFlatList[streamIdWithDot].isUnique === true) {
-        indexes.push({
-          index: { [`${streamId}__unique`]: 1 },
-          options: {
-            unique: true,
-            partialFilterExpression: {
-              [`${streamId}__unique`]: { $exists: true },
-              streamIds: SystemStreamsSerializer.options.STREAM_ID_UNIQUE
-            }
-          }
-        });
-      }
-    });
-  }
   return indexes;
 }
 /**
  * Implementation.
  */
-Events.prototype.getCollectionInfo = function (user) {
+Events.prototype.getCollectionInfo = function (userOrUserId) {
+  const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'events',
-    indexes: getDbIndexes(this.systemStreamsFlatList),
-    useUserId: user.id
+    indexes: getDbIndexes(),
+    useUserId: userId
   };
 };
 
 Events.prototype.getCollectionInfoWithoutUserId = function () {
   return {
     name: 'events',
-    indexes: getDbIndexes(this.systemStreamsFlatList)
+    indexes: getDbIndexes()
   };
 };
 
 /**
  * Implementation
  */
-Events.prototype.findStreamed = function (user, query, options, callback) {
+Events.prototype.findStreamed = function (userOrUserId, query, options, callback) {
   query.deleted = null;
   // Ignore history of events for normal find.
   query.headId = null;
 
   this.database.findStreamed(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     this.applyOptionsToDB(options),
     function (err, dbStreamedItems) {
@@ -191,9 +165,9 @@ Events.prototype.findStreamed = function (user, query, options, callback) {
 /**
  * Implementation
  */
-Events.prototype.findHistory = function (user, headId, options, callback) {
+Events.prototype.findHistory = function (userOrUserId, headId, options, callback) {
   this.database.find(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB({ headId: headId }),
     this.applyOptionsToDB(options),
     function (err, dbItems) {
@@ -209,14 +183,14 @@ Events.prototype.findHistory = function (user, headId, options, callback) {
  * Implementation
  */
 Events.prototype.findDeletionsStreamed = function (
-  user,
+  userOrUserId,
   deletedSince,
   options,
   callback
 ) {
   var query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
   this.database.findStreamed(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     query,
     this.applyOptionsToDB(options),
     function (err, dbStreamedItems) {
@@ -235,7 +209,7 @@ Events.prototype.countAll = function (user, callback) {
 /**
  * Implementation
  */
-Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
+Events.prototype.minimizeEventsHistory = function (userOrUserId, headId, callback) {
   var update = {
     $unset: {
       streamIds: 1,
@@ -253,12 +227,9 @@ Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
       createdBy: 1,
     },
   };
-  this.uniqueStreamIdsList.forEach(uniqueKeys => {
-    update['$unset'][`${uniqueKeys}__unique`] = 1;
-  });
 
   this.database.updateMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB({ headId: headId }),
     update,
     callback
@@ -269,7 +240,7 @@ Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
 /**
  * Implementation.
  */
-Events.prototype.delete = function (user, query, deletionMode, callback) {
+Events.prototype.delete = function (userOrUserId, query, deletionMode, callback) {
   // default
   var update = {
     $set: { deleted: new Date() },
@@ -294,9 +265,6 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
         modified: 1,
         modifiedBy: 1,
       };
-      this.uniqueStreamIdsList.forEach(uniqueKeys => {
-        update['$unset'][`${uniqueKeys}__unique`] = 1;
-      });
       break;
     case 'keep-authors':
       update.$unset = {
@@ -314,14 +282,11 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
         created: 1,
         createdBy: 1,
       };
-      this.uniqueStreamIdsList.forEach(uniqueKeys => {
-        update['$unset'][`${uniqueKeys}__unique`] = 1;
-      });
       break;
   }
 
   this.database.updateMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
     update,
     callback

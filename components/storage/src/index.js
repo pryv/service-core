@@ -11,11 +11,13 @@ const Stream = require('./user/Streams');
 const Database =  require('./Database');
 const StorageLayer = require('./storage_layer');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
+const  { dataBaseTracer } = require('tracing');
 
 let database;
 function _getDatabase(config) {
   if (! database) { 
     database = new Database(config.get('database')); 
+    dataBaseTracer(database);
   }
   return database; 
 }

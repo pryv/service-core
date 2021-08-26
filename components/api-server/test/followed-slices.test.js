@@ -30,7 +30,7 @@ describe('followed slices', function () {
 
   // to verify data change notifications
   var followedSlicesNotifCount;
-  server.on('followed-slices-changed', function () { followedSlicesNotifCount++; });
+  server.on('axon-followed-slices-changed', function () { followedSlicesNotifCount++; });
 
   before(function (done) {
     async.series([

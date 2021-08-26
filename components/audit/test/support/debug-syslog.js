@@ -20,7 +20,6 @@ function lookFor(str) {
 }
 
 (async () => {
-  console.log('uuu');
   await getConfig();
   const syslog = await getSyslog();
   lookFor('toto');
