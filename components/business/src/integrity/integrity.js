@@ -5,13 +5,13 @@
  * Proprietary and confidential
  */
 const config = require('@pryv/boiler').getConfigUnsafe(true);
+const logger = require('@pryv/boiler').getLogger('integrity');
 
 // mapping algo codes to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Digest supported codes
 const subRessourceCodeToDigestMap = {
   sha256: 'SHA-256',
   sha512: 'SHA-512',
   sha1: 'SHA',
-  sha: 'SHA',
   md5: 'MD5'
 }
 
@@ -30,6 +30,11 @@ const integrity = {
   getDigestForSubRessourceIntegrity
 }
 
-
+if (integrity.isActive && (subRessourceCodeToDigestMap[integrity.algorithm] == null)) {
+  const message = 'Integrity is active and algorithm [' + integrity.algorithm + '] is unsupported. Choose one of: ' + Object.keys(subRessourceCodeToDigestMap).join(', ');
+  logger.error(message);
+  console.log('Error: ' + message);
+  process.exit(1);
+}
 
 module.exports = integrity;
