@@ -165,7 +165,7 @@ module.exports = async function (api)
           //streamQuery.not.push(...cannotRead);
         }
       } else { // ------------ All other cases
-        for (const key of ['any', 'all', 'not']) {
+        for (const key of ['any']) {
           if (streamQuery[key]) {
             for (let streamId of streamQuery[key]) {
               await streamExistsAndCanGetEventsOnStream(streamId, streamQuery.storeId);

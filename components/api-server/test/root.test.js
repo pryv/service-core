@@ -315,10 +315,6 @@ describe('root', function() {
       sharedAccess.permissions.push({
         streamId: ':_audit:access-' + sharedAccess.id, 
         level: 'read'});
-      sharedAccess.permissions.push({
-        streamId: ':_audit:actions', 
-        limitations: { 'events.get': {streams: { all: [ 'access-' + sharedAccess.id ] } } },
-        level: 'read'});
 
       validation.check(
         res,

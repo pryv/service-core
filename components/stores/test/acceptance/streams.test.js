@@ -69,12 +69,11 @@ describe('Stores Streams', function() {
       .query({});
     const streams = res.body.streams;
     assert.exists(streams);
-    assert.equal(streams.length,4);
+    assert.equal(streams.length,3);
     assert.equal(streams[0].id,streamId);
     assert.equal(streams[0].children.length,1);
     assert.equal(streams[1].id,':dummy:');
     assert.equal(streams[2].id,':_audit:access-' + appAccessDummy.id);
-    assert.equal(streams[3].id,':_audit:actions');
   });
 
   it('[XC20] Must retrieve "yo" streams and all stores when requesting "*"', async () => {

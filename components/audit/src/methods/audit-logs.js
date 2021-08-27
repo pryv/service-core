@@ -73,8 +73,13 @@ function limitStreamQueryToAccessToken(context, params, result, next) {
   const streamId = audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id;
 
   for (const query of params.streams) {
-    if (! query.all) { query.all = []}
-    query.all.push(streamId);
+    if (! query.any) { 
+      query.any = [streamId]
+    } else {
+      if (! query.all) { query.all = []}
+      query.all.push({any: [streamId]});
+    }
+    
   }
   next();
 }

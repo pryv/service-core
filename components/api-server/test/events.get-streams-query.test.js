@@ -149,6 +149,27 @@ describe('events.get streams query', function () {
           }]);
       });
 
+      it('[PLMO] must convert streams query property "all" to "and: [{any..}]) with each containing expanded streamIds', async function () {
+        const res = await validateQuery({ any: ['A'], all: ['F'] });
+        assert.deepEqual(res, [
+          { any: ['A', 'B', 'C'], 
+            and: [
+              {any: ['F']}, 
+            ], 
+            storeId: 'local' 
+          }]);
+      });
+
+      it('[JYUR] must convert streams query property "all" and "not" to "and: [{any..}] not:) with each containing expanded streamIds', async function () {
+        const res = await validateQuery({ any: ['A'], all: ['F'] , not: ['D', 'E']});
+        assert.deepEqual(res, [
+          {
+            storeId: 'local',
+            any: [ 'A', 'B', 'C' ],
+            and: [ { any: [ 'F' ] }, { not: [ 'D', 'E', 'F' ] }, { not: [ 'E' ] } ]
+          }]);
+      });
+
       it('[2W2K] must accept two streams queries expanding them', async function () {
         const res = await validateQuery([{ any: ['A'] }, { any: ['D'] }]);
         assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local'  }, { any: ['D', 'E', 'F'], storeId: 'local'  }]);

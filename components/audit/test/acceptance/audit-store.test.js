@@ -161,7 +161,6 @@ describe('Audit Streams and Events', function () {
       const logs = res.body.events;
       assert.isAtLeast(logs.length, 1);
       for (let event of logs) {
-        console.log('XXXXXXY e',event);
         assert.exists(event.content);
         assert.equal(event.content.action, 'events.get');
       }

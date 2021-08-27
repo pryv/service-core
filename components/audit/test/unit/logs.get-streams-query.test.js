@@ -24,19 +24,19 @@ describe('toSqliteQuery()', function() {
   });
 
   it('[SGO5] must convert to SQLLite  streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
-    const clean = [{ any: ['A'], and: ['D'] }];
+    const clean = [{ any: ['A'], and: [{any: ['D'] }]}];
     const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '"A" AND "D"');
   });
 
   it('[RPGX] must convert to SQLLite  streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
-    const clean = [{ any: ['A'], and: { any: ['D', 'E']} }];
+    const clean = [{ any: ['A'], and: [{any: ['D', 'E']}] }];
     const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '"A" AND ("D" OR "E")');
   });
 
   it('[EWLK] must convert to SQLLite  streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
-    const clean = [{ any: ['A'], and: ['D','F'] }];
+    const clean = [{ any: ['A'], and: [{any: ['D']}, {any: ['F']}] }];
     const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '"A" AND "D" AND "F"');
   });
@@ -45,6 +45,16 @@ describe('toSqliteQuery()', function() {
     const clean = [{any: ['A', 'B'], not: ['E']}];
     const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '("A" OR "B") NOT "E"');
+  });
+
+  it('[4QSG] must convert to SQLLite including expansion with "AND" and "NOT"', async function () {
+    const clean = [{
+      storeId: 'local',
+      any: [ 'A', 'B', 'C' ],
+      and: [ { any: [ 'F' ] }, { not: [ 'D', 'E', 'F' ] }, { not: [ 'E' ] } ]
+    }];
+    const sqllite = toSQLiteQuery(clean);      
+    assert.deepEqual(sqllite, '("A" OR "B" OR "C") AND "F" AND  NOT "D" NOT "E" NOT "F" AND  NOT "E"');
   });
 
   it('[3TTK] must convert to SQLLite including expansion with "ALL" and "NOT"', async function () {
