@@ -74,12 +74,7 @@ Object.freeze(PermissionLevels);
       this.permissions.push({
         streamId: ':_audit:access-' + this.id,
         level: 'read'
-       }, {
-        streamId: ':_audit:actions', 
-        limitations: {
-          'events.get': {streams: {all: ['access-' + this.id]}},
-        }, 
-        level: 'read'});
+       });
     }
   }
   
