@@ -114,7 +114,7 @@ exports = module.exports = function (action) {
   return res;
 };
 
-var permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only']});
+var permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only', 'none']});
 
 var featureSetting = exports.featureSetting = string({ enum: ['forbidden']});
 
@@ -123,6 +123,7 @@ var permissions = exports.permissions = function (action) {
     'streamId': {
       type: ['string', 'null']
     },
+    'limitations': helpers.object({}, {nullable: true}),
     'level': permissionLevel
   }, {
     id: 'streamPermission',

@@ -7,34 +7,36 @@
 const _ = require('lodash');
 const commonFns = require('./../helpers/commonFunctions');
 const errors = require('errors').factory;
+const { ErrorMessages, ErrorIds } = require('errors');
 const methodsSchema = require('api-server/src/schema/authMethods');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+const { getLogger, getConfig } = require('@pryv/boiler');
+const { getStorageLayer } = require('storage');
 
 import type { MethodContext } from 'business';
 import type Result  from '../Result';
 import type { ApiCallback }  from '../API';
 
-
 /**
  * Auth API methods implementations.
  *
  * @param api
- * @param userAccessesStorage
- * @param sessionsStorage
- * @param authSettings
  */
-module.exports = function (api, logging, storageLayer, servicesSettings) {
-
-  const isDnsLess = getConfigUnsafe().get('dnsLess:isActive');
+module.exports = async function (api) {
+  const config = await getConfig();
+  const logging = await getLogger('register');
+  const storageLayer = await getStorageLayer();
+  const servicesSettings = config.get('services')
+  const isDnsLess = config.get('dnsLess:isActive');
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
   const serviceRegisterConn: ServiceRegister = getServiceRegisterConn();
-  const usersRepository = new UsersRepository(storageLayer.events);
+  const usersRepository = await getUsersRepository(); 
 
   function skip(context, params, result, next) { next(); }
   function ifDnsLess(ifTrue, ifFalse) {
@@ -92,12 +94,9 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
     try {
-      const existingUsers = await usersRepository.findExistingUniqueFields({ [field]: params[field]});
-      if (existingUsers.length > 0) {
-        return next(errors.itemAlreadyExists('user', { [field]: params[field] }));
-      }
+      await usersRepository.checkDuplicates({ [field]: params[field]});
     } catch (error) {
-      return next(errors.unexpectedError(error));
+      return next(error);
     }
     next();
   }

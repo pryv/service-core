@@ -31,6 +31,26 @@ module.exports = {
         index: { endTime: 1 },
         options: { partialFilterExpression: { endTime: { $exists: true } } },
       },
+      {
+        index: { email__unique: 1 },
+        options: {
+          unique: true,
+          partialFilterExpression: {
+            email__unique: { $exists: true },
+            streamIds: '.unique'
+          }
+        },
+      },
+      {
+        index: { username__unique: 1 },
+        options: {
+          unique: true,
+          partialFilterExpression: {
+            username__unique: { $exists: true },
+            streamIds: '.unique'
+          }
+        },
+      },
     ],
     accesses: [
       {

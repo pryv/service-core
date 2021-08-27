@@ -18,13 +18,14 @@ const { getApplication } = require('api-server/src/application');
 const InfluxRepository = require('business/src/series/repository');
 const DataMatrix = require('business/src/series/data_matrix');
 const { getConfig } = require('@pryv/boiler');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const {
   produceMongoConnection,
   produceInfluxConnection,
 } = require('api-server/test/test-helpers');
-const { Notifications } = require('messages');
+
+const { pubsub } = require('messages');
 const bluebird = require('bluebird');
 
 let app;
@@ -52,29 +53,13 @@ describe('DELETE /users/:username', async () => {
     app = getApplication();
     await app.initiate();
 
-    require('../src/methods/auth/delete')(
-      app.api,
-      app.logging,
-      app.storageLayer,
-      app.config
-    );
+    await require('../src/methods/auth/delete')(app.api);
     let axonMsgs = [];
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifications = new Notifications(axonSocket);
-    require('api-server/src/methods/events')(
-      app.api,
-      app.storageLayer.events,
-      app.storageLayer.eventFiles,
-      app.config.get('auth'),
-      app.config.get('service:eventTypes'),
-      notifications,
-      app.logging,
-      app.config.get('versioning'),
-      app.config.get('updates'),
-      app.config.get('openSource'),
-      app.config.get('services'));
+    pubsub.setTestNotifier(axonSocket);
+    await require('api-server/src/methods/events')(app.api);
 
     request = supertest(app.expressApp);
 
@@ -84,7 +69,7 @@ describe('DELETE /users/:username', async () => {
     influx = produceInfluxConnection(app.config);
     influxRepository = new InfluxRepository(influx);
 
-    usersRepository = new UsersRepository(app.storageLayer.events);
+    usersRepository = await getUsersRepository(); 
 
     await bluebird.fromCallback((cb) =>
       app.storageLayer.eventFiles.removeAll(cb)
@@ -190,7 +175,7 @@ describe('DELETE /users/:username', async () => {
           assert.equal(res.body.userDeletion.username, username1);
         });
         it(`[${testIDs[i][1]}] should delete user entries from impacted collections`, async function() {
-          const user = await usersRepository.getById(username1);
+          const user = await usersRepository.getUserById(username1);
           assert.notExists(user);
 
           const dbCollections = [
@@ -234,7 +219,7 @@ describe('DELETE /users/:username', async () => {
           assert.isFalse(userFileExists);
         });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
-          const user = await usersRepository.getById(username2);
+          const user = await usersRepository.getUserById(username2);
           assert.exists(user);
 
           const dbCollections = [

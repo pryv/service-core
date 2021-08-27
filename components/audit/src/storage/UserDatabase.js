@@ -22,6 +22,8 @@ const tables = {
   events: events.dbSchema
 }
 
+const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25,  25,  50,  50, 100];
+
 class UserDatabase {
   /**
    * sqlite3 instance
@@ -30,6 +32,7 @@ class UserDatabase {
   create;
   get;
   getAll;
+  queryGetTerms;
 
 
   /**
@@ -40,9 +43,11 @@ class UserDatabase {
   constructor(params) {
     const db = new sqlite3(params.dbPath, DB_OPTIONS);
     db.pragma('journal_mode = WAL');
+    db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
     this.create = {};
     this.getAll = {};
     this.get = {};
+    
 
     // --- Create all Tables
     Object.keys(tables).map((tableName) => {
@@ -72,13 +77,35 @@ class UserDatabase {
 
     // -- create FTS for streamIds on events
     createFTSFor(db, 'events', tables['events'], ['streamIds'], 'rowid');
+
+    this.queryGetTerms = db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
     
     this.db = db;
   }
 
-  createEvent(event, defaulTime) {
-    const eventForDb = eventSchemas.eventToDB(event, defaulTime);
+  /**
+   * Use only during tests or migration
+   * Not safe within a multi-process environement
+   */
+  createEventSync(event, defaultTime) {
+    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
     this.create.events.run(eventForDb);
+  }  
+
+  async createEvent(event, defaultTime) {
+    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
+    const that = this;
+    await this.concurentSafeWriteStatement(() => {
+      that.create.events.run(eventForDb);
+    }, 10000);
+  }
+
+  getAllActions() {
+    return this.queryGetTerms.all('action-%');
+  }
+
+  getAllAccesses() {
+    return this.queryGetTerms.all('access-%');
   }
 
   getLogs(params) {
@@ -94,17 +121,17 @@ class UserDatabase {
 
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
 
-  getLogsStream(params) {
-    const queryString = prepareLogQuery(params, );
+  getLogsStream(params, addStorePrefix) {
+    const queryString = prepareLogQuery(params);
     logger.debug(queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
-   
+
     const iterateTransform = {
       next: function() {
         const res = iterateSource.next();
         if (res && res.value) {
-          res.value = eventSchemas.eventFromDB(res.value);
+          res.value = eventSchemas.eventFromDB(res.value, addStorePrefix);
         }
         return res;
       }
@@ -121,10 +148,42 @@ class UserDatabase {
   close() { 
     this.db.close();
   }
+
+  /**
+   * Will look "retries" times, in case of "SQLITE_BUSY".
+   * This is CPU intensive, but tests have shown this solution to be efficient
+   */
+  async concurentSafeWriteStatement(statement, retries) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        statement();
+        return;
+      } catch (error) {
+        if (error.code !== 'SQLITE_BUSY') { // ignore 
+          throw error;
+        }
+        const waitTime = i > (WAIT_LIST_MS.length - 1) ? 100 : WAIT_LIST_MS[i];
+        await new Promise((r) => setTimeout(r, waitTime));
+      }
+    }
+    throw new Error('Failed write action on Audit after ' + retries + ' rertries');
+  }
+}
+
+
+
+
+function prepareTermQuery(params = {}) {
+  let queryString = 'SELECT * FROM events_fts_v';
+  return queryString;
 }
 
 function prepareLogQuery(params = {}) {
   const ands = [];
+
+  if (params.type != null) {
+    ands.push('type = ' + params.type);
+  } 
 
   if (params.fromTime != null) {
     ands.push('time >= ' + params.fromTime);
@@ -138,7 +197,8 @@ function prepareLogQuery(params = {}) {
   }
 
   if (params.streams != null) {
-    ands.push('streamIds MATCH \'' + toSQLiteQuery(params.streams) + '\'');
+    const str = toSQLiteQuery(params.streams);
+    if (str) ands.push('streamIds MATCH \'' + str + '\'');
   }
   
   let queryString = 'SELECT * FROM events_fts';

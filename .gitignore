@@ -30,5 +30,6 @@ learn-config
 # netbeans IDE
 nbproject/
 
-# scripts install gnatsd/ in the root directory
+# scripts install nats-server/ in the root directory
+nats-server/
 gnatsd/

@@ -17,6 +17,26 @@ var Result = require('../src/Result'),
 
 describe('Result', function () {
 
+  describe('concatStream', function () { 
+    it('[36RQ] must concatenate multiple streams in a single Array', function (done) {
+      const res = new Result();
+      const a1 = ['a','b','c'];
+      const a2 = ['d','e','f'];
+      const s1 = new Source(a1);
+      const s2 = new Source(a2);
+
+      function expectation(err, content) {
+        should.not.exist(err);
+        content.should.eql({events: a1.concat(a2)});
+        done();
+      }
+      res.addToConcatArrayStream('events', s1);
+      res.addToConcatArrayStream('events', s2);
+      res.closeConcatArrayStream('events');
+      res.toObject(expectation);
+    });
+  });
+
   describe('toObject()', function () {
 
     it('[NKHF] must return the result\'s content when not storing streams', function (done) {

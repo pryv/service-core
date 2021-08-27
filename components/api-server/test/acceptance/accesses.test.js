@@ -50,22 +50,22 @@ describe('accesses', () => {
       
       let mongoFixtures;
       before(async () => {
-        mongoFixtures = databaseFixture(await produceMongoConnection());
-        const user = await mongoFixtures.user(userId);
-        await user.stream({ id: streamId }, () => {});
-  
-        await user.access({
-          type: 'app', token: activeToken,
-          name: 'active access', permissions: []
-        });
-        await user.access({
-          type: 'app', token: deletedToken,
-          name: 'deleted access', permissions: [],
-          deleted: deletedTimestamp
-        });
-  
-        await user.access({ token: accessToken, type: 'personal' });
-        await user.session(accessToken);
+          mongoFixtures = databaseFixture(await produceMongoConnection());
+          const user = await mongoFixtures.user(userId);
+          await user.stream({ id: streamId }, () => {});
+    
+          await user.access({
+            type: 'app', token: activeToken,
+            name: 'active access', permissions: []
+          });
+          await user.access({
+            type: 'app', token: deletedToken,
+            name: 'deleted access', permissions: [],
+            deleted: deletedTimestamp
+          });
+    
+          await user.access({ token: accessToken, type: 'personal' });
+          await user.session(accessToken);
       });
   
   

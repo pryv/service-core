@@ -11,13 +11,14 @@ const charlatan = require('charlatan');
 const bluebird = require('bluebird');
 const { getApplication } = require('api-server/src/application');
 const { getConfig } = require('@pryv/boiler');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
-const { Notifications } = require('messages');
+
+const { pubsub } = require('messages');
 const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers');
 const ErrorIds = require('errors/src/ErrorIds');
+const { ApiEndpoint } = require('utils');
 
 describe('[BMM2] registration: DNS-less', () => {
   let config;
@@ -41,41 +42,22 @@ describe('[BMM2] registration: DNS-less', () => {
     app = getApplication(true);
     await app.initiate();
 
-    require('api-server/src/methods/auth/register')(
-      app.api,
-      app.logging,
-      app.storageLayer,
-      app.config.get('services'),
-    );
+    await require('api-server/src/methods/auth/register')(app.api);
 
     // get events for a small test of valid token
-    // Initialize notifications dependency
+    // Initialize notifyTests dependency
     let axonMsgs = [];
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
     };
-    const notifications = new Notifications(axonSocket);
-    await require("api-server/src/methods/events")(
-      app.api,
-      app.storageLayer.events,
-      app.storageLayer.eventFiles,
-      app.config.get('auth'),
-      app.config.get('service:eventTypes'),
-      notifications,
-      app.logging,
-      app.config.get('versioning'),
-      app.config.get('updates'),
-      app.config.get('openSource'),
-      app.config.get('services'));
+    pubsub.setTestNotifier(axonSocket);
+    await require("api-server/src/methods/events")(app.api);
     
     request = supertest(app.expressApp);
-    
-    
   });
   describe('POST /users', () => {
-    let registerBody;
-    before(() => {
-      registerBody = {
+    function generateRegisterBody() {
+      return {
         username: charlatan.Lorem.characters(7),
         password: charlatan.Lorem.characters(7),
         email: charlatan.Internet.email(),
@@ -83,24 +65,25 @@ describe('[BMM2] registration: DNS-less', () => {
         insurancenumber: charlatan.Number.number(3),
         phoneNumber: charlatan.Number.number(3),
       };
-    });
+    }
     
     describe('when given valid input', function() {
+      let registerData;
       before(async function() {
-        res = await request.post('/users').send(registerBody);
+        registerData = generateRegisterBody();
+        res = await request.post('/users').send(registerData);
       });
       it('[KB3T] should respond with status 201', function() {
         assert.equal(res.status, 201);
       });
       it('[VDA8] should respond with a username and apiEndpoint in the request body', async () => {
-        assert.equal(res.body.username, registerBody.username);
-        const usersRepository = new UsersRepository(app.storageLayer.events);
-        const user = await usersRepository.getAccountByUsername(registerBody.username, true);
+        assert.equal(res.body.username, registerData.username);
+        const usersRepository = await getUsersRepository(); 
+        const user = await usersRepository.getUserByUsername(registerData.username);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
-        let initUser = new User(registerBody);
-        initUser.token = personalAccess.token;
-        assert.equal(res.body.apiEndpoint, initUser.getApiEndpoint());
+        const initUser = new User(user);
+        assert.equal(res.body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
       });
       it('[LPLP] Valid access token exists in the response', async function () {
         assert.exists(res.body.apiEndpoint);
@@ -199,13 +182,15 @@ describe('[BMM2] registration: DNS-less', () => {
     });
     describe('Property values uniqueness', function() {
       describe('username property', function() {
+        let registerData;
         before(async function () {
-          await mongoFixtures.context.cleanEverything();
-          await app.database.deleteMany({ name: 'events' });
+          registerData = generateRegisterBody();
+          //await mongoFixtures.context.cleanEverything();
+          //await app.database.deleteMany({ name: 'events' });
 
-          res = await request.post('/users').send(registerBody);
+          res = await request.post('/users').send(registerData);
           assert.equal(res.status, 201);
-          res = await request.post('/users').send(registerBody);
+          res = await request.post('/users').send(registerData);
         });
         it('[LZ1K] should respond with status 409', function() {
           assert.equal(res.status, 409);
@@ -216,13 +201,7 @@ describe('[BMM2] registration: DNS-less', () => {
           
           // changed to new error format to match the cluster
           const error = JSON.parse(res.error.text);
-          assert.deepEqual(error.error.data, { username: registerBody.username });
-        });
-        it('[9L3R] should not store the user in the database twice', async function() {
-          const usersRepository = new UsersRepository(app.storageLayer.events);
-          const users = await usersRepository.getAll();
-          assert.equal(users.length, 1);
-          assert.equal(users[0].username, registerBody.username);
+          assert.deepEqual(error.error.data, { username: registerData.username, email: registerData.email });
         });
       });
     });
@@ -236,7 +215,7 @@ describe('[BMM2] registration: DNS-less', () => {
         before(async function() {
           const invalidRegisterBody = Object.assign(
             {},
-            registerBody,
+            generateRegisterBody(),
             registerBodyModification
           );
           res = await request.post('/users').send(invalidRegisterBody);
@@ -332,9 +311,7 @@ describe('[BMM2] registration: DNS-less', () => {
 
     const existingUsername = 'existing-username';
     before(async function () {
-      await mongoFixtures.user({
-        username: existingUsername,
-      });
+      await mongoFixtures.user(existingUsername);
     });
 
     function path(username) {

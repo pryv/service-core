@@ -17,12 +17,10 @@ const socketIO = require('socket.io')({
 const MethodContext = require('business').MethodContext;
 import type {ContextSource} from 'business';
 
-const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
-
 const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
-
-const ChangeNotifier = require('./change_notifier');
+const { getConfig, getLogger } = require('@pryv/boiler');
+const { getStorageLayer } = require('storage');
 
 import type { StorageLayer } from 'storage';
 import type { CustomAuthFunction } from 'business';
@@ -32,14 +30,17 @@ import type { SocketIO$Handshake }  from './Manager';
 
 // Initializes the SocketIO subsystem. 
 //
-function setupSocketIO(
-  server: net$Server, logger, 
-  notifications: EventEmitter, api: API, 
-  storageLayer: StorageLayer, 
+async function setupSocketIO(
+  server: net$Server, 
+  api: API, 
   customAuthStepFn: ?CustomAuthFunction,
-  isOpenSource: boolean,
 ) {
- 
+  const config = await getConfig();
+  const logger = getLogger('socketIO');
+  const storageLayer = await getStorageLayer();
+  const isOpenSource = config.get('openSource:isActive');
+
+
   const io = socketIO.listen(server, {
     path: Paths.SocketIO
   });
@@ -67,20 +68,18 @@ function setupSocketIO(
         name: 'socket.io',
         ip:  socket.handshake.headers['x-forwarded-for'] || socket.request.connection.remoteAddress
       }
+      
       const context = new MethodContext(
         contextSource,
         userName,
         query.auth,
         customAuthStepFn,
-        storageLayer.events
+        storageLayer.events,
       );
-      // Load user, init the namespace
-      await context.retrieveUser();
-      if (context.user == null) throw new Error('AF: context.user != null');
-    
-      // Load user, init the namespace
-      await context.retrieveUser();
-      if (context.username == null) throw new Error('AF: context.username != null');
+
+      // Initailizing Context
+      await context.init();
+
       // Load access
       await context.retrieveExpandedAccess(storageLayer);
 
@@ -95,29 +94,5 @@ function setupSocketIO(
   // register wildcard to all namespaces
   dynamicNamespace.use(require('socketio-wildcard')());
 
-  // Setup the chain from notifications -> NATS
-  if (! isOpenSource) {
-    const { NatsPublisher } = require('messages');
-    const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
-      (userName: string): string => { return `${userName}.sok1`; }
-    );
-    const changeNotifier = new ChangeNotifier(natsPublisher);
-    changeNotifier.listenTo(notifications);
-
-    // Webhooks nats publisher - could be moved if there is a more convenient place.
-    const whNatsPublisher = new NatsPublisher(NATS_CONNECTION_URI,
-      (userName: string): string => { return `${userName}.wh1`; }
-    );
-    const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher);
-    webhooksChangeNotifier.listenTo(notifications);
-  } else {
-    const changeNotifier = new ChangeNotifier(manager);
-    changeNotifier.listenTo(notifications);
-  }
-
 }
 module.exports = setupSocketIO; 
-
-
-
-

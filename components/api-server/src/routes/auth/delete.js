@@ -40,7 +40,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
       res: express$Response,
       next: express$NextFunction
     ) {
-      req.context.username = req.params.username;
+      req.context.user.username = req.params.username;
       req.context.authorizationHeader = req.headers.authorization;
       api.call(req.context, req.params, methodCallback(res, next, 200));
   });

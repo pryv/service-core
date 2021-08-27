@@ -47,6 +47,10 @@ const UserLocalDirectory = require('business').users.UserLocalDirectory;
 
 const { Extension, ExtensionLoader } = require('utils').extension;
 
+const { getAPIVersion } = require('middleware/src/project_version');
+const { tracingMiddleware } = require('tracing');
+const { pubsub } = require('messages');
+
 logger.debug('Loading app');
 
 import type { CustomAuthFunction } from 'business';
@@ -65,6 +69,7 @@ class Application {
   logging;
 
   initalized;
+  initializing; 
 
   
   // Normal user API
@@ -80,25 +85,31 @@ class Application {
   expressApp: express$Application;
 
   isOpenSource: boolean;
+  isAuditActive: boolean;
 
   constructor() {
     this.initalized = false;
     this.isOpenSource = false;
+    this.isAuditActive = false;
+    this.initializing = false;
   }
 
   async initiate() {
+    while (this.initializing) { await new Promise(r => setTimeout(r, 50)); }
     if (this.initalized) {
       logger.debug('App was already initialized, skipping');
       return this;
     }
+    this.initializing = true;
     this.produceLogSubsystem();
     logger.debug('Init started');
     await UserLocalDirectory.init();
 
     this.config = await getConfig();
     this.isOpenSource = this.config.get('openSource:isActive');
+    this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active')
     
-    if (! this.isOpenSource) {
+    if (this.isAuditActive) {
       const audit = require('audit');
       await audit.init();
     }
@@ -108,6 +119,15 @@ class Application {
     
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
+    const apiVersion: string = await getAPIVersion();
+    const hostname: string = require('os').hostname();
+    this.expressApp.use(tracingMiddleware(
+      'express1',
+      {
+        apiVersion,
+        hostname,
+      }
+    ))
     this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
     const errorsMiddleware = errorsMiddlewareMod(this.logging);
@@ -115,6 +135,8 @@ class Application {
     logger.debug('Init done');
     this.initalized = true;
     if (this.config.get('showRoutes')) this.helperShowRoutes();
+    this.initializing = false;
+    return this;
   }
 
   /**
@@ -150,9 +172,7 @@ class Application {
   }
 
   async createExpressApp(): Promise<express$Application> {
-    this.expressApp = await expressAppInit( 
-      this.config.get('dnsLess:isActive'), 
-      this.logging);
+    this.expressApp = await expressAppInit(this.logging);
   }
 
   initiateRoutes() {
@@ -184,6 +204,8 @@ class Application {
     
     if(! this.isOpenSource) {
       require('./routes/webhooks')(this.expressApp, this);
+    }
+    if(this.isAuditActive) {
       require('audit/src/routes/audit.route')(this.expressApp, this);
     }
   }
@@ -198,20 +220,7 @@ class Application {
     // for various database models. 
     this.storageLayer = storage.getStorageLayerSync()
   }
-  
-  // Returns the settings for updating entities
-  // 
-  getUpdatesSettings(): UpdatesSettingsHolder {
-    return {
-      ignoreProtectedFields: this.config.get('updates:ignoreProtectedFields'),
-    };
-  }
 
-  getWebhooksSettings(): WebhooksSettingsHolder {
-    return this.config.get('webhooks');
-  }
-
-  
    // Returns the custom auth function if one was configured. Otherwise returns
   // null. 
   // 

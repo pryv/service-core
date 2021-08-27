@@ -8,14 +8,25 @@
 
 const urllib = require('url');
 const superagent = require('superagent');
-const ErrorIds = require('errors').ErrorIds,
-  errors = require('errors').factory,
-  ErrorMessages = require('errors/src/ErrorMessages');
+const ErrorIds = require('errors').ErrorIds;
+const errors = require('errors').factory;
+const ErrorMessages = require('errors/src/ErrorMessages');
+
+type OperationType = 'update' | 'delete';
+type AccountProperty = string;
+type Value = string;
+type Operation = {
+  [OperationType]: {
+    key: AccountProperty,
+    value: Value,
+    isUnique: ?boolean,
+  },
+};
 
 const { getLogger, getConfigUnsafe, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
   config: {}; 
-  logger;
+  logger: {};
 
   constructor(config: {}) {
     this.config = config; 
@@ -109,29 +120,57 @@ class ServiceRegister {
     }
   }
 
-
   /**
    * After indexed fields are updated, service-register is notified to update
    * the information
    */
   async updateUserInServiceRegister (
     username: string,
-    user: object,
-    fieldsToDelete: object,
-    updateParams: object): Promise<void> {
+    operations: Array<Operation>,
+    isActive: boolean,
+    isCreation: boolean
+  ): Promise<void> {
     const url = buildUrl('/users', this.config.url);
-    // log fact about the event
     this.logger.info(`PUT ${url} for username:${username}`);
 
-    const request = {
-      username: username,
-      user: user,
-      fieldsToDelete: fieldsToDelete,
+    // otherwise deletion
+    const isUpdate: boolean = operations[0].update != null;
+    const operationType: OperationType = isUpdate ? 'update' : 'delete';
+
+    const fieldsForUpdate: {} = {}; // sent as user in payload
+    const fieldsToDelete: {} = {};
+    const updateParams: {} = {};
+
+    if (isUpdate) {
+      operations.forEach(operation => {
+        const streamIdWithoutPrefix: string = operation.update.key;
+        fieldsForUpdate[streamIdWithoutPrefix] = [
+          {
+            value: operation.update.value,
+            isUnique: operation.update.isUnique,
+            isActive,
+            creation: isCreation,
+          }
+        ];
+        updateParams[operation[operationType].key] = operation[operationType].value;
+      });
+    } else { // isDelete
+      operations.forEach(operation => {
+        const streamIdWithoutPrefix: string = operation.delete.key;
+        fieldsToDelete[streamIdWithoutPrefix] = operation.delete.value;
+        updateParams[operation[operationType].key] = operation[operationType].value;
+      });
+    }
+
+    const payload: {} = {
+      username,
+      user: fieldsForUpdate,
+      fieldsToDelete,
     }
 
     try {
       const res = await superagent.put(url)
-        .send(request)
+        .send(payload)
         .set('Authorization', this.config.key);
       return res.body;
     } catch (err) {
@@ -152,11 +191,9 @@ class ServiceRegister {
       }
     }
   }
-
- 
 }
 
-function buildUrl(path: string, url): string {
+function buildUrl(path: string, url): URL {
   return new urllib.URL(path, url);
 }
 
@@ -177,11 +214,11 @@ function getServiceRegisterConn() {
    * @param {string} username 
    * @param {object} params 
    */
-  function safetyCleanDuplicate(foundDuplicates, username, params) {
-    if (! foundDuplicates) return foundDuplicates;
-    const res = {};
-    const newParams = Object.assign({}, params);
-    if (username) newParams.username = username; 
+  function safetyCleanDuplicate(foundDuplicates, username, params: {}): {} {
+    if (foundDuplicates == null) return foundDuplicates;
+    const res: {} = {};
+    const newParams: {} = Object.assign({}, params);
+    if (username != null) newParams.username = username; 
     for (const key of Object.keys(foundDuplicates)) {
       if (foundDuplicates[key] === newParams[key]) {
         res[key] = foundDuplicates[key] ;
@@ -200,6 +237,6 @@ function getServiceRegisterConn() {
   }
 
 module.exports = {
-  getServiceRegisterConn: getServiceRegisterConn,
-  safetyCleanDuplicate: safetyCleanDuplicate
+  getServiceRegisterConn,
+  safetyCleanDuplicate,
 };

@@ -98,7 +98,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
       
       api.call(req.context, params, function (err, result) {
         if (err) return next(err);
-        setSSOCookie({ username: req.context.username, token: result.token }, res);
+        setSSOCookie({ username: req.context.user.username, token: result.token }, res);
         methodCallback(res, next, 200)(err, result);
       });
 

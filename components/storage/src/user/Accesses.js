@@ -59,7 +59,7 @@ const indexes = [
 ];
 
 Accesses.prototype.findDeletions = function (
-  user,
+  userOrUserId,
   query,
   options,
   callback
@@ -68,7 +68,7 @@ Accesses.prototype.findDeletions = function (
   query.deleted = { $type: 'date' };
   
   this.database.find(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     query,
     this.applyOptionsToDB(options),
     function (err, dbItems) {
@@ -83,11 +83,12 @@ Accesses.prototype.findDeletions = function (
 /**
  * Implementation.
  */
-Accesses.prototype.getCollectionInfo = function (user) {
+Accesses.prototype.getCollectionInfo = function (userOrUserId) {
+  const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'accesses',
     indexes: indexes,
-    useUserId: user.id
+    useUserId: userId
   };
 };
 
@@ -95,11 +96,11 @@ Accesses.prototype.getCollectionInfo = function (user) {
 /**
  * Implementation.
  */
-Accesses.prototype.delete = function (user, query, callback) {
+Accesses.prototype.delete = function (userOrUserId, query, callback) {
   const update = {
     $set: {deleted: new Date()}
   };
-  this.database.updateMany(this.getCollectionInfo(user),
+  this.database.updateMany(this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query), update, callback);
 };
 
@@ -115,15 +116,15 @@ Accesses.prototype.generateToken = function () {
 /**
  * Override base method to set deleted:null
  * 
- * @param {*} user 
+ * @param {*} userOrUserId 
  * @param {*} item 
  * @param {*} callback 
  */
-Accesses.prototype.insertOne = function (user, access, callback, options) {
+Accesses.prototype.insertOne = function (userOrUserId, access, callback, options) {
   let accessToCreate = _.clone(access);
   if (accessToCreate.deleted === undefined) accessToCreate.deleted = null;
   this.database.insertOne(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyItemToDB(this.applyItemDefaults(accessToCreate)),
     function (err) {
       if (err) {
@@ -138,13 +139,13 @@ Accesses.prototype.insertOne = function (user, access, callback, options) {
 /**
  * Inserts an array of accesses; each item must have a valid id and data already. For tests only.
  */
-Accesses.prototype.insertMany = function (user, accesses, callback) {
+Accesses.prototype.insertMany = function (userOrUserId, accesses, callback) {
   const accessesToCreate = accesses.map((a) => {
     if (a.deleted === undefined) return _.assign({deleted: null}, a);
     return a;
   });
   this.database.insertMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyItemsToDB(accessesToCreate),
     callback
   );

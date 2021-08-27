@@ -19,6 +19,7 @@ const validation = require('./validation');
 const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
 const { AuditAccessIds } = require('./MethodContextUtils');
+const util = require('util');
 
 /**
  * EventEmitter interface is just for tests syncing for now
@@ -27,6 +28,7 @@ class Audit {
   _storage;
   _syslog;
   filter;
+  tracer: {};
 
   /**
    * Requires to call async init() to use
@@ -60,18 +62,25 @@ class Audit {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
 
+    context.tracing.startSpan('audit.validApiCall');
+
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
     if (context.auditHash) {
       _.merge(event.content, context.auditHash);
     }
     event.type = CONSTANTS.EVENT_TYPE_VALID;
-    this.eventForUser(userId, event, methodId);
+    await this.eventForUser(userId, event, methodId);
+    
+    context.tracing.finishSpan('audit.validApiCall');
   }
 
   async errorApiCall(context, error) {
     const methodId = context.methodId;
     if (! this.filter.isAudited(methodId)) return;
+
+    context.tracing.startSpan('audit.errorApiCall');
+
     const userId = context?.user?.id;
   
     if (context.access?.id == null) {
@@ -82,11 +91,12 @@ class Audit {
     event.content.id = error.id;
     event.content.message = error.message;
 
-    this.eventForUser(userId, event, methodId);
+    await this.eventForUser(userId, event, methodId);
+    context.tracing.finishSpan('audit.errorApiCall');
   }
 
   async eventForUser(userId, event) {
-    logger.debug('eventForUser: ' + userId + ' ' + logger.inspect(event));
+    logger.debug('eventForUser: ' + userId + ' ' + util.inspect(event, {breakLength: Infinity, colors: true}));
 
     const methodId = event.content.action;
 
@@ -108,7 +118,7 @@ class Audit {
     }
     if (this.storage && isAudited.storage) {
       const userStorage = await this.storage.forUser(userId);
-      userStorage.createEvent(event);
+      await userStorage.createEvent(event);
     }
   }
 
@@ -124,7 +134,7 @@ class Audit {
 module.exports = Audit;
 
 function buildDefaultEvent(context) {
-  return {
+  const event = {
     createdBy: 'system',
     streamIds: [CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id, CONSTANTS.ACTION_STREAM_ID_PREFIX + context.methodId],
     content: {
@@ -133,6 +143,10 @@ function buildDefaultEvent(context) {
       query: context.originalQuery,
     },
   }
+  if (context.callerId != null) {
+    event.content.callerId = context.callerId;
+  }
+  return event;
 }
 
 function log(context, userId, validity, id) {

@@ -47,7 +47,7 @@ describe('events', function () {
 
   // to verify data change notifications
   var eventsNotifCount;
-  server.on('events-changed', function () { eventsNotifCount++; });
+  server.on('axon-events-changed', function () { eventsNotifCount++; });
 
   before(function (done) {
     async.series([
@@ -228,6 +228,19 @@ describe('events', function () {
         res.body.events.should.containEql(testData.events[8]); // activity/test
         res.body.events.should.containEql(testData.events[9]); // activity/pryv
         done();
+      });
+    });
+
+    it('[4TWI] must refuse unsupported event types', function (done) {
+      var params = {
+        types: ['activity/asd asd'],
+        state: 'all'
+      };
+      request.get(basePath).query(params).end(function (res) {
+        validation.check(res, {
+          status: 400,
+          id: ErrorIds.invalidParametersFormat
+        }, done);
       });
     });
 
@@ -856,32 +869,6 @@ describe('events', function () {
       });
     });
 
-    it.skip('[H7CN] must not stop the running period event if the new event is a mark event (single activity)',
-        function (done) {
-      var data = { streamIds: [testData.streams[0].id], type: testType };
-      async.series([
-        function addNew(stepDone) {
-          request.post(basePath).send(data).end(function (res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.create.result
-            }, stepDone);
-          });
-        },
-        function verifyData(stepDone) {
-          storage.findAll(user, null, function (err, events) {
-            var expected = testData.events[9];
-            var actual = _.find(events, function (event) {
-              return event.id === expected.id;
-            });
-            actual.should.eql(expected);
-
-            stepDone();
-          });
-        }
-      ], done);
-    });
-
     it('[UL6Y] must not stop the running period event if the stream allows overlapping', function (done) {
       var data = {
         streamIds: [testData.streams[1].id],
@@ -959,26 +946,6 @@ describe('events', function () {
       });
     });
 
-    it.skip('[1GGK] must return an error if the event\'s period overlaps existing periods (single activity)',
-        function (done) {
-      var data = {
-        time: timestamp.add(testData.events[1].time, '15m'),
-        duration: timestamp.duration('5h30m'),
-        type: testType,
-        streamIds: [testData.streams[0].id]
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.PeriodsOverlap,
-          data: {overlappedIds: [
-            testData.events[1].id,
-            testData.events[3].id
-          ]}
-        }, done);
-      });
-    });
-
     it('[3S2T] must allow the event\'s period overlapping existing periods when the stream allows it',
         function (done) {
       var data = {
@@ -1020,101 +987,11 @@ describe('events', function () {
 
   });
 
-  describe.skip('POST /start', function () {
-
-    beforeEach(resetEvents);
-
-    var path = basePath + '/start';
-
-    it('[5C8J] must create a running period event stopping any previously running event (single activity)',
-        function (done) {
-      var data = {
-        // 15 minutes ago to make sure the previous duration is set accordingly
-        time: timestamp.now('-15m'),
-        type: testType,
-        streamIds: [testData.streams[0].id],
-        tags: ['houba']
-      };
-      var createdId;
-
-      async.series([
-          function addNewEvent(stepDone) {
-            request.post(path).send(data).end(function (res) {
-              validation.check(res, {
-                status: 201,
-                schema: methodsSchema.create.result
-              });
-              createdId = res.body.event.id;
-              res.body.stoppedId.should.eql(testData.events[9].id);
-              eventsNotifCount.should.eql(1, 'events notifications');
-              stepDone();
-            });
-          },
-          function verifyEventData(stepDone) {
-            storage.findAll(user, null, function (err, events) {
-              var expected = _.clone(data);
-              expected.id = createdId;
-              expected.duration = null;
-              var actual = _.find(events, function (event) {
-                return event.id === createdId;
-              });
-              validation.checkStoredItem(actual, 'event');
-              validation.checkObjectEquality(actual, expected);
-
-              var previous = _.find(events, function (event) {
-                return event.id === testData.events[9].id;
-              });
-              var expectedDuration = data.time - previous.time;
-              // allow 1 second of lag
-              previous.duration.should.be.within(expectedDuration - 1, expectedDuration);
-
-              stepDone();
-            });
-          }
-        ],
-        done
-      );
-    });
-
-    it('[JHUM] must return an error if a period event already exists later (single activity)',
-        function (done) {
-      var data = {
-        time: timestamp.now('-1h05m'),
-        type: testType,
-        streamIds: [testData.streams[0].id]
-      };
-      request.post(path).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation,
-          data: {conflictingEventId: testData.events[9].id}
-        }, done);
-      });
-    });
-
-    it('[7FJZ] must allow starting an event before an existing period when the stream allows overlapping',
-        function (done) {
-      var data = {
-        streamIds: [testData.streams[1].id],
-        time: timestamp.add(testData.events[11].time, '-15m'),
-        type: testType
-      };
-      request.post(basePath + '/start').send(data)
-          .end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        }, done);
-      });
-    });
-
-  });
-
   describe('POST / (multipart content)', function () {
 
     beforeEach(resetEvents);
 
-    it('[4CUV] must create a new event with the uploaded files', function (done) {
+    it('[4CUV] must create a new event with the uploaded files', function (finalDone) {
       var data = {
         time: timestamp.now(),
         type: 'wisdom/test',
@@ -1124,55 +1001,75 @@ describe('events', function () {
         streamIds: [testData.streams[0].id],
         tags: ['houba']
       };
-      request.post(basePath)
-        .field('event', JSON.stringify(data))
-        .attach('document', testData.attachments.document.path,
-            testData.attachments.document.filename)
-        .attach('image', testData.attachments.image.path,
-            testData.attachments.image.filename)
-        .end(function (res) {
-          validation.check(res, {
-            status: 201,
-            schema: methodsSchema.create.result
+      async.series([
+        postEventsWithAttachments,
+        checkEvents,
+      ], finalDone);
+
+
+      let createdEvent; // set by postEventsWithAttachments reused by checkEvents
+      let expected; // set by postEventsWithAttachments reused by checkEvents
+      function postEventsWithAttachments(done) { 
+        request.post(basePath)
+          .field('event', JSON.stringify(data))
+          .attach('document', testData.attachments.document.path,
+              testData.attachments.document.filename)
+          .attach('image', testData.attachments.image.path,
+              testData.attachments.image.filename)
+          .end(function (res) {
+            validation.check(res, {
+              status: 201,
+              schema: methodsSchema.create.result
+            });
+
+            createdEvent = res.body.event;
+            
+            validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
+            validation.sanitizeEvent(createdEvent);
+            expected = _.extend({
+              id: createdEvent.id,
+              attachments: [
+                {
+                  id: createdEvent.attachments[0].id,
+                  fileName: testData.attachments.document.filename,
+                  type: testData.attachments.document.type,
+                  size: testData.attachments.document.size,
+                  integrity: testData.attachments.document.integrity
+                },
+                {
+                  id: createdEvent.attachments[1].id,
+                  fileName: testData.attachments.image.filename,
+                  type: testData.attachments.image.type,
+                  size: testData.attachments.image.size,
+                  integrity: testData.attachments.image.integrity
+                }
+              ],
+              streamIds: data.streamIds,
+            }, data);
+            validation.checkObjectEquality(createdEvent, expected);
+
+            // check attached files
+            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+                createdEvent.attachments[0].id,
+                testData.attachments.document.filename).should.equal('');
+            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+                createdEvent.attachments[1].id,
+                testData.attachments.image.filename).should.equal('');
+
+
+            eventsNotifCount.should.eql(1, 'events notifications');
+
+            done();
           });
+      }
 
-          var createdEvent = res.body.event;
-          validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
-          validation.sanitizeEvent(createdEvent);
-
-          var expected = _.extend({
-            id: createdEvent.id,
-            attachments: [
-              {
-                id: createdEvent.attachments[0].id,
-                fileName: testData.attachments.document.filename,
-                type: testData.attachments.document.type,
-                size: testData.attachments.document.size
-              },
-              {
-                id: createdEvent.attachments[1].id,
-                fileName: testData.attachments.image.filename,
-                type: testData.attachments.image.type,
-                size: testData.attachments.image.size
-              }
-            ],
-            streamIds: data.streamIds,
-          }, data);
-          validation.checkObjectEquality(createdEvent, expected);
-
-          // check attached files
-          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
-              createdEvent.attachments[0].id,
-              testData.attachments.document.filename).should.equal('');
-          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
-              createdEvent.attachments[1].id,
-              testData.attachments.image.filename).should.equal('');
-
-
-          eventsNotifCount.should.eql(1, 'events notifications');
-
+      function checkEvents(done) {
+        request.get(basePath + '/' + createdEvent.id).end(function (res) {
+          validation.checkObjectEquality(validation.sanitizeEvent(res.body.event), expected);
           done();
         });
+      };
+
     });
 
     it('[HROI] must properly handle part names containing special chars (e.g. ".", "$")', function (done) {
@@ -1205,7 +1102,8 @@ describe('events', function () {
               id: createdEvent.attachments[0].id,
               fileName: 'file.name.with.many.dots.pdf',
               type: testData.attachments.document.type,
-              size: testData.attachments.document.size
+              size: testData.attachments.document.size,
+              integrity: testData.attachments.document.integrity
             }
           ],
           streamIds: [data.streamIds[0]],
@@ -1287,7 +1185,8 @@ describe('events', function () {
                     id: attachment.id,
                     fileName: testData.attachments.image.filename,
                     type: testData.attachments.image.type,
-                    size: testData.attachments.image.size
+                    size: testData.attachments.image.size,
+                    integrity: testData.attachments.image.integrity
                   }
                 );
               }
@@ -1297,7 +1196,8 @@ describe('events', function () {
                     id: attachment.id,
                     fileName: testData.attachments.text.filename,
                     type: testData.attachments.text.type,
-                    size: testData.attachments.text.size
+                    size: testData.attachments.text.size,
+                    integrity: testData.attachments.text.integrity
                   }
                 );
               }
@@ -1343,7 +1243,8 @@ describe('events', function () {
               id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
               fileName: testData.attachments.text.filename,
               type: testData.attachments.text.type,
-              size: testData.attachments.text.size
+              size: testData.attachments.text.size,
+              integrity: testData.attachments.text.integrity
             });
 
             const attachments = updatedEvent.attachments; 
@@ -1477,20 +1378,6 @@ describe('events', function () {
         done();
       });
     });
-
-    it.skip('[C9GL] must return the id of the stopped previously running event if any (single activity)',
-        function (done) {
-      request.put(path(testData.events[3].id)).send({time: timestamp.now()})
-          .end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
-        res.body.stoppedId.should.eql(testData.events[9].id);
-        eventsNotifCount.should.eql(1, 'events notifications');
-        done();
-      });
-    });
     
     it('[FM3G] must accept explicit null for optional fields', function (done) {
       const data = {
@@ -1551,30 +1438,6 @@ describe('events', function () {
         });
     });
 
-    it.skip('[SPN1] must return an error if moving a running period event before another existing ' +
-        'period event (single activity)', function (done) {
-      var data = { time: timestamp.add(testData.events[3].time, '-5m') };
-      request.put(path(testData.events[9].id)).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation,
-          data: {conflictingEventId: testData.events[3].id}
-        }, done);
-      });
-    });
-
-    it.skip('[FPEE] must return an error if the event\'s new period overlaps other events\'s (single activity)',
-        function (done) {
-      request.put(path(testData.events[1].id)).send({duration: timestamp.duration('5h')})
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.PeriodsOverlap,
-          data: {overlappedIds: [testData.events[3].id]}
-        }, done);
-      });
-    });
-    
     describe('forbidden updates of protected fields', function () {
       const event = {
         type: 'note/txt',
@@ -1738,165 +1601,6 @@ describe('events', function () {
         done();
       });
     });
-  });
-
-  describe.skip('POST /stop', function () {
-
-    beforeEach(resetEvents);
-
-    var path = basePath + '/stop';
-
-    it('[VE5N] must stop the previously running period event, returning its id (single activity)',
-        function (done) {
-      var stopTime = timestamp.now('-5m'),
-          stoppedEvent = testData.events[9],
-          time;
-
-      async.series([
-        function stop(stepDone) {
-          var data = {
-            streamIds: [testData.streams[0].id],
-            time: stopTime
-          };
-          request.post(path).send(data).end(function (res) {
-            time = timestamp.now();
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.stop.result
-            });
-            res.body.stoppedId.should.eql(stoppedEvent.id);
-            eventsNotifCount.should.eql(1, 'events notifications');
-            stepDone();
-          });
-        },
-        function verifyStoredItem(stepDone) {
-          storage.database.findOne(storage.getCollectionInfo(user), {_id: stoppedEvent.id}, {},
-            function (err, dbEvent) {
-              var expectedDuration = stopTime - dbEvent.time;
-              // allow 1 second of lag
-              dbEvent.duration.should.be.within(expectedDuration - 1, expectedDuration);
-              dbEvent.modified.should.be.within(time - 1, time);
-              dbEvent.modifiedBy.should.eql(access.id);
-              dbEvent.endTime.should.eql(dbEvent.time + dbEvent.duration);
-              stepDone();
-            });
-        }
-      ], done);
-    });
-
-    it('[HYQ3] must stop the last running event of the given type when specified', function (done) {
-      var stoppedEvent = testData.events[11],
-          stopTime;
-      async.series([
-        function addOtherRunning(stepDone) {
-          var data = {
-            streamIds: [stoppedEvent.streamId],
-            type: testType
-          };
-          request.post(basePath + '/start').send(data)
-            .end(function (res) {
-              res.statusCode.should.eql(201);
-              stepDone();
-            });
-        },
-        function (stepDone) {
-          var data = {
-            streamIds: [stoppedEvent.streamId],
-            type: stoppedEvent.type
-          };
-          request.post(basePath + '/stop').send(data).end(function (res) {
-            stopTime = timestamp.now();
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.stop.result
-            });
-            res.body.stoppedId.should.eql(stoppedEvent.id);
-            stepDone();
-          });
-        },
-        function verifyStoredItem(stepDone) {
-          storage.database.findOne(storage.getCollectionInfo(user), {_id: stoppedEvent.id}, {},
-              function (err, dbEvent) {
-            var expectedDuration = stopTime - dbEvent.time;
-            // allow 1 second of lag
-            dbEvent.duration.should.be.within(expectedDuration - 1, expectedDuration);
-            stepDone();
-          });
-        }
-      ], done);
-    });
-
-    it('[7NH0] must accept an `id` param to specify the event to stop', function (done) {
-      async.series([
-        function addOtherRunning(stepDone) {
-          var data = {
-            streamIds: [testData.streams[1].children[0].id],
-            type: testType
-          };
-          request.post(basePath + '/start').send(data)
-              .end(function (res) {
-            res.statusCode.should.eql(201);
-            stepDone();
-          });
-        },
-        function (stepDone) {
-          var data = {id: testData.events[11].id};
-          request.post(basePath + '/stop').send(data)
-              .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.stop.result
-            });
-            res.body.stoppedId.should.eql(data.id);
-            stepDone();
-          });
-        }
-      ], done);
-    });
-
-    it('[GPSM] must return an error if the specified event does not exist', function (done) {
-      var data = {id: 'unknown'};
-      request.post(basePath + '/stop').send(data)
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.UnknownReferencedResource,
-          data: {id: 'unknown'}
-        }, done);
-      });
-    });
-
-    it('[0Y4J] must return an error if the specified event is not running', function (done) {
-      var data = {id: testData.events[6].id};
-      request.post(basePath + '/stop').send(data)
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation
-        }, done);
-      });
-    });
-
-    it('[KN22] must return an error if no event is specified and the stream allows overlapping',
-        function (done) {
-      var data = {streamIds: [testData.streams[1].id]};
-      request.post(basePath + '/stop').send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidParametersFormat
-        }, done);
-      });
-    });
-
-    it('[BMC6] must return an error if neither stream nor event is specified', function (done) {
-      request.post(basePath + '/stop').send({}).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidParametersFormat
-        }, done);
-      });
-    });
-
   });
 
   describe('DELETE /<event id>/<file id>', function () {

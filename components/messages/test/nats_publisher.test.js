@@ -7,62 +7,53 @@
 // @flow
 require('test-helpers/src/api-server-tests-config');
 require('api-server/test/unit/test-helper');
-const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 
 const chai = require('chai');
 const assert = chai.assert;
 
-const bluebird = require('bluebird');
-const NATS = require('nats');
+const { connect, JSONCodec } = require('nats');
+const { encode, decode } = JSONCodec();
 
 /* global describe, it */
 
-const { NatsPublisher } = require('messages');
-const { decode } = require('messages/src/nats_wire_message');
+const natsPubsub = require('../src/nats_pubsub');
+const { getConfig } = require('@pryv/boiler');
+
+//function decode(x) {return x};
 
 describe('NatsPublisher', () => {
-  it('[S386] should construct', () => {
-    // For this to work, you must run the 'gnatsd' service on localhost. 
-    new NatsPublisher(NATS_CONNECTION_URI);
-  });
-  
-  function connect() {
-    return new NatsPublisher(
-      NATS_CONNECTION_URI,
-      (userName) => { return `${userName}.sok1`; }
-    );
-  }
-  function waitForConnect(natsConnection): Promise<void> {
-    return new bluebird((resolve, reject) => {
-      natsConnection.on('connect', resolve);
-      natsConnection.on('error', reject); 
-    });
-  }
-  
-  it('[I21M] delivers messages to "USERNAME.sok1"', (done) => {
-    const p = connect();
-    const rawClient = NATS.connect({
-      url: NATS_CONNECTION_URI, 
-      'preserveBuffers': true 
-    });
-    
-    const sid = rawClient.subscribe('foobar.sok1', (msg) => {
-      try {
-        rawClient.unsubscribe(sid);
-        
-        assert.deepEqual(decode(msg), 'onTestMessage');
-        
-        done(); 
-      } catch(err) { 
-        done(err); 
-      }
-    });
-    
-    waitForConnect(rawClient)
-      .then(() => p.deliver('foobar', 'onTestMessage'))
-      .catch(err => done(err));
+  let natsConnection;
 
-    // If this test times out, then message delivery doesn't work. 
+  before(async () => {
+    const natsUri = (await getConfig()).get('nats:uri');
+    natsConnection = await connect({
+     servers: natsUri
+    });
+
   });
+
+  it('[S386] should construct', async () => {                       
+    await natsPubsub.init();
+  });
+  
+  
+  it('[I21M] delivers messages to "USERNAME"', (done) => {
+    
+    const sub = natsConnection.subscribe('foobar');
+    (async () => {
+      for await (const m of sub) {
+        const msg = decode(m.data);
+        assert.deepEqual(msg.eventName, 'onTestMessage');
+        sub.unsubscribe();
+        done();
+      }
+    })();
+
+    natsPubsub.deliver('foobar', 'onTestMessage');
+  });
+
+
+
+
 });
 

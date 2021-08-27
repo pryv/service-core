@@ -20,7 +20,8 @@ const storage = require('storage');
 const supertest = require('supertest');
 const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
-const { Notifications } = require('messages');
+
+const { pubsub } = require('messages');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
 const { AuditAccessIds } = require('audit/src/MethodContextUtils');
 
@@ -65,36 +66,15 @@ async function initCore() {
   const axonSocket = {
     emit: (...args) => axonMsgs.push(args),
   };
-  const notifications = new Notifications(axonSocket);
-  notifications.serverReady();
+  pubsub.setTestNotifier(axonSocket);
+  pubsub.status.emit(pubsub.SERVER_READY);
 
-  require('api-server/src/methods/events')(
-    app.api,
-    app.storageLayer.events,
-    app.storageLayer.eventFiles,
-    app.config.get('auth'),
-    app.config.get('service:eventTypes'),
-    notifications,
-    app.logging,
-    app.config.get('versioning'),
-    app.config.get('updates'),
-    app.config.get('openSource'),
-    app.config.get('services'));
+  await require('api-server/src/methods/events')(app.api);
+  await require('api-server/src/methods/streams')(app.api);
   require('api-server/src/methods/service')(app.api);
-  require('api-server/src/methods/auth/login')(app.api, 
-    app.storageLayer.accesses, 
-    app.storageLayer.sessions, 
-    app.storageLayer.events, 
-    config.get('auth'));
-  require('api-server/src/methods/auth/register')(app.api, 
-    app.logging, 
-    app.storageLayer, 
-    config.get('services'));
-  require('api-server/src/methods/accesses')(
-    app.api, 
-    notifications, 
-    app.getUpdatesSettings(), 
-    app.storageLayer);
+  await require('api-server/src/methods/auth/login')(app.api);
+  await require('api-server/src/methods/auth/register')(app.api);
+  await require('api-server/src/methods/accesses')(app.api);
   require('audit/src/methods/audit-logs')(app.api);
   global.coreRequest = supertest(app.expressApp);
 }

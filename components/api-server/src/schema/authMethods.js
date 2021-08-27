@@ -215,13 +215,13 @@ module.exports = {
 function loadCustomValidationSettings (validationSchema) {
   // iterate account stream settings and APPEND validation with relevant properties
   // etc additional required fields or regex validation
-  const accountStreamsSettings = SystemStreamsSerializer.getFlatAccountStreamSettings()
-  for (const [streamIdWithDot, value] of Object.entries(accountStreamsSettings)) {
-    // if streamIdWithDot is set as required - add required validation
-    let streamId = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot);
+  const accountStreamsSettings = SystemStreamsSerializer.getAccountMap()
+  for (const [streamIdWithPrefix, value] of Object.entries(accountStreamsSettings)) {
+    // if streamIdWithPrefix is set as required - add required validation
+    const streamId = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
     if (
       value?.isRequiredInValidation == true &&
-      !validationSchema.required.includes(streamIdWithDot)
+      !validationSchema.required.includes(streamIdWithPrefix)
     ) {
       validationSchema.required.push(streamId);
       //the error message of required property by z-schema is still a hell

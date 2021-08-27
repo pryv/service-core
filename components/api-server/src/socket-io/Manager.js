@@ -9,17 +9,19 @@
 const errorHandling = require('errors').errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
-const NATS_CONNECTION_URI = require('messages').NATS_CONNECTION_URI;
 const { USERNAME_REGEXP_STR } = require('../schema/helpers');
+const { pubsub } = require('messages');
 
 (async () => {
   await commonMeta.loadSettings();
 })();
 
+const { getAPIVersion } = require('middleware/src/project_version');
+const { initRootSpan } = require('tracing');
+
 const MethodContext = require('business').MethodContext;
 import type API  from '../API';
 
-import type { MessageSink }  from 'messages';
 import type { StorageLayer } from 'storage';
 
 type SocketIO$SocketId = string; 
@@ -55,7 +57,7 @@ type SocketIO$Server = {
 // Manages contexts for socket-io. NamespaceContext's are created when the first
 // client connects to a namespace and are then kept forever.  
 // 
-class Manager implements MessageSink {
+class Manager {
   contexts: Map<string, NamespaceContext>; 
   
   logger; 
@@ -64,6 +66,8 @@ class Manager implements MessageSink {
   storageLayer: StorageLayer;
   customAuthStepFn: Object;
   isOpenSource: boolean;
+  apiVersion: string;
+  hostname: string;
 
   constructor(
     logger, io: SocketIO$Server, api: API, storageLayer: StorageLayer, customAuthStepFn: Object,
@@ -76,6 +80,7 @@ class Manager implements MessageSink {
     this.contexts = new Map(); 
     this.storageLayer = storageLayer;
     this.customAuthStepFn = customAuthStepFn;
+    this.hostname = require('os').hostname();
   }
   
   // Returns true if the `candidate` could be a username on a lexical level. 
@@ -120,45 +125,36 @@ class Manager implements MessageSink {
     }
   }
   
-  async ensureInitNamespace(namespaceName: string): NamespaceContext {  
-    
+  async ensureInitNamespace(namespaceName: string): Promise<NamespaceContext> {  
+    await initAsyncProps.call(this);
+
     let username = this.extractUsername(namespaceName);
     let context = this.contexts.get(username);
     // Value is not missing, return it. 
     if (typeof context === 'undefined') {
 
-      const sink: MessageSink = this;
 
       context = new NamespaceContext(
         username,
         this.io.of(namespaceName), 
         this.api,
-        sink, this.logger, this.isOpenSource);
+        this.logger,
+        this.isOpenSource,
+        this.apiVersion,
+        this.hostname,
+      );
 
       this.contexts.set(username, context);
     }  
     await context.open();
     return context;
-  }
-    
-  // Given a `userName` and a `message`, delivers the `message` as a socket.io
-  // event to all clients currently connected to the namespace '/USERNAME'.
-  // 
-  // Part of the MessageSink implementation.
-  //
-  deliver(userName: string, message: string | {}): void {
-    const context = this.contexts.get(userName);
-    if (context == null) return; 
-    
-    const namespace = context.socketNs;
-    if (namespace == null) 
-      throw new Error('AF: namespace should not be null');
-    
-    if (typeof message === 'object') {
-      message = JSON.stringify(message);
-    }
 
-    namespace.emit(message);
+    /**
+     * putting this here because putting it above requires rendering too much code async. I'm sorry.
+     */
+    async function initAsyncProps() {
+      if (this.apiVersion == null) this.apiVersion = await getAPIVersion();
+    }
   }
 }
 
@@ -167,28 +163,31 @@ class NamespaceContext {
   username: string; 
   socketNs: SocketIO$Namespace;
   api: API; 
-  sink: MessageSink;
   logger; 
+  apiVersion: string;
+  hostname: string;
   
   connections: Map<SocketIO$SocketId, Connection>; 
-  natsSubscriber: ?NatsSubscriber; 
+  pubsubRemover: ?function; 
   
   constructor(
     username: string, 
     socketNs: SocketIO$Namespace, 
     api: API, 
-    sink: MessageSink, 
     logger,
-    isOpenSource: Boolean
+    isOpenSource: Boolean,
+    apiVersion: string,
+    hostname: string,
   ) {
     this.username = username; 
     this.socketNs = socketNs; 
     this.api = api; 
-    this.sink = sink; 
     this.logger = logger; 
     this.isOpenSource = isOpenSource;
     this.connections = new Map(); 
-    this.natsSubscriber = null;
+    this.pubsubRemover = null;
+    this.apiVersion = apiVersion;
+    this.hostname = hostname;
   }
     
 
@@ -198,7 +197,9 @@ class NamespaceContext {
   addConnection(socket: SocketIO$Socket) {  
     // This will represent state that we keep for every connection. 
     const connection = new Connection(
-      this.logger, socket, this, socket.methodContext, this.api);
+      this.logger, socket, this, socket.methodContext, this.api,
+      this.apiVersion, this.hostname,
+    );
 
     // Permanently store the connection in this namespace.
     this.storeConnection(connection);
@@ -218,37 +219,25 @@ class NamespaceContext {
   
   async open() {
     // If we've already got an active subscription, leave it be. 
-    if (this.natsSubscriber != null || this.isOpenSource) return; 
-    this.natsSubscriber = await this.produceNatsSubscriber();
+    if (this.pubsubRemover != null) return; 
+    this.pubsubRemover = pubsub.notifications.onAndGetRemovable(this.username, this.messageFromPubSub.bind(this) );
   }
-  async produceNatsSubscriber(): Promise<NatsSubscriber> {
-    const sink: MessageSink = this.sink; 
-    const userName = this.username;
-    const { NatsSubscriber } = require('messages');
-    const natsSubscriber = new NatsSubscriber(
-      NATS_CONNECTION_URI, 
-      sink,
-      (username: string): string => {
-        return `${username}.sok1`;
-      }
-    );
-          
-    // We'll await this, since the user will want a connection that has
-    // notifications turned on immediately. 
-    await natsSubscriber.subscribe(userName);
-    
-    return natsSubscriber;
+
+  messageFromPubSub(payload) {
+    const message = pubsubMessageToSocket(payload);
+    if (message != null) {
+      this.socketNs.emit(message);
+    } else {
+      console.log('XXXXXXX Unkown payload', payload);
+    }
   }
   
   // Closes down resources associated with this namespace context. 
   // 
   async close() {
-    const natsSubscriber = this.natsSubscriber;
-
-    if (natsSubscriber == null) return; 
-    this.natsSubscriber = null; 
-    
-    await natsSubscriber.close(); 
+    if (this.pubsubRemover == null) return; 
+    this.pubsubRemover();
+    this.pubsubRemover = null;
   }
 
   // ------------------------------------------------------------ event handlers
@@ -303,17 +292,22 @@ class Connection {
   methodContext: MethodContext;
   api: API; 
   logger; 
+  apiVersion: string;
+  hostname: string;
   
   constructor(
     logger, 
     socket: SocketIO$Socket, 
     namespaceContext: NamespaceContext,
-    methodContext: MethodContext, api: API
+    methodContext: MethodContext, api: API,
+    apiVersion: string, hostname: string,
   ) {
     this.socket = socket; 
     this.methodContext = methodContext;
     this.api = api; 
     this.logger = logger; 
+    this.apiVersion = apiVersion;
+    this.hostname = hostname;
   }
   
   // This should be used as a key when storing the connection inside a Map. 
@@ -330,6 +324,14 @@ class Connection {
   // Called when the socket wants to call a Pryv IO method. 
   // 
   async onMethodCall(callData: SocketIO$CallData, callback: (err: mixed, res: any) => mixed) {
+
+    const methodContext = this.methodContext;
+
+    methodContext.tracing = initRootSpan('socket.io', {
+      apiVersion: this.apiVersion,
+      hostname: this.hostname,
+    });
+
     const api = this.api; 
     const logger = this.logger;
     
@@ -344,23 +346,17 @@ class Connection {
     callback = callback || callData.data[2];
     //if (callback == null) callback = function (err: any, res: any) { }; // eslint-disable-line no-unused-vars
 
-    // Make sure that we have a callback here. 
-   
-    this.methodContext.methodId = apiMethod;
+    methodContext.methodId = apiMethod;
     
-    const methodContext = this.methodContext;
-
     // FLOW MethodContext will need to be rewritten as a class...
-    const userName = methodContext.username;   
+    const userName = methodContext.user.username;   
 
     // Accept streamQueries in JSON format for socket.io
     methodContext.acceptStreamsQueryNonStringified = true;
-    
-    const answer = bluebird.fromCallback(
-      (cb) => api.call(methodContext, params, cb));
       
     try {
-      const result = await answer; 
+      const result = await bluebird.fromCallback(
+        (cb) => api.call(methodContext, params, cb));; 
       
       if (result == null) 
         throw new Error('AF: either err or result must be non-null');
@@ -368,6 +364,11 @@ class Connection {
       const obj = await bluebird.fromCallback(
         (cb) => result.toObject(cb));
         
+      // good ending
+      methodContext.tracing.finishSpan('socket.io');
+      // remove tracing for next call
+      methodContext.tracing = null;
+      
       return callback(null, commonMeta.setCommonMeta(obj));
     }
     catch (err) {
@@ -376,11 +377,27 @@ class Connection {
         method: apiMethod,
         body: params
       }, logger);
+
+      // bad ending
+      methodContext.tracing.setError('socket.io', err);
+      methodContext.tracing.finishSpan('socket.io');
+
       return callback(
         commonMeta.setCommonMeta({ error: errorHandling.getPublicErrorData(err) }));
     }
     // NOT REACHED
   }
 }
+
+const messageMap = {};
+messageMap[pubsub.USERNAME_BASED_EVENTS_CHANGED] = 'eventsChanged';
+messageMap[pubsub.USERNAME_BASED_ACCESSES_CHANGED] = 'accessesChanged';
+messageMap[pubsub.USERNAME_BASED_STREAMS_CHANGED] = 'streamsChanged';
+
+function pubsubMessageToSocket(payload) {
+  const key = (typeof payload === 'object') ? JSON.stringify(payload) : payload;
+  return messageMap[key];
+}
+
 
 module.exports = Manager; 
