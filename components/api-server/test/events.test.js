@@ -1028,6 +1028,7 @@ describe('events', function () {
             validation.sanitizeEvent(createdEvent);
             expected = _.extend({
               id: createdEvent.id,
+              integrity: createdEvent.integrity,
               attachments: [
                 {
                   id: createdEvent.attachments[0].id,
@@ -1107,6 +1108,7 @@ describe('events', function () {
             }
           ],
           streamIds: [data.streamIds[0]],
+          integrity: createdEvent.integrity
         }, data);
         validation.checkObjectEquality(createdEvent, expected);
 

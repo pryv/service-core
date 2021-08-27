@@ -48,8 +48,6 @@ const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId
 
 const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
 
-const { integrity } = require('business');
-
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
 
@@ -448,7 +446,6 @@ module.exports = async function (api)
     createEvent,
     removeActiveFromSibling,
     createAttachments,
-    addEventIntegrity,
     notify);
 
   function applyPrerequisitesForCreation(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -621,6 +618,7 @@ module.exports = async function (api)
       // To remove when streamId not necessary
       newEvent.streamId = newEvent.streamIds[0];
       result.event = newEvent;
+      console.log('NEW EVENT', result.event);
       next();
     } catch (err) {
       if (err.isDuplicateIndex('id')) {
@@ -679,14 +677,6 @@ module.exports = async function (api)
     } catch (err) {
       next(err);
     }
-  }
-
-  function addEventIntegrity(context, params, result, next) {
-    if (! integrity.isActive && ! result.event) return next();
-    context.eventHashAndKey = integrity.forEvent(result.event); 
-    result.event.integrity = context.eventHashAndKey.integrity;
-    console.log('XXXXX addEventIntegrity', result.event, params);
-    next();
   }
 
   // -------------------------------------------------------------------- UPDATE

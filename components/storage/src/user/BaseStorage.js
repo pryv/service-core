@@ -223,14 +223,15 @@ BaseStorage.prototype.aggregate = function(
 };
 
 BaseStorage.prototype.insertOne = function (userOrUserId, item, callback) {
+  const itemToInsert = this.applyItemToDB(this.applyItemDefaults(item))
   this.database.insertOne(
     this.getCollectionInfo(userOrUserId),
-    this.applyItemToDB(this.applyItemDefaults(item)),
+    itemToInsert,
     function(err) {
       if (err) {
         return callback(err);
       }
-      callback(null, this.applyItemFromDB(item));
+      callback(null, this.applyItemFromDB(itemToInsert));
     }.bind(this)
   );
 };
@@ -278,19 +279,7 @@ BaseStorage.prototype.findOneAndUpdate = function(userOrUserId, query, updatedDa
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.updateOne = function (userOrUserId, query, updatedData, callback) {
-  this.database.findOneAndUpdate(
-    this.getCollectionInfo(userOrUserId),
-    this.applyQueryToDB(query),
-    this.applyUpdateToDB(updatedData),
-    function(err, dbItem) {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, this.applyItemFromDB(dbItem));
-    }.bind(this)
-  );
-};
+BaseStorage.prototype.updateOne = BaseStorage.prototype.findOneAndUpdate;
 
 /**
  * Updates the one or multiple document(s) matching the given query.

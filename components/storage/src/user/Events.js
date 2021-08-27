@@ -11,6 +11,7 @@ const util = require('util');
 const _ = require('lodash');
 const ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const integrity = require('business/src/integrity');
 
 module.exports = Events;
 /**
@@ -34,11 +35,13 @@ function Events (database) {
       endTimeToDB,
       converters.deletionToDB,
       converters.stateToDB,
+      addIntegrity,
     ],
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData'),
+      updateIntegrity,
     ],
     itemFromDB: [
       clearEndTime,
@@ -51,6 +54,17 @@ function Events (database) {
   };
 }
 util.inherits(Events, BaseStorage);
+
+function addIntegrity (eventData) {
+  if (! integrity.isActive) return ;
+  eventData.integrity = integrity.forEvent(eventData).integrity; 
+  return eventData;
+}
+
+function updateIntegrity (a, b, c) {
+  //console.log('XXX Update integrity', a, b, c);
+  return a;
+}
 
 function endTimeToDB (eventData) {
   if (eventData.hasOwnProperty('duration') && eventData.duration !== 0) {
