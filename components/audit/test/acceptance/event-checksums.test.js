@@ -54,7 +54,7 @@ describe('Audit events checksums', function() {
   function validPost(path) { return coreRequest.post(path).set('Authorization', appAccess.token);}
 
   before(async () => {
-    auditedEvent = (await validPost(eventsPath).send({ streamIds: [streamId], type: 'count/generic', content: 2, includesHash: true})).body.event;
+    auditedEvent = (await validPost(eventsPath).send({ streamIds: [streamId], type: 'count/generic', content: 2})).body.event;
   });
 
   it('[WNWM] must return auditEventChecksum when event is created with includesHash=true', async () => {

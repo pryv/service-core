@@ -1225,9 +1225,10 @@
     winston "^3.3.3"
     winston-daily-rotate-file "^4.5.5"
 
-"@pryv/stable-object-representation@git+ssh://git@github.com:pryv/lib-js-stable-object-representation.git#0.0.4":
-  version "0.0.4"
-  resolved "git+ssh://git@github.com:pryv/lib-js-stable-object-representation.git#2b71bbee990624e12ecf7158e9a301a53db02caa"
+"@pryv/stable-object-representation@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@pryv/stable-object-representation/-/stable-object-representation-1.0.1.tgz#e5b2bdcd49f394b08ea41defcbaa83a456cc4503"
+  integrity sha512-qlaD3PsZshkxFRZzNhNLz4ykr/nQ5Zy4deuH5odG8ZtHpARDixsZIhexd89j5mTCT4YH0VrH239gSJOQWGa8Kw==
 
 "@rpl/badge-up@^2.2.0":
   version "2.2.0"

@@ -36,7 +36,8 @@ exports = module.exports = function (action) {
     'content': {},
     'description': string({nullable: true}),
     'clientData': object({}, {nullable: true}),
-    'trashed': boolean({nullable: true})
+    'trashed': boolean({nullable: true}),
+    'integrity': string({nullable: true}),
   }, {
     id: helpers.getTypeURI('event', action),
     additionalProperties: false
@@ -52,7 +53,6 @@ exports = module.exports = function (action) {
   if (action === Action.CREATE) {
     // only allow cuid-like strings for custom ids
     schema.properties.id.pattern = '^c[a-z0-9-]{24}$';
-    schema.properties.includesHash = boolean({nullable: true});
     // only allow "files" (raw file data) on create; no further checks as it's
     // created internally
     schema.properties.files = array(object({})); 

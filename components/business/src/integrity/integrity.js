@@ -6,6 +6,7 @@
  */
 const config = require('@pryv/boiler').getConfigUnsafe(true);
 const logger = require('@pryv/boiler').getLogger('integrity');
+const stableRepresentation = require('@pryv/stable-object-representation');
 
 // mapping algo codes to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Digest supported codes
 const subRessourceCodeToDigestMap = {
@@ -30,11 +31,21 @@ const integrity = {
   getDigestForSubRessourceIntegrity
 }
 
+// event integrity schema
+integrity.forEvent = function forEvent(event) {
+  return stableRepresentation.event.compute(event, integrity.algorithm);
+}
+
+
 if (integrity.isActive && (subRessourceCodeToDigestMap[integrity.algorithm] == null)) {
   const message = 'Integrity is active and algorithm [' + integrity.algorithm + '] is unsupported. Choose one of: ' + Object.keys(subRessourceCodeToDigestMap).join(', ');
   logger.error(message);
   console.log('Error: ' + message);
   process.exit(1);
 }
+
+
+//
+
 
 module.exports = integrity;

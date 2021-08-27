@@ -48,6 +48,8 @@ const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId
 
 const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
 
+const { integrity } = require('business');
+
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
 
@@ -61,8 +63,6 @@ const SystemStream = require('business/src/system-streams/SystemStream');
 // for events. 
 const typeRepo = new TypeRepository(); 
 
-let stableRepresentation; // will be loaded depending on conf
-
 /**
  * Events API methods implementations.
  * @param api
@@ -70,10 +70,6 @@ let stableRepresentation; // will be loaded depending on conf
 module.exports = async function (api) 
 {
   const config = await getConfig();
-
-  if ((! config.get('openSource:isActive')) && config.get('audit:active')) {
-    stableRepresentation = require('audit').stableRepresentation;
-  }
   const storageLayer = await getStorageLayer();
   const userEventsStorage = storageLayer.events;
   const userEventFilesStorage = storageLayer.eventFiles;
@@ -452,7 +448,7 @@ module.exports = async function (api)
     createEvent,
     removeActiveFromSibling,
     createAttachments,
-    addEventHash,
+    addEventIntegrity,
     notify);
 
   function applyPrerequisitesForCreation(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -685,13 +681,11 @@ module.exports = async function (api)
     }
   }
 
-  function addEventHash(context, params, result, next) {
-    if (! stableRepresentation && ! result.event) return next();
-    console.log('XXXXX addEventHash', result.event, params);
-    context.eventHashAndKey = stableRepresentation.event.compute(result.event);
-    if (context.includesHash) { 
-      result.event.hash = context.eventHashAndKey.payload;
-    }
+  function addEventIntegrity(context, params, result, next) {
+    if (! integrity.isActive && ! result.event) return next();
+    context.eventHashAndKey = integrity.forEvent(result.event); 
+    result.event.integrity = context.eventHashAndKey.integrity;
+    console.log('XXXXX addEventIntegrity', result.event, params);
     next();
   }
 
@@ -1016,10 +1010,6 @@ module.exports = async function (api)
    */
   async function validateEventContentAndCoerce(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const type: string = context.newEvent.type;
-
-    // remove eventHashAndKeysumRequest and keep it in context
-    context.includesHash = params.includesHash;
-    delete params.includesHash;
 
     // Unknown types can just be created as normal events. 
     if (! typeRepo.isKnown(type)) {
