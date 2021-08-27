@@ -165,14 +165,19 @@ module.exports = async function (api)
           //streamQuery.not.push(...cannotRead);
         }
       } else { // ------------ All other cases
-        for (const key of ['any']) {
-          if (streamQuery[key]) {
-            for (let streamId of streamQuery[key]) {
-              await streamExistsAndCanGetEventsOnStream(streamId, streamQuery.storeId);
-            };
-          }
+        /**
+         * ! we don't have to check for permissions on 'all' or 'not' as long there is at least one 'any' authorized. 
+         */
+         if (! streamQuery.any || streamQuery.any.length === 0) {
+          return next(errors.invalidRequestStructure('streamQueries must have a valid {any: [...]} component'));
+         }
+
+        for (let streamId of streamQuery.any) {
+          await streamExistsAndCanGetEventsOnStream(streamId, streamQuery.storeId);
         };
       }
+
+      
     }
 
     if (unAuthorizedStreams.length > 0) {
@@ -239,10 +244,12 @@ module.exports = async function (api)
     next();
   }
 
+  
+  
+
   /**
    * - Create a copy of the params per query
    * - Add specific stream queries to each of them
-   * - Eventually apply limitations per store
    */
   async function findEventsFromStore(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (params.streams === null || params.streams.length === 0)  {
@@ -266,41 +273,6 @@ module.exports = async function (api)
       paramsByStoreId[storeId].streams.push(streamQuery);
     }
     // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
-
-
-    
-  
-    // ---- apply limitation if any 
-    const limitations = context.access.getLimitationsForMethodId('events.get');
-    if (limitations) {
-      for (let storeId of Object.keys(paramsByStoreId)) {
-        const paramsForStore = paramsByStoreId[storeId];
-        if (limitations[storeId]) { // found limitation for this store
-          const limitation = limitations[storeId];
-          if (limitation.streams) {
-            if (paramsForStore.streams) { // apply to all streamQueries
-
-              for (let streamQuery of paramsForStore.streams) {
-                if (limitation.streams.all) {
-                  if (!streamQuery.all) streamQuery.all = [];
-                  streamQuery.all.push(...limitation.streams.all);
-                }
-                if (limitation.streams.not) {
-                  if (!streamQuery.not) streamQuery.not = [];
-                  streamQuery.not.push(...limitation.streams.not);
-                }
-              }
-
-            } else { // use limitation as streamQuery
-              paramsForStore.streams = [{
-                all: limitation.streams.all,
-                not: limitation.streams.not
-              }];
-            }
-          }
-        }
-      }
-    }
 
 
     /**

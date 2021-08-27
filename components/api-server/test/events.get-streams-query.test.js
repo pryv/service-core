@@ -485,7 +485,7 @@ describe('events.get streams query', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({ streams: JSON.stringify({ all: ['A', 'E'] }) });
+        .query({ streams: JSON.stringify({ any: ['A'], all: ['E'] }) });
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 1);
@@ -505,7 +505,7 @@ describe('events.get streams query', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({ streams: JSON.stringify({ all: ['A'], not: ['B'] }) });
+        .query({ streams: JSON.stringify({ any: ['A'], not: ['B'] }) });
 
       assert.exists(res.body.events)
       const events = res.body.events;
@@ -621,6 +621,15 @@ describe('events.get streams query', function () {
           .query({ streams: JSON.stringify({ any: ['A', 'Z', 'B'] }) });
         assert.exists(res.body.error);
         assert.equal(res.body.error.id, 'unknown-referenced-resource');
+      });
+
+      it('[WRVU] must return error when the is no "any"', async function () {
+        const res = await server.request()
+          .get(basePathEvent)
+          .set('Authorization', tokenRead)
+          .query({ streams: JSON.stringify({ all:  ['A', 'Z'] }) });
+        assert.exists(res.body.error);
+        assert.equal(res.body.error.id, 'invalid-request-structure');
       });
 
       it('[30NV] must return error when provided a boolean instead of an expression', async function () {

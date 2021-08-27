@@ -38,7 +38,6 @@ Object.freeze(PermissionLevels);
  class AccessLogic {
   _access; // Access right from the DB
   _userId;
-  _limitationsByActionByStore;
   _streamPermissionLevelCache;
   _streamByStorePermissionsMap;
 
@@ -101,7 +100,6 @@ Object.freeze(PermissionLevels);
       return;
     }
 
-    this._limitationsByActionByStore = {};
     this.tagPermissions = [];
     this.tagPermissionsMap = {};
     this.featurePermissions = [];
@@ -129,28 +127,6 @@ Object.freeze(PermissionLevels);
     const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
     if (this._streamByStorePermissionsMap[storeId] == null) this._streamByStorePermissionsMap[storeId] = {}
     this._streamByStorePermissionsMap[storeId][streamId] = {streamId: streamId, level: perm.level};
-    this._loadLimitation(storeId, streamId, perm);
-  }
-
-  _loadLimitation(storeId, streamId, perm) {
-    if (perm.limitations == null) return;
-    for (const methodId of Object.keys(perm.limitations)) {
-      if (! this._limitationsByActionByStore[methodId]) this._limitationsByActionByStore[methodId] = {};
-      if (this._limitationsByActionByStore[methodId][storeId]) {
-        throw new Error('Only one limitation per method can be loaded for each store');
-      }
-      this._limitationsByActionByStore[methodId][storeId] = perm.limitations[methodId];
-    }
-  }
-
-  /**
-   * returns the limitations Map for this methods
-   * @param {*} methodId 
-   * @returns {Object} keys are storeId
-   */
-  getLimitationsForMethodId(methodId) {
-    if (this._limitationsByActionByStore == null) return null;
-    return this._limitationsByActionByStore[methodId];
   }
 
   /**
