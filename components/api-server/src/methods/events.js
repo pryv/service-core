@@ -1135,13 +1135,15 @@ module.exports = async function (api)
       const fileId: string = await bluebird.fromCallback(cb =>
         userEventFilesStorage.saveAttachedFile(file.path, context.user, eventInfo.id, cb));
 
-      attachments.push({
+      const attachmentData = {
         id: fileId,
         fileName: file.originalname,
         type: file.mimetype,
-        size: file.size,
-        integrity: file.integrity
-      });
+        size: file.size
+      };
+      if (file.integrity != null) attachmentData.integrity = file.integrity;
+
+      attachments.push(attachmentData);
       
       const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
 
