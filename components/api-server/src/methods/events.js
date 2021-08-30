@@ -145,25 +145,30 @@ module.exports = async function (api)
     }
 
     for (let streamQuery of params.streams) {
+
+      // ------------ ALL --------------- //
+      // add forced Streams if exists
+      const forcedStreams = context.access.getForcedStreamsGetEventsStreamIds(streamQuery.storeId);
+      
+      if (forcedStreams != null && forcedStreams.length > 0) {
+        if (streamQuery.all == null) streamQuery.all = [];
+        streamQuery.all.push(...forcedStreams);
+      }
+
+      // ------------- ANY ------------- //
+
       // ------------ "*" case 
       if (streamQuery.any && streamQuery.any.includes('*')) {
         if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
       
         // replace any by allowed streams for reading
         const canRead = [];
-        const cannotRead = [];
         for (const streamPermission of context.access.getStoresPermissions(streamQuery.storeId)) {
           if (await context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)) {
             canRead.push(streamPermission.streamId);
-          } else {
-            cannotRead.push(streamPermission.streamId)
-          }
+          } 
         }
         streamQuery.any = canRead;
-        if (cannotRead.length > 0) {
-          if (! streamQuery.not) streamQuery.not = [];
-          //streamQuery.not.push(...cannotRead);
-        }
       } else { // ------------ All other cases
         /**
          * ! we don't have to check for permissions on 'all' or 'not' as long there is at least one 'any' authorized. 
@@ -176,8 +181,6 @@ module.exports = async function (api)
           await streamExistsAndCanGetEventsOnStream(streamId, streamQuery.storeId);
         };
       }
-
-      
     }
 
     if (unAuthorizedStreams.length > 0) {
@@ -193,7 +196,6 @@ module.exports = async function (api)
     }
     next();
   }
-
 
   async function streamQueryExpandStreams(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     async function expandStreamInContext(streamId, storeId) {

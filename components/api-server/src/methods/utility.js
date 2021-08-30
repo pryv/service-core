@@ -75,7 +75,6 @@ module.exports = async function (api: API) {
     function filterNonePermissionsOnSystemStreams(permissions: Array<Permission>): Array<Permission> {
       const filteredPermissions: Array<Permission> = [];
       for (const perm of permissions) {
-        console.log(perm);
         if (perm.level !== 'none' && (! SystemStreamsSerializer.isSystemStreamId(perm.streamId))) filteredPermissions.push(perm);
       }
       return filteredPermissions;

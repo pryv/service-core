@@ -102,9 +102,9 @@ Object.freeze(PermissionLevels);
 
     this.tagPermissions = [];
     this.tagPermissionsMap = {};
-    this.featurePermissions = [];
     this.featurePermissionsMap = {};
     this._streamByStorePermissionsMap = {};
+    this._streamByStoreForced = {};
 
     for (const perm of this.permissions) {
       if (perm.streamId != null) {
@@ -139,6 +139,8 @@ Object.freeze(PermissionLevels);
     if (storeStreamPermissionMap == null) return [];
     return Object.values(storeStreamPermissionMap);
   }
+
+
   /**
    * returns the permission for this stream if it exists
    * @param {identifier} storeId 
@@ -220,14 +222,28 @@ Object.freeze(PermissionLevels);
     return res;
   }
 
+  /**
+   * get StreamIds with explicit which are forced for GetEvent by forceStreamIds
+   * @param {storeId} storeId
+   * @returns {Array<cleanStreamIds>} 
+   */
+   getForcedStreamsGetEventsStreamIds(storeId) {
+     if (this._streamByStoreForced == null) return null;
+    return this._streamByStoreForced[storeId];
+   }
+
   _loadFeaturePermission (perm) {
     // here we might want to check if permission is higher
     this._registerFeaturePermission(perm);
   }
 
   _registerFeaturePermission (perm) {
-    this.featurePermissions.push(perm);
     this.featurePermissionsMap[perm.feature] = perm;
+    if (perm.feature === 'forcedStreams') { // load them by stores
+      const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streams);
+      if (this._streamByStoreForced[storeId] == null) this._streamByStoreForced[storeId] = [];
+      this._streamByStoreForced[storeId].push(...perm.streams);
+    }
   }
 
   _loadTagPermission (perm) {
