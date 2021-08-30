@@ -26,7 +26,7 @@ function getDestination (req, file, cb) {
   cb(null, os.tmpdir())
 }
 
-function IntegrityDiskStorage (opts) {
+function MulterIntegrityDiskStorage (opts) {
   this.getFilename = (opts.filename || getFilename)
 
   if (typeof opts.destination === 'string') {
@@ -39,7 +39,7 @@ function IntegrityDiskStorage (opts) {
 
 let count = 0;
 
-IntegrityDiskStorage.prototype._handleFile = function _handleFile (req, file, cb) {
+MulterIntegrityDiskStorage.prototype._handleFile = function _handleFile (req, file, cb) {
   var that = this
 
   that.getDestination(req, file, function (err, destination) {
@@ -67,7 +67,7 @@ IntegrityDiskStorage.prototype._handleFile = function _handleFile (req, file, cb
   })
 }
 
-IntegrityDiskStorage.prototype._removeFile = function _removeFile (req, file, cb) {
+MulterIntegrityDiskStorage.prototype._removeFile = function _removeFile (req, file, cb) {
   var path = file.path
 
   delete file.destination
@@ -78,7 +78,7 @@ IntegrityDiskStorage.prototype._removeFile = function _removeFile (req, file, cb
 }
 
 module.exports = function (opts) {
-  return new IntegrityDiskStorage(opts)
+  return new MulterIntegrityDiskStorage(opts)
 }
 
 // -- CHECKSUM STREAM 

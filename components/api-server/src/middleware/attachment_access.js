@@ -13,6 +13,7 @@ const errors = require('errors').factory;
 
 const config = require('@pryv/boiler').getConfigUnsafe(true);
 const pathForAttachment = require('business').users.UserLocalDirectory.pathForAttachment;
+const getDigestForSubRessourceIntegrity = require('business').integrity.getDigestForSubRessourceIntegrity;
 
 // -- Audit 
 const isAuditActive = (!  config.get('openSource:isActive')) && config.get('audit:active');
@@ -31,15 +32,6 @@ function middlewareFactory(userEventsStorage: storage.user.Events) {
   return lodash.partial(attachmentsAccessMiddleware, userEventsStorage);
 }
 module.exports = middlewareFactory;
-
-// mapping algo codes to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Digest supported codes
-const algoMap = {
-  sha256: 'SHA-256',
-  sha512: 'SHA-512',
-  sha1: 'SHA',
-  sha: 'SHA',
-  md5: 'MD5'
-}
 
 // A middleware that checks permissions to access the file attachment, then
 // translates the request's resource path to match the actual physical path for
@@ -78,12 +70,9 @@ async function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
     res.header('Content-Length', attachment.size);
     res.header('Content-Disposition', 'attachment; filename="' + attachment.fileName + '"');
     if (attachment.integrity) {
-      const splitAt = attachment.integrity.indexOf('-');
-      const algo = attachment.integrity.substr(0, splitAt);
-      const sum = attachment.integrity.substr(splitAt + 1);
-      const digestAlgo = algoMap[algo];
-      if (digestAlgo != null) {
-        res.header('Digest', digestAlgo + '=' + sum);
+      const digest = getDigestForSubRessourceIntegrity(attachment.integrity)
+      if (digest != null) {
+        res.header('Digest', digest);
       }
     }
     const fullPath = pathForAttachment(req.context.user.id, req.params.id, req.params.fileId);

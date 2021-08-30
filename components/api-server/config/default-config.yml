@@ -106,3 +106,7 @@ uploads:
 
 trace:
   enable: false
+
+integrity:
+  isActive: true
+  algorithm: sha256
