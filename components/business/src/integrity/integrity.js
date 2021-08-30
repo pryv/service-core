@@ -21,7 +21,7 @@ function getDigestForSubRessourceIntegrity(subRessourceIntegrity) {
   const algo = subRessourceIntegrity.substr(0, splitAt);
   const sum = subRessourceIntegrity.substr(splitAt + 1);
   const digestAlgo = subRessourceCodeToDigestMap[algo];
-  if (digestAlgo = null) return null;
+  if (digestAlgo == null) return null;
   return digestAlgo + '=' + sum;
 }
 
