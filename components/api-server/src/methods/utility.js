@@ -11,6 +11,7 @@ const errorHandling = require('errors').errorHandling;
 const methodsSchema = require('../schema/generalMethods');
 const _ = require('lodash');
 const bluebird = require('bluebird');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 
@@ -58,7 +59,7 @@ module.exports = async function (api: API) {
       if (accessProp != null) result[prop] = accessProp;
     }
 
-    if (result.permissions != null) result.permissions = filterNonePermissions(result.permissions);
+    if (result.permissions != null) result.permissions = filterNonePermissionsOnSystemStreams(result.permissions);
 
     result.user = {};
     for (const prop of userProps) {
@@ -71,10 +72,11 @@ module.exports = async function (api: API) {
     /**
      * Remove permissions with level="none" from given array
      */
-    function filterNonePermissions(permissions: Array<Permission>): Array<Permission> {
+    function filterNonePermissionsOnSystemStreams(permissions: Array<Permission>): Array<Permission> {
       const filteredPermissions: Array<Permission> = [];
       for (const perm of permissions) {
-        if (perm.level !== 'none') filteredPermissions.push(perm);
+        console.log(perm);
+        if (perm.level !== 'none' && (! SystemStreamsSerializer.isSystemStreamId(perm.streamId))) filteredPermissions.push(perm);
       }
       return filteredPermissions;
     }
