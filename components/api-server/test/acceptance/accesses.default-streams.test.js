@@ -104,22 +104,22 @@ describe("Accesses with account streams", function () {
     describe('When using a personal access', () => {
       describe('to create an access for visible account streams', () => {
         describe('with a read-level permission', async () => {
-          let streamId;
+          let systemEmailStreamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
           before(async function () {
-            streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
-            await createUserAndAccess(permissionLevel, streamId);
+            systemEmailStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
+            await createUserAndAccess(permissionLevel, systemEmailStreamId);
           });
           it('[UE9G] should return 201', async () => {
             assert.equal(accountAccess.status, 201);
           });
           it('[BUYP] should create access in the database', async () => {
-            assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+            assert.deepEqual(accountAccessData.permissions, [{ streamId: systemEmailStreamId, level: permissionLevel }]);
           });
           it('[S3IQ] should enable user to read visible stream event with this access', async () => {
             res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
             assert.equal(res.body.events.length, 1);
-            assert.equal(res.body.events[0].streamId, streamId);
+            assert.equal(res.body.events[0].streamId, systemEmailStreamId);
           });
 
           describe('for the “account” stream', async () => {

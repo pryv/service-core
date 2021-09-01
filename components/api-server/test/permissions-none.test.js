@@ -34,9 +34,9 @@ const EVENTS = {
 }
 const EVENT4ID = {}; // will be filled by fixtures
 
-describe('permissions forcedStreams', function () {
+describe('permissions none', function () {
 
-  describe('GET /events with forcedStreams', function () {
+  describe('GET /events with none permissions', function () {
     let server;
     before(async () => {
       server = await context.spawn();
@@ -101,7 +101,7 @@ describe('permissions forcedStreams', function () {
       await mongoFixtures.clean();
     });
 
-    it('[SO2E] must not see events  on "B" when querying *', async function () {
+    it('must not see event in "none" level stream', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenForcedB)
@@ -109,23 +109,6 @@ describe('permissions forcedStreams', function () {
       assert.exists(res.body.events)
       const events = res.body.events;
       events.forEach(e => {
-        let ebFound = false; 
-        for (const eb of ['E', 'B']) {
-          if (e.streamIds.includes(eb)) ebFound = true;
-        }
-        assert.isFalse(ebFound);
-      });
-    });
-
-    it('[ELFF] must refuse querying C', async function () {
-      const res = await server.request()
-        .get(basePathEvent)
-        .set('Authorization', tokenForcedB)
-        .query({ streams: ['C'] });
-      assert.exists(res.body.events)
-      const events = res.body.events;
-      events.forEach(e => {
-        assert.include(e.streamIds,'C');
         let ebFound = false; 
         for (const eb of ['E', 'B']) {
           if (e.streamIds.includes(eb)) ebFound = true;

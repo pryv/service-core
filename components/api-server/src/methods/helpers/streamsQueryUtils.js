@@ -261,10 +261,10 @@ function uniqueStreamIds(arrayOfStreamiIs) {
 
 exports.expandAndTransformStreamQueries = async function(streamQueries, expandStream) {
 
-  async function expandSet(streamIds, storeId) {
+  async function expandSet(streamIds, storeId, excludedIds) {
     const expandedSet = new Set(); // use a Set to avoid duplicate entries;
     for (let streamId of streamIds) {
-      (await expandStream(streamId, storeId)).forEach(item => expandedSet.add(item));
+      (await expandStream(streamId, storeId, excludedIds)).forEach(item => expandedSet.add(item));
     }
     return Array.from(expandedSet);
   }
@@ -283,30 +283,44 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
 
   // any
   if (streamQuery.any) {
-    const expandedSet = await expandSet(streamQuery.any, streamQuery.storeId);
+    const expandedSet = await expandSet(streamQuery.any, streamQuery.storeId, streamQuery.not || []);
     if (expandedSet.length > 0) {
       containsAtLeastOneInclusion = true;
       res.any = expandedSet;
     }
   }
 
-  // all & not share the same logic
-  for (const property of ['all', 'not']) {
-    if (streamQuery[property]) {
-      for (let streamId of streamQuery[property]) {
-        const expandedSet = await expandSet([streamId], streamQuery.storeId);
-        if (expandedSet.length > 0) {
-          if (! res.and) res.and = [];
-          let key = 'not';
-          if (property === 'all') {
-            containsAtLeastOneInclusion = true;
-            key = 'any';
-          } 
-          res.and.push({[key]: expandedSet});
-        }
-      }
+  // all
+  if (streamQuery.all) {
+    for (let streamId of streamQuery.all) {
+      if (streamQuery.not && streamQuery.not.includes(streamId)) continue;
+
+      let expandedSet = await expandSet([streamId], streamQuery.storeId, streamQuery.not || []);
+      if (expandedSet.length == 0) continue; // escape
+      if (! res.and) res.and = [];
+      containsAtLeastOneInclusion = true;
+      res.and.push({any: expandedSet});
     }
   }
+
+  // not
+  if (streamQuery.not) {
+    const not = [];
+    for (let streamId of streamQuery.not) {
+      
+      if (res.any && res.any.includes(streamId)) continue; // ignore 'not' already authorized by 'any'
+      
+      let expandedSet = await expandSet([streamId], streamQuery.storeId, streamQuery.any || []);
+      if (expandedSet.length == 0) continue; // escape
+      
+      not.push(...expandedSet);
+    }
+    if (not.length > 0) {
+      if (! res.and) res.and = [];
+      res.and.push({not: not});
+    }
+  }
+
   return (containsAtLeastOneInclusion) ? res : null;
 }
 

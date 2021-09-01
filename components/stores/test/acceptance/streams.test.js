@@ -82,6 +82,7 @@ describe('Stores Streams', function() {
       .set('Authorization', appAccessMaster.token)
       .query({});
     const streams = res.body.streams;
+    console.log('XXXXX', streams);
     assert.exists(streams);
     assert.equal(streams.length,4);
     assert.equal(streams[0].id,':dummy:');

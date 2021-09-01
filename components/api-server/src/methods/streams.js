@@ -158,9 +158,9 @@ module.exports = async function (api) {
       streams = filteredStreams;
     } 
 
-    // remove non visible parenIds from 
+    // remove non visible parentIds from 
     for (const rootStream of streams) { 
-      if ((rootStream.parentId != null)|| ! await context.access.canListStream(rootStream.parentId)) {
+      if ((rootStream.parentId != null) && (! await context.access.canListStream(rootStream.parentId))) {
         rootStream.parentId = null;
       }
     };

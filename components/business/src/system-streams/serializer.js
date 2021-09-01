@@ -135,8 +135,9 @@ class SystemStreamsSerializer {
     if (SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet) return SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet;
     SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet = [];
     for (const rootStream of SystemStreamsSerializer.getAll()) {
-      if (rootStream.id.indexOf(PRYV_PREFIX) === 0) SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet.push(rootStream.id);
+      if (rootStream.id.indexOf(PRYV_PREFIX) === 0 && rootStream.id !== ':_system:helpers') SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet.push(rootStream.id);
     }
+    // ---- TODO FIND A NICE WAY TO ACHIEVE THIS
     return SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet;
   }
 

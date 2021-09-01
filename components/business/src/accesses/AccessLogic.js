@@ -191,10 +191,10 @@ Object.freeze(PermissionLevels);
     const res = (storeId === 'local') ? [].concat(SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading()) : [];
 
     if (this._streamByStorePermissionsMap == null) return res;
-    const localPerms = this._streamByStorePermissionsMap[storeId];  
-    if (localPerms == null) return res;
+    const perms = this._streamByStorePermissionsMap[storeId];  
+    if (perms == null) return res;
     
-    for (const perm of Object.values(localPerms)) {
+    for (const perm of Object.values(perms)) {
       if (perm.level == null || perm.level === 'none') { 
         res.push(StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
       }      
@@ -203,16 +203,16 @@ Object.freeze(PermissionLevels);
   }
 
   /**
-   * get StreamIds with explicit "no-read" permissions ("create-only", ...)
+   * get StreamIds with explicit "no-read" permissions 
+   * Note!! "create-only", is not forbidden if a "read" permission has been given to a parent
    * @param {storeId} storeId
    * @returns {Array<cleanStreamIds>} 
    */
-  getCannotGetEventsStreamIds(storeId) {
-    const res = (storeId === 'local') ? [].concat(SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading()) : [];
-
-    if (this._streamByStorePermissionsMap == null) return res;
+  getForbiddenGetEventsStreamIds(storeId) {
+    if (this._streamByStorePermissionsMap == null) return [];
     const localPerms = this._streamByStorePermissionsMap[storeId];  
-    if (localPerms == null) return res;
+    if (localPerms == null) return [];
+    const res = []; 
     
     for (const perm of Object.values(localPerms)) {
       if (perm.level === 'create-only' || perm.level == null || perm.level === 'none') { 

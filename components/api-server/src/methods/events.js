@@ -108,6 +108,7 @@ module.exports = async function (api)
     eventsGetUtil.applyDefaultsForRetrieval,
     applyTagsDefaultsForRetrieval,
     streamQueryCheckPermissionsAndReplaceStars,
+    streamQueryAddForcedAndForbiddenStreams,
     streamQueryExpandStreams,
     findEventsFromStore,
     includeLocalStorageDeletionsIfRequested);
@@ -129,8 +130,6 @@ module.exports = async function (api)
     const unAccessibleStreams = [];
 
     async function streamExistsAndCanGetEventsOnStream(streamId, storeId) {
-      
-
       // remove eventual '#' in streamQuery
       const cleanStreamId = streamId.startsWith('#') ? streamId.substr(1) : streamId;
       
@@ -145,18 +144,6 @@ module.exports = async function (api)
     }
 
     for (let streamQuery of params.streams) {
-
-      // ------------ ALL --------------- //
-      // add forced Streams if exists
-      const forcedStreams = context.access.getForcedStreamsGetEventsStreamIds(streamQuery.storeId);
-      
-      if (forcedStreams != null && forcedStreams.length > 0) {
-        if (streamQuery.all == null) streamQuery.all = [];
-        streamQuery.all.push(...forcedStreams);
-      }
-
-      // ------------- ANY ------------- //
-
       // ------------ "*" case 
       if (streamQuery.any && streamQuery.any.includes('*')) {
         if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
@@ -197,8 +184,29 @@ module.exports = async function (api)
     next();
   }
 
+  function streamQueryAddForcedAndForbiddenStreams(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    for (let streamQuery of params.streams) {
+      // ------------ ALL --------------- //
+      // add forced Streams if exists
+      const forcedStreams = context.access.getForcedStreamsGetEventsStreamIds(streamQuery.storeId);
+      
+      if (forcedStreams != null && forcedStreams.length > 0) {
+        if (streamQuery.all == null) streamQuery.all = [];
+        streamQuery.all.push(...forcedStreams);
+      }
+
+      // ------------- NOT ------------- //
+      const forbiddenStreams = context.access.getForbiddenGetEventsStreamIds(streamQuery.storeId);
+      if (forbiddenStreams != null && forbiddenStreams.length > 0) {
+        if (streamQuery.not == null) streamQuery.not = [];
+        streamQuery.not.push(...forbiddenStreams);
+      }
+    }
+    next();
+  }
+
   async function streamQueryExpandStreams(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    async function expandStreamInContext(streamId, storeId) {
+    async function expandStreamInContext(streamId, storeId, excludedIds) {
       // remove eventual '#' in streamQuery
       if (streamId.startsWith('#')) {
         if (streamId === '#*') { // fence against '#*' request that could lead to expose system streams content
@@ -213,7 +221,7 @@ module.exports = async function (api)
         storeId: storeId, 
         includeTrashed: params.includeTrashed || params.state === 'all', 
         expandChildren: true,
-        excludedIds: context.access.getCannotGetEventsStreamIds(storeId)
+        excludedIds: excludedIds
       };
 
       // do not expand SystemStreams for non-personal tokens
@@ -246,8 +254,6 @@ module.exports = async function (api)
     next();
   }
 
-  
-  
 
   /**
    * - Create a copy of the params per query
