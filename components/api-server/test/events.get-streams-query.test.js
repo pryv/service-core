@@ -159,7 +159,7 @@ describe('events.get streams query', function () {
           {
             storeId: 'local',
             any: [ 'A', 'B', 'C' ],
-            and: [ { any: [ 'F' ] }, { not: [ 'D', 'E', 'F', 'E' ] } ]
+            and: [ { any: [ 'F' ] }, { not: [ 'D', 'E', 'F'] } ]
           }]);
       });
 
@@ -303,7 +303,7 @@ describe('events.get streams query', function () {
           streamIds: { '$in': [ 'A', 'B', 'C', 'E' ] },
           '$and': [
             { streamIds: { '$eq': 'C' } },
-            { streamIds: { '$nin': [ 'D', 'E', 'F', 'F' ] } },
+            { streamIds: { '$nin': [ 'D', 'E', 'F' ] } },
           ]
         });
       });
