@@ -92,6 +92,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
    * @returns {string} streamId without storeId
    */
   function checkStore(streamId) {
+    if (streamId === '#*') throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + ', "#*" is not valid.');
 
     const forbiddenChar = findForbiddenChar(streamId);
     if (forbiddenChar != null) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' forbidden chartacter \'' + forbiddenChar + '\' in streamId \'' + streamId + '\'.');
@@ -147,124 +148,31 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
 }
 
 /**
- * @callback CheckStream generic callback to get stream accesibility
- * @param {identifier} streamId
- * @param {identifier} storeId
- * @return {Promise<boolean>}
- */
-
-/**
- * @callback AllAccessibleStreamsForStore
- * @param {identifier} storeId
- * @return {Array.<StreamId>} allAccessibleStreams for local store
- */
-
-/**
  * @callback ExpandStream
  * @param {identifier} streamId
  * @param {identifier} storeId
+ * @param {Array.<StreamId>} excludedIds - Array of streams to exclude from expand
  * @return {Array.<StreamId>|string} - returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
  */
 
 
-/**
- * Execute a function on all items of a streamQuery
- * @param {Array.<StreamQuery>} - array of streamQUeries 
- * @param {CheckStream} checkStream - return false to break
- */
-async function runOnAllStreamIdOfQuery(arrayOfQueries, checkStream) {
-  for (let streamQuery of arrayOfQueries) {
-    for (const key of ['any', 'all', 'not']) {
-      for (let streamId of streamQuery[key]) {
-        if (! await checkStream(streamId, streamQuery.storeId)) return;
-      };
-    };
-  };
-}
-
-/**
- * Check permission against two callbacks 
- * Transfor query from {any, all, not} to {any, and: {.. , not: ..}}
- * @param {Array.<StreamQuery>} - array of streamQUeries  
- * @param {CheckStream} isAuthorizedStream
- * 
- */
-async function checkPermissions(arrayOfQueries, isAuthorizedStream, isAccessibleStream) {
-  const unAuthorizedStreams = [];
-  const unAccessibleStreams = [];
-  async function checkAuthorized(streamId, storeId) {
-    if (! await isAccessibleStream(streamId, storeId)) {
-      unAccessibleStreams.push(streamId);
-      return true;
-    }
-    if (! await isAuthorizedStream(streamId, storeId)) {
-      unAuthorizedStreams.push(streamId);
-    }
-    return true;
-  }
-
-  await runOnAllStreamIdOfQuery(arrayOfQueries, check);
-  return { unAuthorizedStreams, unAccessibleStreams };
-}
-exports.checkPermissions = checkPermissions;
-
-/**
- * Create a "logical" query .. 
- * Transform query from {any, all, not} to {any, and: {.. , not: ..}}
- * Keep streamids Unqiue.. 
- * @param {Array.<StreamQuery>} - array of streamQUeries  
- */
-function prepareDBQuery(arrayOfQueries) {
-
-  // inspect each streamQuery and remove enventual null
-  const arrayOfQueriesResult = arrayOfQueries.map(transformStreamQuery).filter((streamQuery) => {
-    return streamQuery !== null; // some streamQuery can be translated to "null" if no inclusion are found
-  });
-
-  /**
-   * { any: '*', and: [any: .. , any: ... , or: ...]
-   * }
-   * @param {Object} streamQuery 
-   */
-  function transformStreamQuery(streamQuery) {
-    let containsAtLeastOneInclusion = false;
-    const res = { storeId: streamQuery.storeId };
-
-    if (streamQuery.any && streamQuery.any.length > 0) {
-      containsAtLeastOneInclusion = true;
-      res.any = uniqueStreamIds(streamQuery.any);
-    }
-    // all & not share the same logic
-    for (const property of ['all', 'not']) {
-      if (streamQuery[property] && streamQuery[property].length > 0) {
-        if (!res.and) res.and = [];
-        let key = 'not';
-        if (property === 'all') {
-          containsAtLeastOneInclusion = true;
-          key = 'any';
-        }
-        res.and.push({ [key]: uniqueStreamIds(streamQuery[property]) });
-      }
-
-    }
-    return (containsAtLeastOneInclusion) ? res : null;
-  }
-  return arrayOfQueriesResult;
-}
-
-exports.prepareDBQuery = prepareDBQuery;
 
 function uniqueStreamIds(arrayOfStreamiIs) {
   return [...new Set(arrayOfStreamiIs)];
 }
 
+/**
+ * @param {Array.<StreamQuery>} streamQueries 
+ * @param {ExpandStream} expandStream 
+ * @returns 
+ */
+exports.expandAndTransformStreamQueries = async function expandAndTransformStreamQueries(streamQueries, expandStream) {
 
-exports.expandAndTransformStreamQueries = async function(streamQueries, expandStream) {
-
-  async function expandSet(streamIds, storeId, excludedIds) {
+  async function expandSet(streamIds, storeId, excludedIds = []) {
     const expandedSet = new Set(); // use a Set to avoid duplicate entries;
     for (let streamId of streamIds) {
-      (await expandStream(streamId, storeId, excludedIds)).forEach(item => expandedSet.add(item));
+      if (! excludedIds.includes(streamId)) // skip streamId presents in exluded set
+        (await expandStream(streamId, storeId, excludedIds)).forEach(item => expandedSet.add(item));
     }
     return Array.from(expandedSet);
   }
@@ -283,7 +191,7 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
 
   // any
   if (streamQuery.any) {
-    const expandedSet = await expandSet(streamQuery.any, streamQuery.storeId, streamQuery.not || []);
+    const expandedSet = await expandSet(streamQuery.any, streamQuery.storeId, streamQuery.not);
     if (expandedSet.length > 0) {
       containsAtLeastOneInclusion = true;
       res.any = uniqueStreamIds(expandedSet);
@@ -293,9 +201,7 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
   // all
   if (streamQuery.all) {
     for (let streamId of streamQuery.all) {
-      if (streamQuery.not && streamQuery.not.includes(streamId)) continue;
-
-      let expandedSet = await expandSet([streamId], streamQuery.storeId, streamQuery.not || []);
+      let expandedSet = await expandSet([streamId], streamQuery.storeId, streamQuery.not);
       if (expandedSet.length == 0) continue; // escape
       if (! res.and) res.and = [];
       containsAtLeastOneInclusion = true;
@@ -306,11 +212,8 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
   // not
   if (streamQuery.not) {
     const not = [];
-    for (let streamId of streamQuery.not) {
-      
-      if (res.any && res.any.includes(streamId)) continue; // ignore 'not' already authorized by 'any'
-      
-      let expandedSet = await expandSet([streamId], streamQuery.storeId, streamQuery.any || []);
+    for (let streamId of streamQuery.not) { 
+      let expandedSet = await expandSet([streamId], streamQuery.storeId, streamQuery.any);
       if (expandedSet.length == 0) continue; // escape
       
       not.push(...expandedSet);

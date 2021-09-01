@@ -102,14 +102,16 @@ module.exports = async function (api)
   api.register('events.get',
     eventsGetUtil.coerceStreamsParam,
     commonFns.getParamsValidation(methodsSchema.get.params),
+    eventsGetUtil.applyDefaultsForRetrieval,
+    applyTagsDefaultsForRetrieval,
+
     eventsGetUtil.transformArrayOfStringsToStreamsQuery,
     eventsGetUtil.validateStreamsQueriesAndSetStore,
     changeStreamIdsPrefixInStreamQuery.bind(null, isStreamIdPrefixBackwardCompatibilityActive), // using currying to pass "isStreamIdPrefixBackwardCompatibilityActive" argument
-    eventsGetUtil.applyDefaultsForRetrieval,
-    applyTagsDefaultsForRetrieval,
     streamQueryCheckPermissionsAndReplaceStars,
     streamQueryAddForcedAndForbiddenStreams,
     streamQueryExpandStreams,
+    
     findEventsFromStore,
     includeLocalStorageDeletionsIfRequested);
 
@@ -184,6 +186,9 @@ module.exports = async function (api)
     next();
   }
 
+  /**
+   * Add "forced" and "none" events from permissions
+   */
   function streamQueryAddForcedAndForbiddenStreams(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     for (let streamQuery of params.streams) {
       // ------------ ALL --------------- //
@@ -209,11 +214,7 @@ module.exports = async function (api)
     async function expandStreamInContext(streamId, storeId, excludedIds) {
       // remove eventual '#' in streamQuery
       if (streamId.startsWith('#')) {
-        if (streamId === '#*') { // fence against '#*' request that could lead to expose system streams content
-          streamId = '*';
-        } else {
-          return [streamId.substr(1)]; // do not expand Stream
-        }
+        return [streamId.substr(1)]; // do not expand Stream
       }
 
       const query =  {
