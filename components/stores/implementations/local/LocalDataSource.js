@@ -55,27 +55,29 @@ class LocalDataSource extends DataSource {
   get events() { return this._events; }
 }
 
-
+function clone(obj) {
+  // Clone streams -- BAd BaD -- To be optimized 
+  return JSON.parse(JSON.stringify(obj))
+}
 class LocalUserStreams extends UserStreams {
   async get(uid, params) {
-    let streams = cache.getStreams(uid, 'local');
-    if (streams == null) { // get from DB
-        streams = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
-        cache.setStreams(uid, 'local', streams);
+    let allStreamsForAccount = cache.getStreams(uid, 'local');
+    if (allStreamsForAccount == null) { // get from DB
+        allStreamsForAccount = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
+        // add system streams
+        allStreamsForAccount = allStreamsForAccount.concat(SystemStreamUtils.visibleStreamsTree);
+        cache.setStreams(uid, 'local', allStreamsForAccount);
     }
-    if (! params.hideSystemStreams) {
-     streams = streams.concat(SystemStreamUtils.visibleStreamsTree);
+
+    let streams = [];
+    if (params.id && params.id !== '*') { // find the stream
+      const stream = treeUtils.findById(allStreamsForAccount, params.id);
+      if (stream != null) streams = [clone(stream)]; // clone to be sure they can be mutated without touching the cache
+    } else {
+      streams = clone(allStreamsForAccount); // clone to be sure they can be mutated without touching the cache
     }
-  
-    // Clone streams -- BAd BaD -- To be optimized 
-    streams = JSON.parse(JSON.stringify(streams));
     
-    if (params.id && params.id !== '*') {
-      const stream = treeUtils.findById(streams, params.id);
-      streams = stream ? [ stream ] : [];
-    }
-    
-    if (! params.expandChildren) {
+    if (! params.expandChildren) { // remove children and just return the stream
       streams = streams.map((stream) => {
         stream.childrenHidden = true;
         stream.children = []; 

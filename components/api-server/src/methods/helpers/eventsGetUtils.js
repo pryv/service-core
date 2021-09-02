@@ -60,7 +60,7 @@ let stores;
  *      - "all" is expanded in second excluding streamIds in "not"
  *          `all` is tranformed and each "expansion" is kept in `and: [{any: ,..}]`
  *          example: `{all: ['A', 'B']}` => `{and: [{any: [...expand('A')]}, {any: [...expand('B')]}]}`
- *      - "not" is expanded in third and added to `and` as:
+ *      - "not" is expanded in third and added to `and` -- !! we exclude streamIds that are in 'any' as some authorization might have been given on child now expanded
  *          example: `{all: ['A'], not['B', 'C']}` =>  `{and: [{any: [...expand('A')]}, {not: [...expand('B')...expand('C')]}]}
  * 
  */
@@ -223,11 +223,6 @@ async function streamQueryExpandStreams(context: MethodContext, params: mixed, r
       expandChildren: true,
       excludedIds: excludedIds
     };
-
-    // do not expand SystemStreams for non-personal tokens
-    if (streamId === '*' && storeId === 'local' && ! context.access.isPersonal()) {
-      query.hideSystemStreams = true;
-    }
 
     const tree = await stores.streams.get(context.user.id, query);
     
