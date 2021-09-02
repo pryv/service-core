@@ -14,8 +14,6 @@ const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/eventsMethods');
 const eventSchema = require('../schema/event');
 const timestamp = require('unix-timestamp');
-const treeUtils = utils.treeUtils;
-const streamsQueryUtils = require('./helpers/streamsQueryUtils');
 const _ = require('lodash');
 const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
@@ -78,6 +76,7 @@ module.exports = async function (api)
   const openSourceSettings = config.get('openSource')
   const usersRepository = await getUsersRepository(); 
   const stores = await getStores();
+  await eventsGetUtil.init();
   
   // Initialise the project version as soon as we can. 
   const version = await getAPIVersion();
@@ -104,14 +103,12 @@ module.exports = async function (api)
     commonFns.getParamsValidation(methodsSchema.get.params),
     eventsGetUtil.applyDefaultsForRetrieval,
     applyTagsDefaultsForRetrieval,
-
     eventsGetUtil.transformArrayOfStringsToStreamsQuery,
     eventsGetUtil.validateStreamsQueriesAndSetStore,
     changeStreamIdsPrefixInStreamQuery.bind(null, isStreamIdPrefixBackwardCompatibilityActive), // using currying to pass "isStreamIdPrefixBackwardCompatibilityActive" argument
-    streamQueryCheckPermissionsAndReplaceStars,
-    streamQueryAddForcedAndForbiddenStreams,
-    streamQueryExpandStreams,
-    
+    eventsGetUtil.streamQueryCheckPermissionsAndReplaceStars,
+    eventsGetUtil.streamQueryAddForcedAndForbiddenStreams,
+    eventsGetUtil.streamQueryExpandStreams,
     findEventsFromStore,
     includeLocalStorageDeletionsIfRequested);
 
@@ -124,137 +121,6 @@ module.exports = async function (api)
     }
     next();
   }
-
-  // the two tasks are joined as '*' replaced have their permissions checked 
-  async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    context.tracing.startSpan('streamQueries');
-    const unAuthorizedStreams = [];
-    const unAccessibleStreams = [];
-
-    async function streamExistsAndCanGetEventsOnStream(streamId, storeId) {
-      // remove eventual '#' in streamQuery
-      const cleanStreamId = streamId.startsWith('#') ? streamId.substr(1) : streamId;
-      
-      const stream = await context.streamForStreamId(cleanStreamId, storeId);
-      if (! stream) {
-        unAccessibleStreams.push(cleanStreamId); 
-        return ;
-      }
-      if (! await context.access.canGetEventsOnStream(cleanStreamId, storeId)) {
-        unAuthorizedStreams.push(cleanStreamId);
-      }
-    }
-
-    for (let streamQuery of params.streams) {
-      // ------------ "*" case 
-      if (streamQuery.any && streamQuery.any.includes('*')) {
-        if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
-      
-        // replace any by allowed streams for reading
-        const canRead = [];
-        for (const streamPermission of context.access.getStoresPermissions(streamQuery.storeId)) {
-          if (await context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)) {
-            canRead.push(streamPermission.streamId);
-          } 
-        }
-        streamQuery.any = canRead;
-      } else { // ------------ All other cases
-        /**
-         * ! we don't have to check for permissions on 'all' or 'not' as long there is at least one 'any' authorized. 
-         */
-         if (! streamQuery.any || streamQuery.any.length === 0) {
-          return next(errors.invalidRequestStructure('streamQueries must have a valid {any: [...]} component'));
-         }
-
-        for (let streamId of streamQuery.any) {
-          await streamExistsAndCanGetEventsOnStream(streamId, streamQuery.storeId);
-        };
-      }
-    }
-
-    if (unAuthorizedStreams.length > 0) {
-      context.tracing.finishSpan('streamQueries');
-      return next(errors.forbidden('stream [' + unAuthorizedStreams[0] + '] has not sufficent permission to get events'));
-    }
-    if (unAccessibleStreams.length > 0) {
-      context.tracing.finishSpan('streamQueries');
-      return next(errors.unknownReferencedResource(
-        'stream' + (unAccessibleStreams.length > 1 ? 's' : ''),
-        'streams',
-        unAccessibleStreams));
-    }
-    next();
-  }
-
-  /**
-   * Add "forced" and "none" events from permissions
-   */
-  function streamQueryAddForcedAndForbiddenStreams(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    for (let streamQuery of params.streams) {
-      // ------------ ALL --------------- //
-      // add forced Streams if exists
-      const forcedStreams = context.access.getForcedStreamsGetEventsStreamIds(streamQuery.storeId);
-      
-      if (forcedStreams != null && forcedStreams.length > 0) {
-        if (streamQuery.all == null) streamQuery.all = [];
-        streamQuery.all.push(...forcedStreams);
-      }
-
-      // ------------- NOT ------------- //
-      const forbiddenStreams = context.access.getForbiddenGetEventsStreamIds(streamQuery.storeId);
-      if (forbiddenStreams != null && forbiddenStreams.length > 0) {
-        if (streamQuery.not == null) streamQuery.not = [];
-        streamQuery.not.push(...forbiddenStreams);
-      }
-    }
-    next();
-  }
-
-  async function streamQueryExpandStreams(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    async function expandStreamInContext(streamId, storeId, excludedIds) {
-      // remove eventual '#' in streamQuery
-      if (streamId.startsWith('#')) {
-        return [streamId.substr(1)]; // do not expand Stream
-      }
-
-      const query =  {
-        id: streamId, 
-        storeId: storeId, 
-        includeTrashed: params.includeTrashed || params.state === 'all', 
-        expandChildren: true,
-        excludedIds: excludedIds
-      };
-
-      // do not expand SystemStreams for non-personal tokens
-      if (streamId === '*' && storeId === 'local' && ! context.access.isPersonal()) {
-        query.hideSystemStreams = true;
-      }
-
-      const tree = await stores.streams.get(context.user.id, query);
-      
-      // collect streamIds 
-      const resultWithPrefix = treeUtils.collectPluck(tree, 'id');
-      // remove storePrefix 
-      const result = resultWithPrefix.map((fullStreamId) => {
-        return StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId)[1];
-      });
-      return result;
-    }
-
-    try {
-      params.streams = await streamsQueryUtils.expandAndTransformStreamQueries(params.streams, expandStreamInContext);
-    } catch (e) {
-      console.log(e);
-      context.tracing.finishSpan('streamQueries');
-      return next(e);
-    }
-
-    // delete streamQueries with no inclusions 
-    params.streams = params.streams.filter(streamQuery => streamQuery.any || streamQuery.and);
-    context.tracing.finishSpan('streamQueries');
-    next();
-  }
-
 
   /**
    * - Create a copy of the params per query
