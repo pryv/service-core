@@ -33,16 +33,20 @@ describe('Migration - 1.7.0', function () {
     const eventsStorage = storage.user.events;
     const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
     const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
+    const streamsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'streams' }, cb));
 
     const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds(); 
 
-    // perform migration
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
 
     // get backup of users
     const usersCursor = await bluebird.fromCallback(cb => usersCollection.find({}, cb));
     const users = await usersCursor.toArray();
 
+    // for tags keeps info on existings tags & events
+    const previousEventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
+
+    // perform migration
     await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
     // verify that user accounts were migrated to events
     for(const user of users) {
@@ -71,6 +75,26 @@ describe('Migration - 1.7.0', function () {
 
     const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
     compareIndexes(newIndexes.events, migratedIndexes);
+
+
+    // ----------------- tag migrations 
+    const ROOT_STREAM_TAG = 'tags-migrated';
+    const STREAM_PREFIX = 'migrated-tag-';  
+
+    const eventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
+    assert.equal(eventsWithTags.length, 0);
+    for (event of previousEventsWithTags) {
+      const newEvent = await eventsCollection.findOne({ _id: event._id });
+      // check if tags have been added to streamIds
+      for (tag of event.tags) {
+        assert.include(newEvent.streamIds, STREAM_PREFIX + tag);
+      }
+      // check if stream exists for this user
+      const stream = await streamsCollection.findOne({userId: event.userId, streamId: STREAM_PREFIX + tag});
+      assert.exists(stream);
+      assert.equal(stream.parentId, ROOT_STREAM_TAG);
+    }
+
   });
 
 });
