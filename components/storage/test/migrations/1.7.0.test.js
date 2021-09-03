@@ -34,6 +34,7 @@ describe('Migration - 1.7.0', function () {
     const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
     const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
     const streamsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'streams' }, cb));
+    const accessesCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'accesses' }, cb));
 
     const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds(); 
 
@@ -45,6 +46,7 @@ describe('Migration - 1.7.0', function () {
 
     // for tags keeps info on existings tags & events
     const previousEventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
+    const previousPermissionsWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
 
     // perform migration
     await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
@@ -93,6 +95,23 @@ describe('Migration - 1.7.0', function () {
       const stream = await streamsCollection.findOne({userId: event.userId, streamId: STREAM_PREFIX + tag});
       assert.exists(stream);
       assert.equal(stream.parentId, ROOT_STREAM_TAG);
+    }
+
+    //-- permissions
+    const permissionsWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
+    assert.equal(permissionsWithTags.length, 0);
+
+    for (const previousAccess of previousPermissionsWithTags) {
+
+      const newAccess = await accessesCollection.findOne({ _id: previousAccess._id });
+      const forcedStreamsPerms = newAccess.permissions.filter(p => ( p.feature && p.feature == 'forcedStreams'));
+      assert.equal(forcedStreamsPerms.length, 1);
+      const forcedStreams = forcedStreamsPerms[0].streams;
+      assert.isAbove(forcedStreams.length, 0);
+      for (const permission of previousAccess.permissions) {
+        if (permission.tag)
+          assert.include(forcedStreams, STREAM_PREFIX + permission.tag);
+      }
     }
 
   });
