@@ -449,6 +449,7 @@ class Database {
    * @param {Function} callback
    */
   updateOne (collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback, options: Object = {}) {
+    if (collectionInfo.name !== 'sessions') { console.log(new Error('Update one should not be used'))};
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, options, (err, res) => {

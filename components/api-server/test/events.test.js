@@ -28,6 +28,7 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const supertest = require('supertest');
+const { integrity } = require('business');
 
 require('date-utils');
 
@@ -1163,7 +1164,7 @@ describe('events', function () {
           .attach('text', testData.attachments.text.path,
               testData.attachments.text.fileName)
           .end(function (res) {
-            time = timestamp.now();
+      
             validation.check(res, {
               status: 200,
               schema: methodsSchema.update.result
@@ -1204,10 +1205,11 @@ describe('events', function () {
                 );
               }
             });
-            expected.modified = time;
+            expected.modified = updatedEvent.modified;
             expected.modifiedBy = access.id;
             expected = _.defaults(expected, event);
-
+            integrity.setOnEvent(expected);
+            
             validation.checkObjectEquality(updatedEvent, expected);
 
             // check attached files
@@ -1689,7 +1691,6 @@ describe('events', function () {
 	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {
-              deletionTime = timestamp.now();
 
               validation.check(res, {
                 status: 200,
@@ -1713,7 +1714,7 @@ describe('events', function () {
                 return event.id === id;
               });
               should.exist(deletion);
-              validation.checkObjectEquality(deletion, { id: id, deleted: deletionTime });
+              validation.checkObjectEquality(deletion, integrity.setOnEvent({ id: id, deleted: deletion.deletionTime }));
 
               var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
               fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');

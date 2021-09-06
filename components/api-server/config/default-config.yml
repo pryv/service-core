@@ -109,4 +109,8 @@ trace:
 
 integrity:
   isActive: true
+  attachments:
+    isActive: true
+  events:
+    isActive: true
   algorithm: sha256

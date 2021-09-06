@@ -8,7 +8,7 @@
 /* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
 
-describe('Audit events checksums', function() {
+describe('Audit events integrity', function() {
   let user, username, password, access, appAccess;
   let personalToken;
   let auditPath;

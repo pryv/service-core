@@ -56,7 +56,7 @@ function Events (database) {
 util.inherits(Events, BaseStorage);
 
 function addIntegrity (eventData) {
-  if (! integrity.isActive) return ;
+  if (! integrity.isActiveFor.events) return ;
   eventData.integrity = integrity.forEvent(eventData).integrity; 
   return eventData;
 }
@@ -133,6 +133,39 @@ function getDbIndexes () {
   ];
   return indexes;
 }
+
+
+/**
+ * Finds and updates atomically a single document matching the given query,
+ * returning the updated document.
+ * @param user
+ * @param query
+ * @param updatedData
+ * @param callback
+ */
+Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
+  const that = this;
+  function cb(err, eventData) {
+    if ((! integrity.isActiveFor.events) || err || (eventData.id == null)) return callback(err, eventData);
+
+    const integrityCheck = eventData.integrity;
+    try { 
+      eventData.integrity = integrity.forEvent(eventData).integrity;
+    } catch (errIntegrity) {
+      return callback(errIntegrity, eventData);
+    }
+
+    if (integrityCheck != eventData.integrity) {
+      // could be optimized by using "updateOne" instead of findOne and update
+      return Events.super_.prototype.findOneAndUpdate.call(that, userOrUserId, {_id: eventData.id}, {integrity: eventData.integrity}, callback);
+    } 
+    callback(err, eventData);
+  }
+  Events.super_.prototype.findOneAndUpdate.call(this, userOrUserId, query, update, cb);
+};
+
+
+
 /**
  * Implementation.
  */

@@ -618,7 +618,6 @@ module.exports = async function (api)
       // To remove when streamId not necessary
       newEvent.streamId = newEvent.streamIds[0];
       result.event = newEvent;
-      console.log('NEW EVENT', result.event);
       next();
     } catch (err) {
       if (err.isDuplicateIndex('id')) {

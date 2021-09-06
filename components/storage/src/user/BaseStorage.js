@@ -223,7 +223,7 @@ BaseStorage.prototype.aggregate = function(
 };
 
 BaseStorage.prototype.insertOne = function (userOrUserId, item, callback) {
-  const itemToInsert = this.applyItemToDB(this.applyItemDefaults(item))
+  const itemToInsert = this.applyItemToDB(this.applyItemDefaults(item));
   this.database.insertOne(
     this.getCollectionInfo(userOrUserId),
     itemToInsert,

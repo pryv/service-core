@@ -25,8 +25,14 @@ function getDigestForSubRessourceIntegrity(subRessourceIntegrity) {
   return digestAlgo + '=' + sum;
 }
 
+const configIntegrity = config.get('integrity');
+const isActive = configIntegrity.isActive || false;
 const integrity = {
-  isActive: config.get('integrity:isActive') || false,
+  isActive: isActive,
+  isActiveFor: {
+    events: isActive ? configIntegrity?.events?.isActive : false,
+    attachments: isActive ? configIntegrity?.attachments?.isActive : false,
+  },
   algorithm: config.get('integrity:algorithm'),
   getDigestForSubRessourceIntegrity
 }
@@ -34,6 +40,11 @@ const integrity = {
 // event integrity schema
 integrity.forEvent = function forEvent(event) {
   return stableRepresentation.event.compute(event, integrity.algorithm);
+}
+
+integrity.setOnEvent = function setOnEvent(event) {
+  event.integrity = integrity.forEvent(event).integrity;
+  return event;
 }
 
 
