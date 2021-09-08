@@ -200,9 +200,10 @@ exports.checkErrorUnknown = function (res, done) {
 exports.checkObjectEquality = checkObjectEquality;
 function checkObjectEquality(actual, expected) {
   var verifiedProps = [];
-
+  var isApprox = false;
   if (expected.created) {
     checkApproxTimeEquality(actual.created, expected.created);
+    isApprox = isApprox || actual.created == expected.created ;
   }
   verifiedProps.push('created');
 
@@ -212,11 +213,13 @@ function checkObjectEquality(actual, expected) {
 
   if (expected.modified) {
     checkApproxTimeEquality(actual.modified, expected.modified);
+    isApprox = isApprox || actual.modified == expected.modified ;
   }
   verifiedProps.push('modified');
 
   if (expected.deleted) {
     checkApproxTimeEquality(actual.deleted, expected.deleted);
+    isApprox = isApprox || actual.deleted == expected.deleted ;
   }
   verifiedProps.push('deleted');
 
@@ -229,7 +232,8 @@ function checkObjectEquality(actual, expected) {
     assert.strictEqual(actual.children.length, expected.children.length);
     
     for (var i = 0, n = expected.children.length; i < n; i++) {
-      checkObjectEquality(actual.children[i], expected.children[i]);
+      const subApprox = checkObjectEquality(actual.children[i], expected.children[i]);
+      isApprox = isApprox || subApprox ;
     }
   }
   verifiedProps.push('children');
@@ -254,9 +258,13 @@ function checkObjectEquality(actual, expected) {
   }
   verifiedProps.push('attachments');
 
+  // Integrity cannot be checked when "approximate results"
+  if (isApprox) verifiedProps.push('integrity');
+
   const remaining = _.omit(actual, verifiedProps);
   const expectedRemaining = _.omit(expected, verifiedProps);
   assert.deepEqual(remaining, expectedRemaining);
+  return isApprox; //(forward to eventual recursive calls)
 }
 
 function checkApproxTimeEquality(actual, expected, epsilon=2) {

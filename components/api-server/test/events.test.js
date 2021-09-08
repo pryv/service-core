@@ -1714,7 +1714,7 @@ describe('events', function () {
                 return event.id === id;
               });
               should.exist(deletion);
-              validation.checkObjectEquality(deletion, integrity.setOnEvent({ id: id, deleted: deletion.deletionTime }));
+              validation.checkObjectEquality(deletion, { id: id, deleted: deletion.deletionTime });
 
               var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
               fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');

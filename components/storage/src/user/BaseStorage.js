@@ -8,6 +8,8 @@ const _ = require('lodash');
 const converters = require('./../converters');
 const timestamp = require('unix-timestamp');
 
+const BULKWRITE_BATCH_SIZE = 1000;
+
 module.exports = BaseStorage;
 /**
  * Base class for storage modules.
@@ -110,6 +112,65 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
   );
 };
 
+
+/**
+ * Finds all documents matching the given query, 
+ *
+ * @param {Object} collectionInfo
+ * @param {Object} query Mongo-style query
+ * @param {UpdateIfNeededCallback} updateIfNeededCallback .. returns update to do on document or null if no update
+ * @param {Function} callback
+ */
+ BaseStorage.prototype.findAndUpdateIfNeeded = function(userOrUserId, query, options, updateIfNeededCallback, callback) {
+  console.log('XXXX findAndUpdateIfNeeded', query, options, updateIfNeededCallback, callback);
+  const collectionInfo = this.getCollectionInfo(userOrUserId);
+  const database = this.database;
+
+  database.findCursor(
+  collectionInfo,
+  this.applyQueryToDB(query),
+  this.applyOptionsToDB(options),
+  async (err, cursor) => {
+
+    let updatesToDo = [];
+    let updatesDone = 0;
+    async function executBulk() {
+      if (updatesToDo.length == 0) return;
+      const bulkResult = await database.bulkWrite(collectionInfo, updatesToDo);
+      console.log('XXXX bulkDone', bulkResult);
+      updatesToDo = [];
+    }
+
+    try {
+      while (await cursor.hasNext()) {
+        const document = await cursor.next();
+        const _id = document._id; // keep mongodb _id;
+        console.log('xXXXX DOcument', document);
+        const updateQuery = updateIfNeededCallback(this.applyItemFromDB(document));
+        if (updateQuery == null) continue; // nothing to do .. 
+
+        updatesDone++;
+        updatesToDo.push(
+          {
+            'updateOne': {
+              'filter': { '_id': _id },
+              'update': updateQuery
+            }
+          });
+
+        if (updatesToDo.length === BULKWRITE_BATCH_SIZE) {
+          await executBulk();
+        }
+      }
+      // flush 
+      await executBulk();
+    
+      return callback(null, {count: updatesDone});
+    } catch (err) {
+      return callback(err);
+    }
+  });
+}
 
 /**
  * Same as find(), but returns a readable stream

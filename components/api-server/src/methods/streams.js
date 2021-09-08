@@ -519,10 +519,11 @@ module.exports = async function (api) {
 
           async.series([
             function handleHistory(subStepDone) {
+              console.log('XXX handleHistory', auditSettings.deletionMode);
               if (auditSettings.deletionMode === 'keep-everything') {
 
                 // history is untouched
-                subStepDone();
+                return subStepDone();
               } else if (auditSettings.deletionMode === 'keep-authors') {
 
                 userEventsStorage.findStreamed(context.user,
@@ -644,6 +645,7 @@ module.exports = async function (api) {
               );
             },
             function deleteEvents(subStepDone) {
+              
               const filter = {
                 headId: { $exists: false },
               };

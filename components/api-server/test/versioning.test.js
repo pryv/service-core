@@ -614,6 +614,7 @@ describe('Versioning', function () {
               should.exist(event);
               const expected = _.cloneDeep(eventOnChildStream);
               delete expected.streamId;
+              console.log('BBBBB', event);
               event.should.eql(_.extend({deleted: event.deleted}, expected));
               stepDone();
             });

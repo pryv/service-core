@@ -286,7 +286,7 @@ class Database {
    *    * {Number} limit Number of records to return (or `null`)
    * @param {Function} callback
    */
-  find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
+  findCursor(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
@@ -304,9 +304,29 @@ class Database {
         cursor = cursor.limit(options.limit);
       }
       
+      return callback(null, cursor);
+    });
+  }
+
+   /**
+   * Finds all documents matching the given query.
+   *
+   * @param {Object} collectionInfo
+   * @param {Object} query Mongo-style query
+   * @param {Object} options Properties:
+   *    * {Object} projection Mongo-style fields inclusion/exclusion definition
+   *    * {Object} sort Mongo-style sorting definition
+   *    * {Number} skip Number of records to skip (or `null`)
+   *    * {Number} limit Number of records to return (or `null`)
+   * @param {Function} callback
+   */
+  find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
+    this.findCursor(collectionInfo, query, options, (err, cursor: Object) => {
+      if (err) return callback(err);
       return cursor.toArray(callback);
     });
   }
+
 
   /**
    * Finds all documents matching the given query and returns a readable stream.
@@ -322,24 +342,11 @@ class Database {
    */
   findStreamed(
     collectionInfo: CollectionInfo, 
-    query: mixed, options: FindOptions, 
+    query: {}, options: FindOptions, 
     callback: DatabaseCallback) 
   {
-    this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      const queryOptions = {
-        projection: options.projection,
-      };
-      let cursor = collection
-        .find(query, queryOptions)
-        .sort(options.sort);
-        
-      if (options.skip) {
-        cursor = cursor.skip(options.skip);
-      }
-      if (options.limit) {
-        cursor = cursor.limit(options.limit);
-      }
+    this.findCursor(collectionInfo, query, options, (err, cursor: Object) => {
+      if (err) return callback(err);
       callback(null, cursor.stream());
     });
   }
@@ -475,6 +482,15 @@ class Database {
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, {}, callback);
     });
+  }
+
+  /**
+   * 
+   */
+  async bulkWrite(collectionInfo: CollectionInfo, requests: Array<Object>) {
+    const collection = await bluebird.fromCallback(cb => this.getCollection(collectionInfo, cb));
+    console.log('XXXXX bulkwrite', require('util').inspect(requests, null, 10, true));
+    return await collection.bulkWrite(requests);
   }
 
 
@@ -650,6 +666,8 @@ type MongoDBError = {
   isDuplicateIndex?: (key: string) => boolean,
   getDuplicateSystemStreamId?: () => string,
 }
+
+type UpdateIfNeededCallback = (item: Object) => Object | null;
 
 type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;
 type GetCollectionCallback = 
