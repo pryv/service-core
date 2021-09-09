@@ -7,6 +7,7 @@
 const _ = require('lodash');
 const converters = require('./../converters');
 const timestamp = require('unix-timestamp');
+const logger = require('@pryv/boiler').getLogger('storage:base-storage');
 
 const BULKWRITE_BATCH_SIZE = 1000;
 
@@ -114,7 +115,11 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
 
 
 /**
- * Finds all documents matching the given query, 
+ * 1. Finds all documents matching the given query
+ * 2. Check them against some logic done by `updateIfNeedCallback` one by one
+ * 3. Eventually perform an update (in Bulk) if `updateIfNeedCallback` returns an operation
+ * 
+ * This is used by integrity processes to re-set integrity values on updateMany
  *
  * @param {Object} collectionInfo
  * @param {Object} query Mongo-style query
@@ -122,7 +127,6 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
  * @param {Function} callback
  */
  BaseStorage.prototype.findAndUpdateIfNeeded = function(userOrUserId, query, options, updateIfNeededCallback, callback) {
-  console.log('XXXX findAndUpdateIfNeeded', query, options, updateIfNeededCallback, callback);
   const collectionInfo = this.getCollectionInfo(userOrUserId);
   const database = this.database;
 
@@ -132,12 +136,14 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
   this.applyOptionsToDB(options),
   async (err, cursor) => {
 
-    let updatesToDo = [];
+    let updatesToDo = []; // keeps a list of updates to do
     let updatesDone = 0;
     async function executBulk() {
       if (updatesToDo.length == 0) return;
       const bulkResult = await database.bulkWrite(collectionInfo, updatesToDo);
-      console.log('XXXX bulkDone', bulkResult);
+      if (bulkResult?.result?.nModified != updatesToDo.length) {
+        logger.error('Issue when doing bulk update for ' + JSON.stringify({coll: collectionInfo.name,userOrUserId, query}) + ' counts does not match');
+      }
       updatesToDo = [];
     }
 
@@ -145,7 +151,6 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
       while (await cursor.hasNext()) {
         const document = await cursor.next();
         const _id = document._id; // keep mongodb _id;
-        console.log('xXXXX DOcument', document);
         const updateQuery = updateIfNeededCallback(this.applyItemFromDB(document));
         if (updateQuery == null) continue; // nothing to do .. 
 

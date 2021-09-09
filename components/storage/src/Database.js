@@ -485,14 +485,12 @@ class Database {
   }
 
   /**
-   * 
+   * Execute N requests directly on the DB
    */
   async bulkWrite(collectionInfo: CollectionInfo, requests: Array<Object>) {
     const collection = await bluebird.fromCallback(cb => this.getCollection(collectionInfo, cb));
-    console.log('XXXXX bulkwrite', require('util').inspect(requests, null, 10, true));
     return await collection.bulkWrite(requests);
   }
-
 
   /**
    * Applies the given update to the document matching the given query, returning the updated

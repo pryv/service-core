@@ -12,6 +12,7 @@ const _ = require('lodash');
 const ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const integrity = require('business/src/integrity');
+const logger = require('@pryv/boiler').getLogger('storage:events');
 
 module.exports = Events;
 /**
@@ -139,17 +140,17 @@ function getDbIndexes () {
  */
 Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
   const that = this;
-
- 
+  
+  // unset eventually existing integrity field. Unless integrity is in set request
+  if (update.integrity == null && update.$set?.integrity == null) {
+    if (! update.$unset) update.$unset = {};
+    update.$unset.integrity = 1;
+  }
 
   let cb = callback;
-  if (! integrity.isActiveFor.events) {
-    // unset eventually existing integrity field.
-    if (! update.$unset) update.$unset = {};
-    update.$unset.intergrity = 1;
-  } else {
+  if (integrity.isActiveFor.events) {
     cb = function callbackIntegrity(err, eventData) {
-      if ((! integrity.isActiveFor.events) || err || (eventData.id == null)) return callback(err, eventData);
+      if (err || (eventData.id == null)) return callback(err, eventData);
   
       const integrityCheck = eventData.integrity;
       try { 
@@ -157,7 +158,8 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
       } catch (errIntegrity) {
         return callback(errIntegrity, eventData);
       }
-  
+      
+      // only update if there is a mismatch of integrity
       if (integrityCheck != eventData.integrity) {
         // could be optimized by using "updateOne" instead of findOne and update
         return Events.super_.prototype.findOneAndUpdate.call(that, userOrUserId, {_id: eventData.id}, {integrity: eventData.integrity}, callback);
@@ -165,7 +167,7 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
       callback(err, eventData);
     }
   }
-
+  console.log('XXXXXX updateOne', update);
   Events.super_.prototype.findOneAndUpdate.call(this, userOrUserId, query, update, cb);
 };
 
@@ -180,14 +182,14 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
  * @param callback
 */
  Events.prototype.updateMany = function (userOrUserId, query, update, callback) {
-  const that = this;
-  //if (! integrity.isActiveFor.events) {
-    // unset eventually existing integrity field.
-    if (! update.$unset) update.$unset = {};
-    update.$unset.integrity = 1;
-  //} 
-  console.log('EVENT updateMany', query, 'U:', update)
-
+  let finalCallBack = callback;
+  if (update.$pull != null || update['streamIds.$'] != null) {
+    console.log(' Skipping updateMany Integrity for query ', query, 'update: ', update);
+  } else {
+    console.log('XXXXXX updateMany query: ', query, 'update: ', update);
+    // if integrity for events in "ON" add extra check step after update
+    finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);;
+  }
   Events.super_.prototype.updateMany.call(this, userOrUserId, query, update, callback);
 };
 
@@ -303,6 +305,8 @@ Events.prototype.minimizeEventsHistory = function (userOrUserId, headId, callbac
     },
   };
 
+  // if integrity for events in "ON" add extra check step after update
+  let finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);
   this.database.updateMany(
     this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB({ headId: headId }),
@@ -320,13 +324,6 @@ Events.prototype.delete = function (userOrUserId, query, deletionMode, callback)
   var update = {
     $set: { deleted: new Date() },
   };
-
-  let finalCallBack = callback;
-  if (integrity.isActiveFor.events) {
-    const integrityBatchCode = Math.random();
-    update.$set.integrityBatchCode = integrityBatchCode;
-    finalCallBack = getResetIntegrity(this, userOrUserId, integrityBatchCode, callback);
-  }
 
   switch (deletionMode) {
     case 'keep-nothing':
@@ -373,10 +370,8 @@ Events.prototype.delete = function (userOrUserId, query, deletionMode, callback)
       }
       break;
   }
-  console.log('XXXX delete', update);
-
-
-
+  // if integrity for events in "ON" add extra check step after update
+  let finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);;
   this.database.updateMany(
     this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
@@ -385,28 +380,56 @@ Events.prototype.delete = function (userOrUserId, query, deletionMode, callback)
   );
 };
 
-function getResetIntegrity(eventStore, userOrUserId, integrityBatchCode, callback) {
-  console.log('RESET GIVEN FOR ', integrityBatchCode);
+/**
+ * - Allways unset 'integrity' of updated events by modifiying update query
+ * - If integrity is active for event returns a callBack to be exectued at after the update
+ * @param {Events} eventStore 
+ * @param {User | userId} userOrUserId 
+ * @param {Object} upddate -- the update query to be modified
+ * @param {*} callback 
+ * @returns either the original callback or a process to reset events' integrity
+ */
+function getResetIntegrity(eventStore, userOrUserId, update, callback) {
+  // anyway remove any integrity that might have existed
+  if (! update.$unset) update.$unset = {};
+  update.$unset.integrity = 1;
+
+  // not active return the normal callback
+  if (! integrity.isActiveFor.events) return callback;
+
+  // add a random "code" to the original update find out which events have been modified
+  const integrityBatchCode = Math.random();
+  if (! update.$set) update.$set = {};
+  update.$set.integrityBatchCode = integrityBatchCode;
+
+
+  console.log('XXXXXX B', update);
+  // return a callback that will be executed after the update
+  // it 
   return function(err, res) {
     if (err) return callback(err);
+    const initialModifiedCount = res.modifiedCount;
 
+    // will be called for each updated item
+    // we should remove the "integrityBatchCode" that helped finding them out 
+    // and add the integrity value
     function updateIfNeeded(event) {
-      console.log('XXXXX updateIfNeeded', event);
       return {
         $unset: { integrityBatchCode: 1},
-        $set: {
-          integrity: integrity.forEvent(event).integrity
-        }
+        $set: { integrity: integrity.forEvent(event).integrity}
       }
     }
 
-    function doneCallBack(err2, res) {
+    function doneCallBack(err2, res2) {
       if (err2) return callback(err2);
-      console.log('XXXXX RRRRRRRR', res);
-      return callback(err2, res);
-      // check number of changed items 
+      if (res2.count != initialModifiedCount) { // updated documents counts does not match
+        logger.error('Issue when adding integrity to updated events for ' + JSON.stringify(userOrUserId) + ' counts does not match');
+        // eventually throw an error here.. But this will not help the API client .. 
+        // to be discussed !
+      }
+      return callback(err2, res2);
     }
-
+    
     eventStore.findAndUpdateIfNeeded(userOrUserId, {integrityBatchCode: integrityBatchCode}, {}, updateIfNeeded, doneCallBack);
   }
 }
