@@ -1312,6 +1312,7 @@ describe('events', function () {
           clientField: 'client value'
         },
       };
+      
       async.series([
         function update(stepDone) {
           request.put(path(original.id)).send(data).end(function (res) {
@@ -1331,6 +1332,8 @@ describe('events', function () {
             expected.modifiedBy = access.id;
             expected.attachments = original.attachments;
             expected.streamIds = data.streamIds;
+            console.log(res.body.event, expected);
+            //delete res.body.event.integrity;
             validation.checkObjectEquality(res.body.event, expected);
 
             eventsNotifCount.should.eql(1, 'events notifications');

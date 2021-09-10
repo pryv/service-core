@@ -1225,10 +1225,10 @@
     winston "^3.3.3"
     winston-daily-rotate-file "^4.5.5"
 
-"@pryv/stable-object-representation@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@pryv/stable-object-representation/-/stable-object-representation-1.0.3.tgz#6c4df5973da58fe62fd065c074833d5348d03754"
-  integrity sha512-6ZEyN6whJhCpYYoXMQsIJIlMdsthru+87CiIt2WOZbX9r6lLKhzh5ZtvpLiY3Pe6/2aWBkWVOU5Dd9Y2f4L+Gw==
+"@pryv/stable-object-representation@^1.0.6":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@pryv/stable-object-representation/-/stable-object-representation-1.0.6.tgz#8779f9e9d20b5bc30c3a4d17f06883e62d5ca604"
+  integrity sha512-OiuKMlmCx3QVCnPRau8JsvgNgtUgXhqKtxcRWifSSp0momEgYj0jdiNiTlK/kduYYNbxZYO1WSW8yUltPcochQ==
 
 "@rpl/badge-up@^2.2.0":
   version "2.2.0"

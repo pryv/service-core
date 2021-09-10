@@ -129,19 +129,24 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
  BaseStorage.prototype.findAndUpdateIfNeeded = function(userOrUserId, query, options, updateIfNeededCallback, callback) {
   const collectionInfo = this.getCollectionInfo(userOrUserId);
   const database = this.database;
-
+  const finalQuery = this.applyQueryToDB(query);
+  const finalOptions = this.applyOptionsToDB(options);
+  console.log('XXXX findAndUpdateIfNeeded', require('util').inspect({finalQuery, finalOptions}, null, 10 , true));
   database.findCursor(
   collectionInfo,
-  this.applyQueryToDB(query),
-  this.applyOptionsToDB(options),
+  finalQuery,
+  finalOptions,
   async (err, cursor) => {
 
     let updatesToDo = []; // keeps a list of updates to do
     let updatesDone = 0;
     async function executBulk() {
       if (updatesToDo.length == 0) return;
+      
       const bulkResult = await database.bulkWrite(collectionInfo, updatesToDo);
+      console.log('XXXX bulk', require('util').inspect({updatesToDo}, null, 10 , true));
       if (bulkResult?.result?.nModified != updatesToDo.length) {
+        console.log('XXXXXX ARHGGG', updatesToDo.length, bulkResult?.result?.nModified);
         logger.error('Issue when doing bulk update for ' + JSON.stringify({coll: collectionInfo.name,userOrUserId, query}) + ' counts does not match');
       }
       updatesToDo = [];

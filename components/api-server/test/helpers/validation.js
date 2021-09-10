@@ -17,6 +17,7 @@ const { assert, expect } = require('chai');
 const util = require('util');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { integrity } = require('business');
 
 /**
  * Expose common JSON schemas.
@@ -60,9 +61,24 @@ exports.check = function (response, expected, done) {
   if (expected.schema) {
     checkJSON(response, expected.schema);
   }
+
+  const responseBodyItems = response.body[expected.sanitizeTarget];
+  if (responseBodyItems) {
+    for (let i =0; i < responseBodyItems.length; i++) {
+      if (expected.sanitizeTarget == 'events') {
+        const item = responseBodyItems[i];
+        if (item.integrity == null) continue;
+        const int = integrity.forEvent(responseBodyItems[i]).integrity;
+        if (item.integrity != int) {
+          throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(item, null, 2)));
+        }
+      }
+    }
+  }
+
   if (expected.sanitizeFn) {
     expect(expected.sanitizeTarget).to.exist;
-    expected.sanitizeFn(response.body[expected.sanitizeTarget]);
+    expected.sanitizeFn(responseBodyItems);
   }
   if (expected.body) {
     assert.deepEqual(response.body, expected.body);
@@ -203,7 +219,7 @@ function checkObjectEquality(actual, expected) {
   var isApprox = false;
   if (expected.created) {
     checkApproxTimeEquality(actual.created, expected.created);
-    isApprox = isApprox || actual.created == expected.created ;
+    isApprox = isApprox || actual.created != expected.created ;
   }
   verifiedProps.push('created');
 
@@ -213,13 +229,13 @@ function checkObjectEquality(actual, expected) {
 
   if (expected.modified) {
     checkApproxTimeEquality(actual.modified, expected.modified);
-    isApprox = isApprox || actual.modified == expected.modified ;
+    isApprox = isApprox || actual.modified != expected.modified ;
   }
   verifiedProps.push('modified');
 
   if (expected.deleted) {
     checkApproxTimeEquality(actual.deleted, expected.deleted);
-    isApprox = isApprox || actual.deleted == expected.deleted ;
+    isApprox = isApprox || actual.deleted != expected.deleted ;
   }
   verifiedProps.push('deleted');
 

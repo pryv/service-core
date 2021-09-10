@@ -7,6 +7,7 @@
 var streams = require('./streams'),
     timestamp = require('unix-timestamp');
 
+const { integrity } = require('business');
 
 
 const events =  [
@@ -379,6 +380,7 @@ const events =  [
     event.streamIds = [event.streamId];
     delete event.streamId;
   }
+  integrity.setOnEvent(event);
   return event;
 });
 

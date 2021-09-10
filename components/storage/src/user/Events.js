@@ -38,6 +38,13 @@ function Events (database) {
       converters.stateToDB,
       addIntegrity,
     ],
+    itemsToDB: [
+      function (items) { 
+        if (items == null) return null;  
+        const res = items.map(addIntegrity); 
+        return res;
+      }
+    ],
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
@@ -57,7 +64,7 @@ util.inherits(Events, BaseStorage);
 
 function addIntegrity (eventData) {
   if (! integrity.isActiveFor.events) return ;
-  eventData.integrity = integrity.forEvent(eventData).integrity; 
+  integrity.setOnEvent(eventData); 
   return eventData;
 }
 
@@ -181,19 +188,10 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
  * @param update
  * @param callback
 */
- Events.prototype.updateMany = function (userOrUserId, query, update, callback) {
-  let finalCallBack = callback;
-  if (update.$pull != null || update['streamIds.$'] != null) {
-    console.log(' Skipping updateMany Integrity for query ', query, 'update: ', update);
-  } else {
-    console.log('XXXXXX updateMany query: ', query, 'update: ', update);
-    // if integrity for events in "ON" add extra check step after update
-    finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);;
-  }
-  Events.super_.prototype.updateMany.call(this, userOrUserId, query, update, callback);
+Events.prototype.updateMany = function (userOrUserId, query, update, callback) {
+  const finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);;
+  Events.super_.prototype.updateMany.call(this, userOrUserId, query, update, finalCallBack);
 };
-
-
 
 /**
  * Implementation.
@@ -247,6 +245,7 @@ Events.prototype.findHistory = function (userOrUserId, headId, options, callback
     this.applyQueryToDB({ headId: headId }),
     this.applyOptionsToDB(options),
     function (err, dbItems) {
+      console.log('XXXXXX findHistory', dbItems);
       if (err) {
         return callback(err);
       }
@@ -306,12 +305,13 @@ Events.prototype.minimizeEventsHistory = function (userOrUserId, headId, callbac
   };
 
   // if integrity for events in "ON" add extra check step after update
+  const query = { headId: headId };
   let finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);
   this.database.updateMany(
     this.getCollectionInfo(userOrUserId),
-    this.applyQueryToDB({ headId: headId }),
+    this.applyQueryToDB(query),
     update,
-    callback
+    finalCallBack
   );
 };
 
@@ -399,11 +399,16 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
 
   // add a random "code" to the original update find out which events have been modified
   const integrityBatchCode = Math.random();
-  if (! update.$set) update.$set = {};
-  update.$set.integrityBatchCode = integrityBatchCode;
+  // hard coded cases when syntax changes .. to be evaluated 
+  if(update['streamIds.$'] != null || update.$pull != null) {
+    update.integrityBatchCode = integrityBatchCode;
+  } else {
+    if (! update.$set) update.$set = {};
+    update.$set.integrityBatchCode = integrityBatchCode;
+  }
 
 
-  console.log('XXXXXX B', update);
+  console.log('XXXXXX update:', update);
   // return a callback that will be executed after the update
   // it 
   return function(err, res) {
@@ -414,6 +419,8 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
     // we should remove the "integrityBatchCode" that helped finding them out 
     // and add the integrity value
     function updateIfNeeded(event) {
+      delete event.integrityBatchCode; // remove integrity batch code for computation
+      console.log('XXXXXX updateIfNeeded:', event);
       return {
         $unset: { integrityBatchCode: 1},
         $set: { integrity: integrity.forEvent(event).integrity}
