@@ -61,24 +61,19 @@ exports.check = function (response, expected, done) {
   if (expected.schema) {
     checkJSON(response, expected.schema);
   }
-
-  const responseBodyItems = response.body[expected.sanitizeTarget];
-  if (responseBodyItems) {
-    for (let i =0; i < responseBodyItems.length; i++) {
-      if (expected.sanitizeTarget == 'events') {
-        const item = responseBodyItems[i];
-        if (item.integrity == null) continue;
-        const int = integrity.forEvent(responseBodyItems[i]).integrity;
-        if (item.integrity != int) {
-          throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(item, null, 2)));
-        }
-      }
-    }
+  if (response.body.event != null) {
+    checkEventIntegrity(response.body.event);
+  }
+  if (response.body.events != null) {
+    response.body.events.forEach(checkEventIntegrity);
+  }
+  if (response.body.eventDeletions != null) {
+    response.body.eventDeletions.forEach(checkEventIntegrity);
   }
 
   if (expected.sanitizeFn) {
     expect(expected.sanitizeTarget).to.exist;
-    expected.sanitizeFn(responseBodyItems);
+    expected.sanitizeFn(response.body[expected.sanitizeTarget]);
   }
   if (expected.body) {
     assert.deepEqual(response.body, expected.body);
@@ -89,6 +84,13 @@ exports.check = function (response, expected, done) {
 
   if (done) { done(); }
 };
+
+function checkEventIntegrity(e) {
+  const int = integrity.forEvent(e).integrity;
+  if (e.integrity != int) {
+    throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(e, null, 2)));
+  }
+}
 
 /**
  * Specific check for errors.

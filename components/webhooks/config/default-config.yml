@@ -14,3 +14,11 @@ database:
   name: pryv-node
 nats:
   uri: 'nats://127.0.0.1:4222'
+
+integrity:
+  isActive: true
+  attachments:
+    isActive: true
+  events:
+    isActive: true
+  algorithm: sha256

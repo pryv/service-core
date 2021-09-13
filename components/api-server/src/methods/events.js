@@ -665,11 +665,13 @@ module.exports = async function (api)
 
       result.event.attachments = attachments;
       userEventsStorage.updateOne(context.user, { id: result.event.id }, { attachments: attachments },
-        function (err) {
+        function (err, updatedEvent) {
           if (err) {
             return next(errors.unexpectedError(err));
           }
-
+          // To remove when streamId not necessary
+          updatedEvent.streamId = updatedEvent.streamIds[0];   
+          result.event = updatedEvent;
           result.event.attachments = setFileReadToken(context.access, result.event.attachments);
           next();
         });

@@ -165,7 +165,6 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
       } catch (errIntegrity) {
         return callback(errIntegrity, eventData);
       }
-      
       // only update if there is a mismatch of integrity
       if (integrityCheck != eventData.integrity) {
         // could be optimized by using "updateOne" instead of findOne and update
@@ -174,7 +173,6 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
       callback(err, eventData);
     }
   }
-  console.log('XXXXXX updateOne', update);
   Events.super_.prototype.findOneAndUpdate.call(this, userOrUserId, query, update, cb);
 };
 
@@ -245,7 +243,6 @@ Events.prototype.findHistory = function (userOrUserId, headId, options, callback
     this.applyQueryToDB({ headId: headId }),
     this.applyOptionsToDB(options),
     function (err, dbItems) {
-      console.log('XXXXXX findHistory', dbItems);
       if (err) {
         return callback(err);
       }
@@ -407,8 +404,6 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
     update.$set.integrityBatchCode = integrityBatchCode;
   }
 
-
-  console.log('XXXXXX update:', update);
   // return a callback that will be executed after the update
   // it 
   return function(err, res) {
@@ -420,7 +415,6 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
     // and add the integrity value
     function updateIfNeeded(event) {
       delete event.integrityBatchCode; // remove integrity batch code for computation
-      console.log('XXXXXX updateIfNeeded:', event);
       return {
         $unset: { integrityBatchCode: 1},
         $set: { integrity: integrity.forEvent(event).integrity}

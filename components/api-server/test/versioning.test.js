@@ -474,7 +474,6 @@ describe('Versioning', function () {
         function verifyHistory(stepDone) {
           request.get(pathToEvent(eventOnChildStream.id)).query({includeHistory: true})
             .end(function (res) {
-              console.log('XXXX verifyHistory', res.body);
               validation.check(res, {
                 status: 200,
                 schema: eventsMethodsSchema.getOne.result

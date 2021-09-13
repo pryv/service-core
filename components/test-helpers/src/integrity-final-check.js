@@ -1,4 +1,10 @@
 /**
+ * @license
+ * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
+/**
  * Load all events and check if the "integrity" is OK
  */
 const { getDatabase } = require('storage');
@@ -17,7 +23,6 @@ async function events() {
     if (event.endTime) {
       if (! event.duration) {
         event.duration = event.endTime - event.time;
-        console.log('NNNN Added duration to', event);
       }
       delete event.endTime;
     }

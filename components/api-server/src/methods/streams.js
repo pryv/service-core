@@ -519,7 +519,6 @@ module.exports = async function (api) {
 
           async.series([
             function handleHistory(subStepDone) {
-              console.log('XXX handleHistory', auditSettings.deletionMode);
               if (auditSettings.deletionMode === 'keep-everything') {
 
                 // history is untouched

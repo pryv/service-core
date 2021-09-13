@@ -228,7 +228,7 @@ class Fixture {
       });
 
     if (errorIntegrity) {
-      console.log(errorIntegrity);
+      //console.log(errorIntegrity);
       //throw(errorIntegrity);
     }
     return done;
