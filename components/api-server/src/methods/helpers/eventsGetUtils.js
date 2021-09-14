@@ -24,6 +24,7 @@ let stores;
  *  1. coerceStreamParam:
  *    - null `streams` is changed to `[{any: ['*]}]
  *    - transform "stringified" `streams` by parsing JSON object
+ *    - coerce non-array to array
  * 
  *  2. transformArrayOfStringsToStreamsQuery:
  *    For backwardCompatibility with older streams parameter ['A', 'B'] 
@@ -43,7 +44,7 @@ let stores;
  *    - Add to streams query `not` streams that must not be exposed permissions => with level = "none"
  *   
  *  6. streamQueryExpandStreams
- *    - Each "streamId" of the queries is "expanded" (i.e. transformed in an array of streamId that includes the streams and it's chidlren)
+ *    - Each "streamId" of the queries is "expanded" (i.e. transformed in an array of streamIds that includes the streams and its chidlren)
  *    - Do not expand streams prefixed with a "#" 
  *       
  *    - A callBack `expandStreamInContext`is used to link the expand process and the "stores"

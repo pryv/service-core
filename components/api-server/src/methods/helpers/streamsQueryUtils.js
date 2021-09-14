@@ -42,9 +42,9 @@ const { findForbiddenChar } = require('../../schema/streamId');
  */
 function transformArrayOfStringsToStreamsQuery(arrayOfQueries) {
 
-  const streamIds = arrayOfQueries.filter(item => typeof item === 'string');
+  const streamIds = arrayOfQueries.filter(item => typeof item === 'string'); // why the check here?
 
-  if (streamIds.length === 0) return arrayOfQueries;
+  if (streamIds.length === 0) return arrayOfQueries; // how is this possible?
 
   if (streamIds.length != arrayOfQueries.length) {
     throw ('Error in \'streams\' parameter: streams queries and streamIds cannot be mixed');
@@ -52,14 +52,14 @@ function transformArrayOfStringsToStreamsQuery(arrayOfQueries) {
 
   // group streamIds per "store"
   const map = {};
-  for (let streamId of streamIds) {
+  for (const streamId of streamIds) {
     const [store, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     if (!map[store]) map[store] = [];
     map[store].push(streamId);
   }
 
   const res = [];
-  for (let v of Object.values(map)) {
+  for (const v of Object.values(map)) {
     res.push({ any: v });
   }
 
@@ -92,14 +92,14 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
    * @returns {string} streamId without storeId
    */
   function checkStore(streamId) {
-    if (streamId === '#*') throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + ', "#*" is not valid.');
+    if (streamId === '#*') throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + ', "#*" is not valid.'); // why do this here???
 
-    const forbiddenChar = findForbiddenChar(streamId);
+    const forbiddenChar = findForbiddenChar(streamId); // why do this here???
     if (forbiddenChar != null) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' forbidden chartacter \'' + forbiddenChar + '\' in streamId \'' + streamId + '\'.');
 
     // queries must be grouped by store 
     const [thisStore, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
-    if (!streamQuery.storeId) streamQuery.storeId = thisStore;
+    if (streamQuery.storeId == null) streamQuery.storeId = thisStore;
     if (streamQuery.storeId !== thisStore) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' queries must me grouped by stores.');
     return cleanStreamId;
   }
@@ -114,7 +114,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery) {
       throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' unkown property: \'' + property + '\' in streams query \'' + objectToString(streamQuery) + '\'');
 
     if (!Array.isArray(arrayOfStreamIds)) {
-      if (property === 'any' && arrayOfStreamIds === '*') {
+      if (property === 'any' && arrayOfStreamIds === '*') { // why handle this case and the one at line 134 (property === 'any' && item === '*'). Can't we limit to one of them??
         checkStore('*'); // will be handled as local
         continue; // stop here and go to next property
       } else {
