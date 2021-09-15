@@ -73,8 +73,7 @@ let stores;
  */
 
 function coerceStreamsParam(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-  if (!params.streams) {
-    params.streams = [{ any: ['*'] }];
+  if (params.streams == null) {
     return next();
   }
   // Streams query can also be sent as a JSON string or string of Array
@@ -258,7 +257,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: mixed, r
 
 async function applyDefaultsForRetrieval(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
   _.defaults(params, {
-    streams: null,
+    streams: [{ any: ['*'] }],
     tags: null,
     types: null,
     fromTime: null,
