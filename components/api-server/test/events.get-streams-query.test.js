@@ -309,16 +309,14 @@ describe('events.get streams query', function () {
       });
 
       it('[0RNW] must handle array of queries', async function () {
-        const clean = await validateQuery([{any: ['B']},{all: ['D'] , not: ['E']}]);
+        const clean = await validateQuery([{any: ['B']},{any: ['D'] , not: ['E']}]);
         const mongo = streamsQueryUtils.toMongoDBQuery(clean);
         const expected = {
           '$or': [
             { streamIds: { '$eq': 'B' } },
             {
-              '$and': [
-                { streamIds: { '$in': [ 'D', 'E', 'F' ] } },
-                { streamIds: { '$ne': 'E' } }
-              ]
+              streamIds: { '$in': [ 'D', 'E', 'F' ] },
+              '$and': [ { streamIds: { '$ne': 'E' } } ]
             }
           ]
         };
