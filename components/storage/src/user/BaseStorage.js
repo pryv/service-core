@@ -444,6 +444,7 @@ BaseStorage.prototype.findAll = function(userOrUserId, options, callback) {
  * Inserts an array of items; each item must have a valid id and data already. For tests only.
  */
 BaseStorage.prototype.insertMany = function(userOrUserId, items, callback) {
+  // Groumpf... Many tests are relying on this.. 
   const nItems = JSON.parse(JSON.stringify(items));
   this.database.insertMany(
     this.getCollectionInfo(userOrUserId),

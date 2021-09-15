@@ -644,7 +644,6 @@ module.exports = async function (api) {
               );
             },
             function deleteEvents(subStepDone) {
-              
               const filter = {
                 headId: { $exists: false },
               };

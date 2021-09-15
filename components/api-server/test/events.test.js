@@ -328,7 +328,6 @@ describe('events', function () {
         fromTime: testData.events[9].time + 1,
         toTime: timestamp.now()
       };
-      
       request.get(basePath).query(params).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -1318,7 +1317,6 @@ describe('events', function () {
           clientField: 'client value'
         },
       };
-      
       async.series([
         function update(stepDone) {
           request.put(path(original.id)).send(data).end(function (res) {
