@@ -99,11 +99,12 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
    * @param {string} streamIdWithPrefix - a streamId with its store prefix
    * @returns {string} streamId without its prefix
    */
+  function validateAndAttachStore(streamIdWithPrefix: string): string {
     // queries must be grouped by store 
-    const [thisStore: string, cleanStreamId: string] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    const [thisStore: string, streamId: string] = StreamsUtils.storeIdAndStreamIdForStreamId(streamIdWithPrefix);
     if (streamQuery.storeId == null) streamQuery.storeId = thisStore;
     if (streamQuery.storeId !== thisStore) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' queries must me grouped by stores.');
-    return cleanStreamId;
+    return streamId;
   }
 
   if (!streamQuery.any && !streamQuery.all) {
@@ -117,7 +118,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
 
     if (!Array.isArray(arrayOfStreamIds)) {
       if (property === 'any' && arrayOfStreamIds === '*') { // can we not accept a non-array here?
-        checkStore('*'); // will be handled as local
+        validateAndAttachStore('*'); // will be handled as local
         continue; // stop here and go to next property
       } else {
         throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' value of : \'' + property + '\' must be an array. Found: \'' + objectToString(arrayOfStreamIds) + '\'');
@@ -143,7 +144,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
         if (arrayOfStreamIds.length > 1)
           throw ('Error in \'streams\' parameter[' + objectToString(arrayOfQueries) + '] \'*\' cannot be mixed with other streamIds in \'any\': ' + objectToString(arrayOfStreamIds));
       } 
-      const cleanStreamid = checkStore(item);
+      const cleanStreamid: string = validateAndAttachStore(item);
       arrayOfCleanStreamIds.push(cleanStreamid);
 
       streamQuery[property] = arrayOfCleanStreamIds;
