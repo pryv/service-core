@@ -157,7 +157,7 @@ module.exports = [
   {
     streamId: 's_0',
     time: 1390315767.971,
-    duration: null,
+    //duration: null,
     type: 'activity/pryv',
     tags: [ ],
     description: 'One hour ago',
@@ -184,7 +184,7 @@ module.exports = [
   {
     streamId: 's_1_0',
     time: 1390318467.971,
-    duration: null,
+    //duration: null,
     type: 'activity/pryv',
     tags: [ ],
     description: '15 mins ago',

@@ -152,7 +152,7 @@ const events =  [
     id: getTestEventId(9),
     streamId: streams[0].children[0].id,
     time: timestamp.now('-1h'),
-    duration: null, // running
+    //duration: null, // running
     type: 'activity/pryv',
     tags: [],
     description: 'One hour ago',
@@ -179,7 +179,7 @@ const events =  [
     id: getTestEventId(11),
     streamId: streams[1].children[0].id,
     time: timestamp.now('-15m'),
-    duration: null, // running
+    //duration: null, // running
     type: 'activity/pryv',
     tags: ['fragilistic'],
     description: '15 mins ago',
@@ -317,7 +317,7 @@ const events =  [
     id: getTestEventId(23),
     streamId: streams[7].id,
     time: timestamp.now('-5h'),
-    duration: null, // running
+    //duration: null, // running
     type: 'activity/pryv',
     tags: [],
     description: 'event started one hour ago on a normal stream',
@@ -330,7 +330,7 @@ const events =  [
     id: getTestEventId(24),
     streamId: streams[8].id,
     time: timestamp.now('-6h'),
-    duration: null, // running
+    //duration: null, // running
     type: 'activity/pryv',
     tags: [],
     description: 'event started one hour ago on a singleActivity stream',

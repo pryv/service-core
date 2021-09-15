@@ -28,11 +28,18 @@ async function events() {
     }
     const i = integrity.forEvent(event).integrity;
     if (i != event.integrity) { 
-      erroneousEvents.push(event);
+      erroneousEvents.push({event, i});
     }
   };
-  if (erroneousEvents.length > 0)
+  if (erroneousEvents.length > 0) {
+
     throw new Error('Integrity not respected for ' +  JSON.stringify(erroneousEvents, null, 2));
+    console.log(new Error('integrity check'));
+  }
+
+
+
+  //await bluebird.fromCallback(cb => database.deleteMany({name: 'events'}, {},cb));
 }
 
 

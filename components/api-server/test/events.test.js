@@ -328,6 +328,7 @@ describe('events', function () {
         fromTime: testData.events[9].time + 1,
         toTime: timestamp.now()
       };
+      
       request.get(basePath).query(params).end(function (res) {
         validation.check(res, {
           status: 200,

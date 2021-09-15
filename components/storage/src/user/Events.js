@@ -33,7 +33,7 @@ function Events (database) {
   _.extend(this.converters, {
     itemDefaults: [converters.createIdIfMissing],
     itemToDB: [
-      endTimeToDB,
+      durationToEndTime,
       converters.deletionToDB,
       converters.stateToDB,
       addIntegrity,
@@ -41,7 +41,7 @@ function Events (database) {
     itemsToDB: [
       function (items) { 
         if (items == null) return null;  
-        const res = items.map(addIntegrity); 
+        const res = items.map(e => addIntegrity(converters.stateToDB(converters.deletionToDB(durationToEndTime(e))))); 
         return res;
       }
     ],
@@ -51,8 +51,15 @@ function Events (database) {
       converters.getKeyValueSetUpdateFn('clientData'),
     ],
     itemFromDB: [
-      clearEndTime,
+      endTimeToDuration,
       converters.deletionFromDB,
+    ],
+    itemsFromDB: [
+      function (items) { 
+        if (items == null) return null;  
+        const res = items.map(e => converters.deletionFromDB(endTimeToDuration(e))); 
+        return res;
+      }
     ],
   });
 
@@ -68,37 +75,36 @@ function addIntegrity (eventData) {
   return eventData;
 }
 
-function endTimeToDB (eventData) {
-  if (eventData.hasOwnProperty('duration') && eventData.duration !== 0) {
-    eventData.endTime = getEndTime(eventData.time, eventData.duration);
+function durationToEndTime (eventData) {
+  if (eventData.duration != null) {
+    eventData.endTime = eventData.time + eventData.duration;
   }
+  delete eventData.duration;
   return eventData;
 }
 
+
 function endTimeUpdate (update) {
-  if (update.$set.hasOwnProperty('duration')) {
-    if (update.$set.duration === 0) {
-      update.$unset.endTime = 1;
-    } else {
-      update.$set.endTime = getEndTime(update.$set.time, update.$set.duration);
-    }
+  if (update.$set.duration != null) {
+   if (update.$set.time == null) {
+    throw (new Error('Cannot update duration without known the time' + JSON.stringify(update)));
+   }
+   update.$set.endTime = update.$set.time + update.$set.duration;
+   delete update.$set.duration ;
   }
   return update;
 }
 
-function getEndTime (time, duration) {
-  if (duration === null) {
-    // running period event; HACK: end time = event time + 1000 years
-    return timestamp.add(time, 24 * 365 * 1000);
-  } else {
-    // finished period event
-    return time + duration;
-  }
-}
-
-function clearEndTime (event) {
+function endTimeToDuration (event) {
   if (!event) {
     return event;
+  }
+  if (event.endTime != null) {
+    const prevDuration = event.duration;
+    event.duration = event.endTime - event.time;
+    if (prevDuration != null && prevDuration != event.duration) {
+      console.log('ZZZZZZZZZZZZZZZ');
+    }
   }
   delete event.endTime;
   return event;
@@ -157,7 +163,7 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
   let cb = callback;
   if (integrity.isActiveFor.events) {
     cb = function callbackIntegrity(err, eventData) {
-      if (err || (eventData.id == null)) return callback(err, eventData);
+      if (err || (eventData?.id == null)) return callback(err, eventData);
   
       const integrityCheck = eventData.integrity;
       try { 
@@ -228,7 +234,7 @@ Events.prototype.findStreamed = function (userOrUserId, query, options, callback
       }
       callback(null,
         dbStreamedItems
-          .pipe(new ApplyEventsFromDbStream())
+          .pipe(new ApplyEventsFromDbStream(this.converters.itemFromDB))
       );
     }.bind(this)
   );
@@ -269,7 +275,7 @@ Events.prototype.findDeletionsStreamed = function (
       if (err) {
         return callback(err);
       }
-      callback(null, dbStreamedItems.pipe(new ApplyEventsFromDbStream()));
+      callback(null, dbStreamedItems.pipe(new ApplyEventsFromDbStream(this.converters.itemFromDB)));
     }.bind(this)
   );
 };

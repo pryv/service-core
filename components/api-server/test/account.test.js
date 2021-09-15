@@ -41,10 +41,14 @@ describe('account', function () {
   server.on('axon-account-changed', function () { accountNotifCount++; });
 
   before(function (done) {
+    
     async.series([
       testData.resetUsers,
       testData.resetAccesses,
       testData.resetEvents,
+      async function() {
+        await require('test-helpers/src/integrity-final-check').events();
+      },
       testData.resetProfile,
       testData.resetFollowedSlices,
       
