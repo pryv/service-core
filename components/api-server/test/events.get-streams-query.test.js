@@ -237,7 +237,7 @@ describe('events.get streams query', function () {
           'streams queries and streamIds cannot be mixed': [
             ['A', { any: ['A', 'B'] }],
           ],
-          'must contain at least one of \'any\' or \'all\'': [
+          'must contain at least one of \'any\'': [
             { not: ['A', 'B'] },
           ],
           'unkown property': [

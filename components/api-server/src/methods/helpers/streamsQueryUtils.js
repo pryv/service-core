@@ -107,8 +107,8 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
     return streamId;
   }
 
-  if (!streamQuery.any && !streamQuery.all) {
-    throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' must contain at least one of \'any\' or \'all\' property.');
+  if (streamQuery.any == null) {
+    throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' must contain at least one of \'any\' property.');
   }
 
   let hasAnyStar: boolean = false;
