@@ -99,12 +99,6 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
    * @param {string} streamIdWithPrefix - a streamId with its store prefix
    * @returns {string} streamId without its prefix
    */
-  function checkStore(streamId: string) {
-    if (streamId === '#*') throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + ', "#*" is not valid.');
-
-    const forbiddenChar = findForbiddenChar(streamId);
-    if (forbiddenChar != null) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' forbidden chartacter \'' + forbiddenChar + '\' in streamId \'' + streamId + '\'.');
-
     // queries must be grouped by store 
     const [thisStore: string, cleanStreamId: string] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     if (streamQuery.storeId == null) streamQuery.storeId = thisStore;
@@ -135,6 +129,11 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
     for (const item: string of arrayOfStreamIds) {
       if (typeof item !== 'string')
         throw ('Error in \'streams\' parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) + ' must be streamIds. Found: ' + objectToString(item));
+      
+      if (item === '#*') throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + ', "#*" is not valid.');
+
+      const forbiddenChar: string = findForbiddenChar(item);
+      if (forbiddenChar != null) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' forbidden chartacter \'' + forbiddenChar + '\' in streamId \'' + item + '\'.');
 
       if (property !== 'any' && item === '*')
         throw ('Error in \'streams\' parameter[' + objectToString(arrayOfQueries) + '] only \'any\' can contain \'*\' : ' + objectToString(arrayOfStreamIds));
