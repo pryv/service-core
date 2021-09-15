@@ -4,18 +4,25 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+// @flow
+
 /**
  * Some method used by events.get are shared with audit.getLogs
  */
 
 
-const
-  streamsQueryUtils = require('./streamsQueryUtils'),
-  _ = require('lodash'),
-  timestamp = require('unix-timestamp'),
-  errors = require('errors').factory,
-  { getStores, StreamsUtils } = require('stores'),
-  { treeUtils } = require('utils');
+const streamsQueryUtils = require('./streamsQueryUtils');
+const _ = require('lodash');
+const timestamp = require('unix-timestamp');
+const errors = require('errors').factory;
+const { getStores, StreamsUtils } = require('stores');
+const { treeUtils } = require('utils');
+
+import type StreamQuery from 'business/src/events';
+import type { MethodContext } from 'business';
+import type { ApiCallback }  from '../../API';
+import type Result  from '../../Result';
 
 let stores;
 
@@ -65,7 +72,7 @@ let stores;
  * 
  */
 
-function coerceStreamsParam(context, params, result, next) {
+function coerceStreamsParam(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
   if (!params.streams) {
     params.streams = [{ any: ['*'] }];
     return next();
@@ -104,7 +111,7 @@ function coerceStreamsParam(context, params, result, next) {
 }
 
 
-function transformArrayOfStringsToStreamsQuery(context, params, result, next) {
+function transformArrayOfStringsToStreamsQuery(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
   if (params.streams === null) return next();
   try {
     params.streams = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(params.streams);
@@ -114,7 +121,7 @@ function transformArrayOfStringsToStreamsQuery(context, params, result, next) {
   next();
 }
 
-function validateStreamsQueriesAndSetStore(context, params, result, next) {
+function validateStreamsQueriesAndSetStore(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
   if (params.streams === null) return next();
   try {
     streamsQueryUtils.validateStreamsQueriesAndSetStore(params.streams);
@@ -249,7 +256,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: mixed, r
   next();
 }
 
-async function applyDefaultsForRetrieval(context, params, result, next) {
+async function applyDefaultsForRetrieval(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
   _.defaults(params, {
     streams: null,
     tags: null,
