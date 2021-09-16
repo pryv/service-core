@@ -15,7 +15,7 @@ const multer = require('multer');
 const integrity = require('business').integrity;
 
 // load the correct disk storage depending on settings
-const MulterDiskStorage = integrity.isActiveFor.attachments ? integrity.MulterIntegrityDiskStorage : multer.diskStorage;
+const MulterDiskStorage = integrity.attachments.isActive ? integrity.attachments.MulterIntegrityDiskStorage : multer.diskStorage;
 
 // ---------------------------------------------------------------- multer setup
 

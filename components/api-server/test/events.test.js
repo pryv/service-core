@@ -1052,7 +1052,7 @@ describe('events', function () {
             expected.createdBy = createdEvent.createdBy;
             expected.modified = createdEvent.modified;
             expected.modifiedBy = createdEvent.modifiedBy;
-            integrity.setOnEvent(expected);
+            integrity.events.set(expected);
             validation.checkObjectEquality(createdEvent, expected);
 
             // check attached files
@@ -1213,7 +1213,7 @@ describe('events', function () {
             expected.modified = updatedEvent.modified;
             expected.modifiedBy = access.id;
             expected = _.defaults(expected, event);
-            integrity.setOnEvent(expected);
+            integrity.events.set(expected);
             
             validation.checkObjectEquality(updatedEvent, expected);
 
@@ -1383,7 +1383,7 @@ describe('events', function () {
         expected.created = res.body.event.created;
         _.extend(expected.clientData, data.clientData);
         delete expected.clientData.numberProp;
-        integrity.setOnEvent(expected);
+        integrity.events.set(expected);
         validation.checkObjectEquality(res.body.event, expected);
 
         eventsNotifCount.should.eql(1, 'events notifications');
@@ -1640,7 +1640,7 @@ describe('events', function () {
         expected.modifiedBy = access.id;
         expected.modified = updatedEvent.modified;
         expected.attachments.shift();
-        integrity.setOnEvent(expected);
+        integrity.events.set(expected);
         validation.checkObjectEquality(updatedEvent, expected);
         
         var time = timestamp.now();
@@ -1725,7 +1725,7 @@ describe('events', function () {
               });
               should.exist(deletion);
               const expected = { id: id, deleted: deletion.deleted };
-              integrity.setOnEvent(expected);
+              integrity.events.set(expected);
               validation.checkObjectEquality(deletion, expected);
 
               var dirPath = eventFilesStorage.getAttachedFilePath(user, id);

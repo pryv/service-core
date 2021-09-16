@@ -25,9 +25,7 @@ uploads:
   maxSizeMb: 50
 
 integrity:
-  isActive: true
-  attachments:
-    isActive: true
-  events:
-    isActive: true
+  isActive:
+    attachments: true
+    events: true
   algorithm: sha256

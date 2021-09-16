@@ -86,7 +86,7 @@ exports.check = function (response, expected, done) {
 };
 
 function checkEventIntegrity(e) {
-  const int = integrity.forEvent(e).integrity;
+  const int = integrity.events.compute(e).integrity;
   if (e.integrity != int) {
     throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(e, null, 2)));
   }

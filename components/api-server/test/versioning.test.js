@@ -232,7 +232,7 @@ describe('Versioning', function () {
                   const expected = _.cloneDeep(trashedEventWithHistory);
                   delete expected.streamId;
                   expected.deleted = event.deleted;
-                  integrity.setOnEvent(expected);
+                  integrity.events.set(expected);
                   event.should.eql(expected);
                   stepDone();
                 });
@@ -622,7 +622,7 @@ describe('Versioning', function () {
               const expected = _.cloneDeep(eventOnChildStream);
               delete expected.streamId;
               expected.deleted = event.deleted;
-              integrity.setOnEvent(expected);
+              integrity.events.set(expected);
               event.should.eql(expected);
               stepDone();
             });

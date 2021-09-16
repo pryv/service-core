@@ -198,7 +198,7 @@ function createEvent (
     time: timestamp.now(),
     createdBy: accessId,
     modifiedBy: accessId,
-    attachements: [],
+    attachments: [],
     tags: []
   };
 

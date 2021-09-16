@@ -70,8 +70,8 @@ function Events (database) {
 util.inherits(Events, BaseStorage);
 
 function addIntegrity (eventData) {
-  if (! integrity.isActiveFor.events) return ;
-  integrity.setOnEvent(eventData); 
+  if (! integrity.events.isActive) return eventData;
+  integrity.events.set(eventData); 
   return eventData;
 }
 
@@ -161,13 +161,13 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
   }
 
   let cb = callback;
-  if (integrity.isActiveFor.events) {
+  if (integrity.events.isActive) {
     cb = function callbackIntegrity(err, eventData) {
       if (err || (eventData?.id == null)) return callback(err, eventData);
   
       const integrityCheck = eventData.integrity;
       try { 
-        eventData.integrity = integrity.forEvent(eventData).integrity;
+        integrity.events.set(eventData).integrity;
       } catch (errIntegrity) {
         return callback(errIntegrity, eventData);
       }
@@ -398,7 +398,7 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
   update.$unset.integrity = 1;
 
   // not active return the normal callback
-  if (! integrity.isActiveFor.events) return callback;
+  if (! integrity.events.isActive) return callback;
 
   // add a random "code" to the original update find out which events have been modified
   const integrityBatchCode = Math.random();
@@ -421,9 +421,12 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
     // and add the integrity value
     function updateIfNeeded(event) {
       delete event.integrityBatchCode; // remove integrity batch code for computation
+      const previousIntegrity = event.integrity;
+      integrity.events.set(event, true);
+      if (previousIntegrity == event.integrity) return null;
       return {
         $unset: { integrityBatchCode: 1},
-        $set: { integrity: integrity.forEvent(event).integrity}
+        $set: { integrity: event.integrity}
       }
     }
 

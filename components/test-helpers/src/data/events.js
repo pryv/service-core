@@ -380,7 +380,7 @@ const events =  [
     event.streamIds = [event.streamId];
     delete event.streamId;
   }
-  integrity.setOnEvent(event);
+  integrity.events.set(event);
   return event;
 });
 

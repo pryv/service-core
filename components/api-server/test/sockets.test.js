@@ -220,7 +220,7 @@ describe('Socket.IO', function () {
         const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
         validation.validateAccountEvents(actualAccountStreamsEvents);
         
-        expectedEvents.forEach(integrity.setOnEvent);
+        expectedEvents.forEach(integrity.events.set);
         result.events.should.eql(expectedEvents);
         // check deletions
         let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
@@ -240,7 +240,7 @@ describe('Socket.IO', function () {
         let activeTestEvents = activeEvents(
           validation.removeDeletions(testData.events));
     
-        activeTestEvents.forEach(integrity.setOnEvent);
+        activeTestEvents.forEach(integrity.events.set);
         should(
           resultEvents
         ).be.eql(activeTestEvents);

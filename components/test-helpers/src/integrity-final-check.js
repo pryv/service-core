@@ -26,7 +26,7 @@ async function events() {
       }
       delete event.endTime;
     }
-    const i = integrity.forEvent(event).integrity;
+    const i = integrity.events.compute(event).integrity;
     if (i != event.integrity) { 
       erroneousEvents.push({event, i});
     }

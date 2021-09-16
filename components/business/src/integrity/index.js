@@ -4,8 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-module.exports = {
-  MulterIntegrityDiskStorage: require('./MulterIntegrityDiskStorage')
-}
 
-Object.assign(module.exports, require('./integrity'));
+
+
+module.exports = require('./integrity');
