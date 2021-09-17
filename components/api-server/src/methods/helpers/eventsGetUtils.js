@@ -18,6 +18,9 @@ const timestamp = require('unix-timestamp');
 const errors = require('errors').factory;
 const { getStores, StreamsUtils } = require('stores');
 const { treeUtils } = require('utils');
+const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
+const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
+const ChangeStreamIdPrefixStream = require('../streams/ChangeStreamIdPrefixStream');
 
 const Stream = require('business/src/streams/Stream');
 import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
@@ -294,7 +297,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
     const query: StoreQuery =  {
       id: streamId, 
       storeId: storeId, 
-      includeTrashed: params.includeTrashed || params.state === 'all',  // ou est-ce que tu déclares includeTrashed?
+      includeTrashed: params.state === 'all' || params.state === 'trashed',
       expandChildren: true,
       excludedIds: excludedIds
     };
@@ -319,9 +322,62 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
   }
 
   // delete streamQueries with no inclusions 
-  params.arrayOfStreamQueriesWithStoreId = params.arrayOfStreamQueriesWithStoreId.filter(streamQuery => streamQuery.any || streamQuery.and);
+  params.arrayOfStreamQueriesWithStoreId = params.arrayOfStreamQueriesWithStoreId.filter(streamQuery => streamQuery.any != null || streamQuery.and != null);
   context.tracing.finishSpan('streamQueries');
   next();
+}
+
+/**
+ * - Create a copy of the params per query
+ * - Add specific stream queries to each of them
+ */
+async function findEventsFromStore(filesReadTokenSecret: string, isStreamIdPrefixBackwardCompatibilityActive: boolean, context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+  if (params.arrayOfStreamQueriesWithStoreId?.length === 0)  {
+    result.events = [];
+    return next();
+  }
+
+  // in> params.fromTime = 2 params.streams = [{any: '*' storeId: 'local'}, {any: 'access-gasgsg', storeId: 'audit'}, {any: 'action-events.get', storeId: 'audit'}]
+  const paramsByStoreId: Map<string, GetEventsParams> = {};
+  for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
+    const storeId: string = streamQuery.storeId;
+    if (storeId == null) {
+      console.error('Missing storeId' + params.arrayOfStreamQueriesWithStoreId);
+      throw(new Error("Missing storeId" + params.arrayOfStreamQueriesWithStoreId));
+    }
+    if (paramsByStoreId[storeId] == null) {
+      paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
+      paramsByStoreId[storeId].streams = []; // empty the stream query
+    }
+    delete streamQuery.storeId; 
+    paramsByStoreId[storeId].streams.push(streamQuery);
+  }
+  // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
+
+
+  /**
+   * Will be called by "stores" for each source of event that need to be streames to result
+   * @param {Store} store
+   * @param {ReadableStream} eventsStream of "Events"
+   */
+  function addnewEventStreamFromSource (store, eventsStream: ReadableStream) {
+    let stream: ?ReadableStream;
+    if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
+      stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
+    } else {
+      stream = eventsStream;
+    }
+    stream = stream.pipe(new SetSingleStreamIdStream());
+    if (store.settings?.attachments?.setFileReadToken) {
+      stream = stream.pipe(new SetFileReadTokenStream({ access: context.access, filesReadTokenSecret }));
+    }
+    result.addToConcatArrayStream('events', stream);
+  }
+
+  await stores.events.generateStreams(context.user.id, paramsByStoreId, addnewEventStreamFromSource);
+  result.closeConcatArrayStream('events');
+
+  return next();
 }
 
 async function init() {
@@ -336,5 +392,6 @@ module.exports = {
   transformArrayOfStringsToStreamsQuery,
   streamQueryCheckPermissionsAndReplaceStars,
   streamQueryAddForcedAndForbiddenStreams,
-  streamQueryExpandStreams
+  streamQueryExpandStreams,
+  findEventsFromStore,
 }

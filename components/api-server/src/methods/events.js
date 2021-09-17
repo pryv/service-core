@@ -109,7 +109,7 @@ module.exports = async function (api)
     eventsGetUtils.streamQueryCheckPermissionsAndReplaceStars,
     eventsGetUtils.streamQueryAddForcedAndForbiddenStreams,
     eventsGetUtils.streamQueryExpandStreams,
-    findEventsFromStore,
+    eventsGetUtils.findEventsFromStore.bind(null, authSettings.filesReadTokenSecret, isStreamIdPrefixBackwardCompatibilityActive),
     includeLocalStorageDeletionsIfRequested);
 
   function applyTagsDefaultsForRetrieval(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -120,60 +120,6 @@ module.exports = async function (api)
         : accessibleTags;
     }
     next();
-  }
-
-  /**
-   * - Create a copy of the params per query
-   * - Add specific stream queries to each of them
-   */
-  async function findEventsFromStore(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    params.arrayOfStreamQueriesWithStoreId;
-    if (params.arrayOfStreamQueriesWithStoreId?.length === 0)  {
-      result.events = [];
-      return next();
-    }
-
-    // in> params.fromTime = 2 params.streams = [{any: '*' storeId: 'local'}, {any: 'access-gasgsg', storeId: 'audit'}, {any: 'action-events.get', storeId: 'audit'}]
-    const paramsByStoreId = {};
-    for (const streamQuery of params.arrayOfStreamQueriesWithStoreId) {
-      const storeId = streamQuery.storeId;
-      if (storeId == null) {
-        console.error('Missing storeId' + params.arrayOfStreamQueriesWithStoreId);
-        throw(new Error("Missing storeId" + params.arrayOfStreamQueriesWithStoreId));
-      }
-      if (paramsByStoreId[storeId] == null) {
-        paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
-        paramsByStoreId[storeId].streams = []; // empty the stream query
-      }
-      delete streamQuery.storeId; 
-      paramsByStoreId[storeId].streams.push(streamQuery);
-    }
-    // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
-
-
-    /**
-     * Will be called by "stores" for each source of event that need to be streames to result
-     * @param {Store} store
-     * @param {ReadableStream} eventsStream of "Events"
-     */
-    function addnewEventStreamFromSource (store, eventsStream: ReadableStream) {
-      let stream: ?ReadableStream;
-      if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
-        stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
-      } else {
-        stream = eventsStream;
-      }
-      stream = stream.pipe(new SetSingleStreamIdStream());
-      if (store.settings?.attachments?.setFileReadToken) {
-        stream = stream.pipe(new SetFileReadTokenStream({ access: context.access, filesReadTokenSecret: authSettings.filesReadTokenSecret }));
-      }
-      result.addToConcatArrayStream('events', stream);
-    }
-
-    await stores.events.generateStreams(context.user.id, paramsByStoreId, addnewEventStreamFromSource);
-    result.closeConcatArrayStream('events');
-
-    return next();
   }
 
   function includeLocalStorageDeletionsIfRequested(context, params, result, next) {

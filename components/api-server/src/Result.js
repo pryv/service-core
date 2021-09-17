@@ -84,6 +84,9 @@ class Result {
   checkedPermissions: mixed;
   error: mixed;
 
+  event: ?Event;
+  events: ?Array<Event>;
+
   type: string;
   name: string;
   permissions: Array<Permission>
