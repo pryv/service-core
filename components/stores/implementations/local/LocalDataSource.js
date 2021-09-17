@@ -70,14 +70,14 @@ class LocalUserStreams extends UserStreams {
     }
 
     let streams = [];
-    if (params.id && params.id !== '*') { // find the stream
+    if (params?.id !== '*') { // find the stream
       const stream = treeUtils.findById(allStreamsForAccount, params.id);
       if (stream != null) streams = [clone(stream)]; // clone to be sure they can be mutated without touching the cache
     } else {
       streams = clone(allStreamsForAccount); // clone to be sure they can be mutated without touching the cache
     }
     
-    if (! params.expandChildren) { // remove children and just return the stream
+    if (! params.expandChildren) { // remove children and just return the stream - maybe do this before cloning?
       streams = streams.map((stream) => {
         stream.childrenHidden = true;
         stream.children = []; 
@@ -86,9 +86,7 @@ class LocalUserStreams extends UserStreams {
     }
 
     if (! params.includeTrashed) { // i.e. === 'default' (return non-trashed items)
-      streams = treeUtils.filterTree(streams, false /*no orphans*/, function (item) {
-        return !item.trashed;
-      });
+      streams = treeUtils.filterTree(streams, false /*no orphans*/, stream => !stream.trashed);
     }
     return streams;
   }

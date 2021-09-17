@@ -516,12 +516,12 @@ Object.freeze(PermissionLevels);
 
     const stores = await getStores();
 
-    while (currentStream != null) {
+    while (currentStream != null) { // should never execute
       const permissions = this.getStreamPermission(storeId, currentStream);
       if (permissions != null) return permissions; // found  
     
       // not found, look for parent
-      const stream = await stores.streams.getOne(this._userId, currentStream, storeId);
+      const stream = await stores.streams.getOne(this._userId, currentStream, storeId); // TODO dont fetch children
       currentStream = stream ? stream.parentId : null;
     } 
 

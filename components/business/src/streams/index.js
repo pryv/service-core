@@ -17,6 +17,9 @@ export type Stream = {
   createdBy: string,
   modified: number,
   modifiedBy: string,
+
+  // stores
+  childrenHidden: boolean,
 }
 
 const StreamProperties: Array<string> = [

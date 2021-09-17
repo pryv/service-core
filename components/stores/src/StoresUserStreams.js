@@ -29,9 +29,9 @@ class StoresUserStreams extends UserStreams {
   async getOne(uid, streamId, storeId) {
     if (storeId == null) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
     const store = this.mainStore._storeForId(storeId);
-    if (! store) return null;
+    if (store == null) return null;
     const streams = await store.streams.get(uid, {id: streamId, includeTrashed: true});
-    if (streams && streams.length === 1) return streams[0];
+    if (streams?.length === 1) return streams[0];
     return null;
   }
 

@@ -15,8 +15,7 @@
  * @param {String} state "default", "trashed" or "all"
  * @returns {Object} The query object
  */
-exports.applyState = function (query, state) {
-  query = query || {};
+exports.applyState = function (query = {}, state) {
   switch (state) {
   case 'trashed':
     query.trashed = true;
