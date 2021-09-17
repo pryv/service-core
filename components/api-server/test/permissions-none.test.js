@@ -101,7 +101,7 @@ describe('permissions none', function () {
       await mongoFixtures.clean();
     });
 
-    it('must not see event in "none" level stream', async function () {
+    it('[VVOA] must not see event in "none" level stream', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenForcedB)
