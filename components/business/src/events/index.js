@@ -16,7 +16,30 @@ export type StreamQueryWithStoreId = StreamQuery & {
   storeId: string,
 };
 
-module.exports = {
-  Attachment: require('./Attachment'),
-  Event: require('./Event'),
+export type Attachment = {
+  id: string,
+  fileName: string,
+  type: string,
+  size: number,
+  readToken: string,
+  integrity: string,
 }
+
+export type Event = {
+  id: string,
+  streamIds: Array<string>,
+  streamId: ?string, // deprecated
+  type: string,
+  time: number,
+  duration: ?number,
+  content: any,
+  tags: ?Array<string>, // deprecated
+  description: ?string,
+  attachments: Array<Attachment>,
+  clientData: {},
+  trashed: ?boolean,
+  created: number,
+  createdBy: string,
+  modified: number,
+  modifiedBy: string,
+};

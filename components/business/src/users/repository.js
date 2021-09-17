@@ -12,9 +12,9 @@ const timestamp = require('unix-timestamp');
 
 const User = require('./User');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
-const Event = require('business/src/events/Event');
-const Access = require('business/src/accesses/Access');
-const SystemStream = require('business/src/system-streams/SystemStream');
+import type { Event } from 'business/src/events';
+import type { Access } from 'business/src/accesses';
+import type { SystemStream } from 'business/src/system-streams';
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;

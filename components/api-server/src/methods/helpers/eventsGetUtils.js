@@ -22,7 +22,7 @@ const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
 const ChangeStreamIdPrefixStream = require('../streams/ChangeStreamIdPrefixStream');
 
-const Stream = require('business/src/streams/Stream');
+import type { Stream } from 'business/src/streams';
 import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
 import type { MethodContext } from 'business';
 import type { ApiCallback }  from '../../API';

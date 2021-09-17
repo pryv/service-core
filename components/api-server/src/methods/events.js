@@ -50,10 +50,9 @@ import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
 
 // for typing
-const Event = require('business/src/events/Event');
-const Attachment = require('business/src/events/Attachment');
-const Stream = require('business/src/streams/Stream');
-const SystemStream = require('business/src/system-streams/SystemStream');
+import type { Attachment, Event } from 'business/src/events';
+import type { Stream } from 'business/src/streams';
+import type { SystemStream } from 'business/src/system-streams';
 
 // Type repository that will contain information about what is allowed/known
 // for events. 

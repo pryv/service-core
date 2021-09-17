@@ -18,8 +18,8 @@ const UserRepositoryOptions = require('./UserRepositoryOptions');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { encryption } = require('utils')
 
-const SystemStream = require('business/src/system-streams/SystemStream');
-const Event = require('business/src/events/Event');
+import type { SystemStream } from 'business/src/system-streams';
+import type { Event } from 'business/src/events';
 
 class User {
   // User properties that exists by default (email could not exist with specific config)

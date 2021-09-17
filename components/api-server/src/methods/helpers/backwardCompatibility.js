@@ -8,8 +8,8 @@
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-const Stream = require('business/src/streams/Stream');
-const Permission = require('business/src/accesses/Permission');
+import type { Stream } from 'business/src/streams';
+import type { Permission } from 'business/src/accesses';
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
 import type { StreamQueryWithStoreId } from 'business/src/events';

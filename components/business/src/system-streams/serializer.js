@@ -7,8 +7,9 @@
 // @flow
 const _ = require('lodash');
 
-const Stream = require('business/src/streams/Stream');
-const SystemStream = require('business/src/system-streams/SystemStream');
+import type { Stream } from 'business/src/streams';
+import type { SystemStream } from 'business/src/system-streams';
+const { StreamProperties } = require('business/src/streams');
 const treeUtils = require('utils').treeUtils;
 const { getConfigUnsafe } = require('@pryv/boiler');
 
@@ -440,7 +441,7 @@ class SystemStreamsSerializer {
   static getReadable(): Array<Stream> {
     if (SystemStreamsSerializer.readable) return SystemStreamsSerializer.readable;
     SystemStreamsSerializer.readable = treeUtils.filterTree(this.allAsTree, false, s => s[IS_SHOWN]);
-    SystemStreamsSerializer.readable = treeUtils.cloneAndApply(this.readable, s => _.pick(s, Stream.properties));
+    SystemStreamsSerializer.readable = treeUtils.cloneAndApply(this.readable, s => _.pick(s, StreamProperties));
     return SystemStreamsSerializer.readable;
   }
 }
