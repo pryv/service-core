@@ -34,6 +34,7 @@ const StreamProperties: Array<string> = [
   'modified',
   'modifiedBy',
 ];
+Object.freeze(StreamProperties);
 
 module.exports = {
   StreamProperties,

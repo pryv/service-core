@@ -4,22 +4,27 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+// @flow
+
 /**
  * Local Data Source. 
  */
 const bluebird = require('bluebird');
 const _ = require('lodash');
 
-
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 const querying = require('api-server/src/methods//helpers/querying');
 const storage = require('storage');
 const { treeUtils } = require('utils');
-
+const { StreamProperties } = require('business/src/streams');
+const StreamPropsWithoutChildren: Array<string> = StreamProperties.filter(p => p !== 'children');
 const {DataSource, UserStreams, UserEvents}  = require('stores/interfaces/DataSource');
 const SystemStreamUtils = require('./SystemStreamUtils');
-
 const cache = require('cache');
+
+import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
+import type { Stream } from 'business/src/streams';
 
 const STORE_ID = 'local';
 const STORE_NAME = 'Local Store';
@@ -55,34 +60,40 @@ class LocalDataSource extends DataSource {
   get events() { return this._events; }
 }
 
-function clone(obj) {
-  // Clone streams -- BAd BaD -- To be optimized 
-  return JSON.parse(JSON.stringify(obj))
+function clone(obj: any): any {
+// Clone streams -- BAd BaD -- To be optimized 
+return JSON.parse(JSON.stringify(obj))
+}
+function cloneStream(sourceStream: Stream, includeChildren: boolean): Stream {
+  if (includeChildren) {
+    return clone(sourceStream);
+  } else {
+    // _.pick() creates a copy
+    const stream: Stream = _.pick(sourceStream, StreamPropsWithoutChildren);
+    stream.childrenHidden = true;
+    stream.children = [];
+    return stream;
+  }
+
 }
 class LocalUserStreams extends UserStreams {
-  async get(uid, params) {
-    let allStreamsForAccount = cache.getStreams(uid, 'local');
+  async get(uid: string, params: StoreQuery): Promise<Array<Stream>> {
+    let allStreamsForAccount: Array<Stream> = cache.getStreams(uid, 'local');
     if (allStreamsForAccount == null) { // get from DB
-        allStreamsForAccount = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
-        // add system streams
-        allStreamsForAccount = allStreamsForAccount.concat(SystemStreamUtils.visibleStreamsTree);
-        cache.setStreams(uid, 'local', allStreamsForAccount);
-    }
-
-    let streams = [];
-    if (params?.id !== '*') { // find the stream
-      const stream = treeUtils.findById(allStreamsForAccount, params.id);
-      if (stream != null) streams = [clone(stream)]; // clone to be sure they can be mutated without touching the cache
-    } else {
-      streams = clone(allStreamsForAccount); // clone to be sure they can be mutated without touching the cache
+      allStreamsForAccount = await bluebird.fromCallback(cb => userStreamsStorage.find({id: uid}, {}, null, cb));
+      // add system streams
+      allStreamsForAccount = allStreamsForAccount.concat(SystemStreamUtils.visibleStreamsTree);
+      cache.setStreams(uid, 'local', allStreamsForAccount);
     }
     
-    if (! params.expandChildren) { // remove children and just return the stream - maybe do this before cloning?
-      streams = streams.map((stream) => {
-        stream.childrenHidden = true;
-        stream.children = []; 
-        return stream
-      });
+
+    let streams: Array<Stream> = [];
+    if (params?.id === '*') { 
+      // assert: params.expandChildren == true, see "#*" case
+      streams = clone(allStreamsForAccount); // clone to be sure they can be mutated without touching the cache
+    } else {
+      const stream = treeUtils.findById(allStreamsForAccount, params.id); // find the stream
+      if (stream != null) streams = [cloneStream(stream, params.expandChildren)]; // clone to be sure they can be mutated without touching the cache
     }
 
     if (! params.includeTrashed) { // i.e. === 'default' (return non-trashed items)

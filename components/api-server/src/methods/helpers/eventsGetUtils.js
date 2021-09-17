@@ -43,7 +43,7 @@ export type GetEventsParams = {
   modifiedSince?: number,
   includeDeletions?: boolean,
 };
-type StoreQuery = {
+export type StoreQuery = {
   id: string, 
   storeId: string, 
   includeTrashed: boolean,
