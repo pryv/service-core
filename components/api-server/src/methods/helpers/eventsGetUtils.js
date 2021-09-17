@@ -19,10 +19,34 @@ const errors = require('errors').factory;
 const { getStores, StreamsUtils } = require('stores');
 const { treeUtils } = require('utils');
 
-import type StreamQuery from 'business/src/events';
+const Stream = require('business/src/streams/Stream');
+import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
 import type { MethodContext } from 'business';
 import type { ApiCallback }  from '../../API';
 import type Result  from '../../Result';
+
+export type GetEventsParams = {
+  streams?: Array<string> | string | StreamQuery | Array<StreamQuery>,
+  arrayOfStreamQueries?: Array<StreamQuery>,
+  arrayOfStreamQueriesWithStoreId?: Array<StreamQueryWithStoreId>,
+  tags?: Array<string>,
+  types?: Array<string>,
+  fromTime?: number,
+  toTime?: number,
+  sortAscending?: boolean,
+  skip?: number,
+  limit?: number,
+  state?: 'default' | 'all' | 'trashed',
+  modifiedSince?: number,
+  includeDeletions?: boolean,
+};
+type StoreQuery = {
+  id: string, 
+  storeId: string, 
+  includeTrashed: boolean,
+  expandChildren: boolean,
+  excludedIds: {},
+};
 
 let stores;
 
@@ -72,18 +96,24 @@ let stores;
  * 
  */
 
-function coerceStreamsParam(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+function coerceStreamsParam(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
   if (params.streams == null) {
     return next();
   }
-  // Streams query can also be sent as a JSON string or string of Array
-  if (!context.acceptStreamsQueryNonStringified ||
-    (context.acceptStreamsQueryNonStringified && typeof params.streams === 'string')) { // batchCall and socket.io can use plain JSON objects
-    try {
-      params.streams = parseStreamsQueryParam(params.streams);
-    } catch (e) {
-      return next(errors.invalidRequestStructure(
-        'Invalid "streams" parameter. It should be an array of streamIds or JSON logical query' + e, params.streams));
+
+  if (! context.acceptStreamsQueryNonStringified) {
+    if (isStringifiedJSON(params.streams)) {
+      params.streams = parseStreamsParams(params.streams);
+    } else if (isStringOrArrayOfStrings(params.streams)) {
+      // good, do nothing
+    } else {
+      return next(errors.invalidRequestStructure('Invalid "streams" parameter. It should be an array of streamIds or JSON logical query.'))
+    }
+  } else {
+    if (isStringifiedJSON(params.streams)) {
+      params.streams = parseStreamsParams(params.streams);
+    } else {
+      // good, do nothing
     }
   }
 
@@ -94,168 +124,34 @@ function coerceStreamsParam(context: MethodContext, params: mixed, result: Resul
 
   next();
 
-  function parseStreamsQueryParam(streamsParam) {
-    if (typeof streamsParam === 'string') {
-      if (['[', '{'].includes(streamsParam.substr(0, 1))) { // we detect if it's JSON by looking at first char
-        // Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
-        try {
-          streamsParam = JSON.parse(streamsParam);
-        } catch (e) {
-          throw ('Error while parsing JSON ' + e);
-        }
-      }
-    }
-    return streamsParam
-  }
-}
-
-
-function transformArrayOfStringsToStreamsQuery(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-  if (params.streams === null) return next();
-  try {
-    params.streams = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(params.streams);
-  } catch (e) {
-    return next(errors.invalidRequestStructure(e, params.streams));
-  }
-  next();
-}
-
-function validateStreamsQueriesAndSetStore(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-  if (params.streams === null) return next();
-  try {
-    streamsQueryUtils.validateStreamsQueriesAndSetStore(params.streams);
-  } catch (e) {
-    return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
-  }
-  next();
-}
-
-// the two tasks are joined as '*' replaced have their permissions checked 
-async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-  context.tracing.startSpan('streamQueries');
-  const unAuthorizedStreams = [];
-  const unAccessibleStreams = [];
-
-  async function streamExistsAndCanGetEventsOnStream(streamId, storeId) {
-    // remove eventual '#' in streamQuery
-    const cleanStreamId = streamId.startsWith('#') ? streamId.substr(1) : streamId;
-
-    const stream = await context.streamForStreamId(cleanStreamId, storeId);
-    if (!stream) {
-      unAccessibleStreams.push(cleanStreamId);
-      return;
-    }
-    if (! await context.access.canGetEventsOnStream(cleanStreamId, storeId)) {
-      unAuthorizedStreams.push(cleanStreamId);
+  function parseStreamsParams(input: string) {
+    try {
+      return JSON.parse(input);
+    } catch (e) {
+      return next(errors.invalidRequestStructure('Invalid "streams" parameter. It should be an array of streamIds or JSON logical query. Error while parsing JSON ' + e, input));
     }
   }
 
-  for (let streamQuery of params.streams) {
-    // ------------ "*" case 
-    if (streamQuery.any && streamQuery.any.includes('*')) {
-      if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
-
-      // replace any by allowed streams for reading
-      const canRead = [];
-      for (const streamPermission of context.access.getStoresPermissions(streamQuery.storeId)) {
-        if (await context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)) {
-          canRead.push(streamPermission.streamId);
-        }
-      }
-      streamQuery.any = canRead;
-    } else { // ------------ All other cases
-      /**
-       * ! we don't have to check for permissions on 'all' or 'not' as long there is at least one 'any' authorized. 
-       */
-      if (!streamQuery.any || streamQuery.any.length === 0) {
-        return next(errors.invalidRequestStructure('streamQueries must have a valid {any: [...]} component'));
-      }
-
-      for (let streamId of streamQuery.any) {
-        await streamExistsAndCanGetEventsOnStream(streamId, streamQuery.storeId);
-      };
-    }
-  }
-
-  if (unAuthorizedStreams.length > 0) {
-    context.tracing.finishSpan('streamQueries');
-    return next(errors.forbidden('stream [' + unAuthorizedStreams[0] + '] has not sufficent permission to get events'));
-  }
-  if (unAccessibleStreams.length > 0) {
-    context.tracing.finishSpan('streamQueries');
-    return next(errors.unknownReferencedResource(
-      'stream' + (unAccessibleStreams.length > 1 ? 's' : ''),
-      'streams',
-      unAccessibleStreams));
-  }
-  next();
-}
-
-/**
-   * Add "forced" and "none" events from permissions
+  /**
+   * we detect if it's JSON by looking at first char. 
+   * Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
+   * @param {string} input
    */
-function streamQueryAddForcedAndForbiddenStreams(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-  for (let streamQuery of params.streams) {
-    // ------------ ALL --------------- //
-    // add forced Streams if exists
-    const forcedStreams = context.access.getForcedStreamsGetEventsStreamIds(streamQuery.storeId);
-
-    if (forcedStreams != null && forcedStreams.length > 0) {
-      if (streamQuery.all == null) streamQuery.all = [];
-      streamQuery.all.push(...forcedStreams);
-    }
-
-    // ------------- NOT ------------- //
-    const forbiddenStreams = context.access.getForbiddenGetEventsStreamIds(streamQuery.storeId);
-    if (forbiddenStreams != null && forbiddenStreams.length > 0) {
-      if (streamQuery.not == null) streamQuery.not = [];
-      streamQuery.not.push(...forbiddenStreams);
-    }
+  function isStringifiedJSON(input: any): boolean {
+    return (typeof input === 'string') && ['[', '{'].includes(input.substr(0, 1));
   }
-  next();
+
+  function isStringOrArrayOfStrings(input: any): boolean {
+    if (typeof input === 'string') return true;
+    if (! Array.isArray(input)) return false;
+    for (const item of input) {
+      if (typeof item !== 'string') return false;
+    }
+    return true;
+  }
 }
 
-async function streamQueryExpandStreams(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-  async function expandStreamInContext(streamId, storeId, excludedIds) {
-    // remove eventual '#' in streamQuery
-    if (streamId.startsWith('#')) {
-      return [streamId.substr(1)]; // do not expand Stream
-    }
-
-    const query =  {
-      id: streamId, 
-      storeId: storeId, 
-      includeTrashed: params.includeTrashed || params.state === 'all', 
-      expandChildren: true,
-      excludedIds: excludedIds
-    };
-
-    const tree = await stores.streams.get(context.user.id, query);
-    
-    // collect streamIds 
-    const resultWithPrefix = treeUtils.collectPluck(tree, 'id');
-    // remove storePrefix 
-    const result = resultWithPrefix.map((fullStreamId) => {
-      return StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId)[1];
-    });
-    return result;
-  }
-
-  try {
-    params.streams = await streamsQueryUtils.expandAndTransformStreamQueries(params.streams, expandStreamInContext);
-  } catch (e) {
-    console.log(e);
-    context.tracing.finishSpan('streamQueries');
-    return next(e);
-  }
-
-  // delete streamQueries with no inclusions 
-  params.streams = params.streams.filter(streamQuery => streamQuery.any || streamQuery.and);
-  context.tracing.finishSpan('streamQueries');
-  next();
-}
-
-async function applyDefaultsForRetrieval(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+async function applyDefaultsForRetrieval(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
   _.defaults(params, {
     streams: [{ any: ['*'] }],
     tags: null,
@@ -279,6 +175,152 @@ async function applyDefaultsForRetrieval(context: MethodContext, params: mixed, 
     // limit to 20 items by default
     params.limit = 20;
   }
+  next();
+}
+
+
+function transformArrayOfStringsToStreamsQuery(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+  try {
+    params.arrayOfStreamQueries = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(params.streams);
+  } catch (e) {
+    return next(errors.invalidRequestStructure(e, params.streams));
+  }
+  next();
+}
+
+function validateStreamsQueriesAndSetStore(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+  try {
+    streamsQueryUtils.validateStreamsQueriesAndSetStore(params.arrayOfStreamQueries);
+    params.arrayOfStreamQueriesWithStoreId = params.arrayOfStreamQueries;
+  } catch (e) {
+    return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
+  }
+  next();
+}
+
+// the two tasks are joined as '*' replaced have their permissions checked 
+async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+  context.tracing.startSpan('streamQueries');
+  const unAuthorizedStreamIds: Array<string> = [];
+  const unAccessibleStreamIds: Array<string> = [];
+
+  async function streamExistsAndCanGetEventsOnStream(streamId: string, storeId: string, 
+    unAuthorizedStreamIds: Array<string>, unAccessibleStreamIds: Array<string>): Promise<void> {
+    // remove eventual '#' in streamQuery
+    const cleanStreamId: string = streamId.startsWith('#') ? streamId.substr(1) : streamId;
+
+    const stream: Stream = await context.streamForStreamId(cleanStreamId, storeId);
+    if (stream == null) {
+      unAccessibleStreamIds.push(cleanStreamId);
+      return;
+    }
+    if (! await context.access.canGetEventsOnStream(cleanStreamId, storeId)) {
+      unAuthorizedStreamIds.push(cleanStreamId);
+    }
+  }
+
+  for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
+    // ------------ "*" case 
+    if (streamQuery.any && streamQuery.any.includes('*')) {
+      if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
+
+      // replace any by allowed streams for reading
+      const canReadStreamIds: Array<string> = [];
+      for (const streamPermission of context.access.getStoresPermissions(streamQuery.storeId)) {
+        if (await context.access.canGetEventsOnStream(streamPermission.streamId, streamQuery.storeId)) {
+          canReadStreamIds.push(streamPermission.streamId);
+        }
+      }
+      streamQuery.any = canReadStreamIds;
+    } else { // ------------ All other cases
+      /**
+       * ! we don't have to check for permissions on 'all' or 'not' as long there is at least one 'any' authorized. 
+       */
+      if (streamQuery?.any?.length === 0) {
+        return next(errors.invalidRequestStructure('streamQueries must have a valid {any: [...]} component'));
+      }
+
+      for (const streamId: string of streamQuery.any) {
+        await streamExistsAndCanGetEventsOnStream(streamId, streamQuery.storeId, unAuthorizedStreamIds, unAccessibleStreamIds);
+      };
+    }
+  }
+
+  if (unAuthorizedStreamIds.length > 0) {
+    context.tracing.finishSpan('streamQueries');
+    return next(errors.forbidden('stream [' + unAuthorizedStreamIds[0] + '] has not sufficent permission to get events'));
+  }
+  if (unAccessibleStreamIds.length > 0) {
+    context.tracing.finishSpan('streamQueries');
+    return next(errors.unknownReferencedResource(
+      'stream' + (unAccessibleStreamIds.length > 1 ? 's' : ''),
+      'streams',
+      unAccessibleStreamIds));
+  }
+  next();
+}
+
+/**
+ * Add "forced" and "none" events from permissions
+ */
+function streamQueryAddForcedAndForbiddenStreams(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+  for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
+    // ------------ ALL --------------- //
+    // add forced Streams if exists
+    const forcedStreamIds: Array<string> = context.access.getForcedStreamsGetEventsStreamIds(streamQuery.storeId);
+
+    if (forcedStreamIds?.length > 0) {
+      if (streamQuery.all == null) streamQuery.all = [];
+      streamQuery.all.push(...forcedStreamIds);
+    }
+
+    // ------------- NOT ------------- //
+    const forbiddenStreamIds: Array<string> = context.access.getForbiddenGetEventsStreamIds(streamQuery.storeId);
+    if (forbiddenStreamIds?.length > 0) {
+      if (streamQuery.not == null) streamQuery.not = [];
+      streamQuery.not.push(...forbiddenStreamIds);
+    }
+  }
+  next();
+}
+
+async function streamQueryExpandStreams(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+  async function expandStreamInContext(streamId: string, storeId: string, excludedIds) {
+    // remove eventual '#' in streamQuery
+    if (streamId.startsWith('#')) {
+      return [streamId.substr(1)]; // do not expand Stream
+    }
+
+    const query: StoreQuery =  {
+      id: streamId, 
+      storeId: storeId, 
+      includeTrashed: params.includeTrashed || params.state === 'all',  // ou est-ce que tu déclares includeTrashed?
+      expandChildren: true,
+      excludedIds: excludedIds
+    };
+
+    const tree = await stores.streams.get(context.user.id, query);
+    
+    // collect streamIds 
+    const resultWithPrefix = treeUtils.collectPluck(tree, 'id');
+    // remove storePrefix 
+    const result = resultWithPrefix.map((fullStreamId) => {
+      return StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId)[1];
+    });
+    return result;
+  }
+
+  try {
+    params.arrayOfStreamQueriesWithStoreId = await streamsQueryUtils.expandAndTransformStreamQueries(params.arrayOfStreamQueriesWithStoreId, expandStreamInContext);
+  } catch (e) {
+    console.log(e);
+    context.tracing.finishSpan('streamQueries');
+    return next(e);
+  }
+
+  // delete streamQueries with no inclusions 
+  params.arrayOfStreamQueriesWithStoreId = params.arrayOfStreamQueriesWithStoreId.filter(streamQuery => streamQuery.any || streamQuery.and);
+  context.tracing.finishSpan('streamQueries');
   next();
 }
 

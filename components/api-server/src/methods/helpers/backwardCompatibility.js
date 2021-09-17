@@ -9,10 +9,12 @@
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const Stream = require('business/src/streams/Stream');
-const StreamsQuery = require('business/src/streams/StreamsQuery');
 const Permission = require('business/src/accesses/Permission');
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
+import type { StreamQueryWithStoreId } from 'business/src/events';
+import type { GetEventsParams } from './eventsGetUtils';
+import type Result from '../../Result';
 
 const OLD_PREFIX: string = '.';
 
@@ -63,16 +65,16 @@ function replaceWithNewPrefix(streamId: string): string {
 function changeStreamIdsPrefixInStreamQuery(
   isStreamIdPrefixBackwardCompatibilityActive: boolean,
   context: MethodContext,
-  params: mixed,
+  params: GetEventsParams,
   result: Result,
   next: ApiCallback
-): void {
+): ?Function {
   if (! isStreamIdPrefixBackwardCompatibilityActive || context.disableBackwardCompatibility) return next();
-  const streamsQueries: Array<StreamsQuery> = params.streams;
-  const oldStyleStreamsQueries: Array<StreamsQuery> = [];
+  const streamsQueries: Array<StreamQueryWithStoreId> = params.arrayOfStreamQueriesWithStoreId;
+  const oldStyleStreamsQueries: Array<StreamQueryWithStoreId> = [];
   for (const streamsQuery of streamsQueries) {
     const oldStyleStreamQuery = {};
-    for (const [prop, streamIds] of Object.entries(streamsQuery)) {
+    for (const [prop: string, streamIds: Array<string>] of Object.entries(streamsQuery)) {
       if (prop === 'storeId') {
         oldStyleStreamQuery[prop] = streamIds; // hack
       } else {
@@ -81,7 +83,7 @@ function changeStreamIdsPrefixInStreamQuery(
     }
     oldStyleStreamsQueries.push(oldStyleStreamQuery);
   }
-  params.streams = oldStyleStreamsQueries;
+  params.arrayOfStreamQueriesWithStoreId = oldStyleStreamsQueries;
   next();
 }
 

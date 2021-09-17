@@ -16,7 +16,7 @@ const util = require('util');
 const { StreamsUtils } = require('stores');
 const { findForbiddenChar } = require('../../schema/streamId');
 
-import type StreamQuery from 'business/src/events';
+import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
 
 /**
  * @typedef {Object} StreamQueryScoped
@@ -83,6 +83,7 @@ function validateStreamsQueriesAndSetStore(arrayOfQueries: Array<StreamQuery>) {
   arrayOfQueries.forEach((streamQuery: StreamQuery) => {
     validateStreamsQuerySchemaAndSetStore(arrayOfQueries, streamQuery);
   });
+  return arrayOfQueries;
 }
 exports.validateStreamsQueriesAndSetStore = validateStreamsQueriesAndSetStore;
 
@@ -117,12 +118,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
       throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' unkown property: \'' + property + '\' in streams query \'' + objectToString(streamQuery) + '\'');
 
     if (!Array.isArray(arrayOfStreamIds)) {
-      if (property === 'any' && arrayOfStreamIds === '*') { // can we not accept a non-array here?
-        validateAndAttachStore('*'); // will be handled as local
-        continue; // stop here and go to next property
-      } else {
-        throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' value of : \'' + property + '\' must be an array. Found: \'' + objectToString(arrayOfStreamIds) + '\'');
-      }
+      throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' value of : \'' + property + '\' must be an array. Found: \'' + objectToString(arrayOfStreamIds) + '\'');
     }
 
     const arrayOfCleanStreamIds: Array<string> = [];

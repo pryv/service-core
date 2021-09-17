@@ -29,7 +29,7 @@ const ErrorMessages = require('errors/src/ErrorMessages');
 const assert = require('assert');
 const MultiStream = require('multistream');
 
-const eventsGetUtil = require('./helpers/eventsGetUtils');
+const eventsGetUtils = require('./helpers/eventsGetUtils');
 
 const { getAPIVersion } = require('middleware/src/project_version');
 
@@ -76,7 +76,7 @@ module.exports = async function (api)
   const openSourceSettings = config.get('openSource')
   const usersRepository = await getUsersRepository(); 
   const stores = await getStores();
-  await eventsGetUtil.init();
+  await eventsGetUtils.init();
   
   // Initialise the project version as soon as we can. 
   const version = await getAPIVersion();
@@ -99,16 +99,16 @@ module.exports = async function (api)
 
   // RETRIEVAL
   api.register('events.get',
-    eventsGetUtil.coerceStreamsParam,
+    eventsGetUtils.coerceStreamsParam,
     commonFns.getParamsValidation(methodsSchema.get.params),
-    eventsGetUtil.applyDefaultsForRetrieval,
+    eventsGetUtils.applyDefaultsForRetrieval,
     applyTagsDefaultsForRetrieval,
-    eventsGetUtil.transformArrayOfStringsToStreamsQuery,
-    eventsGetUtil.validateStreamsQueriesAndSetStore,
+    eventsGetUtils.transformArrayOfStringsToStreamsQuery,
+    eventsGetUtils.validateStreamsQueriesAndSetStore,
     changeStreamIdsPrefixInStreamQuery.bind(null, isStreamIdPrefixBackwardCompatibilityActive), // using currying to pass "isStreamIdPrefixBackwardCompatibilityActive" argument
-    eventsGetUtil.streamQueryCheckPermissionsAndReplaceStars,
-    eventsGetUtil.streamQueryAddForcedAndForbiddenStreams,
-    eventsGetUtil.streamQueryExpandStreams,
+    eventsGetUtils.streamQueryCheckPermissionsAndReplaceStars,
+    eventsGetUtils.streamQueryAddForcedAndForbiddenStreams,
+    eventsGetUtils.streamQueryExpandStreams,
     findEventsFromStore,
     includeLocalStorageDeletionsIfRequested);
 
@@ -127,20 +127,21 @@ module.exports = async function (api)
    * - Add specific stream queries to each of them
    */
   async function findEventsFromStore(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (params.streams === null || params.streams.length === 0)  {
+    params.arrayOfStreamQueriesWithStoreId;
+    if (params.arrayOfStreamQueriesWithStoreId?.length === 0)  {
       result.events = [];
       return next();
     }
 
     // in> params.fromTime = 2 params.streams = [{any: '*' storeId: 'local'}, {any: 'access-gasgsg', storeId: 'audit'}, {any: 'action-events.get', storeId: 'audit'}]
     const paramsByStoreId = {};
-    for (let streamQuery of params.streams) {
+    for (const streamQuery of params.arrayOfStreamQueriesWithStoreId) {
       const storeId = streamQuery.storeId;
       if (storeId == null) {
-        console.error('Missing storeId' + params.streams);
-        throw(new Error("Missing storeId" + params.streams));
+        console.error('Missing storeId' + params.arrayOfStreamQueriesWithStoreId);
+        throw(new Error("Missing storeId" + params.arrayOfStreamQueriesWithStoreId));
       }
-      if (! paramsByStoreId[storeId]) {
+      if (paramsByStoreId[storeId] == null) {
         paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
         paramsByStoreId[storeId].streams = []; // empty the stream query
       }

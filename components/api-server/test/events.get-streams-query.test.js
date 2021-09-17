@@ -241,19 +241,19 @@ describe('events.get streams query', function () {
             { not: ['A', 'B'] },
           ],
           'unkown property': [
-            { all: ['A', 'B'], zz: ['A'] },
+            { any: ['A', 'B'], zz: ['A'] },
           ],
           'must be an array': [
             // only array strings (streamIds)
             { any: {all: 'B'} },
-            { all: true },
+            { any: true },
             { any: '*', not: 'B' },
           ],
           'must be streamIds': [
             // only array strings (streamIds)
             { any: ['A', 'B', { all: 'Z' }] },
-            { all: ['A', 'B', true] },
-            { any: '*', not: ['A', 'B', ['A']] },
+            { any: ['A', 'B', true] },
+            { any: ['*'], not: ['A', 'B', ['A']] },
           ]
         };
 
@@ -427,7 +427,7 @@ describe('events.get streams query', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({ streams: JSON.stringify({ any: '*', not: ['D'] }) });
+        .query({ streams: JSON.stringify({ any: ['*'], not: ['D'] }) });
       const events = res.body.events;
       assert.equal(events.length, 3);
       events.forEach(e => {
@@ -450,7 +450,7 @@ describe('events.get streams query', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({ streams: JSON.stringify({ any: "*", not: ['B','E']}) });
+        .query({ streams: JSON.stringify({ any: ['*'], not: ['B','E']}) });
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 6);

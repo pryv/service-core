@@ -59,7 +59,7 @@ class MethodContext {
 
   accessToken: ?string;
   callerId: ?string;
-  headers: ?object; // used in custom auth function
+  headers: ?{}; // used in custom auth function
 
   methodId: ?string; // API method id. Ex.: 'events.get'
 
@@ -72,6 +72,9 @@ class MethodContext {
   stores: Store;
 
   _tracing: ?Tracing;
+
+  // events get
+  acceptStreamsQueryNonStringified: ?boolean;
 
   /**
    * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
