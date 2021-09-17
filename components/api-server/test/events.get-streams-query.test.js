@@ -612,7 +612,7 @@ describe('events.get streams query', function () {
         assert.equal(res.body.error.id, 'unknown-referenced-resource');
       });
 
-      it('[WRVU] must return error when the is no "any"', async function () {
+      it('[WRVU] must return error when there is no "any"', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenRead)
@@ -621,7 +621,7 @@ describe('events.get streams query', function () {
         assert.equal(res.body.error.id, 'invalid-request-structure');
       });
 
-      it('[30NV] must return error when provided a boolean instead of an expression', async function () {
+      it('[30NV] must return error when provided a boolean instead of a string', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenRead)
@@ -630,13 +630,23 @@ describe('events.get streams query', function () {
         assert.equal(res.body.error.id, 'invalid-request-structure');
       });
 
-      it('[YOJ9] must return error when provided a null instead of an expression', async function () {
+      it('[YOJ9] must return error when provided a null instead of a stream query', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: JSON.stringify([null, { any:  ['A', 'Z'] }]) });
         assert.exists(res.body.error);
         assert.equal(res.body.error.id, 'invalid-request-structure');
+      });
+
+      it('[8NNP] must return an error when providing a non-stringified stream query', async function () {
+        const res = await server.request()
+          .get(basePathEvent)
+          .set('Authorization', tokenRead)
+          .query({ streams: [{ any:  ['A', 'Z'] }] });
+        assert.exists(res.body.error);
+        assert.equal(res.body.error.id, 'invalid-request-structure');
+        assert.include(res.body.error.message, 'should be an array of streamIds or JSON logical query');
       });
 
       it('[3X9I] must return an empty list when provided a trashed streamId', async function () {

@@ -8,7 +8,6 @@
 
 import type { Stream } from '../streams';
 
-
 export type SystemStream = Stream & {
   isIndexed: boolean,
   isUnique: boolean,
