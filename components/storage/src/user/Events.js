@@ -76,7 +76,12 @@ function addIntegrity (eventData) {
 }
 
 function durationToEndTime (eventData) {
-  if (eventData.duration != null) {
+  if (typeof eventData.endTime != 'undefined' ) {
+    console.log('endTime should no be defined ', {id: eventData.id, endTime: eventData.endTime, duration: eventData.duration});
+  }
+  if (eventData.duration === null) { // exactly null 
+    eventData.endTime = null;
+  } else if (eventData.duration != null) { // (no undefined)
     eventData.endTime = eventData.time + eventData.duration;
   }
   delete eventData.duration;
@@ -85,12 +90,16 @@ function durationToEndTime (eventData) {
 
 
 function endTimeUpdate (update) {
-  if (update.$set.duration != null) {
-   if (update.$set.time == null) {
-    throw (new Error('Cannot update duration without known the time' + JSON.stringify(update)));
-   }
-   update.$set.endTime = update.$set.time + update.$set.duration;
-   delete update.$set.duration ;
+  if (update.$set) {
+    if (update.$set.duration === null) {
+      update.$set.endTime = null;
+    } else if (update.$set.duration != null) { // (no undefined)
+      if (update.$set.time == null) {
+        throw (new Error('Cannot update duration without known the time' + JSON.stringify(update)));
+      }
+      update.$set.endTime = update.$set.time + update.$set.duration;
+    }
+    delete update.$set.duration ;
   }
   return update;
 }
@@ -99,7 +108,9 @@ function endTimeToDuration (event) {
   if (!event) {
     return event;
   }
-  if (event.endTime != null) {
+  if (event.endTime === null) {
+    event.duration = null;
+  } else if (event.endTime != null) {
     const prevDuration = event.duration;
     event.duration = event.endTime - event.time;
     if (prevDuration != null && prevDuration != event.duration) {
@@ -153,7 +164,7 @@ function getDbIndexes () {
  */
 Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
   const that = this;
-  
+
   // unset eventually existing integrity field. Unless integrity is in set request
   if (update.integrity == null && update.$set?.integrity == null) {
     if (! update.$unset) update.$unset = {};

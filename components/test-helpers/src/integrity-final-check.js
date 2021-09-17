@@ -20,15 +20,24 @@ async function events() {
     event.id = event._id;
     delete event._id;
     delete event.userId;
+
+    const errors = [];
+
+    if (typeof event.duration != 'undefined') {
+      errors.push('unexpected duration prop');
+    }
+
     if (event.endTime) {
-      if (! event.duration) {
-        event.duration = event.endTime - event.time;
-      }
+      event.duration = event.endTime - event.time;
       delete event.endTime;
     }
     const i = integrity.events.compute(event).integrity;
     if (i != event.integrity) { 
-      erroneousEvents.push({event, i});
+      errors.push('expected integrity: ' + i);
+    }
+
+    if (errors.length != 0) {
+      erroneousEvents.push({event, errors});
     }
   };
   if (erroneousEvents.length > 0) {
