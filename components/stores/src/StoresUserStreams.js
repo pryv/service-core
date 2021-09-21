@@ -4,11 +4,14 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const {DataSource, UserStreams}  = require('../interfaces/DataSource');
 
+// @flow
+
+const { DataSource, UserStreams }  = require('../interfaces/DataSource');
 const StreamsUtils = require('./lib/StreamsUtils');
-
 const { treeUtils } = require('utils');
+
+import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
 
 /**
  * Handle Store.streams.* methods
@@ -30,7 +33,7 @@ class StoresUserStreams extends UserStreams {
     if (storeId == null) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
     const store = this.mainStore._storeForId(storeId);
     if (store == null) return null;
-    const streams = await store.streams.get(uid, {id: streamId, includeTrashed: true});
+    const streams = await store.streams.get(uid, { id: streamId, includeTrashed: true, storeId });
     if (streams?.length === 1) return streams[0];
     return null;
   }
@@ -48,67 +51,45 @@ class StoresUserStreams extends UserStreams {
    * @param {timestamp} [params.includeDeletionsSince] 
    * @returns {UserStream|null} - the stream or null if not found:
    */
-  async get(uid, params) {
+  async get(uid: string, params: StoreQuery) {
 
     // -------- cleanup params --------- //
-    
-    let streamId = params.id || '*';
-    let storeId = params.storeId; // might me null
-    let excludedIds = null;
-
-    if (storeId == null) { // --- Also strip storeId from excluded Idds
-      [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
-      excludedIds = [];
-      for (const excludedFullStreamId of params.excludedIds) { // keep only streamIds in this store
-        const [excludedStoreId, excludedStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(excludedFullStreamId);
-        if (excludedStoreId === storeId) {
-          excludedIds.push(excludedStreamId);
-        }
-      }
-    } else {
-      excludedIds = params.excludedIds;
-    }
+    const streamId: string = params.id || '*'; // why?? -- IT SHOULD NOT HAVE DEFAULT VALUES
+    const storeId: string = params.storeId; // might me null -- how? IT DOES NOT HAPPEN
+    const excludedIds: Array<string> = params.excludedIds;
 
     // ------- create result ------//
     let res = [];
 
     // *** root query we just expose stores handles & local streams
     // might be moved in LocalDataSource ? 
-    if (streamId === '*' && storeId === 'local') { 
-      for (const source of this.mainStore.stores) {
-        if (source.id !== 'local') {
-          res.push(StreamsUtils.sourceToStream(source, {
-            children: [],
-            childrenHidden: true // To be discussed
-          }));
-        }
-      }
+    if (streamId === '*' && storeId === 'local') {
+      res = getChildlessRootStreamsForOtherStores(this.mainStore.stores);
     }
     //------ Query Store -------------//
 
-    const myParams = {
+    const store = this.mainStore._storeForId(storeId);
+
+    const myParams: StoreQuery = {
       id: streamId,
       includeDeletionsSince: params.includeDeletionsSince,
       includeTrashed: params.includeTrashed,
       expandChildren: params.expandChildren,
+      excludedIds: store.streams.hasFeatureGetParamsExcludedIds ? excludedIds : null,
+      storeId: null, // we'll address this request to a store
     }
 
-    const store = this.mainStore._storeForId(storeId);
+    // add it to parameters if feature is supported by store.
+    if (store.streams.hasFeatureGetParamsExcludedIds) myParams.excludedIds = excludedIds;
 
-    // add it to parameters if feature is supported.
-    if (store.streams.hasFeatureGetParamsExcludedIds)
-      myParams.excludedIds = excludedIds;
-   
     const storeStreams = await store.streams.get(uid, myParams);
 
     // add storeStreams to result
     res.push(...storeStreams);
 
-    // if store does not handle excludeIds on his own filter 
-    if (! store.streams.hasFeatureGetParamsExcludedIds &&  excludedIds.length > 0) {
-      res = treeUtils.filterTree(res, false, function (stream) { 
-        return ! excludedIds.includes(stream.id);;
-      });
+    // if store does not support excludeIds, perform it here
+    if (! store.streams.hasFeatureGetParamsExcludedIds && excludedIds.length > 0) {
+      res = performExclusion(res, excludedIds);
     }
 
     if (storeId !== 'local') { // add Prefix
@@ -121,6 +102,23 @@ class StoresUserStreams extends UserStreams {
     }
 
     return res;
+
+    function getChildlessRootStreamsForOtherStores(stores: Array<{}>): Array<{}> {
+      const res = [];
+      for (const source of stores) {
+        if (source.id !== 'local') {
+          res.push(StreamsUtils.sourceToStream(source, {
+            children: [],
+            childrenHidden: true // To be discussed
+          }));
+        }
+      }
+      return res;
+    }
+
+    function performExclusion(res: Array<{}>, excludedIds: Array<string>): Array<{}> {
+      return treeUtils.filterTree(res, false, (stream) => ! excludedIds.includes(stream.id));
+    }
   }
 
 }
