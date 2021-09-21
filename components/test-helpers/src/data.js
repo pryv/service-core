@@ -60,7 +60,7 @@ exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
   }
   
   if (addToId) {
-    var data = JSON.parse(JSON.stringify(accesses));
+    var data = _.cloneDeep(accesses);
     for (var i = 0; i < data.length; i++) {
       data[i].id += u.id;
     }

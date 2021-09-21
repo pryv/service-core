@@ -62,7 +62,7 @@ class LocalDataSource extends DataSource {
 
 function clone(obj: any): any {
 // Clone streams -- BAd BaD -- To be optimized 
-return JSON.parse(JSON.stringify(obj))
+return _.cloneDeep(obj);
 }
 function cloneStream(sourceStream: Stream, includeChildren: boolean): Stream {
   if (includeChildren) {
