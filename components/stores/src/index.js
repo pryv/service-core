@@ -58,18 +58,3 @@ module.exports = {
   getStores : getStores,
   StreamsUtils: require('./lib/StreamsUtils')
 };
-
-
-
-// ---- dev mode 
-
-(async () => { 
-  try {
-    const s = await getStores();
-    const streams = await s.streams.get('toto', {parentIds: ['.*']});
-    //const streams = await s.events.get('toto', {streamIds: ['.*']});
-    console.log(require('util').inspect(streams, null, 10));
-  } catch (e) {
-    console.log(e);
-  }
-});
