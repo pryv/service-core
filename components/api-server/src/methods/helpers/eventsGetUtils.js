@@ -127,11 +127,11 @@ function coerceStreamsParam(context: MethodContext, params: GetEventsParams, res
 
   next();
 
-  function parseStreamsParams(input: string) {
+  function parseStreamsParams(input: string): ?StreamQuery | ?Array<StreamQuery>  {
     try {
       return JSON.parse(input);
     } catch (e) {
-      return next(errors.invalidRequestStructure('Invalid "streams" parameter. It should be an array of streamIds or JSON logical query. Error while parsing JSON ' + e, input));
+      next(errors.invalidRequestStructure('Invalid "streams" parameter. It should be an array of streamIds or JSON logical query. Error while parsing JSON ' + e, input));
     }
   }
 
