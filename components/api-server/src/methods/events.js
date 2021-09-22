@@ -719,6 +719,7 @@ module.exports = async function (api)
     verifyUnicity,
     updateEvent,
     removeActiveFromSibling,
+    addIntegrityToContext,
     notify);
 
   async function applyPrerequisitesForUpdate(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
