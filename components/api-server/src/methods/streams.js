@@ -306,6 +306,10 @@ module.exports = async function (api) {
   }
 
   async function applyPrerequisitesForUpdate(context, params, result, next) {
+    if (params?.update?.parentId === params.id) {
+      return next(errors.invalidOperation('The provided "parentId" is the same as the stream\'s "id".', params.update));
+    }
+
     // check stream
     var stream = await context.streamForStreamId(params.id);
     if (!stream) {
@@ -315,6 +319,7 @@ module.exports = async function (api) {
         )
       ));
     }
+
     if (!await context.access.canUpdateStream(stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }

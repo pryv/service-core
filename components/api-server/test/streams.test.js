@@ -23,6 +23,7 @@ const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const treeUtils = require('utils').treeUtils;
 const _ = require('lodash');
+const charlatan = require('charlatan');
 
 const chai = require('chai');
 const assert = chai.assert; 
@@ -419,7 +420,6 @@ describe('streams', function () {
         }, done);
       });
     });
-
   });
 
   describe('PUT /<id>', function () {
@@ -571,6 +571,19 @@ describe('streams', function () {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
           data: {parentId: 'unknown-id'}
+        }, done);
+      });
+    });
+
+    // ticket #1209
+    it('[29S6] must return an error if the "parentId" is the same as the "id"', function (done) {
+      const id = testData.streams[1].id;
+      request.put(path(id)).send({parentId: id})
+          .end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidOperation,
+          data: {parentId: id}
         }, done);
       });
     });
