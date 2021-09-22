@@ -47,6 +47,7 @@ const { ResultError } = require('influx');
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
 const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
+const { integrity } = require('business');
 
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
@@ -443,9 +444,11 @@ module.exports = async function (api)
     validateAccountStreamsForCreation,
     appendAccountStreamsDataForCreation,
     verifyUnicity,
+    handleSeries,
     createEvent,
     removeActiveFromSibling,
     createAttachments,
+    addIntegrityToContext,
     notify);
 
   function applyPrerequisitesForCreation(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -595,7 +598,7 @@ module.exports = async function (api)
     }
   }
 
-  async function createEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  function handleSeries(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (isSeriesType(context.newEvent.type)) {
       if (openSourceSettings.isActive) {
         return next(errors.unavailableMethod());
@@ -608,6 +611,10 @@ module.exports = async function (api)
       // As long as there is no data, event duration is considered to be 0.
       context.newEvent.duration = 0; 
     }
+    next();
+  }
+
+  async function createEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
       const newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
@@ -678,6 +685,22 @@ module.exports = async function (api)
     } catch (err) {
       next(err);
     }
+  }
+
+  function addIntegrityToContext(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if(result?.event?.integrity != null ) {
+      context.auditIntegrityPayload = {
+        key: integrity.events.key(result.event),
+        integrity: result.event.integrity,
+      };
+      if (process.env.NODE_ENV === 'test') {
+        // double check integrity when running tests only
+        if (result.event.integrity != integrity.events.hash(result.event)) {
+          return next(new Error('integrity mismatch at events.create' + JSON.stringify(result.event)));
+        }
+      }
+    }
+    next();
   }
 
   // -------------------------------------------------------------------- UPDATE

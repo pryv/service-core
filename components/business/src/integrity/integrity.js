@@ -87,12 +87,20 @@ const attachments = {
 
 // ------------- events ------------------ //
 
-function forEvent(event) {
+function compute(event) {
   return stableRepresentation.event.compute(event, algorithm);
 }
 
+function key(event) {
+  return stableRepresentation.event.key(event);
+}
+
+function hash(event) {
+  return stableRepresentation.event.hash(event, algorithm);
+}
+
 function setOnEvent(event) {
-  event.integrity = forEvent(event).integrity;
+  event.integrity = hash(event);
   return event;
 }
 
@@ -101,7 +109,9 @@ function setOnEvent(event) {
  */
 const events = {
   isActive: eventsIsActive,
-  compute: forEvent,
+  compute,
+  key,
+  hash,
   set: setOnEvent
 }
 

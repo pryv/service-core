@@ -69,7 +69,7 @@ async function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
     res.header('Content-Type', attachment.type);
     res.header('Content-Length', attachment.size);
     res.header('Content-Disposition', 'attachment; filename="' + attachment.fileName + '"');
-    if (attachment.integrity) {
+    if (attachment.integrity != null) {
       const digest = getHTTPDigestHeaderForAttachment(attachment.integrity)
       if (digest != null) {
         res.header('Digest', digest);

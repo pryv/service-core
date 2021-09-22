@@ -66,8 +66,8 @@ class Audit {
 
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
-    if (context.auditHash) {
-      _.merge(event.content, context.auditHash);
+    if (context.auditIntegrityPayload != null) {
+      event.content.hash = context.auditIntegrityPayload;
     }
     event.type = CONSTANTS.EVENT_TYPE_VALID;
     await this.eventForUser(userId, event, methodId);
