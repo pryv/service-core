@@ -445,7 +445,7 @@ BaseStorage.prototype.findAll = function(userOrUserId, options, callback) {
  */
 BaseStorage.prototype.insertMany = function(userOrUserId, items, callback) {
   // Groumpf... Many tests are relying on this.. 
-  const nItems = JSON.parse(JSON.stringify(items));
+  const nItems = _.cloneDeep(items);
   this.database.insertMany(
     this.getCollectionInfo(userOrUserId),
     this.applyItemsToDB(nItems),
