@@ -35,6 +35,8 @@ class DataSource {
 
   _id: string;
   _name: string;
+  _streams: UserStreams;
+  _events: UserEvents;
 
   set id(id: string): void { this._id = id; }
   set name(name: string): void { this._name = name; }

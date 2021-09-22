@@ -26,16 +26,13 @@ const cache = require('cache');
 import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { Stream } from 'business/src/streams';
 
-const STORE_ID: string = 'local';
-const STORE_NAME: string = 'Local Store';
-
 let userEventsStorage;
 let userStreamsStorage;
 
 class LocalDataSource extends DataSource {
   
-  get id() { return STORE_ID; }
-  get name() { return STORE_NAME; }
+  _id: string = 'local';
+  _name: string = 'Local Store';
 
   constructor() {  
     super(); 
@@ -46,7 +43,7 @@ class LocalDataSource extends DataSource {
     }
   }
 
-  async init() {
+  async init(): Promise<DataSource> {
     // get config and load approriated data sources componenst;
     this._streams = new LocalUserStreams();
     this._events = new LocalUserEvents();
