@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const { DataSource } = require('../../interfaces/DataSource');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const LOCAL_STORE = 'local';
 
 /**
@@ -51,7 +50,7 @@ function storeIdAndStreamIdForStreamId(fullStreamId) {
  * Get full streamId from source + cleanstreanId
  * @returns {string} 
  */
- function streamIdForStoreId(streamId, storeId) {
+function streamIdForStoreId(streamId, storeId) {
   if (storeId === LOCAL_STORE) return streamId;
   const isDashed = (streamId.indexOf('#') === 0);
   let sstreamId = isDashed ? streamId.substr(1) : streamId;

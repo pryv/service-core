@@ -9,7 +9,7 @@
  * Send predicatable static data
  */
 
-const {DataSource, UserStreams, UserEvents}  = require('../../interfaces/DataSource');
+const { DataSource, UserStreams, UserEvents }  = require('../../interfaces/DataSource');
 
 class Dummy extends DataSource {
 
@@ -51,8 +51,8 @@ class DummyUserStreams extends UserStreams {
       for (let stream of arrayOfStreams) {
         if (stream.id === streamId) return stream;
         if (stream.children) {
-         const found = findStream(streamId, stream.children);
-         if (found) return found;
+          const found = findStream(streamId, stream.children);
+          if (found) return found;
         }
       }
       return [];

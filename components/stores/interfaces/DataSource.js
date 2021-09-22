@@ -5,6 +5,10 @@
  * Proprietary and confidential
  */
 
+// @flow
+
+import type { Stream } from 'business/src/streams';
+import type { Event } from 'business/src/events';
 
 /**
  * Notes:
@@ -28,13 +32,21 @@ function toBeImplemented() {
  * @property {string} BY_EXTERNAL_PREFIX - When createdBy / modifiedBy value is an external Reference
  */
 class DataSource { 
+
+  _id: string;
+  _name: string;
+
+  set id(id: string): void { this._id = id; }
+  set name(name: string): void { this._name = name; }
+  get id(): string { return this._id; }
+  get name(): string { return this._name; }
   
-  async init(config) { toBeImplemented(); }
+  async init(config: {}): Promise<void> { toBeImplemented(); }
 
   /** @returns  UserStreams */
-  get streams() { toBeImplemented(); } 
+  get streams(): UserStreams { toBeImplemented(); } 
   /** @returns  UserEvents */
-  get events() { toBeImplemented(); } 
+  get events(): UserEvents { toBeImplemented(); } 
 
   // -- will be overriden by the system to throw appropriate error
   static throwUnkownRessource(resourceType, id, innerError) { // APIError.UnknownResource 
@@ -84,7 +96,7 @@ class UserStreams {
    * @param {timestamp} [params.includeDeletionsSince] 
    * @returns {UserStream|null} - the stream or null if not found:
    */
-  async get(uid, params) { toBeImplemented(); }
+  async get(uid: string, params): Promise<Array<Stream>> { toBeImplemented(); }
 
 
   /**
@@ -95,7 +107,7 @@ class UserStreams {
    * @throws ressource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Stream} - The created Stream
    */
-  async create(uid, params)  { toBeImplemented(); }
+  async create(uid: string, params): Promise<void> { toBeImplemented(); }
 
   /**
    * @see https://api.pryv.com/reference/#update-stream
@@ -104,7 +116,7 @@ class UserStreams {
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Stream
    */
-  async update(uid, streamid, params) { toBeImplemented(); }
+  async update(uid: string, streamId: string, params): Promise<void> { toBeImplemented(); }
 
   /**
    * @see https://api.pryv.com/reference/#delete-stream
@@ -113,7 +125,7 @@ class UserStreams {
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream|StreamDeletionItem} - The trashed Stream
    */
-  async delete(uid, streamid, params) { toBeImplemented(); }
+  async delete(uid: string, streamId: string, params): Promise<void> { toBeImplemented(); }
 
   /**
    * Utility to complete a stream structure with missing properties and streamIds.
@@ -122,7 +134,7 @@ class UserStreams {
    * @property {Array<Streams>} streams
    * @returns null;
    */
-  static applyDefaults(streams) {
+  static applyDefaults(streams: Array<Stream>): void {
     _applyDefaults(streams, null);
   }
 }
@@ -133,13 +145,13 @@ class UserStreams {
  * @param {string} storeIdNameSpace - namespacing for streamIds
  * @param {Array<Streams>} streams 
  */
-function _applyDefaults(streams, parentId) {
-  for (let stream of streams) {
+function _applyDefaults(streams: Array<Stream>, parentId: ?string): void {
+  for (const stream: Stream of streams) {
     if (typeof stream.created === 'undefined') stream.created = DataSource.UNKOWN_DATE;
     if (typeof stream.modified === 'undefined') stream.modified = DataSource.UNKOWN_DATE;
     if (typeof stream.createdBy === 'undefined') stream.createdBy = DataSource.BY_UNKOWN;
     if (typeof stream.modifiedBy === 'undefined') stream.modifiedBy = DataSource.BY_UNKOWN;
-    if (! stream.children) stream.children = [];
+    if (stream.children == null) stream.children = [];
     if (stream.children.length > 0) _applyDefaults(stream.children, stream.id);
     // force parentId
     stream.parentId = parentId;
@@ -159,7 +171,7 @@ class UserEvents {
    * @returns {Array<Stream>}
    * @see https://api.pryv.com/reference/#get-events
    */
-  async get(uid, params) { toBeImplemented(); }
+  async get(uid: string, params): Promise<Array<Event>> { toBeImplemented(); }
 
 
   /**
@@ -169,7 +181,7 @@ class UserEvents {
    * @returns {Readable}
    * @see https://api.pryv.com/reference/#get-events
    */
-   async getStreamed(uid, params) { toBeImplemented(); }
+  async getStreamed(uid: string, params): Promise<{}> { toBeImplemented(); }
 
   /**
    * @see https://api.pryv.com/reference/#create-event
@@ -179,7 +191,7 @@ class UserEvents {
    * @throws ressource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-  async create(uid, params)  { toBeImplemented(); }
+  async create(uid: string, params): Promise<void>  { toBeImplemented(); }
 
   /**
    * @see https://api.pryv.com/reference/#update-event
@@ -188,7 +200,7 @@ class UserEvents {
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Event
    */
-  async update(uid, eventId, params) { toBeImplemented(); }
+  async update(uid: string, eventId: string, params): Promise<void> { toBeImplemented(); }
 
   /**
    * @see https://api.pryv.com/reference/#delete-event
@@ -197,7 +209,7 @@ class UserEvents {
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Event|EventDeletionItem} - The trashed Event
    */
-  async delete(uid, eventId, params) { toBeImplemented(); }
+  async delete(uid: string, eventId: string, params): Promise<void> { toBeImplemented(); }
 
 
   /**
@@ -209,15 +221,15 @@ class UserEvents {
    */
 
 
-   /**
+  /**
    * Utility to complete a event properties with missing properties and complete streamIds.
    * **Note** events object will be modified
    * @property {string} storeId - to be happend to streamId with '.${storeId}-'
    * @property {Array<Events>} events
    * @returns null;
    */
-  static applyDefaults(events) {
-    for (let event of events) {
+  static applyDefaults(events: Array<Event>) {
+    for (const event: Event of events) {
       if (typeof event.created === 'undefined') event.created = DataSource.UNKOWN_DATE;
       if (typeof event.modified === 'undefined') event.modified = DataSource.UNKOWN_DATE;
       if (typeof event.createdBy === 'undefined') event.createdBy = DataSource.BY_UNKOWN;

@@ -26,8 +26,8 @@ const cache = require('cache');
 import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { Stream } from 'business/src/streams';
 
-const STORE_ID = 'local';
-const STORE_NAME = 'Local Store';
+const STORE_ID: string = 'local';
+const STORE_NAME: string = 'Local Store';
 
 let userEventsStorage;
 let userStreamsStorage;
@@ -61,8 +61,8 @@ class LocalDataSource extends DataSource {
 }
 
 function clone(obj: any): any {
-// Clone streams -- BAd BaD -- To be optimized 
-return _.cloneDeep(obj);
+  // Clone streams -- BAd BaD -- To be optimized 
+  return _.cloneDeep(obj);
 }
 function cloneStream(sourceStream: Stream, includeChildren: boolean): Stream {
   if (includeChildren) {
@@ -92,7 +92,7 @@ class LocalUserStreams extends UserStreams {
       // assert: params.expandChildren == true, see "#*" case
       streams = clone(allStreamsForAccount); // clone to be sure they can be mutated without touching the cache
     } else {
-      const stream = treeUtils.findById(allStreamsForAccount, params.id); // find the stream
+      const stream: Stream = treeUtils.findById(allStreamsForAccount, params.id); // find the stream
       if (stream != null) streams = [cloneStream(stream, params.expandChildren)]; // clone to be sure they can be mutated without touching the cache
     }
 

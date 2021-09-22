@@ -4,6 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+// @flow
+
 /**
  * Data Source aggregator. 
  * Pack configured datasources into one
@@ -11,7 +14,7 @@
 
 const errors = require('errors').factory;
 
-const {DataSource} = require('../interfaces/DataSource');
+const { DataSource } = require('../interfaces/DataSource');
 
 // --- Override Error handling 
 
@@ -30,8 +33,13 @@ const StoreUserEvents = require('./StoresUserEvents');
 
 class Stores extends DataSource {
 
-  get id() { return 'store' }
-  get name() { return 'Store' }
+  _id: string = 'store';
+  _name: string = 'Store';
+  stores: Array<DataSource>;
+  storesMap: Map<string, DataSource>;
+  initialized: boolean;
+  _streams: StoresUserStreams;
+  _events: StoreUserEvents;
 
   constructor() {
     super();
@@ -40,22 +48,25 @@ class Stores extends DataSource {
     this.initialized = false;
   }
 
+  get streams(): StoresUserStreams { return this._streams; }
+  get events(): StoreUserEvents { return this._events; }
+
   /**
    * register a new DataSource
    * @param 
    */
-  addStore(store) {
+  addStore(store: DataSource): void {
     if (this.initialized) throw(new Error('Sources cannot be added after init()'));
     this.stores.push(store);
     this.storesMap[store.id] = store;
   }
 
-  async init() {
+  async init(): Promise<Stores> {
     if (this.initialized) throw(new Error('init() can only be called once.'));
     this.initialized = true;
 
     // initialize all stores
-    for (let store of this.stores) {
+    for (const store: DataSource of this.stores) {
       await store.init();
     }
 
@@ -71,12 +82,9 @@ class Stores extends DataSource {
    * @param {identifier} storeId 
    * @returns 
    */
-  _storeForId(storeId) {
+  _storeForId(storeId: string): DataSource {
     return this.storesMap[storeId];
   }
-
-  get streams() { return this._streams; }
-  get events() { return this._events; }
 
 }
 
