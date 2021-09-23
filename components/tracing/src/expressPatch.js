@@ -7,16 +7,17 @@
 
 
 module.exports = function patchApp(app, expressSpanName) {
-  if (app.unpatchedUse != null) throw new Error('Already patched');
+  if (app.legacy_use != null) throw new Error('Already patched');
 
-  app.unpatchedUse = app.use;
+  app.legacy_use = app.use;
   app.use = function () {
     const newArgs = [];
     for (let i = 0; i < arguments.length; i++) {
+      // !!!! doing nothing for now.. all attemp to patch "use" failed
       newArgs.push(patchFunction0(arguments[i]));
     }
     //console.log(arguments, newArgs);
-    return app.unpatchedUse(...newArgs);
+    return app.legacy_use(...newArgs);
   }
 
   patch('get');
@@ -39,22 +40,17 @@ module.exports = function patchApp(app, expressSpanName) {
 
   function patchFunction(fn, spanName) {
     return async function (req, res, next) {
-      function nextCloseSpan(err) {
+      req.tracing.startSpan(spanName, {}, expressSpanName);
+      return await fn(req, res, function nextCloseSpan(err) {
         req.tracing.finishSpan(spanName);
         next(err);
-      }
-      req.tracing.startSpan(spanName, {}, expressSpanName);
-      try {
-        return await fn(req, res, nextCloseSpan);
-      } catch (e) {
-        console.log('XXXX PatchError', e);
-        req.tracing.finishSpan(spanName);
-        throw e;
-      }
+      });
     }
   }
 
+  // doing nothing 
   function patchFunction0(fn) {
+    console.log('>>>> unpatched: ', fn.name);
     return fn;
   }
 
