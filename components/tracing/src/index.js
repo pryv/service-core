@@ -41,7 +41,7 @@ module.exports.initRootSpan = initRootSpan;
 /**
  * Returns an ExpressJS middleware that starts a span and attaches the "tracing" object to the request parameter.
  */
-function tracingMiddleware (name: string = 'express1', tags: ?{}): Function  {
+function tracingMiddleware (name: string, tags: ?{}): Function  {
   return function (req: express$Request, res: express$Response, next: express$NextFunction): void {
     if (req.tracing != null) { console.log('XXXXX tracing already set', new Error()); return next();}
     const tracing = initRootSpan (name, tags);
@@ -55,6 +55,7 @@ function tracingMiddleware (name: string = 'express1', tags: ?{}): Function  {
 }
 
 module.exports.initExpressTracer = function(app) {
-  app.use(tracingMiddleware()); // anyway .. initRootSpan will retrun a dummytracer is not enabled
-  if (isTracingEnabled) expressPatch(app);
+  const expressTraceName = 'express2';
+  app.use(tracingMiddleware(expressTraceName)); // anyway .. initRootSpan will retrun a dummytracer is not enabled
+  if (isTracingEnabled) expressPatch(app, expressTraceName);
 }

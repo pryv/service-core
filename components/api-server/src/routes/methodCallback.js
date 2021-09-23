@@ -18,7 +18,7 @@ import type Result  from '../Result';
  * @returns {Function}
  */
 module.exports = function (res: express$Response, next: express$NextFunction, successCode: number) {
-  return function (err: ?Error, result: ?Result) {
+  return function methodCallBack(err: ?Error, result: ?Result) {
 
     if (err != null) {
       return next(err);
