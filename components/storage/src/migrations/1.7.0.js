@@ -38,7 +38,7 @@ module.exports = async function (context, callback) {
   
   await migrateAccounts(eventsCollection);
   await migrateTags(eventsCollection, streamsCollection);
-  await migrateTagsPermissions(accessesCollection);
+  await migrateTagsAccesses(accessesCollection);
   logger.info('Accounts were migrated, now rebuilding the indexes');
   await rebuildIndexes(context.database, eventsCollection, userEventsStorage.getCollectionInfoWithoutUserId()),
   logger.info('V1.6.21 => v1.7.0 Migration finished');
@@ -189,16 +189,16 @@ module.exports = async function (context, callback) {
       eventsMigrated = 0;
       const cursor = await eventsCollection.find({ userId: userId, tags: { $exists: true, $ne: [] } });
       let requests = [];
-      let document;
+      let event;
       while (await cursor.hasNext()) {
-        document = await cursor.next();
-        if (! document.tags) continue;
-        const newStreams = document.tags.filter(t => t != null).map(t => STREAM_PREFIX + t);
+        event = await cursor.next();
+        if (event.tags == null) continue;
+        const newStreams = event.tags.filter(t => t != null).map(t => STREAM_PREFIX + t);
 
         eventsMigrated++;
         requests.push({
           'updateOne': {
-            'filter': { '_id': document._id },
+            'filter': { '_id': event._id },
             'update': {
               '$addToSet': { 'streamIds': { $each: newStreams }},
               '$unset': { 'tags': ''}
@@ -221,13 +221,13 @@ module.exports = async function (context, callback) {
     }
   }
 
-  async function migrateTagsPermissions(accessesCollection): Promise<void> {
+  async function migrateTagsAccesses(accessesCollection): Promise<void> {
     console.log('a')
     const cursor = await accessesCollection.find({ 'permissions.tag': { $exists: true} });
     let requests = [];
     let accessesMigrated = 0;
     while (await cursor.hasNext()) {
-      access = await cursor.next();
+      const access = await cursor.next();
       const newPermissions = [];
       const forcedStreams = [];
       for (const permission of access.permissions) {
