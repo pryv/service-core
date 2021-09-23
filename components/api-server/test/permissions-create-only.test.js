@@ -336,14 +336,14 @@ describe('permissions create-only level', () => {
         assert.equal(res.body.error.id, 'forbidden');
       });
 
-      it('[V4KJ] should return events when fetching "create-only" streams that are children of "read" streams', async function() {
+      it('[V4KJ] should not return events when fetching "create-only" streams that are children of "read" streams', async function() {
         const res = await server
           .request()
           .get(basePath)
           .set('Authorization', coWithReadParentToken);
         const events = res.body.events;
         assert.equal(events.length, 2); 
-        for (let event of events) {
+        for (const event of events) {
           assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
         }     
       });

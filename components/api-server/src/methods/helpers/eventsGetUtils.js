@@ -48,7 +48,7 @@ export type StoreQuery = {
   storeId: string, 
   includeTrashed: boolean,
   expandChildren: boolean,
-  excludedIds: {},
+  excludedIds: Array<string>,
 };
 
 let stores;
@@ -274,6 +274,7 @@ function streamQueryAddForcedAndForbiddenStreams(context: MethodContext, params:
 
     if (forcedStreamIds?.length > 0) {
       if (streamQuery.all == null) streamQuery.all = [];
+      // TODO check for duplicates
       streamQuery.all.push(...forcedStreamIds);
     }
 
@@ -281,6 +282,7 @@ function streamQueryAddForcedAndForbiddenStreams(context: MethodContext, params:
     const forbiddenStreamIds: Array<string> = context.access.getForbiddenGetEventsStreamIds(streamQuery.storeId);
     if (forbiddenStreamIds?.length > 0) {
       if (streamQuery.not == null) streamQuery.not = [];
+      // TODO check for duplicates
       streamQuery.not.push(...forbiddenStreamIds);
     }
   }

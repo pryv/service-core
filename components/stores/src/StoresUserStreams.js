@@ -12,16 +12,20 @@ const StreamsUtils = require('./lib/StreamsUtils');
 const { treeUtils } = require('utils');
 
 import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
+import type { Stream } from 'business/src/streams';
+import typeof Stores from './Stores';
 
 /**
  * Handle Store.streams.* methods
  */
 class StoresUserStreams extends UserStreams {
+
+  mainStore: Stores;
  
   /**
    * @param {Stores} mainStore 
    */
-  constructor(mainStore) {
+  constructor(mainStore: Stores) {
     super();
     this.mainStore = mainStore;
   }
@@ -29,11 +33,11 @@ class StoresUserStreams extends UserStreams {
   /**
    * Helper to get a single stream
    */
-  async getOne(uid, streamId, storeId) {
+  async getOne(uid: string, streamId: string, storeId: string): Promise<?Stream> {
     if (storeId == null) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
-    const store = this.mainStore._storeForId(storeId);
+    const store: DataSource = this.mainStore._storeForId(storeId);
     if (store == null) return null;
-    const streams = await store.streams.get(uid, { id: streamId, includeTrashed: true, storeId });
+    const streams: Array<Stream> = await store.streams.get(uid, { id: streamId, includeTrashed: true, storeId });
     if (streams?.length === 1) return streams[0];
     return null;
   }
@@ -59,7 +63,7 @@ class StoresUserStreams extends UserStreams {
     const excludedIds: Array<string> = params.excludedIds;
 
     // ------- create result ------//
-    let res = [];
+    let res: Array<Stream> = [];
 
     // *** root query we just expose stores handles & local streams
     // might be moved in LocalDataSource ? 
@@ -68,7 +72,7 @@ class StoresUserStreams extends UserStreams {
     }
     //------ Query Store -------------//
 
-    const store = this.mainStore._storeForId(storeId);
+    const store: DataSource = this.mainStore._storeForId(storeId);
 
     const myParams: StoreQuery = {
       id: streamId,
@@ -76,7 +80,7 @@ class StoresUserStreams extends UserStreams {
       includeTrashed: params.includeTrashed,
       expandChildren: params.expandChildren,
       excludedIds: store.streams.hasFeatureGetParamsExcludedIds ? excludedIds : null,
-      storeId: null, // we'll address this request to a store
+      storeId: null, // we'll address this request to the store directly
     }
 
     // add it to parameters if feature is supported by store.
@@ -103,9 +107,9 @@ class StoresUserStreams extends UserStreams {
 
     return res;
 
-    function getChildlessRootStreamsForOtherStores(stores: Array<{}>): Array<{}> {
-      const res = [];
-      for (const source of stores) {
+    function getChildlessRootStreamsForOtherStores(stores: Array<DataSource>): Array<Stream> {
+      const res: Array<Stream> = [];
+      for (const source: DataSource of stores) {
         if (source.id !== 'local') {
           res.push(StreamsUtils.sourceToStream(source, {
             children: [],
@@ -116,7 +120,7 @@ class StoresUserStreams extends UserStreams {
       return res;
     }
 
-    function performExclusion(res: Array<{}>, excludedIds: Array<string>): Array<{}> {
+    function performExclusion(res: Array<Stream>, excludedIds: Array<string>): Array<Stream> {
       return treeUtils.filterTree(res, false, (stream) => ! excludedIds.includes(stream.id));
     }
   }

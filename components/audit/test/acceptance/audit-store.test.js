@@ -121,7 +121,7 @@ describe('Audit Streams and Events', function () {
       assert.exists(res.body.error);
     });
 
-    it('[TFZL] personalToken must not retrieve list of available actions', async() => { 
+    it('[TFZL] personalToken must retrieve list of available actions', async() => { 
       const res = await coreRequest
         .get(streamsPath)
         .query({parentId: ':_audit:actions'})
