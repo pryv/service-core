@@ -342,19 +342,19 @@ describe('permissions create-only level', () => {
           .get(basePath)
           .set('Authorization', coWithReadParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 2); 
+        assert.equal(events.length, 1); 
         for (const event of events) {
           assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
         }     
       });
 
-      it('[SYRW] should return events when fetching "create-only" streams that are children of "contribute" streams', async function() {
+      it('[SYRW] should not return events when fetching "create-only" streams that are children of "contribute" streams', async function() {
         const res = await server
           .request()
           .get(basePath)
           .set('Authorization', coWithContributeParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 2); 
+        assert.equal(events.length, 1); 
         for (let event of events) {
           assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
         }  
