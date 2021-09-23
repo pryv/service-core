@@ -46,7 +46,7 @@ describe('Migration - 1.7.0', function () {
 
     // for tags keeps info on existings tags & events
     const previousEventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
-    const previousPermissionsWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
+    const previousAccessesWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
 
     // perform migration
     await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
@@ -101,7 +101,7 @@ describe('Migration - 1.7.0', function () {
     const permissionsWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
     assert.equal(permissionsWithTags.length, 0);
 
-    for (const previousAccess of previousPermissionsWithTags) {
+    for (const previousAccess of previousAccessesWithTags) {
 
       const newAccess = await accessesCollection.findOne({ _id: previousAccess._id });
       const forcedStreamsPerms = newAccess.permissions.filter(p => ( p.feature && p.feature == 'forcedStreams'));
