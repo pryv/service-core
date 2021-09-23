@@ -56,14 +56,14 @@ const attachments = {
 // ----------------- standard db Items -------------- //
 
 /**
- * @typedef {Object} IntegrityComputeResult
+ * @callback IntegrityComputeResult
  * @property {string} integrity - and integrity code for an item. Exemple 'EVENT:0:sha256-uZKmWZ+CQ7UY3GUqFWD4sNPPEUKm8OPcAWr4780Acnk='
  * @property {string} key - and unique key for this object. Exemple 'EVENT:0:<id>:<modified>'
  */
 
 /**
  * Returns integrity and key of an object
- * @typedef {Function} IntegrityCompute
+ * @callback IntegrityCompute
  * @param {*} item - Object to compute on
  * @param {boolean} save - This computation should be saved for audit 
  * @returns {IntegrityComputeResult}
@@ -71,7 +71,15 @@ const attachments = {
 
 /**
  * Compute and set integrity property to an item
- * @typedef {Function} IntegritySet
+ * @callback IntegritySet
+ * @param {*} item - Object to compute on
+ * @param {boolean} save - This computation should be saved for audit 
+ * @returns {*} - the item
+ */
+
+/**
+ * Get the hash (only .integrity) of an item item
+ * @callback IntegrityHash
  * @param {*} item - Object to compute on
  * @param {boolean} save - This computation should be saved for audit 
  * @returns {*} - the item
@@ -83,6 +91,7 @@ const attachments = {
  * @property {boolean} isActive - Setting: Add integrity hash to item if true
  * @property {IntegrityCompute} compute 
  * @property {IntegritySet} set
+ * @property {IntegrityHash} hash
  */
 
 // ------------- events ------------------ //
