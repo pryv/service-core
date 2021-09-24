@@ -153,7 +153,6 @@ class LocalUserEvents extends UserEvents {
         query.endTime = null; // matches when duration exists and is null
       }
     }
-    $$(query);
 
     const options = {
       projection: params.returnOnlyIds ? {id: 1} : {},

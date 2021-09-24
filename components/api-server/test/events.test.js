@@ -465,10 +465,10 @@ describe('events', function () {
       });
     });
 
-    it('[ESLZ] must not keep event deletions past a certain time ' +
+    it.skip('[ESLZ] must not keep event deletions past a certain time ' +
         '(cannot test because cannot force-run Mongo\'s TTL cleanup task)'
       //TODO do this test when cleanup is delegated to nightlyTask
-    /*, function (done) {
+    , function (done) {
       var params = {
         state: 'all',
         modifiedSince: timestamp.now('-5y'),
@@ -482,14 +482,14 @@ describe('events', function () {
         res.body.eventDeletions.should.eql(_.at(testData.events, 13, 14))
         done();
       });
-    }*/);
+    });
 
     it('[V72A] must only return running period event(s) when requested', function (done) {
       var params = {
         running: true
       };
       var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
-        return (typeof e.duration !== 'undefined') && e.duration === null;
+        return e.duration === null;
       }).sort(function (a, b) {
         return b.time - a.time;
       });

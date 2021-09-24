@@ -83,8 +83,8 @@ function durationToEndTime (eventData) {
   if (eventData.duration === null) { // exactly null 
     eventData.endTime = null;
   } else if (eventData.duration === undefined) { // (no undefined)
-    if (eventData.time)
-      eventData.endTime = eventData.time;
+    // event.time is not defined for deleted events
+    if (eventData.time != null) eventData.endTime = eventData.time;
   } else { // defined
     eventData.endTime = eventData.time + eventData.duration;
   }
