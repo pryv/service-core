@@ -124,7 +124,7 @@ class LocalUserEvents extends UserEvents {
           time: { $gte: params.fromTime, $lte: params.toTime }
         });
       }
-      console.log('XXXX', params.toTime - (Date.now() / 1000));
+      
       if (params.toTime == null || ( params.toTime + DELTA_TO_CONSIDER_IS_NOW) > (Date.now() / 1000)) { // toTime is null or greater than now();
         params.running = true;
       }

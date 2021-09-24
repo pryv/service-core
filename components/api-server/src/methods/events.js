@@ -46,7 +46,7 @@ const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
-const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
+const { changeStreamIdsPrefixOnResultEvent, changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
 const { integrity } = require('business');
 
 import type { MethodContext } from 'business';
@@ -397,7 +397,7 @@ module.exports = async function (api)
     event.attachments = setFileReadToken(context.access, event.attachments);
 
     if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-      event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds);
+      changeStreamIdsPrefixOnResultEvent(event);
     }
 
     // To remove when streamId not necessary
@@ -416,9 +416,10 @@ module.exports = async function (api)
       const history = await bluebird.fromCallback(cb => userEventsStorage.findHistory(context.user, params.id, options, cb))
 
       // To remove when streamId not necessary
+      
       history.forEach(e => {
         if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-          e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
+          changeStreamIdsPrefixOnResultEvent(e);
         }
         e.streamId = e.streamIds[0]
         return e;
@@ -619,7 +620,7 @@ module.exports = async function (api)
       const newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
+        changeStreamIdsPrefixOnResultEvent(newEvent);
       }
 
       // To remove when streamId not necessary
@@ -878,7 +879,7 @@ module.exports = async function (api)
       }
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+        changeStreamIdsPrefixOnResultEvent(updatedEvent);
       }
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
@@ -1256,7 +1257,7 @@ module.exports = async function (api)
       }
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+        changeStreamIdsPrefixOnResultEvent(updatedEvent);
       }
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];

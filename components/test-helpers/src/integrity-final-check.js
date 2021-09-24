@@ -8,15 +8,16 @@
  * Load all events and check if the "integrity" is OK
  */
 const { getDatabase } = require('storage');
-const { integrity } = require('business');
+const { integrity } = require('business');
 const bluebird = require('bluebird');
 
 async function events() {
   const database = await getDatabase();
-  const cursor = await bluebird.fromCallback(cb => database.findCursor({name: 'events'}, {}, {},cb));
+  const cursor = await bluebird.fromCallback(cb => database.findCursor({ name: 'events' }, {}, {}, cb));
   const erroneousEvents = [];
+  let and_N_more = 0;
   while (await cursor.hasNext()) {
-  const event = await cursor.next();
+    const event = await cursor.next();
     event.id = event._id;
     delete event._id;
     delete event.userId;
@@ -27,18 +28,29 @@ async function events() {
       errors.push('unexpected duration prop');
     }
 
-    const i = integrity.events.compute(event).integrity;
-    if (i != event.integrity) { 
-      errors.push('expected integrity: ' + i);
+    if (event.integrity === undefined) {
+      errors.push('event has no integrity property');
+    } else {
+      const i = integrity.events.compute(event).integrity;
+      if (i != event.integrity) {
+        errors.push('expected integrity: ' + i);
+      }
     }
 
+
     if (errors.length != 0) {
-      erroneousEvents.push({event, errors});
+      if (erroneousEvents.length < 3) {
+        erroneousEvents.push({ event, errors });
+      } else {
+        and_N_more++;
+      }
     }
   };
   if (erroneousEvents.length > 0) {
-
-    throw new Error('Integrity not respected for ' +  JSON.stringify(erroneousEvents, null, 2));
+    if (and_N_more > 0) {
+      erroneousEvents.push('... And ' + and_N_more + ' More');
+    }
+    throw new Error('Integrity not respected for ' + JSON.stringify(erroneousEvents, null, 2));
     console.log(new Error('integrity check'));
   }
 
