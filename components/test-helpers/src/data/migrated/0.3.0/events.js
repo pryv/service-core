@@ -116,7 +116,7 @@ module.exports = [
     id: 'c_0_e_9',
     streamId: streams[0].children[0].id,
     time: 1374111071.898,
-    //duration: null, // running
+    duration: null, // running
     type: 'activity/pryv',
     tags: [],
     description: 'One hour ago',
@@ -146,7 +146,7 @@ module.exports = [
     id: 'c_1_e_12',
     streamId: streams[1].children[0].id,
     time: 1374111071.898,
-    //duration: null, // running
+    duration: null, // running
     type: 'activity/pryv',
     tags: [],
     description: 'One hour ago',

@@ -257,7 +257,7 @@ module.exports = async function (api)
       const storeId = streamQuery.storeId;
       if (storeId == null) {
         console.error('Missing storeId' + params.streams);
-        throw(new Error("Missing storeId" + params.streams));
+        throw(new Error('Missing storeId' + params.streams));
       }
       if (! paramsByStoreId[storeId]) {
         paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters

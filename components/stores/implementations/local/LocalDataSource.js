@@ -23,6 +23,7 @@ const cache = require('cache');
 
 const STORE_ID = 'local';
 const STORE_NAME = 'Local Store';
+const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 
 let userEventsStorage;
 let userStreamsStorage;
@@ -111,19 +112,22 @@ class LocalUserEvents extends UserEvents {
       const types = params.types.map(getTypeQueryValue);
       query.type = {$in: types};
     }
-    if (params.running) {
-      query.duration = {'$type' : 10}; // matches when duration exists and is null
-    }
     if (params.fromTime != null) {
       const timeQuery = [
         { // Event started before fromTime, but finished inside from->to.
           time: {$lt: params.fromTime},
           endTime: {$gte: params.fromTime}
-        },
-        { // Event has started inside the interval.
-          time: { $gte: params.fromTime, $lte: params.toTime }
-        },
+        }
       ];
+      if (params.toTime != null) {
+        timeQuery.push({ // Event has started inside the interval.
+          time: { $gte: params.fromTime, $lte: params.toTime }
+        });
+      }
+      console.log('XXXX', params.toTime - (Date.now() / 1000));
+      if (params.toTime == null || ( params.toTime + DELTA_TO_CONSIDER_IS_NOW) > (Date.now() / 1000)) { // toTime is null or greater than now();
+        params.running = true;
+      }
 
       if (query.$or) { // mongo support only one $or .. so we nest them into a $and
         if (! query.$and) query.$and = [];
@@ -142,6 +146,14 @@ class LocalUserEvents extends UserEvents {
     if (params.modifiedSince != null) {
       query.modified = {$gt: params.modifiedSince};
     }
+    if (params.running) {
+      if (query.$or) { 
+        query.$or.push({endTime: null})
+      } else {
+        query.endTime = null; // matches when duration exists and is null
+      }
+    }
+    $$(query);
 
     const options = {
       projection: params.returnOnlyIds ? {id: 1} : {},
