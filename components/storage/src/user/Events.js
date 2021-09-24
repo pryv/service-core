@@ -76,12 +76,16 @@ function addIntegrity (eventData) {
 }
 
 function durationToEndTime (eventData) {
-  if (typeof eventData.endTime != 'undefined' ) {
-    console.log('endTime should no be defined ', {id: eventData.id, endTime: eventData.endTime, duration: eventData.duration});
+  if (eventData.endTime !== undefined ) {
+    //console.log('endTime should no be defined ', {id: eventData.id, endTime: eventData.endTime, duration: eventData.duration});
+    return eventData;
   }
   if (eventData.duration === null) { // exactly null 
     eventData.endTime = null;
-  } else if (eventData.duration != null) { // (no undefined)
+  } else if (eventData.duration === undefined) { // (no undefined)
+    if (eventData.time)
+      eventData.endTime = eventData.time;
+  } else { // defined
     eventData.endTime = eventData.time + eventData.duration;
   }
   delete eventData.duration;
@@ -110,7 +114,7 @@ function endTimeToDuration (event) {
   }
   if (event.endTime === null) {
     event.duration = null;
-  } else if (event.endTime != null) {
+  } else if (event.endTime !== undefined) {
     const prevDuration = event.duration;
     event.duration = event.endTime - event.time;
     if (prevDuration != null && prevDuration != event.duration) {
@@ -118,6 +122,8 @@ function endTimeToDuration (event) {
     }
   }
   delete event.endTime;
+  // force duration property undefined if 0
+  if (event.duration === 0) { delete event.duration; }
   return event;
 }
 

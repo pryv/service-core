@@ -27,10 +27,6 @@ async function events() {
       errors.push('unexpected duration prop');
     }
 
-    if (event.endTime) {
-      event.duration = event.endTime - event.time;
-      delete event.endTime;
-    }
     const i = integrity.events.compute(event).integrity;
     if (i != event.integrity) { 
       errors.push('expected integrity: ' + i);

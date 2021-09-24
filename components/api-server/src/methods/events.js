@@ -696,7 +696,7 @@ module.exports = async function (api)
       if (process.env.NODE_ENV === 'test') {
         // double check integrity when running tests only
         if (result.event.integrity != integrity.events.hash(result.event)) {
-          return next(new Error('integrity mismatch at events.create' + JSON.stringify(result.event)));
+          return next(new Error('integrity mismatch' + JSON.stringify(result.event)));
         }
       }
     }

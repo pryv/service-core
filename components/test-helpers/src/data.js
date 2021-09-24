@@ -100,13 +100,17 @@ exports.resetEvents = function (done, user) {
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 
       user,
-      {
+      { 
         streamIds: {
           $nin: allAccountStreamIds
         }
       }
     ),
-    storage.user.events.insertMany.bind(storage.user.events, user, events)
+    storage.user.events.insertMany.bind(storage.user.events, user, events),
+    function removeZerosDuration(done2) {
+      events.forEach( e => { if (e.duration === 0) delete e.duration});
+      done2();
+    }
   ], done);
   
 };
