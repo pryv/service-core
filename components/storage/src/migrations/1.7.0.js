@@ -9,8 +9,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { UsersRepository, getUsersRepository, User } = require('business/src/users');
 
 const { getLogger } = require('@pryv/boiler');
-const ROOT_STREAM_TAG = 'tags-migrated';
-const STREAM_PREFIX = 'migrated-tag-';
+const { TAG_ROOT_STREAMID: string, TAG_PREFIX: string } = require('api-server/src/methods/helpers/backwardCompatibility');
 const DOT: string = '.';
 /**
  * v1.7.0: 
@@ -175,11 +174,11 @@ module.exports = async function (context, callback) {
       }
 
       // create root stream
-      await createStream(ROOT_STREAM_TAG, 'Migrated Tags')
+      await createStream(TAG_ROOT_STREAMID, 'Migrated Tags')
       // get all tags for user
       const tags = await eventsCollection.distinct('tags', {userId: userId});
       for (tag of tags) { 
-        await createStream(STREAM_PREFIX + tag, tag, ROOT_STREAM_TAG);
+        await createStream(TAG_PREFIX + tag, tag, TAG_ROOT_STREAMID);
         await migrateEvents(userId);
       }
       // migrate tags (add to streams for each event)
@@ -193,7 +192,7 @@ module.exports = async function (context, callback) {
       while (await cursor.hasNext()) {
         event = await cursor.next();
         if (event.tags == null) continue;
-        const newStreams = event.tags.filter(t => t != null).map(t => STREAM_PREFIX + t);
+        const newStreams = event.tags.filter(t => t != null).map(t => TAG_PREFIX + t);
 
         eventsMigrated++;
         requests.push({
@@ -240,7 +239,7 @@ module.exports = async function (context, callback) {
           console.log(msg);
           //process.exit(0);
         }
-        forcedStreams.push(STREAM_PREFIX + permission.tag);
+        forcedStreams.push(TAG_PREFIX + permission.tag);
       }
       newPermissions.push({feature: 'forcedStreams', streams: forcedStreams});
 

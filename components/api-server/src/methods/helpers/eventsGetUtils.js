@@ -304,14 +304,12 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
       excludedIds: excludedIds
     };
 
-    const tree = await stores.streams.get(context.user.id, query);
+    const tree: Array<Stream> = await stores.streams.get(context.user.id, query);
     
     // collect streamIds 
-    const resultWithPrefix = treeUtils.collectPluck(tree, 'id');
+    const resultWithPrefix: Array<string> = treeUtils.collectPluck(tree, 'id');
     // remove storePrefix 
-    const result = resultWithPrefix.map((fullStreamId) => {
-      return StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId)[1];
-    });
+    const result: Array<string> = resultWithPrefix.map((fullStreamId: string) => StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId)[1]);
     return result;
   }
 
@@ -325,6 +323,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
 
   // delete streamQueries with no inclusions 
   params.arrayOfStreamQueriesWithStoreId = params.arrayOfStreamQueriesWithStoreId.filter(streamQuery => streamQuery.any != null || streamQuery.and != null);
+
   context.tracing.finishSpan('streamQueries');
   next();
 }

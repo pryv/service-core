@@ -18,6 +18,7 @@ const testData = helpers.data;
 const migrations = require('../../src/migrations');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getLogger } = require('@pryv/boiler');
+const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 
 const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
 
@@ -80,21 +81,18 @@ describe('Migration - 1.7.0', function () {
 
 
     // ----------------- tag migrations 
-    const ROOT_STREAM_TAG = 'tags-migrated';
-    const STREAM_PREFIX = 'migrated-tag-';  
-
     const eventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
     assert.equal(eventsWithTags.length, 0);
     for (event of previousEventsWithTags) {
       const newEvent = await eventsCollection.findOne({ _id: event._id });
       // check if tags have been added to streamIds
       for (tag of event.tags) {
-        assert.include(newEvent.streamIds, STREAM_PREFIX + tag);
+        assert.include(newEvent.streamIds, TAG_PREFIX + tag);
       }
       // check if stream exists for this user
-      const stream = await streamsCollection.findOne({userId: event.userId, streamId: STREAM_PREFIX + tag});
+      const stream = await streamsCollection.findOne({userId: event.userId, streamId: TAG_PREFIX + tag});
       assert.exists(stream);
-      assert.equal(stream.parentId, ROOT_STREAM_TAG);
+      assert.equal(stream.parentId, TAG_ROOT_STREAMID);
     }
 
     //-- permissions
@@ -110,7 +108,7 @@ describe('Migration - 1.7.0', function () {
       assert.isAbove(forcedStreams.length, 0);
       for (const permission of previousAccess.permissions) {
         if (permission.tag)
-          assert.include(forcedStreams, STREAM_PREFIX + permission.tag);
+          assert.include(forcedStreams, TAG_PREFIX + permission.tag);
       }
     }
 

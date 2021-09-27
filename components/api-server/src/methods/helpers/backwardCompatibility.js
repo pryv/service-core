@@ -17,6 +17,9 @@ import type { GetEventsParams } from './eventsGetUtils';
 import type Result from '../../Result';
 
 const OLD_PREFIX: string = '.';
+const TAG_ROOT_STREAMID: string = 'migrated-tags';
+const TAG_PREFIX: string = 'migrated-tag-';
+const TAG_PREFIX_LENGTH: number = TAG_PREFIX.length;
 
 function changeMultipleStreamIdsPrefix(streamIds: Array<string>, toOldPrefix: boolean = true): Array<string> {
   const changeFunction: string => string = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
@@ -98,7 +101,16 @@ function changeStreamIdsInPermissions(permissions: Array<Permission>, toOldPrefi
   return oldStylePermissions;
 }
 
-// double for loop
+/**
+ * extract tags from streamIds with tag prefix
+ */
+function findTagsInStreamIds(streamIds: Array<string>): Array<string> {
+  const tags = [];
+  for (const streamId of streamIds) {
+    if (streamId.startsWith(TAG_PREFIX)) tags.push(streamId.slice(TAG_PREFIX_LENGTH))
+  }
+  return tags;
+}
 
 module.exports = {
   changeMultipleStreamIdsPrefix,
@@ -106,4 +118,7 @@ module.exports = {
   changePrefixIdForStreams,
   replaceWithNewPrefix,
   changeStreamIdsInPermissions,
+  TAG_ROOT_STREAMID,
+  TAG_PREFIX,
+  findTagsInStreamIds,
 }

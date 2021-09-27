@@ -17,7 +17,6 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
-const ChangeStreamIdPrefixStream = require('./streams/ChangeStreamIdPrefixStream');
 
 const { getStores, StreamsUtils } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -44,7 +43,7 @@ const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
-const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
+const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery, findTagsInStreamIds, TAG_PREFIX } = require('./helpers/backwardCompatibility');
 
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
@@ -108,6 +107,7 @@ module.exports = async function (api)
     eventsGetUtils.streamQueryCheckPermissionsAndReplaceStars,
     eventsGetUtils.streamQueryAddForcedAndForbiddenStreams,
     eventsGetUtils.streamQueryExpandStreams,
+    migrateTagsToStreamQueries,
     eventsGetUtils.findEventsFromStore.bind(null, authSettings.filesReadTokenSecret, isStreamIdPrefixBackwardCompatibilityActive),
     includeLocalStorageDeletionsIfRequested);
 
@@ -118,6 +118,26 @@ module.exports = async function (api)
         ? _.intersection(params.tags, accessibleTags) 
         : accessibleTags;
     }
+    next();
+  }
+
+  /**
+   * Backward compatibility for tags
+   */
+  function migrateTagsToStreamQueries(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+    if (params.tags != null) {
+      for (const query: StreamQuery of params.arrayOfStreamQueriesWithStoreId) {
+        if (query.storeId === 'local') {
+          if (query.and == null) query.and = [],
+          query.and.push({any: params.tags.map(t => TAG_PREFIX + t)})
+        }  
+      }
+    }
+    next();
+  }
+
+  function addBackwardCompatibilityStreams(context, params, result, next) {
+    result.addToConcatArrayStream('events', findTagsInStreamIds);
     next();
   }
 

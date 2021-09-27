@@ -379,6 +379,12 @@ const events =  [
     event.streamIds = [event.streamId];
     delete event.streamId;
   }
+  if (event.tags != null) {
+    for (const tag of event.tags) {
+      event.streamIds.push('migrated-tag-' + tag);
+    }
+    delete event.tags;
+  }
   return event;
 });
 

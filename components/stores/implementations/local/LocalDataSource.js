@@ -109,11 +109,7 @@ class LocalUserEvents extends UserEvents {
     if (streamsQuery.$or) query.$or = streamsQuery.$or;
     if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
     if (streamsQuery.$and) query.$and = streamsQuery.$and;
-  
-  
-    if (params.tags && params.tags.length > 0) {
-      query.tags = {$in: params.tags};
-    }
+
     if (params.types && params.types.length > 0) {
       // unofficially accept wildcard for sub-type parts
       const types = params.types.map(getTypeQueryValue);
