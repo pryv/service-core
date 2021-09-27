@@ -7,6 +7,7 @@
 
 /* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
+const { integrity } = require('business');
 
 describe('Audit events integrity', function() {
   let user, username, password, access, appAccess;
@@ -17,6 +18,8 @@ describe('Audit events integrity', function() {
   let auditedEvent;
   
   const streamId = 'yo';
+  const now = Date.now() / 1000;
+
   before(async function() {
     await initTests();
     await initCore();
@@ -55,10 +58,26 @@ describe('Audit events integrity', function() {
 
   before(async () => {
     auditedEvent = (await validPost(eventsPath).send({ streamIds: [streamId], type: 'count/generic', content: 2})).body.event;
+    assert.exists(auditedEvent.integrity);
   });
 
-  it('[WNWM] must return auditEventChecksum when event is created with includesHash=true', async () => {
-    console.log(auditedEvent);
+  it('[WNWM] must find event checksum in the audit log ', async () => {
+    const res = await coreRequest
+    .get(eventsPath)
+    .set('Authorization', appAccess.token)
+    .query({ fromTime: now, streams: ':_audit:action-events.create' });
+
+    assert.exists(res.body?.events);
+    assert.equal(1, res.body.events.length);
+
+    const auditEvent = res.body.events[0];
+    assert.exists(auditEvent.content.hash);
+    assert.equal(auditedEvent.integrity, auditEvent.content.hash.integrity);
+    
+    const computedIntegrity = integrity.events.compute(auditedEvent);
+    assert.equal(computedIntegrity.integrity, auditEvent.content.hash.integrity);
+    assert.equal(computedIntegrity.key, auditEvent.content.hash.key);
+
   });
 
 });

@@ -216,6 +216,7 @@ class Fixture {
   async clean(): Promise<mixed> {
     let errorIntegrity;
     try {
+      // check integrity before reset--- This could trigger error related to previous test
       await integrityFinalCheck.events();
     } catch (e) {
       errorIntegrity = e; // keep it for later

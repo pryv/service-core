@@ -118,7 +118,7 @@ function endTimeToDuration (event) {
     const prevDuration = event.duration;
     event.duration = event.endTime - event.time;
     if (prevDuration != null && prevDuration != event.duration) {
-      console.log('Whats !! ', new Error('Duration issue.. This should not thappen'));
+      console.log('What !! ', new Error('Duration issue.. This should not thappen'));
     }
   }
   delete event.endTime;

@@ -416,7 +416,6 @@ module.exports = async function (api)
       const history = await bluebird.fromCallback(cb => userEventsStorage.findHistory(context.user, params.id, options, cb))
 
       // To remove when streamId not necessary
-      
       history.forEach(e => {
         if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
           changeStreamIdsPrefixOnResultEvent(e);
