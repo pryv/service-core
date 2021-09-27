@@ -4,10 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var streams = require('./streams'),
-    timestamp = require('unix-timestamp');
-
-
+const streams = require('./streams');
+const timestamp = require('unix-timestamp');
+const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 
 const events =  [
   {
@@ -381,9 +380,9 @@ const events =  [
   }
   if (event.tags != null) {
     for (const tag of event.tags) {
-      event.streamIds.push('migrated-tag-' + tag);
+      event.streamIds.push(TAG_PREFIX + tag);
     }
-    delete event.tags;
+    //delete event.tags;
   }
   return event;
 });

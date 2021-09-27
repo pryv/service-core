@@ -17,8 +17,8 @@ import type { GetEventsParams } from './eventsGetUtils';
 import type Result from '../../Result';
 
 const OLD_PREFIX: string = '.';
-const TAG_ROOT_STREAMID: string = 'migrated-tags';
-const TAG_PREFIX: string = 'migrated-tag-';
+const TAG_ROOT_STREAMID: string = 'tags-migrated';
+const TAG_PREFIX: string = 'tag-migrated-';
 const TAG_PREFIX_LENGTH: number = TAG_PREFIX.length;
 
 function changeMultipleStreamIdsPrefix(streamIds: Array<string>, toOldPrefix: boolean = true): Array<string> {

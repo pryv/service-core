@@ -189,7 +189,7 @@ module.exports = [
   // migrated tags
   {
     id: TAG_ROOT_STREAMID,
-    name: 'Migrated Tags',
+    name: 'Tags Migrated',
     parentId: null,
     created: timestamp.now(),
     createdBy: 'test',
