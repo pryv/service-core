@@ -156,6 +156,40 @@ Accesses.prototype.insertOne = function (userOrUserId, access, callback, options
   );
 };
 
+
+Accesses.prototype.updateOne = function (userOrUserId, query, update, callback) {
+  if (update.modified == null || !integrity.accesses.isActive) { // update only if "modified" is set .. to avoid all "calls" and "lastused" updated
+    Accesses.super_.prototype.findOneAndUpdate.call(this, userOrUserId, query, update, callback);
+    return;
+  }
+
+
+  // unset eventually existing integrity field. Unless integrity is in set request
+  if (update.integrity == null && update.$set?.integrity == null) {
+    if (!update.$unset) update.$unset = {};
+    update.$unset.integrity = 1;
+  }
+
+  const that = this;
+  const cb = function callbackIntegrity(err, accessData) {
+    if (err || (accessData?.id == null)) return callback(err, accessData);
+
+    const integrityCheck = accessData.integrity;
+    try {
+      integrity.accesses.set(accessData, true);
+    } catch (errIntegrity) {
+      return callback(errIntegrity, accessData);
+    }
+    // only update if there is a mismatch of integrity
+    if (integrityCheck != accessData.integrity) {
+      // could be optimized by using "updateOne" instead of findOne and update
+      return Accesses.super_.prototype.findOneAndUpdate.call(that, userOrUserId, { _id: accessData.id }, { integrity: accessData.integrity }, callback);
+    }
+    callback(err, accessData);
+  }
+  Accesses.super_.prototype.findOneAndUpdate.call(this, userOrUserId, query, update, cb);
+};
+
 /**
  * Inserts an array of accesses; each item must have a valid id and data already. For tests only.
  */

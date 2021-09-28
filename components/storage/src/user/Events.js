@@ -184,7 +184,7 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
   
       const integrityCheck = eventData.integrity;
       try { 
-        integrity.events.set(eventData).integrity;
+        integrity.events.set(eventData, true);
       } catch (errIntegrity) {
         return callback(errIntegrity, eventData);
       }
