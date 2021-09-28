@@ -61,7 +61,7 @@ describe('Audit events integrity', function() {
     assert.exists(auditedEvent.integrity);
   });
 
-  it('[WNWM] must find event checksum in the audit log ', async () => {
+  it('[WNWM] must find event integrity key and hash in the audit log ', async () => {
     const res = await coreRequest
     .get(eventsPath)
     .set('Authorization', appAccess.token)
@@ -75,6 +75,25 @@ describe('Audit events integrity', function() {
     assert.equal(auditedEvent.integrity, auditEvent.content.hash.integrity);
     
     const computedIntegrity = integrity.events.compute(auditedEvent);
+    assert.equal(computedIntegrity.integrity, auditEvent.content.hash.integrity);
+    assert.equal(computedIntegrity.key, auditEvent.content.hash.key);
+
+  });
+
+  it('[U09J] must access integrity key and hash in the audit log ', async () => {
+    const res = await coreRequest
+    .get(eventsPath)
+    .set('Authorization', personalToken)
+    .query({ fromTime: now, streams: ':_audit:action-accesses.create' });
+
+    assert.exists(res.body?.events);
+    assert.equal(1, res.body.events.length);
+
+    const auditEvent = res.body.events[0];
+    assert.exists(auditEvent.content.hash);
+    assert.equal(appAccess.integrity, auditEvent.content.hash.integrity);
+    
+    const computedIntegrity = integrity.accesses.compute(appAccess);
     assert.equal(computedIntegrity.integrity, auditEvent.content.hash.integrity);
     assert.equal(computedIntegrity.key, auditEvent.content.hash.key);
 

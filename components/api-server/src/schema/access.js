@@ -26,7 +26,8 @@ exports = module.exports = function (action) {
     'apiEndpoint': string({minLength: 1}),
     'name': string({minLength: 1}),
     'permissions': permissions(action),
-    'lastUsed': helpers.number()
+    'lastUsed': helpers.number(),
+    'integrity': string({nullable: true})
   }, {
     additionalProperties: false
   });

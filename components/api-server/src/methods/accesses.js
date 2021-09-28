@@ -34,6 +34,8 @@ const { getStorageLayer } = require('storage');
 
 const { changeStreamIdsInPermissions } = require('./helpers/backwardCompatibility');
 
+const { integrity } = require('business');
+
 import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'business';
 
@@ -163,7 +165,8 @@ module.exports = async function produceAccessesApiMethods(api: API)
     applyAccountStreamsValidation,
     createDataStructureFromPermissions,
     cleanupPermissions,
-    createAccess);
+    createAccess, 
+    addIntegrityToContext);
 
   function applyDefaultsForCreation(context, params, result, next) {
     _.defaults(params, {type: 'shared'});
@@ -711,6 +714,24 @@ module.exports = async function produceAccessesApiMethods(api: API)
   function isAccessExpired(access: Access, nowParam?: number): boolean {
     const now = nowParam || timestamp.now(); 
     return access.expires != null && now > access.expires;
+  }
+
+
+  function addIntegrityToContext(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if(result?.access?.integrity != null ) {
+      context.auditIntegrityPayload = {
+        key: integrity.accesses.key(result.access),
+        integrity: result.access.integrity,
+      };
+     
+      if (process.env.NODE_ENV === 'test') {
+        // double check integrity when running tests only
+        if (result.access.integrity != integrity.accesses.hash(result.access)) {
+          return next(new Error('integrity mismatch' + JSON.stringify(result.access)));
+        }
+      }
+    }
+    next();
   }
 
 };

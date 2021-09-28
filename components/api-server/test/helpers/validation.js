@@ -61,6 +61,10 @@ exports.check = function (response, expected, done) {
   if (expected.schema) {
     checkJSON(response, expected.schema);
   }
+  // service info .. also expose an "access" property
+  if (response.body.access != null && response.body.api == null) {
+    checkAccessIntegrity(response.body.access);
+  }
   if (response.body.event != null) {
     checkEventIntegrity(response.body.event);
   }
@@ -89,6 +93,13 @@ function checkEventIntegrity(e) {
   const int = integrity.events.hash(e);
   if (e.integrity != int) {
     throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(e, null, 2)));
+  }
+}
+
+function checkAccessIntegrity(access) {
+  const int = integrity.accesses.hash(access);
+  if (access.integrity != int) {
+    throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(access, null, 2)));
   }
 }
 

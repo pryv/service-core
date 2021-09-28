@@ -26,6 +26,7 @@ const _ = require('lodash');
 const R = require('ramda');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
+const { integrity } = require('business');
 
 describe('accesses (personal)', function () {
 
@@ -232,11 +233,11 @@ describe('accesses (personal)', function () {
               delete expected.permissions[1].defaultName;
               delete expected.permissions[2].defaultName;
               delete expected.permissions[3].defaultName;
-              delete expected.created;
-              delete expected.createdBy;
-              delete expected.modified;
-              delete expected.modifiedBy;
-
+              expected.created = res.body.access.created;
+              expected.createdBy = res.body.access.createdBy;
+              expected.modified = res.body.access.modified;
+              expected.modifiedBy = res.body.access.modifiedBy;
+              integrity.accesses.set(expected);
               validation.checkObjectEquality(res.body.access, expected);
 
               should(accessesNotifCount).be.eql(1, 'accesses notifications');
@@ -312,6 +313,11 @@ describe('accesses (personal)', function () {
         expected.token = res.body.access.token;
         expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
         delete expected.permissions[0].defaultName;
+        expected.created = res.body.access.created;
+        expected.createdBy = res.body.access.createdBy;
+        expected.modified = res.body.access.modified;
+        expected.modifiedBy = res.body.access.modifiedBy;
+        integrity.accesses.set(expected);
         validation.checkObjectEquality(res.body.access, expected);
 
         should(accessesNotifCount).be.eql(1, 'accesses notifications');

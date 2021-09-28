@@ -53,11 +53,54 @@ async function events() {
     throw new Error('Integrity not respected for ' + JSON.stringify(erroneousEvents, null, 2));
     console.log(new Error('integrity check'));
   }
+  //await bluebird.fromCallback(cb => database.deleteMany({name: 'events'}, {},cb));
+}
+
+async function accesses() {
+  const database = await getDatabase();
+  const cursor = await bluebird.fromCallback(cb => database.findCursor({ name: 'accesses' }, {}, {}, cb));
+  const erroneousAccess = [];
+  let and_N_more = 0;
+  while (await cursor.hasNext()) {
+    const access = await cursor.next();
+    access.id = access._id;
+    delete access._id;
+    delete access.userId;
+
+    const errors = [];
+
+    if (access.integrity === undefined) {
+      errors.push('access has no integrity property');
+    } else {
+      const i = integrity.accesses.compute(access).integrity;
+      if (i != access.integrity) {
+        errors.push('expected integrity: ' + i);
+      }
+    }
 
 
-
+    if (errors.length != 0) {
+      if (erroneousAccess.length < 3) {
+        erroneousAccess.push({ access: access, errors });
+      } else {
+        and_N_more++;
+      }
+    }
+  };
+  if (erroneousAccess.length > 0) {
+    if (and_N_more > 0) {
+      erroneousAccess.push('... And ' + and_N_more + ' More');
+    }
+    throw new Error('Integrity not respected for ' + JSON.stringify(erroneousAccess, null, 2));
+    console.log(new Error('integrity check'));
+  }
   //await bluebird.fromCallback(cb => database.deleteMany({name: 'events'}, {},cb));
 }
 
 
-module.exports = { events };
+async function all() {
+  await events();
+  await accesses();
+}
+
+module.exports = { all };

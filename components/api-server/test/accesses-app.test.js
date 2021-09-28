@@ -18,6 +18,8 @@ const should = require('should');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
 
+const { integrity } = require('business');
+
 import type Request  from './helpers';
 
 describe('accesses (app)', function () {
@@ -230,6 +232,11 @@ describe('accesses (app)', function () {
         expected.type = 'shared';
         delete expected.permissions[0].defaultName;
         delete expected.permissions[0].name;
+        expected.created = res.body.access.created;
+        expected.createdBy = res.body.access.createdBy;
+        expected.modified = res.body.access.modified;
+        expected.modifiedBy = res.body.access.modifiedBy;
+        integrity.accesses.set(expected);
         validation.checkObjectEquality(res.body.access, expected);
 
         should(accessesNotifCount).be.eql(1, 'accesses notifications');

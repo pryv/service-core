@@ -10,8 +10,6 @@ const bluebird = require('bluebird');
 const _ = require('lodash');
 
 const Webhook = require('./Webhook');
-const WebhooksStorage = require('storage').StorageLayer.webhooks;
-const UserEventsStorage = require('storage').StorageLayer.events;
 const { getUsersRepository } = require('business/src/users');
 
 /** 
@@ -24,7 +22,6 @@ class Repository {
   constructor (webhooksStorage: WebhooksStorage, userEventsStorage: UserEventsStorage) {
     this.storage = webhooksStorage;
     this.userEventsStorage = userEventsStorage;
-    
   }
 
   /**

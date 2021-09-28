@@ -4,13 +4,17 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const BaseStorage = require('./BaseStorage');
 const converters = require('./../converters');
 const generateId = require('cuid');
 const util = require('util');
 const _ = require('lodash');
+const integrity  = require('business/src/integrity');
 
 module.exports = Accesses;
+
+
 /**
  * DB persistence for accesses.
  *
@@ -18,12 +22,15 @@ module.exports = Accesses;
  * @constructor
  */
 function Accesses(database) {
+  
+
   Accesses.super_.call(this, database);
 
   _.extend(this.converters, {
     itemDefaults: [
       converters.createIdIfMissing,
-      createTokenIfMissing
+      createTokenIfMissing,
+      addIntegrity
     ],
     itemToDB: [converters.deletionToDB],
     itemFromDB: [converters.deletionFromDB],
@@ -39,6 +46,12 @@ util.inherits(Accesses, BaseStorage);
 function createTokenIfMissing(access) {
   access.token = access.token || generateId();
   return access;
+}
+
+function addIntegrity (accessData) {
+  if (! integrity.accesses.isActive) return accessData;
+  integrity.accesses.set(accessData); 
+  return accessData;
 }
 
 const indexes = [

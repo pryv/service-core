@@ -11,6 +11,7 @@ const stableRepresentation = require('@pryv/stable-object-representation');
 // --------------- CONFIGURATION -------------- //
 const configIntegrity = config.get('integrity');
 const eventsIsActive = configIntegrity?.isActive?.events || false;
+const accessesIsActive = configIntegrity?.isActive?.accesses || false;
 const attachmentsIsActive = configIntegrity?.isActive?.attachments || false;
 const algorithm = config.get('integrity:algorithm');
 
@@ -96,20 +97,20 @@ const attachments = {
 
 // ------------- events ------------------ //
 
-function compute(event) {
+function computeEvent(event) {
   return stableRepresentation.event.compute(event, algorithm);
 }
 
-function key(event) {
+function keyEvent(event) {
   return stableRepresentation.event.key(event);
 }
 
-function hash(event) {
+function hashEvent(event) {
   return stableRepresentation.event.hash(event, algorithm);
 }
 
 function setOnEvent(event) {
-  event.integrity = hash(event);
+  event.integrity = hashEvent(event);
   return event;
 }
 
@@ -118,10 +119,40 @@ function setOnEvent(event) {
  */
 const events = {
   isActive: eventsIsActive,
-  compute,
-  key,
-  hash,
+  compute: computeEvent,
+  key: keyEvent,
+  hash: hashEvent,
   set: setOnEvent
+}
+
+// ------------- accesses ------------------ //
+
+function computeAccess(access) {
+  return stableRepresentation.access.compute(access, algorithm);
+}
+
+function keyAccess(access) {
+  return stableRepresentation.access.key(access);
+}
+
+function hashAccess(access) {
+  return stableRepresentation.access.hash(access, algorithm);
+}
+
+function setOnAccess(access) {
+  access.integrity = hashAccess(access);
+  return access;
+}
+
+/** 
+ * @type {IntegrityItem} 
+ */
+const accesses = {
+  isActive: accessesIsActive,
+  compute: computeAccess,
+  key: keyAccess,
+  hash: hashAccess,
+  set: setOnAccess
 }
 
 // ------- Exports ---------- //
@@ -134,6 +165,7 @@ const events = {
  */
 const integrity = {
   events,
+  accesses,
   attachments,
   algorithm,
 }

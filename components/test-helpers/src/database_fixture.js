@@ -217,7 +217,7 @@ class Fixture {
     let errorIntegrity;
     try {
       // check integrity before reset--- This could trigger error related to previous test
-      await integrityFinalCheck.events();
+      await integrityFinalCheck.all();
     } catch (e) {
       errorIntegrity = e; // keep it for later
     }

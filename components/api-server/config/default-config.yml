@@ -111,4 +111,5 @@ integrity:
   isActive:
     attachments: true
     events: true
+    accesses: true
   algorithm: sha256
