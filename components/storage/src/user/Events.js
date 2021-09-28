@@ -391,7 +391,7 @@ Events.prototype.delete = function (userOrUserId, query, deletionMode, callback)
       break;
   }
   // if integrity for events in "ON" add extra check step after update
-  let finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);;
+  const finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);
   this.database.updateMany(
     this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),

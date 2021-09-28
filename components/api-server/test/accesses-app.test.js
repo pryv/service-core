@@ -148,6 +148,7 @@ describe('accesses (app)', function () {
     
     additionalTestAccesses.map((a) => {
       a.apiEndpoint = buildApiEndpoint(user.username, a.token);
+      integrity.accesses.set(a);
     });
 
 

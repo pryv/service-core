@@ -29,10 +29,16 @@ function Accesses(database) {
   _.extend(this.converters, {
     itemDefaults: [
       converters.createIdIfMissing,
-      createTokenIfMissing,
-      addIntegrity
+      createTokenIfMissing
     ],
-    itemToDB: [converters.deletionToDB],
+    itemToDB: [converters.deletionToDB, addIntegrity],
+    itemsToDB: [
+      function (items) { 
+        if (items == null) return null;  
+        const res = items.map(a => addIntegrity(converters.deletionToDB(a))); 
+        return res;
+      }
+    ],
     itemFromDB: [converters.deletionFromDB],
     queryToDB: [converters.idInOrClause],
   });
@@ -113,8 +119,9 @@ Accesses.prototype.delete = function (userOrUserId, query, callback) {
   const update = {
     $set: {deleted: new Date()}
   };
+  const finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);
   this.database.updateMany(this.getCollectionInfo(userOrUserId),
-    this.applyQueryToDB(query), update, callback);
+    this.applyQueryToDB(query), update, finalCallBack);
 };
 
 /**
@@ -163,3 +170,61 @@ Accesses.prototype.insertMany = function (userOrUserId, accesses, callback) {
     callback
   );
 };
+
+
+/**
+ * - Allways unset 'integrity' of updated events by modifiying update query
+ * - If integrity is active for event returns a callBack to be exectued at after the update
+ * @param {Accesses} accessesStore 
+ * @param {User | userId} userOrUserId 
+ * @param {Object} upddate -- the update query to be modified
+ * @param {*} callback 
+ * @returns either the original callback or a process to reset events' integrity
+ */
+ function getResetIntegrity(accessesStore, userOrUserId, update, callback) {
+  // anyway remove any integrity that might have existed
+  if (! update.$unset) update.$unset = {};
+  update.$unset.integrity = 1;
+  
+  // not active return the normal callback
+  if (! integrity.accesses.isActive) return callback;
+ 
+  // add a random "code" to the original update find out which events have been modified
+  const integrityBatchCode = Math.random();
+  if (! update.$set) update.$set = {};
+  update.$set.integrityBatchCode = integrityBatchCode;
+
+  
+  // return a callback that will be executed after the update
+  // it 
+  return function(err, res) {
+    if (err) return callback(err);
+    const initialModifiedCount = res.modifiedCount;
+
+    // will be called for each updated item
+    // we should remove the "integrityBatchCode" that helped finding them out 
+    // and add the integrity value
+    function updateIfNeeded(access) {
+      delete access.integrityBatchCode; // remove integrity batch code for computation
+      const previousIntegrity = access.integrity;
+      integrity.accesses.set(access, true);
+      if (previousIntegrity == access.integrity) return null;
+      return {
+        $unset: { integrityBatchCode: 1},
+        $set: { integrity: access.integrity}
+      }
+    }
+
+    function doneCallBack(err2, res2) {
+      if (err2) return callback(err2);
+      if (res2.count != initialModifiedCount) { // updated documents counts does not match
+        logger.error('Issue when adding integrity to updated events for ' + JSON.stringify(userOrUserId) + ' counts does not match');
+        // eventually throw an error here.. But this will not help the API client .. 
+        // to be discussed !
+      }
+      return callback(err2, res2);
+    }
+    
+    accessesStore.findAndUpdateIfNeeded(userOrUserId, {integrityBatchCode: integrityBatchCode}, {}, updateIfNeeded, doneCallBack);
+  }
+}
