@@ -423,7 +423,7 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
   if(update['streamIds.$'] != null || update.$pull != null) {
     update.integrityBatchCode = integrityBatchCode;
   } else {
-    if (! update.$set) update.$set = {};
+    if (update.$set == null) update.$set = {};
     update.$set.integrityBatchCode = integrityBatchCode;
   }
 
