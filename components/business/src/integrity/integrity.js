@@ -140,7 +140,7 @@ const integrity = {
 
 
 // config check
-// output message and crash is algorythm is not supported
+// output message and crash if algorythm is not supported
 
 if ((events.isActive || attachments.isActive) && (subRessourceCodeToDigestMap[algorithm] == null)) {
   const message = 'Integrity is active and algorithm [' + algorithm + '] is unsupported. Choose one of: ' + Object.keys(subRessourceCodeToDigestMap).join(', ');

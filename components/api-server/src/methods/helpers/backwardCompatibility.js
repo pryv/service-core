@@ -17,7 +17,7 @@ import type { ApiCallback } from 'api-server/src/API';
 const OLD_PREFIX: string = '.';
 
 
-function changeStreamIdsPrefixOnResultEvent(event: Event) {
+function convertStreamIdsToOldPrefixOnResult(event: Event) {
   let count = 0;
   if (event.streamIds == null) return;
   const newStreamIds = event.streamIds.map((streamId) => {
@@ -120,5 +120,5 @@ module.exports = {
   changePrefixIdForStreams,
   replaceWithNewPrefix,
   changeStreamIdsInPermissions,
-  changeStreamIdsPrefixOnResultEvent,
+  convertStreamIdsToOldPrefixOnResult,
 }

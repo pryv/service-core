@@ -61,7 +61,7 @@ describe('Audit events integrity', function() {
     assert.exists(auditedEvent.integrity);
   });
 
-  it('[WNWM] must find event checksum in the audit log ', async () => {
+  it('[WNWM] must find event integrity in the audit log ', async () => {
     const res = await coreRequest
     .get(eventsPath)
     .set('Authorization', appAccess.token)

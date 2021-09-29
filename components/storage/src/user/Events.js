@@ -109,7 +109,7 @@ function endTimeUpdate (update) {
 }
 
 function endTimeToDuration (event) {
-  if (!event) {
+  if (event == null) {
     return event;
   }
   if (event.endTime === null) {
