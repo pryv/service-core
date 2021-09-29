@@ -86,8 +86,7 @@ describe('Audit events integrity', function() {
     .set('Authorization', personalToken)
     .query({ fromTime: now, streams: ':_audit:action-accesses.create' });
 
-    assert.exists(res.body?.events);
-    assert.equal(1, res.body.events.length);
+    assert.equal(1, res?.body?.events?.length);
 
     const auditEvent = res.body.events[0];
     assert.exists(auditEvent.content.hash);

@@ -27,7 +27,7 @@ exports = module.exports = function (action) {
     'name': string({minLength: 1}),
     'permissions': permissions(action),
     'lastUsed': helpers.number(),
-    'integrity': string({nullable: true})
+    'integrity': string({nullable: true}),
   }, {
     additionalProperties: false
   });
