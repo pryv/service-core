@@ -727,7 +727,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
       if (process.env.NODE_ENV === 'test') {
         // double check integrity when running tests only
         if (result.access.integrity != integrity.accesses.hash(result.access)) {
-          return next(new Error('integrity mismatch' + JSON.stringify(result.access)));
+          return next(new Error('integrity mismatch ' + JSON.stringify(result.access)));
         }
       }
     }

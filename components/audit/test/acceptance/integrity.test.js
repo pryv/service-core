@@ -46,7 +46,6 @@ describe('Audit events integrity', function() {
       .set('Authorization', personalToken)
       .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: streamId, level: 'manage'}]});
     appAccess = res.body.access;
-    assert.exists(appAccess);
   });
 
   after(async function() {
@@ -58,6 +57,14 @@ describe('Audit events integrity', function() {
 
   before(async () => {
     auditedEvent = (await validPost(eventsPath).send({ streamIds: [streamId], type: 'count/generic', content: 2})).body.event;
+    
+  });
+
+  it('[XLEL] created access has integrity', async () => {
+    assert.exists(appAccess.integrity);
+  });
+
+  it('[ZKVC] created event has integrity', async () => {
     assert.exists(auditedEvent.integrity);
   });
 
@@ -80,7 +87,7 @@ describe('Audit events integrity', function() {
 
   });
 
-  it('[U09J] must access integrity key and hash in the audit log ', async () => {
+  it('[U09J] must find access integrity key and hash in the audit log ', async () => {
     const res = await coreRequest
     .get(eventsPath)
     .set('Authorization', personalToken)

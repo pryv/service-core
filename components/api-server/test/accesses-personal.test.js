@@ -88,6 +88,7 @@ describe('accesses (personal)', function () {
         validation.addStoreStreams(expected);
         for (let e of expected) {
           e.apiEndpoint = buildApiEndpoint('userzero', e.token);
+          integrity.accesses.set(e);
         }
         for (let e of res.body.accesses) {
           if (e.id === 'a_0') e.lastUsed = 0;

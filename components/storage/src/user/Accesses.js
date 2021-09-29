@@ -133,29 +133,6 @@ Accesses.prototype.generateToken = function () {
   return generateId();
 };
 
-/**
- * Override base method to set deleted:null
- * 
- * @param {*} userOrUserId 
- * @param {*} item 
- * @param {*} callback 
- */
-Accesses.prototype.insertOne = function (userOrUserId, access, callback, options) {
-  let accessToCreate = _.clone(access);
-  if (accessToCreate.deleted === undefined) accessToCreate.deleted = null;
-  this.database.insertOne(
-    this.getCollectionInfo(userOrUserId),
-    this.applyItemToDB(this.applyItemDefaults(accessToCreate)),
-    function (err) {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, _.omit(accessToCreate, 'deleted'));
-    },
-    options
-  );
-};
-
 
 Accesses.prototype.updateOne = function (userOrUserId, query, update, callback) {
   if (update.modified == null || !integrity.accesses.isActive) { // update only if "modified" is set .. to avoid all "calls" and "lastused" updated
