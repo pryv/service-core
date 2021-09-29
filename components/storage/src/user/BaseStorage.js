@@ -140,7 +140,7 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
     let updatesToDo = []; // keeps a list of updates to do
     let updatesDone = 0;
     async function executBulk() {
-      if (updatesToDo.length == 0) return;
+      if (updatesToDo.length === 0) return;
       
       const bulkResult = await database.bulkWrite(collectionInfo, updatesToDo);
       if (bulkResult?.result?.nModified != updatesToDo.length) {

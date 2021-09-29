@@ -384,21 +384,6 @@ exports.removeDeletions = function (items) {
 };
 
 /**
- * Add 0 duration when duration is undefined
- * return a copy of the events
- * @param {Array} events 
- * @returns 
- */
-exports.removeZeroDuration = function (events) {
-  return events.map(e => {
-    const e2 = _.cloneDeep(e);
-    if (e2.duration === 0) delete e2.duration;
-    return e2;
-  });
-}
-
-
-/**
  * Strips off items history from the given array
  *
  * @param {Array} items

@@ -46,7 +46,7 @@ const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
-const { changeStreamIdsPrefixOnResultEvent, changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
+const { convertStreamIdsToOldPrefixOnResult, changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery } = require('./helpers/backwardCompatibility');
 const { integrity } = require('business');
 
 import type { MethodContext } from 'business';
@@ -397,7 +397,7 @@ module.exports = async function (api)
     event.attachments = setFileReadToken(context.access, event.attachments);
 
     if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-      changeStreamIdsPrefixOnResultEvent(event);
+      convertStreamIdsToOldPrefixOnResult(event);
     }
 
     // To remove when streamId not necessary
@@ -418,7 +418,7 @@ module.exports = async function (api)
       // To remove when streamId not necessary
       history.forEach(e => {
         if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-          changeStreamIdsPrefixOnResultEvent(e);
+          convertStreamIdsToOldPrefixOnResult(e);
         }
         e.streamId = e.streamIds[0]
         return e;
@@ -619,7 +619,7 @@ module.exports = async function (api)
       const newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        changeStreamIdsPrefixOnResultEvent(newEvent);
+        convertStreamIdsToOldPrefixOnResult(newEvent);
       }
 
       // To remove when streamId not necessary
@@ -878,7 +878,7 @@ module.exports = async function (api)
       }
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        changeStreamIdsPrefixOnResultEvent(updatedEvent);
+        convertStreamIdsToOldPrefixOnResult(updatedEvent);
       }
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
@@ -1256,7 +1256,7 @@ module.exports = async function (api)
       }
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        changeStreamIdsPrefixOnResultEvent(updatedEvent);
+        convertStreamIdsToOldPrefixOnResult(updatedEvent);
       }
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];

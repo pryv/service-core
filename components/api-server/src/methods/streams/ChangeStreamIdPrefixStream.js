@@ -6,7 +6,7 @@
  */
 const Transform = require('stream').Transform;
 const inherits = require('util').inherits;
-const { changeStreamIdsPrefixOnResultEvent } = require('../helpers/backwardCompatibility');
+const { convertStreamIdsToOldPrefixOnResult } = require('../helpers/backwardCompatibility');
 
 module.exports = ChangeStreamIdPrefixStream;
 
@@ -22,7 +22,7 @@ function ChangeStreamIdPrefixStream() {
 inherits(ChangeStreamIdPrefixStream, Transform);
 
 ChangeStreamIdPrefixStream.prototype._transform = function (event, encoding, callback) {
-  changeStreamIdsPrefixOnResultEvent(event);
+  convertStreamIdsToOldPrefixOnResult(event);
   this.push(event);
   callback();
 };
