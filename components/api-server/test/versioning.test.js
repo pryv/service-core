@@ -422,9 +422,9 @@ describe('Versioning', function () {
                 const previousVersion = res.body.history[0];
                 delete previousVersion.streamId;
                 (previousVersion.headId).should.eql(eventWithNoHistory.id);
-                (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'trashed']))
+                (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'trashed', 'tags']))
                   .should.eql(_.omit(eventWithNoHistory,
-                    ['id', 'headId', 'modified', 'modifiedBy']));
+                    ['id', 'headId', 'modified', 'modifiedBy', 'tags']));
                 stepDone();
               });
           }

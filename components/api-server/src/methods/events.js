@@ -43,7 +43,9 @@ const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
-const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery, findTagsInStreamIds, TAG_PREFIX } = require('./helpers/backwardCompatibility');
+const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery, 
+  findTagsInStreamIds, TAG_PREFIX, replaceTagsWithStreamIds,
+  putOldTags } = require('./helpers/backwardCompatibility');
 
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
@@ -194,7 +196,7 @@ module.exports = async function (api)
 
   async function checkIfAuthorized(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (! context.event) return next();
-    const event: Event = context.event;
+    let event: Event = context.event;
     delete context.event;
 
     let canReadEvent: boolean = false;
@@ -211,6 +213,7 @@ module.exports = async function (api)
     if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
       event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds);
     }
+    event = putOldTags(event);
 
     // To remove when streamId not necessary
     event.streamId = event.streamIds[0];     
@@ -232,6 +235,7 @@ module.exports = async function (api)
         if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
           e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
         }
+        e = putOldTags(e);
         e.streamId = e.streamIds[0]
         return e;
       });
@@ -422,12 +426,12 @@ module.exports = async function (api)
       context.newEvent.duration = 0; 
     }
     try {
-      const newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
+      let newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
       }
-
+      newEvent = putOldTags(newEvent);
       // To remove when streamId not necessary
       newEvent.streamId = newEvent.streamIds[0];
       result.event = newEvent;
@@ -654,7 +658,7 @@ module.exports = async function (api)
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      const updatedEvent: Event = await bluebird.fromCallback(cb =>
+      let updatedEvent: Event = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: context.newEvent.id }, context.newEvent, cb));
 
       // if update was not done and no errors were catched
@@ -667,6 +671,7 @@ module.exports = async function (api)
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
       }
+      updatedEvent = putOldTags(updatedEvent);
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
       result.event = updatedEvent;
@@ -812,6 +817,8 @@ module.exports = async function (api)
    */
   async function validateEventContentAndCoerce(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const type: string = context.newEvent.type;
+
+    context.newEvent = replaceTagsWithStreamIds(context.newEvent);
 
     // Unknown types can just be created as normal events. 
     if (! typeRepo.isKnown(type)) {
@@ -1032,7 +1039,7 @@ module.exports = async function (api)
           context.accountStreamId,
         );
       }
-      const updatedEvent: Event = await bluebird.fromCallback(cb =>
+      let updatedEvent: Event = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
       // if update was not done and no errors were catched
@@ -1045,6 +1052,7 @@ module.exports = async function (api)
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
       }
+      updatedEvent = putOldTags(updatedEvent);
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
 

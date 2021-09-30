@@ -23,6 +23,7 @@ const superagent = require('superagent'); // for basic auth
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
+const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 
 describe('root', function() {
   let user, user2;
@@ -496,7 +497,10 @@ describe('root', function() {
           {
             id: results[1].event.id,
           },
-          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
+          _.extend(calls[1].params, { 
+            streamId: calls[1].params.streamIds[0],
+            streamIds: calls[1].params.streamIds.concat(calls[1].params.tags.map(t => TAG_PREFIX + t))
+          }),
         )
       );
       assert.exists(results[2].error);

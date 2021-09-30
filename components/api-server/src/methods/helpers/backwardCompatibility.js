@@ -8,6 +8,7 @@
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
+import type { Event } from 'business/src/events';
 import type { Stream } from 'business/src/streams';
 import type { Permission } from 'business/src/accesses';
 import type { MethodContext } from 'business';
@@ -107,9 +108,44 @@ function changeStreamIdsInPermissions(permissions: Array<Permission>, toOldPrefi
 function findTagsInStreamIds(streamIds: Array<string>): Array<string> {
   const tags = [];
   for (const streamId of streamIds) {
-    if (streamId.startsWith(TAG_PREFIX)) tags.push(streamId.slice(TAG_PREFIX_LENGTH))
+    if (isTagStreamId(streamId)) tags.push(removeTagPrefix(streamId))
   }
   return tags;
+}
+
+/**
+ * Replaces the tags in an event with streamIds with the corresponding prefix
+ * Deletes the tags.
+ */
+function replaceTagsWithStreamIds(event: Event): Event {
+  if (event.tags == null) return event;
+  for (const tag: string of event.tags) {
+    event.streamIds.push(TAG_PREFIX + tag);
+  }
+  delete event.tags;
+  return event;
+}
+
+/**
+ * put back tags in events, taken from its streamIds
+ */
+function putOldTags(event: Event): Event {
+  // if (event.tags != null) console.log('WOW, should not have anymore tags in the storage');
+  event.tags = [];
+  for (const streamId: string of event.streamIds) {
+    if (isTagStreamId(streamId)) {
+      event.tags.push(removeTagPrefix(streamId));
+    }
+  }
+  return event;
+}
+
+function removeTagPrefix(streamId: string): string {
+  return streamId.slice(TAG_PREFIX_LENGTH);
+}
+
+function isTagStreamId(streamId: string): boolean {
+  return streamId.startsWith(TAG_PREFIX);
 }
 
 module.exports = {
@@ -121,4 +157,6 @@ module.exports = {
   TAG_ROOT_STREAMID,
   TAG_PREFIX,
   findTagsInStreamIds,
+  replaceTagsWithStreamIds,
+  putOldTags,
 }

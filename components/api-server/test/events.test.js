@@ -28,6 +28,7 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const supertest = require('supertest');
+const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 
 require('date-utils');
 
@@ -670,7 +671,7 @@ describe('events', function () {
     beforeEach(resetEvents);
 
     it('[1GR6] must create an event with the sent data, returning it', function (done) {
-      var data = {
+      const data = {
         time: timestamp.fromDate('2012-03-22T10:00'),
         duration: timestamp.duration('55m'),
         type: 'temperature/celsius',
@@ -687,9 +688,16 @@ describe('events', function () {
         modified: timestamp.now('-1h'),
         modifiedBy: 'should-be-ignored'
       };
-      var originalCount,
-          createdEventId,
-          created;
+      const processedTags = ['patapoumpoum'];
+      const processedStreamIds = data.streamIds.concat(processedTags.map(t => TAG_PREFIX + t));
+      const expected = _.cloneDeep(data);
+      expected.tags = processedTags;
+      expected.streamIds = processedStreamIds;
+      expected.streamId = data.streamIds[0];
+
+      let originalCount;
+      let createdEventId;
+      let created;
 
       async.series([
         function countInitialEvents(stepDone) {
@@ -700,9 +708,21 @@ describe('events', function () {
         },
         function addNewEvent(stepDone) {
           request.post(basePath).send(data).end(function (res) {
+            const event = res?.body.event;
+            assert.exists(event);
+            assert.notEqual(event.created, data.created);
+            assert.notEqual(event.createdBy, data.createdBy);
+            assert.notEqual(event.modified, data.modified);
+            assert.notEqual(event.modifiedBy, data.modifiedBy);
+            expected.created = event.created;
+            expected.createdBy = event.createdBy;
+            expected.modified = event.modified;
+            expected.modifiedBy = event.modifiedBy;
+            expected.id = event.id;
             validation.check(res, {
               status: 201,
-              schema: methodsSchema.create.result
+              schema: methodsSchema.create.result,
+              body: { event: expected },
             });
             created = timestamp.now();
             createdEventId = res.body.event.id;
@@ -715,9 +735,11 @@ describe('events', function () {
             events.length.should.eql(originalCount + 1, 'events');
 
             var expected = _.clone(data);
+            
             expected.streamId = expected.streamIds[0];
             expected.id = createdEventId;
-            expected.tags = ['patapoumpoum'];
+            expected.streamIds = expected.streamIds.concat(['patapoumpoum'].map(t => TAG_PREFIX + t));
+            delete expected.tags; // tags are not stored anymore
             expected.created = expected.modified = created;
             expected.createdBy = expected.modifiedBy = access.id;
             var actual = _.find(events, function (event) {
@@ -1026,26 +1048,28 @@ describe('events', function () {
             
             validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
             validation.sanitizeEvent(createdEvent);
-            expected = _.extend({
-              id: createdEvent.id,
-              attachments: [
-                {
-                  id: createdEvent.attachments[0].id,
-                  fileName: testData.attachments.document.filename,
-                  type: testData.attachments.document.type,
-                  size: testData.attachments.document.size,
-                  integrity: testData.attachments.document.integrity
-                },
-                {
-                  id: createdEvent.attachments[1].id,
-                  fileName: testData.attachments.image.filename,
-                  type: testData.attachments.image.type,
-                  size: testData.attachments.image.size,
-                  integrity: testData.attachments.image.integrity
-                }
-              ],
-              streamIds: data.streamIds,
-            }, data);
+            expected = _.extend(data,
+              {
+                id: createdEvent.id,
+                attachments: [
+                  {
+                    id: createdEvent.attachments[0].id,
+                    fileName: testData.attachments.document.filename,
+                    type: testData.attachments.document.type,
+                    size: testData.attachments.document.size,
+                    integrity: testData.attachments.document.integrity
+                  },
+                  {
+                    id: createdEvent.attachments[1].id,
+                    fileName: testData.attachments.image.filename,
+                    type: testData.attachments.image.type,
+                    size: testData.attachments.image.size,
+                    integrity: testData.attachments.image.integrity
+                  }
+                ],
+                streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+              }
+            );
             validation.checkObjectEquality(createdEvent, expected);
 
             // check attached files
@@ -1095,19 +1119,21 @@ describe('events', function () {
         });
 
         var createdEvent = validation.sanitizeEvent(res.body.event);
-        var expected = _.extend({
-          id: createdEvent.id,
-          attachments: [
-            {
-              id: createdEvent.attachments[0].id,
-              fileName: 'file.name.with.many.dots.pdf',
-              type: testData.attachments.document.type,
-              size: testData.attachments.document.size,
-              integrity: testData.attachments.document.integrity
-            }
-          ],
-          streamIds: [data.streamIds[0]],
-        }, data);
+        var expected = _.extend(data,
+          {
+            id: createdEvent.id,
+            attachments: [
+              {
+                id: createdEvent.attachments[0].id,
+                fileName: 'file.name.with.many.dots.pdf',
+                type: testData.attachments.document.type,
+                size: testData.attachments.document.size,
+                integrity: testData.attachments.document.integrity
+              }
+            ],
+            streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+          }
+        );
         validation.checkObjectEquality(createdEvent, expected);
 
         // check attached files
@@ -1326,7 +1352,7 @@ describe('events', function () {
             expected.modified = time;
             expected.modifiedBy = access.id;
             expected.attachments = original.attachments;
-            expected.streamIds = data.streamIds;
+            expected.streamIds = data.streamIds.concat(expected.tags.map(t => TAG_PREFIX + t));
             validation.checkObjectEquality(res.body.event, expected);
 
             eventsNotifCount.should.eql(1, 'events notifications');

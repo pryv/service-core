@@ -9,7 +9,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { UsersRepository, getUsersRepository, User } = require('business/src/users');
 
 const { getLogger } = require('@pryv/boiler');
-const { TAG_ROOT_STREAMID: string, TAG_PREFIX: string } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { TAG_ROOT_STREAMID, TAG_PREFIX }: { TAG_ROOT_STREAMID: string, TAG_PREFIX: string } = require('api-server/src/methods/helpers/backwardCompatibility');
 const DOT: string = '.';
 /**
  * v1.7.0: 
