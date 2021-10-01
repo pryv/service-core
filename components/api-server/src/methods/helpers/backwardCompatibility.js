@@ -7,6 +7,7 @@
 //@flow
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { getConfigUnsafe } = require('@pryv/boiler');
 
 import type { Event } from 'business/src/events';
 import type { Stream } from 'business/src/streams';
@@ -18,9 +19,23 @@ import type { GetEventsParams } from './eventsGetUtils';
 import type Result from '../../Result';
 
 const OLD_PREFIX: string = '.';
-const TAG_ROOT_STREAMID: string = 'tags-migrated';
-const TAG_PREFIX: string = 'tag-migrated-';
-const TAG_PREFIX_LENGTH: number = TAG_PREFIX.length;
+
+// loaded lazily from config using loadTagConfigIfNeeded()
+let TAG_ROOT_STREAMID: ?string;
+let TAG_PREFIX: ?string;
+let TAG_PREFIX_LENGTH: ?number;
+let isTagBackwardCompatibilityActive: ?boolean;
+
+loadTagConfigIfNeeded();
+
+function loadTagConfigIfNeeded(): void {
+  if (TAG_PREFIX != null) return; // only testing this one as all 3 values are set together
+  const config = getConfigUnsafe(true);
+  TAG_PREFIX = config.get('backwardCompatibility:tags:prefix:streamId');
+  TAG_ROOT_STREAMID = config.get('backwardCompatibility:tags:prefix:rootStreamId');
+  TAG_PREFIX_LENGTH = TAG_PREFIX.length;
+  isTagBackwardCompatibilityActive = config.get('backwardCompatibility:tags:isActive');
+}
 
 function changeMultipleStreamIdsPrefix(streamIds: Array<string>, toOldPrefix: boolean = true): Array<string> {
   const changeFunction: string => string = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
@@ -106,6 +121,7 @@ function changeStreamIdsInPermissions(permissions: Array<Permission>, toOldPrefi
  * extract tags from streamIds with tag prefix
  */
 function findTagsInStreamIds(streamIds: Array<string>): Array<string> {
+  if (!isTagBackwardCompatibilityActive) return [];
   const tags = [];
   for (const streamId of streamIds) {
     if (isTagStreamId(streamId)) tags.push(removeTagPrefix(streamId))
@@ -118,6 +134,7 @@ function findTagsInStreamIds(streamIds: Array<string>): Array<string> {
  * Deletes the tags.
  */
 function replaceTagsWithStreamIds(event: Event): Event {
+  if (!isTagBackwardCompatibilityActive) return event;
   if (event.tags == null) return event;
   for (const tag: string of event.tags) {
     event.streamIds.push(TAG_PREFIX + tag);
@@ -130,6 +147,7 @@ function replaceTagsWithStreamIds(event: Event): Event {
  * put back tags in events, taken from its streamIds
  */
 function putOldTags(event: Event): Event {
+  if (!isTagBackwardCompatibilityActive) return event;
   // if (event.tags != null) console.log('WOW, should not have anymore tags in the storage');
   event.tags = [];
   for (const streamId: string of event.streamIds) {

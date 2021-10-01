@@ -44,8 +44,8 @@ const { ResultError } = require('influx');
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
 const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery, 
-  findTagsInStreamIds, TAG_PREFIX, replaceTagsWithStreamIds,
-  putOldTags } = require('./helpers/backwardCompatibility');
+  findTagsInStreamIds, TAG_PREFIX, TAG_ROOT_STREAMID,
+  replaceTagsWithStreamIds, putOldTags } = require('./helpers/backwardCompatibility');
 
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
@@ -69,6 +69,7 @@ module.exports = async function (api)
   const storageLayer = await getStorageLayer();
   const userEventsStorage = storageLayer.events;
   const userEventFilesStorage = storageLayer.eventFiles;
+  const userStreamsStorage = storageLayer.streams;
   const authSettings = config.get('auth');
   const eventTypesUrl = config.get('service:eventTypes');
   const auditSettings = config.get('versioning');
@@ -96,6 +97,7 @@ module.exports = async function (api)
   }
 
   const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
+  const isTagsBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:tags:isActive');
 
   // RETRIEVAL
   api.register('events.get',
@@ -127,14 +129,15 @@ module.exports = async function (api)
    * Backward compatibility for tags
    */
   function migrateTagsToStreamQueries(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
-    if (params.tags != null) {
-      for (const query: StreamQuery of params.arrayOfStreamQueriesWithStoreId) {
-        if (query.storeId === 'local') {
-          if (query.and == null) query.and = [],
-          query.and.push({any: params.tags.map(t => TAG_PREFIX + t)})
-        }  
-      }
+    if (params.tags == null) return next()
+    
+    for (const query: StreamQuery of params.arrayOfStreamQueriesWithStoreId) {
+      if (query.storeId === 'local') {
+        if (query.and == null) query.and = [],
+        query.and.push({any: params.tags.map(t => TAG_PREFIX + t)})
+      }  
     }
+    
     next();
   }
 
@@ -254,6 +257,7 @@ module.exports = async function (api)
     commonFns.getParamsValidation(methodsSchema.create.params),
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForCreation,
+    createStreamsForTagsIfNeeded,
     validateEventContentAndCoerce,
     verifycanCreateEventsOnStreamAndWIthTags,
     doesEventBelongToAccountStream,
@@ -502,6 +506,7 @@ module.exports = async function (api)
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
+    createStreamsForTagsIfNeeded,
     validateEventContentAndCoerce,
     doesEventBelongToAccountStream,
     validateAccountStreamsForUpdate,
@@ -862,6 +867,40 @@ module.exports = async function (api)
       return params.update != null && params.update.content != null;
     }
 
+  }
+
+  /**
+   * If they don't exist, create the streams for the present tags
+   */
+  async function createStreamsForTagsIfNeeded(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+    if (! isTagsBackwardCompatibilityActive) return next();
+    
+    const tags: ?Array<string> = context.newEvent.tags;
+    if (tags == null) return next();
+    const streams: Array<Promise> = [];
+    for(const tag: string of tags) {
+      // weirdly context.streamForStreamId does not behave like a Promise, so we execute it in the for loop
+      streams.push(await context.streamForStreamId(TAG_PREFIX + tag, 'local'));
+    }    
+    const streamIdsToCreate: Array<string> = (_.cloneDeep(tags)).map(t => TAG_PREFIX + t);
+    for(const stream: ?Stream of streams) {
+      if (stream != null) streamIdsToCreate.splice(streamIdsToCreate.indexOf(stream.id), 1);
+    }
+    const streamsToCreate: Array<Promise<void>> = [];
+    for(const streamId: string of streamIdsToCreate) {
+      const newStream: Stream = context.initTrackingProperties({
+        id: streamId,
+        name: streamId,
+        parentId: TAG_ROOT_STREAMID,
+      });
+      streamsToCreate.push(bluebird.fromCallback(cb =>  userStreamsStorage.insertOne(context.user, newStream, cb)));
+    }
+    const streamsCreatedResults: Array<{}> = await Promise.allSettled(streamsToCreate);
+    const streamIdsCreated: Array<string> = streamsCreatedResults.map(r => {
+      if (r.status === 'fulfilled') return r.value.id;
+    });
+    logger.info('backward compatibility: created streams for tags: ' + streamIdsCreated);
+    next();
   }
 
   function throwIfStreamIdIsNotEditable(accountStreamId: string): void {
