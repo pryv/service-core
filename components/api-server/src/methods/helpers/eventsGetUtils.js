@@ -21,6 +21,7 @@ const { treeUtils } = require('utils');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
 const ChangeStreamIdPrefixStream = require('../streams/ChangeStreamIdPrefixStream');
+const addTagsStream = require('../streams/AddTagsStream');
 
 import type { Stream } from 'business/src/streams';
 import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
@@ -332,7 +333,9 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
  * - Create a copy of the params per query
  * - Add specific stream queries to each of them
  */
-async function findEventsFromStore(filesReadTokenSecret: string, isStreamIdPrefixBackwardCompatibilityActive: boolean, context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+async function findEventsFromStore(filesReadTokenSecret: string, 
+  isStreamIdPrefixBackwardCompatibilityActive: boolean, isTagsBackwardCompatibilityActive: boolean,
+  context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
   if (params.arrayOfStreamQueriesWithStoreId?.length === 0)  {
     result.events = [];
     return next();
@@ -362,11 +365,12 @@ async function findEventsFromStore(filesReadTokenSecret: string, isStreamIdPrefi
    * @param {ReadableStream} eventsStream of "Events"
    */
   function addnewEventStreamFromSource (store, eventsStream: ReadableStream) {
-    let stream: ?ReadableStream;
+    let stream: ReadableStream = eventsStream;
     if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
       stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
-    } else {
-      stream = eventsStream;
+    } 
+    if (isTagsBackwardCompatibilityActive) {
+      stream = stream.pipe(new addTagsStream());
     }
     stream = stream.pipe(new SetSingleStreamIdStream());
     if (store.settings?.attachments?.setFileReadToken) {

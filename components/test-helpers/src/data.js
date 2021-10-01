@@ -96,7 +96,12 @@ exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
   const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
-
+  let eventsToWrite = _.cloneDeep(events);
+  let eventsToWrite = eventsToWrite.map(e => {
+    const eventToWrite = _.cloneDeep(e);
+    delete eventToWrite.tags;
+    return eventToWrite;
+  })
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 
       user,
@@ -106,7 +111,7 @@ exports.resetEvents = function (done, user) {
         }
       }
     ),
-    storage.user.events.insertMany.bind(storage.user.events, user, events)
+    storage.user.events.insertMany.bind(storage.user.events, user, eventsToWrite)
   ], done);
   
 };

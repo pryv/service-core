@@ -118,23 +118,10 @@ function changeStreamIdsInPermissions(permissions: Array<Permission>, toOldPrefi
 }
 
 /**
- * extract tags from streamIds with tag prefix
- */
-function findTagsInStreamIds(streamIds: Array<string>): Array<string> {
-  if (!isTagBackwardCompatibilityActive) return [];
-  const tags = [];
-  for (const streamId of streamIds) {
-    if (isTagStreamId(streamId)) tags.push(removeTagPrefix(streamId))
-  }
-  return tags;
-}
-
-/**
  * Replaces the tags in an event with streamIds with the corresponding prefix
  * Deletes the tags.
  */
 function replaceTagsWithStreamIds(event: Event): Event {
-  if (!isTagBackwardCompatibilityActive) return event;
   if (event.tags == null) return event;
   for (const tag: string of event.tags) {
     event.streamIds.push(TAG_PREFIX + tag);
@@ -147,7 +134,6 @@ function replaceTagsWithStreamIds(event: Event): Event {
  * put back tags in events, taken from its streamIds
  */
 function putOldTags(event: Event): Event {
-  if (!isTagBackwardCompatibilityActive) return event;
   // if (event.tags != null) console.log('WOW, should not have anymore tags in the storage');
   event.tags = [];
   for (const streamId: string of event.streamIds) {
@@ -174,7 +160,6 @@ module.exports = {
   changeStreamIdsInPermissions,
   TAG_ROOT_STREAMID,
   TAG_PREFIX,
-  findTagsInStreamIds,
   replaceTagsWithStreamIds,
   putOldTags,
 }

@@ -267,6 +267,7 @@ const events =  [
     streamId: streams[7].id,
     time: timestamp.now('3h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'trashed event used to simplify deletion tests.',
     trashed: true,
     created: timestamp.now('-2h'),
@@ -280,6 +281,7 @@ const events =  [
     streamId: streams[7].id,
     time: timestamp.now('2h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'trashed event used to simplify deletion tests.',
     trashed: true,
     created: timestamp.now('-2h'),
@@ -293,6 +295,7 @@ const events =  [
     streamId: streams[7].id,
     time: timestamp.now('1h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'trashed event used to simplify deletion tests.',
     trashed: true,
     created: timestamp.now('-2h'),
@@ -305,6 +308,7 @@ const events =  [
     streamId: streams[7].id,
     time: timestamp.now('+43h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'simple event with nothing special A',
     created: timestamp.now('-1h'),
     createdBy: 'test',
@@ -342,6 +346,7 @@ const events =  [
     streamId: streams[7].children[0].id,
     time: timestamp.now('+41h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'simple event with nothing special B',
     created: timestamp.now('-1h'),
     createdBy: 'test',
@@ -354,6 +359,7 @@ const events =  [
     streamId: streams[7].children[0].id,
     time: timestamp.now('+41h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'simple event with nothing special - original version',
     created: timestamp.now('-1h'),
     createdBy: 'test',
@@ -365,6 +371,7 @@ const events =  [
     streamId: streams[8].id,
     time: 0,
     type: 'note/txt',
+    tags: [],
     content: 'I am a simple event with time 0',
     description: 'simple event with time 0',
     created: 0,
@@ -382,7 +389,7 @@ const events =  [
     for (const tag of event.tags) {
       event.streamIds.push(TAG_PREFIX + tag);
     }
-    //delete event.tags;
+    // tags are deleted in resetEvents(), just before writing the fixtures in MongoDB
   }
   return event;
 });

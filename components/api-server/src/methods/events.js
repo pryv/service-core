@@ -17,6 +17,7 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
+const addTagsStream = require('./streams/AddTagsStream');
 
 const { getStores, StreamsUtils } = require('stores');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -44,7 +45,7 @@ const { ResultError } = require('influx');
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
 const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery, 
-  findTagsInStreamIds, TAG_PREFIX, TAG_ROOT_STREAMID,
+  TAG_PREFIX, TAG_ROOT_STREAMID,
   replaceTagsWithStreamIds, putOldTags } = require('./helpers/backwardCompatibility');
 
 import type { MethodContext } from 'business';
@@ -112,7 +113,8 @@ module.exports = async function (api)
     eventsGetUtils.streamQueryAddForcedAndForbiddenStreams,
     eventsGetUtils.streamQueryExpandStreams,
     migrateTagsToStreamQueries,
-    eventsGetUtils.findEventsFromStore.bind(null, authSettings.filesReadTokenSecret, isStreamIdPrefixBackwardCompatibilityActive),
+    eventsGetUtils.findEventsFromStore.bind(null, authSettings.filesReadTokenSecret, 
+      isStreamIdPrefixBackwardCompatibilityActive, isTagsBackwardCompatibilityActive),
     includeLocalStorageDeletionsIfRequested);
 
   function applyTagsDefaultsForRetrieval(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -129,6 +131,7 @@ module.exports = async function (api)
    * Backward compatibility for tags
    */
   function migrateTagsToStreamQueries(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+    if (! isTagsBackwardCompatibilityActive) return next();
     if (params.tags == null) return next()
     
     for (const query: StreamQuery of params.arrayOfStreamQueriesWithStoreId) {
@@ -138,11 +141,6 @@ module.exports = async function (api)
       }  
     }
     
-    next();
-  }
-
-  function addBackwardCompatibilityStreams(context, params, result, next) {
-    result.addToConcatArrayStream('events', findTagsInStreamIds);
     next();
   }
 
@@ -216,7 +214,7 @@ module.exports = async function (api)
     if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
       event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds);
     }
-    event = putOldTags(event);
+    if (isTagsBackwardCompatibilityActive) event = putOldTags(event);
 
     // To remove when streamId not necessary
     event.streamId = event.streamIds[0];     
@@ -238,7 +236,7 @@ module.exports = async function (api)
         if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
           e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
         }
-        e = putOldTags(e);
+        if (isTagsBackwardCompatibilityActive) e = putOldTags(e);
         e.streamId = e.streamIds[0]
         return e;
       });
@@ -435,7 +433,7 @@ module.exports = async function (api)
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
       }
-      newEvent = putOldTags(newEvent);
+      if (isTagsBackwardCompatibilityActive) newEvent = putOldTags(newEvent);
       // To remove when streamId not necessary
       newEvent.streamId = newEvent.streamIds[0];
       result.event = newEvent;
@@ -676,7 +674,7 @@ module.exports = async function (api)
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
       }
-      updatedEvent = putOldTags(updatedEvent);
+      if (isTagsBackwardCompatibilityActive) updatedEvent = putOldTags(updatedEvent);
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
       result.event = updatedEvent;
@@ -823,7 +821,7 @@ module.exports = async function (api)
   async function validateEventContentAndCoerce(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const type: string = context.newEvent.type;
 
-    context.newEvent = replaceTagsWithStreamIds(context.newEvent);
+    if (isTagsBackwardCompatibilityActive) context.newEvent = replaceTagsWithStreamIds(context.newEvent);
 
     // Unknown types can just be created as normal events. 
     if (! typeRepo.isKnown(type)) {
@@ -1091,7 +1089,7 @@ module.exports = async function (api)
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
       }
-      updatedEvent = putOldTags(updatedEvent);
+      if (isTagsBackwardCompatibilityActive) updatedEvent = putOldTags(updatedEvent);
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
 

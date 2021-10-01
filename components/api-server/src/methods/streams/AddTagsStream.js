@@ -6,9 +6,9 @@
  */
 const Transform = require('stream').Transform;
 const inherits = require('util').inherits;
-const { findTagsInStreamIds } = require('../helpers/backwardCompatibility');
+const { putOldTags } = require('../helpers/backwardCompatibility');
 
-module.exports = ChangeStreamIdPrefixStream;
+module.exports = AddTagsStream;
 
 /**
  * For backwardCompatibility, change system stream id prefix
@@ -22,7 +22,7 @@ function AddTagsStream() {
 inherits(AddTagsStream, Transform);
 
 AddTagsStream.prototype._transform = function (event, encoding, callback) {
-  event.tags = findTagsInStreamIds(event.streamIds);
+  event = putOldTags(event);
   this.push(event);
   callback();
 };

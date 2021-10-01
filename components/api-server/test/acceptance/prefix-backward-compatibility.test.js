@@ -152,7 +152,22 @@ describe('backward-compatibility', () => {
         });
       });
     });
-    
+    describe('when fetching events', () => {
+      before(async () => {
+        await post('events', {
+          streamIds: [streamId],
+          type: 'activity/plain',
+          tags: ['hello'],
+        });
+      });
+      it('[R3NU] should return the event with its tags', async () => {
+        res = await get('events');
+        assert.equal(res.status, 200);
+        const events = res.body.events;
+        const eventWithTags = events.filter(e => e.tags.includes('hello'));
+        assert.exists(eventWithTags);
+      })
+    })
 
 
   });
