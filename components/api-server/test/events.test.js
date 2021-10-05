@@ -29,6 +29,7 @@ const chai = require('chai');
 const assert = chai.assert;
 const supertest = require('supertest');
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { integrity } = require('business');
 
 require('date-utils');
 
@@ -465,10 +466,10 @@ describe('events', function () {
       });
     });
 
-    it('[ESLZ] must not keep event deletions past a certain time ' +
+    it.skip('[ESLZ] must not keep event deletions past a certain time ' +
         '(cannot test because cannot force-run Mongo\'s TTL cleanup task)'
       //TODO do this test when cleanup is delegated to nightlyTask
-    /*, function (done) {
+    , function (done) {
       var params = {
         state: 'all',
         modifiedSince: timestamp.now('-5y'),
@@ -482,14 +483,14 @@ describe('events', function () {
         res.body.eventDeletions.should.eql(_.at(testData.events, 13, 14))
         done();
       });
-    }*/);
+    });
 
     it('[V72A] must only return running period event(s) when requested', function (done) {
       var params = {
         running: true
       };
       var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
-        return (typeof e.duration !== 'undefined') && e.duration === null;
+        return e.duration === null;
       }).sort(function (a, b) {
         return b.time - a.time;
       });
@@ -1048,28 +1049,32 @@ describe('events', function () {
             
             validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
             validation.sanitizeEvent(createdEvent);
-            expected = _.extend(data,
-              {
-                id: createdEvent.id,
-                attachments: [
-                  {
-                    id: createdEvent.attachments[0].id,
-                    fileName: testData.attachments.document.filename,
-                    type: testData.attachments.document.type,
-                    size: testData.attachments.document.size,
-                    integrity: testData.attachments.document.integrity
-                  },
-                  {
-                    id: createdEvent.attachments[1].id,
-                    fileName: testData.attachments.image.filename,
-                    type: testData.attachments.image.type,
-                    size: testData.attachments.image.size,
-                    integrity: testData.attachments.image.integrity
-                  }
-                ],
-                streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
-              }
-            );
+            expected = _.extend({
+              id: createdEvent.id,
+              integrity: createdEvent.integrity,
+              attachments: [
+                {
+                  id: createdEvent.attachments[0].id,
+                  fileName: testData.attachments.document.filename,
+                  type: testData.attachments.document.type,
+                  size: testData.attachments.document.size,
+                  integrity: testData.attachments.document.integrity
+                },
+                {
+                  id: createdEvent.attachments[1].id,
+                  fileName: testData.attachments.image.filename,
+                  type: testData.attachments.image.type,
+                  size: testData.attachments.image.size,
+                  integrity: testData.attachments.image.integrity
+                }
+              ],
+              streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+            }, data);
+            expected.created = createdEvent.created;
+            expected.createdBy = createdEvent.createdBy;
+            expected.modified = createdEvent.modified;
+            expected.modifiedBy = createdEvent.modifiedBy;
+            integrity.events.set(expected);
             validation.checkObjectEquality(createdEvent, expected);
 
             // check attached files
@@ -1119,21 +1124,20 @@ describe('events', function () {
         });
 
         var createdEvent = validation.sanitizeEvent(res.body.event);
-        var expected = _.extend(data,
-          {
-            id: createdEvent.id,
-            attachments: [
-              {
-                id: createdEvent.attachments[0].id,
-                fileName: 'file.name.with.many.dots.pdf',
-                type: testData.attachments.document.type,
-                size: testData.attachments.document.size,
-                integrity: testData.attachments.document.integrity
-              }
-            ],
-            streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
-          }
-        );
+        var expected = _.extend(data, {
+          id: createdEvent.id,
+          attachments: [
+            {
+              id: createdEvent.attachments[0].id,
+              fileName: 'file.name.with.many.dots.pdf',
+              type: testData.attachments.document.type,
+              size: testData.attachments.document.size,
+              integrity: testData.attachments.document.integrity
+            }
+          ],
+          streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+          integrity: createdEvent.integrity
+        });
         validation.checkObjectEquality(createdEvent, expected);
 
         // check attached files
@@ -1187,7 +1191,7 @@ describe('events', function () {
           .attach('text', testData.attachments.text.path,
               testData.attachments.text.fileName)
           .end(function (res) {
-            time = timestamp.now();
+      
             validation.check(res, {
               status: 200,
               schema: methodsSchema.update.result
@@ -1228,10 +1232,11 @@ describe('events', function () {
                 );
               }
             });
-            expected.modified = time;
+            expected.modified = updatedEvent.modified;
             expected.modifiedBy = access.id;
             expected = _.defaults(expected, event);
-
+            integrity.events.set(expected);
+            
             validation.checkObjectEquality(updatedEvent, expected);
 
             // check attached files
@@ -1396,8 +1401,11 @@ describe('events', function () {
         delete expected.modified; 
         expected.modifiedBy = access.id;
         expected.streamId = expected.streamIds[0];
+        expected.modified = res.body.event.modified;
+        expected.created = res.body.event.created;
         _.extend(expected.clientData, data.clientData);
         delete expected.clientData.numberProp;
+        integrity.events.set(expected);
         validation.checkObjectEquality(res.body.event, expected);
 
         eventsNotifCount.should.eql(1, 'events notifications');
@@ -1652,7 +1660,9 @@ describe('events', function () {
         // for time delta below. 
         delete expected.modified; 
         expected.modifiedBy = access.id;
+        expected.modified = updatedEvent.modified;
         expected.attachments.shift();
+        integrity.events.set(expected);
         validation.checkObjectEquality(updatedEvent, expected);
         
         var time = timestamp.now();
@@ -1713,7 +1723,6 @@ describe('events', function () {
 	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {
-              deletionTime = timestamp.now();
 
               validation.check(res, {
                 status: 200,
@@ -1737,7 +1746,9 @@ describe('events', function () {
                 return event.id === id;
               });
               should.exist(deletion);
-              validation.checkObjectEquality(deletion, { id: id, deleted: deletionTime });
+              const expected = { id: id, deleted: deletion.deleted };
+              integrity.events.set(expected);
+              validation.checkObjectEquality(deletion, expected);
 
               var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
               fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');

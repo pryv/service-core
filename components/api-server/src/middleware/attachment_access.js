@@ -13,7 +13,7 @@ const errors = require('errors').factory;
 
 const config = require('@pryv/boiler').getConfigUnsafe(true);
 const pathForAttachment = require('business').users.UserLocalDirectory.pathForAttachment;
-const getDigestForSubRessourceIntegrity = require('business').integrity.getDigestForSubRessourceIntegrity;
+const getHTTPDigestHeaderForAttachment = require('business').integrity.attachments.getHTTPDigestHeaderForAttachment;
 
 // -- Audit 
 const isAuditActive = (!  config.get('openSource:isActive')) && config.get('audit:active');
@@ -69,8 +69,8 @@ async function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
     res.header('Content-Type', attachment.type);
     res.header('Content-Length', attachment.size);
     res.header('Content-Disposition', 'attachment; filename="' + attachment.fileName + '"');
-    if (attachment.integrity) {
-      const digest = getDigestForSubRessourceIntegrity(attachment.integrity)
+    if (attachment.integrity != null) {
+      const digest = getHTTPDigestHeaderForAttachment(attachment.integrity)
       if (digest != null) {
         res.header('Digest', digest);
       }

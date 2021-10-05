@@ -21,6 +21,7 @@ const bluebird = require('bluebird');
 const url = require('url');
 const charlatan = require('charlatan');
 const SystemStreamSerializer = require('business/src/system-streams/serializer');
+const { integrity } = require('business');
 const assert = require('chai').assert;
 require('date-utils');
 
@@ -174,11 +175,12 @@ describe('Versioning', function () {
                     return stepDone(err);
                   }
                   should.exist(event);
-                  (Object.keys(event).length).should.eql(4);
+                  (Object.keys(event).length).should.eql(5);
                   event.id.should.eql(trashedEventWithHistory.id);
                   should.exist(event.deleted);
                   should.exist(event.modified);
                   should.exist(event.modifiedBy);
+                  should.exist(event.integrity);
                   stepDone();
                 });
             },
@@ -190,11 +192,12 @@ describe('Versioning', function () {
                   }
                   (events.length).should.be.eql(2);
                   events.forEach(function (event) {
-                    (Object.keys(event).length).should.eql(4);
+                    (Object.keys(event).length).should.eql(5);
                     should.exist(event.id);
                     should.exist(event.headId);
                     should.exist(event.modified);
                     should.exist(event.modifiedBy);
+                    should.exist(event.integrity);
                   });
                   stepDone();
                 });
@@ -228,7 +231,9 @@ describe('Versioning', function () {
                   should.exist(event);
                   const expected = _.cloneDeep(trashedEventWithHistory);
                   delete expected.streamId;
-                  event.should.eql(_.extend({deleted: event.deleted}, expected));
+                  expected.deleted = event.deleted;
+                  integrity.events.set(expected);
+                  event.should.eql(expected);
                   stepDone();
                 });
             },
@@ -387,9 +392,9 @@ describe('Versioning', function () {
                     (previousVersion.modified).should.be.above(time);
                   }
                   time = previousVersion.modified;
-                  (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags']))
+                  (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags', 'integrity']))
                     .should.eql(_.omit(eventWithNoHistory,
-                      ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags']));
+                      ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags', 'integrity']));
                 });
                 stepDone();
               });
@@ -422,9 +427,9 @@ describe('Versioning', function () {
                 const previousVersion = res.body.history[0];
                 delete previousVersion.streamId;
                 (previousVersion.headId).should.eql(eventWithNoHistory.id);
-                (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'trashed', 'tags']))
+                (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'trashed', 'integrity']))
                   .should.eql(_.omit(eventWithNoHistory,
-                    ['id', 'headId', 'modified', 'modifiedBy', 'tags']));
+                    ['id', 'headId', 'modified', 'modifiedBy', 'integrity', 'tags']));
                 stepDone();
               });
           }
@@ -558,11 +563,12 @@ describe('Versioning', function () {
                 return stepDone(err);
               }
               should.exist(event);
-              (Object.keys(event).length).should.eql(4);
+              (Object.keys(event).length).should.eql(5);
               event.id.should.eql(eventOnChildStream.id);
               should.exist(event.deleted);
               should.exist(event.modified);
               should.exist(event.modifiedBy);
+              should.exist(event.integrity);
               stepDone();
             });
         },
@@ -574,11 +580,12 @@ describe('Versioning', function () {
               }
               (events.length).should.be.eql(1);
               events.forEach(function (event) {
-                (Object.keys(event).length).should.eql(4);
+                (Object.keys(event).length).should.eql(5);
                 should.exist(event.id);
                 should.exist(event.headId);
                 should.exist(event.modified);
                 should.exist(event.modifiedBy);
+                should.exist(event.integrity);
               });
               stepDone();
             });
@@ -614,7 +621,9 @@ describe('Versioning', function () {
               should.exist(event);
               const expected = _.cloneDeep(eventOnChildStream);
               delete expected.streamId;
-              event.should.eql(_.extend({deleted: event.deleted}, expected));
+              expected.deleted = event.deleted;
+              integrity.events.set(expected);
+              event.should.eql(expected);
               stepDone();
             });
         },

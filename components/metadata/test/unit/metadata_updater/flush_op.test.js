@@ -31,9 +31,10 @@ describe('Flush', () => {
   const db = produceStorageLayer(connection);
   const logger = getLogger('flush'); 
 
-  const now = 100000;
-  const from = now - 10; 
-  const to = now - 1;
+  const now = Date.now() / 1000;
+  const initialDuration = 100;
+  const fromDeltaTime = initialDuration - 10; 
+  const toDeltaTime = initialDuration - 1;
 
   const modifiedTime = Date.now() / 1e3 ;
   
@@ -54,8 +55,10 @@ describe('Flush', () => {
     await pryv.user(userId, {}, (user) => {
       user.stream({id: parentStreamId}, (stream) => {
         stream.event({
+          time: now,
           id: eventId, 
           type: 'series:mass/kg', 
+          description: 'no initial data',
           content: {
             elementType: 'mass/kg', 
             fields: ['value'], 
@@ -63,14 +66,16 @@ describe('Flush', () => {
           }
         });
         stream.event({
+          time: now,
           id: eventWithContentId, 
           type: 'series:mass/kg', 
+          description: 'with initial ' + initialDuration + ' seconds off data ',
           content: {
             elementType: 'mass/kg', 
             fields: ['value'], 
             required: ['value']
           },
-          duration: now + 100,
+          duration: initialDuration,
         });
       });
     });
@@ -83,8 +88,8 @@ describe('Flush', () => {
       const update = makeUpdate(now, { 
         userId: userId, eventId: eventId, 
         author: 'author123', 
-        from: from, 
-        to: to,
+        from: fromDeltaTime, 
+        to: toDeltaTime,
       }); 
       op = new Flush(update, db, logger);
     });
@@ -94,7 +99,7 @@ describe('Flush', () => {
       const event = await loadEvent(db, userId, eventId);
       assert.strictEqual(event.modifiedBy, 'author123');
       assert.approximately(event.modified, modifiedTime, 3);
-      assert.strictEqual(event.duration, to); 
+      assert.strictEqual(event.duration, toDeltaTime); 
     });
   });
   describe('event with existing metadata', () => {
@@ -104,18 +109,19 @@ describe('Flush', () => {
       const update = makeUpdate(now, { 
         userId: userId, eventId: eventWithContentId, 
         author: 'author123', 
-        from: from, 
-        to: to,
+        from: fromDeltaTime, 
+        to: toDeltaTime,
       }); 
       op = new Flush(update, db, logger);
     });
     
-    it('[5QO0] doesn\'t modfify duration', async () => {
+    it('[5QO0] doesn\'t modify duration', async () => {
       await op.run(); 
       const event = await loadEvent(db, userId, eventWithContentId);
       // See fixture above
-      assert.strictEqual(event.duration, now + 100); 
+      assert.strictEqual(event.duration, initialDuration ); 
     });
+
     it('[Z70F] leaves base data intact', async () => {
       await op.run(); 
       const event = await loadEvent(db, userId, eventWithContentId);
@@ -125,6 +131,21 @@ describe('Flush', () => {
       assert.deepEqual(content.fields, ['value']);
       assert.deepEqual(content.required, ['value']);
     });
+
+    it('[UD1B] update event duration if over current Duration', async () => {
+      const update = makeUpdate(now, { 
+        userId: userId, eventId: eventWithContentId, 
+        author: 'author123', 
+        from: fromDeltaTime, 
+        to: toDeltaTime + 100,
+      }); 
+      const op2 = new Flush(update, db, logger);
+      await op2.run(); 
+      const event = await loadEvent(db, userId, eventWithContentId);
+      // See fixture above
+      assert.strictEqual(event.duration, toDeltaTime + 100 ); 
+    });
+
   });
 });
 

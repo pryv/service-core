@@ -65,18 +65,22 @@ class Flush implements Operation {
     };
     const { from, to } = request.dataExtent;
    
-    const updatedData = {
-      // $min: { 'content.earliest': from }, -> Removed features
-      $max: { duration: to },
-      modifiedBy: request.author, 
-      modified: request.timestamp,
-     
-    };
-    // ADD AUDIT HERE ??
+    // first get event... because we need it's current time 
+    // we could optimze here if the call sent the time of the event.. or use agregate call of mongo
+    const event = await bluebird.fromCallback(cb => db.events.findOne(user, query, {}, cb));
+   
+    if (event.duration == null || to > event.duration) { // update only if needed.
+      const endTime = event.time + to;
+      const updatedData = {
+        endTime: endTime,
+        modifiedBy: request.author, 
+        modified: request.timestamp,
+      };
+      // ADD AUDIT HERE ??
+      await bluebird.fromCallback(
+              cb => db.events.updateOne(user, query, updatedData, cb));
+    } 
 
-    await bluebird.fromCallback(
-            cb => db.events.updateOne(user, query, updatedData, cb));
-      
     return true;
   }
 }

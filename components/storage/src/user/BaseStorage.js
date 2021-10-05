@@ -7,6 +7,9 @@
 const _ = require('lodash');
 const converters = require('./../converters');
 const timestamp = require('unix-timestamp');
+const logger = require('@pryv/boiler').getLogger('storage:base-storage');
+
+const BULKWRITE_BATCH_SIZE = 1000;
 
 module.exports = BaseStorage;
 /**
@@ -110,6 +113,72 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
   );
 };
 
+
+/**
+ * 1. Finds all documents matching the given query
+ * 2. Check them against some logic done by `updateIfNeedCallback` one by one
+ * 3. Eventually perform an update (in Bulk) if `updateIfNeedCallback` returns an operation
+ * 
+ * This is used by integrity processes to re-set integrity values on updateMany
+ *
+ * @param {Object} collectionInfo
+ * @param {Object} query Mongo-style query
+ * @param {UpdateIfNeededCallback} updateIfNeededCallback .. returns update to do on document or null if no update
+ * @param {Function} callback
+ */
+ BaseStorage.prototype.findAndUpdateIfNeeded = function(userOrUserId, query, options, updateIfNeededCallback, callback) {
+  const collectionInfo = this.getCollectionInfo(userOrUserId);
+  const database = this.database;
+  const finalQuery = this.applyQueryToDB(query);
+  const finalOptions = this.applyOptionsToDB(options);
+  database.findCursor(
+  collectionInfo,
+  finalQuery,
+  finalOptions,
+  async (err, cursor) => {
+
+    let updatesToDo = []; // keeps a list of updates to do
+    let updatesDone = 0;
+    async function executBulk() {
+      if (updatesToDo.length === 0) return;
+      
+      const bulkResult = await database.bulkWrite(collectionInfo, updatesToDo);
+      if (bulkResult?.result?.nModified != updatesToDo.length) {
+        // not throwing error as we are in the middle on an operation
+        logger.error('Issue when doing bulk update for ' + JSON.stringify({coll: collectionInfo.name,userOrUserId, query}) + ' counts does not match');
+      }
+      updatesToDo = [];
+    }
+
+    try {
+      while (await cursor.hasNext()) {
+        const document = await cursor.next();
+        const _id = document._id; // keep mongodb _id;
+        const updateQuery = updateIfNeededCallback(this.applyItemFromDB(document));
+        if (updateQuery == null) continue; // nothing to do .. 
+
+        updatesDone++;
+        updatesToDo.push(
+          {
+            'updateOne': {
+              'filter': { '_id': _id },
+              'update': updateQuery
+            }
+          });
+
+        if (updatesToDo.length === BULKWRITE_BATCH_SIZE) {
+          await executBulk();
+        }
+      }
+      // flush 
+      await executBulk();
+    
+      return callback(null, {count: updatesDone});
+    } catch (err) {
+      return callback(err);
+    }
+  });
+}
 
 /**
  * Same as find(), but returns a readable stream
@@ -223,14 +292,15 @@ BaseStorage.prototype.aggregate = function(
 };
 
 BaseStorage.prototype.insertOne = function (userOrUserId, item, callback) {
+  const itemToInsert = this.applyItemToDB(this.applyItemDefaults(item));
   this.database.insertOne(
     this.getCollectionInfo(userOrUserId),
-    this.applyItemToDB(this.applyItemDefaults(item)),
+    itemToInsert,
     function(err) {
       if (err) {
         return callback(err);
       }
-      callback(null, this.applyItemFromDB(item));
+      callback(null, this.applyItemFromDB(itemToInsert));
     }.bind(this)
   );
 };
@@ -278,19 +348,7 @@ BaseStorage.prototype.findOneAndUpdate = function(userOrUserId, query, updatedDa
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.updateOne = function (userOrUserId, query, updatedData, callback) {
-  this.database.findOneAndUpdate(
-    this.getCollectionInfo(userOrUserId),
-    this.applyQueryToDB(query),
-    this.applyUpdateToDB(updatedData),
-    function(err, dbItem) {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, this.applyItemFromDB(dbItem));
-    }.bind(this)
-  );
-};
+BaseStorage.prototype.updateOne = BaseStorage.prototype.findOneAndUpdate;
 
 /**
  * Updates the one or multiple document(s) matching the given query.
@@ -386,9 +444,11 @@ BaseStorage.prototype.findAll = function(userOrUserId, options, callback) {
  * Inserts an array of items; each item must have a valid id and data already. For tests only.
  */
 BaseStorage.prototype.insertMany = function(userOrUserId, items, callback) {
+  // Groumpf... Many tests are relying on this.. 
+  const nItems = _.cloneDeep(items);
   this.database.insertMany(
     this.getCollectionInfo(userOrUserId),
-    this.applyItemsToDB(items),
+    this.applyItemsToDB(nItems),
     callback
   );
 };

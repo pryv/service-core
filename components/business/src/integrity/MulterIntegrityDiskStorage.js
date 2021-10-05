@@ -26,6 +26,10 @@ function getDestination (req, file, cb) {
   cb(null, os.tmpdir())
 }
 
+/**
+ * @function IntegrityMulterDiskStorage - Returns a StorageEngine implementation configured to store files on the local file system and computes a hash.
+ * @param {*} opts 
+ */
 function MulterIntegrityDiskStorage (opts) {
   this.getFilename = (opts.filename || getFilename)
 
@@ -77,6 +81,10 @@ MulterIntegrityDiskStorage.prototype._removeFile = function _removeFile (req, fi
   fs.unlink(path, cb)
 }
 
+/**
+ * Multer disk storage
+ * @module IntegrityMulterIntegrityDiskStorage
+ */
 module.exports = function (opts) {
   return new MulterIntegrityDiskStorage(opts)
 }

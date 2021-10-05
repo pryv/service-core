@@ -20,6 +20,7 @@ const storage = require('storage');
 const Webhook = require('business').webhooks.Webhook;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
+const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
 class Context {
   databaseConn: storage.Database; 
@@ -212,11 +213,26 @@ class Fixture {
   // this in an afterEach function to ensure that the database is clean after
   // running tests. 
   //
-  clean(): Promise<mixed> {
-    return this.childs.all(
+  async clean(): Promise<mixed> {
+    let errorIntegrity;
+    try {
+      // check integrity before reset--- This could trigger error related to previous test
+      await integrityFinalCheck.all();
+    } catch (e) {
+      errorIntegrity = e; // keep it for later
+    }
+
+    // clean data anyway
+    const done = await this.childs.all(
       (child) => {
         return child.remove();
       });
+
+    if (errorIntegrity) {
+      console.log(errorIntegrity);
+      //throw(errorIntegrity);
+    }
+    return done;
   }
 }
 

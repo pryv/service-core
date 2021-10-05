@@ -51,7 +51,7 @@ function pathForuserId(userId, extraPath = '') {
 }
 
 /**
- * Return the full file path for this attachement
+ * Return the full file path for this attachment
  * @param {string} userId 
  * @param {string} eventId
  * @param {string} fileId

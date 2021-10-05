@@ -37,6 +37,21 @@ function loadTagConfigIfNeeded(): void {
   isTagBackwardCompatibilityActive = config.get('backwardCompatibility:tags:isActive');
 }
 
+function convertStreamIdsToOldPrefixOnResult(event: Event) {
+  let count = 0;
+  if (event.streamIds == null) return;
+  const newStreamIds = event.streamIds.map((streamId) => {
+    if (SystemStreamsSerializer.isSystemStreamId(streamId)) {
+      count++;
+      return changeToOldPrefix(streamId);
+    }
+  });
+  if (count > 0) { // we cannot ensure integrity
+    delete event.integrity;
+    event.streamIds = newStreamIds;
+  }
+}
+
 function changeMultipleStreamIdsPrefix(streamIds: Array<string>, toOldPrefix: boolean = true): Array<string> {
   const changeFunction: string => string = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
 
@@ -63,10 +78,10 @@ function replaceWithOldPrefix(streamId: string): string {
   } else {
     return streamId;
   }
+}
 
-  function changeToOldPrefix(streamId: string): string {
-    return OLD_PREFIX + SystemStreamsSerializer.removePrefixFromStreamId(streamId);
-  }
+function changeToOldPrefix(streamId: string): string {
+  return OLD_PREFIX + SystemStreamsSerializer.removePrefixFromStreamId(streamId);
 }
 
 function replaceWithNewPrefix(streamId: string): string {
@@ -162,4 +177,5 @@ module.exports = {
   TAG_PREFIX,
   replaceTagsWithStreamIds,
   putOldTags,
+  convertStreamIdsToOldPrefixOnResult,
 }

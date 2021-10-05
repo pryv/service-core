@@ -44,9 +44,10 @@ const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
-const { changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery, 
+const { convertStreamIdsToOldPrefixOnResult, changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery, 
   TAG_PREFIX, TAG_ROOT_STREAMID,
   replaceTagsWithStreamIds, putOldTags } = require('./helpers/backwardCompatibility');
+const { integrity } = require('business');
 
 import type { MethodContext } from 'business';
 import type { ApiCallback } from 'api-server/src/API';
@@ -132,8 +133,8 @@ module.exports = async function (api)
    */
   function migrateTagsToStreamQueries(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
     if (! isTagsBackwardCompatibilityActive) return next();
-    if (params.tags == null) return next()
-    
+    if (params.tags == null) return next();
+
     for (const query: StreamQuery of params.arrayOfStreamQueriesWithStoreId) {
       if (query.storeId === 'local') {
         if (query.and == null) query.and = [],
@@ -141,6 +142,32 @@ module.exports = async function (api)
       }  
     }
     
+    next();
+  }
+  
+  async function findEventsFromStore(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if (params.streams === null || params.streams.length === 0)  {
+      result.events = [];
+      return next();
+    }
+
+    // in> params.fromTime = 2 params.streams = [{any: '*' storeId: 'local'}, {any: 'access-gasgsg', storeId: 'audit'}, {any: 'action-events.get', storeId: 'audit'}]
+    const paramsByStoreId = {};
+    for (let streamQuery of params.streams) {
+      const storeId = streamQuery.storeId;
+      if (storeId == null) {
+        console.error('Missing storeId' + params.streams);
+        throw(new Error('Missing storeId' + params.streams));
+      }
+      if (! paramsByStoreId[storeId]) {
+        paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
+        paramsByStoreId[storeId].streams = []; // empty the stream query
+      }
+      delete streamQuery.storeId; 
+      paramsByStoreId[storeId].streams.push(streamQuery);
+    }
+    // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
+
     next();
   }
 
@@ -212,7 +239,7 @@ module.exports = async function (api)
     event.attachments = setFileReadToken(context.access, event.attachments);
 
     if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-      event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds);
+      convertStreamIdsToOldPrefixOnResult(event);
     }
     if (isTagsBackwardCompatibilityActive) event = putOldTags(event);
 
@@ -234,7 +261,7 @@ module.exports = async function (api)
       // To remove when streamId not necessary
       history.forEach(e => {
         if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-          e.streamIds = changeMultipleStreamIdsPrefix(e.streamIds);
+          convertStreamIdsToOldPrefixOnResult(e);
         }
         if (isTagsBackwardCompatibilityActive) e = putOldTags(e);
         e.streamId = e.streamIds[0]
@@ -262,9 +289,11 @@ module.exports = async function (api)
     validateAccountStreamsForCreation,
     appendAccountStreamsDataForCreation,
     verifyUnicity,
+    handleSeries,
     createEvent,
     removeActiveFromSibling,
     createAttachments,
+    addIntegrityToContext,
     notify);
 
   function applyPrerequisitesForCreation(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -414,7 +443,7 @@ module.exports = async function (api)
     }
   }
 
-  async function createEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  function handleSeries(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (isSeriesType(context.newEvent.type)) {
       if (openSourceSettings.isActive) {
         return next(errors.unavailableMethod());
@@ -427,11 +456,15 @@ module.exports = async function (api)
       // As long as there is no data, event duration is considered to be 0.
       context.newEvent.duration = 0; 
     }
+    next();
+  }
+
+  async function createEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
       let newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        newEvent.streamIds = changeMultipleStreamIdsPrefix(newEvent.streamIds);
+        convertStreamIdsToOldPrefixOnResult(newEvent);
       }
       if (isTagsBackwardCompatibilityActive) newEvent = putOldTags(newEvent);
       // To remove when streamId not necessary
@@ -484,17 +517,35 @@ module.exports = async function (api)
 
       result.event.attachments = attachments;
       userEventsStorage.updateOne(context.user, { id: result.event.id }, { attachments: attachments },
-        function (err) {
+        function (err, updatedEvent) {
           if (err) {
             return next(errors.unexpectedError(err));
           }
-
+          // To remove when streamId not necessary
+          updatedEvent.streamId = updatedEvent.streamIds[0];   
+          result.event = updatedEvent;
           result.event.attachments = setFileReadToken(context.access, result.event.attachments);
           next();
         });
     } catch (err) {
       next(err);
     }
+  }
+
+  function addIntegrityToContext(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if(result?.event?.integrity != null ) {
+      context.auditIntegrityPayload = {
+        key: integrity.events.key(result.event),
+        integrity: result.event.integrity,
+      };
+      if (process.env.NODE_ENV === 'test') {
+        // double check integrity when running tests only
+        if (result.event.integrity != integrity.events.hash(result.event)) {
+          return next(new Error('integrity mismatch' + JSON.stringify(result.event)));
+        }
+      }
+    }
+    next();
   }
 
   // -------------------------------------------------------------------- UPDATE
@@ -514,6 +565,7 @@ module.exports = async function (api)
     verifyUnicity,
     updateEvent,
     removeActiveFromSibling,
+    addIntegrityToContext,
     notify);
 
   async function applyPrerequisitesForUpdate(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -672,7 +724,7 @@ module.exports = async function (api)
       }
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+        convertStreamIdsToOldPrefixOnResult(updatedEvent);
       }
       if (isTagsBackwardCompatibilityActive) updatedEvent = putOldTags(updatedEvent);
       // To remove when streamId not necessary
@@ -1087,7 +1139,7 @@ module.exports = async function (api)
       }
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        updatedEvent.streamIds = changeMultipleStreamIdsPrefix(updatedEvent.streamIds);
+        convertStreamIdsToOldPrefixOnResult(updatedEvent);
       }
       if (isTagsBackwardCompatibilityActive) updatedEvent = putOldTags(updatedEvent);
       // To remove when streamId not necessary

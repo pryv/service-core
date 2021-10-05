@@ -527,7 +527,7 @@ module.exports = async function (api) {
               if (auditSettings.deletionMode === 'keep-everything') {
 
                 // history is untouched
-                subStepDone();
+                return subStepDone();
               } else if (auditSettings.deletionMode === 'keep-authors') {
 
                 userEventsStorage.findStreamed(context.user,

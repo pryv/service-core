@@ -36,7 +36,8 @@ exports = module.exports = function (action) {
     'content': {},
     'description': string({nullable: true}),
     'clientData': object({}, {nullable: true}),
-    'trashed': boolean({nullable: true})
+    'trashed': boolean({nullable: true}),
+    'integrity': string({nullable: true}),
   }, {
     id: helpers.getTypeURI('event', action),
     additionalProperties: false

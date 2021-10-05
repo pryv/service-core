@@ -485,6 +485,7 @@ describe('root', function() {
           {
             id: results[0].event.id,
             tags: [],
+            integrity: results[0].event.integrity
           },
           _.extend(calls[0].params, { streamId: calls[0].params.streamIds[0]})
         )
@@ -496,6 +497,7 @@ describe('root', function() {
         _.defaults(
           {
             id: results[1].event.id,
+            integrity: results[1].event.integrity
           },
           _.extend(calls[1].params, { 
             streamId: calls[1].params.streamIds[0],
@@ -563,6 +565,7 @@ describe('root', function() {
           {
             tags: [],
             id: results[1].event.id,
+            integrity: results[1].event.integrity
           },
           _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]}),
         )

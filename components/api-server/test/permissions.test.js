@@ -20,6 +20,7 @@ const _ = require('lodash');
 const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert;
+const { integrity } = require('business');
 
 describe('[ACCP] Access permissions', function () {
 
@@ -86,6 +87,7 @@ describe('[ACCP] Access permissions', function () {
         validation.checkFilesReadToken(res.body.events, testData.accesses[1],
           filesReadTokenSecret);
         validation.sanitizeEvents(res.body.events);
+        events.forEach(integrity.events.set);
         res.body.events.should.eql(events);
         done();
       });
@@ -102,6 +104,7 @@ describe('[ACCP] Access permissions', function () {
             filesReadTokenSecret);
           validation.sanitizeEvents(res.body.events);
           res.body.events = validation.removeAccountStreamsEvents(res.body.events);
+          testData.events.forEach(integrity.events.set);
           res.body.events.should.eql(validation.removeDeletionsAndHistory(testData.events).sort(
             function (a, b) {
               return b.time - a.time;

@@ -4,7 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
-
-
-module.exports = require('./integrity');
+afterEach(async function () {
+  await integrityFinalCheck.all();
+});

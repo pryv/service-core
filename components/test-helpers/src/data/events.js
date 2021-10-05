@@ -7,6 +7,8 @@
 const streams = require('./streams');
 const timestamp = require('unix-timestamp');
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { integrity } = require('business');
+
 
 const events =  [
   {
@@ -391,6 +393,7 @@ const events =  [
     }
     // tags are deleted in resetEvents(), just before writing the fixtures in MongoDB
   }
+  integrity.events.set(event);
   return event;
 });
 

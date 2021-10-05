@@ -23,3 +23,10 @@ serviceInfoUrl: file://test/service-info.json
 # including metadataUpdater:host breaks tests
 uploads:
   maxSizeMb: 50
+
+integrity:
+  isActive:
+    attachments: true
+    events: true
+    accesses: true
+  algorithm: sha256
