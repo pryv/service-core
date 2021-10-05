@@ -72,7 +72,7 @@ describe('Audit events integrity', function() {
     const res = await coreRequest
     .get(eventsPath)
     .set('Authorization', appAccess.token)
-    .query({ fromTime: now, streams: ':_audit:action-events.create' });
+    .query({ fromTime: now, streams: ':_audit:' });
 
     assert.exists(res.body?.events);
     assert.equal(1, res.body.events.length);

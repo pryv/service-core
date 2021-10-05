@@ -211,7 +211,6 @@ class UsersRepository {
   ): Access {
     const accessData = {
       token: token,
-      userId: userId,
       name: appId,
       type: UserRepositoryOptions.ACCESS_TYPE_PERSONAL,
       created: timestamp.now(),

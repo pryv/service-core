@@ -1044,9 +1044,6 @@ describe('events', function () {
           .attach('image', testData.attachments.image.path,
             testData.attachments.image.filename)
           .end(function (res) {
-            console.log('XXXXX', res.body.event);
-
-
             validation.check(res, {
               status: 201,
               schema: methodsSchema.create.result
@@ -1077,7 +1074,7 @@ describe('events', function () {
               ],
               streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
             });
-            
+
             expected.created = createdEvent.created;
             expected.createdBy = createdEvent.createdBy;
             expected.modified = createdEvent.modified;
