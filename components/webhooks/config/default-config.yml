@@ -21,3 +21,14 @@ integrity:
     events: true
     accesses: true
   algorithm: sha256
+
+backwardCompatibility:
+  systemStreams:
+    prefix:
+      isActive: false
+  tags:
+    isActive: true
+    prefix:
+      rootStreamId: 'tags-migrated'
+      streamId: 'tag-migrated-'
+    
