@@ -96,8 +96,7 @@ exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
   const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
-  let eventsToWrite = _.cloneDeep(events);
-  let eventsToWrite = eventsToWrite.map(e => {
+  let eventsToWrite = events.map(e => {
     const eventToWrite = _.cloneDeep(e);
     delete eventToWrite.tags;
     return eventToWrite;
