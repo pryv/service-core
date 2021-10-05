@@ -720,6 +720,7 @@ describe('events', function () {
             expected.modified = event.modified;
             expected.modifiedBy = event.modifiedBy;
             expected.id = event.id;
+            integrity.events.set(expected);
             validation.check(res, {
               status: 201,
               schema: methodsSchema.create.result,
@@ -912,7 +913,10 @@ describe('events', function () {
         function verifyData(stepDone) {
           storage.findOne(user, {id: testData.events[11].id}, null, function (err, event) {
             // HERE
-            event.should.eql(testData.events[11]);
+            // as event comes from storage we will not find "tags"
+            const expected = _.cloneDeep(testData.events[11]);
+            delete expected.tags;
+            event.should.eql(expected);
             stepDone();
           });
         }
@@ -1032,24 +1036,27 @@ describe('events', function () {
 
       let createdEvent; // set by postEventsWithAttachments reused by checkEvents
       let expected; // set by postEventsWithAttachments reused by checkEvents
-      function postEventsWithAttachments(done) { 
+      function postEventsWithAttachments(done) {
         request.post(basePath)
           .field('event', JSON.stringify(data))
           .attach('document', testData.attachments.document.path,
-              testData.attachments.document.filename)
+            testData.attachments.document.filename)
           .attach('image', testData.attachments.image.path,
-              testData.attachments.image.filename)
+            testData.attachments.image.filename)
           .end(function (res) {
+            console.log('XXXXX', res.body.event);
+
+
             validation.check(res, {
               status: 201,
               schema: methodsSchema.create.result
             });
 
             createdEvent = res.body.event;
-            
+
             validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
             validation.sanitizeEvent(createdEvent);
-            expected = _.extend({
+            expected = _.extend(data, {
               id: createdEvent.id,
               integrity: createdEvent.integrity,
               attachments: [
@@ -1069,7 +1076,8 @@ describe('events', function () {
                 }
               ],
               streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
-            }, data);
+            });
+            
             expected.created = createdEvent.created;
             expected.createdBy = createdEvent.createdBy;
             expected.modified = createdEvent.modified;
@@ -1079,11 +1087,11 @@ describe('events', function () {
 
             // check attached files
             attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
-                createdEvent.attachments[0].id,
-                testData.attachments.document.filename).should.equal('');
+              createdEvent.attachments[0].id,
+              testData.attachments.document.filename).should.equal('');
             attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
-                createdEvent.attachments[1].id,
-                testData.attachments.image.filename).should.equal('');
+              createdEvent.attachments[1].id,
+              testData.attachments.image.filename).should.equal('');
 
 
             eventsNotifCount.should.eql(1, 'events notifications');

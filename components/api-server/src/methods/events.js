@@ -198,6 +198,7 @@ module.exports = async function (api)
     commonFns.getParamsValidation(methodsSchema.getOne.params),
     findEvent,
     checkIfAuthorized,
+    backwardCompatibilityOnResult,
     includeHistoryIfRequested
   );
 
@@ -238,11 +239,6 @@ module.exports = async function (api)
 
     event.attachments = setFileReadToken(context.access, event.attachments);
 
-    if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-      convertStreamIdsToOldPrefixOnResult(event);
-    }
-    if (isTagsBackwardCompatibilityActive) event = putOldTags(event);
-
     // To remove when streamId not necessary
     event.streamId = event.streamIds[0];     
     result.event = event;
@@ -260,12 +256,7 @@ module.exports = async function (api)
 
       // To remove when streamId not necessary
       history.forEach(e => {
-        if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-          convertStreamIdsToOldPrefixOnResult(e);
-        }
-        if (isTagsBackwardCompatibilityActive) e = putOldTags(e);
-        e.streamId = e.streamIds[0]
-        return e;
+        _applyBackwardCompatibilityOnEvent(e, context);
       });
         
       result.history = history;
@@ -293,6 +284,7 @@ module.exports = async function (api)
     createEvent,
     removeActiveFromSibling,
     createAttachments,
+    backwardCompatibilityOnResult,
     addIntegrityToContext,
     notify);
 
@@ -463,10 +455,6 @@ module.exports = async function (api)
     try {
       let newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
 
-      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        convertStreamIdsToOldPrefixOnResult(newEvent);
-      }
-      if (isTagsBackwardCompatibilityActive) newEvent = putOldTags(newEvent);
       // To remove when streamId not necessary
       newEvent.streamId = newEvent.streamIds[0];
       result.event = newEvent;
@@ -479,6 +467,20 @@ module.exports = async function (api)
       return next(errors.unexpectedError(err));
     }
   }
+
+  function backwardCompatibilityOnResult(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if (result.event != null) _applyBackwardCompatibilityOnEvent(result.event, context)
+    next();
+  }
+
+  function _applyBackwardCompatibilityOnEvent(event, context) {
+    if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
+      convertStreamIdsToOldPrefixOnResult(event);
+    }
+    if (isTagsBackwardCompatibilityActive) event = putOldTags(event);
+    event.streamId = event.streamIds[0];
+  }
+
 
   function addUniqueStreamIdIfNeeded(streamIds: Array<string>, isUnique: boolean): Array<string> {
     if (! isUnique) {
@@ -508,6 +510,7 @@ module.exports = async function (api)
   }
 
   async function createAttachments(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  
     try {
       const attachments = await attachFiles(context, { id: result.event.id }, context.files);
 
@@ -564,6 +567,7 @@ module.exports = async function (api)
     appendAccountStreamsDataForUpdate,
     verifyUnicity,
     updateEvent,
+    backwardCompatibilityOnResult,
     removeActiveFromSibling,
     addIntegrityToContext,
     notify);
@@ -722,12 +726,6 @@ module.exports = async function (api)
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
       }
-
-      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        convertStreamIdsToOldPrefixOnResult(updatedEvent);
-      }
-      if (isTagsBackwardCompatibilityActive) updatedEvent = putOldTags(updatedEvent);
-      // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
       result.event = updatedEvent;
       result.event.attachments = setFileReadToken(context.access, result.event.attachments);
@@ -1138,12 +1136,7 @@ module.exports = async function (api)
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
       }
 
-      if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-        convertStreamIdsToOldPrefixOnResult(updatedEvent);
-      }
-      if (isTagsBackwardCompatibilityActive) updatedEvent = putOldTags(updatedEvent);
-      // To remove when streamId not necessary
-      updatedEvent.streamId = updatedEvent.streamIds[0];
+      _applyBackwardCompatibilityOnEvent(updatedEvent, context);
 
       result.event = updatedEvent;
       result.event.attachments = setFileReadToken(context.access, result.event.attachments);
@@ -1218,54 +1211,56 @@ module.exports = async function (api)
   api.register('events.deleteAttachment',
     commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
     checkEventForDelete,
-    async function (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-      try {
-        const attIndex = getAttachmentIndex(context.event.attachments, params.fileId);
-        if (attIndex === -1) {
-          return next(errors.unknownResource(
-            'attachment', params.fileId
-          ));
-        }
-        const deletedAtt: Attachment = context.event.attachments[attIndex];
-        context.event.attachments.splice(attIndex, 1);
+    deleteAttachment,
+    backwardCompatibilityOnResult);
 
-        const updatedData: {} = { attachments: context.event.attachments };
-        context.updateTrackingProperties(updatedData);
-
-        const alreadyUpdatedEvent: Event = await bluebird.fromCallback(cb =>
-          userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
-
-        // if update was not done and no errors were catched
-        //, perhaps user is trying to edit account streams
-        if (!alreadyUpdatedEvent) {
-          return next(errors.invalidOperation(
-            ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
-        }
-
-        // To remove when streamId not necessary
-        alreadyUpdatedEvent.streamId = alreadyUpdatedEvent.streamIds[0];
-
-        result.event = alreadyUpdatedEvent;
-        result.event.attachments = setFileReadToken(context.access, result.event.attachments);
-
-        await bluebird.fromCallback(cb => userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, cb));
-
-        const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
-
-        // approximately update account storage size
-        storagedUsed.attachedFiles -= deletedAtt.size;
-        await usersRepository.updateOne(
-          context.user,
-          storagedUsed,
-          'system',
-        );
-        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
-        next();
-      } catch (err) {
-        next(err);
+  async function deleteAttachment (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    try {
+      const attIndex = getAttachmentIndex(context.event.attachments, params.fileId);
+      if (attIndex === -1) {
+        return next(errors.unknownResource(
+          'attachment', params.fileId
+        ));
       }
-    });
+      const deletedAtt: Attachment = context.event.attachments[attIndex];
+      context.event.attachments.splice(attIndex, 1);
 
+      const updatedData: {} = { attachments: context.event.attachments };
+      context.updateTrackingProperties(updatedData);
+
+      const alreadyUpdatedEvent: Event = await bluebird.fromCallback(cb =>
+        userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
+
+      // if update was not done and no errors were catched
+      //, perhaps user is trying to edit account streams
+      if (!alreadyUpdatedEvent) {
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
+      }
+
+      // To remove when streamId not necessary
+      alreadyUpdatedEvent.streamId = alreadyUpdatedEvent.streamIds[0];
+
+      result.event = alreadyUpdatedEvent;
+      result.event.attachments = setFileReadToken(context.access, result.event.attachments);
+
+      await bluebird.fromCallback(cb => userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, cb));
+
+      const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
+
+      // approximately update account storage size
+      storagedUsed.attachedFiles -= deletedAtt.size;
+      await usersRepository.updateOne(
+        context.user,
+        storagedUsed,
+        'system',
+      );
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
 
   async function checkEventForDelete(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const eventId: string = params.id;
