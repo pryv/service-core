@@ -16,8 +16,11 @@ describe('Synchro', function () {
 
   let natsClient;
 
-  before(async () => {
-    const natsUri = (await getConfig()).get('nats:uri');
+  before(async function () {
+    const config = await getConfig();
+    if (config.get('openSource:isActive')) this.skip();
+
+    const natsUri = config.get('nats:uri');
     natsClient = await connect({
      servers: natsUri, 
      json: true 

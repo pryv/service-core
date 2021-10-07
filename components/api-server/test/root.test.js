@@ -24,9 +24,18 @@ const superagent = require('superagent'); // for basic auth
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { getConfig } = require('@pryv/boiler');
+
+let isAuditActive = false;
 
 describe('root', function() {
   let user, user2;
+
+  before(async () => {
+    const config = await getConfig();
+    isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
+  });
+
 
   let mongoFixtures;
   before(async function () {
@@ -313,9 +322,11 @@ describe('root', function() {
         .set('Authorization', sharedAccessToken);
       
       // extend sharedAccess with audit rights
-      sharedAccess.permissions.push({
-        streamId: ':_audit:access-' + sharedAccess.id, 
-        level: 'read'});
+      if (isAuditActive) {
+        sharedAccess.permissions.push({
+          streamId: ':_audit:access-' + sharedAccess.id, 
+          level: 'read'});
+      }
 
       validation.check(
         res,

@@ -21,8 +21,16 @@ const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert;
 const { integrity } = require('business');
+const { getConfig } = require('@pryv/boiler');
+
+let isAuditActive = false;
 
 describe('[ACCP] Access permissions', function () {
+
+  before(async () => {
+    const config = await getConfig();
+    isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
+  });
 
   var user = Object.assign({}, testData.users[0]),
       request = null, // must be set after server instance started
@@ -267,7 +275,10 @@ describe('[ACCP] Access permissions', function () {
 
     it('[BSFP] `get` must only return streams for which permissions are defined', function (done) {
       request.get(basePath, token(1)).query({state: 'all'}).end(async function (res) {
-        const expectedStreamids = [testData.streams[0].id, testData.streams[1].id, testData.streams[2].children[0].id, ':_audit:access-a_1'];
+        const expectedStreamids = [testData.streams[0].id, testData.streams[1].id, testData.streams[2].children[0].id];
+        if (isAuditActive) {
+          expectedStreamids.push(':_audit:access-a_1');
+        }
         assert.exists(res.body.streams);
         res.body.streams.length.should.eql(expectedStreamids.length)
         for (const stream of res.body.streams) {

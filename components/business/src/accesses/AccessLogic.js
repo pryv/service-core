@@ -48,8 +48,7 @@ Object.freeze(PermissionLevels);
     _.merge(this, access);
 
 
-    // add audit permissions
-    if (! addAuditStreams()) return;
+    
     if (this.isPersonal()) return;
     if (! this.id) return; // this is an access "in" creation process  
     
@@ -60,6 +59,9 @@ Object.freeze(PermissionLevels);
     for (const forbiddenStream of SystemStreamsSerializer.getAllRootStreamIdsThatRequireReadRightsForEventsGet()) {
       this.permissions.unshift({streamId: forbiddenStream, level: 'none'});
     }
+
+    // add audit permissions
+    if (! addAuditStreams()) return;
     
     let selfAudit = true;
     for (let permission of this.permissions) {

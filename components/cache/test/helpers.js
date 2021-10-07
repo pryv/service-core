@@ -86,8 +86,6 @@ Object.assign(global, {
   sinon: require('sinon'),
   path: require('path'),
   _: require('lodash'),
-  apiMethods: require('audit/src/ApiMethods'),
-  validation: require('audit/src/validation'),
 });
 
 

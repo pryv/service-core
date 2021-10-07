@@ -18,11 +18,15 @@ const settings = _.cloneDeep(helpers.dependencies.settings);
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
+const { getConfig } = require('@pryv/boiler');
+let isAuditActive = true;
 
 describe('permissions create-only level', () => {
   let mongoFixtures;
   before(async function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
+    const config = await getConfig();
+    isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
   });
   after(() => {
     mongoFixtures.clean();
@@ -521,9 +525,8 @@ describe('permissions create-only level', () => {
           .get(basePath)
           .set('Authorization', createOnlyToken)
           .query({ state: 'all' });
-
         const streams = res.body.streams;
-        assert.equal(streams.length, 2);
+        assert.equal(streams.length, isAuditActive ? 2 : 1);
         const stream = streams[0];
         assert.equal(stream.id, streamCreateOnlyId);
       });
