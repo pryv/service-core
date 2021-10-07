@@ -209,6 +209,7 @@ describe('DELETE /users/:username', async () => {
           assert.isFalse(userFileExists);
         });
         it(`[${testIDs[i][8]}] should delete HF data`, async function() {
+          if (isOpenSource) this.skip();
           const databases = await influx.getDatabases();
           const isFound = databases.indexOf(`user.${userToDelete.attrs.username}`) >= 0;
           assert.isFalse(isFound);

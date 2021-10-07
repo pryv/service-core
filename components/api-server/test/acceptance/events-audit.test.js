@@ -22,9 +22,10 @@ describe('Audit logs events', () => {
   let username;
   let auditToken, actionsToken;
   let streamId;
-  before(async () => {
+  before(async function () {
     config = await getConfig();
-  
+    if (config.get('openSource:isActive')) this.skip();
+
     mongoFixtures = databaseFixture(await produceMongoConnection());
 
     username = cuid();
@@ -92,6 +93,7 @@ describe('Audit logs events', () => {
   });
 
   after(async () => {
+    if (config.get('openSource:isActive')) return;
     await server.stop();
     await mongoFixtures.clean();
     config.injectTestConfig({});

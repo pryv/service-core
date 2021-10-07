@@ -10,6 +10,7 @@
 const { getDatabase } = require('storage');
 const { integrity } = require('business');
 const bluebird = require('bluebird');
+const { getConfig } = require('@pryv/boiler');
 
 async function events() {
   const database = await getDatabase();
@@ -97,8 +98,14 @@ async function accesses() {
   //await bluebird.fromCallback(cb => database.deleteMany({name: 'events'}, {},cb));
 }
 
+let isOpenSource = null;
 
 async function all() {
+  if (isOpenSource === null) {
+    const config = await getConfig();
+    isOpenSource = config.get('openSource:isActive');
+  }
+  if (isOpenSource) return;
   await events();
   await accesses();
 }

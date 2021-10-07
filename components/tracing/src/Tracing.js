@@ -11,9 +11,7 @@ const { Tags } = require('opentracing');
 
 const ah = require('./hooks');
 
-
 const TRACING_NAME: string = 'api-server';
-
 
 /**
  * Starts jaeger tracer
@@ -29,8 +27,6 @@ const TRACING_NAME: string = 'api-server';
   return initJaegerTracer(config, {});
 }
 
-
-
 /**
  * The jaeger tracer singleton
  */
@@ -40,8 +36,6 @@ const TRACING_NAME: string = 'api-server';
    tracerSingleton = initTracer(TRACING_NAME);
    return tracerSingleton;
  }
-
-
 
 /**
  * Object implementing 

@@ -62,6 +62,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
 {
   const config = await getConfig();
   const logger = getLogger('methods:accesses');
+  const isOpenSource = config.get('openSource:isActive');
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
   const stores = await getStores();
@@ -724,7 +725,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
         integrity: result.access.integrity,
       };
      
-      if (process.env.NODE_ENV === 'test') {
+      if (process.env.NODE_ENV === 'test' && ! isOpenSource) {
         // double check integrity when running tests only
         if (result.access.integrity != integrity.accesses.hash(result.access)) {
           return next(new Error('integrity mismatch ' + JSON.stringify(result.access)));
