@@ -40,8 +40,6 @@ const { getStorageLayer } = require('storage');
 
 const { pubsub } = require('messages');
 
-const { ResultError } = require('influx');
-
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
 const { convertStreamIdsToOldPrefixOnResult, changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery, 
@@ -541,7 +539,7 @@ module.exports = async function (api)
         key: integrity.events.key(result.event),
         integrity: result.event.integrity,
       };
-      if (process.env.NODE_ENV === 'test') {
+      if (process.env.NODE_ENV === 'test' && ! openSourceSettings.isActive) {
         // double check integrity when running tests only
         if (result.event.integrity != integrity.events.hash(result.event)) {
           return next(new Error('integrity mismatch' + JSON.stringify(result.event)));
