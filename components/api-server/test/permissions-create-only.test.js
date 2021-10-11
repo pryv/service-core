@@ -434,16 +434,6 @@ describe('permissions create-only level', () => {
       // because they are covered by the GET above
     });
 
-    describe('POST /stop', function () {
-      it.skip('[6VJF] should not allow stopping events for "create-only" streams', async function () {
-         const res = await server
-          .request()
-          .post(`${basePath}/stop`)
-          .set('Authorization', createOnlyToken)
-          .send({ id: createOnlyEventId });
-        assert.equal(res.status, 403);
-      });
-    });
 
     describe('attachments', function () {
 
