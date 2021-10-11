@@ -207,7 +207,6 @@ Accesses.prototype.insertMany = function (userOrUserId, accesses, callback) {
 
   
   // return a callback that will be executed after the update
-  // it 
   return function(err, res) {
     if (err) return callback(err);
     const initialModifiedCount = res.modifiedCount;

@@ -143,6 +143,7 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
       if (updatesToDo.length === 0) return;
       
       const bulkResult = await database.bulkWrite(collectionInfo, updatesToDo);
+      updatesDone += bulkResult?.result?.nModified || 0;
       if (bulkResult?.result?.nModified != updatesToDo.length) {
         // not throwing error as we are in the middle on an operation
         logger.error('Issue when doing bulk update for ' + JSON.stringify({coll: collectionInfo.name,userOrUserId, query}) + ' counts does not match');
@@ -157,7 +158,6 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
         const updateQuery = updateIfNeededCallback(this.applyItemFromDB(document));
         if (updateQuery == null) continue; // nothing to do .. 
 
-        updatesDone++;
         updatesToDo.push(
           {
             'updateOne': {
