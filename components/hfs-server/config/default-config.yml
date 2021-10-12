@@ -37,7 +37,6 @@ backwardCompatibility:
       isActive: false
   tags:
     isActive: true
-    prefix:
-      rootStreamId: 'tags-migrated'
-      streamId: 'tag-migrated-'
+    rootStreamId: 'tags-migrated'
+    streamIdPrefix: 'tag-migrated-'
     
