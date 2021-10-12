@@ -122,33 +122,6 @@ describe('[ACCP] Access permissions', function () {
         });
       });
 
-    it.skip('[FZ97] `get` must only return events with accessible tags', function (done) {
-      var tags = getAllTagsByToken(5);
-      var events = [];
-      validation.removeDeletionsAndHistory(testData.events).sort(
-        function (a, b) {
-          return b.time - a.time;
-        }).filter(function (e) {
-          if (_.intersection(tags, e.tags).length > 0) {
-            events.push(e);
-          }
-        });
-      request.get(basePath, token(5)).end(function (res) {
-        validation.sanitizeEvents(res.body.events);
-        res.body.events.should.eql(events);
-        done();
-      });
-    });
-
-    it.skip('[1DH6] `get` must only return events in accessible streams *and* with accessible tags when both ' +
-        'are defined', function (done) {
-      request.get(basePath, token(6)).end(function (res) {
-        validation.sanitizeEvents(res.body.events);
-        res.body.events.should.eql(_.at(testData.events, 0));
-        done();
-      });
-    });
-
     it('[5360] `get` (or any request) must alternatively accept the access token in the query string',
         function (done) {
       var query = {
@@ -182,17 +155,6 @@ describe('[ACCP] Access permissions', function () {
       });
     });
 
-    it.skip('[Y0TI] must forbid creating events for \'read-only\' tags', function (done) {
-      var params = {
-        type: 'test/test',
-        streamId: testData.streams[0].id,
-        tags: ['fragilistic']
-      };
-      request.post(basePath, token(5)).send(params).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
-    });
-
     it('[ZKZZ] must forbid updating events for \'read-only\' streams', function (done) {
       // also check recursive permissions
       request.put(reqPath(testData.events[0].id), token(1)).send({content: {}}).end(function (res) {
@@ -200,21 +162,8 @@ describe('[ACCP] Access permissions', function () {
       });
     });
 
-    it.skip('[9LKQ] must forbid updating events for \'read-only\' tags', function (done) {
-      request.put(reqPath(testData.events[11].id), token(5)).send({content: {}})
-          .end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
-    });
-
     it('[4H62] must forbid deleting events for \'read-only\' streams', function (done) {
       request.del(reqPath(testData.events[1].id), token(1)).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
-    });
-
-    it.skip('[GBKV] must forbid deleting events for \'read-only\' tags', function (done) {
-      request.del(reqPath(testData.events[11].id), token(5)).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -227,18 +176,6 @@ describe('[ACCP] Access permissions', function () {
         streamId: testData.streams[1].id
       };
       request.post(basePath, token(1)).send(data).end(function (res) {
-        res.statusCode.should.eql(201);
-        done();
-      });
-    });
-
-    it.skip('[NIDD] must allow creating events for \'contribute\' tags', function (done) {
-      var data = {
-        type: 'test/test',
-        streamId: testData.streams[1].id,
-        tags: ['super']
-      };
-      request.post(basePath, token(5)).send(data).end(function (res) {
         res.statusCode.should.eql(201);
         done();
       });
