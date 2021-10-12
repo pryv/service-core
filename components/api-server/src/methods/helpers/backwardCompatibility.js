@@ -31,8 +31,8 @@ loadTagConfigIfNeeded();
 function loadTagConfigIfNeeded(): void {
   if (TAG_PREFIX != null) return; // only testing this one as all 3 values are set together
   const config = getConfigUnsafe(true);
-  TAG_PREFIX = config.get('backwardCompatibility:tags:prefix:streamId');
-  TAG_ROOT_STREAMID = config.get('backwardCompatibility:tags:prefix:rootStreamId');
+  TAG_PREFIX = config.get('backwardCompatibility:tags:streamIdPrefix');
+  TAG_ROOT_STREAMID = config.get('backwardCompatibility:tags:rootStreamId');
   TAG_PREFIX_LENGTH = TAG_PREFIX.length;
   isTagBackwardCompatibilityActive = config.get('backwardCompatibility:tags:isActive');
 }
