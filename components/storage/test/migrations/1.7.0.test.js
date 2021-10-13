@@ -24,13 +24,23 @@ const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
 
 const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
 
-describe('Migration - 1.7.0',async function () {
-  this.timeout(20000);
-  const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
-  const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
-  const streamsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'streams' }, cb));
-  const accessesCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'accesses' }, cb));
 
+describe('Migration - 1.7.0',function () {
+  this.timeout(20000);
+
+  let eventsCollection;
+  let usersCollection;
+  let streamsCollection;
+  let accessesCollection;
+  let webhooksCollection;
+
+  before(async function() { 
+    eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
+    usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
+    streamsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'streams' }, cb));
+    accessesCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'accesses' }, cb));
+    webhooksCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'webhooks' }, cb));
+  });
 
   after(async function() {
     // erase all
@@ -44,7 +54,6 @@ describe('Migration - 1.7.0',async function () {
     const defaultUser = { id: 'u_0' };
     const eventsStorage = storage.user.events;
  
-
     const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds(); 
 
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
@@ -56,6 +65,14 @@ describe('Migration - 1.7.0',async function () {
     // for tags keeps info on existings tags & events
     const previousEventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
     const previousAccessesWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
+
+    // deleted 
+    const collectionsWithDelete = [eventsCollection, accessesCollection, streamsCollection, webhooksCollection]; 
+    const previousItemsWithDelete = {};
+    for (const collection of collectionsWithDelete) {
+      previousItemsWithDelete[collection.namespace] = await (await collection.find({ 'deleted': { $type: 'date'} })).toArray();
+    }
+   
 
     // perform migration
     await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
@@ -120,6 +137,18 @@ describe('Migration - 1.7.0',async function () {
       }
     }
 
+
+    // -----------------  deleted  migrations 
+
+    for (const collection of collectionsWithDelete) {
+      const newItems = await (await collection.find({ 'deleted': { $type: 'date'} })).toArray();
+      assert.equal(newItems.length, 0, collection.namespace + ' should have no item with deleted dates' );
+
+      for (const previousItem of previousItemsWithDelete[collection.namespace]) {
+        const newItem = await collection.findOne({ _id: previousItem._id });
+        assert.equal(newItem.deleted, previousItem.deleted.getTime() / 1000);
+      }
+    }
   });
 
 });

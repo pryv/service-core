@@ -283,7 +283,7 @@ Events.prototype.findDeletionsStreamed = function (
   options,
   callback
 ) {
-  var query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
+  var query = { deleted: { $gt: deletedSince } };
   this.database.findStreamed(
     this.getCollectionInfo(userOrUserId),
     query,
@@ -342,7 +342,7 @@ Events.prototype.minimizeEventsHistory = function (userOrUserId, headId, callbac
 Events.prototype.delete = function (userOrUserId, query, deletionMode, callback) {
   // default
   var update = {
-    $set: { deleted: new Date() },
+    $set: { deleted: Date.now() / 1000 },
   };
 
   switch (deletionMode) {
