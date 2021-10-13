@@ -57,6 +57,7 @@ function load(config: {}): {} {
   let defaultAccountStreams: Array<SystemStream> = 
     [{
       id: 'account',
+      name: 'Account'
       type: 'none',
       children: [
         {
@@ -138,6 +139,7 @@ function load(config: {}): {} {
 
   let helpers: Array<SystemStream> = [{
     id: 'helpers',
+    name: 'Helpers',
     type: 'none',
     children: [
       {
