@@ -73,38 +73,18 @@ exports.getKeyValueSetUpdateFn = function (propertyName) {
 
 
 exports.deletionToDB = function (item) {
-  
-  if (item.deleted != null) {
-    if (typeof item.deleted === 'number') {
-      //item.deleted = timestamp.toDate(item.deleted);
-    } else {
-      console.log('Why did I found a Date here!', dbItem);
-      throw new Error('Why did I found a Date here!');
-    }
-  } else {
+  if (item.deleted === undefined) { // undefined => null 
     item.deleted = null;
   }
   return item;
 };
 
 exports.deletionFromDB = function (dbItem) {
- 
   if (dbItem == null) { return dbItem; }
 
-  if (dbItem.deleted == null) {
+  if (dbItem.deleted == null) { // undefined or null
     delete dbItem.deleted;
   }
- /** 
-  if (dbItem.deleted != null) {
-    if (typeof dbItem.deleted == 'number') {
-      console.log('Why did I found a number here!', dbItem);
-      throw new Error('Why did I found a number here!');
-    } else {
-      dbItem.deleted = timestamp.fromDate(dbItem.deleted);
-    }
-    
-  }
-  **/
   return dbItem;
 };
 
