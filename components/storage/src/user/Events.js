@@ -142,6 +142,10 @@ function getDbIndexes () {
       index: { tags: 1 },
       options: {},
     },
+    {
+      index: {integrityBatchCode: 1},
+      options: {},
+    },
     // no index by content until we have more actual usage feedback
     {
       index: { trashed: 1 },

@@ -69,6 +69,10 @@ const indexes = [
     }
   },
   {
+    index: {integrityBatchCode: 1},
+    options: {},
+  },
+  {
     index: { name: 1, type: 1, deviceName: 1 },
     options: { 
       unique: true,
