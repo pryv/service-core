@@ -49,7 +49,6 @@ const { Extension, ExtensionLoader } = require('utils').extension;
 
 const { getAPIVersion } = require('middleware/src/project_version');
 const { tracingMiddleware } = require('tracing');
-const { pubsub } = require('messages');
 
 logger.debug('Loading app');
 
