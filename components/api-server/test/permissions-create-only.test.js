@@ -188,29 +188,6 @@ describe('permissions create-only level', () => {
 
       describe('POST /', function () {
 
-        describe('when using an access with a "manage" permission', function () {          
-          it('[IBXP] should forbid to create accesses with "create-only" permissions for tags', async function () {
-            const res = await server
-              .request()
-              .post(basePath)
-              .set('Authorization', masterToken)
-              .send({
-                type: 'shared',
-                name: 'whatever',
-                permissions: [
-                  {
-                    tag: 'whatever',
-                    level: 'create-only'
-                  }
-                ]
-              });
-            const error = res.body.error;
-            assert.exists(error);
-            assert.equal(res.status, 403);
-            assert.notExists(res.body.access);
-          });
-        });
-
         describe('when using an access with a "create-only" permission', function () {
   
           it('[X4Z1] should allow to create an access with a "create-only" permissions', async function () {

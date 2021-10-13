@@ -136,15 +136,6 @@ var permissions = exports.permissions = function (action) {
     streamPermission.properties.name = string();
   }
 
-  var tagPermission = object({
-    'tag': string(),
-    'level': permissionLevel
-  }, {
-    id: 'tagPermission',
-    additionalProperties: false,
-    required: [ 'tag', 'level' ]
-  });
-
   var featurePermission = object({
     'feature': string(),
     'setting': featureSetting
@@ -155,6 +146,6 @@ var permissions = exports.permissions = function (action) {
   });
 
   return array({
-    oneOf: [streamPermission, tagPermission, featurePermission]
+    oneOf: [streamPermission, featurePermission]
   });
 };
