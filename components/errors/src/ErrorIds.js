@@ -64,7 +64,7 @@ const ErrorIds = {
    * Throw this error for methods that are valid only for pryv.io
    */
   DeniedStreamAccess: 'denied-stream-access',
-  TooHighAccessForAccountStreams: 'too-high-access-for-account-stream',
+  TooHighAccessForSystemStreams: 'too-high-access-for-account-stream',
   ForbiddenMultipleAccountStreams: 'forbidden-multiple-account-streams-events',
   EmailRequired: 'email-required',
   PasswordRequired: 'password-required',

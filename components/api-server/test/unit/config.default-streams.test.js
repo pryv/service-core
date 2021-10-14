@@ -12,6 +12,7 @@ const systemStreamsConfig = require('api-server/config/components/systemStreams'
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfig } = require('@pryv/boiler');
 const treeUtils = require('utils/src/treeUtils');
+const { DataSource } = require('stores/interfaces/DataSource');
 
 const PRIVATE_PREFIX = ':_system:';
 const CUSTOMER_PREFIX = ':system:';
@@ -25,7 +26,11 @@ describe('SystemStreams config', () => {
     [systemStreamsConfig.features.IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
     [systemStreamsConfig.features.IS_SHOWN]: true, // if true, will be returned in events.get
     [systemStreamsConfig.features.IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
-    [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
+    [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: false, // if true, the field will be required in the validation
+    created: DataSource.UNKOWN_DATE,
+    modified: DataSource.UNKOWN_DATE,
+    createdBy: DataSource.BY_SYSTEM,
+    modifiedBy: DataSource.BY_SYSTEM,
   };
 
   after(async () => {

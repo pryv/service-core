@@ -23,6 +23,8 @@ const IS_EDITABLE: string = 'isEditable';
 const IS_UNIQUE: string = 'isUnique';
 const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
 
+const { DataSource } = require('stores/interfaces/DataSource');
+
 module.exports.features = {
   IS_SHOWN,
   IS_INDEXED,
@@ -41,7 +43,11 @@ const DEFAULT_VALUES_FOR_FIELDS: {} = {
   [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
   [IS_SHOWN]: true, // if true, will be returned in events.get
   [IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
-  [IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
+  [IS_REQUIRED_IN_VALIDATION]: false, // if true, the field will be required in the validation
+  created: DataSource.UNKOWN_DATE,
+  modified: DataSource.UNKOWN_DATE,
+  createdBy: DataSource.BY_SYSTEM,
+  modifiedBy: DataSource.BY_SYSTEM,
 };
 
 /**
@@ -57,7 +63,7 @@ function load(config: {}): {} {
   let defaultAccountStreams: Array<SystemStream> = 
     [{
       id: 'account',
-      name: 'Account'
+      name: 'Account',
       type: 'none',
       children: [
         {

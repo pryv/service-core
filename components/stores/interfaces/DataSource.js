@@ -33,6 +33,11 @@ function toBeImplemented() {
  */
 class DataSource { 
 
+  static UNKOWN_DATE: number = 10000000.00000001;
+  static BY_SYSTEM: string = 'system';
+  static BY_UNKOWN: string = 'unkown';
+  static BY_EXTERNAL_PREFIX: string = 'external-';
+
   _id: string;
   _name: string;
   _streams: UserStreams;
@@ -75,10 +80,7 @@ class DataSource {
 
 }
 
-DataSource.UNKOWN_DATE = 10000000.00000001;
-DataSource.BY_SYSTEM = 'system';
-DataSource.BY_UNKOWN = 'unkown';
-DataSource.BY_EXTERNAL_PREFIX = 'external-';
+
 
 
 /**

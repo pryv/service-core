@@ -32,7 +32,7 @@ describe("Accesses with account streams", function () {
   let app;
   let request;
   let res;
-  let accountAccess;
+  let createAccessResponse;
   let accountAccessData;
   let mongoFixtures;
   let basePath;
@@ -59,7 +59,7 @@ describe("Accesses with account streams", function () {
 
   async function createUserAndAccess (permissionLevel, streamId) {
     await createUser();
-    accountAccess = await request.post(basePath)
+    createAccessResponse = await request.post(basePath)
       .send({
         name: charlatan.Lorem.characters(7),
         permissions: [
@@ -70,7 +70,7 @@ describe("Accesses with account streams", function () {
         ]
       })
       .set('authorization', access.token);
-    accountAccessData = accountAccess.body.access;
+    accountAccessData = createAccessResponse.body.access;
   }
 
   async function getAccessInDb (id) {
@@ -111,7 +111,7 @@ describe("Accesses with account streams", function () {
             await createUserAndAccess(permissionLevel, systemEmailStreamId);
           });
           it('[UE9G] should return 201', async () => {
-            assert.equal(accountAccess.status, 201);
+            assert.equal(createAccessResponse.status, 201);
           });
           it('[BUYP] should create access in the database', async () => {
             assert.deepEqual(accountAccessData.permissions, [{ streamId: systemEmailStreamId, level: permissionLevel }]);
@@ -130,7 +130,7 @@ describe("Accesses with account streams", function () {
               await createUserAndAccess(permissionLevel, streamId);
             });
             it('[XEAK] should return 201', async () => {
-              assert.equal(accountAccess.status, 201);
+              assert.equal(createAccessResponse.status, 201);
             });
             it('[65I4] should create access in the database', async () => {
               assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
@@ -149,7 +149,7 @@ describe("Accesses with account streams", function () {
               await createUserAndAccess(permissionLevel, streamId);
             });
             it('[EPEP] should return 201', async () => {
-              assert.equal(accountAccess.status, 201);
+              assert.equal(createAccessResponse.status, 201);
             });
             it('[U3UM] should create access in the database', async () => {
               assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
@@ -176,7 +176,7 @@ describe("Accesses with account streams", function () {
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[IWMQ] should return 201', async () => {
-            assert.equal(accountAccess.status, 201);
+            assert.equal(createAccessResponse.status, 201);
           });
           it('[APYN] should create access in the database', async () => {
             assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
@@ -190,7 +190,7 @@ describe("Accesses with account streams", function () {
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[R0M1] should return 201', async () => {
-            assert.equal(accountAccess.status, 201);
+            assert.equal(createAccessResponse.status, 201);
           });
           it('[Q8R8] should create access in the database', async () => {
             assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
@@ -224,12 +224,12 @@ describe("Accesses with account streams", function () {
             await createUserAndAccess(AccessLogic.PERMISSION_LEVEL_MANAGE, streamId);
           });
           it('[93HO] should return 400', async () => {
-            assert.equal(accountAccess.status, 400);
+            assert.equal(createAccessResponse.status, 400);
           });
           it('[YPHX] should return the correct error', async () => {
-            assert.deepEqual(accountAccess.body.error, {
+            assert.deepEqual(createAccessResponse.body.error, {
               id: ErrorIds.InvalidOperation,
-              message: ErrorMessages[ErrorIds.TooHighAccessForAccountStreams],
+              message: ErrorMessages[ErrorIds.TooHighAccessForSystemStreams],
               data: { param: streamId }
             });
           });
@@ -242,10 +242,10 @@ describe("Accesses with account streams", function () {
           await createUserAndAccess('read', streamId);
         });
         it('[ATGU] should return 400', async () => {
-          assert.equal(accountAccess.status, 400);
+          assert.equal(createAccessResponse.status, 400);
         });
         it('[Q2KZ] should return the correct error', async () => {
-          assert.deepEqual(accountAccess.body.error, {
+          assert.deepEqual(createAccessResponse.body.error, {
             id: ErrorIds.InvalidOperation,
             message: ErrorMessages[ErrorIds.DeniedStreamAccess],
             data: { param: streamId }
@@ -263,14 +263,14 @@ describe("Accesses with account streams", function () {
         before(async function () {
           streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed');
           await createUserAndAccess(permissionLevel, streamId);
-          res = await request.delete(path.join(basePath, accountAccess.body.access.id))
+          res = await request.delete(path.join(basePath, createAccessResponse.body.access.id))
             .set('authorization', access.token);
         });
         it('[Z40J] should return 200', async () => {
           assert.equal(res.status, 200);
         });
         it('[MP9T] should delete the access in the database', async () => {
-          const deletedAccess = await getAccessInDb(accountAccess.body.access.id);
+          const deletedAccess = await getAccessInDb(createAccessResponse.body.access.id);
           assert.equal(deletedAccess, null);
         });
       });
