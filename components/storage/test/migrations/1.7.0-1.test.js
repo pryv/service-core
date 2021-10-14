@@ -25,7 +25,7 @@ const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
 const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
 
 
-describe('Migration - 1.7.0',function () {
+describe('Migration - 1.7.x',function () {
   this.timeout(20000);
 
   let eventsCollection;
@@ -48,8 +48,9 @@ describe('Migration - 1.7.0',function () {
     await accessesCollection.deleteMany({});
   });
 
-  it('[V8JR] must handle data migration from 1.6.21 to 1.7.0', async function () {
-    const versions = getVersions('1.7.0');
+  it('[V8JR] must handle data migration from 1.6.21 to 1.7.1', async function () {
+    const versions0 = getVersions('1.7.0');
+    const versions1 = getVersions('1.7.1');
     const newIndexes = testData.getStructure('1.7.0').indexes;
     const defaultUser = { id: 'u_0' };
     const eventsStorage = storage.user.events;
@@ -75,7 +76,8 @@ describe('Migration - 1.7.0',function () {
    
 
     // perform migration
-    await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
+    await bluebird.fromCallback(cb => versions0.migrateIfNeeded(cb));
+    await bluebird.fromCallback(cb => versions1.migrateIfNeeded(cb));
     // verify that user accounts were migrated to events
     for(const user of users) {
       // we must verify that all system streamIds were translated to another prefix
