@@ -9,7 +9,7 @@
  */
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { UserStreams } = require('mall/interfaces/DataSource');
+const { UserStreams } = require('mall/interfaces/DataStore');
 
 const forbiddenForReadingStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
 

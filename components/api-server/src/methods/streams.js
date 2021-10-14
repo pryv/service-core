@@ -73,7 +73,7 @@ module.exports = async function (api) {
 
   async function checkAuthorization(context, params, result, next) {
     if (params.parentId && params.id) {
-      DataSource.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
+      DataStore.throwInvalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
     }
     
     if (params.parentId) {

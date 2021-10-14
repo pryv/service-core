@@ -8,7 +8,7 @@
 // @flow
 
 /**
- * Local Data Source. 
+ * Local Data Store. 
  */
 const bluebird = require('bluebird');
 const _ = require('lodash');
@@ -19,7 +19,7 @@ const storage = require('storage');
 const { treeUtils } = require('utils');
 const { StreamProperties } = require('business/src/streams');
 const StreamPropsWithoutChildren: Array<string> = StreamProperties.filter(p => p !== 'children');
-const {DataSource, UserStreams, UserEvents}  = require('mall/interfaces/DataSource');
+const {DataStore, UserStreams, UserEvents}  = require('mall/interfaces/DataStore');
 const SystemStreamUtils = require('./SystemStreamUtils');
 const cache = require('cache');
 
@@ -32,7 +32,7 @@ const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 let userEventsStorage;
 let userStreamsStorage;
 
-class LocalDataSource extends DataSource {
+class LocalDataStore extends DataStore {
   
   _id: string = 'local';
   _name: string = 'Local Store';
@@ -46,7 +46,7 @@ class LocalDataSource extends DataSource {
     }
   }
 
-  async init(): Promise<DataSource> {
+  async init(): Promise<DataStore> {
     // get config and load approriated data sources componenst;
     this._streams = new LocalUserStreams();
     this._events = new LocalUserEvents();
@@ -171,7 +171,7 @@ class LocalUserEvents extends UserEvents {
   }
 }
 
-module.exports = LocalDataSource;
+module.exports = LocalDataStore;
 
 
 //--------------- helpers ------------//

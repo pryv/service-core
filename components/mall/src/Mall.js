@@ -8,21 +8,21 @@
 // @flow
 
 /**
- * Data Source aggregator. 
+ * Data Store aggregator. 
  * Pack configured datasources into one
  */
 
 const errors = require('errors').factory;
 
-const { DataSource } = require('../interfaces/DataSource');
+const { DataStore } = require('../interfaces/DataStore');
 
 // --- Override Error handling 
 
-DataSource.throwInvalidRequestStructure = function(message, data) {
+DataStore.throwInvalidRequestStructure = function(message, data) {
   throw(errors.invalidRequestStructure(message, data, innerError));
 }
 
-DataSource.throwUnkownRessource = function(resourceType, id, innerError) {
+DataStore.throwUnkownRessource = function(resourceType, id, innerError) {
   throw(errors.unknownResource(resourceType, id, innerError));
 }
 
@@ -31,12 +31,12 @@ DataSource.throwUnkownRessource = function(resourceType, id, innerError) {
 const MallUserStreams = require('./MallUserStreams');
 const StoreUserEvents = require('./MallUserEvents');
 
-class Mall extends DataSource {
+class Mall extends DataStore {
 
   _id: string = 'store';
   _name: string = 'Store';
-  stores: Array<DataSource>;
-  storesMap: Map<string, DataSource>;
+  stores: Array<DataStore>;
+  storesMap: Map<string, DataStore>;
   initialized: boolean;
   _streams: MallUserStreams;
   _events: StoreUserEvents;
@@ -52,10 +52,10 @@ class Mall extends DataSource {
   get events(): StoreUserEvents { return this._events; }
 
   /**
-   * register a new DataSource
+   * register a new DataStore
    * @param 
    */
-  addStore(store: DataSource): void {
+  addStore(store: DataStore): void {
     if (this.initialized) throw(new Error('Sources cannot be added after init()'));
     this.stores.push(store);
     this.storesMap[store.id] = store;
@@ -66,7 +66,7 @@ class Mall extends DataSource {
     this.initialized = true;
 
     // initialize all stores
-    for (const store: DataSource of this.stores) {
+    for (const store: DataStore of this.stores) {
       await store.init();
     }
 
@@ -82,7 +82,7 @@ class Mall extends DataSource {
    * @param {identifier} storeId 
    * @returns 
    */
-  _storeForId(storeId: string): DataSource {
+  _storeForId(storeId: string): DataStore {
     return this.storesMap[storeId];
   }
 

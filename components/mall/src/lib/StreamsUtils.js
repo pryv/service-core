@@ -7,24 +7,24 @@
 
 // @flow
 
-const { DataSource } = require('../../interfaces/DataSource');
+const { DataStore } = require('../../interfaces/DataStore');
 const LOCAL_STORE = 'local';
 import type { Stream } from 'business/src/streams';
 
 /**
- * Create a Stream object from a DataSource 
- * @param {DataSource} source 
+ * Create a Stream object from a DataStore 
+ * @param {DataStore} source 
  * @param {Object} extraProperties 
  */
-function sourceToStream(source: DataSource, extraProperties: mixed): Stream {
+function sourceToStream(source: DataStore, extraProperties: mixed): Stream {
   return Object.assign({
     id: ':' + source.id + ':',
     name: source.name,
     parentId: null,  
-    created: DataSource.UNKOWN_DATE,
-    modified: DataSource.UNKOWN_DATE,
-    createdBy: DataSource.BY_SYSTEM,
-    modifiedBy: DataSource.BY_SYSTEM,
+    created: DataStore.UNKOWN_DATE,
+    modified: DataStore.UNKOWN_DATE,
+    createdBy: DataStore.BY_SYSTEM,
+    modifiedBy: DataStore.BY_SYSTEM,
   }, extraProperties);
 }
 

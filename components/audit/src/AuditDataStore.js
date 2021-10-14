@@ -5,19 +5,19 @@
  * Proprietary and confidential
  */
 /**
- * Audit Data Source. 
+ * Audit Data Store. 
  * Send predicatable static data
  */
 
 
-const {DataSource, UserStreams, UserEvents}  = require('mall/interfaces/DataSource');
+const {DataStore, UserStreams, UserEvents}  = require('mall/interfaces/DataStore');
 
 const audit = require('audit');
 
 const STORE_ID = '_audit';
 const STORE_NAME = 'Audit Store';
 
-class AuditDataSource extends DataSource {
+class AuditDataStore extends DataStore {
   
   get id() { return STORE_ID; }
   get name() { return STORE_NAME; }
@@ -136,4 +136,4 @@ class AuditUserEvents extends UserEvents {
   }
 }
 
-module.exports = AuditDataSource;
+module.exports = AuditDataStore;

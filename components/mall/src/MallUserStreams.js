@@ -7,7 +7,7 @@
 
 // @flow
 
-const { DataSource, UserStreams }  = require('../interfaces/DataSource');
+const { DataStore, UserStreams }  = require('../interfaces/DataStore');
 const StreamsUtils = require('./lib/StreamsUtils');
 const { treeUtils } = require('utils');
 
@@ -35,7 +35,7 @@ class MallUserStreams extends UserStreams {
    */
   async getOne(uid: string, streamId: string, storeId: string): Promise<?Stream> {
     if (storeId == null) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
-    const store: DataSource = this.mall._storeForId(storeId);
+    const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     const streams: Array<Stream> = await store.streams.get(uid, { id: streamId, includeTrashed: true, storeId });
     if (streams?.length === 1) return streams[0];
@@ -43,7 +43,7 @@ class MallUserStreams extends UserStreams {
   }
 
   /**
-   * Get the stream that will be set as root for all Stream Structure of this Data Source.
+   * Get the stream that will be set as root for all Stream Structure of this Data Store.
    * @see https://api.pryv.com/reference/#get-streams
    * @param {identifier} uid
    * @param {Object} params
@@ -66,13 +66,13 @@ class MallUserStreams extends UserStreams {
     let res: Array<Stream> = [];
 
     // *** root query we just expose store handles & local streams
-    // might be moved in LocalDataSource ? 
+    // might be moved in LocalDataStore ? 
     if (streamId === '*' && storeId === 'local') {
       res = getChildlessRootStreamsForOtherStores(this.mall.stores);
     }
     //------ Query Store -------------//
 
-    const store: DataSource = this.mall._storeForId(storeId);
+    const store: DataStore = this.mall._storeForId(storeId);
 
     const myParams: StoreQuery = {
       id: streamId,
@@ -107,9 +107,9 @@ class MallUserStreams extends UserStreams {
 
     return res;
 
-    function getChildlessRootStreamsForOtherStores(stores: Array<DataSource>): Array<Stream> {
+    function getChildlessRootStreamsForOtherStores(stores: Array<DataStore>): Array<Stream> {
       const res: Array<Stream> = [];
-      for (const source: DataSource of stores) {
+      for (const source: DataStore of stores) {
         if (source.id !== 'local') {
           res.push(StreamsUtils.sourceToStream(source, {
             children: [],

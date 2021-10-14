@@ -84,7 +84,7 @@ let mall;
  *    - A callBack `expandStreamInContext`is used to link the expand process and the "store"
  *      This callBack is designed to be optimized on a Per-Store basis The current implementation is generic
  *      - If streamId is prefixed with a "#" just return the streamId without "#"
- *      - It queries the store with and standard `store.streams.get({id: streamId, exludedIds: [....]})` 
+ *      - It queries the stores with and standard `store.streams.get({id: streamId, exludedIds: [....]})` 
  *        and return an array of streams.
  * 
  *    - streamsQueryUtils.expandAndTransformStreamQueries
