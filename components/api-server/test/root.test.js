@@ -25,6 +25,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { getConfig } = require('@pryv/boiler');
+const { integrity } = require('business');
 
 let isAuditActive = false;
 
@@ -499,7 +500,8 @@ describe('root', function() {
             integrity: results[0].event.integrity
           },
           _.extend(calls[0].params, { streamId: calls[0].params.streamIds[0]})
-        )
+        ),
+        integrity.events.isActive ? [] : ['integrity']
       );
 
       assert.exists(results[1].event);
@@ -514,7 +516,8 @@ describe('root', function() {
             streamId: calls[1].params.streamIds[0],
             streamIds: calls[1].params.streamIds.concat(calls[1].params.tags.map(t => TAG_PREFIX + t))
           }),
-        )
+        ),
+        integrity.events.isActive ? [] : ['integrity']
       );
       assert.exists(results[2].error);
       assert.equal(results[2].error.id, ErrorIds.UnknownReferencedResource);
@@ -576,10 +579,11 @@ describe('root', function() {
           {
             tags: [],
             id: results[1].event.id,
-            integrity: results[1].event.integrity
+            integrity: results[1].event.integrity 
           },
-          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]}),
-        )
+          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
+        ),
+        integrity.events.isActive ? []: ['integrity']
       );
 
       const getEventsResult = results[2];

@@ -539,7 +539,7 @@ module.exports = async function (api)
         key: integrity.events.key(result.event),
         integrity: result.event.integrity,
       };
-      if (process.env.NODE_ENV === 'test' && ! openSourceSettings.isActive) {
+      if (process.env.NODE_ENV === 'test' && ! openSourceSettings.isActive && integrity.events.isActive) {
         // double check integrity when running tests only
         if (result.event.integrity != integrity.events.hash(result.event)) {
           return next(new Error('integrity mismatch' + JSON.stringify(result.event)));

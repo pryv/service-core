@@ -110,6 +110,7 @@ function hashEvent(event) {
 }
 
 function setOnEvent(event) {
+  if (! eventsIsActive) return;
   event.integrity = hashEvent(event);
   return event;
 }
@@ -140,6 +141,7 @@ function hashAccess(access) {
 }
 
 function setOnAccess(access) {
+  if (! accessesIsActive) return;
   access.integrity = hashAccess(access);
   return access;
 }

@@ -91,6 +91,7 @@ exports.check = function (response, expected, done) {
 };
 
 function checkEventIntegrity(e) {
+  if (! integrity.events.isActive) return;
   if (isOpenSource) return;
   const int = integrity.events.hash(e);
   if (e.integrity != int) {
@@ -99,6 +100,7 @@ function checkEventIntegrity(e) {
 }
 
 function checkAccessIntegrity(access) {
+  if (! integrity.accesses.isActive) return;
   if (isOpenSource) return;
   const int = integrity.accesses.hash(access);
   if (access.integrity != int) {
@@ -230,8 +232,7 @@ exports.checkErrorUnknown = function (res, done) {
  * `actual` and `expected` if not empty).
  */
 exports.checkObjectEquality = checkObjectEquality;
-function checkObjectEquality(actual, expected) {
-  var verifiedProps = [];
+function checkObjectEquality(actual, expected, verifiedProps = []) {
   var isApprox = false;
   if (expected.created) {
     checkApproxTimeEquality(actual.created, expected.created);

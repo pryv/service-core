@@ -13,6 +13,7 @@ const bluebird = require('bluebird');
 const { getConfig } = require('@pryv/boiler');
 
 async function events() {
+  if (! integrity.events.isActive) return;
   const database = await getDatabase();
   const cursor = await bluebird.fromCallback(cb => database.findCursor({ name: 'events' }, {}, {}, cb));
   const erroneousEvents = [];
@@ -58,6 +59,7 @@ async function events() {
 }
 
 async function accesses() {
+  if (! integrity.accesses.isActive) return;
   const database = await getDatabase();
   const cursor = await bluebird.fromCallback(cb => database.findCursor({ name: 'accesses' }, {}, {}, cb));
   const erroneousAccess = [];
