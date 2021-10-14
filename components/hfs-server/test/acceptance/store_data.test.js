@@ -864,7 +864,7 @@ describe('Storing data in a HF series', function() {
         assert.strictEqual(error.id, 'invalid-operation');
       });
       
-      it('[YMHK] store strings', async () => {
+      it('[YMHK] stores strings', async () => {
         const aLargeString = '2222222'.repeat(100);
         const now = 20; 
         
@@ -876,7 +876,7 @@ describe('Storing data in a HF series', function() {
           
         assert.isTrue(result.ok);
       });
-      it('[ZL7C] store floats', async () => {
+      it('[ZL7C] stores floats', async () => {
         const now = 10000000; 
 
         

@@ -69,7 +69,7 @@ class MethodContext {
   customAuthStepFn: ?CustomAuthFunction;
 
   methodId: ?string;
-  mall: Store;
+  mall: Mall;
 
   _tracing: ?Tracing;
 
