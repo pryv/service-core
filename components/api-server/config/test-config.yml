@@ -72,7 +72,7 @@ backwardCompatibility:
   systemStreams:
     prefix:
       isActive: false
-mall:
+stores:
   loadExternal:
     - id: dummy
       name: Dummy Store

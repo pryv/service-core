@@ -85,7 +85,7 @@ custom:
       name: Email
       isRequiredInValidation: true
 
-mall:
+stores:
   loadExternal: []
 
 caching:

@@ -31,7 +31,7 @@ async function getMall(): Array<DataStore> {
   mall = new Mall();
   
   // -- DataStores (Imported After to avoid cycles);
-  const externalStores: Array<{}> = config.get('mall:loadExternal');
+  const externalStores: Array<{}> = config.get('stores:loadExternal');
   if (externalStores) { // keep it like this .. to be sure we test null, undefined, [], false
     for (const externalStore of externalStores) {
       const NewStore: Function = require(externalStore.path);
