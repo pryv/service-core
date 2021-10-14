@@ -20,7 +20,7 @@ const { getUsersRepository } = require('business/src/users');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getStores, StreamsUtils } = require('mall');
+const { getMall, StreamsUtils } = require('mall');
 
 const cache = require('cache');
 
@@ -145,7 +145,7 @@ class MethodContext {
 
   // Load the userId and mall 
   async init() {
-    this.mall = await getStores();
+    this.mall = await getMall();
     const usersRepository = await getUsersRepository();
     this.user = { 
       id: await usersRepository.getUserIdForUsername(this.user.username),
@@ -156,7 +156,7 @@ class MethodContext {
 
   // Retrieve the userBusiness
   async retrieveUser() {
-    this.mall = await getStores();
+    this.mall = await getMall();
     try {
       // get user details
       const usersRepository = await getUsersRepository();

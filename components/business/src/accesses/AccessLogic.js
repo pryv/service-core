@@ -13,7 +13,7 @@ var treeUtils = require('utils').treeUtils,
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
-const { StreamsUtils, getStores } = require('mall');
+const { StreamsUtils, getMall } = require('mall');
 
 let auditIsActive = null;
 function addAuditStreams() {
@@ -516,7 +516,7 @@ Object.freeze(PermissionLevels);
 
     let currentStream = (streamId !== '*') ? streamId : null; 
 
-    const mall = await getStores();
+    const mall = await getMall();
 
     while (currentStream != null) { // should never execute
       const permissions = this.getStreamPermission(storeId, currentStream);

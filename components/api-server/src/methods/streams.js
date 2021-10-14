@@ -23,7 +23,7 @@ const ErrorIds = require('errors/src/ErrorIds');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
-const { getStores, StreamsUtils } = require('mall');
+const { getMall, StreamsUtils } = require('mall');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
@@ -50,7 +50,7 @@ module.exports = async function (api) {
   const userEventFilesStorage = storageLayer.eventFiles;
   const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
-  const mall = await getStores();
+  const mall = await getMall();
 
   const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 

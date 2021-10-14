@@ -437,16 +437,16 @@ exports.removeAccountStreams = function (streams) {
 }
 
 exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
-  const {StreamsUtils, getStores} = require('mall');
+  const {StreamsUtils, getMall} = require('mall');
   function isShown(storeId) {
     if (storeId === 'local') return false;
     if (storesId == null) return true;
     return storesId.includes(storeId);
   }
 
-  // -- ADD Stores
-  const mainStore = await getStores();
-  for (const source of [...mainStore.stores].reverse()) { // cloning array before reversing it!
+  // -- ADD stores
+  const mall = await getMall();
+  for (const source of [...mall.stores].reverse()) { // cloning array before reversing it!
     if (isShown(source.id)) {
       const stream = StreamsUtils.sourceToStream(source, {
         children: [],

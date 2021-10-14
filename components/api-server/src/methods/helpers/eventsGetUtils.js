@@ -16,7 +16,7 @@ const streamsQueryUtils = require('./streamsQueryUtils');
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 const errors = require('errors').factory;
-const { getStores, StreamsUtils } = require('mall');
+const { getMall, StreamsUtils } = require('mall');
 const { treeUtils } = require('utils');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
@@ -386,7 +386,7 @@ async function findEventsFromStore(filesReadTokenSecret: string,
 }
 
 async function init() {
-  mall = await getStores();
+  mall = await getMall();
 }
 
 module.exports = {
