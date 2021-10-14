@@ -16,7 +16,7 @@ class Dummy extends DataStore {
   constructor() {  super(); }
 
   async init(config) {
-    // get config and load approriated data sources componenst;
+    // get config and load approriated data store components;
     this._streams = new DummyUserStreams();
     this._events = new DummyUserEvents();
     return this;

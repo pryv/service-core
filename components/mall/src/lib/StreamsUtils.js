@@ -13,13 +13,13 @@ import type { Stream } from 'business/src/streams';
 
 /**
  * Create a Stream object from a DataStore 
- * @param {DataStore} source 
+ * @param {DataStore} store 
  * @param {Object} extraProperties 
  */
-function sourceToStream(source: DataStore, extraProperties: mixed): Stream {
+function storeToStream(store: DataStore, extraProperties: mixed): Stream {
   return Object.assign({
-    id: ':' + source.id + ':',
-    name: source.name,
+    id: ':' + store.id + ':',
+    name: store.name,
     parentId: null,  
     created: DataStore.UNKOWN_DATE,
     modified: DataStore.UNKOWN_DATE,
@@ -51,7 +51,7 @@ function storeIdAndStreamIdForStreamId(fullStreamId: string): [ string, string ]
 }
 
 /**
- * Get full streamId from source + cleanstreanId
+ * Get full streamId from store + cleanstreanId
  * @returns {string} 
  */
 function streamIdForStoreId(streamId: string, storeId: string): string {
@@ -82,7 +82,7 @@ function addStoreIdPrefixToStreams(storeId: string, streams: Array<Stream>): voi
 }
 
 module.exports = {
-  sourceToStream,
+  storeToStream,
   storeIdAndStreamIdForStreamId,
   streamIdForStoreId,
   addStoreIdPrefixToStreams

@@ -143,7 +143,7 @@ class UserStreams {
 
 /**
  * @private
- * recursively apply default streamId datasource namne and streams default value
+ * recursively apply default streamId datastore namne and streams default value
  * @param {string} storeIdNameSpace - namespacing for streamIds
  * @param {Array<Streams>} streams 
  */

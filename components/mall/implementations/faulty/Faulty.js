@@ -18,7 +18,7 @@ class Faulty extends DataStore {
   constructor() {  super(); }
 
   async init(config) {
-    // get config and load approriated data sources componenst;
+    // get config and load approriated data store components;
     this._streams = new FaultyUserStreams();
     this._events = new FaultyUserEvents();
     return this;

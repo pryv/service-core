@@ -47,7 +47,7 @@ class LocalDataStore extends DataStore {
   }
 
   async init(): Promise<DataStore> {
-    // get config and load approriated data sources componenst;
+    // get config and load approriated data store components;
     this._streams = new LocalUserStreams();
     this._events = new LocalUserEvents();
 
@@ -64,12 +64,12 @@ function clone(obj: any): any {
   // Clone streams -- BAd BaD -- To be optimized 
   return _.cloneDeep(obj);
 }
-function cloneStream(sourceStream: Stream, includeChildren: boolean): Stream {
+function cloneStream(storeStream: Stream, includeChildren: boolean): Stream {
   if (includeChildren) {
-    return clone(sourceStream);
+    return clone(storeStream);
   } else {
     // _.pick() creates a copy
-    const stream: Stream = _.pick(sourceStream, StreamPropsWithoutChildren);
+    const stream: Stream = _.pick(storeStream, StreamPropsWithoutChildren);
     stream.childrenHidden = true;
     stream.children = [];
     return stream;

@@ -9,7 +9,7 @@
 
 /**
  * Data Store aggregator. 
- * Pack configured datasources into one
+ * Pack configured datastores into one
  */
 
 const errors = require('errors').factory;

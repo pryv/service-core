@@ -99,7 +99,7 @@ class MallUserStreams extends UserStreams {
     if (storeId !== 'local') { // add Prefix
       StreamsUtils.addStoreIdPrefixToStreams(storeId, res);
       if (streamId === '*') { // add root stream
-        res = [StreamsUtils.sourceToStream(store, {
+        res = [StreamsUtils.storeToStream(store, {
           children: res,
         })];
       }
@@ -109,9 +109,9 @@ class MallUserStreams extends UserStreams {
 
     function getChildlessRootStreamsForOtherStores(stores: Array<DataStore>): Array<Stream> {
       const res: Array<Stream> = [];
-      for (const source: DataStore of stores) {
-        if (source.id !== 'local') {
-          res.push(StreamsUtils.sourceToStream(source, {
+      for (const store: DataStore of stores) {
+        if (store.id !== 'local') {
+          res.push(StreamsUtils.storeToStream(store, {
             children: [],
             childrenHidden: true // To be discussed
           }));

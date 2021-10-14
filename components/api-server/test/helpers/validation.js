@@ -448,7 +448,7 @@ exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
   const mall = await getMall();
   for (const source of [...mall.stores].reverse()) { // cloning array before reversing it!
     if (isShown(source.id)) {
-      const stream = StreamsUtils.sourceToStream(source, {
+      const stream = StreamsUtils.storeToStream(source, {
         children: [],
         childrenHidden: true // To be discussed
       });
