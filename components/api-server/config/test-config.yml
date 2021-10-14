@@ -72,11 +72,11 @@ backwardCompatibility:
   systemStreams:
     prefix:
       isActive: false
-stores:
+mall:
   loadExternal:
     - id: dummy
       name: Dummy Store
-      path: ../implementations/dummy # should be fully qualified path for external stores
+      path: ../implementations/dummy # should be fully qualified path for external mall
       config: null
     - id: faulty
       name: Faulty Store

@@ -19,7 +19,7 @@ const storage = require('storage');
 const { treeUtils } = require('utils');
 const { StreamProperties } = require('business/src/streams');
 const StreamPropsWithoutChildren: Array<string> = StreamProperties.filter(p => p !== 'children');
-const {DataSource, UserStreams, UserEvents}  = require('stores/interfaces/DataSource');
+const {DataSource, UserStreams, UserEvents}  = require('mall/interfaces/DataSource');
 const SystemStreamUtils = require('./SystemStreamUtils');
 const cache = require('cache');
 

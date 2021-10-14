@@ -141,7 +141,7 @@ describe("System streams", function () {
           }
         ];
 
-        const { UserStreams } = require('stores/interfaces/DataSource')
+        const { UserStreams } = require('mall/interfaces/DataSource')
         UserStreams.applyDefaults(readableStreams);
 
         expectedRes.push(...readableStreams);

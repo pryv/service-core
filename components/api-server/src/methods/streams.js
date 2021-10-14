@@ -23,7 +23,7 @@ const ErrorIds = require('errors/src/ErrorIds');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
-const { getStores, StreamsUtils } = require('stores');
+const { getStores, StreamsUtils } = require('mall');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
@@ -50,7 +50,7 @@ module.exports = async function (api) {
   const userEventFilesStorage = storageLayer.eventFiles;
   const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
-  const stores = await getStores();
+  const mall = await getStores();
 
   const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
@@ -106,7 +106,7 @@ module.exports = async function (api) {
       [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
     }
    
-    let streams = await stores.streams.get(context.user.id, 
+    let streams = await mall.streams.get(context.user.id, 
       {
         id: streamId,
         storeId: storeId,
@@ -142,7 +142,7 @@ module.exports = async function (api) {
         } else {
           if (storeId === 'local' && listable.storeId !== 'local') {
             // fetch stream structures for listables not in local and add it to the result
-            const listableStreamAndChilds = await stores.streams.get(context.user.id, 
+            const listableStreamAndChilds = await mall.streams.get(context.user.id, 
               {
                 id: listable.streamId,
                 storeId: listable.storeId,

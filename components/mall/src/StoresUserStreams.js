@@ -48,7 +48,7 @@ class StoresUserStreams extends UserStreams {
    * @param {identifier} uid
    * @param {Object} params
    * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by Stores 
-   * @param {identifier} [params.storeId] null, means streamId is a "FullStreamId that includes stores informations"
+   * @param {identifier} [params.storeId] null, means streamId is a "FullStreamId that includes store informations"
    * @param {identifier} [params.expandChildren] default false, if true also return childrens
    * @param {Array<identifier>} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is true, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
@@ -65,7 +65,7 @@ class StoresUserStreams extends UserStreams {
     // ------- create result ------//
     let res: Array<Stream> = [];
 
-    // *** root query we just expose stores handles & local streams
+    // *** root query we just expose store handles & local streams
     // might be moved in LocalDataSource ? 
     if (streamId === '*' && storeId === 'local') {
       res = getChildlessRootStreamsForOtherStores(this.mainStore.stores);

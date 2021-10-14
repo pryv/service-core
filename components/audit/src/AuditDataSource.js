@@ -10,7 +10,7 @@
  */
 
 
-const {DataSource, UserStreams, UserEvents}  = require('stores/interfaces/DataSource');
+const {DataSource, UserStreams, UserEvents}  = require('mall/interfaces/DataSource');
 
 const audit = require('audit');
 

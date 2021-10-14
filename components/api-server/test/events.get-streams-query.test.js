@@ -12,7 +12,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
-const { StreamsUtils } = require('stores');
+const { StreamsUtils } = require('mall');
 
 /**
  * Structures
@@ -216,7 +216,7 @@ describe('events.get streams query', function () {
             const res = await validateQuery([{ any: ['A', ':_audit:test'] }]);
             assert(false);
           } catch (e) {
-            assert.include(e, 'queries must me grouped by stores');
+            assert.include(e, 'queries must me grouped by store');
           }
         });
 

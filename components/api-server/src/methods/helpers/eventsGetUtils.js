@@ -16,7 +16,7 @@ const streamsQueryUtils = require('./streamsQueryUtils');
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 const errors = require('errors').factory;
-const { getStores, StreamsUtils } = require('stores');
+const { getStores, StreamsUtils } = require('mall');
 const { treeUtils } = require('utils');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
@@ -52,7 +52,7 @@ export type StoreQuery = {
   excludedIds: Array<string>,
 };
 
-let stores;
+let mall;
 
 /**
  *  # Stream Query Flow 
@@ -81,10 +81,10 @@ let stores;
  *    - Each "streamId" of the queries is "expanded" (i.e. transformed in an array of streamId that includes the streams and it's chidlren)
  *    - Do not expand streams prefixed with a "#" 
  *       
- *    - A callBack `expandStreamInContext`is used to link the expand process and the "stores"
+ *    - A callBack `expandStreamInContext`is used to link the expand process and the "store"
  *      This callBack is designed to be optimized on a Per-Store basis The current implementation is generic
  *      - If streamId is prefixed with a "#" just return the streamId without "#"
- *      - It queries the stores with and standard `stores.streams.get({id: streamId, exludedIds: [....]})` 
+ *      - It queries the store with and standard `store.streams.get({id: streamId, exludedIds: [....]})` 
  *        and return an array of streams.
  * 
  *    - streamsQueryUtils.expandAndTransformStreamQueries
@@ -305,7 +305,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
       excludedIds: excludedIds
     };
 
-    const tree: Array<Stream> = await stores.streams.get(context.user.id, query);
+    const tree: Array<Stream> = await mall.streams.get(context.user.id, query);
     
     // collect streamIds 
     const resultWithPrefix: Array<string> = treeUtils.collectPluck(tree, 'id');
@@ -360,7 +360,7 @@ async function findEventsFromStore(filesReadTokenSecret: string,
 
 
   /**
-   * Will be called by "stores" for each source of event that need to be streames to result
+   * Will be called by "mall" for each source of event that need to be streames to result
    * @param {Store} store
    * @param {ReadableStream} eventsStream of "Events"
    */
@@ -379,14 +379,14 @@ async function findEventsFromStore(filesReadTokenSecret: string,
     result.addToConcatArrayStream('events', stream);
   }
 
-  await stores.events.generateStreams(context.user.id, paramsByStoreId, addnewEventStreamFromSource);
+  await mall.events.generateStreams(context.user.id, paramsByStoreId, addnewEventStreamFromSource);
   result.closeConcatArrayStream('events');
 
   return next();
 }
 
 async function init() {
-  stores = await getStores();
+  mall = await getStores();
 }
 
 module.exports = {

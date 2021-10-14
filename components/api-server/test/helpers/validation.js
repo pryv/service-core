@@ -437,7 +437,7 @@ exports.removeAccountStreams = function (streams) {
 }
 
 exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
-  const {StreamsUtils, getStores} = require('stores');
+  const {StreamsUtils, getStores} = require('mall');
   function isShown(storeId) {
     if (storeId === 'local') return false;
     if (storesId == null) return true;
