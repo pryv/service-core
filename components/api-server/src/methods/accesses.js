@@ -238,28 +238,30 @@ module.exports = async function produceAccessesApiMethods(api: API)
    */
   function applyAccountStreamsValidation (context, params, result, next) {
     if (params.permissions == null) return next();
-
-    // don't allow user to give access to not visible stream
-    for (let i = 0; i < params.permissions.length; i++) {
-      if (notVisibleAccountStreamsIds.includes(params.permissions[i].streamId)) {
-        return next(errors.invalidOperation(
-          ErrorMessages[ErrorIds.DeniedStreamAccess],
-          { param: params.permissions[i].streamId }
-        ));
+    
+    for (const permission of params.permissions) {
+      if (isStreamBasedPermission(permission)) {
+        // don't allow user to give access to not visible stream
+        if (notVisibleAccountStreamsIds.includes(permission.streamId)) {
+          return next(errors.invalidOperation(
+            ErrorMessages[ErrorIds.DeniedStreamAccess],
+            { param: permission.streamId }
+          ));
+        }
+        // don't allow user to give anything higher than contribute or read access
+        // to visible stream
+        if (visibleAccountStreamsIds.includes(permission.streamId) && 
+        !context.access.canCreateAccessForAccountStream(permission.level)) {
+          return next(errors.invalidOperation(
+            ErrorMessages[ErrorIds.TooHighAccessForSystemStreams],
+            { param: permission.streamId }));
+        }
       }
     }
 
-    // don't allow user to give anything higher than contribute or read access
-    // to visible stream
-    for (let n = 0; n < params.permissions.length; n++) {
-      if (visibleAccountStreamsIds.includes(params.permissions[n].streamId) &&
-        params.permissions[n]?.level && !context.access.canCreateAccessForAccountStream(params.permissions[n].level)) {
-        return next(errors.invalidOperation(
-          ErrorMessages[ErrorIds.TooHighAccessForSystemStreams],
-          { param: params.permissions[n].streamId }));
-      }
+    function isStreamBasedPermission(permission): boolean {
+      return permission.streamId != null;
     }
-
     return next();
   }
 
