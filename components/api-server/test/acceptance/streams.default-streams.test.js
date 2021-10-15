@@ -19,7 +19,7 @@ const { databaseFixture } = require('test-helpers');
 const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { DataSource } = require('stores/interfaces/DataSource');
+const { DataStore } = require('mall/interfaces/DataStore');
 const treeUtils = require('utils/src/treeUtils');
 
 describe("System streams", function () {
@@ -144,8 +144,8 @@ describe("System streams", function () {
         ];
         
         readableStreams = treeUtils.cloneAndApply(readableStreams, (s) => {
-          s.createdBy = DataSource.BY_SYSTEM;
-          s.modifiedBy = DataSource.BY_SYSTEM;
+          s.createdBy = DataStore.BY_SYSTEM;
+          s.modifiedBy = DataStore.BY_SYSTEM;
           return s;
         });
 
