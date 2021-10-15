@@ -59,7 +59,7 @@ Webhooks.prototype.getCollectionInfo = function (userOrUserId) {
  */
 Webhooks.prototype.delete = function (userOrUserId, query, callback) {
   const update = {
-    $set: { deleted: new Date() },
+    $set: { deleted: Date.now() / 1000 },
     $unset: {
       accessId: 1,
       url: 1,

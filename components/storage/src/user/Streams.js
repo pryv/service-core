@@ -163,7 +163,7 @@ Streams.prototype.delete = function (userOrUserId, query, callback) {
   const userId = userOrUserId.id || userOrUserId;
   cache.clearUserId(userId);
   var update = {
-    $set: {deleted: new Date()},
+    $set: {deleted: Date.now() / 1000},
     $unset: {
       name: 1,
       parentId: 1,

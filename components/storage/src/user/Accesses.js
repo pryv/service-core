@@ -69,6 +69,10 @@ const indexes = [
     }
   },
   {
+    index: {integrityBatchCode: 1},
+    options: {},
+  },
+  {
     index: { name: 1, type: 1, deviceName: 1 },
     options: { 
       unique: true,
@@ -84,7 +88,7 @@ Accesses.prototype.findDeletions = function (
   callback
 ) {
   query = query || {};
-  query.deleted = { $type: 'date' };
+  query.deleted = { $type: 'number' };
   
   this.database.find(
     this.getCollectionInfo(userOrUserId),
@@ -117,7 +121,7 @@ Accesses.prototype.getCollectionInfo = function (userOrUserId) {
  */
 Accesses.prototype.delete = function (userOrUserId, query, callback) {
   const update = {
-    $set: {deleted: new Date()}
+    $set: {deleted: Date.now() / 1000}
   };
   const finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);
   this.database.updateMany(this.getCollectionInfo(userOrUserId),

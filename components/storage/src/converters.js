@@ -73,13 +73,7 @@ exports.getKeyValueSetUpdateFn = function (propertyName) {
 
 
 exports.deletionToDB = function (item) {
-  if (item.deleted != null) {
-    if (typeof item.deleted === 'number') {
-      item.deleted = timestamp.toDate(item.deleted);
-    } else {
-      // why should we get "Dates" here ? might be investigates
-    }
-  } else {
+  if (item.deleted === undefined) { // undefined => null 
     item.deleted = null;
   }
   return item;
@@ -88,17 +82,8 @@ exports.deletionToDB = function (item) {
 exports.deletionFromDB = function (dbItem) {
   if (dbItem == null) { return dbItem; }
 
-  if (dbItem.deleted == null) {
+  if (dbItem.deleted == null) { // undefined or null
     delete dbItem.deleted;
-  }
-
-  if (dbItem.deleted != null) {
-    if (typeof dbItem.deleted == 'number') {
-      console.log('Why did I found a number here!', dbItem);
-    } else {
-      dbItem.deleted = timestamp.fromDate(dbItem.deleted);
-    }
-    
   }
   return dbItem;
 };

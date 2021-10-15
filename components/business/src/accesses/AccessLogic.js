@@ -13,7 +13,7 @@ var treeUtils = require('utils').treeUtils,
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
-const { StreamsUtils, getStores } = require('stores');
+const { StreamsUtils, getMall } = require('mall');
 
 let auditIsActive = null;
 function addAuditStreams() {
@@ -241,7 +241,7 @@ Object.freeze(PermissionLevels);
 
   _registerFeaturePermission (perm) {
     this.featurePermissionsMap[perm.feature] = perm;
-    if (perm.feature === 'forcedStreams') { // load them by stores
+    if (perm.feature === 'forcedStreams') { // load them by store
       const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streams);
       if (this._streamByStoreForced[storeId] == null) this._streamByStoreForced[storeId] = [];
       this._streamByStoreForced[storeId].push(...perm.streams);
@@ -516,14 +516,14 @@ Object.freeze(PermissionLevels);
 
     let currentStream = (streamId !== '*') ? streamId : null; 
 
-    const stores = await getStores();
+    const mall = await getMall();
 
     while (currentStream != null) { // should never execute
       const permissions = this.getStreamPermission(storeId, currentStream);
       if (permissions != null) return permissions; // found  
     
       // not found, look for parent
-      const stream = await stores.streams.getOne(this._userId, currentStream, storeId); // TODO dont fetch children
+      const stream = await mall.streams.getOne(this._userId, currentStream, storeId); // TODO dont fetch children
       currentStream = stream ? stream.parentId : null;
     } 
 

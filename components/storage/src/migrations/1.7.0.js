@@ -38,6 +38,7 @@ module.exports = async function (context, callback) {
   await migrateAccounts(eventsCollection);
   await migrateTags(eventsCollection, streamsCollection);
   await migrateTagsAccesses(accessesCollection);
+
   logger.info('Accounts were migrated, now rebuilding the indexes');
   await rebuildIndexes(context.database, eventsCollection, userEventsStorage.getCollectionInfoWithoutUserId()),
   logger.info('V1.6.21 => v1.7.0 Migration finished');
@@ -265,5 +266,6 @@ module.exports = async function (context, callback) {
       console.log('Migrated ' + accessesMigrated + ' accesses for user ' + userId);
     }
   }
+
 
 };

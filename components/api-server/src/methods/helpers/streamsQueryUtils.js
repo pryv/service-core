@@ -13,7 +13,7 @@
  */
 const util = require('util');
 
-const { StreamsUtils } = require('stores');
+const { StreamsUtils } = require('mall');
 const { findForbiddenChar } = require('../../schema/streamId');
 
 import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
@@ -104,7 +104,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
     // queries must be grouped by store 
     const [thisStore: string, streamId: string] = StreamsUtils.storeIdAndStreamIdForStreamId(streamIdWithPrefix);
     if (streamQuery.storeId == null) streamQuery.storeId = thisStore;
-    if (streamQuery.storeId !== thisStore) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' queries must me grouped by stores.');
+    if (streamQuery.storeId !== thisStore) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' queries must me grouped by store.');
     return streamId;
   }
 

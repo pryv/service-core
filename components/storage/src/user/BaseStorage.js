@@ -209,7 +209,7 @@ BaseStorage.prototype.findDeletions = function(
   options,
   callback
 ) {
-  const query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
+  const query = { deleted: { $gt: deletedSince } };
   query.headId = null;
   this.database.find(
     this.getCollectionInfo(userOrUserId),
@@ -390,7 +390,7 @@ BaseStorage.prototype.delete = function(userOrUserId, query, callback) {
   callback( new Error('Not implemented (user: ' + userOrUserId + ')') );
   // a line like this could work when/if Mongo ever supports "replacement" update on multiple docs:
   //this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query),
-  //    {deleted: new Date()}, callback);
+  //    {deleted: Date.now() / 1000}, callback);
 };
 
 BaseStorage.prototype.removeOne = function(userOrUserId, query, callback) {

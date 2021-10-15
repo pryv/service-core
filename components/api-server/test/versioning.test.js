@@ -175,12 +175,12 @@ describe('Versioning', function () {
                     return stepDone(err);
                   }
                   should.exist(event);
-                  (Object.keys(event).length).should.eql(5);
+                  (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
                   event.id.should.eql(trashedEventWithHistory.id);
                   should.exist(event.deleted);
                   should.exist(event.modified);
                   should.exist(event.modifiedBy);
-                  should.exist(event.integrity);
+                  if (integrity.events.isActive) should.exist(event.integrity);
                   stepDone();
                 });
             },
@@ -192,12 +192,12 @@ describe('Versioning', function () {
                   }
                   (events.length).should.be.eql(2);
                   events.forEach(function (event) {
-                    (Object.keys(event).length).should.eql(5);
+                    (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
                     should.exist(event.id);
                     should.exist(event.headId);
                     should.exist(event.modified);
                     should.exist(event.modifiedBy);
-                    should.exist(event.integrity);
+                    if (integrity.events.isActive) should.exist(event.integrity);
                   });
                   stepDone();
                 });
@@ -569,12 +569,12 @@ describe('Versioning', function () {
                 return stepDone(err);
               }
               should.exist(event);
-              (Object.keys(event).length).should.eql(5);
+              (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
               event.id.should.eql(eventOnChildStream.id);
               should.exist(event.deleted);
               should.exist(event.modified);
               should.exist(event.modifiedBy);
-              should.exist(event.integrity);
+              if (integrity.events.isActive) should.exist(event.integrity);
               stepDone();
             });
         },
@@ -586,12 +586,12 @@ describe('Versioning', function () {
               }
               (events.length).should.be.eql(1);
               events.forEach(function (event) {
-                (Object.keys(event).length).should.eql(5);
+                (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
                 should.exist(event.id);
                 should.exist(event.headId);
                 should.exist(event.modified);
                 should.exist(event.modifiedBy);
-                should.exist(event.integrity);
+                if (integrity.events.isActive) should.exist(event.integrity);
               });
               stepDone();
             });

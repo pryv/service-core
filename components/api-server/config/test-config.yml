@@ -76,7 +76,7 @@ stores:
   loadExternal:
     - id: dummy
       name: Dummy Store
-      path: ../implementations/dummy # should be fully qualified path for external stores
+      path: ../implementations/dummy # should be fully qualified path for external store
       config: null
     - id: faulty
       name: Faulty Store

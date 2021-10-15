@@ -5,18 +5,18 @@
  * Proprietary and confidential
  */
 /**
- * Dummy Data Source. 
+ * Dummy Data Store. 
  * Send predicatable static data
  */
 
-const { DataSource, UserStreams, UserEvents }  = require('../../interfaces/DataSource');
+const { DataStore, UserStreams, UserEvents }  = require('../../interfaces/DataStore');
 
-class Dummy extends DataSource {
+class Dummy extends DataStore {
 
   constructor() {  super(); }
 
   async init(config) {
-    // get config and load approriated data sources componenst;
+    // get config and load approriated data store components;
     this._streams = new DummyUserStreams();
     this._events = new DummyUserEvents();
     return this;

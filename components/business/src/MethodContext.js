@@ -20,7 +20,7 @@ const { getUsersRepository } = require('business/src/users');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getStores, StreamsUtils } = require('stores');
+const { getMall, StreamsUtils } = require('mall');
 
 const cache = require('cache');
 
@@ -69,7 +69,7 @@ class MethodContext {
   customAuthStepFn: ?CustomAuthFunction;
 
   methodId: ?string;
-  stores: Store;
+  mall: Mall;
 
   _tracing: ?Tracing;
 
@@ -94,7 +94,7 @@ class MethodContext {
     this.source = source;
 
     this.user = { id: null, username: username};
-    this.stores = null;
+    this.mall = null;
     this.access = null;
 
     this.customAuthStepFn = customAuthStepFn;
@@ -143,9 +143,9 @@ class MethodContext {
     }
   }
 
-  // Load the userId and stores 
+  // Load the userId and mall 
   async init() {
-    this.stores = await getStores();
+    this.mall = await getMall();
     const usersRepository = await getUsersRepository();
     this.user = { 
       id: await usersRepository.getUserIdForUsername(this.user.username),
@@ -156,7 +156,7 @@ class MethodContext {
 
   // Retrieve the userBusiness
   async retrieveUser() {
-    this.stores = await getStores();
+    this.mall = await getMall();
     try {
       // get user details
       const usersRepository = await getUsersRepository();
@@ -317,7 +317,7 @@ class MethodContext {
    * @returns 
    */
   async streamForStreamId(streamId: string, storeId: string) {
-    return await this.stores.streams.getOne(this.user.id, streamId, storeId);
+    return await this.mall.streams.getOne(this.user.id, streamId, storeId);
   }
 
   initTrackingProperties(item: any, authorOverride: ?string) {

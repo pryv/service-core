@@ -44,23 +44,23 @@ declare module 'nconf/lib/nconf/provider' {
   declare module.exports: any;
 }
 
-declare module 'nconf/lib/nconf/stores/argv' {
+declare module 'nconf/lib/nconf/mall/argv' {
   declare module.exports: any;
 }
 
-declare module 'nconf/lib/nconf/stores/env' {
+declare module 'nconf/lib/nconf/mall/env' {
   declare module.exports: any;
 }
 
-declare module 'nconf/lib/nconf/stores/file' {
+declare module 'nconf/lib/nconf/mall/file' {
   declare module.exports: any;
 }
 
-declare module 'nconf/lib/nconf/stores/literal' {
+declare module 'nconf/lib/nconf/mall/literal' {
   declare module.exports: any;
 }
 
-declare module 'nconf/lib/nconf/stores/memory' {
+declare module 'nconf/lib/nconf/mall/memory' {
   declare module.exports: any;
 }
 
@@ -144,23 +144,23 @@ declare module 'nconf/test/provider-test' {
   declare module.exports: any;
 }
 
-declare module 'nconf/test/stores/argv-test' {
+declare module 'nconf/test/mall/argv-test' {
   declare module.exports: any;
 }
 
-declare module 'nconf/test/stores/env-test' {
+declare module 'nconf/test/mall/env-test' {
   declare module.exports: any;
 }
 
-declare module 'nconf/test/stores/file-store-test' {
+declare module 'nconf/test/mall/file-store-test' {
   declare module.exports: any;
 }
 
-declare module 'nconf/test/stores/literal-test' {
+declare module 'nconf/test/mall/literal-test' {
   declare module.exports: any;
 }
 
-declare module 'nconf/test/stores/memory-store-test' {
+declare module 'nconf/test/mall/memory-store-test' {
   declare module.exports: any;
 }
 
@@ -181,20 +181,20 @@ declare module 'nconf/lib/nconf/formats.js' {
 declare module 'nconf/lib/nconf/provider.js' {
   declare module.exports: $Exports<'nconf/lib/nconf/provider'>;
 }
-declare module 'nconf/lib/nconf/stores/argv.js' {
-  declare module.exports: $Exports<'nconf/lib/nconf/stores/argv'>;
+declare module 'nconf/lib/nconf/mall/argv.js' {
+  declare module.exports: $Exports<'nconf/lib/nconf/mall/argv'>;
 }
-declare module 'nconf/lib/nconf/stores/env.js' {
-  declare module.exports: $Exports<'nconf/lib/nconf/stores/env'>;
+declare module 'nconf/lib/nconf/mall/env.js' {
+  declare module.exports: $Exports<'nconf/lib/nconf/mall/env'>;
 }
-declare module 'nconf/lib/nconf/stores/file.js' {
-  declare module.exports: $Exports<'nconf/lib/nconf/stores/file'>;
+declare module 'nconf/lib/nconf/mall/file.js' {
+  declare module.exports: $Exports<'nconf/lib/nconf/mall/file'>;
 }
-declare module 'nconf/lib/nconf/stores/literal.js' {
-  declare module.exports: $Exports<'nconf/lib/nconf/stores/literal'>;
+declare module 'nconf/lib/nconf/mall/literal.js' {
+  declare module.exports: $Exports<'nconf/lib/nconf/mall/literal'>;
 }
-declare module 'nconf/lib/nconf/stores/memory.js' {
-  declare module.exports: $Exports<'nconf/lib/nconf/stores/memory'>;
+declare module 'nconf/lib/nconf/mall/memory.js' {
+  declare module.exports: $Exports<'nconf/lib/nconf/mall/memory'>;
 }
 declare module 'nconf/test/common-test.js' {
   declare module.exports: $Exports<'nconf/test/common-test'>;
@@ -256,20 +256,20 @@ declare module 'nconf/test/provider-save-test.js' {
 declare module 'nconf/test/provider-test.js' {
   declare module.exports: $Exports<'nconf/test/provider-test'>;
 }
-declare module 'nconf/test/stores/argv-test.js' {
-  declare module.exports: $Exports<'nconf/test/stores/argv-test'>;
+declare module 'nconf/test/mall/argv-test.js' {
+  declare module.exports: $Exports<'nconf/test/mall/argv-test'>;
 }
-declare module 'nconf/test/stores/env-test.js' {
-  declare module.exports: $Exports<'nconf/test/stores/env-test'>;
+declare module 'nconf/test/mall/env-test.js' {
+  declare module.exports: $Exports<'nconf/test/mall/env-test'>;
 }
-declare module 'nconf/test/stores/file-store-test.js' {
-  declare module.exports: $Exports<'nconf/test/stores/file-store-test'>;
+declare module 'nconf/test/mall/file-store-test.js' {
+  declare module.exports: $Exports<'nconf/test/mall/file-store-test'>;
 }
-declare module 'nconf/test/stores/literal-test.js' {
-  declare module.exports: $Exports<'nconf/test/stores/literal-test'>;
+declare module 'nconf/test/mall/literal-test.js' {
+  declare module.exports: $Exports<'nconf/test/mall/literal-test'>;
 }
-declare module 'nconf/test/stores/memory-store-test.js' {
-  declare module.exports: $Exports<'nconf/test/stores/memory-store-test'>;
+declare module 'nconf/test/mall/memory-store-test.js' {
+  declare module.exports: $Exports<'nconf/test/mall/memory-store-test'>;
 }
 declare module 'nconf/usage.js' {
   declare module.exports: $Exports<'nconf/usage'>;

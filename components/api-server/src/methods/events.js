@@ -19,7 +19,7 @@ const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
 const addTagsStream = require('./streams/AddTagsStream');
 
-const { getStores, StreamsUtils } = require('stores');
+const { getMall, StreamsUtils } = require('mall');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
@@ -76,7 +76,7 @@ module.exports = async function (api)
   const updatesSettings = config.get('updates');
   const openSourceSettings = config.get('openSource')
   const usersRepository = await getUsersRepository(); 
-  const stores = await getStores();
+  const mall = await getMall();
   await eventsGetUtils.init();
   
   // Initialise the project version as soon as we can. 
@@ -539,7 +539,7 @@ module.exports = async function (api)
         key: integrity.events.key(result.event),
         integrity: result.event.integrity,
       };
-      if (process.env.NODE_ENV === 'test' && ! openSourceSettings.isActive) {
+      if (process.env.NODE_ENV === 'test' && ! openSourceSettings.isActive && integrity.events.isActive) {
         // double check integrity when running tests only
         if (result.event.integrity != integrity.events.hash(result.event)) {
           return next(new Error('integrity mismatch' + JSON.stringify(result.event)));

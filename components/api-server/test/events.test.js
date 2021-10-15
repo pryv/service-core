@@ -1060,6 +1060,13 @@ describe('events', function () {
             expected.createdBy = createdEvent.createdBy;
             expected.modified = createdEvent.modified;
             expected.modifiedBy = createdEvent.modifiedBy;
+            if (! integrity.attachments.isActive) {
+              delete expected.attachments[0].integrity;
+              delete expected.attachments[1].integrity;
+            }
+            if (! integrity.events.isActive) {
+              delete expected.integrity;
+            }
             integrity.events.set(expected);
             validation.checkObjectEquality(createdEvent, expected);
 
@@ -1124,6 +1131,13 @@ describe('events', function () {
           streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
           integrity: createdEvent.integrity
         });
+
+        if (! integrity.attachments.isActive) {
+          delete expected.attachments[0].integrity;
+        }
+        if (! integrity.events.isActive) {
+          delete expected.integrity;
+        }
         validation.checkObjectEquality(createdEvent, expected);
 
         // check attached files
@@ -1196,26 +1210,24 @@ describe('events', function () {
             expected.attachments = [];
             updatedEvent.attachments.forEach(function (attachment) {
               if (attachment.fileName === testData.attachments.image.filename) {
-                expected.attachments.push(
-                  {
-                    id: attachment.id,
-                    fileName: testData.attachments.image.filename,
-                    type: testData.attachments.image.type,
-                    size: testData.attachments.image.size,
-                    integrity: testData.attachments.image.integrity
-                  }
-                );
+                const attData = {
+                  id: attachment.id,
+                  fileName: testData.attachments.image.filename,
+                  type: testData.attachments.image.type,
+                  size: testData.attachments.image.size,
+                };
+                if (integrity.attachments.isActive) attData.integrity = testData.attachments.image.integrity;
+                expected.attachments.push(attData);
               }
               if (attachment.fileName === testData.attachments.text.filename) {
-                expected.attachments.push(
-                  {
-                    id: attachment.id,
-                    fileName: testData.attachments.text.filename,
-                    type: testData.attachments.text.type,
-                    size: testData.attachments.text.size,
-                    integrity: testData.attachments.text.integrity
-                  }
-                );
+               const attData = {
+                  id: attachment.id,
+                  fileName: testData.attachments.text.filename,
+                  type: testData.attachments.text.type,
+                  size: testData.attachments.text.size
+                }
+                if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
+                expected.attachments.push(attData);
               }
             });
             expected.modified = updatedEvent.modified;
@@ -1256,13 +1268,14 @@ describe('events', function () {
 
             var updatedEvent = validation.sanitizeEvent(res.body.event);
             var expectedAttachments = event.attachments.slice();
-            expectedAttachments.push({
+            const attData = {
               id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
               fileName: testData.attachments.text.filename,
               type: testData.attachments.text.type,
               size: testData.attachments.text.size,
-              integrity: testData.attachments.text.integrity
-            });
+            };
+            if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
+            expectedAttachments.push(attData);
 
             const attachments = updatedEvent.attachments; 
             should(attachments.length).be.eql(expectedAttachments.length);

@@ -178,7 +178,7 @@ describe('accesses', () => {
               streamId: 'stream',
               level: 'read'
             }],
-            deleted: new Date()
+            deleted: Date.now() / 1000
           };
   
           before(async () => {
@@ -213,12 +213,12 @@ describe('accesses', () => {
             .put(`/${userId}/accesses/${activeAccess.id}`)
             .set('Authorization', accessToken)
             .send({
-              update: { deleted: new Date() }
+              update: { deleted: Date.now() / 1000 }
             });
+          error = res.body.error; 
         });
   
         it('[JNJK] should return an error', () => {
-          error = res.body.error;
           assert.isNotNull(error);
         });
   
