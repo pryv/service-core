@@ -8,7 +8,7 @@
 // @flow
 
 /**
- * Local Data Source. 
+ * Local Data Store. 
  */
 const bluebird = require('bluebird');
 const _ = require('lodash');
@@ -19,7 +19,7 @@ const storage = require('storage');
 const { treeUtils } = require('utils');
 const { StreamProperties } = require('business/src/streams');
 const StreamPropsWithoutChildren: Array<string> = StreamProperties.filter(p => p !== 'children');
-const {DataSource, UserStreams, UserEvents}  = require('stores/interfaces/DataSource');
+const {DataStore, UserStreams, UserEvents}  = require('mall/interfaces/DataStore');
 const SystemStreamUtils = require('./SystemStreamUtils');
 const cache = require('cache');
 
@@ -32,7 +32,7 @@ const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 let userEventsStorage;
 let userStreamsStorage;
 
-class LocalDataSource extends DataSource {
+class LocalDataStore extends DataStore {
   
   _id: string = 'local';
   _name: string = 'Local Store';
@@ -46,8 +46,8 @@ class LocalDataSource extends DataSource {
     }
   }
 
-  async init(): Promise<DataSource> {
-    // get config and load approriated data sources componenst;
+  async init(): Promise<DataStore> {
+    // get config and load approriated data store components;
     this._streams = new LocalUserStreams();
     this._events = new LocalUserEvents();
 
@@ -64,12 +64,12 @@ function clone(obj: any): any {
   // Clone streams -- BAd BaD -- To be optimized 
   return _.cloneDeep(obj);
 }
-function cloneStream(sourceStream: Stream, includeChildren: boolean): Stream {
+function cloneStream(storeStream: Stream, includeChildren: boolean): Stream {
   if (includeChildren) {
-    return clone(sourceStream);
+    return clone(storeStream);
   } else {
     // _.pick() creates a copy
-    const stream: Stream = _.pick(sourceStream, StreamPropsWithoutChildren);
+    const stream: Stream = _.pick(storeStream, StreamPropsWithoutChildren);
     stream.childrenHidden = true;
     stream.children = [];
     return stream;
@@ -171,7 +171,7 @@ class LocalUserEvents extends UserEvents {
   }
 }
 
-module.exports = LocalDataSource;
+module.exports = LocalDataStore;
 
 
 //--------------- helpers ------------//

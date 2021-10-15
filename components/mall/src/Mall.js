@@ -8,37 +8,37 @@
 // @flow
 
 /**
- * Data Source aggregator. 
- * Pack configured datasources into one
+ * Data Store aggregator. 
+ * Pack configured datastores into one
  */
 
 const errors = require('errors').factory;
 
-const { DataSource } = require('../interfaces/DataSource');
+const { DataStore } = require('../interfaces/DataStore');
 
 // --- Override Error handling 
 
-DataSource.throwInvalidRequestStructure = function(message, data) {
+DataStore.throwInvalidRequestStructure = function(message, data) {
   throw(errors.invalidRequestStructure(message, data, innerError));
 }
 
-DataSource.throwUnkownRessource = function(resourceType, id, innerError) {
+DataStore.throwUnkownRessource = function(resourceType, id, innerError) {
   throw(errors.unknownResource(resourceType, id, innerError));
 }
 
 
 // -- Core properties
-const StoresUserStreams = require('./StoresUserStreams');
-const StoreUserEvents = require('./StoresUserEvents');
+const MallUserStreams = require('./MallUserStreams');
+const StoreUserEvents = require('./MallUserEvents');
 
-class Stores extends DataSource {
+class Mall extends DataStore {
 
   _id: string = 'store';
   _name: string = 'Store';
-  stores: Array<DataSource>;
-  storesMap: Map<string, DataSource>;
+  stores: Array<DataStore>;
+  storesMap: Map<string, DataStore>;
   initialized: boolean;
-  _streams: StoresUserStreams;
+  _streams: MallUserStreams;
   _events: StoreUserEvents;
 
   constructor() {
@@ -48,30 +48,30 @@ class Stores extends DataSource {
     this.initialized = false;
   }
 
-  get streams(): StoresUserStreams { return this._streams; }
+  get streams(): MallUserStreams { return this._streams; }
   get events(): StoreUserEvents { return this._events; }
 
   /**
-   * register a new DataSource
+   * register a new DataStore
    * @param 
    */
-  addStore(store: DataSource): void {
+  addStore(store: DataStore): void {
     if (this.initialized) throw(new Error('Sources cannot be added after init()'));
     this.stores.push(store);
     this.storesMap[store.id] = store;
   }
 
-  async init(): Promise<Stores> {
+  async init(): Promise<Mall> {
     if (this.initialized) throw(new Error('init() can only be called once.'));
     this.initialized = true;
 
     // initialize all stores
-    for (const store: DataSource of this.stores) {
+    for (const store: DataStore of this.stores) {
       await store.init();
     }
 
     // expose streams and events;
-    this._streams = new StoresUserStreams(this);
+    this._streams = new MallUserStreams(this);
     this._events = new StoreUserEvents(this);
     
     return this;
@@ -82,10 +82,10 @@ class Stores extends DataSource {
    * @param {identifier} storeId 
    * @returns 
    */
-  _storeForId(storeId: string): DataSource {
+  _storeForId(storeId: string): DataStore {
     return this.storesMap[storeId];
   }
 
 }
 
-module.exports = Stores;
+module.exports = Mall;

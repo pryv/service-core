@@ -8,57 +8,57 @@
 // @flow
 
 /**
- * Data Source aggregator. 
- * Pack configured datasources into one
+ * Data Store aggregator. 
+ * Pack configured datastores into one
  */
 
 const { getConfig, getLogger } = require('@pryv/boiler');
-const Stores = require('./Stores');
+const Mall = require('./Mall');
 
-import typeof DataSource from '../interfaces/DataSource';
+import typeof DataStore from '../interfaces/DataStore';
 
-let stores: ?Array<DataSource>;
+let mall: Mall;
 let initializing: boolean = false;
-async function getStores(): Array<DataSource> {
+async function getMall(): Array<DataStore> {
   while (initializing) {
     await new Promise((r) => setTimeout(r, 5));
   }
-  if (stores != null) return stores;
+  if (mall != null) return mall;
   initializing = true;
 
   const config: {} = await getConfig();
-  const logger: {} = getLogger('stores');
-  stores = new Stores();
+  const logger: {} = getLogger('mall');
+  mall = new Mall();
   
   // -- DataStores (Imported After to avoid cycles);
   const externalStores: Array<{}> = config.get('stores:loadExternal');
   if (externalStores) { // keep it like this .. to be sure we test null, undefined, [], false
     for (const externalStore of externalStores) {
       const NewStore: Function = require(externalStore.path);
-      const newStore: DataSource = new NewStore(externalStore.config);
+      const newStore: DataStore = new NewStore(externalStore.config);
       newStore.id = externalStore.id;
       newStore.name = externalStore.name;
-      stores.addStore(newStore); 
-      logger.info('Loading stores [' + newStore.name + '] with id [' + newStore.id + '] from ' + externalStore.path);
+      mall.addStore(newStore); 
+      logger.info('Loading store [' + newStore.name + '] with id [' + newStore.id + '] from ' + externalStore.path);
     }
   }
 
   // -- Builds in
 
-  const LocalStore: DataSource = require('../implementations/local/LocalDataSource');
-  stores.addStore(new LocalStore());
+  const LocalStore: DataStore = require('../implementations/local/LocalDataStore');
+  mall.addStore(new LocalStore());
 
   if ( (! config.get('openSource:isActive')) && config.get('audit:active')) {
-    const AuditDataSource = require('audit/src/AuditDataSource');
-    stores.addStore(new AuditDataSource());
+    const AuditDataStore = require('audit/src/AuditDataStore');
+    mall.addStore(new AuditDataStore());
   }
-  await stores.init()
+  await mall.init()
   initializing = false;
-  return stores;
+  return mall;
 };
 
 
 module.exports = {
-  getStores : getStores,
+  getMall : getMall,
   StreamsUtils: require('./lib/StreamsUtils')
 };

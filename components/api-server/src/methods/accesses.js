@@ -28,7 +28,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const cache = require('cache');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
-const { getStores } = require('stores');
+const { getMall } = require('mall');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
 
@@ -65,7 +65,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
   const isOpenSource = config.get('openSource:isActive');
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
-  const stores = await getStores();
+  const mall = await getMall();
   const storageLayer = await getStorageLayer();
   const updatesSettings: UpdatesSettingsHolder = {
     ignoreProtectedFields: config.get('updates:ignoreProtectedFields'),

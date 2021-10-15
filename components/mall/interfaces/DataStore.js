@@ -31,7 +31,7 @@ function toBeImplemented() {
  * @property {string} BY_UNKOWN - When createdBy / modifiedBy value is UNKOWN
  * @property {string} BY_EXTERNAL_PREFIX - When createdBy / modifiedBy value is an external Reference
  */
-class DataSource { 
+class DataStore { 
 
   _id: string;
   _name: string;
@@ -75,10 +75,10 @@ class DataSource {
 
 }
 
-DataSource.UNKOWN_DATE = 10000000.00000001;
-DataSource.BY_SYSTEM = 'system';
-DataSource.BY_UNKOWN = 'unkown';
-DataSource.BY_EXTERNAL_PREFIX = 'external-';
+DataStore.UNKOWN_DATE = 10000000.00000001;
+DataStore.BY_SYSTEM = 'system';
+DataStore.BY_UNKOWN = 'unkown';
+DataStore.BY_EXTERNAL_PREFIX = 'external-';
 
 
 /**
@@ -87,11 +87,11 @@ DataSource.BY_EXTERNAL_PREFIX = 'external-';
 class UserStreams {
 
   /**
-   * Get the stream that will be set as root for all Stream Structure of this Data Source.
+   * Get the stream that will be set as root for all Stream Structure of this Data Store.
    * @see https://api.pryv.com/reference/#get-streams
    * @param {identifier} uid
    * @param {Object} params
-   * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by Stores 
+   * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by stores 
    * @param {identifier} [params.expandChildren] default false, if true also return childrens
    * @param {identifiers} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is true, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
@@ -143,16 +143,16 @@ class UserStreams {
 
 /**
  * @private
- * recursively apply default streamId datasource namne and streams default value
+ * recursively apply default streamId datastore namne and streams default value
  * @param {string} storeIdNameSpace - namespacing for streamIds
  * @param {Array<Streams>} streams 
  */
 function _applyDefaults(streams: Array<Stream>, parentId: ?string): void {
   for (const stream: Stream of streams) {
-    if (typeof stream.created === 'undefined') stream.created = DataSource.UNKOWN_DATE;
-    if (typeof stream.modified === 'undefined') stream.modified = DataSource.UNKOWN_DATE;
-    if (typeof stream.createdBy === 'undefined') stream.createdBy = DataSource.BY_UNKOWN;
-    if (typeof stream.modifiedBy === 'undefined') stream.modifiedBy = DataSource.BY_UNKOWN;
+    if (typeof stream.created === 'undefined') stream.created = DataStore.UNKOWN_DATE;
+    if (typeof stream.modified === 'undefined') stream.modified = DataStore.UNKOWN_DATE;
+    if (typeof stream.createdBy === 'undefined') stream.createdBy = DataStore.BY_UNKOWN;
+    if (typeof stream.modifiedBy === 'undefined') stream.modifiedBy = DataStore.BY_UNKOWN;
     if (stream.children == null) stream.children = [];
     if (stream.children.length > 0) _applyDefaults(stream.children, stream.id);
     // force parentId
@@ -232,16 +232,16 @@ class UserEvents {
    */
   static applyDefaults(events: Array<Event>) {
     for (const event: Event of events) {
-      if (typeof event.created === 'undefined') event.created = DataSource.UNKOWN_DATE;
-      if (typeof event.modified === 'undefined') event.modified = DataSource.UNKOWN_DATE;
-      if (typeof event.createdBy === 'undefined') event.createdBy = DataSource.BY_UNKOWN;
-      if (typeof event.modifiedBy === 'undefined') event.modifiedBy = DataSource.BY_UNKOWN;
+      if (typeof event.created === 'undefined') event.created = DataStore.UNKOWN_DATE;
+      if (typeof event.modified === 'undefined') event.modified = DataStore.UNKOWN_DATE;
+      if (typeof event.createdBy === 'undefined') event.createdBy = DataStore.BY_UNKOWN;
+      if (typeof event.modifiedBy === 'undefined') event.modifiedBy = DataStore.BY_UNKOWN;
     }
   }
 }
 
 module.exports = {
-  DataSource,
+  DataStore,
   UserEvents,
   UserStreams
 }

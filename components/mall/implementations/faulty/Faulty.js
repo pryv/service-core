@@ -6,19 +6,19 @@
  */
 
 /**
- * Faulty Data Source. 
+ * Faulty Data Store. 
  * Always fail
  */
 
 
-const {DataSource, UserStreams, UserEvents}  = require('../../interfaces/DataSource');
+const {DataStore, UserStreams, UserEvents}  = require('../../interfaces/DataStore');
 
-class Faulty extends DataSource {
+class Faulty extends DataStore {
 
   constructor() {  super(); }
 
   async init(config) {
-    // get config and load approriated data sources componenst;
+    // get config and load approriated data store components;
     this._streams = new FaultyUserStreams();
     this._events = new FaultyUserEvents();
     return this;
