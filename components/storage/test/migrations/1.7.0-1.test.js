@@ -24,13 +24,23 @@ const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
 
 const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
 
-describe('Migration - 1.7.0',async function () {
-  this.timeout(20000);
-  const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
-  const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
-  const streamsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'streams' }, cb));
-  const accessesCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'accesses' }, cb));
 
+describe('Migration - 1.7.x',function () {
+  this.timeout(20000);
+
+  let eventsCollection;
+  let usersCollection;
+  let streamsCollection;
+  let accessesCollection;
+  let webhooksCollection;
+
+  before(async function() { 
+    eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
+    usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
+    streamsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'streams' }, cb));
+    accessesCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'accesses' }, cb));
+    webhooksCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'webhooks' }, cb));
+  });
 
   after(async function() {
     // erase all
@@ -38,13 +48,13 @@ describe('Migration - 1.7.0',async function () {
     await accessesCollection.deleteMany({});
   });
 
-  it('[V8JR] must handle data migration from 1.6.21 to 1.7.0', async function () {
-    const versions = getVersions('1.7.0');
+  it('[V8JR] must handle data migration from 1.6.21 to 1.7.1', async function () {
+    const versions0 = getVersions('1.7.0');
+    const versions1 = getVersions('1.7.1');
     const newIndexes = testData.getStructure('1.7.0').indexes;
     const defaultUser = { id: 'u_0' };
     const eventsStorage = storage.user.events;
  
-
     const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds(); 
 
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
@@ -57,8 +67,17 @@ describe('Migration - 1.7.0',async function () {
     const previousEventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
     const previousAccessesWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
 
+    // deleted 
+    const collectionsWithDelete = [eventsCollection, accessesCollection, streamsCollection, webhooksCollection]; 
+    const previousItemsWithDelete = {};
+    for (const collection of collectionsWithDelete) {
+      previousItemsWithDelete[collection.namespace] = await (await collection.find({ 'deleted': { $type: 'date'} })).toArray();
+    }
+   
+
     // perform migration
-    await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
+    await bluebird.fromCallback(cb => versions0.migrateIfNeeded(cb));
+    await bluebird.fromCallback(cb => versions1.migrateIfNeeded(cb));
     // verify that user accounts were migrated to events
     for(const user of users) {
       // we must verify that all system streamIds were translated to another prefix
@@ -120,6 +139,18 @@ describe('Migration - 1.7.0',async function () {
       }
     }
 
+
+    // -----------------  deleted  migrations 
+
+    for (const collection of collectionsWithDelete) {
+      const newItems = await (await collection.find({ 'deleted': { $type: 'date'} })).toArray();
+      assert.equal(newItems.length, 0, collection.namespace + ' should have no item with deleted dates' );
+
+      for (const previousItem of previousItemsWithDelete[collection.namespace]) {
+        const newItem = await collection.findOne({ _id: previousItem._id });
+        assert.equal(newItem.deleted, previousItem.deleted.getTime() / 1000);
+      }
+    }
   });
 
 });
