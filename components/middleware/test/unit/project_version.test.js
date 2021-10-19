@@ -55,7 +55,9 @@ describe('APIVersion#version', () => {
         const versionFromGitTag = execSync('git describe --tags').toString().trim();
         assert.strictEqual(version, versionFromGitTag);
       } catch (err) { // test fails in CI because no .git/
-        if (! err.message.includes('not a git repository')) assert.fail(err);
+        if (err.message.includes('No names found, cannot describe anything')) return; // Happens in Github CI
+        if (err.message.includes('not a git repository')) return; 
+        assert.fail(err);
       }
       
     });
