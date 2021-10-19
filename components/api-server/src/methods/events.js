@@ -945,7 +945,9 @@ module.exports = async function (api)
     const streamIdsCreated: Array<string> = streamsCreatedResults.map(r => {
       if (r.status === 'fulfilled') return r.value.id;
     });
-    logger.info('backward compatibility: created streams for tags: ' + streamIdsCreated);
+    
+    if (streamIdsCreated.length > 0) logger.info('backward compatibility: created streams for tags: ' + streamIdsCreated);
+    
     next();
   }
 
