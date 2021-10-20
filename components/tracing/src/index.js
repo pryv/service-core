@@ -15,7 +15,7 @@ const { getHookerTracer } = require('./HookedTracer');
 const dataBaseTracer = require('./databaseTracer');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
-
+const launchTags = getConfigUnsafe(true).get('trace:tags');
 
 module.exports.DummyTracing = DummyTracing;
 
@@ -28,8 +28,9 @@ module.exports.getHookerTracer = getHookerTracer;
  */
 function initRootSpan (name: string, tags: ?{} = {}): Tracing {
   if (! isTracingEnabled) return new DummyTracing();
+  const myTags = Object.assign(Object.assign({}, launchTags), tags);
   const tracing = new Tracing();
-  tracing.startSpan(name, { tags });
+  tracing.startSpan(name, {tags: myTags});
   setTimeout(() => { 
     tracing.checkIfFinished();
   }, 5000);
