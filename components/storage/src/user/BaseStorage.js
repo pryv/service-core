@@ -571,6 +571,11 @@ BaseStorage.prototype.applyUpdateToDB = function(updatedData) {
     delete input.$pull;
   }
 
+  if (input.$inc != null) {
+    data.$inc = input.$inc;
+    delete input.$inc;
+  }
+
   if (input.$unset != null) {
     data.$unset = input.$unset;
     delete input.$unset;
