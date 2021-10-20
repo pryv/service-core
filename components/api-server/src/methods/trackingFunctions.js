@@ -6,18 +6,10 @@
  */
 // @flow
 
-const errorHandling = require('errors').errorHandling;
-const errors = require('errors').factory;
-const string = require('./helpers/string');
-const timestamp = require('unix-timestamp');
-const { getLogger, getConfig } = require('@pryv/boiler');
-const { getStorageLayer } = require('storage');
-
 import type API  from '../API';
-import type { StorageLayer } from 'storage';
-import type { MethodContext } from 'business';
-import type Result  from '../Result';
-import type { ApiCallback }  from '../API';
+
+const updateAccessUsageStats = require('./helpers/updateAccessUsageStats');
+const { getLogger, getConfig } = require('@pryv/boiler');
 
 /**
  * Call tracking functions, to be registered after all methods have been registered.
@@ -26,50 +18,8 @@ import type { ApiCallback }  from '../API';
  */
 module.exports = async function (api: API) 
 {
-  const logger = getLogger('methods:trackingFunctions');
-  const storageLayer = await getStorageLayer();
   const config = await getConfig();
-  const userAccessesStorage = storageLayer.accesses;
-
-  const isActive = config.get('accessTracking:isActive') ? true : false;
-
-  api.register('*',
-    updateAccessUsageStats);
-
-  function updateAccessUsageStats(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    // don't make callers wait on this to get their reply
-    next();
-    if (! isActive) return;
-
-    // handle own errors not to mess with "concurrent" code (because of next() above)
-    try {
-      const access = context?.access;
-      if (access) {
-        const calledMethodKey = string.toMongoKey(context.methodId);
-        const prevCallCount = (access.calls && access.calls[calledMethodKey]) ?
-          access.calls[calledMethodKey] : 
-          0;
-
-        const update = { lastUsed: timestamp.now() , $inc: {}};
-        update.$inc['calls.' + calledMethodKey] = 1;
-
-        userAccessesStorage.updateOne(context.user, {id: context.access.id}, update, function (err) {
-          if (err) {
-            errorHandling.logError(errors.unexpectedError(err), {
-              url: context.user.username,
-              method: 'updateAccessLastUsed',
-              body: params
-            }, logger);
-          }
-        });
-      }
-    } catch (err) {
-      errorHandling.logError(errors.unexpectedError(err), {
-        url: context?.user?.username,
-        method: 'updateAccessLastUsed',
-        body: params
-      }, logger);
-    }
-  }
-
+  if (! config.get('accessTracking:isActive')) return;
+  const updateAccessUsage = await updateAccessUsageStats();
+  api.register('*', updateAccessUsage);
 };

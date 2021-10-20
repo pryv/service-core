@@ -22,6 +22,8 @@ import type { ApiCallback }  from '../API';
 
 const { Permission } = require('business/src/accesses');
 
+const updateAccessUsageStats = require('./helpers/updateAccessUsageStats');
+
 type ApiCall = {
   method: string,
   params: mixed,
@@ -39,10 +41,14 @@ module.exports = async function (api: API) {
 
   const isOpenSource = config.get('openSource:isActive');
   const isAuditActive = (! isOpenSource) && config.get('audit:active');
+
+  const updateAccessUsage = await updateAccessUsageStats();
+
   let audit;
   if (isAuditActive) {
     audit = require('audit');
   }
+
   api.register('getAccessInfo',
     commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
     getAccessInfoApiFn);
@@ -83,17 +89,28 @@ module.exports = async function (api: API) {
 
   api.register('callBatch',
     commonFns.getParamsValidation(methodsSchema.callBatch.params),
-    callBatchApiFn);
+    callBatchApiFn,
+    updateAccessUsage);
 
   async function callBatchApiFn(context: MethodContext, calls: Array<ApiCall>, result: Result, next: ApiCallback) {
     // allow non stringified stream queries in batch calls 
     context.acceptStreamsQueryNonStringified = true;
+    context.disableAccessUsageStats = true;
+
+    // to avoid updatingAccess for each api call we are collecting all counter here
+    context.accessUsageStats = {};
+    function countCall(methodId) {
+      if (context.accessUsageStats[methodId] == null) context.accessUsageStats[methodId] = 0;
+      context.accessUsageStats[methodId]++;
+    }
 
     result.results = await bluebird.mapSeries(calls, executeCall);
+    context.disableAccessUsageStats = false; // to allow tracking functions
     next();
 
     async function executeCall(call: ApiCall) {
       try {
+        countCall(call.method);
         // update methodId to match the call todo
         context.methodId = call.method;
         // Perform API call
