@@ -104,10 +104,13 @@ function coerceStreamsParam(context: MethodContext, params: GetEventsParams, res
   if (params.streams == null) {
     return next();
   }
-
   if (! context.acceptStreamsQueryNonStringified) {
     if (isStringifiedJSON(params.streams)) {
-      params.streams = parseStreamsParams(params.streams);
+      try {
+        params.streams = parseStreamsParams(params.streams);
+      } catch (e) {
+        return next(e);
+      }
     } else if (isStringOrArrayOfStrings(params.streams)) {
       // good, do nothing
     } else {
@@ -115,7 +118,11 @@ function coerceStreamsParam(context: MethodContext, params: GetEventsParams, res
     }
   } else {
     if (isStringifiedJSON(params.streams)) {
-      params.streams = parseStreamsParams(params.streams);
+      try {
+        params.streams = parseStreamsParams(params.streams);
+      } catch (e) {
+        return next(e);
+      }
     } else {
       // good, do nothing
     }
@@ -132,7 +139,7 @@ function coerceStreamsParam(context: MethodContext, params: GetEventsParams, res
     try {
       return JSON.parse(input);
     } catch (e) {
-      next(errors.invalidRequestStructure('Invalid "streams" parameter. It should be an array of streamIds or JSON logical query. Error while parsing JSON ' + e, input));
+      throw errors.invalidRequestStructure('Invalid "streams" parameter. It should be an array of streamIds or JSON logical query. Error while parsing JSON ' + e, input);
     }
   }
 
