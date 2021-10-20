@@ -170,7 +170,7 @@ describe('permissions create-only level', () => {
     describe('Accesses', function () {
       describe('GET /', function () {
 
-        describe('when using an access with a "create-only" permissions', async function () {
+        describe('when using an access with a "create-only" permissions', function () {
   
           let accesses;
           before(async function () {

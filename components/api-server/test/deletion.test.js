@@ -44,12 +44,12 @@ let config;
 let isOpenSource = false;
 let regUrl;
 
-describe('DELETE /users/:username', async () => {
-  config = await getConfig();
-  regUrl = config.get('services:register:url');
+describe('DELETE /users/:username', () => {
 
   before(async function() {
-    
+    config = await getConfig();
+    regUrl = config.get('services:register:url');
+    isOpenSource = config.get('openSource:isActive');
     app = getApplication();
     await app.initiate();
 
@@ -127,8 +127,8 @@ describe('DELETE /users/:username', async () => {
 
   // ---------------- loop loop -------------- //
 
-  isOpenSource = config.get('openSource:isActive');
-
+  
+ 
   // [isDnsLess, isOpenSource]
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
@@ -137,12 +137,11 @@ describe('DELETE /users/:username', async () => {
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B', 'L2Q1']];
   for (let i = 0; i < settingsToTest.length; i++) {
     
-
     // skip tests that are not in scope
-    if (isOpenSource !== settingsToTest[i][1]) continue;
-
+    
     describe(`dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
+        if (isOpenSource !== settingsToTest[i][1]) this.skip();
         config.injectTestConfig({
           dnsLess: {isActive: settingsToTest[i][0]}
         });
@@ -157,6 +156,7 @@ describe('DELETE /users/:username', async () => {
         let deletedOnRegister = false;
         let userToDelete;
         before(async function() {
+
           userToDelete = await initiateUserWithData(username1);
           await initiateUserWithData(username2);
           if (! settingsToTest[i][0]) { // ! isDnsLess
