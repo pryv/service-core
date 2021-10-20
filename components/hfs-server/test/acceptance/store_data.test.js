@@ -405,7 +405,7 @@ describe('Storing data in a HF series', function() {
         .set('authorization', accessToken);
         
       // wait a moment before checking if event was deleted correctly
-      await awaiting.delay(5);
+      await awaiting.delay(500);
       
       // add Data using timestamp sugar
       const result2 = await storeData(result.event.id,
