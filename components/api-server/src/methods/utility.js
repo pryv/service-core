@@ -86,40 +86,21 @@ module.exports = async function (api: API) {
     callBatchApiFn);
 
   async function callBatchApiFn(context: MethodContext, calls: Array<ApiCall>, result: Result, next: ApiCallback) {
+    // allow non stringified stream queries in batch calls 
+    context.acceptStreamsQueryNonStringified = true;
 
-    let needRefeshForNextcall = true;
-    let freshContext: MethodContext = null;
-    
     result.results = await bluebird.mapSeries(calls, executeCall);
     next();
 
-
-    // Reload streams tree since a previous call in this batch
-    // may have modified stream structure.
-    async function refreshContext() {
-      // Clone context to avoid potential side effects
-      freshContext = _.cloneDeep(context);
-      // Accept streamQueries in JSON format for batchCalls
-      freshContext.acceptStreamsQueryNonStringified = true;
-      const access = freshContext.access;
-      if (! access.isPersonal()) access.loadPermissions();
-    }
-
     async function executeCall(call: ApiCall) {
       try {
-        if (needRefeshForNextcall) {
-          await refreshContext();
-          needRefeshForNextcall = false;
-        }
-
-        // needRefeshForNextcall = ['streams.create', 'streams.update', 'streams.delete'].includes(call.method);
-        
-        freshContext.methodId = call.method;
+        // update methodId to match the call todo
+        context.methodId = call.method;
         // Perform API call
         const result: Result = await bluebird.fromCallback(
-          (cb) => api.call(freshContext, call.params, cb));
+          (cb) => api.call(context, call.params, cb));
         
-        if (isAuditActive) await audit.validApiCall(freshContext, result);
+        if (isAuditActive) await audit.validApiCall(context, result);
 
         return await bluebird.fromCallback(
           (cb) => result.toObject(cb));
@@ -131,7 +112,7 @@ module.exports = async function (api: API) {
         };
         errorHandling.logError(err, reqContext, logger);
 
-        if (isAuditActive) await audit.errorApiCall(freshContext, err);
+        if (isAuditActive) await audit.errorApiCall(context, err);
         
         return {error: errorHandling.getPublicErrorData(err)};
       }
