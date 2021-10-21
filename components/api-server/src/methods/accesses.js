@@ -241,6 +241,9 @@ module.exports = async function produceAccessesApiMethods(api: API)
     
     for (const permission of params.permissions) {
       if (isStreamBasedPermission(permission)) {
+        if (isUnknownSystemStream(permission.streamId)) {
+          return next(errors.forbidden('Forbidden'))
+        }
         // don't allow user to give access to not visible stream
         if (notVisibleAccountStreamsIds.includes(permission.streamId)) {
           return next(errors.invalidOperation(
@@ -262,6 +265,11 @@ module.exports = async function produceAccessesApiMethods(api: API)
     function isStreamBasedPermission(permission): boolean {
       return permission.streamId != null;
     }
+
+    function isUnknownSystemStream(streamId: string): boolean {
+      return SystemStreamsSerializer.hasSystemStreamPrefix(streamId) && (SystemStreamsSerializer.removePrefixFromStreamId(streamId) === streamId);
+    }
+
     return next();
   }
 

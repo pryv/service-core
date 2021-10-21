@@ -236,11 +236,9 @@ describe('XXXSystemStreams config', () => {
         ]
       );
       try {
-        console.log('loadin')
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw.');
       } catch (err) {
-        console.log('got', err)
         assert.include(err.message, 'Config error: custom system stream cannot be unique and not indexed. Stream: ');
       }
     });

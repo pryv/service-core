@@ -381,6 +381,15 @@ class SystemStreamsSerializer {
   }
 
   /**
+   * Checks if a streamId starts with a system stream prefix. To be used only in accesses.create!
+   * Don't let prefix checks leak into the code, use maps instead for performance and readability.
+   * @param {string} streamIdWithPrefix 
+   */
+  static hasSystemStreamPrefix(streamIdWithPrefix: string): boolean {
+    return streamIdWithPrefix.startsWith(PRYV_PREFIX) || streamIdWithPrefix.startsWith(CUSTOMER_PREFIX);
+  }
+
+  /**
   * Adds private systeam stream prefix to stream id, if available
   * @param string streamId
   */

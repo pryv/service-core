@@ -235,7 +235,7 @@ describe("Accesses with account streams", function () {
           });
         });
       });
-      describe('to create an access for not visible account streams', async () => {
+      describe('to create an access for not visible account streams', () => {
         let streamId;
         before(async function () {
           streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash');
@@ -252,12 +252,23 @@ describe("Accesses with account streams", function () {
           });
         });
       });
+      describe('to create an access for unexisting system streams', () => {
+        
+        before(async function () {
+          const streamId = ':system:' + charlatan.Lorem.characters(10);
+          await createUserAndAccess('read', streamId);
+        });
+        it('[KKKS] should return 403 forbidden', async () => {
+          assert.equal(createAccessResponse.status, 403);
+          assert.equal(createAccessResponse.body.error.id, ErrorIds.Forbidden);
+        });
+      })
     });
   });
 
-  describe('DELETE /accesses', async () => {
+  describe('DELETE /accesses', () => {
     describe('When using a personal access', () => {
-      describe('to delete an account stream access', async () => {
+      describe('to delete an account stream access', () => {
         let streamId;
         const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
         before(async function () {
