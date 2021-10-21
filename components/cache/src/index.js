@@ -12,6 +12,7 @@ const MAX_PER_CACHE_SIZE = 2000; // maximum elements for each cache (namespace)
 
 let synchro = null;
 
+let isActive = false;
 
 const logger = getLogger('cache');
 const debug = {};
@@ -30,20 +31,22 @@ function getNameSpace(namespace) {
 }
 
 function set(namespace, key, value) {
+  if (! isActive) return;  
   if (key == null) throw new Error('Null key for' + namespace);
-  if (config.get('caching:isActive') !== true) return;
   getNameSpace(namespace).set(key, value);
   debug.set(namespace, key);
   return value;
 }
 
 function unset(namespace, key) {
+  if (! isActive) return;
   if (key == null) throw new Error('Null key for' + namespace);
   getNameSpace(namespace).del(key);
   debug.unset(namespace, key);
 }
 
 function get(namespace, key) {
+  if (! isActive) return null;
   if (key == null) throw new Error('Null key for' + namespace);
   debug.get(namespace, key);
   return getNameSpace(namespace).get(key);
@@ -58,10 +61,12 @@ function clear(namespace) {
   } else {
     delete _caches[namespace];
   }
+  loadConfiguration(); // reload configuration
   debug.clear(namespace);
 }
 
 function clearUserId(userId, notifyOtherProcesses = true) {
+  if (! isActive) return;
   if (notifyOtherProcesses && synchro != null) synchro.clearUserId(userId);
   _unsetStreams(userId, 'local'); // for now we hardcode local streams
   clearAccessLogics(userId);
@@ -73,6 +78,7 @@ function getStreams(userId, key) {
 }
 
 function setStreams(userId, key, streams) {
+  if (! isActive) return;
   if (synchro != null) synchro.trackChangesForUserId(userId); // follow this user
   set(NS.STREAMS_FOR_USERID + key, userId, streams);
 }
@@ -89,12 +95,14 @@ function unsetStreams(userId, key) {
 //--------------- Access Logic -----------//
 
 function getAccessLogicForToken(userId, token) {
+  if (! isActive) return null;
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return null;
   return accessLogics.tokens[token];
 }
 
 function getAccessLogicForId(userId, accessId) {
+  if (! isActive) return null;
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return null;
   return accessLogics.ids[accessId];
@@ -102,6 +110,7 @@ function getAccessLogicForId(userId, accessId) {
 
 
 function unsetAccessLogic(userId, accessLogic, notifyOtherProcesses = true) {
+  if (! isActive) return;
   if (notifyOtherProcesses && synchro != null) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return ;
@@ -114,6 +123,7 @@ function clearAccessLogics(userId) {
 }
 
 function setAccessLogic(userId, accessLogic) {
+  if (! isActive) return;
   if (synchro != null) synchro.trackChangesForUserId(userId);
   let accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) {
@@ -128,6 +138,13 @@ function setAccessLogic(userId, accessLogic) {
 }
 
 //---------------
+
+/** Used only from tests to reload configuration after settting changes */
+function loadConfiguration() {
+  // could be true/false or 1/0 if launched from command line
+  isActive = config.get('caching:isActive') ? true : false;
+}
+loadConfiguration();
 
 const NS = {
   USERID_BY_USERNAME: 'USERID_BY_USERNAME',
@@ -152,8 +169,12 @@ const cache = {
   getStreams,
   unsetStreams,
 
+  loadConfiguration,
+  isActive,
+
   NS
 }
+
 
 // load synchro if needed
 if (! config.get('openSource:isActive')) {

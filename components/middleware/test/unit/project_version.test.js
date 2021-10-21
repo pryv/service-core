@@ -48,14 +48,16 @@ describe('APIVersion#version', () => {
       assert(versionRead === '1.2.3', '.apiversion file content should be 1.2.3');
     });
 
-    it('[HV40] should return git tag version', async () => {
+    it('[HV40] should return git tag version', async function () {
+      if (process.env.IS_CI === 'true') this.skip(); // does not work in Github_CI
       const version = await getAPIVersion(true);
 
       try {
         const versionFromGitTag = execSync('git describe --tags').toString().trim();
         assert.strictEqual(version, versionFromGitTag);
       } catch (err) { // test fails in CI because no .git/
-        if (! err.message.includes('not a git repository')) assert.fail(err);
+        if (err.message.includes('not a git repository')) return; 
+        assert.fail(err);
       }
       
     });

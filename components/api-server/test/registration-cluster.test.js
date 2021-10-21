@@ -386,7 +386,7 @@ describe('registration: cluster', function() {
     });
 
     describe('when invitationTokens are undefined', () => {
-      describe('and a random string is provided as "invitationToken"', async () => {
+      describe('and a random string is provided as "invitationToken"', () => {
         before(async () => {
           userData = defaults();
           userData.invitationToken = charlatan.Lorem.characters(25);

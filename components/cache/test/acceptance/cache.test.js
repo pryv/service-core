@@ -84,6 +84,7 @@ describe('Cache', function() {
   this.beforeEach(() => {
     // make sure config is clean;
     config.injectTestConfig({});
+    cache.clear(); // clear & reload configuration
   });
 
   it('[FELT] Second get stream must be faster that first one', async () => {

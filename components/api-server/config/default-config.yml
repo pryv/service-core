@@ -90,8 +90,6 @@ stores:
 
 caching:
   isActive: true
-  localStreams: true
-  accesses: true
 
 logs:
   console:

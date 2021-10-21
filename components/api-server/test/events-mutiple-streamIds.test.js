@@ -215,7 +215,7 @@ describe('events.streamIds', function () {
         assert.equal(err.id, ErrorIds.InvalidOperation);
       });
 
-      describe('when using "streamId"', async function () {
+      describe('when using "streamId"', function () {
         it('[1YUV] must return streamIds & streamId', async function () {
           const res = await server.request()
             .post(basePathEvent)
@@ -232,7 +232,7 @@ describe('events.streamIds', function () {
         });
       });
 
-      describe('when using "streamIds"', async function () {
+      describe('when using "streamIds"', function () {
         it('[VXMG] must return streamIds & streamId containing the first one', async function () {
           const res = await server.request()
             .post(basePathEvent)

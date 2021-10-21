@@ -38,7 +38,7 @@ module.exports = async function (api) {
   const serviceRegisterConn = getServiceRegisterConn();
   const usersRepository = await getUsersRepository(); 
 
-  const isDnsLess = config.get('dnsLess:isActive') === true;
+  const isDnsLess = config.get('dnsLess:isActive');
 
   // RETRIEVAL
 

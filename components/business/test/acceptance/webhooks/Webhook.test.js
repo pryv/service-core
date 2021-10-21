@@ -208,7 +208,7 @@ describe('Webhook', () => {
 
     describe('when scheduling for a retry', () => {
 
-      describe('when the notifications service is down', async () => {
+      describe('when the notifications service is down', () => {
 
         before(async () => {
           postPath = '/notifs2222';

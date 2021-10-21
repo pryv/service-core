@@ -103,7 +103,7 @@ describe("Accesses with account streams", function () {
   describe('POST /accesses', () => {
     describe('When using a personal access', () => {
       describe('to create an access for visible account streams', () => {
-        describe('with a read-level permission', async () => {
+        describe('with a read-level permission', () => {
           let systemEmailStreamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
           before(async function () {
@@ -122,7 +122,7 @@ describe("Accesses with account streams", function () {
             assert.equal(res.body.events[0].streamId, systemEmailStreamId);
           });
 
-          describe('for the “account” stream', async () => {
+          describe('for the “account” stream', () => {
             let streamId;
             const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
@@ -141,7 +141,7 @@ describe("Accesses with account streams", function () {
               validation.validateAccountEvents(res.body.events);
             });
           });
-          describe('for the “storageUsed” stream', async () => {
+          describe('for the “storageUsed” stream', () => {
             let streamId;
             const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
@@ -168,7 +168,7 @@ describe("Accesses with account streams", function () {
             });
           });
         });
-        describe('with a create-only-level permission', async () => {
+        describe('with a create-only-level permission', () => {
           let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CREATE_ONLY;
           before(async function () {
@@ -182,7 +182,7 @@ describe("Accesses with account streams", function () {
             assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
           });
         });
-        describe('with a contribute-level permission', async () => {
+        describe('with a contribute-level permission', () => {
           let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CONTRIBUTE;
           before(async function () {
@@ -217,7 +217,7 @@ describe("Accesses with account streams", function () {
           });
         });
 
-        describe('with a manage-level permission', async () => {
+        describe('with a manage-level permission', () => {
           let streamId;
           before(async function () {
             streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
