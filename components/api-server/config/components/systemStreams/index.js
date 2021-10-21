@@ -22,6 +22,7 @@ const IS_INDEXED: string = 'isIndexed';
 const IS_EDITABLE: string = 'isEditable';
 const IS_UNIQUE: string = 'isUnique';
 const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
+const REGEX_VALIDATION: string = 'regexValidation';
 
 const { DataStore } = require('mall/interfaces/DataStore');
 
@@ -31,6 +32,7 @@ module.exports.features = {
   IS_EDITABLE,
   IS_UNIQUE,
   IS_REQUIRED_IN_VALIDATION,
+  REGEX_VALIDATION,
 };
 
 const DEFAULT: string = 'default';

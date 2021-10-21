@@ -4,31 +4,35 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+// @flow
+
 /**
  * JSON Schema specification of methods data for auth.
  */
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
+const { features } = require('api-server/config/components/systemStreams');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-var helpers = require('./helpers'),
-  object = helpers.object,
-  string = helpers.string;
+const helpers = require('./helpers');
+const object = helpers.object;
+const string = helpers.string;
 
 let registrationSchema = {
   params: object({
     username: helpers.username,
-    password: helpers.string({
+    password: string({
       minLength: 6,
       maxLength: 100
     }),
     email: helpers.email,
-    appId: helpers.string({
+    appId: string({
       minLength: 6,
       maxLength: 99,
     }),
     invitationToken: string(),
-    referer: helpers.string({
+    referer: string({
       nullable: true,
       minLength: 1,
       maxLength: 99,
@@ -138,7 +142,6 @@ let registrationSchema = {
 // extend registration settings with settings from the accountStreams
 registrationSchema.params = loadCustomValidationSettings(registrationSchema.params);
 
-
 module.exports = {
   login: {
     params: object({
@@ -208,43 +211,45 @@ module.exports = {
 };
 
 /**
- * Append validation settings to validation schema
- * Currently it can append required field, Regex for string validation and custom
- * validation message
+ * Append validation of custom system streams for registration method
  */
 function loadCustomValidationSettings (validationSchema) {
   // iterate account stream settings and APPEND validation with relevant properties
   // etc additional required fields or regex validation
   const accountStreamsSettings = SystemStreamsSerializer.getAccountMap()
-  for (const [streamIdWithPrefix, value] of Object.entries(accountStreamsSettings)) {
+  for (const [streamIdWithPrefix: string, systemStream] of Object.entries(accountStreamsSettings)) {
     // if streamIdWithPrefix is set as required - add required validation
-    const streamId = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
+    const streamId: string = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
     if (
-      value?.isRequiredInValidation == true &&
-      !validationSchema.required.includes(streamIdWithPrefix)
+      systemStream[features.IS_REQUIRED_IN_VALIDATION] &&
+      ! validationSchema.required.includes(streamIdWithPrefix)
     ) {
       validationSchema.required.push(streamId);
-      //the error message of required property by z-schema is still a hell
+      //the error message of required property by z-schema is still obscure
     }
 
     // if accountStream hasfield has type validation - add regex type rule
     // etc : '^(series:)?[a-z0-9-]+/[a-z0-9-]+$'
-    if (
-      value.regexValidation &&
-      !validationSchema.properties.hasOwnProperty(streamId)
-    ) {
-      validationSchema.properties[streamId] = string({
-        pattern: value.regexValidation
-      });
-
-      // if there is an error message and code specified, set those too
+    if (validationSchema.properties[streamId] == null) {
       if (
-        value.regexError &&
-        !validationSchema.messages.hasOwnProperty(streamId)
+        systemStream[features.REGEX_VALIDATION] != null
       ) {
-        validationSchema.messages[streamId] = { PATTERN: value.regexError };
+        validationSchema.properties[streamId] = string({
+          pattern: systemStream.regexValidation
+        });
+      } else {
+        validationSchema.properties[streamId] = string();
       }
     }
+    
+    // if there is an error message and code specified, set those too
+    if (
+      systemStream.regexError != null && 
+      validationSchema.messages[streamId] == null
+    ) {
+      validationSchema.messages[streamId] = { PATTERN: systemStream.regexError };
+    }
+    
   }
   return validationSchema;
 }

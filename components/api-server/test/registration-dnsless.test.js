@@ -19,6 +19,7 @@ const { pubsub } = require('messages');
 const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers');
 const ErrorIds = require('errors/src/ErrorIds');
 const { ApiEndpoint } = require('utils');
+const systemStreamsConfig = require('api-server/config/components/systemStreams');
 
 describe('[BMM2] registration: DNS-less', () => {
   let config;
@@ -202,6 +203,26 @@ describe('[BMM2] registration: DNS-less', () => {
           // changed to new error format to match the cluster
           const error = JSON.parse(res.error.text);
           assert.deepEqual(error.error.data, { username: registerData.username, email: registerData.email });
+        });
+      });
+    });
+
+    describe('When providing an indexed value that is neither a number nor a string', () => {
+      function generateInvalidBodyWith(incorrectValue) {
+        return {
+          username: charlatan.Lorem.characters(7),
+          password: charlatan.Lorem.characters(7),
+          appId: charlatan.Lorem.characters(7),
+          email: charlatan.Internet.email(),
+          insurancenumber: incorrectValue,
+        };
+      }
+      describe('by providing an object', () => {
+        it('[S6PS] must return an error', async () => {
+          const res = await request.post('/users').send(generateInvalidBodyWith({
+            [charlatan.Lorem.characters(5)]: charlatan.Lorem.words(10).join(' '),
+          }));
+          assert.equal(res.status, 400);
         });
       });
     });
