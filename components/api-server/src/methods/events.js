@@ -275,6 +275,7 @@ module.exports = async function (api)
     validateEventContentAndCoerce,
     verifycanCreateEventsOnStreamAndWIthTags,
     doesEventBelongToAccountStream,
+    validaSystemStreamsContent,
     validateAccountStreamsForCreation,
     appendAccountStreamsDataForCreation,
     verifyUnicity,
@@ -559,6 +560,7 @@ module.exports = async function (api)
     createStreamsForTagsIfNeeded,
     validateEventContentAndCoerce,
     doesEventBelongToAccountStream,
+    validaSystemStreamsContent,
     validateAccountStreamsForUpdate,
     generateVersionIfNeeded,
     updateAttachments,
@@ -913,6 +915,18 @@ module.exports = async function (api)
       return params.update != null && params.update.content != null;
     }
 
+  }
+
+  function validaSystemStreamsContent(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+    if (! context.doesEventBelongToAccountStream) return next();
+    if (context.newEvent == null) return next();
+
+    const acceptedIndexedTypes: Array<string> = ['number', 'string', 'undefined'];
+
+    const contentType: string = typeof context.newEvent.content;
+    if (! acceptedIndexedTypes.includes(contentType)) return next(errors.invalidParametersFormat(ErrorMessages.IndexedParameterInvalidFormat, params));
+
+    return next();
   }
 
   /**

@@ -37,6 +37,7 @@ const ErrorMessages = {
   [ErrorIds.ForbiddenToEditNoneditableAccountFields]: 'It is forbidden to edit non-editable acccount fields.',
   [ErrorIds.UnexpectedError]: 'Unexpected error',
   [ErrorIds.NewPasswordFieldIsRequired]: 'newPassword field is required.',
+  IndexedParameterInvalidFormat: 'Indexed parameters must be numbers or strings if required.',
 };
 Object.freeze(ErrorMessages);
 
