@@ -66,7 +66,7 @@ function load(config: {}): {} {
     [{
       id: 'account',
       name: 'Account',
-      type: 'none',
+      type: 'none/none',
       children: [
         {
           id: 'username',
@@ -148,7 +148,7 @@ function load(config: {}): {} {
   let helpers: Array<SystemStream> = [{
     id: 'helpers',
     name: 'Helpers',
-    type: 'none',
+    type: 'none/none',
     children: [
       {
         id: 'active',
