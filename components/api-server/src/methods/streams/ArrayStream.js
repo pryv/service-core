@@ -18,12 +18,14 @@ const SERIALIZATION_STACK_SIZE = 1000;
  * @param arrayName {String} array name that will prefix the array
  * @constructor
  */
-function ArrayStream(arrayName, isFirst) {
+function ArrayStream(arrayName, isFirst, tracing) {
   Transform.call(this, {objectMode: true});
   this.isStart = true;
+  this.arrayName = arrayName;
   this.prefix = formatPrefix(arrayName, isFirst);
   this.size = SERIALIZATION_STACK_SIZE;
   this.stack = [];
+  this.tracing = tracing;
 }
 
 inherits(ArrayStream, Transform);
@@ -33,6 +35,7 @@ ArrayStream.prototype._transform = function (item, encoding, callback) {
 
   if (this.stack.length >= this.size) {
     if (this.isStart) {
+      if (this.tracing != null) this.tracing.startSpan('arrayStream.' + this.arrayName);
       this.isStart = false;
       this.push((this.prefix + JSON.stringify(this.stack)).slice(0,-1));
     } else {
@@ -47,6 +50,7 @@ ArrayStream.prototype._flush = function (callback) {
   if (this.isStart) {
     this.push(this.prefix + JSON.stringify(this.stack));
   } else {
+    if (this.tracing != null) this.tracing.finishSpan('arrayStream.' + this.arrayName);
     const joiningComma = this.stack.length > 0 ? ',' : '';
     this.push(joiningComma + (JSON.stringify(this.stack)).slice(1));
   }

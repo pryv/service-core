@@ -189,7 +189,7 @@ class API {
     const apiSpanName = 'api:' + methodId;
     tracing.startSpan(apiSpanName, tags);
 
-    const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
+    const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE}, tracing);
 
     let unanmedCount = 0;
     async.forEachSeries(methodList, function (currentFn, next) {

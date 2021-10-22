@@ -67,7 +67,8 @@ class Result {
     isStreamResult: boolean, 
     streamsArray: Array<StreamDescriptor>, 
     onEndCallback: ?doneCallBack,
-    streamsConcatArrays: Object
+    streamsConcatArrays: Object,
+    tracing: Tracing,
   }
   meta: ?Object;
   
@@ -101,14 +102,15 @@ class Result {
   auditLogs: ?Array<{}>;
   
 
-  constructor(params?: ResultOptions) {
+  constructor(params?: ResultOptions, tracing?: Tracing) {
     this._private = { 
       init: false, first: true, 
       arrayLimit: 10000, 
       isStreamResult: false, 
       streamsArray: [],  
       onEndCallback: null,
-      streamsConcatArrays: {}
+      streamsConcatArrays: {},
+      tracing: tracing
     };
     
     if (params && params.arrayLimit != null && params.arrayLimit > 0) {
@@ -156,18 +158,23 @@ class Result {
   // 
   writeToHttpResponse(res: express$Response, successCode: number) {
     const onEndCallBack = this._private.onEndCallback;
+    const tracing = this._private.tracing;
+    if (tracing != null) tracing.startSpan('result.writeToHttpResponse');
     if (this.isStreamResult()) {
       const stream: Readable = this.writeStreams(res, successCode);
       stream.on('close', function() { 
+        if (tracing != null) tracing.finishSpan('result.writeToHttpResponse');
         if (onEndCallBack) onEndCallBack();
       }.bind(this));
     } else {
       this.writeSingle(res, successCode);
+      if (tracing != null) tracing.finishSpan('result.writeToHttpResponse');
       if (onEndCallBack) onEndCallBack()
     }
   }
   
   writeStreams(res: express$Response, successCode: number): Readable {
+    const tracing = this._private.tracing;
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
     res.statusCode = successCode;
@@ -183,8 +190,8 @@ class Result {
     if (streamsArray.length === 1) {
       const first = streamsArray[0];
       return first.stream
-        .pipe(new ArrayStream(first.name, true))
-        .pipe(new ResultStream())
+        .pipe(new ArrayStream(first.name, true, this._private.tracing))
+        .pipe(new ResultStream(this._private.tracing))
         .pipe(res);
     }
 
@@ -192,10 +199,10 @@ class Result {
     const streams = [];
     for (let i=0; i<streamsArray.length; i++) {
       const s = streamsArray[i];
-      streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
+      streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0, this._private.tracing)));
     }
 
-    return new MultiStream(streams).pipe(new ResultStream()).pipe(res);
+    return new MultiStream(streams).pipe(new ResultStream(this._private.tracing)).pipe(res);
   }
   
   writeSingle(res: express$Response, successCode: number) {
@@ -248,15 +255,17 @@ class Result {
 // Http.response
 class ResultStream extends Transform {
   isStart: boolean;
+  tracing: tracing;
   
-  constructor() {
+  constructor(tracing) {
     super({objectMode: true});
-    
+    this.tracing = tracing;
     this.isStart = true;
   }
   
   _transform(data, encoding, callback) {
     if (this.isStart) {
+      if (this.tracing != null) this.tracing.startSpan('result.resultStream');
       this.push('{');
       this.isStart = false;
     }
@@ -267,7 +276,7 @@ class ResultStream extends Transform {
   _flush(callback) {
     const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
     this.push(thing + '}');
-
+    if (this.tracing != null) this.tracing.finishSpan('result.resultStream');
     callback();
   }
 }
