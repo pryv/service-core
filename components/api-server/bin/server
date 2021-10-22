@@ -1,6 +1,18 @@
 #!/usr/bin/env node
 
 // Binary for launching the api-server process. 
+const cluster = require('cluster')
+const os = require('os')
+
+// check if the process is the master process
+if(cluster.isMaster){
+    // get the number of available cpu cores 
+    const nCPUs = os.cpus().length;
+    // fork worker processes for each available CPU core
+    for(let i = 0; i< nCPUs; i++){
+        cluster.fork();
+    } 
+} else {
 
 const Server = require('../src/server');
 const { getApplication } = require('api-server/src/application');
@@ -39,3 +51,4 @@ const logger = getLogger('serverRoot');
     }
     process.exit(1);
   });
+}
