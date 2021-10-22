@@ -275,7 +275,7 @@ module.exports = async function (api)
     validateEventContentAndCoerce,
     verifycanCreateEventsOnStreamAndWIthTags,
     doesEventBelongToAccountStream,
-    validaSystemStreamsContent,
+    validateSystemStreamsContent,
     validateAccountStreamsForCreation,
     appendAccountStreamsDataForCreation,
     verifyUnicity,
@@ -560,7 +560,7 @@ module.exports = async function (api)
     createStreamsForTagsIfNeeded,
     validateEventContentAndCoerce,
     doesEventBelongToAccountStream,
-    validaSystemStreamsContent,
+    validateSystemStreamsContent,
     validateAccountStreamsForUpdate,
     generateVersionIfNeeded,
     updateAttachments,
@@ -917,7 +917,7 @@ module.exports = async function (api)
 
   }
 
-  function validaSystemStreamsContent(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+  function validateSystemStreamsContent(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
     if (! context.doesEventBelongToAccountStream) return next();
     if (context.newEvent == null) return next();
 
