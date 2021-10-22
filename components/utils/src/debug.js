@@ -20,7 +20,7 @@ function stack(start = 0, length = 100) {
 }
 
 function logstack() {
-  log(...arguments, stack(3, 2));
+  log(...arguments, stack(2, 4));
 }
 
 module.exports = {

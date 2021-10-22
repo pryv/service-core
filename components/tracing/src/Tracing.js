@@ -20,7 +20,7 @@ const TRACING_NAME: string = 'api-server';
   const config = {
     serviceName: serviceName,
     sampler: { // Tracing all spans. See https://www.jaegertracing.io/docs/1.7/sampling/#client-sampling-configuration
-      type: 'ratelimiting', // previous was "const" set to ratelimiting to prevent crashes with benchmark
+      type: 'const', // previous was "const" set to ratelimiting to prevent crashes with benchmark
       param: 1,
     },
   };

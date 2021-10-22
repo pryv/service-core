@@ -537,7 +537,7 @@ describe('system (ex-register)', function () {
 
     before(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
-    it('[9C1A] must return user information (including time of last account use)', function (done) {
+    it('[9C1A] trackingFunctions must return user information (including time of last account use)', function (done) {
       var originalInfo,
           expectedTime;
       async.series([
