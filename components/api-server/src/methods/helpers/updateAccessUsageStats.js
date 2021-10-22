@@ -21,7 +21,7 @@ import type { ApiCallback }  from '../../API';
 
 let singleton = null;
 
-module.exports = async function updateAccessUsageStatsFactory() {
+module.exports = async function getUpdateAccessUsageStats() {
   if (singleton != null) return singleton;
 
   const logger = getLogger('methods:trackingFunctions');
