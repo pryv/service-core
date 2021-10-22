@@ -50,22 +50,22 @@ describe('accesses', () => {
       
       let mongoFixtures;
       before(async () => {
-        mongoFixtures = databaseFixture(await produceMongoConnection());
-        const user = await mongoFixtures.user(userId);
-        await user.stream({ id: streamId }, () => {});
-  
-        await user.access({
-          type: 'app', token: activeToken,
-          name: 'active access', permissions: []
-        });
-        await user.access({
-          type: 'app', token: deletedToken,
-          name: 'deleted access', permissions: [],
-          deleted: deletedTimestamp
-        });
-  
-        await user.access({ token: accessToken, type: 'personal' });
-        await user.session(accessToken);
+          mongoFixtures = databaseFixture(await produceMongoConnection());
+          const user = await mongoFixtures.user(userId);
+          await user.stream({ id: streamId }, () => {});
+    
+          await user.access({
+            type: 'app', token: activeToken,
+            name: 'active access', permissions: []
+          });
+          await user.access({
+            type: 'app', token: deletedToken,
+            name: 'deleted access', permissions: [],
+            deleted: deletedTimestamp
+          });
+    
+          await user.access({ token: accessToken, type: 'personal' });
+          await user.session(accessToken);
       });
   
   
@@ -178,7 +178,7 @@ describe('accesses', () => {
               streamId: 'stream',
               level: 'read'
             }],
-            deleted: new Date()
+            deleted: Date.now() / 1000
           };
   
           before(async () => {
@@ -213,12 +213,12 @@ describe('accesses', () => {
             .put(`/${userId}/accesses/${activeAccess.id}`)
             .set('Authorization', accessToken)
             .send({
-              update: { deleted: new Date() }
+              update: { deleted: Date.now() / 1000 }
             });
+          error = res.body.error; 
         });
   
         it('[JNJK] should return an error', () => {
-          error = res.body.error;
           assert.isNotNull(error);
         });
   

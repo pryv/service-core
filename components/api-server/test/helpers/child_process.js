@@ -9,7 +9,7 @@
 
 
 const Server = require('../../src/server');
-const Application = require('../../src/application');
+const { getApplication } = require('api-server/src/application');
 const ChildProcess = require('test-helpers').child_process;
 
 const { getLogger, getConfig} = require('@pryv/boiler');
@@ -31,10 +31,10 @@ class ApplicationLauncher {
       // directly inject settings in nconf // to be updated to 
       config.injectTestConfig(injectSettings);
 
-      const app = this.app = new Application();
+      const app = this.app = getApplication();
       await app.initiate();
 
-      const server = new Server(app); 
+      const server = new Server(); 
       return server.start(); 
 
     } catch (e) { // this is necessary for debug process as Error is not forwarded correctly

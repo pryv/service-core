@@ -10,7 +10,7 @@ var storage = require('storage'),
 const { getConfigUnsafe, getLogger } = require('@pryv/boiler');
 const config = getConfigUnsafe(true);
 
-const database = new storage.Database(config.get('database'));
+const database = storage.getDatabaseSync(true);
 
 /**
  * Test process dependencies.

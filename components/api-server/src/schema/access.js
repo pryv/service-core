@@ -26,7 +26,8 @@ exports = module.exports = function (action) {
     'apiEndpoint': string({minLength: 1}),
     'name': string({minLength: 1}),
     'permissions': permissions(action),
-    'lastUsed': helpers.number()
+    'lastUsed': helpers.number(),
+    'integrity': string({nullable: true}),
   }, {
     additionalProperties: false
   });
@@ -114,7 +115,7 @@ exports = module.exports = function (action) {
   return res;
 };
 
-var permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only']});
+var permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only', 'none']});
 
 var featureSetting = exports.featureSetting = string({ enum: ['forbidden']});
 
@@ -135,15 +136,6 @@ var permissions = exports.permissions = function (action) {
     streamPermission.properties.name = string();
   }
 
-  var tagPermission = object({
-    'tag': string(),
-    'level': permissionLevel
-  }, {
-    id: 'tagPermission',
-    additionalProperties: false,
-    required: [ 'tag', 'level' ]
-  });
-
   var featurePermission = object({
     'feature': string(),
     'setting': featureSetting
@@ -154,6 +146,6 @@ var permissions = exports.permissions = function (action) {
   });
 
   return array({
-    oneOf: [streamPermission, tagPermission, featurePermission]
+    oneOf: [streamPermission, featurePermission]
   });
 };

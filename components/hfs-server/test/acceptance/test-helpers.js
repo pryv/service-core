@@ -18,9 +18,10 @@ const { getConfig, getLogger } = require('@pryv/boiler').init({
     scope: 'defaults-paths',
     file: path.resolve(__dirname, '../../../api-server/config/paths-config.js')
   }, {
-    plugin: require('../../../api-server/config/components/systemStreams')
+    plugin: require('api-server/config/components/systemStreams')
   }]
 });
+
 
 // Test helpers for all acceptance tests. 
 
@@ -41,10 +42,7 @@ exports.produceInfluxConnection = produceInfluxConnection;
 // Produces and returns a connection to MongoDB. 
 // 
 async function produceMongoConnection(): storage.Database {
-  const config = await getConfig();
-  const database = new storage.Database(config.get('database')); 
-  
-  return database; 
+  return await storage.getDatabase();;
 }
 exports.produceMongoConnection = produceMongoConnection;
 

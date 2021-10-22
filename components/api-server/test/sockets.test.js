@@ -35,6 +35,7 @@ const validation = helpers.validation;
 const testData = helpers.data;
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
+const { integrity } = require('business');
 
 const { ConditionVariable } = require('test-helpers').syncPrimitives; 
 
@@ -186,7 +187,7 @@ describe('Socket.IO', function () {
       done(new Error('Connecting should have failed'));
     });
   
-    ioCons.con.once('error', function () {
+    ioCons.con.once('connect_error', function () {
       // We expect failure, so we're done here. 
       done();
     });
@@ -206,6 +207,7 @@ describe('Socket.IO', function () {
       ioCons.con.emit('events.get', params, async function (err, result) {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(result.events);
         result.events = separatedEvents.events;
+      
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
         const testEvents = _.clone(testData.events);
@@ -218,8 +220,8 @@ describe('Socket.IO', function () {
         const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
         validation.validateAccountEvents(actualAccountStreamsEvents);
         
+        expectedEvents.forEach(integrity.events.set);
         result.events.should.eql(expectedEvents);
-        
         // check deletions
         let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
         for (let el of deleted) {
@@ -238,6 +240,7 @@ describe('Socket.IO', function () {
         let activeTestEvents = activeEvents(
           validation.removeDeletions(testData.events));
     
+        activeTestEvents.forEach(integrity.events.set);
         should(
           resultEvents
         ).be.eql(activeTestEvents);
@@ -248,10 +251,12 @@ describe('Socket.IO', function () {
     });
     it('[O3SW] must properly route method call messages for streams and return the results', function (done) {
       ioCons.con = connect(namespace, {auth: token});
+      const expected = _.cloneDeep(testData.streams);
+      validation.addStoreStreams(expected);
       ioCons.con.emit('streams.get', { state: 'all' }, function (err, result) {
         result.streams = validation.removeAccountStreams(result.streams);
         validation.checkSchema(result, streamsMethodsSchema.get.result);
-        result.streams.should.eql(validation.removeDeletions(testData.streams));
+        result.streams.should.eql(validation.removeDeletions(expected));
         done();
       });
     });
@@ -470,7 +475,7 @@ describe('Socket.IO', function () {
   
       // Aggregate user data to be more contextual
       const user = {
-        name: testData.users[0].username,
+        username: testData.users[0].username,
         token: token, 
       };
   
@@ -499,7 +504,7 @@ describe('Socket.IO', function () {
   
     // Connect to `server` using `user` as credentials. 
     function connectTo(server: Server, user: User): SocketIO$Client {
-      const namespace = `/${user.name}`;
+      const namespace = `/${user.username}`;
       const params = { auth: user.token, resource: namespace };
   
       const url = server.url(namespace) + 

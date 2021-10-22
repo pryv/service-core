@@ -17,6 +17,8 @@ const { assert, expect } = require('chai');
 const util = require('util');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { integrity } = require('business');
+const isOpenSource = require('@pryv/boiler').getConfigUnsafe('true').get('openSource:isActive');
 
 /**
  * Expose common JSON schemas.
@@ -60,6 +62,20 @@ exports.check = function (response, expected, done) {
   if (expected.schema) {
     checkJSON(response, expected.schema);
   }
+  // service info .. also expose an "access" property
+  if (response.body.access != null && response.body.api == null) {
+    checkAccessIntegrity(response.body.access);
+  }
+  if (response.body.event != null) {
+    checkEventIntegrity(response.body.event);
+  }
+  if (response.body.events != null) {
+    response.body.events.forEach(checkEventIntegrity);
+  }
+  if (response.body.eventDeletions != null) {
+    response.body.eventDeletions.forEach(checkEventIntegrity);
+  }
+
   if (expected.sanitizeFn) {
     expect(expected.sanitizeTarget).to.exist;
     expected.sanitizeFn(response.body[expected.sanitizeTarget]);
@@ -73,6 +89,24 @@ exports.check = function (response, expected, done) {
 
   if (done) { done(); }
 };
+
+function checkEventIntegrity(e) {
+  if (! integrity.events.isActive) return;
+  if (isOpenSource) return;
+  const int = integrity.events.hash(e);
+  if (e.integrity != int) {
+    throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(e, null, 2)));
+  }
+}
+
+function checkAccessIntegrity(access) {
+  if (! integrity.accesses.isActive) return;
+  if (isOpenSource) return;
+  const int = integrity.accesses.hash(access);
+  if (access.integrity != int) {
+    throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(access, null, 2)));
+  }
+}
 
 /**
  * Specific check for errors.
@@ -198,11 +232,11 @@ exports.checkErrorUnknown = function (res, done) {
  * `actual` and `expected` if not empty).
  */
 exports.checkObjectEquality = checkObjectEquality;
-function checkObjectEquality(actual, expected) {
-  var verifiedProps = [];
-
+function checkObjectEquality(actual, expected, verifiedProps = []) {
+  var isApprox = false;
   if (expected.created) {
     checkApproxTimeEquality(actual.created, expected.created);
+    isApprox = isApprox || actual.created != expected.created ;
   }
   verifiedProps.push('created');
 
@@ -212,11 +246,13 @@ function checkObjectEquality(actual, expected) {
 
   if (expected.modified) {
     checkApproxTimeEquality(actual.modified, expected.modified);
+    isApprox = isApprox || actual.modified != expected.modified ;
   }
   verifiedProps.push('modified');
 
   if (expected.deleted) {
     checkApproxTimeEquality(actual.deleted, expected.deleted);
+    isApprox = isApprox || actual.deleted != expected.deleted ;
   }
   verifiedProps.push('deleted');
 
@@ -229,7 +265,8 @@ function checkObjectEquality(actual, expected) {
     assert.strictEqual(actual.children.length, expected.children.length);
     
     for (var i = 0, n = expected.children.length; i < n; i++) {
-      checkObjectEquality(actual.children[i], expected.children[i]);
+      const subApprox = checkObjectEquality(actual.children[i], expected.children[i]);
+      isApprox = isApprox || subApprox ;
     }
   }
   verifiedProps.push('children');
@@ -254,9 +291,13 @@ function checkObjectEquality(actual, expected) {
   }
   verifiedProps.push('attachments');
 
+  // Integrity cannot be checked when "approximate results"
+  if (isApprox) verifiedProps.push('integrity');
+
   const remaining = _.omit(actual, verifiedProps);
   const expectedRemaining = _.omit(expected, verifiedProps);
   assert.deepEqual(remaining, expectedRemaining);
+  return isApprox; //(forward to eventual recursive calls)
 }
 
 function checkApproxTimeEquality(actual, expected, epsilon=2) {
@@ -368,12 +409,12 @@ exports.removeDeletionsAndHistory = function (items) {
 
 exports.removeAccountStreamsEvents = function (items) {
   // get streams ids from the config that should be retrieved
-  const expectedAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
+  const expectedAccountStreams = SystemStreamsSerializer.getAccountMap();
   return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedAccountStreams).indexOf(streamId) >= 0)); });
 };
 
 exports.separateAccountStreamsAndOtherEvents = function (items) {
-  const readableAccountStreams = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+  const readableAccountStreams = SystemStreamsSerializer.getAccountStreamIds();
   const normalEvents = items.filter(function (e) {
     return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
@@ -392,6 +433,32 @@ exports.removeAccountStreams = function (streams) {
       streams.splice(i, 1);
     }
   }
+  return streams;
+}
+
+exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
+  const {StreamsUtils, getMall} = require('mall');
+  function isShown(storeId) {
+    if (storeId === 'local') return false;
+    if (storesId == null) return true;
+    return storesId.includes(storeId);
+  }
+
+  // -- ADD stores
+  const mall = await getMall();
+  for (const source of [...mall.stores].reverse()) { // cloning array before reversing it!
+    if (isShown(source.id)) {
+      const stream = StreamsUtils.storeToStream(source, {
+        children: [],
+        childrenHidden: true // To be discussed
+      });
+      if (atTheEnd) {
+        streams.push(stream)
+      } else {
+        streams.unshift(stream);
+      }
+    }
+  };
   return streams;
 }
 
@@ -423,8 +490,8 @@ exports.removeTrackingProperties = function (items) {
  */
 exports.validateAccountEvents = function (actualAccountEvents) {
   // get streams ids from the config that should be retrieved
-  let expectedAccountStreams = SystemStreamsSerializer.getReadableAccountStreamsForTests();
 
+  const expectedAccountStreams = SystemStreamsSerializer.getReadableAccountMapForTests();
   // iterate through expected account events and check that they exists in actual
   // account events
   const expectedSreamIds = Object.keys(expectedAccountStreams);
@@ -434,8 +501,8 @@ exports.validateAccountEvents = function (actualAccountEvents) {
       if (event.streamIds.includes(streamId)) {
         foundEvent = true;
         // validate that event is indexed/unique if needed
-        if (expectedAccountStreams[streamId].isUnique === true) {
-          assert.isTrue(event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE), `.unique streamId not found in ${event} for ${streamId}`);
+        if (expectedAccountStreams[streamId].isUnique) {
+          assert.isTrue(event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE), `":_system:unique" streamId not found in ${event} for ${streamId}`);
         }
         // validate type
         assert.equal(event.type, expectedAccountStreams[streamId].type, `type mismatch between ${event} and ${expectedAccountStreams[streamId]}`);

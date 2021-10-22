@@ -23,7 +23,7 @@ const url = require('url');
 const _ = require('lodash');
 const fs = require('fs');
 const os = require('os');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository, UserRepositoryOptions } = require('business/src/users');
 
 describe('auth', function() {
   this.timeout(5000);
@@ -94,7 +94,7 @@ describe('auth', function() {
               { name: authData.appId },
               null,
               function(err, access) {
-                access.modifiedBy.should.eql(UsersRepository.options.SYSTEM_USER_ACCESS_ID);
+                access.modifiedBy.should.eql(UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
                 stepDone();
               }
             );
@@ -342,7 +342,7 @@ describe('auth', function() {
           checkNoUnwantedCookie(res);
           should.exist(res.body.preferredLanguage);
           assert.strictEqual(res.body.preferredLanguage, user.language);
-
+          
           should.not.exist(res.body._private);
 
           done();
@@ -386,6 +386,9 @@ describe('auth', function() {
             maxsize: 500000,
             maxFiles: 50,
             json: false,
+            rotation: {
+              isActive: false
+            }
           },
         };
         server.ensureStarted.call(server, settings, stepDone);
@@ -409,13 +412,19 @@ describe('auth', function() {
                   stepDone();
                 });
             },
+            function givehalfSecondChance(stepDone) {
+              setTimeout(stepDone, 500);
+            },  
             function verifyHiddenPasswordInLogs(stepDone) {
               fs.readFile(logFilePath, 'utf8', function(err, data) {
                 if (err) {
                   return stepDone(err);
                 }
-                should(data.indexOf(wrongPasswordData.password)).be.equal(-1);
-                should(data.indexOf('"password":"(hidden password)"')).be.aboveOrEqual(0);
+                assert.isAbove(data.length, 10, 'Issue in configuration, logfile is empty. >> ' + logFilePath);
+                const passwordFound = data.indexOf(wrongPasswordData.password);
+                const hiddenPasswordFound = data.indexOf('"password":"(hidden password)"');
+                assert.equal(passwordFound, -1, 'password is present in logs when it should not. >> \n' + data);
+                assert.isAtLeast(hiddenPasswordFound, 0, 'log with hidden password not found.. >> \n' + data);
                 stepDone();
               });
             },

@@ -11,6 +11,9 @@ const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const Result = require('./Result');
 const _ = require('lodash');
+const { getConfigUnsafe } = require('@pryv/boiler');
+
+let audit, throwIfMethodIsNotDeclared, isOpenSource, isAuditActive;
 
 // When storing full events.get request instead of streaming it, the maximum
 // array size before returning an error.
@@ -29,7 +32,7 @@ type ApiFunction = string |
 export type ApiCallback = 
   (err: ?Error, result: ?Result) => mixed;
 
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 
 // Maps each API method's implementation as a chain of functions (akin to
 // middleware) to its id. Handles method calls coming from HTTP or web sockets.
@@ -40,10 +43,18 @@ class API {
   map: Map<string, Array<ApiFunction>>;
   
   filters: Array<Filter>;
+
   
   constructor() {
     this.map = new Map(); 
     this.filters = []; 
+    const config = getConfigUnsafe();
+    isOpenSource = config.get('openSource:isActive');
+    isAuditActive = (! isOpenSource) && config.get('audit:active');
+    if (isAuditActive) {
+      audit = require('audit');
+      throwIfMethodIsNotDeclared = require('audit/src/ApiMethods').throwIfMethodIsNotDeclared;
+    }
   }
   
   // -------------------------------------------------------------- registration
@@ -63,6 +74,8 @@ class API {
   // - `api.register('events.start', fn1, 'events.create', ...)`
   // 
   register(id: string, ...fns: Array<ApiFunction>) {
+    if (isAuditActive) throwIfMethodIsNotDeclared(id);
+
     const methodMap = this.map; 
     const wildcardAt = id.indexOf(WILDCARD);
     
@@ -81,7 +94,7 @@ class API {
       const idMethodFns = methodMap.get(id);
       if (idMethodFns == null) 
         throw new Error('AF: methodMap must contain id at this point.');
-      
+
       // append registered functions
       for (const fn of fns) {
         // Syntax allows strings in the function list, which means that the 
@@ -104,7 +117,6 @@ class API {
           idMethodFns.push(...backrefMethods);
         }
         else {
-          // assert: _.isFunction(fn)
           idMethodFns.push(fn);
         }
       }
@@ -162,31 +174,55 @@ class API {
 
   // ------------------------------------------------------------ handling calls
   
-  call(id: string, context: MethodContext, params: mixed, callback: ApiCallback) {
+  call(context: MethodContext, params: mixed, callback: ApiCallback) {
+    const methodId: string = context.methodId;
     const methodMap = this.map; 
-    const methodList = methodMap.get(id);
+    const methodList = methodMap.get(methodId);
+    
 
     if (methodList == null) 
-      return callback(errors.invalidMethod(id), null);
+      return callback(errors.invalidMethod(methodId), null);
+
     
-    // Instrument the context with the method that was called. 
-    if (context != null)
-      context.calledMethodId = id; 
-      
+    const tracing = context.tracing;
+    const tags = (context.username != null) ? {} : {username: context.username};
+    const apiSpanName = 'api:' + methodId;
+    tracing.startSpan(apiSpanName, tags);
+
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
+
+    let unanmedCount = 0;
     async.forEachSeries(methodList, function (currentFn, next) {
-      try {
-        currentFn(context, params, result, next);
-      } catch (err) {
+
+      // -- Tracing by Function
+      const fnName = 'fn:' + (currentFn.name || methodId + '.unamed' + unanmedCount++);
+      tracing.startSpan(fnName, {}, apiSpanName);
+      const nextCloseSpan = function(err) {
+        if (err != null) tracing.setError(fnName, err); 
+        tracing.finishSpan(fnName);
         next(err);
+      }
+      // --- 
+
+      try {
+        currentFn(context, params, result, nextCloseSpan);
+      } catch (err) {
+        nextCloseSpan(err);
       }
     }, function (err) {
       if (err != null) {
+        tracing.setError(apiSpanName, err);
+        tracing.finishSpan(apiSpanName);
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
       }
-      
+      if (isAuditActive) {
+        result.onEnd(async function() {
+          await audit.validApiCall(context, result);
+        });
+      }
+      tracing.finishSpan(apiSpanName);
       callback(null, result);
     });
   }
@@ -208,5 +244,3 @@ function matches(idFilter: string, id: string) {
   const filterWithoutWildcard = idFilter.slice(0, -1);
   return id.startsWith(filterWithoutWildcard);
 }
-
-

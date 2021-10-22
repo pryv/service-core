@@ -15,8 +15,6 @@ const { PendingUpdatesMap, PendingUpdate } = require('./pending_updates');
 const { Controller } = require('./controller');
 const { ErrorLogger } = require('./error_logger');
 
-const NatsPublisher = require('api-server/src/socket-io/nats_publisher');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
 
 import type { IMetadataUpdaterService, IUpdateRequests, IUpdateResponse, 
   IUpdateId, IPendingUpdate } from './interface';
@@ -40,9 +38,6 @@ class Service implements IMetadataUpdaterService {
   
   // Controller for work done in this service. 
   controller: Controller;
-
-  // <username, natspublisher>
-  socketIoNotifiers: Map<string, NatsPublisher>;
   
   constructor(db: StorageLayer, logger) {
     this.db = db;
@@ -75,22 +70,6 @@ class Service implements IMetadataUpdaterService {
     const runEachMs = 500;
     logger.info(`Will flush every ${runEachMs}ms.`);
     controller.runEach(runEachMs);
-  }
-
-  // execute this for each user when loading them in the cache
-  addApiSocketIoNotifier(username): void {
-    if (this.socketIoNotifiers == null) {
-      this.socketIoNotifiers = new Map();
-    }
-    this.socketIoNotifiers.set(username, new NatsPublisher(NATS_CONNECTION_URI,
-      (userName: string): string => { return `${userName}.sok1`; }
-    ));
-  }
-
-  // execute this to load send notification to api-server socket.io notifiers
-  notifySocketIo(username, message) {
-    const publisher = this.socketIoNotifiers.get(username);
-    publisher.deliver(username, message);
   }
   
   produceServiceImpl(): IMetadataUpdaterService {

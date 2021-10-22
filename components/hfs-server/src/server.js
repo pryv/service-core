@@ -16,11 +16,8 @@ const errorsMiddleware = require('./middleware/errors');
 const tracingMiddlewareFactory = require('./tracing/middleware/trace');
 const clsWrapFactory = require('./tracing/middleware/clsWrap');
 
-const { ProjectVersion } = require('middleware/src/project_version');
-
-
 const controllerFactory = require('./web/controller');
-const getAuth = require('../../middleware/src/getAuth');
+const getAuth = require('middleware/src/getAuth');
 
 const KEY_IP = 'http:ip';
 const KEY_PORT = 'http:port';  
@@ -124,15 +121,12 @@ class Server {
    * 
    * @return express application.
    */
-  setupExpress(): Promise<express$Application> {
+  async setupExpress(): Promise<express$Application> {
     const logger = this.logger;
     const config = this.config;
     const traceEnabled = config.get('trace:enable'); 
-    
-    const pv = new ProjectVersion(); 
-    const version = pv.version(); 
         
-    var app = express(); 
+    const app = express(); 
     
     app.disable('x-powered-by');
     
@@ -143,9 +137,9 @@ class Server {
     }
     app.use(middleware.subdomainToPath([]));
     app.use(middleware.requestTrace(express, logger));
-    app.use(bodyParser.json({ limit: '10mb' }));
+    app.use(bodyParser.json({ limit: config.get('uploads:maxSizeMb') + 'mb' }));
     app.use(middleware.override);
-    app.use(middleware.commonHeaders(version));
+    app.use(await middleware.commonHeaders());
     app.all('/*', getAuth);
     
     this.defineApplication(app); 

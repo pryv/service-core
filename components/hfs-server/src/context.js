@@ -54,7 +54,7 @@ class Context {
     this.config = config;
 
     this.configureTypeRepository(typeRepoUpdateUrl); 
-    this.configureMetadataCache(this.series, mongoConn, getLogger('model'));
+    this.configureMetadataCache(this.series, mongoConn, getLogger('business'));
   }
   
   configureTypeRepository(url: string) {

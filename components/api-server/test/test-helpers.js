@@ -28,16 +28,13 @@ after(async () => {
   await context.shutdown(); 
 });
 
-const { Database } = require('storage');
+const storage = require('storage');
 const { getConfig } = require('@pryv/boiler');
 const InfluxConnection = require('business/src/series/influx_connection');
 
 // Produces and returns a connection to MongoDB. 
 async function produceMongoConnection(): Promise<Database> {
-  const config = await getConfig();
-  const database = new Database(config.get('database')); 
-  
-  return database; 
+  return await storage.getDatabase(); 
 }
 
 function produceInfluxConnection(settings: any) {

@@ -24,7 +24,7 @@ describe('Metadata Loader', function () {
   let database, config, pryv;
   before(async function () {
     config = await getConfig();
-    database = new storage.Database(config.get('database')); 
+    database = await storage.getDatabase(); 
     pryv = databaseFixture(database);
   });
   

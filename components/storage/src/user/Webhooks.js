@@ -45,20 +45,21 @@ const indexes = [
 /**
  * Implementation.
  */
-Webhooks.prototype.getCollectionInfo = function (user) {
+Webhooks.prototype.getCollectionInfo = function (userOrUserId) {
+  const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'webhooks',
     indexes: indexes,
-    useUserId: user.id
+    useUserId: userId
   };
 };
 
 /**
  * Implementation.
  */
-Webhooks.prototype.delete = function (user, query, callback) {
+Webhooks.prototype.delete = function (userOrUserId, query, callback) {
   const update = {
-    $set: { deleted: new Date() },
+    $set: { deleted: Date.now() / 1000 },
     $unset: {
       accessId: 1,
       url: 1,
@@ -76,7 +77,7 @@ Webhooks.prototype.delete = function (user, query, callback) {
       modifiedBy: 1,
     },
   };
-  this.database.updateMany(this.getCollectionInfo(user),
+  this.database.updateMany(this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query), update, callback);
 };
 
@@ -87,11 +88,11 @@ Webhooks.prototype.delete = function (user, query, callback) {
  * @param {*} item 
  * @param {*} callback 
  */
-Webhooks.prototype.insertOne = function (user, webhook, callback) {
+Webhooks.prototype.insertOne = function (userOrUserId, webhook, callback) {
   let webhookToCreate = _.clone(webhook);
   if (webhookToCreate.deleted === undefined) webhookToCreate.deleted = null;
   this.database.insertOne(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyItemToDB(this.applyItemDefaults(webhookToCreate)),
     function (err) {
       if (err) {
@@ -105,13 +106,13 @@ Webhooks.prototype.insertOne = function (user, webhook, callback) {
 /**
  * Inserts an array of webhooks; each item must have a valid id and data already. For tests only.
  */
-Webhooks.prototype.insertMany = function (user, webhooks, callback) {
+Webhooks.prototype.insertMany = function (userOrUserId, webhooks, callback) {
   const webhooksToCreate = webhooks.map((w) => {
     if (w.deleted === undefined) return _.assign({ deleted: null }, w);
     return w;
   });
   this.database.insertMany(
-    this.getCollectionInfo(user),
+    this.getCollectionInfo(userOrUserId),
     this.applyItemsToDB(webhooksToCreate),
     callback
   );

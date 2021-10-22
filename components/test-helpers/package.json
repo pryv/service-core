@@ -8,7 +8,10 @@
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
   "main": "./src/index.js",
   "scripts": {
-    "dump-test-data": "node scripts/dump-test-data",
+    "dump-test-data": "NODE_ENV=development node scripts/dump-test-data",
     "restore-test-data": "node scripts/restore-test-data"
+  },
+  "dependencies": {
+    "msgpack5": "^3.6.1"
   }
 }

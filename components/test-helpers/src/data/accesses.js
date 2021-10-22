@@ -105,52 +105,6 @@ module.exports = [
     id: 'a_5',
     token: 'a_5_token',
     apiEndpoint: 'https://a_5_token@userzero.pryv.me/',
-    name: 'app-with-just-tag-permissions',
-    type: 'app',
-    permissions: [
-      {
-        tag: 'super',
-        level: 'contribute'
-      },
-      {
-        tag: 'fragilistic',
-        level: 'read'
-      }
-    ],
-    created: timestamp.now(),
-    createdBy: 'test',
-    modified: timestamp.now(),
-    modifiedBy: 'test',
-    lastUsed: 0,
-    calls: {}
-  },
-  {
-    id: 'a_6',
-    token: 'a_6_token',
-    apiEndpoint: 'https://a_6_token@userzero.pryv.me/',
-    name: 'app-with-both-stream-and-tag-permissions',
-    type: 'app',
-    permissions: [
-      {
-        streamId: streams[0].id,
-        level: 'contribute'
-      },
-      {
-        tag: 'fragilistic',
-        level: 'read'
-      }
-    ],
-    created: timestamp.now(),
-    createdBy: 'test',
-    modified: timestamp.now(),
-    modifiedBy: 'test',
-    lastUsed: 0,
-    calls: {}
-  },
-  {
-    id: 'a_7',
-    token: 'a_7_token',
-    apiEndpoint: 'https://a_7_token@userzero.pryv.me/',
     name: 'deleted shared (should expire)',
     type: 'shared',
     permissions: [

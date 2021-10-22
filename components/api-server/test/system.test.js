@@ -28,7 +28,7 @@ const validation = helpers.validation;
 const encryption = require('utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const charlatan = require('charlatan');
@@ -94,13 +94,13 @@ describe('system route', function () {
         .set('authorization', config.get('auth:adminAccessKey'));
       profileRes = await server.request().get(profilePath).set('authorization', token);
     });
-    if('should return 204', () => {
+    it('[1V4D] should return 204', () => {
       assert.equal(res.status, 204);
     });
-    it('should delete the user\'s "mfa" profile property', async () => {
+    it('[3HE9] should delete the user\'s "mfa" profile property', async () => {
       assert.isUndefined(profileRes.body.profile.mfa);
     });
-    it('should not delete anything else in the profile', () => {
+    it('[I2PU] should not delete anything else in the profile', () => {
       assert.deepEqual(profileRes.body.profile.restOfProfile, restOfProfile);
     });
   });
@@ -174,11 +174,10 @@ describe('system (ex-register)', function () {
           execute: function () {
             require('nock')(this.context.url)
               .post('')
-              .reply(200, function (uri, requestBody) {
-                var body = JSON.parse(requestBody);
+              .reply(200, function (uri, body) {
                 body.message.global_merge_vars[0].content.should.be.equal('mr-dupotager');
                 body.template_name.should.match(/welcome/);
-                this.context.messagingSocket.emit('mail-sent1');
+                this.context.testNotifier.emit('mail-sent1');
               }.bind(this));
           }
         });
@@ -188,7 +187,7 @@ describe('system (ex-register)', function () {
         });
         await (new Promise(server.ensureStarted.bind(server, settings)));
 
-        const usersRepository = new UsersRepository(storage);
+        const usersRepository = await getUsersRepository(); 
         const originalUsers = await usersRepository.getAll();
 
         originalCount = originalUsers.length;
@@ -198,6 +197,7 @@ describe('system (ex-register)', function () {
           status: 201,
           schema: methodsSchema.createUser.result
         });
+        await new Promise(r => setTimeout(r, 1000));
         mailSent.should.eql(true);
 
         // getUpdatedUsers
@@ -212,7 +212,7 @@ describe('system (ex-register)', function () {
         validation.checkStoredItem(actual.getAccountWithId(), 'user');
         // password hash is not retrieved with getAll
         delete expected.passwordHash;
-        actual.getAccount().should.eql(expected);
+        actual.getReadableAccount().should.eql(expected);
       });
     });
     
@@ -236,7 +236,7 @@ describe('system (ex-register)', function () {
         execute: function () {
           require('nock')(this.context.url).post(this.context.sendMessagePath)
             .reply(200, function () {
-              this.context.messagingSocket.emit('mail-sent2');
+              this.context.testNotifier.emit('mail-sent2');
             }.bind(this));
         }
       });
@@ -285,7 +285,7 @@ describe('system (ex-register)', function () {
 
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
-          const usersRepository = new UsersRepository(storage);
+          const usersRepository = await getUsersRepository(); 
           originalUsers = await usersRepository.getAll();
           originalCount = originalUsers.length;
 
@@ -537,7 +537,7 @@ describe('system (ex-register)', function () {
 
     before(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
-    it('[9C1A] must return user information (including time of last account use)', function (done) {
+    it('[9C1A] trackingFunctions must return user information (including time of last account use)', function (done) {
       var originalInfo,
           expectedTime;
       async.series([

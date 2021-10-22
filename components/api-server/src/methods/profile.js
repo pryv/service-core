@@ -9,15 +9,17 @@ var errors = require('errors').factory,
     commonFns = require('./helpers/commonFunctions'),
     methodsSchema = require('../schema/profileMethods');
 
+const { getStorageLayer } = require('storage');
+
 /**
  * Profile methods implementation.
  * TODO: add change notifications
  *
  * @param api
- * @param userProfileStorage
  */
-module.exports = function (api, userProfileStorage) {
-
+module.exports = async function (api) {
+  const storageLayer = await getStorageLayer();
+  const userProfileStorage = storageLayer.profile;
   // RETRIEVAL / CREATION
 
   api.register('profile.getPublic',
@@ -36,7 +38,7 @@ module.exports = function (api, userProfileStorage) {
     getProfile);
 
   api.register('profile.get',
-    commonFns.requirePersonalAccess,
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.get.params),
     getProfile);
 
@@ -56,7 +58,7 @@ module.exports = function (api, userProfileStorage) {
     updateProfile);
 
   api.register('profile.update',
-    commonFns.requirePersonalAccess,
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.update.params),
     updateProfile);
 

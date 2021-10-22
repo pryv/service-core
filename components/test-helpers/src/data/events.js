@@ -4,9 +4,10 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var streams = require('./streams'),
-    timestamp = require('unix-timestamp');
-
+const streams = require('./streams');
+const timestamp = require('unix-timestamp');
+const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { integrity } = require('business');
 
 
 const events =  [
@@ -268,6 +269,7 @@ const events =  [
     streamId: streams[7].id,
     time: timestamp.now('3h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'trashed event used to simplify deletion tests.',
     trashed: true,
     created: timestamp.now('-2h'),
@@ -281,6 +283,7 @@ const events =  [
     streamId: streams[7].id,
     time: timestamp.now('2h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'trashed event used to simplify deletion tests.',
     trashed: true,
     created: timestamp.now('-2h'),
@@ -294,6 +297,7 @@ const events =  [
     streamId: streams[7].id,
     time: timestamp.now('1h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'trashed event used to simplify deletion tests.',
     trashed: true,
     created: timestamp.now('-2h'),
@@ -306,6 +310,7 @@ const events =  [
     streamId: streams[7].id,
     time: timestamp.now('+43h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'simple event with nothing special A',
     created: timestamp.now('-1h'),
     createdBy: 'test',
@@ -343,6 +348,7 @@ const events =  [
     streamId: streams[7].children[0].id,
     time: timestamp.now('+41h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'simple event with nothing special B',
     created: timestamp.now('-1h'),
     createdBy: 'test',
@@ -355,6 +361,7 @@ const events =  [
     streamId: streams[7].children[0].id,
     time: timestamp.now('+41h'),
     type: 'activity/pryv',
+    tags: [],
     description: 'simple event with nothing special - original version',
     created: timestamp.now('-1h'),
     createdBy: 'test',
@@ -366,6 +373,7 @@ const events =  [
     streamId: streams[8].id,
     time: 0,
     type: 'note/txt',
+    tags: [],
     content: 'I am a simple event with time 0',
     description: 'simple event with time 0',
     created: 0,
@@ -379,6 +387,13 @@ const events =  [
     event.streamIds = [event.streamId];
     delete event.streamId;
   }
+  if (event.tags != null) {
+    for (const tag of event.tags) {
+      event.streamIds.push(TAG_PREFIX + tag);
+    }
+    // tags are deleted in resetEvents(), just before writing the fixtures in MongoDB
+  }
+  integrity.events.set(event);
   return event;
 });
 

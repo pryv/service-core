@@ -19,8 +19,8 @@ const storage = require('storage');
 
 const Webhook = require('business').webhooks.Webhook;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
+const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
 class Context {
   databaseConn: storage.Database; 
@@ -113,7 +113,6 @@ class GenericChildHolder<T: ChildResource> {
   // 
   create<U: T>(resource: U, cb?: (U) => mixed): Promise<U> {
     const name = resource.constructor.name;
-    logger.debug('create', name, resource.attrs);
     
     const createdResource = resource.create();
     this.pending.push(createdResource);
@@ -121,9 +120,7 @@ class GenericChildHolder<T: ChildResource> {
     return createdResource
       .then(() => {
         this.push(resource);
-        logger.debug(name, 'entering cb');
         if (cb) cb(resource);
-        logger.debug(name, 'leaving cb, has ', this.pending.length, 'pending.');
           
         return bluebird.all(resource.childs.pending); 
       })
@@ -216,11 +213,26 @@ class Fixture {
   // this in an afterEach function to ensure that the database is clean after
   // running tests. 
   //
-  clean(): Promise<mixed> {
-    return this.childs.all(
+  async clean(): Promise<mixed> {
+    let errorIntegrity;
+    try {
+      // check integrity before reset--- This could trigger error related to previous test
+      await integrityFinalCheck.all();
+    } catch (e) {
+      errorIntegrity = e; // keep it for later
+    }
+
+    // clean data anyway
+    const done = await this.childs.all(
       (child) => {
         return child.remove();
       });
+
+    if (errorIntegrity) {
+      console.log(errorIntegrity);
+      //throw(errorIntegrity);
+    }
+    return done;
   }
 }
 
@@ -276,8 +288,8 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   async createUser (): Object<mixed> {
     const db = this.db;
     const attributes = this.attrs;
-    const usersRepository = new UsersRepository(db.events);
-    let userObj: User = new User(attributes);
+    const usersRepository = await getUsersRepository(); 
+    const userObj: User = new User(attributes);
     await usersRepository.insertOne(userObj);
     return this.attrs;
   }
@@ -298,7 +310,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     //const removeUser = bluebird.fromCallback((cb) => 
     //  db.users.removeOne(user, {username: username}, cb));
     // get streams ids from the config that should be deleted
-    const accountStreams = SystemStreamsSerializer.getAllAccountStreams();
+    const accountStreams = SystemStreamsSerializer.getAccountMap();
     const removeUser = bluebird.fromCallback((cb) => {
       db.events.removeMany(this.context.user, {
         $and:[
@@ -496,7 +508,7 @@ class FixtureSession extends FixtureTreeNode implements ChildResource {
       _id: generateId(), 
       expires: getNewExpirationDate(), 
       data: {
-        username: this.context.userName, 
+        username: this.context.user.username, 
         appId: Charlatan.App.name(), 
       },
     };

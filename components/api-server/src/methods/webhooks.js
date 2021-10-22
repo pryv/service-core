@@ -18,14 +18,12 @@ const methodsSchema = require('../schema/webhooksMethods');
 const Webhook = require('business').webhooks.Webhook;
 const WebhooksRepository = require('business').webhooks.Repository;
 
-const NatsPublisher = require('../socket-io/nats_publisher');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
-const NATS_WEBHOOKS_CREATE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_CREATE;
-const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_ACTIVATE;
-const NATS_WEBHOOKS_DELETE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_DELETE;
+const { pubsub } = require('messages');
+const { getLogger, getConfig} = require('@pryv/boiler');
+const { getStorageLayer } = require('storage');
 
 import type { StorageLayer } from 'storage';
-import type { MethodContext } from 'model';
+import type { MethodContext } from 'business';
 
 import type API  from '../API';
 import type { ApiCallback }  from '../API';
@@ -41,19 +39,18 @@ export type WebhooksSettingsHolder = {
 
 type Access = {
   id: string,
-  isApp(): boolean,
-  isPersonal(): boolean,
+  isApp(): Boolean
 };
 
-module.exports = function produceWebhooksApiMethods(
-  api: API,
-  logger,
-  wehbooksSettings: WebhooksSettingsHolder,
-  storageLayer: StorageLayer) {
+module.exports = async function produceWebhooksApiMethods(api: API)
+{
+  const config = await getConfig();
+  const wehbooksSettings = config.get('webhooks');
+  const storageLayer = await getStorageLayer();
+  const logger = getLogger('methods:webhooks');
 
-  const webhooksRepository: WebhooksRepository = new WebhooksRepository(storageLayer.webhooks);
-  const natsPublisher: NatsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
-
+  const webhooksRepository: WebhooksRepository = new WebhooksRepository(storageLayer.webhooks, storageLayer.events);
+  
   // RETRIEVAL
 
   api.register('webhooks.get',
@@ -105,25 +102,11 @@ module.exports = function produceWebhooksApiMethods(
   // CREATION
 
   api.register('webhooks.create',
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.create.params),
-    forbidPersonalAccess,
     createWebhook,
     bootWebhook,
   );
-
-  function forbidPersonalAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const currentAccess: Access = context.access;
-
-    if (currentAccess == null) {
-      return next(new Error('AF: Access cannot be null at this point.'));
-    }
-    if (currentAccess.isPersonal()) {
-      return next(errors.forbidden(
-        'Personal Accesses cannot create Webhooks. Please use an App Access.'
-      ));
-    }
-    next();
-  }
 
   async function createWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
     context.initTrackingProperties(params);
@@ -152,7 +135,7 @@ module.exports = function produceWebhooksApiMethods(
   }
 
   async function bootWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
-    natsPublisher.deliver(NATS_WEBHOOKS_CREATE_CHANNEL, _.extend(
+    pubsub.webhooks.emit(pubsub.WEBHOOKS_CREATE, _.extend(
       { username: context.user.username }, 
       { webhook: result.webhook })
     );
@@ -207,7 +190,7 @@ module.exports = function produceWebhooksApiMethods(
   }
 
   async function reactivateWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
-    natsPublisher.deliver(NATS_WEBHOOKS_ACTIVATE_CHANNEL, _.extend(
+    pubsub.webhooks.emit(pubsub.WEBHOOKS_ACTIVATE, _.extend(
       { username: context.user.username }, 
       { webhook: result.webhook })
     );
@@ -253,7 +236,7 @@ module.exports = function produceWebhooksApiMethods(
   async function turnOffWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
     const username: string = context.user.username;
     const webhookId: string = params.id;
-    natsPublisher.deliver(NATS_WEBHOOKS_DELETE_CHANNEL, {
+    pubsub.webhooks.emit(pubsub.WEBHOOKS_DELETE, {
       username: username,
       webhook: {
         id: webhookId,

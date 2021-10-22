@@ -18,11 +18,15 @@ const settings = _.cloneDeep(helpers.dependencies.settings);
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
+const { getConfig } = require('@pryv/boiler');
+let isAuditActive = true;
 
 describe('permissions create-only level', () => {
   let mongoFixtures;
   before(async function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
+    const config = await getConfig();
+    isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
   });
   after(() => {
     mongoFixtures.clean();
@@ -31,7 +35,7 @@ describe('permissions create-only level', () => {
   let user,
       username,
       streamParentId,
-      createOnlyStreamId,
+      streamCreateOnlyId,
       streamOutId,
       readAccessId,
       createOnlyToken,
@@ -39,6 +43,7 @@ describe('permissions create-only level', () => {
       coWithContributeParentToken,
       masterToken,
       createOnlyEventId,
+      streamParentIdAndCreateOnlyEventId,
       eventOutId;
 
   before(() => {
@@ -49,9 +54,10 @@ describe('permissions create-only level', () => {
     coWithContributeParentToken = cuid();
     masterToken = cuid();
     streamParentId = cuid();
-    createOnlyStreamId = cuid();
+    streamCreateOnlyId = cuid();
     streamOutId = cuid();
     createOnlyEventId = cuid();
+    streamParentIdAndCreateOnlyEventId = cuid();
     eventOutId = cuid();
   });
 
@@ -69,9 +75,9 @@ describe('permissions create-only level', () => {
       id: streamParentId,
       name: 'Does not matter at all'
     });
-    const createOnlyStream = await user.stream({
+    const streamCreateOnly = await user.stream({
       parentId: streamParentId,
-      id: createOnlyStreamId,
+      id: streamCreateOnlyId,
       name: 'Does not matter',
       singleActivity: true
     });
@@ -84,7 +90,7 @@ describe('permissions create-only level', () => {
       id: readAccessId,
       permissions: [
         {
-          streamId: createOnlyStreamId,
+          streamId: streamCreateOnlyId,
           level: 'read'
         }
       ]
@@ -94,7 +100,7 @@ describe('permissions create-only level', () => {
       token: createOnlyToken,
       permissions: [
         {
-          streamId: createOnlyStreamId,
+          streamId: streamCreateOnlyId,
           level: 'create-only'
         }
       ]
@@ -104,7 +110,7 @@ describe('permissions create-only level', () => {
       token: coWithReadParentToken,
       permissions: [
         {
-          streamId: createOnlyStreamId,
+          streamId: streamCreateOnlyId,
           level: 'create-only'
         },
         {
@@ -118,7 +124,7 @@ describe('permissions create-only level', () => {
       token: coWithContributeParentToken,
       permissions: [
         {
-          streamId: createOnlyStreamId,
+          streamId: streamCreateOnlyId,
           level: 'create-only'
         },
         {
@@ -138,7 +144,11 @@ describe('permissions create-only level', () => {
       ]
     });
     await streamParent.event();
-    await createOnlyStream.event({
+    await user.event({
+      id: streamParentIdAndCreateOnlyEventId,
+      streamIds: [streamParentId, streamCreateOnlyId]
+    });
+    await streamCreateOnly.event({
       id: createOnlyEventId,
       duration: null
     });
@@ -160,7 +170,7 @@ describe('permissions create-only level', () => {
     describe('Accesses', function () {
       describe('GET /', function () {
 
-        describe('when using an access with a "create-only" permissions', async function () {
+        describe('when using an access with a "create-only" permissions', function () {
   
           let accesses;
           before(async function () {
@@ -178,29 +188,6 @@ describe('permissions create-only level', () => {
 
       describe('POST /', function () {
 
-        describe('when using an access with a "manage" permission', function () {          
-          it('[IBXP] should forbid to create accesses with "create-only" permissions for tags', async function () {
-            const res = await server
-              .request()
-              .post(basePath)
-              .set('Authorization', masterToken)
-              .send({
-                type: 'shared',
-                name: 'whatever',
-                permissions: [
-                  {
-                    tag: 'whatever',
-                    level: 'create-only'
-                  }
-                ]
-              });
-            const error = res.body.error;
-            assert.exists(error);
-            assert.equal(res.status, 403);
-            assert.notExists(res.body.access);
-          });
-        });
-
         describe('when using an access with a "create-only" permission', function () {
   
           it('[X4Z1] should allow to create an access with a "create-only" permissions', async function () {
@@ -211,7 +198,7 @@ describe('permissions create-only level', () => {
                 type: 'shared',
                 name: 'whatever',
                 permissions: [{
-                  streamId: createOnlyStreamId,
+                  streamId: streamCreateOnlyId,
                   level: 'create-only',
                 }]
               });
@@ -228,7 +215,7 @@ describe('permissions create-only level', () => {
                 name: charlatan.App.name(),
                 permissions: [
                   {
-                    streamId: createOnlyStreamId,
+                    streamId: streamCreateOnlyId,
                     level: 'read'
                   }
                 ]
@@ -247,7 +234,7 @@ describe('permissions create-only level', () => {
                 name: charlatan.App.name(),
                 permissions: [
                   {
-                    streamId: createOnlyStreamId,
+                    streamId: streamCreateOnlyId,
                     level: 'contribute'
                   }
                 ]
@@ -266,7 +253,7 @@ describe('permissions create-only level', () => {
                 name: charlatan.App.name(),
                 permissions: [
                   {
-                    streamId: createOnlyStreamId,
+                    streamId: streamCreateOnlyId,
                     level: 'manage'
                   }
                 ]
@@ -318,7 +305,7 @@ describe('permissions create-only level', () => {
     describe('GET /', function() {
       it('[CKF3] should return an error list when fetching explicitly "create-only" streams', async function() {
         const query = {
-          streams: [createOnlyStreamId]
+          streams: [streamCreateOnlyId]
         };
 
         const res = await server
@@ -330,24 +317,28 @@ describe('permissions create-only level', () => {
         assert.equal(res.body.error.id, 'forbidden');
       });
 
-      it('[V4KJ] should return events when fetching "create-only" streams that are children of "read" streams', async function() {
-        // TODO return empty list on v2
+      it('[V4KJ] should not return events when fetching "create-only" streams that are children of "read" streams', async function() {
         const res = await server
           .request()
           .get(basePath)
           .set('Authorization', coWithReadParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 1);      
+        assert.equal(events.length, 1); 
+        for (const event of events) {
+          assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
+        }     
       });
 
-      it('[SYRW] should return events when fetching "create-only" streams that are children of "contribute" streams', async function() {
-        // TODO return empty list on v2
+      it('[SYRW] should not return events when fetching "create-only" streams that are children of "contribute" streams', async function() {
         const res = await server
           .request()
           .get(basePath)
           .set('Authorization', coWithContributeParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 1);
+        assert.equal(events.length, 1); 
+        for (let event of events) {
+          assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
+        }  
       });
     });
 
@@ -379,7 +370,7 @@ describe('permissions create-only level', () => {
       it('[F406] should allow creating events for "create-only" streams', async function() {
         const params = {
           type: 'test/test',
-          streamId: createOnlyStreamId
+          streamId: streamCreateOnlyId
         };
         const res = await server
           .request()
@@ -420,16 +411,6 @@ describe('permissions create-only level', () => {
       // because they are covered by the GET above
     });
 
-    describe('POST /stop', function () {
-      it.skip('[6VJF] should not allow stopping events for "create-only" streams', async function () {
-         const res = await server
-          .request()
-          .post(`${basePath}/stop`)
-          .set('Authorization', createOnlyToken)
-          .send({ id: createOnlyEventId });
-        assert.equal(res.status, 403);
-      });
-    });
 
     describe('attachments', function () {
 
@@ -439,7 +420,7 @@ describe('permissions create-only level', () => {
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .field('event', JSON.stringify({
-            streamId: createOnlyStreamId,
+            streamId: streamCreateOnlyId,
             type: 'picture/attached',
           }))
           .attach('document', testData.attachments.document.path,
@@ -512,9 +493,9 @@ describe('permissions create-only level', () => {
           .set('Authorization', createOnlyToken)
           .query({ state: 'all' });
         const streams = res.body.streams;
-        assert.equal(streams.length, 1);
+        assert.equal(streams.length, isAuditActive ? 2 : 1);
         const stream = streams[0];
-        assert.equal(stream.id, createOnlyStreamId);
+        assert.equal(stream.id, streamCreateOnlyId);
       });
     });
 
@@ -522,7 +503,7 @@ describe('permissions create-only level', () => {
       it('[TFWF] should forbid creating child streams in "create-only" streams', async function () {
         const data = {
           name: charlatan.Lorem.word(),
-          parentId: createOnlyStreamId
+          parentId: streamCreateOnlyId
         };
         const res = await server
           .request()
@@ -537,7 +518,7 @@ describe('permissions create-only level', () => {
       it('[PCO8] should forbid updating "create-only" streams', async function () {
         const res = await server
           .request()
-          .put(reqPath(createOnlyStreamId))
+          .put(reqPath(streamCreateOnlyId))
           .set('Authorization', createOnlyToken)
           .send({ name: charlatan.Lorem.word() });
         assert.equal(res.status, 403);
@@ -548,7 +529,7 @@ describe('permissions create-only level', () => {
       it('[PCO9] should forbid deleting "create-only" streams', async function () {
         const res = await server
           .request()
-          .del(reqPath(createOnlyStreamId))
+          .del(reqPath(streamCreateOnlyId))
           .set('Authorization', createOnlyToken);
         assert.equal(res.status, 403);
       });

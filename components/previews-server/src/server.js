@@ -20,7 +20,7 @@ const {getConfig, getLogger } = require('@pryv/boiler').init({
     scope: 'defaults-paths',
     file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
   }, {
-    plugin: require('../../api-server/config/components/systemStreams')
+    plugin: require('api-server/config/components/systemStreams')
   }]
 });
 
@@ -30,10 +30,9 @@ const http = require('http');
 const middleware = require('middleware');
 const storage = require('storage');
 const utils = require('utils');
+const { axonMessaging } = require('messages');
 
 const ExtensionLoader = utils.extension.ExtensionLoader;
-
-const { ProjectVersion } = require('middleware/src/project_version');
 
 import type { Extension } from 'utils';
 
@@ -62,14 +61,9 @@ async function start() {
 
   const logger = getLogger('server');
 
-  const database = new storage.Database(
-    config.get('database'), getLogger('database'));
+  const database = await storage.getDatabase();
 
-  const storageLayer = new storage.StorageLayer(
-    database, logger,
-    config.get('eventFiles:attachmentsDirPath'),
-    config.get('eventFiles:previewsDirPath'),
-    10, config.get('auth:sessionMaxAge'));
+  const storageLayer = await storage.getStorageLayer();
 
   const initContextMiddleware = middleware.initContext(
     storageLayer,
@@ -78,11 +72,8 @@ async function start() {
   const loadAccessMiddleware = middleware.loadAccess(
     storageLayer);
 
-  const pv = new ProjectVersion();
-  const version = pv.version();
-
   const { expressApp, routesDefined } = require('./expressApp')(
-    middleware.commonHeaders(version), 
+    await middleware.commonHeaders(), 
     require('./middleware/errors')(logger), 
     middleware.requestTrace(null, logger));
 
@@ -99,30 +90,22 @@ async function start() {
   module.exports = server;
 
   // Go
+  const testNotifier = await axonMessaging.getTestNotifier();
 
-  utils.messaging.openPubSocket(config.get('tcpMessaging'), function (err, pubSocket) {
-    if (err) {
-      logger.error('Error setting up TCP pub socket: ' + err);
-      process.exit(1);
-    }
-    logger.info('TCP pub socket ready on ' + config.get('tcpMessaging:host') + ':' +
-      config.get('tcpMessaging:port'));
+  database.waitForConnection(function () {
+    const backlog = 512;
+    server.listen(config.get('http:port'), config.get('http:ip'), backlog, function () {
+      var address = server.address();
+      var protocol = server.key ? 'https' : 'http';
+      server.url = protocol + '://' + address.address + ':' + address.port;
+      const infostr =  'Preview server v' + require('../package.json').version +
+      ' [' + expressApp.settings.env + '] listening on ' + server.url;
+      logger.info(infostr);
 
-    database.waitForConnection(function () {
-      const backlog = 512;
-      server.listen(config.get('http:port'), config.get('http:ip'), backlog, function () {
-        var address = server.address();
-        var protocol = server.key ? 'https' : 'http';
-        server.url = protocol + '://' + address.address + ':' + address.port;
-        const infostr =  'Preview server v' + require('../package.json').version +
-        ' [' + expressApp.settings.env + '] listening on ' + server.url;
-        logger.info(infostr);
-
-        // all right
-        logger.debug(infostr)
-        logger.info('Server ready');
-        pubSocket.emit('server-ready');
-      });
+      // all right
+      logger.debug(infostr)
+      logger.info('Server ready');
+      testNotifier.emit('axon-server-ready');
     });
   });
 
@@ -141,6 +124,6 @@ const loggerLaunch = getLogger('launch');
 // And now:
 start()
   .catch(err => {
-    loggerLaunch.error(err); // eslint-disable-line no-console
+    loggerLaunch.error(err, err); // eslint-disable-line no-console
   });
 

@@ -18,6 +18,8 @@ const should = require('should');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
 
+const { integrity } = require('business');
+
 import type Request  from './helpers';
 
 describe('accesses (app)', function () {
@@ -58,10 +60,6 @@ describe('accesses (app)', function () {
             streamId: testData.streams[1].id,
             level: 'contribute'
           },
-          {
-            tag: 'super',
-            level: 'contribute'
-          }
         ],
         created: timestamp.now(),
         createdBy: 'test',
@@ -78,10 +76,6 @@ describe('accesses (app)', function () {
             streamId: testData.streams[0].id,
             level: 'read'
           },
-          {
-            tag: 'super',
-            level: 'read'
-          }
         ],
         created: timestamp.now(),
         createdBy: 'test',
@@ -98,10 +92,6 @@ describe('accesses (app)', function () {
             streamId: testData.streams[0].children[0].id,
             level: 'read'
           },
-          {
-            tag: 'super',
-            level: 'read'
-          }
         ],
         created: timestamp.now(),
         createdBy: 'app_A',
@@ -146,6 +136,7 @@ describe('accesses (app)', function () {
     
     additionalTestAccesses.map((a) => {
       a.apiEndpoint = buildApiEndpoint(user.username, a.token);
+      integrity.accesses.set(a);
     });
 
 
@@ -153,7 +144,7 @@ describe('accesses (app)', function () {
     basePath = '/' + user.username + '/accesses';
     
     // to verify data change notifications
-    server.on('accesses-changed', function () { accessesNotifCount++; });
+    server.on('axon-accesses-changed', function () { accessesNotifCount++; });
   });
 
   function path(id) {
@@ -211,10 +202,6 @@ describe('accesses (app)', function () {
             defaultName: 'Should be ignored',
             name: 'Should be ignored'
           },
-          {
-            tag: 'super',
-            level: 'read'
-          }
         ]
       };
       req().post(basePath, access.token).send(data).end(function (res) {
@@ -230,6 +217,11 @@ describe('accesses (app)', function () {
         expected.type = 'shared';
         delete expected.permissions[0].defaultName;
         delete expected.permissions[0].name;
+        expected.created = res.body.access.created;
+        expected.createdBy = res.body.access.createdBy;
+        expected.modified = res.body.access.modified;
+        expected.modifiedBy = res.body.access.modifiedBy;
+        integrity.accesses.set(expected);
         validation.checkObjectEquality(res.body.access, expected);
 
         should(accessesNotifCount).be.eql(1, 'accesses notifications');

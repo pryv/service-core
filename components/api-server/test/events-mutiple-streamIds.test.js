@@ -15,6 +15,7 @@ const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
+const { integrity } = require('business');
 
 const helpers = require('./helpers');
 const validation = helpers.validation;
@@ -214,7 +215,7 @@ describe('events.streamIds', function () {
         assert.equal(err.id, ErrorIds.InvalidOperation);
       });
 
-      describe('when using "streamId"', async function () {
+      describe('when using "streamId"', function () {
         it('[1YUV] must return streamIds & streamId', async function () {
           const res = await server.request()
             .post(basePathEvent)
@@ -231,7 +232,7 @@ describe('events.streamIds', function () {
         });
       });
 
-      describe('when using "streamIds"', async function () {
+      describe('when using "streamIds"', function () {
         it('[VXMG] must return streamIds & streamId containing the first one', async function () {
           const res = await server.request()
             .post(basePathEvent)
@@ -486,7 +487,7 @@ describe('events.streamIds', function () {
 
     });
 
-    describe('GET /events/:id/:fileId', () => {
+    describe('GET /events/:id/:fileId -- attachments', () => {
       
       let userId, streamId, event,
           appToken, appReadToken, 
@@ -556,6 +557,19 @@ describe('events.streamIds', function () {
         const retrievedAttachment = res.body;
         assert.exists(retrievedAttachment);
       });
+
+      it('[6YFZ] should retrieve the attachment with the app token correct headers', async () => {
+        const res = await server.request()
+          .get(path(`events/${event.id}/${event.attachments[0].id}`))
+          .set('Authorization', appToken);
+        if (integrity.attachments.isActive) {
+          assert.equal(res.headers.digest, 'SHA-256=' + event.attachments[0].integrity.split('-')[1]);
+        }
+        assert.equal(res.headers['content-disposition'], 'attachment; filename="'+ event.attachments[0].fileName +'"');
+        assert.equal(res.headers['content-length'],event.attachments[0].size);
+        assert.equal(res.headers['content-type'], event.attachments[0].type);
+      }); 
+
       it('[NH1O] should retrieve the attachment with the shared access readToken', async () => {
         const res = await server.request()
           .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${appReadToken}`))

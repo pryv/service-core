@@ -10,9 +10,7 @@ const bluebird = require('bluebird');
 const _ = require('lodash');
 
 const Webhook = require('./Webhook');
-const WebhooksStorage = require('storage').StorageLayer.webhooks;
-const UserEventsStorage = require('storage').StorageLayer.events;
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository } = require('business/src/users');
 
 /** 
  * Repository of all Webhooks in this Pryv.io instance. 
@@ -20,12 +18,10 @@ const UsersRepository = require('business/src/users/repository');
 class Repository {
   storage: WebhooksStorage;
   userEventsStorage: UserEventsStorage;
-  usersRepository: UsersRepository;
 
   constructor (webhooksStorage: WebhooksStorage, userEventsStorage: UserEventsStorage) {
     this.storage = webhooksStorage;
     this.userEventsStorage = userEventsStorage;
-    this.usersRepository = new UsersRepository(this.userEventsStorage);
   }
 
   /**
@@ -33,8 +29,8 @@ class Repository {
    */
   async getAll(): Promise<Map<string, Array<Webhook>>> {
     let users;
-    
-    users = await this.usersRepository.getAllUsernames();
+    const usersRepository = await getUsersRepository(); 
+    users = await usersRepository.getAllUsernames();
     const allWebhooks = new Map();
     
     await bluebird.all(users.map(retrieveWebhooks, this));

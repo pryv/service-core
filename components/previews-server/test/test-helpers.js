@@ -10,4 +10,4 @@
 
 process.env.NODE_ENV = 'test';
 
-require('../../test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');

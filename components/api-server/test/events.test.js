@@ -28,6 +28,8 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const supertest = require('supertest');
+const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { integrity } = require('business');
 
 require('date-utils');
 
@@ -47,7 +49,7 @@ describe('events', function () {
 
   // to verify data change notifications
   var eventsNotifCount;
-  server.on('events-changed', function () { eventsNotifCount++; });
+  server.on('axon-events-changed', function () { eventsNotifCount++; });
 
   before(function (done) {
     async.series([
@@ -228,6 +230,19 @@ describe('events', function () {
         res.body.events.should.containEql(testData.events[8]); // activity/test
         res.body.events.should.containEql(testData.events[9]); // activity/pryv
         done();
+      });
+    });
+
+    it('[4TWI] must refuse unsupported event types', function (done) {
+      var params = {
+        types: ['activity/asd asd'],
+        state: 'all'
+      };
+      request.get(basePath).query(params).end(function (res) {
+        validation.check(res, {
+          status: 400,
+          id: ErrorIds.invalidParametersFormat
+        }, done);
       });
     });
 
@@ -451,31 +466,12 @@ describe('events', function () {
       });
     });
 
-    it('[ESLZ] must not keep event deletions past a certain time ' +
-        '(cannot test because cannot force-run Mongo\'s TTL cleanup task)'
-      //TODO do this test when cleanup is delegated to nightlyTask
-    /*, function (done) {
-      var params = {
-        state: 'all',
-        modifiedSince: timestamp.now('-5y'),
-        includeDeletions: true
-      };
-      request.get(basePath).query(params).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result
-        });
-        res.body.eventDeletions.should.eql(_.at(testData.events, 13, 14))
-        done();
-      });
-    }*/);
-
     it('[V72A] must only return running period event(s) when requested', function (done) {
       var params = {
         running: true
       };
       var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
-        return (typeof e.duration !== 'undefined') && e.duration === null;
+        return e.duration === null;
       }).sort(function (a, b) {
         return b.time - a.time;
       });
@@ -657,7 +653,7 @@ describe('events', function () {
     beforeEach(resetEvents);
 
     it('[1GR6] must create an event with the sent data, returning it', function (done) {
-      var data = {
+      const data = {
         time: timestamp.fromDate('2012-03-22T10:00'),
         duration: timestamp.duration('55m'),
         type: 'temperature/celsius',
@@ -674,9 +670,16 @@ describe('events', function () {
         modified: timestamp.now('-1h'),
         modifiedBy: 'should-be-ignored'
       };
-      var originalCount,
-          createdEventId,
-          created;
+      const processedTags = ['patapoumpoum'];
+      const processedStreamIds = data.streamIds.concat(processedTags.map(t => TAG_PREFIX + t));
+      const expected = _.cloneDeep(data);
+      expected.tags = processedTags;
+      expected.streamIds = processedStreamIds;
+      expected.streamId = data.streamIds[0];
+
+      let originalCount;
+      let createdEventId;
+      let created;
 
       async.series([
         function countInitialEvents(stepDone) {
@@ -687,9 +690,22 @@ describe('events', function () {
         },
         function addNewEvent(stepDone) {
           request.post(basePath).send(data).end(function (res) {
+            const event = res?.body.event;
+            assert.exists(event);
+            assert.notEqual(event.created, data.created);
+            assert.notEqual(event.createdBy, data.createdBy);
+            assert.notEqual(event.modified, data.modified);
+            assert.notEqual(event.modifiedBy, data.modifiedBy);
+            expected.created = event.created;
+            expected.createdBy = event.createdBy;
+            expected.modified = event.modified;
+            expected.modifiedBy = event.modifiedBy;
+            expected.id = event.id;
+            integrity.events.set(expected);
             validation.check(res, {
               status: 201,
-              schema: methodsSchema.create.result
+              schema: methodsSchema.create.result,
+              body: { event: expected },
             });
             created = timestamp.now();
             createdEventId = res.body.event.id;
@@ -702,9 +718,11 @@ describe('events', function () {
             events.length.should.eql(originalCount + 1, 'events');
 
             var expected = _.clone(data);
+            
             expected.streamId = expected.streamIds[0];
             expected.id = createdEventId;
-            expected.tags = ['patapoumpoum'];
+            expected.streamIds = expected.streamIds.concat(['patapoumpoum'].map(t => TAG_PREFIX + t));
+            delete expected.tags; // tags are not stored anymore
             expected.created = expected.modified = created;
             expected.createdBy = expected.modifiedBy = access.id;
             var actual = _.find(events, function (event) {
@@ -856,32 +874,6 @@ describe('events', function () {
       });
     });
 
-    it.skip('[H7CN] must not stop the running period event if the new event is a mark event (single activity)',
-        function (done) {
-      var data = { streamIds: [testData.streams[0].id], type: testType };
-      async.series([
-        function addNew(stepDone) {
-          request.post(basePath).send(data).end(function (res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.create.result
-            }, stepDone);
-          });
-        },
-        function verifyData(stepDone) {
-          storage.findAll(user, null, function (err, events) {
-            var expected = testData.events[9];
-            var actual = _.find(events, function (event) {
-              return event.id === expected.id;
-            });
-            actual.should.eql(expected);
-
-            stepDone();
-          });
-        }
-      ], done);
-    });
-
     it('[UL6Y] must not stop the running period event if the stream allows overlapping', function (done) {
       var data = {
         streamIds: [testData.streams[1].id],
@@ -902,7 +894,10 @@ describe('events', function () {
         function verifyData(stepDone) {
           storage.findOne(user, {id: testData.events[11].id}, null, function (err, event) {
             // HERE
-            event.should.eql(testData.events[11]);
+            // as event comes from storage we will not find "tags"
+            const expected = _.cloneDeep(testData.events[11]);
+            delete expected.tags;
+            event.should.eql(expected);
             stepDone();
           });
         }
@@ -959,26 +954,6 @@ describe('events', function () {
       });
     });
 
-    it.skip('[1GGK] must return an error if the event\'s period overlaps existing periods (single activity)',
-        function (done) {
-      var data = {
-        time: timestamp.add(testData.events[1].time, '15m'),
-        duration: timestamp.duration('5h30m'),
-        type: testType,
-        streamIds: [testData.streams[0].id]
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.PeriodsOverlap,
-          data: {overlappedIds: [
-            testData.events[1].id,
-            testData.events[3].id
-          ]}
-        }, done);
-      });
-    });
-
     it('[3S2T] must allow the event\'s period overlapping existing periods when the stream allows it',
         function (done) {
       var data = {
@@ -1020,101 +995,11 @@ describe('events', function () {
 
   });
 
-  describe.skip('POST /start', function () {
-
-    beforeEach(resetEvents);
-
-    var path = basePath + '/start';
-
-    it('[5C8J] must create a running period event stopping any previously running event (single activity)',
-        function (done) {
-      var data = {
-        // 15 minutes ago to make sure the previous duration is set accordingly
-        time: timestamp.now('-15m'),
-        type: testType,
-        streamIds: [testData.streams[0].id],
-        tags: ['houba']
-      };
-      var createdId;
-
-      async.series([
-          function addNewEvent(stepDone) {
-            request.post(path).send(data).end(function (res) {
-              validation.check(res, {
-                status: 201,
-                schema: methodsSchema.create.result
-              });
-              createdId = res.body.event.id;
-              res.body.stoppedId.should.eql(testData.events[9].id);
-              eventsNotifCount.should.eql(1, 'events notifications');
-              stepDone();
-            });
-          },
-          function verifyEventData(stepDone) {
-            storage.findAll(user, null, function (err, events) {
-              var expected = _.clone(data);
-              expected.id = createdId;
-              expected.duration = null;
-              var actual = _.find(events, function (event) {
-                return event.id === createdId;
-              });
-              validation.checkStoredItem(actual, 'event');
-              validation.checkObjectEquality(actual, expected);
-
-              var previous = _.find(events, function (event) {
-                return event.id === testData.events[9].id;
-              });
-              var expectedDuration = data.time - previous.time;
-              // allow 1 second of lag
-              previous.duration.should.be.within(expectedDuration - 1, expectedDuration);
-
-              stepDone();
-            });
-          }
-        ],
-        done
-      );
-    });
-
-    it('[JHUM] must return an error if a period event already exists later (single activity)',
-        function (done) {
-      var data = {
-        time: timestamp.now('-1h05m'),
-        type: testType,
-        streamIds: [testData.streams[0].id]
-      };
-      request.post(path).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation,
-          data: {conflictingEventId: testData.events[9].id}
-        }, done);
-      });
-    });
-
-    it('[7FJZ] must allow starting an event before an existing period when the stream allows overlapping',
-        function (done) {
-      var data = {
-        streamIds: [testData.streams[1].id],
-        time: timestamp.add(testData.events[11].time, '-15m'),
-        type: testType
-      };
-      request.post(basePath + '/start').send(data)
-          .end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        }, done);
-      });
-    });
-
-  });
-
   describe('POST / (multipart content)', function () {
 
     beforeEach(resetEvents);
 
-    it('[4CUV] must create a new event with the uploaded files', function (done) {
+    it('[4CUV] must create a new event with the uploaded files', function (finalDone) {
       var data = {
         time: timestamp.now(),
         type: 'wisdom/test',
@@ -1124,55 +1009,89 @@ describe('events', function () {
         streamIds: [testData.streams[0].id],
         tags: ['houba']
       };
-      request.post(basePath)
-        .field('event', JSON.stringify(data))
-        .attach('document', testData.attachments.document.path,
+      async.series([
+        postEventsWithAttachments,
+        checkEvents,
+      ], finalDone);
+
+
+      let createdEvent; // set by postEventsWithAttachments reused by checkEvents
+      let expected; // set by postEventsWithAttachments reused by checkEvents
+      function postEventsWithAttachments(done) {
+        request.post(basePath)
+          .field('event', JSON.stringify(data))
+          .attach('document', testData.attachments.document.path,
             testData.attachments.document.filename)
-        .attach('image', testData.attachments.image.path,
+          .attach('image', testData.attachments.image.path,
             testData.attachments.image.filename)
-        .end(function (res) {
-          validation.check(res, {
-            status: 201,
-            schema: methodsSchema.create.result
-          });
+          .end(function (res) {
+            validation.check(res, {
+              status: 201,
+              schema: methodsSchema.create.result
+            });
 
-          var createdEvent = res.body.event;
-          validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
-          validation.sanitizeEvent(createdEvent);
+            createdEvent = res.body.event;
 
-          var expected = _.extend({
-            id: createdEvent.id,
-            attachments: [
-              {
-                id: createdEvent.attachments[0].id,
-                fileName: testData.attachments.document.filename,
-                type: testData.attachments.document.type,
-                size: testData.attachments.document.size
-              },
-              {
-                id: createdEvent.attachments[1].id,
-                fileName: testData.attachments.image.filename,
-                type: testData.attachments.image.type,
-                size: testData.attachments.image.size
-              }
-            ],
-            streamIds: data.streamIds,
-          }, data);
-          validation.checkObjectEquality(createdEvent, expected);
+            validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
+            validation.sanitizeEvent(createdEvent);
+            expected = _.extend(data, {
+              id: createdEvent.id,
+              integrity: createdEvent.integrity,
+              attachments: [
+                {
+                  id: createdEvent.attachments[0].id,
+                  fileName: testData.attachments.document.filename,
+                  type: testData.attachments.document.type,
+                  size: testData.attachments.document.size,
+                  integrity: testData.attachments.document.integrity
+                },
+                {
+                  id: createdEvent.attachments[1].id,
+                  fileName: testData.attachments.image.filename,
+                  type: testData.attachments.image.type,
+                  size: testData.attachments.image.size,
+                  integrity: testData.attachments.image.integrity
+                }
+              ],
+              streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+            });
 
-          // check attached files
-          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+            expected.created = createdEvent.created;
+            expected.createdBy = createdEvent.createdBy;
+            expected.modified = createdEvent.modified;
+            expected.modifiedBy = createdEvent.modifiedBy;
+            if (! integrity.attachments.isActive) {
+              delete expected.attachments[0].integrity;
+              delete expected.attachments[1].integrity;
+            }
+            if (! integrity.events.isActive) {
+              delete expected.integrity;
+            }
+            integrity.events.set(expected);
+            validation.checkObjectEquality(createdEvent, expected);
+
+            // check attached files
+            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
               createdEvent.attachments[0].id,
               testData.attachments.document.filename).should.equal('');
-          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
               createdEvent.attachments[1].id,
               testData.attachments.image.filename).should.equal('');
 
 
-          eventsNotifCount.should.eql(1, 'events notifications');
+            eventsNotifCount.should.eql(1, 'events notifications');
 
+            done();
+          });
+      }
+
+      function checkEvents(done) {
+        request.get(basePath + '/' + createdEvent.id).end(function (res) {
+          validation.checkObjectEquality(validation.sanitizeEvent(res.body.event), expected);
           done();
         });
+      };
+
     });
 
     it('[HROI] must properly handle part names containing special chars (e.g. ".", "$")', function (done) {
@@ -1198,18 +1117,27 @@ describe('events', function () {
         });
 
         var createdEvent = validation.sanitizeEvent(res.body.event);
-        var expected = _.extend({
+        var expected = _.extend(data, {
           id: createdEvent.id,
           attachments: [
             {
               id: createdEvent.attachments[0].id,
               fileName: 'file.name.with.many.dots.pdf',
               type: testData.attachments.document.type,
-              size: testData.attachments.document.size
+              size: testData.attachments.document.size,
+              integrity: testData.attachments.document.integrity
             }
           ],
-          streamIds: [data.streamIds[0]],
-        }, data);
+          streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+          integrity: createdEvent.integrity
+        });
+
+        if (! integrity.attachments.isActive) {
+          delete expected.attachments[0].integrity;
+        }
+        if (! integrity.events.isActive) {
+          delete expected.integrity;
+        }
         validation.checkObjectEquality(createdEvent, expected);
 
         // check attached files
@@ -1263,7 +1191,7 @@ describe('events', function () {
           .attach('text', testData.attachments.text.path,
               testData.attachments.text.fileName)
           .end(function (res) {
-            time = timestamp.now();
+      
             validation.check(res, {
               status: 200,
               schema: methodsSchema.update.result
@@ -1282,30 +1210,31 @@ describe('events', function () {
             expected.attachments = [];
             updatedEvent.attachments.forEach(function (attachment) {
               if (attachment.fileName === testData.attachments.image.filename) {
-                expected.attachments.push(
-                  {
-                    id: attachment.id,
-                    fileName: testData.attachments.image.filename,
-                    type: testData.attachments.image.type,
-                    size: testData.attachments.image.size
-                  }
-                );
+                const attData = {
+                  id: attachment.id,
+                  fileName: testData.attachments.image.filename,
+                  type: testData.attachments.image.type,
+                  size: testData.attachments.image.size,
+                };
+                if (integrity.attachments.isActive) attData.integrity = testData.attachments.image.integrity;
+                expected.attachments.push(attData);
               }
               if (attachment.fileName === testData.attachments.text.filename) {
-                expected.attachments.push(
-                  {
-                    id: attachment.id,
-                    fileName: testData.attachments.text.filename,
-                    type: testData.attachments.text.type,
-                    size: testData.attachments.text.size
-                  }
-                );
+               const attData = {
+                  id: attachment.id,
+                  fileName: testData.attachments.text.filename,
+                  type: testData.attachments.text.type,
+                  size: testData.attachments.text.size
+                }
+                if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
+                expected.attachments.push(attData);
               }
             });
-            expected.modified = time;
+            expected.modified = updatedEvent.modified;
             expected.modifiedBy = access.id;
             expected = _.defaults(expected, event);
-
+            integrity.events.set(expected);
+            
             validation.checkObjectEquality(updatedEvent, expected);
 
             // check attached files
@@ -1339,12 +1268,14 @@ describe('events', function () {
 
             var updatedEvent = validation.sanitizeEvent(res.body.event);
             var expectedAttachments = event.attachments.slice();
-            expectedAttachments.push({
+            const attData = {
               id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
               fileName: testData.attachments.text.filename,
               type: testData.attachments.text.type,
-              size: testData.attachments.text.size
-            });
+              size: testData.attachments.text.size,
+            };
+            if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
+            expectedAttachments.push(attData);
 
             const attachments = updatedEvent.attachments; 
             should(attachments.length).be.eql(expectedAttachments.length);
@@ -1425,7 +1356,7 @@ describe('events', function () {
             expected.modified = time;
             expected.modifiedBy = access.id;
             expected.attachments = original.attachments;
-            expected.streamIds = data.streamIds;
+            expected.streamIds = data.streamIds.concat(expected.tags.map(t => TAG_PREFIX + t));
             validation.checkObjectEquality(res.body.event, expected);
 
             eventsNotifCount.should.eql(1, 'events notifications');
@@ -1469,24 +1400,13 @@ describe('events', function () {
         delete expected.modified; 
         expected.modifiedBy = access.id;
         expected.streamId = expected.streamIds[0];
+        expected.modified = res.body.event.modified;
+        expected.created = res.body.event.created;
         _.extend(expected.clientData, data.clientData);
         delete expected.clientData.numberProp;
+        integrity.events.set(expected);
         validation.checkObjectEquality(res.body.event, expected);
 
-        eventsNotifCount.should.eql(1, 'events notifications');
-        done();
-      });
-    });
-
-    it.skip('[C9GL] must return the id of the stopped previously running event if any (single activity)',
-        function (done) {
-      request.put(path(testData.events[3].id)).send({time: timestamp.now()})
-          .end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
-        res.body.stoppedId.should.eql(testData.events[9].id);
         eventsNotifCount.should.eql(1, 'events notifications');
         done();
       });
@@ -1551,30 +1471,6 @@ describe('events', function () {
         });
     });
 
-    it.skip('[SPN1] must return an error if moving a running period event before another existing ' +
-        'period event (single activity)', function (done) {
-      var data = { time: timestamp.add(testData.events[3].time, '-5m') };
-      request.put(path(testData.events[9].id)).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation,
-          data: {conflictingEventId: testData.events[3].id}
-        }, done);
-      });
-    });
-
-    it.skip('[FPEE] must return an error if the event\'s new period overlaps other events\'s (single activity)',
-        function (done) {
-      request.put(path(testData.events[1].id)).send({duration: timestamp.duration('5h')})
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.PeriodsOverlap,
-          data: {overlappedIds: [testData.events[3].id]}
-        }, done);
-      });
-    });
-    
     describe('forbidden updates of protected fields', function () {
       const event = {
         type: 'note/txt',
@@ -1740,165 +1636,6 @@ describe('events', function () {
     });
   });
 
-  describe.skip('POST /stop', function () {
-
-    beforeEach(resetEvents);
-
-    var path = basePath + '/stop';
-
-    it('[VE5N] must stop the previously running period event, returning its id (single activity)',
-        function (done) {
-      var stopTime = timestamp.now('-5m'),
-          stoppedEvent = testData.events[9],
-          time;
-
-      async.series([
-        function stop(stepDone) {
-          var data = {
-            streamIds: [testData.streams[0].id],
-            time: stopTime
-          };
-          request.post(path).send(data).end(function (res) {
-            time = timestamp.now();
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.stop.result
-            });
-            res.body.stoppedId.should.eql(stoppedEvent.id);
-            eventsNotifCount.should.eql(1, 'events notifications');
-            stepDone();
-          });
-        },
-        function verifyStoredItem(stepDone) {
-          storage.database.findOne(storage.getCollectionInfo(user), {_id: stoppedEvent.id}, {},
-            function (err, dbEvent) {
-              var expectedDuration = stopTime - dbEvent.time;
-              // allow 1 second of lag
-              dbEvent.duration.should.be.within(expectedDuration - 1, expectedDuration);
-              dbEvent.modified.should.be.within(time - 1, time);
-              dbEvent.modifiedBy.should.eql(access.id);
-              dbEvent.endTime.should.eql(dbEvent.time + dbEvent.duration);
-              stepDone();
-            });
-        }
-      ], done);
-    });
-
-    it('[HYQ3] must stop the last running event of the given type when specified', function (done) {
-      var stoppedEvent = testData.events[11],
-          stopTime;
-      async.series([
-        function addOtherRunning(stepDone) {
-          var data = {
-            streamIds: [stoppedEvent.streamId],
-            type: testType
-          };
-          request.post(basePath + '/start').send(data)
-            .end(function (res) {
-              res.statusCode.should.eql(201);
-              stepDone();
-            });
-        },
-        function (stepDone) {
-          var data = {
-            streamIds: [stoppedEvent.streamId],
-            type: stoppedEvent.type
-          };
-          request.post(basePath + '/stop').send(data).end(function (res) {
-            stopTime = timestamp.now();
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.stop.result
-            });
-            res.body.stoppedId.should.eql(stoppedEvent.id);
-            stepDone();
-          });
-        },
-        function verifyStoredItem(stepDone) {
-          storage.database.findOne(storage.getCollectionInfo(user), {_id: stoppedEvent.id}, {},
-              function (err, dbEvent) {
-            var expectedDuration = stopTime - dbEvent.time;
-            // allow 1 second of lag
-            dbEvent.duration.should.be.within(expectedDuration - 1, expectedDuration);
-            stepDone();
-          });
-        }
-      ], done);
-    });
-
-    it('[7NH0] must accept an `id` param to specify the event to stop', function (done) {
-      async.series([
-        function addOtherRunning(stepDone) {
-          var data = {
-            streamIds: [testData.streams[1].children[0].id],
-            type: testType
-          };
-          request.post(basePath + '/start').send(data)
-              .end(function (res) {
-            res.statusCode.should.eql(201);
-            stepDone();
-          });
-        },
-        function (stepDone) {
-          var data = {id: testData.events[11].id};
-          request.post(basePath + '/stop').send(data)
-              .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.stop.result
-            });
-            res.body.stoppedId.should.eql(data.id);
-            stepDone();
-          });
-        }
-      ], done);
-    });
-
-    it('[GPSM] must return an error if the specified event does not exist', function (done) {
-      var data = {id: 'unknown'};
-      request.post(basePath + '/stop').send(data)
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.UnknownReferencedResource,
-          data: {id: 'unknown'}
-        }, done);
-      });
-    });
-
-    it('[0Y4J] must return an error if the specified event is not running', function (done) {
-      var data = {id: testData.events[6].id};
-      request.post(basePath + '/stop').send(data)
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation
-        }, done);
-      });
-    });
-
-    it('[KN22] must return an error if no event is specified and the stream allows overlapping',
-        function (done) {
-      var data = {streamIds: [testData.streams[1].id]};
-      request.post(basePath + '/stop').send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidParametersFormat
-        }, done);
-      });
-    });
-
-    it('[BMC6] must return an error if neither stream nor event is specified', function (done) {
-      request.post(basePath + '/stop').send({}).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidParametersFormat
-        }, done);
-      });
-    });
-
-  });
-
   describe('DELETE /<event id>/<file id>', function () {
 
     beforeEach(resetEvents);
@@ -1922,7 +1659,9 @@ describe('events', function () {
         // for time delta below. 
         delete expected.modified; 
         expected.modifiedBy = access.id;
+        expected.modified = updatedEvent.modified;
         expected.attachments.shift();
+        integrity.events.set(expected);
         validation.checkObjectEquality(updatedEvent, expected);
         
         var time = timestamp.now();
@@ -1983,7 +1722,6 @@ describe('events', function () {
 	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {
-              deletionTime = timestamp.now();
 
               validation.check(res, {
                 status: 200,
@@ -2007,7 +1745,9 @@ describe('events', function () {
                 return event.id === id;
               });
               should.exist(deletion);
-              validation.checkObjectEquality(deletion, { id: id, deleted: deletionTime });
+              const expected = { id: id, deleted: deletion.deleted };
+              integrity.events.set(expected);
+              validation.checkObjectEquality(deletion, expected);
 
               var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
               fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');

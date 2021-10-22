@@ -316,19 +316,19 @@ declare module 'api-server/src/socket-io/Manager' {
   declare module.exports: any;
 }
 
-declare module 'api-server/src/socket-io/message_sink' {
+declare module 'messages/src/message_sink' {
   declare module.exports: any;
 }
 
-declare module 'api-server/src/socket-io/nats_publisher' {
+declare module 'messages/src/nats_publisher' {
   declare module.exports: any;
 }
 
-declare module 'api-server/src/socket-io/nats_subscriber' {
+declare module 'messages/src/nats_subscriber' {
   declare module.exports: any;
 }
 
-declare module 'api-server/src/socket-io/nats_wire_message' {
+declare module 'messages/src/nats_wire_message' {
   declare module.exports: any;
 }
 
@@ -484,11 +484,11 @@ declare module 'api-server/test/unit/schema/validation.test' {
   declare module.exports: any;
 }
 
-declare module 'api-server/test/unit/socket-io/nats_publisher.test' {
+declare module 'messages/test/nats_publisher.test' {
   declare module.exports: any;
 }
 
-declare module 'api-server/test/unit/socket-io/nats_subscriber.test' {
+declare module 'messages/test/nats_subscriber.test' {
   declare module.exports: any;
 }
 
@@ -726,17 +726,17 @@ declare module 'api-server/src/socket-io/index.js' {
 declare module 'api-server/src/socket-io/Manager.js' {
   declare module.exports: $Exports<'api-server/src/socket-io/Manager'>;
 }
-declare module 'api-server/src/socket-io/message_sink.js' {
-  declare module.exports: $Exports<'api-server/src/socket-io/message_sink'>;
+declare module 'messages/src/message_sink.js' {
+  declare module.exports: $Exports<'messages/src/message_sink'>;
 }
-declare module 'api-server/src/socket-io/nats_publisher.js' {
-  declare module.exports: $Exports<'api-server/src/socket-io/nats_publisher'>;
+declare module 'messages/src/nats_publisher.js' {
+  declare module.exports: $Exports<'messages/src/nats_publisher'>;
 }
-declare module 'api-server/src/socket-io/nats_subscriber.js' {
-  declare module.exports: $Exports<'api-server/src/socket-io/nats_subscriber'>;
+declare module 'messages/src/nats_subscriber.js' {
+  declare module.exports: $Exports<'messages/src/nats_subscriber'>;
 }
-declare module 'api-server/src/socket-io/nats_wire_message.js' {
-  declare module.exports: $Exports<'api-server/src/socket-io/nats_wire_message'>;
+declare module 'messages/src/nats_wire_message.js' {
+  declare module.exports: $Exports<'messages/src/nats_wire_message'>;
 }
 declare module 'api-server/test/acceptance/accesses.test.js' {
   declare module.exports: $Exports<'api-server/test/acceptance/accesses.test'>;
@@ -855,11 +855,11 @@ declare module 'api-server/test/unit/routes/login.test.js' {
 declare module 'api-server/test/unit/schema/validation.test.js' {
   declare module.exports: $Exports<'api-server/test/unit/schema/validation.test'>;
 }
-declare module 'api-server/test/unit/socket-io/nats_publisher.test.js' {
-  declare module.exports: $Exports<'api-server/test/unit/socket-io/nats_publisher.test'>;
+declare module 'messages/test/nats_publisher.test.js' {
+  declare module.exports: $Exports<'messages/test/nats_publisher.test'>;
 }
-declare module 'api-server/test/unit/socket-io/nats_subscriber.test.js' {
-  declare module.exports: $Exports<'api-server/test/unit/socket-io/nats_subscriber.test'>;
+declare module 'messages/test/nats_subscriber.test.js' {
+  declare module.exports: $Exports<'messages/test/nats_subscriber.test'>;
 }
 declare module 'api-server/test/unit/test-helper.js' {
   declare module.exports: $Exports<'api-server/test/unit/test-helper'>;

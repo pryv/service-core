@@ -14,13 +14,13 @@ const supertest = require('supertest');
 const assert = require('chai').assert;
 
 const { getConfig } = require('@pryv/boiler');
-const Application = require('../src/application');
+const { getApplication } = require('api-server/src/application');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
-const User = require('business/src/users/User');
-const UsersRepository = require('business/src/users/repository');
+const { getUsersRepository, User } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
+const { ApiEndpoint } = require('utils');
 
 function defaults() {
   return {
@@ -67,19 +67,14 @@ describe('registration: cluster', function() {
     });
     regUrl = config.get('services:register:url');
 
-    app = new Application();
+    app = getApplication();
     await app.initiate();
 
-    require('../src/methods/auth/register')(
-      app.api,
-      app.logging,
-      app.storageLayer,
-      app.config.get('services')
-    );
+    await require('../src/methods/auth/register')(app.api);
 
     request = supertest(app.expressApp);
 
-    usersRepository = new UsersRepository(app.storageLayer.events);
+    usersRepository = await getUsersRepository(); 
   });
   after(async function () {
     config.injectTestConfig({});
@@ -149,11 +144,11 @@ describe('registration: cluster', function() {
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = _.merge(buildValidationRequest(userData), { uniqueFields: { email: userData.email } });
         firstRegistrationRequest = buildRegistrationRequest(userData);
-        firstUser = await usersRepository.getAccountByUsername(userData.username, true);
+        firstUser = await usersRepository.getUserByUsername(userData.username);
         oldEmail = userData.email;
         userData.email = charlatan.Internet.email();
         res = await request.post(methodPath).send(userData);
-        secondUser = await usersRepository.getAccountByUsername(userData.username, true);
+        secondUser = await usersRepository.getUserByUsername(userData.username);
       });
       it('[QV8Z] should respond with status 201', () => {
         assert.equal(res.status, 201);
@@ -161,14 +156,13 @@ describe('registration: cluster', function() {
       it('[TCOM] should respond with the username and apiEndpoint', async () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
-        const usersRepository = new UsersRepository(app.storageLayer.events);
-        const user = await usersRepository.getAccountByUsername(userData.username, true);
+        const usersRepository = await getUsersRepository(); 
+        const user = await usersRepository.getUserByUsername(userData.username);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
 
         let initUser = new User(userData);
-        initUser.token = personalAccess.token;
-        assert.equal(body.apiEndpoint, initUser.getApiEndpoint());
+        assert.equal(body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
       });
       it('[7QB6] should send the right data to register', () => {
         const firstValidationSent = serviceRegisterRequests[0];
@@ -392,7 +386,7 @@ describe('registration: cluster', function() {
     });
 
     describe('when invitationTokens are undefined', () => {
-      describe('and a random string is provided as "invitationToken"', async () => {
+      describe('and a random string is provided as "invitationToken"', () => {
         before(async () => {
           userData = defaults();
           userData.invitationToken = charlatan.Lorem.characters(25);

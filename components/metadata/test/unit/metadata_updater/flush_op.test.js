@@ -17,13 +17,13 @@ const bluebird = require('bluebird');
 const charlatan = require('charlatan');
 
 
-require('../../../../test-helpers/src/boiler-init');
+require('test-helpers/src/api-server-tests-config');
 const storage = require('storage');
 const { databaseFixture } = require('test-helpers');
 
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
-const { Flush, UsersRepository } = require('../../../src/metadata_updater/flush');
+const { Flush, CustomUsersRepository } = require('../../../src/metadata_updater/flush');
 const { getLogger } = require('@pryv/boiler');
 
 describe('Flush', () => {
@@ -31,9 +31,10 @@ describe('Flush', () => {
   const db = produceStorageLayer(connection);
   const logger = getLogger('flush'); 
 
-  const now = 100000;
-  const from = now - 10; 
-  const to = now - 1;
+  const now = Date.now() / 1000;
+  const initialDuration = 100;
+  const fromDeltaTime = initialDuration - 10; 
+  const toDeltaTime = initialDuration - 1;
 
   const modifiedTime = Date.now() / 1e3 ;
   
@@ -54,8 +55,10 @@ describe('Flush', () => {
     await pryv.user(userId, {}, (user) => {
       user.stream({id: parentStreamId}, (stream) => {
         stream.event({
+          time: now,
           id: eventId, 
           type: 'series:mass/kg', 
+          description: 'no initial data',
           content: {
             elementType: 'mass/kg', 
             fields: ['value'], 
@@ -63,14 +66,16 @@ describe('Flush', () => {
           }
         });
         stream.event({
+          time: now,
           id: eventWithContentId, 
           type: 'series:mass/kg', 
+          description: 'with initial ' + initialDuration + ' seconds off data ',
           content: {
             elementType: 'mass/kg', 
             fields: ['value'], 
             required: ['value']
           },
-          duration: now + 100,
+          duration: initialDuration,
         });
       });
     });
@@ -83,8 +88,8 @@ describe('Flush', () => {
       const update = makeUpdate(now, { 
         userId: userId, eventId: eventId, 
         author: 'author123', 
-        from: from, 
-        to: to,
+        from: fromDeltaTime, 
+        to: toDeltaTime,
       }); 
       op = new Flush(update, db, logger);
     });
@@ -93,8 +98,8 @@ describe('Flush', () => {
       await op.run();
       const event = await loadEvent(db, userId, eventId);
       assert.strictEqual(event.modifiedBy, 'author123');
-      assert.approximately(event.modified, modifiedTime, 2);
-      assert.strictEqual(event.duration, to); 
+      assert.approximately(event.modified, modifiedTime, 3);
+      assert.strictEqual(event.duration, toDeltaTime); 
     });
   });
   describe('event with existing metadata', () => {
@@ -104,18 +109,19 @@ describe('Flush', () => {
       const update = makeUpdate(now, { 
         userId: userId, eventId: eventWithContentId, 
         author: 'author123', 
-        from: from, 
-        to: to,
+        from: fromDeltaTime, 
+        to: toDeltaTime,
       }); 
       op = new Flush(update, db, logger);
     });
     
-    it('[5QO0] doesn\'t modfify duration', async () => {
+    it('[5QO0] doesn\'t modify duration', async () => {
       await op.run(); 
       const event = await loadEvent(db, userId, eventWithContentId);
       // See fixture above
-      assert.strictEqual(event.duration, now + 100); 
+      assert.strictEqual(event.duration, initialDuration ); 
     });
+
     it('[Z70F] leaves base data intact', async () => {
       await op.run(); 
       const event = await loadEvent(db, userId, eventWithContentId);
@@ -125,6 +131,21 @@ describe('Flush', () => {
       assert.deepEqual(content.fields, ['value']);
       assert.deepEqual(content.required, ['value']);
     });
+
+    it('[UD1B] update event duration if over current Duration', async () => {
+      const update = makeUpdate(now, { 
+        userId: userId, eventId: eventWithContentId, 
+        author: 'author123', 
+        from: fromDeltaTime, 
+        to: toDeltaTime + 100,
+      }); 
+      const op2 = new Flush(update, db, logger);
+      await op2.run(); 
+      const event = await loadEvent(db, userId, eventWithContentId);
+      // See fixture above
+      assert.strictEqual(event.duration, toDeltaTime + 100 ); 
+    });
+
   });
 });
 
@@ -147,9 +168,9 @@ describe('UsersRepository', () => {
     return pryv.user(username, { id: userId });
   });
 
-  let repository: UsersRepository;
+  let repository: CustomUsersRepository;
   beforeEach(() => {
-    repository = new UsersRepository(db);
+    repository = new CustomUsersRepository(db);
   });
   
   describe('#resolve(name)', () => {
@@ -199,28 +220,13 @@ type UpdateAttrs = {
 // Produces and returns a connection to MongoDB. 
 // 
 function produceMongoConnection(): storage.Database {
-  const settings = {
-    host: '127.0.0.1', 
-    port: 27017,
-    name: 'pryv-node-test',
-  };
-  const database = new storage.Database(settings); 
-  
-  return database; 
+  return storage.getDatabaseSync(); 
 }
 
 // Produces a StorageLayer instance
 // 
 function produceStorageLayer(connection: storage.Database): storage.StorageLayer {
-  const passwordResetRequestMaxAge = 60*1000;
-  const sessionMaxAge = 60*1000;
-    
-  return new storage.StorageLayer(
-    connection, 
-    getLogger('flush-test'), 
-    'attachmentsDirPath', 'previewsDirPath', 
-    passwordResetRequestMaxAge,
-    sessionMaxAge);
+  return storage.getStorageLayerSync();
 }
 
 function loadEvent(db: storage.StorageLayer, userId: string, eventId: string): Promise<any> {

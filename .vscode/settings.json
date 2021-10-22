@@ -3,5 +3,11 @@
   "previewjsdoc.autoOpenBrowser": false,
   "files.exclude": {
     "dist/": true
-  }
+  },
+  "typescript.validate.enable": false,
+  "files.watcherExclude": {
+    "**/dist/**": true,
+    "**/var-pryv/**": true
+  },
+  "javascript.validate.enable": false
 }

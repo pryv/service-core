@@ -13,21 +13,17 @@ const LRU = require('lru-cache');
 const logger = require('@pryv/boiler').getLogger('metadata_cache');
 
 const storage = require('storage');
-const MethodContext = require('model').MethodContext;
+const MethodContext = require('business').MethodContext;
+import type {ContextSource} from 'business';
+
 const errors = require('errors').factory;
 const { InfluxRowType } = require('business').types;
 
-const NatsSubscriber = require('api-server/src/socket-io/nats_subscriber');
-const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('utils').messaging
-  .NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('utils').messaging
-  .NATS_DELETE_EVENT;
+const { pubsub } = require('messages');
 
 import type { LRUCache }  from 'lru-cache';
 
 import type { TypeRepository, Repository } from 'business';
-import type { MessageSink }  from './message_sink';
 
 type UsernameEvent = {
   username: string,
@@ -72,7 +68,7 @@ const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
  * 
  * Caches data about a series first by `accessToken`, then by `eventId`. 
  * */
-class MetadataCache implements MetadataRepository, MessageSink {
+class MetadataCache implements MetadataRepository {
   loader: MetadataRepository;
 
   /**
@@ -86,11 +82,6 @@ class MetadataCache implements MetadataRepository, MessageSink {
 
   config;
 
-  // nats messaging
-  natsUpdateSubscriber: NatsSubscriber;
-  natsDeleteSubscriber: NatsSubscriber;
-  sink: MessageSink;
-  
   constructor(series: Repository, metadataLoader: MetadataRepository, config) {
 
     this.loader = metadataLoader;
@@ -101,26 +92,13 @@ class MetadataCache implements MetadataRepository, MessageSink {
       max: LRU_CACHE_SIZE,
       maxAge: LRU_CACHE_MAX_AGE_MS,
     };
-    this.cache = LRU(options);
+    this.cache = new LRU(options);
 
-    // nats messages
+    // messages
     this.subscribeToNotifications();
   }
 
   // nats messages
-
-  deliver(channel: string, usernameEvent: UsernameEvent): void {
-    switch (channel) {
-      case NATS_DELETE_EVENT:
-        this.dropSeries(usernameEvent);
-      // fall through
-      case NATS_UPDATE_EVENT:
-        this.invalidateEvent(usernameEvent);
-        break;
-      default:
-        break;
-    }
-  }
 
   dropSeries(usernameEvent: UsernameEvent): Promise {
     return this.series.connection.dropMeasurement(
@@ -140,11 +118,9 @@ class MetadataCache implements MetadataRepository, MessageSink {
     }
   }
 
-  async subscribeToNotifications() {
-    this.natsUpdateSubscriber = new NatsSubscriber(this.config.get('nats:uri'), this);
-    this.natsDeleteSubscriber = new NatsSubscriber(this.config.get('nats:uri'), this);
-    await this.natsUpdateSubscriber.subscribe(NATS_UPDATE_EVENT);
-    await this.natsDeleteSubscriber.subscribe(NATS_DELETE_EVENT);
+ subscribeToNotifications() {
+    pubsub.series.on(pubsub.SERIES_UPDATE_EVENTID_USERNAME, this.invalidateEvent.bind(this) );
+    pubsub.series.on(pubsub.SERIES_DELETE_EVENTID_USERNAME, this.dropSeries.bind(this) );   
   }
 
   // cache logic
@@ -209,8 +185,13 @@ class MetadataLoader {
     const storage = this.storage; 
     
     // Retrieve Access (including accessLogic)
+    const contextSource: ContextSource = {
+      name: 'hf',
+      ip: 'TODO'
+    }
     const customAuthStep = null;
     const methodContext = new MethodContext(
+      contextSource,
       userName,
       accessToken,
       customAuthStep,
@@ -220,7 +201,7 @@ class MetadataLoader {
     return bluebird.fromCallback((returnValueCallback) => {
       async.series(
         [
-          (next) => toCallback(methodContext.retrieveUser(), next),
+          (next) => toCallback(methodContext.init(), next),
           (next) => toCallback(methodContext.retrieveExpandedAccess(storage), next), 
           function loadEvent(done) { // result is used in success handler!
             const user = methodContext.user; 
@@ -245,8 +226,10 @@ class MetadataLoader {
           
           if (event === null) return returnValueCallback(errors.unknownResource('event', eventId));
 
-          returnValueCallback(null,
-            new SeriesMetadataImpl(access, user, event));
+          const serieMetadata = new SeriesMetadataImpl(access, user, event);
+          serieMetadata.init().then(
+            () => { returnValueCallback(null,serieMetadata); },
+            (error) => { returnValueCallback(error,serieMetadata); });
         }
       );
     });
@@ -266,8 +249,8 @@ class MetadataLoader {
 }
 
 type AccessModel = {
-  canContributeToStream(streamId: string): boolean; 
-  canReadStream(streamId: string): boolean; 
+  canCreateEventsOnStream(streamId: string): boolean; 
+  canGetEventsOnStream(streamId: string, storeId: string): boolean; 
 };
 type EventModel = {
   id: string, 
@@ -301,15 +284,22 @@ class SeriesMetadataImpl implements SeriesMetadata {
   time: number; 
   trashed: boolean;
   deleted: number;
+  _access: AccessModel;
+  _event: EventModel;
   
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
-    this.permissions = definePermissions(access, event);
+    this._access = access;
+    this._event = event;
     this.userName = user.username; 
     this.eventId = event.id; 
     this.time = event.time;
     this.eventType = event.type; 
     this.trashed = event.trashed;
     this.deleted = event.deleted;
+  }
+
+  async init() {
+    this.permissions = await definePermissions(this._access, this._event);
   }
 
   isTrashedOrDeleted(): boolean {
@@ -347,7 +337,7 @@ class SeriesMetadataImpl implements SeriesMetadata {
   }
 }
 
-function definePermissions(access: AccessModel, event: EventModel): {write: boolean, read: boolean} {
+async function definePermissions(access: AccessModel, event: EventModel): {write: boolean, read: boolean} {
   const streamIds = event.streamIds; 
   const permissions = {
     write: false,
@@ -355,8 +345,8 @@ function definePermissions(access: AccessModel, event: EventModel): {write: bool
   };
   const streamIdsLength = streamIds.length;
   for(let i=0; i<streamIdsLength && ! readAndWriteTrue(permissions); i++) {
-    if (access.canContributeToStream(streamIds[i])) permissions.write = true;
-    if (access.canReadStream(streamIds[i])) permissions.read = true;
+    if (await access.canCreateEventsOnStream(streamIds[i])) permissions.write = true;
+    if (await access.canGetEventsOnStream(streamIds[i], 'local')) permissions.read = true;
   }
   return permissions;
 

@@ -33,7 +33,9 @@ describe('Metadata Updater/Controller', () => {
     // Replace the database connection here with a dummy. We're testing the 
     // controller, not the database access. 
     // FLOW
-    const db: StorageLayer = {};
+    const db: StorageLayer = { events: {
+      getCollectionInfoWithoutUserId: () => {},
+    }};
     
     map = new PendingUpdatesMap();
     controller = new Controller(db, map, logger); 

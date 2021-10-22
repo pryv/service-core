@@ -204,6 +204,7 @@ describe('webhooks', function() {
         });
 
         it('[7N4L] should update the Webhook\'s data to the storage', async function() {
+          await new Promise(r => { setTimeout(r, 1000);});
           const updatedWebhook = await repository.getById(user, webhook.id);
           assert.equal(updatedWebhook.runCount, 1, 'wrong runCount');
           const runs = updatedWebhook.runs;

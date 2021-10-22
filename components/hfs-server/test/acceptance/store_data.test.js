@@ -17,10 +17,6 @@ const cuid = require('cuid');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
-
-
 
 const { 
   spawnContext, produceMongoConnection, 
@@ -34,6 +30,8 @@ const metadata = require('metadata');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('store_data.test');
+
+const { getUsersRepository, User } = require('business/src/users');
 
 import type { IMetadataUpdaterService } from 'metadata';
 
@@ -292,8 +290,8 @@ describe('Storing data in a HF series', function() {
         { streamIds: [parentStreamId], time: Date.now() / 1000 },
         attrs
       );
-      const usersRepository = new UsersRepository(storageLayer.events);
-      const user: User = await usersRepository.getById(userId);
+      const usersRepository = await getUsersRepository(); 
+      const user: User = await usersRepository.getUserById(userId);
       assert.isNotNull(user);
 
       const event = await bluebird.fromCallback(
@@ -361,7 +359,7 @@ describe('Storing data in a HF series', function() {
 
       // There is the need to syncronize separate services, otherwise the new 
       // reference time is taken from the cache instead of mongodb (cache is not invalidated on time)
-      await awaiting.delay(10)
+      await awaiting.delay(500)
       // add Data using timestamp sugar
       const result2 = await storeData(result.event.id, 
         {format: 'flatJSON',
@@ -407,7 +405,7 @@ describe('Storing data in a HF series', function() {
         .set('authorization', accessToken);
         
       // wait a moment before checking if event was deleted correctly
-      await awaiting.delay(5);
+      await awaiting.delay(500);
       
       // add Data using timestamp sugar
       const result2 = await storeData(result.event.id,
@@ -789,8 +787,8 @@ describe('Storing data in a HF series', function() {
           attrs
         );
 
-        const usersRepository = new UsersRepository(storageLayer.events);
-        const user: User = await usersRepository.getById(userId);
+        const usersRepository = await getUsersRepository(); 
+        const user: User = await usersRepository.getUserById(userId);
 
         assert.isNotNull(user);
           

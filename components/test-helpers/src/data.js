@@ -19,8 +19,7 @@ const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const UsersRepository = require('business/src/users/repository');
-const User = require('business/src/users/User');
+const { getUsersRepository, User } = require('business/src/users');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('test-helpers:data');
@@ -39,17 +38,13 @@ exports.resetUsers = async () => {
     { name: 'events' },
     {
       streamIds: {
-        $in: Object.keys(SystemStreamsSerializer.getAllAccountStreams())
+        $in: SystemStreamsSerializer.getAccountStreamIds(),
       }
     }, cb));
-  const usersRepository = new UsersRepository(storage.user.events);
+  const usersRepository = await getUsersRepository(); 
   
-  let i;
-  let userObj: User;
-  for (i = 0; i < users.length; i++){
-    let user = Object.assign({}, users[i]);
-    user = _.merge(customAccountProperties, user);
-    userObj = new User(user);
+  for (const user of users) {
+    const userObj: User = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
     await usersRepository.insertOne(userObj);
   }
 };
@@ -65,7 +60,7 @@ exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
   }
   
   if (addToId) {
-    var data = JSON.parse(JSON.stringify(accesses));
+    var data = _.cloneDeep(accesses);
     for (var i = 0; i < data.length; i++) {
       data[i].id += u.id;
     }
@@ -100,18 +95,26 @@ const events = exports.events = require('./data/events');
 exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
-  const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
-
+  const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
+  let eventsToWrite = events.map(e => {
+    const eventToWrite = _.cloneDeep(e);
+    delete eventToWrite.tags;
+    return eventToWrite;
+  })
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 
       user,
-      {
+      { 
         streamIds: {
           $nin: allAccountStreamIds
         }
       }
     ),
-    storage.user.events.insertMany.bind(storage.user.events, user, events)
+    storage.user.events.insertMany.bind(storage.user.events, user, eventsToWrite),
+    function removeZerosDuration(done2) {
+      events.forEach( e => { if (e.duration === 0) delete e.duration});
+      done2();
+    }
   ], done);
   
 };
@@ -147,16 +150,28 @@ const attachments = exports.attachments = {
   text: getAttachmentInfo('text', 'text.txt', 'text/plain')
 };
 
+// following https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
+// compute sri with openssl
+// cat FILENAME.js | openssl dgst -sha384 -binary | openssl base64 -A
+// replaces: 'sha256 ' + crypto.createHash('sha256').update(data).digest('hex');
+function getSubresourceIntegrity(filePath) {
+  const algorithm = 'sha256';
+  return algorithm + '-' + childProcess.execSync(`cat "${filePath}" | openssl dgst -${algorithm} -binary | openssl base64 -A`)
+}
+
+
 function getAttachmentInfo(id, filename, type) {
   const filePath = path.join(attachmentsDirPath, filename);
   const data = fs.readFileSync(filePath);
+  const integrity = getSubresourceIntegrity(filePath);
   return {
     id: id,
     filename: filename,
     path: filePath,
     data: data,
     size: data.length,
-    type: type
+    type: type,
+    integrity: integrity,
   };
 }
 
@@ -302,7 +317,7 @@ function buildCustomAccountProperties() {
   
   const customProperties = {};
   accountStreams.forEach(stream => {
-    customProperties[SystemStreamsSerializer.removeDotFromStreamId(stream.id)] = charlatan.Number.number(3);
+    customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);
   });
   return customProperties;
 }

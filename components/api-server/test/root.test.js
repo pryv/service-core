@@ -23,9 +23,20 @@ const superagent = require('superagent'); // for basic auth
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
+const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { getConfig } = require('@pryv/boiler');
+const { integrity } = require('business');
+
+let isAuditActive = false;
 
 describe('root', function() {
   let user, user2;
+
+  before(async () => {
+    const config = await getConfig();
+    isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
+  });
+
 
   let mongoFixtures;
   before(async function () {
@@ -240,7 +251,7 @@ describe('root', function() {
       assert.equal(res.status, 400);
     });
 
-    it('[J2WP] should update the access\'s "last used" time and *internal* request counters', async function() {
+    it('[J2WP] trackingFunctions should update the access\'s "last used" time and *internal* request counters', async function() {
       let expectedTime;
       const calledMethodKey = 'events:get';
       let originalCallCount;
@@ -310,6 +321,14 @@ describe('root', function() {
       const res = await server.request()
         .get('/' + username + '/access-info')
         .set('Authorization', sharedAccessToken);
+      
+      // extend sharedAccess with audit rights
+      if (isAuditActive) {
+        sharedAccess.permissions.push({
+          streamId: ':_audit:access-' + sharedAccess.id, 
+          level: 'read'});
+      }
+
       validation.check(
         res,
         {
@@ -324,8 +343,6 @@ describe('root', function() {
       );
     });
   });
-
-  
 
   describe('Accept Basic Auth request', function () {
 
@@ -390,7 +407,7 @@ describe('root', function() {
     before(function () {
       eventsNotifCount = 0;
       
-      server.on('events-changed', function () {
+      server.on('axon-events-changed', function () {
         eventsNotifCount++;
       });
     });
@@ -480,9 +497,11 @@ describe('root', function() {
           {
             id: results[0].event.id,
             tags: [],
+            integrity: results[0].event.integrity
           },
           _.extend(calls[0].params, { streamId: calls[0].params.streamIds[0]})
-        )
+        ),
+        integrity.events.isActive ? [] : ['integrity']
       );
 
       assert.exists(results[1].event);
@@ -491,9 +510,14 @@ describe('root', function() {
         _.defaults(
           {
             id: results[1].event.id,
+            integrity: results[1].event.integrity
           },
-          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
-        )
+          _.extend(calls[1].params, { 
+            streamId: calls[1].params.streamIds[0],
+            streamIds: calls[1].params.streamIds.concat(calls[1].params.tags.map(t => TAG_PREFIX + t))
+          }),
+        ),
+        integrity.events.isActive ? [] : ['integrity']
       );
       assert.exists(results[2].error);
       assert.equal(results[2].error.id, ErrorIds.UnknownReferencedResource);
@@ -555,9 +579,11 @@ describe('root', function() {
           {
             tags: [],
             id: results[1].event.id,
+            integrity: results[1].event.integrity 
           },
-          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]}),
-        )
+          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
+        ),
+        integrity.events.isActive ? []: ['integrity']
       );
 
       const getEventsResult = results[2];

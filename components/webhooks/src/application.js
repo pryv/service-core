@@ -15,7 +15,7 @@ require('@pryv/boiler').init({
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   },{
-    plugin: require('../../api-server/config/components/systemStreams')
+    plugin: require('api-server/config/components/systemStreams')
   }]
 });
 
@@ -58,10 +58,7 @@ class Application {
     const settings = this.settings;
 
     // Connect to MongoDB
-    const storageLayer = produceStorageLayer(
-      settings.get('database'),
-      getLogger('database')
-    );
+    const storageLayer = await storage.getStorageLayer()
 
     // Construct the service
     const service = new services.WebhooksService({
@@ -81,16 +78,3 @@ class Application {
 
 }
 module.exports = Application;
-
-function produceStorageLayer(settings, logger) {
-  logger.info(`Connecting to MongoDB (@ ${settings.host}:${settings.port}/${settings.name}) (${settings.authUser})`);
-
-  const mongoConn = new storage.Database(settings);
-
-  const storageLayer = new storage.StorageLayer(
-    mongoConn,
-    logger,
-  );
-
-  return storageLayer;
-}

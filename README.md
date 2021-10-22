@@ -12,7 +12,7 @@ _Prerequisites:_
 - Yarn v1
 - Mongo DB v3.6 (needs at least 4GB of free disk space for the initial database)
 - InfluxDB v1.2
-- gnatsd
+- nats-server
 - graphicsmagick - for image events preview
 - make
 
@@ -22,7 +22,7 @@ For node, you may use [nvm](https://github.com/nvm-sh/nvm) or [nodenv](https://g
 You should be able to install these prerequisites by first installing homebrew and then running these commands: 
 
 ~~~bash
-$ brew install gnatsd node-build influxdb nodenv/nvm
+$ brew install nats-server node-build influxdb nodenv/nvm
 # Follow post-install instructions by homebrew, especially for nodenv/nvm.
 $ nodenv install 8.8.0
 $ brew install graphicsmagick
@@ -34,11 +34,11 @@ You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`
 ```
 sudo apt-get install build-essential influxdb graphicsmagick
 
-# Install gnatsd
-./scripts/setup-gnatsd.sh
+# Install nats-server
+./scripts/setup-nats-server.sh
 
-# Start gnatsd in the background
-gnatsd/gnatsd-v1.0.4-linux-amd64/gnatsd &
+# Start nats-server in the background
+nats-server/nats-server-v2.3.4-linux-amd64/nats-server &
 
 # Start Influxdb 
 sudo service influxd start
@@ -70,7 +70,6 @@ Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opt
     ├── dist                Once you run 'yarn release', this is created
     ├── docs                Documentation in Markdown format 
     ├── flow-typed           Flow-Type annotations, managed by flow-typed
-    ├── jsdoc.json          JSDoc configuration, `yarn jsdoc`
     ├── node_modules        Package installation, `yarn install`
     ├── package.json        Yarn package file
     ├── proxy               Proxy configuration
@@ -178,22 +177,6 @@ Those components also accept the following command line options:
 
 - `--help` displays all available configuration settings as a schema structure (and exits)
 - `--printConfig` prints the configuration settings actually loaded (e.g. for debugging purposes)
-
-
-## Nginx proxy - to verify and probably fix
-
-*Prerequisite:* NGINX
-
-The proxy runs on `https://{username}.rec.la:8080` (`{username}` can be anything and is configured as follows:
-
-- `/api/{path}` proxies for `/{path}` on the API server
-- `/previews/{path}` proxies for `/{path}` on the previews server
-- `/{path}` serves files from `{static.root}` as defined in the Nginx config
-
-The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` in `vars.{environment}.js`. To generate a `nginx.conf`, do `node scripts/compile-proxy-config {variables file}` (this is automatically done for development when running the proxy with `yarn proxy`).
-
-In development, Nginx runs on HTTPS with a "dev" SSL certificate on domain `*.rec.la` (where `*` is whatever Pryv username you like), whose DNS entry points to `127.0.0.1`. This little trick enables HTTPS connections to the local server via wildcard subdomains, without having to rely on additional tools like Dnsmasq.
-
 
 ## Customizing server behaviour
 

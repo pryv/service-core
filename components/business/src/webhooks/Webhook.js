@@ -11,8 +11,8 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
-const NatsSubscriber = require('api-server/src/socket-io/nats_subscriber');
-import type { MessageSink } from 'api-server/src/socket-io/message_sink';
+const { pubsub } = require('messages');
+import type { MessageSink } from 'messages';
 import type Repository  from './repository';
 
 export type Run = {
@@ -55,12 +55,13 @@ class Webhook implements MessageSink {
 
   user: ?{};
   repository: ?Repository;
-  NatsSubscriber: ?NatsSubscriber;
 
   apiVersion: string;
   serial: string;
 
   logger;
+
+  pubsubTurnOffListener: ?function;
 
   constructor(params: {
     id?: string,
@@ -100,22 +101,17 @@ class Webhook implements MessageSink {
     this.modifiedBy = params.modifiedBy;
     this.user = params.user;
     this.repository = params.webhooksRepository;
-    this.NatsSubscriber = null;
     this.messageBuffer = params.messageBuffer || new Set();
     this.timeout = null;
     this.isSending = false;
     this.runsSize = params.runsSize || 50;
   }
 
-  setNatsSubscriber(nsub: NatsSubscriber): void {
-    this.NatsSubscriber = nsub;
-  }
-
-  /**
-   * Send message and update the webhook in the storage
-   */
-  async deliver(username: string, message: string): Promise<void> {
-    await this.send(message);
+ startListenting(username: string) {
+    if (this.pubsubTurnOffListener != null) { throw new Error('Cannot listen twice'); }
+    this.pubsubTurnOffListener = pubsub.notifications.onAndGetRemovable(username,
+      function named(payload) { this.send(payload.eventName); }.bind(this)
+    ); 
   }
 
   /**
@@ -223,9 +219,10 @@ class Webhook implements MessageSink {
     if (this.timeout != null) {
       clearTimeout(this.timeout);
     }
-    if (this.NatsSubscriber != null) {
-      this.NatsSubscriber.close();
-    }
+    if (this.pubsubTurnOffListener != null) { 
+      this.pubsubTurnOffListener();
+      this.pubsubTurnOffListener = null;
+    };
   }
 
   addRun(run: Run): void {

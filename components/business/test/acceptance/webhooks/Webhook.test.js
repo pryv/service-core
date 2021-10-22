@@ -19,9 +19,9 @@ const PORT = 6123;
 
 //const whStorage = require('test-helpers').dependencies.storage.user.webhooks;
 const storage = require('test-helpers').dependencies.storage.user.webhooks;
-const userStorage = require('test-helpers').dependencies.storage.events;
+const userStorage = require('test-helpers').dependencies.storage.user.events;
 
-const { ProjectVersion } = require('middleware/src/project_version');
+const { getAPIVersion } = require('middleware/src/project_version');
 
 describe('Webhook', () => {
 
@@ -48,9 +48,8 @@ describe('Webhook', () => {
         });
 
         let apiVersion;
-        before(() => {
-          const pv = new ProjectVersion(); 
-          apiVersion = pv.version();
+        before(async () => {
+          apiVersion = await getAPIVersion();
         });
 
         after(() => {
@@ -209,7 +208,7 @@ describe('Webhook', () => {
 
     describe('when scheduling for a retry', () => {
 
-      describe('when the notifications service is down', async () => {
+      describe('when the notifications service is down', () => {
 
         before(async () => {
           postPath = '/notifs2222';

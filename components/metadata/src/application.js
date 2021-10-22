@@ -12,14 +12,20 @@ const path = require('path');
 require('@pryv/boiler').init({
   appName: 'metadata',
   baseConfigDir: path.resolve(__dirname, '../config'),
-  extraConfigs: [{
-    scope: 'serviceInfo',
-    key: 'service',
-    urlFromKey: 'serviceInfoUrl'
-  },{
-    scope: 'defaults-data',
-    file: path.resolve(__dirname, '../config/default-config.hjson')
-  }]
+  extraConfigs: [
+    {
+      scope: 'serviceInfo',
+      key: 'service',
+      urlFromKey: 'serviceInfoUrl'
+    },
+    {
+      scope: 'defaults-data',
+      file: path.resolve(__dirname, '../config/default-config.hjson')
+    },
+    {
+      plugin: require('api-server/config/components/systemStreams')
+    }
+  ]
 });
 const { getConfig, getLogger } = require('@pryv/boiler');
 
@@ -82,23 +88,5 @@ class Application {
 module.exports = Application;
 
 function produceStorageLayer(settings, logger) {
-  logger.info(`Connecting to MongoDB (@ ${settings.host}:${settings.port}/${settings.name}) (${settings.authUser})`);
-  
-  const mongoConn = new storage.Database(settings);
-    
-  // BUG These must be read from the configuration, probably. If we don't have 
-  // these values, we cannot instanciate StorageLayer, even though none of these
-  // is used here. So bad. To be changed.
-  // 
-  const passwordResetRequestMaxAge = 60*1000;
-  const sessionMaxAge = 60*1000;
-      
-  const storageLayer = new storage.StorageLayer(
-    mongoConn, 
-    logger, 
-    'attachmentsDirPath', 'previewsDirPath', 
-    passwordResetRequestMaxAge,
-    sessionMaxAge);
-    
-  return storageLayer;
+  return storage.getStorageLayerSync();
 }

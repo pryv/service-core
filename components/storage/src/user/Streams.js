@@ -12,6 +12,8 @@ var async = require('async'),
     treeUtils = require('utils').treeUtils,
     _ = require('lodash');
 
+const cache = require('cache');
+
 module.exports = Streams;
 
 /**
@@ -83,11 +85,12 @@ var indexes = [
 /**
  * Implementation.
  */
-Streams.prototype.getCollectionInfo = function (user) {
+Streams.prototype.getCollectionInfo = function (userOrUserId) {
+  const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'streams',
     indexes: indexes,
-    useUserId: user.id
+    useUserId: userId
   };
 };
 
@@ -97,6 +100,7 @@ Streams.prototype.countAll = function (user, callback) {
 };
 
 Streams.prototype.insertOne = function (user, stream, callback) {
+  cache.clearUserId(user.id);
   async.series([
     function checkDeletionWithSameId(stepDone) {
       if (! stream.id) { return stepDone(); }
@@ -118,6 +122,11 @@ Streams.prototype.insertOne = function (user, stream, callback) {
 };
 
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {
+  if (typeof updatedData.parentId != 'undefined') { // clear ALL when a stream is moved
+    cache.clearUserId(user.id);
+  } else { // only stream Structure
+    cache.unsetStreams(user.id, 'local');
+  }
   var self = this;
   if (! updatedData.parentId) {
     doUpdate();
@@ -150,9 +159,11 @@ function checkParentExists(user, parentId, callback) {
 /**
  * Implementation.
  */
-Streams.prototype.delete = function (user, query, callback) {
+Streams.prototype.delete = function (userOrUserId, query, callback) {
+  const userId = userOrUserId.id || userOrUserId;
+  cache.clearUserId(userId);
   var update = {
-    $set: {deleted: new Date()},
+    $set: {deleted: Date.now() / 1000},
     $unset: {
       name: 1,
       parentId: 1,
@@ -165,7 +176,7 @@ Streams.prototype.delete = function (user, query, callback) {
       modifiedBy: 1
     }
   };
-  this.database.updateMany(this.getCollectionInfo(user),
+  this.database.updateMany(this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query), update, callback);
 };
 
