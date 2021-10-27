@@ -4,10 +4,19 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+require('test-helpers/src/api-server-tests-config');
+const { getConfig } = require('@pryv/boiler');
+
 describe('Stores Streams', function() {
   let user, username, password, access, appAccessDummy, appAccessMaster;
   let personalToken;
   let mongoFixtures;
+  let isOpenSource;
+
+  before(async () => {
+    isOpenSource = (await getConfig()).get('openSource:isActive');
+  });
+
   
   const streamId = 'yo';
   before(async function() {
@@ -69,11 +78,12 @@ describe('Stores Streams', function() {
       .query({});
     const streams = res.body.streams;
     assert.exists(streams);
-    assert.equal(streams.length,3);
+    assert.equal(streams.length,isOpenSource ? 2 : 3);
     assert.equal(streams[0].id,streamId);
     assert.equal(streams[0].children.length,1);
     assert.equal(streams[1].id,':dummy:');
-    assert.equal(streams[2].id,':_audit:access-' + appAccessDummy.id);
+    if (! isOpenSource)
+      assert.equal(streams[2].id,':_audit:access-' + appAccessDummy.id);
   });
 
   it('[XC20] Must retrieve "yo" streams and all stores when requesting "*"', async () => {
@@ -84,12 +94,17 @@ describe('Stores Streams', function() {
     const streams = res.body.streams;
     assert.exists(streams);
     // we also get helpers here, because with the current implementation, it is returned.
-    assert.equal(streams.length,5);
+    assert.equal(streams.length,isOpenSource ? 4 : 5);
     assert.equal(streams[0].id,':dummy:');
     assert.equal(streams[1].id,':faulty:');
-    assert.equal(streams[2].id,':_audit:');
-    assert.equal(streams[3].id,streamId);
-    assert.equal(streams[3].children.length,1);
+    if (! isOpenSource) {
+      assert.equal(streams[2].id,':_audit:');
+      assert.equal(streams[3].id,streamId);
+      assert.equal(streams[3].children.length,1);
+    } else {
+      assert.equal(streams[2].id,streamId);
+      assert.equal(streams[2].children.length,1);
+    }
   });
 
 
