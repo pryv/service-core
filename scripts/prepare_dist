@@ -16,7 +16,7 @@ rsync -a --delete node_modules/ dist/node_modules/
 mkdir -p dist/components/audit/
 mkdir -p dist/components/mall/
 mkdir -p dist/components/cache/
-if [ -e file ]
+if [ -e components/audit/.mocharc.js ]
   then cp components/audit/.mocharc.js dist/components/audit/.mocharc.js
 fi
 cp components/mall/.mocharc.js dist/components/mall/.mocharc.js
