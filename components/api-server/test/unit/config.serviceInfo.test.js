@@ -15,9 +15,11 @@ const testServiceInfo = require('../../../../../test/service-info.json');
 
 describe('config: serviceInfo', () => {
   let config;
+  let isOpenSource;
 
   before(async () => {
     config = await getConfig();
+    isOpenSource = config.get('openSource:isActive');
   });
 
 
@@ -26,7 +28,22 @@ describe('config: serviceInfo', () => {
     describe('when "serviceInfoUrl" points to a file', () => {
       it('[D2P7] should load serviceInfo', () => {
         const serviceInfo = config.get('service');
-        assert.deepEqual(serviceInfo, testServiceInfo);
+        if (! isOpenSource) {
+          assert.deepEqual(serviceInfo, testServiceInfo);
+        } else {
+          assert.deepEqual(serviceInfo, {
+            access: 'http://localhost:3000/reg/access/',
+            api: 'http://localhost:3000/{username}/',
+            serial: '2019061301',
+            register: 'http://localhost:3000/reg/',
+            name: 'Pryv Lab',
+            home: 'https://sw.pryv.me',
+            support: 'https://pryv.com/helpdesk',
+            terms: 'https://pryv.com/terms-of-use/',
+            eventTypes: 'https://api.pryv.com/event-types/flat.json',
+            assets: { definitions: 'http://localhost:3000/www/assets/index.json' }
+          });
+        }
       });
     });
 
