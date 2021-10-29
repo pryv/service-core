@@ -115,3 +115,6 @@ integrity:
     events: true
     accesses: true
   algorithm: sha256
+
+accessTracking:
+  isActive: true

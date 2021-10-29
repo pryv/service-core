@@ -298,23 +298,6 @@ describe('[ACCP] Access permissions', function () {
             done();
       });
     });
-
-    it.skip('[ZGK0] must allow access to all streams when only tag permissions are defined', function (done) {
-      request.get(basePath, token(5)).query({state: 'all'}).end(function (res) {
-        res.body.streams = validation.removeAccountStreams(res.body.streams);
-        res.body.streams.should.eql(validation.removeDeletionsAndHistory(testData.streams));
-        done();
-      });
-    });
-
-    it.skip('[UYB2] must only allow access to set streams when both tag and stream permissions are defined',
-        function (done) {
-      request.get(basePath, token(6)).end(function (res) {
-        res.body.streams.should.eql([_.omit(testData.streams[0], 'parentId')]);
-        done();
-      });
-    });
-
   });
 
   describe('Auth and change tracking', function () {

@@ -275,6 +275,7 @@ module.exports = async function (api)
     validateEventContentAndCoerce,
     verifycanCreateEventsOnStreamAndWIthTags,
     doesEventBelongToAccountStream,
+    validateSystemStreamsContent,
     validateAccountStreamsForCreation,
     appendAccountStreamsDataForCreation,
     verifyUnicity,
@@ -559,6 +560,7 @@ module.exports = async function (api)
     createStreamsForTagsIfNeeded,
     validateEventContentAndCoerce,
     doesEventBelongToAccountStream,
+    validateSystemStreamsContent,
     validateAccountStreamsForUpdate,
     generateVersionIfNeeded,
     updateAttachments,
@@ -915,6 +917,18 @@ module.exports = async function (api)
 
   }
 
+  function validateSystemStreamsContent(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+    if (! context.doesEventBelongToAccountStream) return next();
+    if (context.newEvent == null) return next();
+
+    const acceptedIndexedTypes: Array<string> = ['number', 'string', 'undefined'];
+
+    const contentType: string = typeof context.newEvent.content;
+    if (! acceptedIndexedTypes.includes(contentType)) return next(errors.invalidParametersFormat(ErrorMessages.IndexedParameterInvalidFormat, params));
+
+    return next();
+  }
+
   /**
    * If they don't exist, create the streams for the present tags
    */
@@ -945,7 +959,9 @@ module.exports = async function (api)
     const streamIdsCreated: Array<string> = streamsCreatedResults.map(r => {
       if (r.status === 'fulfilled') return r.value.id;
     });
-    logger.info('backward compatibility: created streams for tags: ' + streamIdsCreated);
+    
+    if (streamIdsCreated.length > 0) logger.info('backward compatibility: created streams for tags: ' + streamIdsCreated);
+    
     next();
   }
 

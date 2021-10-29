@@ -19,6 +19,8 @@ const { databaseFixture } = require('test-helpers');
 const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { DataStore } = require('mall/interfaces/DataStore');
+const treeUtils = require('utils/src/treeUtils');
 
 describe("System streams", function () {
   let app;
@@ -68,9 +70,9 @@ describe("System streams", function () {
       it('[9CGO] Should return all streams - including system ones', async () => {
         const expectedRes = [];
         validation.addStoreStreams(expectedRes)
-        const readableStreams = [
+        let readableStreams = [
           {
-            name: 'account',
+            name: 'Account',
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
             parentId: null,
             children: [
@@ -127,7 +129,7 @@ describe("System streams", function () {
           },
           {
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
-            name: 'helpers',
+            name: 'Helpers',
             parentId: null,
             children: [
               {
@@ -140,6 +142,12 @@ describe("System streams", function () {
             ] 
           }
         ];
+        
+        readableStreams = treeUtils.cloneAndApply(readableStreams, (s) => {
+          s.createdBy = DataStore.BY_SYSTEM;
+          s.modifiedBy = DataStore.BY_SYSTEM;
+          return s;
+        });
 
         const { UserStreams } = require('mall/interfaces/DataStore')
         UserStreams.applyDefaults(readableStreams);

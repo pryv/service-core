@@ -251,7 +251,7 @@ describe('root', function() {
       assert.equal(res.status, 400);
     });
 
-    it('[J2WP] should update the access\'s "last used" time and *internal* request counters', async function() {
+    it('[J2WP] trackingFunctions should update the access\'s "last used" time and *internal* request counters', async function() {
       let expectedTime;
       const calledMethodKey = 'events:get';
       let originalCallCount;

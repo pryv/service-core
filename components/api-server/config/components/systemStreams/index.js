@@ -22,6 +22,9 @@ const IS_INDEXED: string = 'isIndexed';
 const IS_EDITABLE: string = 'isEditable';
 const IS_UNIQUE: string = 'isUnique';
 const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
+const REGEX_VALIDATION: string = 'regexValidation';
+
+const { DataStore } = require('mall/interfaces/DataStore');
 
 module.exports.features = {
   IS_SHOWN,
@@ -29,6 +32,7 @@ module.exports.features = {
   IS_EDITABLE,
   IS_UNIQUE,
   IS_REQUIRED_IN_VALIDATION,
+  REGEX_VALIDATION,
 };
 
 const DEFAULT: string = 'default';
@@ -41,7 +45,11 @@ const DEFAULT_VALUES_FOR_FIELDS: {} = {
   [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
   [IS_SHOWN]: true, // if true, will be returned in events.get
   [IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
-  [IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
+  [IS_REQUIRED_IN_VALIDATION]: false, // if true, the field will be required in the validation
+  created: DataStore.UNKOWN_DATE,
+  modified: DataStore.UNKOWN_DATE,
+  createdBy: DataStore.BY_SYSTEM,
+  modifiedBy: DataStore.BY_SYSTEM,
 };
 
 /**
@@ -57,7 +65,8 @@ function load(config: {}): {} {
   let defaultAccountStreams: Array<SystemStream> = 
     [{
       id: 'account',
-      type: 'none',
+      name: 'Account',
+      type: 'none/none',
       children: [
         {
           id: 'username',
@@ -138,7 +147,8 @@ function load(config: {}): {} {
 
   let helpers: Array<SystemStream> = [{
     id: 'helpers',
-    type: 'none',
+    name: 'Helpers',
+    type: 'none/none',
     children: [
       {
         id: 'active',

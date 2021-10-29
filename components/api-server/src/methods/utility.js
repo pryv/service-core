@@ -22,6 +22,8 @@ import type { ApiCallback }  from '../API';
 
 const { Permission } = require('business/src/accesses');
 
+const updateAccessUsageStats = require('./helpers/updateAccessUsageStats');
+
 type ApiCall = {
   method: string,
   params: mixed,
@@ -39,10 +41,14 @@ module.exports = async function (api: API) {
 
   const isOpenSource = config.get('openSource:isActive');
   const isAuditActive = (! isOpenSource) && config.get('audit:active');
+
+  const updateAccessUsage = await updateAccessUsageStats();
+
   let audit;
   if (isAuditActive) {
     audit = require('audit');
   }
+
   api.register('getAccessInfo',
     commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
     getAccessInfoApiFn);
@@ -83,43 +89,35 @@ module.exports = async function (api: API) {
 
   api.register('callBatch',
     commonFns.getParamsValidation(methodsSchema.callBatch.params),
-    callBatchApiFn);
+    callBatchApiFn,
+    updateAccessUsage);
 
   async function callBatchApiFn(context: MethodContext, calls: Array<ApiCall>, result: Result, next: ApiCallback) {
+    // allow non stringified stream queries in batch calls 
+    context.acceptStreamsQueryNonStringified = true;
+    context.disableAccessUsageStats = true;
 
-    let needRefeshForNextcall = true;
-    let freshContext: MethodContext = null;
-    
-    result.results = await bluebird.mapSeries(calls, executeCall);
-    next();
-
-
-    // Reload streams tree since a previous call in this batch
-    // may have modified stream structure.
-    async function refreshContext() {
-      // Clone context to avoid potential side effects
-      freshContext = _.cloneDeep(context);
-      // Accept streamQueries in JSON format for batchCalls
-      freshContext.acceptStreamsQueryNonStringified = true;
-      const access = freshContext.access;
-      if (! access.isPersonal()) access.loadPermissions();
+    // to avoid updatingAccess for each api call we are collecting all counter here
+    context.accessUsageStats = {};
+    function countCall(methodId) {
+      if (context.accessUsageStats[methodId] == null) context.accessUsageStats[methodId] = 0;
+      context.accessUsageStats[methodId]++;
     }
+
+    result.results = await bluebird.mapSeries(calls, executeCall);
+    context.disableAccessUsageStats = false; // to allow tracking functions
+    next();
 
     async function executeCall(call: ApiCall) {
       try {
-        if (needRefeshForNextcall) {
-          await refreshContext();
-          needRefeshForNextcall = false;
-        }
-
-        // needRefeshForNextcall = ['streams.create', 'streams.update', 'streams.delete'].includes(call.method);
-        
-        freshContext.methodId = call.method;
+        countCall(call.method);
+        // update methodId to match the call todo
+        context.methodId = call.method;
         // Perform API call
         const result: Result = await bluebird.fromCallback(
-          (cb) => api.call(freshContext, call.params, cb));
+          (cb) => api.call(context, call.params, cb));
         
-        if (isAuditActive) await audit.validApiCall(freshContext, result);
+        if (isAuditActive) await audit.validApiCall(context, result);
 
         return await bluebird.fromCallback(
           (cb) => result.toObject(cb));
@@ -131,7 +129,7 @@ module.exports = async function (api: API) {
         };
         errorHandling.logError(err, reqContext, logger);
 
-        if (isAuditActive) await audit.errorApiCall(freshContext, err);
+        if (isAuditActive) await audit.errorApiCall(context, err);
         
         return {error: errorHandling.getPublicErrorData(err)};
       }

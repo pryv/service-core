@@ -12,14 +12,16 @@ import type { SystemStream } from 'business/src/system-streams';
 const { StreamProperties } = require('business/src/streams');
 const treeUtils = require('utils').treeUtils;
 const { getConfigUnsafe } = require('@pryv/boiler');
+const { features } = require('api-server/config/components/systemStreams');
 
 const PRYV_PREFIX = ':_system:';
 const CUSTOMER_PREFIX = ':system:';
 
-const IS_SHOWN = 'isShown';
-const IS_INDEXED = 'isIndexed';
-const IS_EDITABLE = 'isEditable';
-const IS_UNIQUE = 'isUnique';
+const IS_SHOWN: string = features.IS_SHOWN;
+const IS_INDEXED: string = features.IS_INDEXED;
+const IS_EDITABLE: string = features.IS_EDITABLE;
+const IS_UNIQUE: string = features.IS_UNIQUE;
+const IS_REQUIRED_IN_VALIDATION: string = features.IS_REQUIRED_IN_VALIDATION;
 
 const ALL = 'all';
 
@@ -315,9 +317,9 @@ class SystemStreamsSerializer {
     return SystemStreamsSerializer.accountLeavesMap;
   }
 
-/**
- * Get streamIds of fields that should be indexed
- */
+  /**
+    * Get streamIds of fields that should be indexed
+    */
   static getIndexedAccountStreamsIdsWithoutPrefix(): Array<string> {
     if (SystemStreamsSerializer.indexedAccountStreamsIdsWithoutPrefix != null) return SystemStreamsSerializer.indexedAccountStreamsIdsWithoutPrefix;
     let indexedStreamIds = Object.keys(filterMapStreams(SystemStreamsSerializer.getAccountChildren(), IS_INDEXED));
@@ -376,6 +378,15 @@ class SystemStreamsSerializer {
   static removePrefixFromStreamId(streamIdWithPrefix: string): string {
     const streamIdWithoutPrefix = SystemStreamsSerializer.streamIdWithPrefixToWithout[streamIdWithPrefix];
     return streamIdWithoutPrefix ? streamIdWithoutPrefix : streamIdWithPrefix;
+  }
+
+  /**
+   * Checks if a streamId starts with a system stream prefix. To be used only in accesses.create!
+   * Don't let prefix checks leak into the code, use maps instead for performance and readability.
+   * @param {string} streamIdWithPrefix 
+   */
+  static hasSystemStreamPrefix(streamIdWithPrefix: string): boolean {
+    return streamIdWithPrefix.startsWith(PRYV_PREFIX) || streamIdWithPrefix.startsWith(CUSTOMER_PREFIX);
   }
 
   /**
