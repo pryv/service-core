@@ -124,7 +124,7 @@ describe('Result', function () {
  * Stream simply forwards what he receives. Used for pipe case.
  */
 function SimpleTransformStream() {
-  Transform.call(this, {objectMode: true});
+  Transform.call(this, {objectMode: true, highWaterMark: 4000});
 }
 
 inherits(SimpleTransformStream, Transform);

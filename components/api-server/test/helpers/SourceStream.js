@@ -17,7 +17,7 @@ module.exports = Source;
  * @constructor
  */
 function Source(array) {
-  Readable.call(this, {objectMode: true});
+  Readable.call(this, {objectMode: true, highWaterMark: 4000});
   this.array = R.clone(array); // shift changes in place
 }
 

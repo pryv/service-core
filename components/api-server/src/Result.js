@@ -258,7 +258,7 @@ class ResultStream extends Transform {
   tracing: tracing;
   
   constructor(tracing) {
-    super({objectMode: true});
+    super({objectMode: true, highWaterMark: 4000});
     this.tracing = tracing;
     this.isStart = true;
   }
@@ -301,7 +301,7 @@ class StreamConcatArray {
       streamConcact.nextFactoryCallBack = callback;
       streamConcact._next();
     }
-    this.multistream = new MultiStream(factory, {objectMode: true});
+    this.multistream = new MultiStream(factory, {objectMode: true, highWaterMark: 4000});
   }
 
   /**

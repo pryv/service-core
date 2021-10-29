@@ -19,7 +19,7 @@ const SERIALIZATION_STACK_SIZE = 1000;
  * @constructor
  */
 function ArrayStream(arrayName, isFirst, tracing) {
-  Transform.call(this, {objectMode: true});
+  Transform.call(this, {objectMode: true, highWaterMark: 4000});
   this.isStart = true;
   this.arrayName = arrayName;
   this.prefix = formatPrefix(arrayName, isFirst);

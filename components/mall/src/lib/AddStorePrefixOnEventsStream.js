@@ -18,7 +18,7 @@
   */
  class AddStorePrefixOnEventsStream extends Transform {
    constructor(storeId) {
-     super({objectMode: true});
+     super({objectMode: true, highWaterMark: 4000});
      this.storePrefix = ':' + storeId + ':';
    }
    _transform = function (event, encoding, callback) {

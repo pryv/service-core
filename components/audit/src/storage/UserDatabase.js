@@ -141,7 +141,7 @@ class UserDatabase {
       return iterateTransform;
     }
 
-    return Readable.from(iterateTransform);
+    return Readable.from(iterateTransform,  {objectMode: true, highWaterMark: 4000});
   }
 
 

@@ -12,6 +12,7 @@ const lodash = require('lodash');
 const bluebird = require('bluebird');
 
 const { getLogger } = require('@pryv/boiler');
+const { Readable } = require('stream');
 
 import type { Db as MongoDB, Collection }  from 'mongodb';
 
@@ -347,7 +348,17 @@ class Database {
   {
     this.findCursor(collectionInfo, query, options, (err, cursor: Object) => {
       if (err) return callback(err);
-      callback(null, cursor.stream());
+
+      async function* iterate() {
+        let res = null;
+        do {
+          res = await cursor.next();
+          if (res != null) yield res
+        } while (res != null);
+      }
+  
+      const stream = Readable.from(iterate(),  {objectMode: true, highWaterMark: 4000});
+      callback(null, stream);
     });
   }
 
