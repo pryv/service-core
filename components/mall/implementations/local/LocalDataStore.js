@@ -104,7 +104,19 @@ class LocalUserStreams extends UserStreams {
 }
 
 class LocalUserEvents extends UserEvents {
+
+  async get(userId, params) {
+    const {query, options} = this._prepareQueryAndOptions(params);
+    return await bluebird.fromCallback(cb => userEventsStorage.findMany(userId, query, options));
+  }
+
   async getStreamed(userId, params) {
+    const {query, options} = this._prepareQueryAndOptions(params);
+  
+    return await bluebird.fromCallback(cb => userEventsStorage.findStreamed(userId, query, options, cb));
+  }
+
+  _prepareQueryAndOptions(params) {
     const query = querying.noDeletions(querying.applyState({}, params.state));
 
     const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams, SystemStreamUtils.forbiddenForReadingStreamIds);
@@ -166,8 +178,8 @@ class LocalUserEvents extends UserEvents {
       skip: params.skip,
       limit: params.limit
     };
-  
-    return await bluebird.fromCallback(cb => userEventsStorage.findStreamed(userId, query, options, cb));
+
+    return {query, options};
   }
 }
 

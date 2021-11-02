@@ -21,6 +21,7 @@ const { treeUtils } = require('utils');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
 const ChangeStreamIdPrefixStream = require('../streams/ChangeStreamIdPrefixStream');
+const { convertStreamIdsToOldPrefixOnResult, putOldTags } = require('../helpers/backwardCompatibility');
 const addTagsStream = require('../streams/AddTagsStream');
 
 import type { Stream } from 'business/src/streams';
@@ -340,7 +341,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
  * - Create a copy of the params per query
  * - Add specific stream queries to each of them
  */
-async function findEventsFromStore(filesReadTokenSecret: string, 
+function findEventsFromStore(filesReadTokenSecret: string, 
   isStreamIdPrefixBackwardCompatibilityActive: boolean, isTagsBackwardCompatibilityActive: boolean,
   context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
   if (params.arrayOfStreamQueriesWithStoreId?.length === 0)  {
@@ -365,6 +366,44 @@ async function findEventsFromStore(filesReadTokenSecret: string,
   }
   // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
 
+
+  if (false) {
+    findEventsFromStoreDirect(filesReadTokenSecret, isStreamIdPrefixBackwardCompatibilityActive, isTagsBackwardCompatibilityActive,
+      context, paramsByStoreId, result, next);
+
+  } else { 
+
+    findEventsFromStoreStreamed(filesReadTokenSecret, isStreamIdPrefixBackwardCompatibilityActive, isTagsBackwardCompatibilityActive, 
+      context, paramsByStoreId, result, next);
+  }
+
+}
+
+async function findEventsFromStoreDirect(filesReadTokenSecret: string, 
+  isStreamIdPrefixBackwardCompatibilityActive: boolean, isTagsBackwardCompatibilityActive: boolean,
+  context: MethodContext, paramsByStoreId, result: Result, next: ApiCallback) {
+
+  const events = await mall.events.get(context.user.id, paramsByStoreId);
+  
+  for (const event of events) {
+    if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
+      convertStreamIdsToOldPrefixOnResult(event);
+    } 
+    if (isTagsBackwardCompatibilityActive) {
+      putOldTags(event);
+    }
+    //if (store.settings?.attachments?.setFileReadToken) {
+      SetFileReadTokenStream.setOnEvent(event, context.access, filesReadTokenSecret);
+    //}
+  }
+
+  next();
+}
+
+
+async function findEventsFromStoreStreamed(filesReadTokenSecret: string, 
+  isStreamIdPrefixBackwardCompatibilityActive: boolean, isTagsBackwardCompatibilityActive: boolean,
+  context: MethodContext, paramsByStoreId, result: Result, next: ApiCallback) {
 
   /**
    * Will be called by "mall" for each source of event that need to be streames to result

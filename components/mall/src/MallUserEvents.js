@@ -21,6 +21,23 @@ class StoreUserEvents extends UserEvents {
     this.store = store;
   }
 
+  async get(uid, paramsBySource) {
+    const res = [];
+    for (let storeId of Object.keys(paramsBySource)) {
+      const store = this.store._storeForId(storeId);
+      const storePrefix = ':' + storeId + ':';
+      const params = paramsBySource[storeId];
+      const events = store.events.get(uid, params);
+      for (const event of events) {
+        if (storeId != 'local') {
+          event.streamIds = event.streamIds.map(streamId => this.storePrefix + streamId);
+        } 
+        res.push(event);
+      }
+    }
+    return res;
+  }
+
   async generateStreams(uid, paramsBySource, addEventStreamCB) {
     for (let storeId of Object.keys(paramsBySource)) {
       const store = this.store._storeForId(storeId);

@@ -29,21 +29,19 @@ function SetFileReadTokenStream(params) {
 inherits(SetFileReadTokenStream, Transform);
 
 SetFileReadTokenStream.prototype._transform = function (event, encoding, callback) {
-  
-  // To remove when streamId not necessary
-  event.streamId = event.streamIds[0];
-
-  if (! event.attachments) {
-    this.push(event);
-  } else {
-    event.attachments.forEach(function (att) {
-      att.readToken = utils.encryption
-        .fileReadToken(
-          att.id, this.access.id, this.access.token,
-          this.filesReadTokenSecret);
-    }.bind(this));
-    this.push(event);
-  }
+  setOnEvent(event, this.access, this.filesReadTokenSecret)
+  this.push(event);
   callback();
 };
 
+function setOnEvent(event, access, filesReadTokenSecret) {
+  // To remove when streamId not necessary
+  event.streamId = event.streamIds[0];
+
+  if (event.attachments == null) return;
+  for (const attachment of event.attachments) {
+    attachment.readToken = utils.encryption.fileReadToken(attachment.id, access.id, access.token, filesReadTokenSecret);
+  }
+}
+
+SetFileReadTokenStream.setOnEvent = setOnEvent;
