@@ -367,7 +367,7 @@ function findEventsFromStore(filesReadTokenSecret: string,
   // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
 
 
-  if (false) {
+  if (true) {
     findEventsFromStoreDirect(filesReadTokenSecret, isStreamIdPrefixBackwardCompatibilityActive, isTagsBackwardCompatibilityActive,
       context, paramsByStoreId, result, next);
 
@@ -396,7 +396,7 @@ async function findEventsFromStoreDirect(filesReadTokenSecret: string,
       SetFileReadTokenStream.setOnEvent(event, context.access, filesReadTokenSecret);
     //}
   }
-
+  result.events = events;
   next();
 }
 

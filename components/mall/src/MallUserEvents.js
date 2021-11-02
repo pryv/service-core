@@ -27,7 +27,7 @@ class StoreUserEvents extends UserEvents {
       const store = this.store._storeForId(storeId);
       const storePrefix = ':' + storeId + ':';
       const params = paramsBySource[storeId];
-      const events = store.events.get(uid, params);
+      const events = await store.events.get(uid, params);
       for (const event of events) {
         if (storeId != 'local') {
           event.streamIds = event.streamIds.map(streamId => this.storePrefix + streamId);

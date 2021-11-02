@@ -107,7 +107,8 @@ class LocalUserEvents extends UserEvents {
 
   async get(userId, params) {
     const {query, options} = this._prepareQueryAndOptions(params);
-    return await bluebird.fromCallback(cb => userEventsStorage.findMany(userId, query, options));
+    const res = await bluebird.fromCallback(cb => userEventsStorage.find(userId, query, options, cb));
+    return res;
   }
 
   async getStreamed(userId, params) {
