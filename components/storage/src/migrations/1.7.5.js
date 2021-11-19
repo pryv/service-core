@@ -47,6 +47,7 @@ module.exports = async function (context, callback) {
               'filter': { '_id': access._id },
               'update': {
                 '$set': { permissions: newPermissions },
+                '$unset': { integrity: 1 },
               }
             }
           });
