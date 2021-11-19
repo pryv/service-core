@@ -32,7 +32,7 @@ describe('Migration - 1.7.5',function () {
 
   after(async function() {
     // erase all
-    //await accessesCollection.deleteMany({});
+    await accessesCollection.deleteMany({});
   });
 
   it('[MA7J] must handle data migration from 1.7.1 to 1.7.5', async function () {

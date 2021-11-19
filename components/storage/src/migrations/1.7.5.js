@@ -34,7 +34,6 @@ module.exports = async function (context, callback) {
   async function migrateAccessPermissions(collection) {
     const cursor = await collection.find({'permissions.streamId': { $regex : /^\./ }});
     let requests = [];
-    let document;
     let accessesMigrated = 0;
     while (await cursor.hasNext()) {
       const access = await cursor.next();
@@ -59,9 +58,6 @@ module.exports = async function (context, callback) {
             requests = [];
           }    
         }
-
-
-        
       }
       
     }
@@ -84,7 +80,7 @@ module.exports = async function (context, callback) {
       if (! oldStreamId.startsWith(DOT)) return permission;
 
       const streamIdWithoutPrefix = oldStreamId.substring(1);
-      // case :_system:
+
       let newStreamId;
       if (isPrivateSystemStreamId(streamIdWithoutPrefix)) {
         newStreamId = ':_system:' + streamIdWithoutPrefix;
