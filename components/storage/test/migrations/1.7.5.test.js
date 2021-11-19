@@ -44,22 +44,24 @@ describe('Migration - 1.7.5',function () {
 
     // verify accesses afterwards
     const previousAccessesWithSystemStreamPermissions = await (await accessesCollection.find({"permissions.streamId": { $regex : /^\./ }})).toArray();
-    console.log('going to check if migrated this one', JSON.stringify(previousAccessesWithSystemStreamPermissions,null,2));
+    const accessToCheck = previousAccessesWithSystemStreamPermissions[0];
     // perform migration
     await bluebird.fromCallback(cb => newVersion.migrateIfNeeded(cb));
     
     // verify that accesses were migrated
+    let isAccessToCheckProcessed = false;
+
     const accesses = await (await bluebird.fromCallback(cb => accessesCollection.find({}, cb))).toArray();
-    //console.log('got acccesses', accesses)
     for (const access of accesses) {
-      //console.log('checkin access', access);
       if (access.type === 'personal') continue;
+      if ( access._id === accessToCheck._id) isAccessToCheckProcessed = true;
       for (const permission of access.permissions) {
         if (permission.streamId != null) {
           assert.isFalse(hasDotStreamId(permission.streamId));
         }
       }
     }
+    assert.isTrue(isAccessToCheckProcessed);
 
     function hasDotStreamId(streamId) {
       return streamId.indexOf('.') > -1;
