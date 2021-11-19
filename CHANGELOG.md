@@ -1,3 +1,23 @@
+## 1.7
+
+### 1.7.5
+
+- add missing system stream permissions accesses
+
+### 1.7.3
+
+- fix nats booting after migration
+
+### 1.7.1
+
+- migrate tags into streams
+
+### 1.7.0
+
+- introduce mall abstraction
+- add integrity
+- refactor access permissions logic
+
 ## 1.6
 
 ### 1.6.21
