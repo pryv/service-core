@@ -3,6 +3,7 @@
 ### 1.7.5
 
 - add missing system stream permissions accesses
+- change __unique properties cleanup, just match them by key suffix, not from current serializer unique props. Avoids migration error if uniqueness has been modified.
 
 ### 1.7.3
 
