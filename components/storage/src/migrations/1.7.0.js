@@ -23,8 +23,6 @@ module.exports = async function (context, callback) {
   const logger = getLogger('migration-1.7.0');
   logger.info('V1.6.21 => v1.7.0 Migration started');
 
-  const uniqueProperties: Array<string> = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
-  const uniquePropertiesToDelete: Array<string> = uniqueProperties.map(s => s + '__unique');
   const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
   const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
   const eventsCollection = await bluebird.fromCallback(cb =>
@@ -97,9 +95,10 @@ module.exports = async function (context, callback) {
     }
 
     function buildUniquePropsToDelete(event) {
+      const UNIQUE_SUFFIX = '__unique';
       const unsets = {};
-      for (const prop of uniquePropertiesToDelete) {
-        if (event[prop] != null) unsets[prop] = 1;
+      for (const prop of Object.keys(event)) {
+        if (prop.indexOf(UNIQUE_SUFFIX) > -1) unsets[prop] = 1;
       }
       return unsets;
     }
@@ -222,7 +221,6 @@ module.exports = async function (context, callback) {
   }
 
   async function migrateTagsAccesses(accessesCollection): Promise<void> {
-    console.log('a')
     const cursor = await accessesCollection.find({ 'permissions.tag': { $exists: true} });
     let requests = [];
     let accessesMigrated = 0;
