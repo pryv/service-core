@@ -327,15 +327,21 @@ class UsersRepository {
       }
     }, getTransactionOptions());
   }
-  async deleteOne(userId: string): Promise<number> {
+  async deleteOne(userId: string, username: ?string): Promise<number> {
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
-    return await bluebird.fromCallback(
+    if (username == null) {
+      const user = await this.getUserById(userId);
+      username = user?.username;
+    }
+    const result = await bluebird.fromCallback(
       cb => this.eventsStorage.database.deleteMany(
         this.eventsStorage.getCollectionInfo(userId),
         { streamIds: { $in: userAccountStreamsIds } },
         cb,
       ),
     );
+    cache.clearUserId(userId, username);
+    return result;
   }
   async checkUserPassword(userId: string, password: string): Promise<boolean> {
     const currentPass = await getUserPasswordHash(userId, this.eventsStorage);

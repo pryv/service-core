@@ -38,7 +38,7 @@ function handleMessage(userId, msg) {
   }
   if (msg.action == 'clear') {
     removeChangeTracker(userId);
-    return cache.clearUserId(userId, false);
+    return cache.clearUserId(userId, msg.andAccountWithUsername, false);
   }
 }
 
@@ -50,9 +50,14 @@ function unsetAccessLogic(userId, accessLogic) {
 }
 
 // emit message "clear" to listners
-function clearUserId(userId) {
+/**
+ * 
+ * @param {string} userId 
+ * @param {string} [andAccountWithUsername] also clear account data cache if provided 
+ */
+function clearUserId(userId, andAccountWithUsername = null) {
   removeChangeTracker(userId);
-  pubsub.cache.emit(userId, {action: 'clear'});
+  pubsub.cache.emit(userId, {action: 'clear', andAccountWithUsername: andAccountWithUsername});
 }
 
 

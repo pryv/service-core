@@ -154,7 +154,7 @@ describe('DELETE /users/:username', () => {
       });
 
   
-      describe('when given existing username', function() {
+      describe('[D7HZ] when given existing username', function() {
         let deletedOnRegister = false;
         let userToDelete;
         before(async function() {
@@ -222,8 +222,8 @@ describe('DELETE /users/:username', () => {
           assert.isFalse(userFileExists);
         });
         it(`[${testIDs[i][10]}] should delete user from the cache`, async function() {
-          const usersExists = cache.get(cache.NS.USERID_BY_USERNAME, userToDelete.attrs.id)
-          console.log('got', usersExists)
+          const usersExists = cache.get(cache.NS.USERID_BY_USERNAME, userToDelete.attrs.id);
+          assert.isUndefined(usersExists);
         })
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
           const user = await usersRepository.getUserById(username2);

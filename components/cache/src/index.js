@@ -65,11 +65,21 @@ function clear(namespace) {
   debug.clear(namespace);
 }
 
-function clearUserId(userId, notifyOtherProcesses = true) {
+/**
+ * Clear only all data related to userId 
+ * @param {string} userId 
+ * @param {[string]} andUserAccountWithUsername
+ * @param {boolean} notifyOtherProcesses 
+ * @returns 
+ */
+function clearUserId(userId, andUserAccountWithUsername = null, notifyOtherProcesses = true) {
   if (! isActive) return;
-  if (notifyOtherProcesses && synchro != null) synchro.clearUserId(userId);
+  if (notifyOtherProcesses && synchro != null) synchro.clearUserId(userId, andUserAccountWithUsername);
   _unsetStreams(userId, 'local'); // for now we hardcode local streams
   clearAccessLogics(userId);
+  if (andUserAccountWithUsername != null) {
+    unset(NS.USERID_BY_USERNAME, andUserAccountWithUsername);
+  }
 }
 
 //--------------- Streams ---------------//
