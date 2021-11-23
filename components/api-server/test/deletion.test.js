@@ -28,6 +28,8 @@ const {
 const { pubsub } = require('messages');
 const bluebird = require('bluebird');
 
+const cache = require('cache');
+
 let app;
 let authKey;
 let username1; // fixtures reuse the username for userId
@@ -132,9 +134,9 @@ describe('DELETE /users/:username', () => {
   // [isDnsLess, isOpenSource]
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
-    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T', '75IW', 'MPXH'],
-    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR', '7WMG', 'UWYY'],
-    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B', 'L2Q1']];
+    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T', '75IW', 'MPXH', '635G'],
+    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR', '7WMG', 'UWYY', 'U004'],
+    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B', 'L2Q1', 'CQ50']];
   for (let i = 0; i < settingsToTest.length; i++) {
     
     // skip tests that are not in scope
@@ -219,6 +221,10 @@ describe('DELETE /users/:username', () => {
           const userFileExists = fs.existsSync(pathToUserAuditData);
           assert.isFalse(userFileExists);
         });
+        it(`[${testIDs[i][10]}] should delete user from the cache`, async function() {
+          const usersExists = cache.get(cache.NS.USERID_BY_USERNAME, userToDelete.attrs.id)
+          console.log('got', usersExists)
+        })
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
           const user = await usersRepository.getUserById(username2);
           assert.exists(user);
