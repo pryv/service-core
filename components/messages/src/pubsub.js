@@ -164,6 +164,9 @@ class PubSubFactory {
   setTestNotifier(testNotifier) {
     globalTestNotifier = testNotifier;
   }
+  setTestNatsDeliverHook(deliverHook) {
+    nats.setTestNatsDeliverHook(deliverHook);
+  }
 }
 
 const pubSubFactory = new PubSubFactory();

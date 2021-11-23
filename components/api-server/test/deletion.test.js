@@ -25,10 +25,10 @@ const {
   produceInfluxConnection,
 } = require('api-server/test/test-helpers');
 
-const { pubsub } = require('messages');
 const bluebird = require('bluebird');
 
 const cache = require('cache');
+const { pubsub } = require('messages');
 
 let app;
 let authKey;
@@ -56,11 +56,6 @@ describe('DELETE /users/:username', () => {
     await app.initiate();
 
     await require('../src/methods/auth/delete')(app.api);
-    let axonMsgs = [];
-    const axonSocket = {
-      emit: (...args) => axonMsgs.push(args),
-    };
-    pubsub.setTestNotifier(axonSocket);
     await require('api-server/src/methods/events')(app.api);
 
     request = supertest(app.expressApp);
@@ -157,8 +152,10 @@ describe('DELETE /users/:username', () => {
       describe('[D7HZ] when given existing username', function() {
         let deletedOnRegister = false;
         let userToDelete;
+        let natsDelivered = [];
         before(async function() {
 
+         
           userToDelete = await initiateUserWithData(username1);
           await initiateUserWithData(username2);
           if (! settingsToTest[i][0]) { // ! isDnsLess
@@ -170,8 +167,13 @@ describe('DELETE /users/:username', () => {
             .times(1)
             .reply(200, { deleted: true });
           }
+
+          pubsub.setTestNatsDeliverHook(function(scopeName, eventName, payload) {
+            natsDelivered.push({scopeName, eventName, payload});
+          });
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
+
         it(`[${testIDs[i][0]}] should respond with 200`, function () {
           assert.equal(res.status, 200);
           assert.equal(res.body.userDeletion.username, username1);
@@ -224,6 +226,11 @@ describe('DELETE /users/:username', () => {
         it(`[${testIDs[i][10]}] should delete user from the cache`, async function() {
           const usersExists = cache.get(cache.NS.USERID_BY_USERNAME, userToDelete.attrs.id);
           assert.isUndefined(usersExists);
+          assert.equal(natsDelivered.length, 1);
+          assert.equal(natsDelivered[0].scopeName, 'cache.' + userToDelete.attrs.id);
+          assert.equal(natsDelivered[0].eventName, userToDelete.attrs.id);
+          assert.equal(natsDelivered[0].payload.action, 'clear');
+          assert.equal(natsDelivered[0].payload.andAccountWithUsername, userToDelete.attrs.id);
         })
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
           const user = await usersRepository.getUserById(username2);
