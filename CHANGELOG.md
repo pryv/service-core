@@ -1,5 +1,9 @@
 ## 1.7
 
+### 1.7.6
+
+- Fix issue where a deleted user was kept in the cache, thus rendering the reuse of username possible, but failing all subsequent calls as the password and tokens were not returned (since the wrong userId was returned by the cache)
+
 ### 1.7.5
 
 - add missing system stream permissions accesses
