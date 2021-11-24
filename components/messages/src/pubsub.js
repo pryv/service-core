@@ -165,6 +165,10 @@ class PubSubFactory {
     globalTestNotifier = testNotifier;
   }
   setTestNatsDeliverHook(deliverHook) {
+    if (nats == null) {
+      console.log(new Error('NATS not initialized'));
+      return;
+    } 
     nats.setTestNatsDeliverHook(deliverHook);
   }
 }
