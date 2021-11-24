@@ -25,10 +25,10 @@ const {
   produceInfluxConnection,
 } = require('api-server/test/test-helpers');
 
+const { pubsub } = require('messages');
 const bluebird = require('bluebird');
 
 const cache = require('cache');
-const { pubsub } = require('messages');
 
 let app;
 let authKey;
@@ -46,7 +46,7 @@ let config;
 let isOpenSource = false;
 let regUrl;
 
-describe('DELETE /users/:username', () => {
+describe('[PGTD] DELETE /users/:username', () => {
 
   before(async function() {
     config = await getConfig();
@@ -56,7 +56,17 @@ describe('DELETE /users/:username', () => {
     await app.initiate();
 
     await require('../src/methods/auth/delete')(app.api);
+    let axonMsgs = [];
+    const axonSocket = {
+      emit: (...args) => axonMsgs.push(args),
+    };
+    // needed even if not used
+    pubsub.setTestNotifier(axonSocket);
     await require('api-server/src/methods/events')(app.api);
+    await require('api-server/src/methods/streams')(app.api);
+    await require('../src/methods/auth/register')(app.api);
+    await require('../src/methods/auth/login')(app.api);
+    await require('../src/methods/utility')(app.api);
 
     request = supertest(app.expressApp);
 
@@ -72,8 +82,8 @@ describe('DELETE /users/:username', () => {
       app.storageLayer.eventFiles.removeAll(cb)
     );
 
-    username1 = charlatan.Internet.userName();
-    username2 = charlatan.Internet.userName();
+    username1 = charlatan.Internet.userName().replace('_','-') + 'x';
+    username2 = charlatan.Internet.userName().replace('_','-') + 'x';
 
     authKey = config.get('auth:adminAccessKey');
   });
@@ -155,7 +165,6 @@ describe('DELETE /users/:username', () => {
         let natsDelivered = [];
         before(async function() {
 
-         
           userToDelete = await initiateUserWithData(username1);
           await initiateUserWithData(username2);
           if (! settingsToTest[i][0]) { // ! isDnsLess
@@ -167,13 +176,11 @@ describe('DELETE /users/:username', () => {
             .times(1)
             .reply(200, { deleted: true });
           }
-
           pubsub.setTestNatsDeliverHook(function(scopeName, eventName, payload) {
             natsDelivered.push({scopeName, eventName, payload});
           });
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
-
         it(`[${testIDs[i][0]}] should respond with 200`, function () {
           assert.equal(res.status, 200);
           assert.equal(res.body.userDeletion.username, username1);
@@ -288,6 +295,66 @@ describe('DELETE /users/:username', () => {
       });
     });
   }
+
+  describe('User - Create - Delete - Create - Login', function () { 
+    const usernamex = charlatan.Internet.userName().replace('_', '-') + 'x';
+
+    
+    it('[JBZM] should be able to recreate this user, and login', async function() {
+      nock(regUrl).post('/users/validate', () => {return true;}).times(2)
+      .reply(200, { errors: [] });
+
+      nock(regUrl).post('/users', () => {return true;}).times(2)
+      .reply(200, {username: usernamex});
+
+      async function createUser() {
+        const password = 'blupblipblop';
+        res = await request.post(`/users`)
+          .send({
+            appId: 'pryv-test',
+            username: usernamex,
+            password: 'blupblipblop',
+            email: usernamex + '@example.com',
+            insurancenumber: '123456789',
+          });
+        assert.equal(res.status, 201, 'should create a new user');
+        assert.isString(res.body.apiEndpoint, 'should receive an api Endpoint');
+        const token = res.body.apiEndpoint.split('//')[1].split('@')[0];
+
+        res = await request.post(`/${usernamex}/`).set('Authorization', token).send(
+          [{method: 'streams.create', params: {id: 'diary', name: 'Journal'}},
+           {method: 'events.create', params: {streamId: 'diary', type: 'mass/kg', content: '70'}}]);
+        assert.equal(res.status, 200, 'should create a stream and an event');
+        assert.isArray(res.body.results, 'should receive an array of results');
+        assert.isObject(res.body.results[0].stream, 'should receive an stream');
+        assert.isObject(res.body.results[1].event, 'should receive an event');
+      };
+      
+      async function deleteUser() {
+        res = await request.delete(`/users/${usernamex}`).set('Authorization', authKey);
+        assert.equal(res.status, 200, 'should delete the user');
+        assert.equal(res.body.userDeletion?.username, usernamex, 'should receive the deleted username');
+      }
+
+      await createUser();
+      await deleteUser();
+      await createUser();
+      
+      res = await request.post('/' + usernamex + '/auth/login')
+      .set('Origin', 'http://test.pryv.local')
+      .send({
+        appId: 'pryv-test',
+        username: usernamex,
+        password: 'blupblipblop'
+      });
+      assert.equal(res.status, 200, 'should login');
+      assert.isString(res.body.apiEndpoint, 'should receive an api Endpoint');
+      assert.isString(res.body.token, 'should receive a token');
+
+      await deleteUser();
+    });
+  });
+
 });
 
 async function initiateUserWithData(username: string) {

@@ -287,8 +287,6 @@ class UsersRepository {
     return user;
   }
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
-    // invalidate caches
-    cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
    
     await this.checkDuplicates(update);
     
