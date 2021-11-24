@@ -6,7 +6,7 @@
  */
 
 // @flow
-const nock = require('nock');
+const nock = require('nock'); 
 const cuid = require('cuid');
 const fs = require('fs');
 const path = require('path');
@@ -55,7 +55,7 @@ describe('[PGTD] DELETE /users/:username', () => {
     app = getApplication();
     await app.initiate();
 
-    await require('../src/methods/auth/delete')(app.api);
+    await require('api-server/src/methods/auth/delete')(app.api);
     let axonMsgs = [];
     const axonSocket = {
       emit: (...args) => axonMsgs.push(args),
@@ -64,9 +64,9 @@ describe('[PGTD] DELETE /users/:username', () => {
     pubsub.setTestNotifier(axonSocket);
     await require('api-server/src/methods/events')(app.api);
     await require('api-server/src/methods/streams')(app.api);
-    await require('../src/methods/auth/register')(app.api);
-    await require('../src/methods/auth/login')(app.api);
-    await require('../src/methods/utility')(app.api);
+    await require('api-server/src/methods/auth/login')(app.api);
+    await require('api-server/src/methods/utility')(app.api);
+    await require('api-server/src/methods/auth/register')(app.api);
 
     request = supertest(app.expressApp);
 
@@ -299,7 +299,7 @@ describe('[PGTD] DELETE /users/:username', () => {
       });
     });
   }
-  /** 
+  
   describe('User - Create - Delete - Create - Login', function () { 
     const usernamex = charlatan.Internet.userName().replace('_', '-') + 'x';
 
@@ -321,6 +321,7 @@ describe('[PGTD] DELETE /users/:username', () => {
             email: usernamex + '@example.com',
             insurancenumber: '123456789',
           });
+        $$(res.body)
         assert.equal(res.status, 201, 'should create a new user');
         assert.isString(res.body.apiEndpoint, 'should receive an api Endpoint');
         const token = res.body.apiEndpoint.split('//')[1].split('@')[0];
@@ -357,7 +358,7 @@ describe('[PGTD] DELETE /users/:username', () => {
 
       await deleteUser();
     });
-  });*/
+  });
 
 });
 
