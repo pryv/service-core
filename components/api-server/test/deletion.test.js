@@ -321,7 +321,7 @@ describe('[PGTD] DELETE /users/:username', () => {
             email: usernamex + '@example.com',
             insurancenumber: '123456789',
           });
-        $$(res.body)
+
         assert.equal(res.status, 201, 'should create a new user');
         assert.isString(res.body.apiEndpoint, 'should receive an api Endpoint');
         const token = res.body.apiEndpoint.split('//')[1].split('@')[0];
