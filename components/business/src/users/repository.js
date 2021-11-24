@@ -288,6 +288,7 @@ class UsersRepository {
   }
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
    
+   
     await this.checkDuplicates(update);
     
     // change password into hash if it exists

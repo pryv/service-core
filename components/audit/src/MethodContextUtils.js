@@ -7,7 +7,7 @@
 function setAuditAccessId(accessId) {
   return function(context, params, result, next) {
     if (! context.access)  context.access = {};
-    if (context.access.id) {
+    if (context.access.id != null && context.access.id != accessId) {
       return next(new Error('Access Id was already set to ' + context.access.id + ' when trying to set it to ' + accessId));
     }
     context.access.id = accessId;

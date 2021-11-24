@@ -82,8 +82,8 @@ describe('[PGTD] DELETE /users/:username', () => {
       app.storageLayer.eventFiles.removeAll(cb)
     );
 
-    username1 = charlatan.Internet.userName().replace('_','-') + 'x';
-    username2 = charlatan.Internet.userName().replace('_','-') + 'x';
+    username1 = charlatan.Internet.userName();
+    username2 = charlatan.Internet.userName();
 
     authKey = config.get('auth:adminAccessKey');
   });
@@ -181,6 +181,10 @@ describe('[PGTD] DELETE /users/:username', () => {
           });
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
+        after(async function() {
+          pubsub.setTestNatsDeliverHook(null);
+        });
+
         it(`[${testIDs[i][0]}] should respond with 200`, function () {
           assert.equal(res.status, 200);
           assert.equal(res.body.userDeletion.username, username1);
@@ -295,7 +299,7 @@ describe('[PGTD] DELETE /users/:username', () => {
       });
     });
   }
-
+  /** 
   describe('User - Create - Delete - Create - Login', function () { 
     const usernamex = charlatan.Internet.userName().replace('_', '-') + 'x';
 
@@ -353,7 +357,7 @@ describe('[PGTD] DELETE /users/:username', () => {
 
       await deleteUser();
     });
-  });
+  });*/
 
 });
 
