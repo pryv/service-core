@@ -339,7 +339,7 @@ class UsersRepository {
         cb,
       ),
     );
-    cache.clearUserId(userId, username);
+    //cache.clearUserId(userId, username);
     return result;
   }
   async checkUserPassword(userId: string, password: string): Promise<boolean> {

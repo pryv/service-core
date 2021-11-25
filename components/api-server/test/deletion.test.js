@@ -342,8 +342,11 @@ describe('[PGTD] DELETE /users/:username', () => {
       }
 
       await createUser();
+      console.log('got in cache', cache.get(cache.NS.USERID_BY_USERNAME, usernamex));
       await deleteUser();
+      console.log('got in cache', cache.get(cache.NS.USERID_BY_USERNAME, usernamex));
       await createUser();
+      console.log('got in cache', cache.get(cache.NS.USERID_BY_USERNAME, usernamex));
       
       res = await request.post('/' + usernamex + '/auth/login')
       .set('Origin', 'http://test.pryv.local')
