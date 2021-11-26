@@ -25,4 +25,5 @@ module.exports = {
   '1.6.0': require('./1.6.0.js'),
   '1.7.0': require('./1.7.0.js'),
   '1.7.1': require('./1.7.1.js'),
+  '1.7.5': require('./1.7.5.js'),
 };

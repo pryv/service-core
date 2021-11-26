@@ -32,7 +32,7 @@ module.exports = async function (context, callback) {
   await migrateDeletedDates(streamsCollection);
   await migrateDeletedDates(webhooksCollection);
 
-  logger.info('V1.7.9 => v1.7.1 Migration finished');
+  logger.info('V1.7.0 => v1.7.1 Migration finished');
   callback();
 
   //----------------- DELETED Dates to Number

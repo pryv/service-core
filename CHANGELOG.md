@@ -1,3 +1,29 @@
+## 1.7
+
+### 1.7.6
+
+- Fix issue where a deleted user was kept in the cache, thus rendering the reuse of username possible, but failing all subsequent calls as the password and tokens were not returned (since the wrong userId was returned by the cache)
+- Fix access-info permissions
+
+### 1.7.5
+
+- add missing system stream permissions accesses
+- change __unique properties cleanup, just match them by key suffix, not from current serializer unique props. Avoids migration error if uniqueness has been modified.
+
+### 1.7.3
+
+- fix nats booting after migration
+
+### 1.7.1
+
+- migrate tags into streams
+
+### 1.7.0
+
+- introduce mall abstraction
+- add integrity
+- refactor access permissions logic
+
 ## 1.6
 
 ### 1.6.21

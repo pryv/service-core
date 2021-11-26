@@ -60,10 +60,6 @@ describe('accesses (app)', function () {
             streamId: testData.streams[1].id,
             level: 'contribute'
           },
-          {
-            tag: 'super',
-            level: 'contribute'
-          }
         ],
         created: timestamp.now(),
         createdBy: 'test',
@@ -80,10 +76,6 @@ describe('accesses (app)', function () {
             streamId: testData.streams[0].id,
             level: 'read'
           },
-          {
-            tag: 'super',
-            level: 'read'
-          }
         ],
         created: timestamp.now(),
         createdBy: 'test',
@@ -100,10 +92,6 @@ describe('accesses (app)', function () {
             streamId: testData.streams[0].children[0].id,
             level: 'read'
           },
-          {
-            tag: 'super',
-            level: 'read'
-          }
         ],
         created: timestamp.now(),
         createdBy: 'app_A',
@@ -214,10 +202,6 @@ describe('accesses (app)', function () {
             defaultName: 'Should be ignored',
             name: 'Should be ignored'
           },
-          {
-            tag: 'super',
-            level: 'read'
-          }
         ]
       };
       req().post(basePath, access.token).send(data).end(function (res) {

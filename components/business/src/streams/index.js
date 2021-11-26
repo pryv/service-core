@@ -19,8 +19,8 @@ export type Stream = {
   modifiedBy: string,
 
   // stores
-  childrenHidden: boolean,
-}
+  childrenHidden: ?boolean,
+};
 
 const StreamProperties: Array<string> = [
   'id',

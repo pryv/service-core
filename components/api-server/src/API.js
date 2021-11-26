@@ -82,14 +82,14 @@ class API {
     // Is this a full method id, without wildcards?
     if (wildcardAt === -1) {
       // Do we need to initialize this method id?
-      if (! methodMap.has(id)) {
+      //if (! methodMap.has(id)) {
         const methodFns = []; 
         methodMap.set(id, methodFns);
         
         // prepend with matching filters registered earlier, if any
         this.applyMatchingFilters(id);
-      }
-      
+      //}
+       
       // assert: methodMap.has(id)
       const idMethodFns = methodMap.get(id);
       if (idMethodFns == null) 

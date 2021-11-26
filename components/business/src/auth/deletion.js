@@ -197,7 +197,7 @@ class Deletion {
         );
       
       const usersRepository = await getUsersRepository();
-      await usersRepository.deleteOne(context.user.id);
+      await usersRepository.deleteOne(context.user.id, context.user.username);
 
       await Promise.all(drops);
 

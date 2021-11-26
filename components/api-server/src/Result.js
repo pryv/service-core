@@ -37,13 +37,14 @@ type itemDeletion = {
 };
 
 type PermissionLevel = 'read' | 'contribute' | 'manage';
+type Setting = 'forbidden';
 
 type Permission = {
   streamId: string,
   level: PermissionLevel,
 } | {
-  tag: string,
-  level: PermissionLevel,
+  feature: string,
+  setting: Setting,
 };
 
 (async () => {

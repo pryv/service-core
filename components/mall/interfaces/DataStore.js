@@ -33,6 +33,11 @@ function toBeImplemented() {
  */
 class DataStore { 
 
+  static UNKOWN_DATE: number = 10000000.00000001;
+  static BY_SYSTEM: string = 'system';
+  static BY_UNKOWN: string = 'unkown';
+  static BY_EXTERNAL_PREFIX: string = 'external-';
+
   _id: string;
   _name: string;
   _streams: UserStreams;
@@ -75,10 +80,6 @@ class DataStore {
 
 }
 
-DataStore.UNKOWN_DATE = 10000000.00000001;
-DataStore.BY_SYSTEM = 'system';
-DataStore.BY_UNKOWN = 'unkown';
-DataStore.BY_EXTERNAL_PREFIX = 'external-';
 
 
 /**

@@ -48,7 +48,7 @@ custom:
       - 
         isShown: true
         isEditable: true
-        type: myCustomStream/string
+        type: my-custom-stream/string
         name: myCustomStream
         id: myCustomStream
 user-account:

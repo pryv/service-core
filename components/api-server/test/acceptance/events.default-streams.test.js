@@ -330,16 +330,17 @@ describe("Events of system streams", () => {
           });
         });
         describe('which is indexed', function () {
-            
+          
+          describe('when the new value is valid', () => {
             before(async function () {
-              
+            
               await createUser();
               eventData = {
                 streamIds: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')],
                 content: charlatan.Lorem.characters(7),
                 type: 'string/pryv'
               };
-
+  
               nock.cleanAll();
               scope = nock(config.get('services:register:url'))
               scope.put('/users',
@@ -347,12 +348,12 @@ describe("Events of system streams", () => {
                   serviceRegisterRequest = body;
                   return true;
                 }).reply(200, { errors: [] });
-
+  
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
             });
-
+  
             it('[8C80] should return 201', () => {
               assert.equal(res.status, 201);
             });
@@ -372,7 +373,7 @@ describe("Events of system streams", () => {
             it('[199D] should notify register with the new data', function () {
               if (isDnsLess) this.skip();
               assert.equal(scope.isDone(), true);
-
+  
               assert.deepEqual(serviceRegisterRequest, {
                 username: user.attrs.username,
                 user: {
@@ -386,6 +387,30 @@ describe("Events of system streams", () => {
                 fieldsToDelete: {}
               });
             });
+          });
+
+          
+
+          describe('when the new value is invalid', () => {
+
+            before(async function () {
+            
+              await createUser();
+              eventData = {
+                streamIds: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')],
+                content: [charlatan.Lorem.characters(7)],
+                type: 'string/pryv'
+              };
+  
+              res = await request.post(basePath)
+                .send(eventData)
+                .set('authorization', access.token);
+            });
+  
+            it('[PQHR] should return 400', () => {
+              assert.equal(res.status, 400);
+            });
+          });
         });
         describe('which is indexed and unique', () => {
           describe('whose content is unique', () => {
@@ -653,10 +678,10 @@ describe("Events of system streams", () => {
       describe('to update an editable system event', () => {
         let scope;
         let serviceRegisterRequest;
-        async function editEvent (streamId) {
+        async function editEvent (streamId, isFaulty = false) {
           eventData = {
             streamIds: [streamId],
-            content: charlatan.Lorem.characters(7),
+            content: isFaulty ? { someProp: 123 } : charlatan.Lorem.characters(7),
             type: 'string/pryv'
           };
           const initialEvent = await bluebird.fromCallback(
@@ -781,58 +806,31 @@ describe("Events of system streams", () => {
               if (isDnsLess) this.skip();
             });
             describe('as register is working', () => {
-              const streamId = 'language';
-              let systemStreamId;
-              before(async function () {
-                systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
-                await createUser();
-                nock.cleanAll();
-                scope = nock(config.get('services:register:url'));
-                scope.put('/users',
-                  (body) => {
-                    serviceRegisterRequest = body;
-                    return true;
-                  }).reply(200, { errors: [] });
-                await editEvent(systemStreamId);
-              });
-              it('[0RUK] should return 200', () => {
-                assert.equal(res.status, 200);
-              });
-              it('[E43M] should notify register with the updated data', () => {
-                assert.equal(scope.isDone(), true);
-                
-                assert.deepEqual(serviceRegisterRequest, {
-                  username: user.attrs.username,
-                  user: {
-                    [streamId]: [{
-                      value: eventData.content,
-                      isUnique: false,
-                      isActive: true,
-                      creation: false
-                    }],
-                  },
-                  fieldsToDelete: {}
-                });
-              });
-              describe('by adding the “active” streamId', () => {
+              describe('when the new value is valid', () => {
+                const streamId = 'language';
+                let systemStreamId;
                 before(async function () {
+                  systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
                   await createUser();
-                  let streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
                   nock.cleanAll();
-                  scope = nock(config.get('services:register:url'))
+                  scope = nock(config.get('services:register:url'));
                   scope.put('/users',
                     (body) => {
                       serviceRegisterRequest = body;
                       return true;
-                    }).times(2).reply(200, { errors: [] });
-                  res = await createAdditionalEventAndupdateMainOne(streamId);
+                    }).reply(200, { errors: [] });
+                  await editEvent(systemStreamId);
                 });
-                it('[0D18] should notify register with the updated data', () => {
+                it('[0RUK] should return 200', () => {
+                  assert.equal(res.status, 200);
+                });
+                it('[E43M] should notify register with the updated data', () => {
                   assert.equal(scope.isDone(), true);
+                  
                   assert.deepEqual(serviceRegisterRequest, {
                     username: user.attrs.username,
                     user: {
-                      language: [{
+                      [streamId]: [{
                         value: eventData.content,
                         isUnique: false,
                         isActive: true,
@@ -841,6 +839,47 @@ describe("Events of system streams", () => {
                     },
                     fieldsToDelete: {}
                   });
+                });
+                describe('by adding the “active” streamId', () => {
+                  before(async function () {
+                    await createUser();
+                    let streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
+                    nock.cleanAll();
+                    scope = nock(config.get('services:register:url'))
+                    scope.put('/users',
+                      (body) => {
+                        serviceRegisterRequest = body;
+                        return true;
+                      }).times(2).reply(200, { errors: [] });
+                    res = await createAdditionalEventAndupdateMainOne(streamId);
+                  });
+                  it('[0D18] should notify register with the updated data', () => {
+                    assert.equal(scope.isDone(), true);
+                    assert.deepEqual(serviceRegisterRequest, {
+                      username: user.attrs.username,
+                      user: {
+                        language: [{
+                          value: eventData.content,
+                          isUnique: false,
+                          isActive: true,
+                          creation: false
+                        }],
+                      },
+                      fieldsToDelete: {}
+                    });
+                  });
+                });
+              });
+              describe('when the new value is invalid', () => {
+                const streamId = 'language';
+                let systemStreamId;
+                before(async function () {
+                  systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+                  await createUser();
+                  await editEvent(systemStreamId, true);
+                });
+                it('[RDZF] should return 400', () => {
+                  assert.equal(res.status, 400);
                 });
               });
             });
