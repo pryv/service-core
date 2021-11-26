@@ -12,7 +12,11 @@ const logger = getLogger('cache:synchro');
 const { pubsub } = require('messages');
 let cache = null;
 
-const listenerMap = {};
+
+/**
+ * userId -> listener
+ */
+const listenerMap: Map<string, string> = new Map();
 
 const MESSAGES = {
   UNSET_ACCESS_LOGIC: 'unset-access-logic',
@@ -30,21 +34,21 @@ type Message = {
 // ------- listener 
 
 // listen for a userId
-function trackChangesForUserId(userId: string): void {
+function registerListenerForUserId(userId: string): void {
   logger.debug('activate listener for user:', userId);
-  if (listenerMap[userId] != null) return;
-  listenerMap[userId] = pubsub.cache.onAndGetRemovable(
+  if (listenerMap.has(userId)) return;
+  listenerMap.set(userId, pubsub.cache.onAndGetRemovable(
     userId,
     (msg) => { handleMessage(userId, msg); }
-  );
+  ));
 }
 
 // unregister listner
-function removeChangeTracker(userId: string): void {
+function removeListenerForUserId(userId: string): void {
   logger.debug('disable listener for user:', userId);
-  if (listenerMap[userId] == null) return;
-  listenerMap[userId](); // remove listener
-  delete listenerMap[userId];
+  if (! listenerMap.has(userId)) return;
+  listenerMap.get(userId)(); // remove listener
+  listenerMap.delete(userId);
 }
 
 // listener 
@@ -54,7 +58,7 @@ function handleMessage(userId: string, msg: Message) {
     return cache.unsetAccessLogic(userId, {id: msg.accessId, token: msg.accessToken}, false);
   }
   if (msg.action === MESSAGES.UNSET_USER_DATA) { // streams and accesses
-    removeChangeTracker(userId);
+    removeListenerForUserId(userId);
     return cache.unsetUserData(userId, false);
   }
   if (msg.action === MESSAGES.UNSET_USER) {
@@ -75,7 +79,7 @@ function unsetAccessLogic(userId: string, accessLogic): void {
 }
 
 function unsetUserData(userId: string): void {
-  removeChangeTracker(userId);
+  removeListenerForUserId(userId);
   pubsub.cache.emit(userId, {
     action: MESSAGES.UNSET_USER_DATA,
     userId,
@@ -83,7 +87,7 @@ function unsetUserData(userId: string): void {
 }
 
 function unsetUser(username: string): void {
-  removeChangeTracker(username);
+  removeListenerForUserId(username);
   pubsub.cache.emit(MESSAGES.UNSET_USER, {
     username: username,
   });
@@ -96,7 +100,7 @@ function unsetUser(username: string): void {
  * @param {string} [andAccountWithUsername] also clear account data cache if provided 
  */
 /*function clearUserId(userId, andAccountWithUsername = null) {
-  removeChangeTracker(userId);
+  removeListenerForUserId(userId);
   pubsub.cache.emit(userId, {action: 'clear', andAccountWithUsername: andAccountWithUsername});
 }*/
 
@@ -111,13 +115,13 @@ function setCache(c) {
 
 
 module.exports = {
-  trackChangesForUserId,
+  registerListenerForUserId,
   unsetAccessLogic,
   unsetUserData,
   unsetUser,
   //clearUserId,
   setCache,
   listenerMap, // exported for tests only
-  removeChangeTracker, // exported for tests only
+  removeListenerForUserId, // exported for tests only
   MESSAGES,
 }

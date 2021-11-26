@@ -9,6 +9,8 @@
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 const LRU = require('lru-cache');
 
+import type { Stream } from 'business/src/streams';
+
 const _caches = {};
 const MAX_PER_CACHE_SIZE: number = 2000; // maximum elements for each cache (namespace)
 
@@ -123,21 +125,21 @@ function unsetUserData(userId: string, notifyOtherProcesses: boolean = true) {
 }*/
 
 //--------------- Streams ---------------//
-function getStreams(userId, storeId = 'local') {
+function getStreams(userId: string, storeId: string = 'local'): ?Array<Stream> {
   return get(NS.STREAMS_FOR_USERID + storeId, userId);
 }
 
-function setStreams(userId, storeId = 'local', streams) {
+function setStreams(userId: string, storeId: string = 'local', streams: Array<Stream>): void {
   if (! isActive) return;
-  if (isSynchroActive) synchro.trackChangesForUserId(userId); // follow this user
+  if (isSynchroActive) synchro.registerListenerForUserId(userId); // follow this user
   set(NS.STREAMS_FOR_USERID + storeId, userId, streams);
 }
 
-function _unsetStreams(userId, storeId = 'local') {
+function _unsetStreams(userId: string, storeId: string = 'local'): void {
   unset(NS.STREAMS_FOR_USERID + storeId, userId);
 }
 
-function unsetStreams(userId, storeId = 'local') { 
+function unsetStreams(userId: string, storeId: string = 'local'): void { 
   // TODO remove?
   unsetUserData(userId);
   //clearUserId(userId); // for now we just fully clear this user.. 
@@ -146,14 +148,14 @@ function unsetStreams(userId, storeId = 'local') {
 
 //--------------- Access Logic -----------//
 
-function getAccessLogicForToken(userId, token) {
+function getAccessLogicForToken(userId: string, token: string) {
   if (! isActive) return null;
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return null;
   return accessLogics.tokens[token];
 }
 
-function getAccessLogicForId(userId, accessId) {
+function getAccessLogicForId(userId: string, accessId: string) {
   if (! isActive) return null;
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return null;
@@ -161,7 +163,7 @@ function getAccessLogicForId(userId, accessId) {
 }
 
 
-function unsetAccessLogic(userId, accessLogic, notifyOtherProcesses = true) {
+function unsetAccessLogic(userId: string, accessLogic: string, notifyOtherProcesses: boolean = true): void {
   if (! isActive) return;
   // notify others to unsed
   if (notifyOtherProcesses && isSynchroActive) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
@@ -172,13 +174,13 @@ function unsetAccessLogic(userId, accessLogic, notifyOtherProcesses = true) {
   delete accessLogics.ids[accessLogic.id];
 }
 
-function _clearAccessLogics(userId) {
+function _clearAccessLogics(userId: string): void {
   unset(NS.ACCESS_LOGICS_FOR_USERID, userId);
 }
 
-function setAccessLogic(userId, accessLogic) {
+function setAccessLogic(userId: string, accessLogic: {}): void {
   if (! isActive) return;
-  if (synchro != null) synchro.trackChangesForUserId(userId);
+  if (synchro != null) synchro.registerListenerForUserId(userId);
   let accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) {
     accessLogics = {
