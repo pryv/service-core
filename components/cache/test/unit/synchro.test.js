@@ -6,6 +6,7 @@
  */
 const cache = require('cache');
 const synchro = require('../../src/synchro');
+const MESSAGES = synchro.MESSAGES;
 const { pubsub } = require('messages');
 const { getConfig } = require('@pryv/boiler');
 
@@ -50,7 +51,7 @@ describe('Synchro', function () {
     assert.exists(al);
     assert.equal(al.token, 'titi');
     await new Promise(r => setTimeout(r, 50));
-    natsClient.publish('cache.toto', encode({eventName: 'toto', payload: {action: 'unset-access-logic', accessId: 'test', accessToken: 'titi'}}));
+    natsClient.publish('cache.toto', encode({eventName: 'toto', payload: {action: MESSAGES.UNSET_ACCESS_LOGIC, accessId: 'test', accessToken: 'titi'}}));
     await new Promise(r => setTimeout(r, 50));
     assert.notExists(cache.getAccessLogicForId('toto', 'test'));
   });
@@ -58,7 +59,9 @@ describe('Synchro', function () {
   it('[8M1B] Registered listener should be removed on clearEvent', () => {
     cache.setStreams('toto', 'test', 'titi');
     assert.exists(synchro.listenerMap['toto'], 'should be registered');
-    cache.clearUserId('toto');
+    //cache.unsetUserData('toto');
+    cache.clearUserId('toto'); // deletes listeners
+    cache.clearUserId('toto', 'username'); // does not notify
     assert.notExists(synchro.listenerMap['toto'], 'should be removed');
   });
 

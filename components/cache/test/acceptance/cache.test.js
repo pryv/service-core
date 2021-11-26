@@ -92,14 +92,16 @@ describe('Cache', function() {
       assert.notExists(cache.getStreams(username, 'local'));
       assert.notExists(cache.getAccessLogicForToken(username, appAccess.token));
       assert.notExists(cache.getAccessLogicForId(username, appAccess.id));
-      assert.notExists(cache.get(cache.NS.USERID_BY_USERNAME, username));
+      //assert.notExists(cache.get(cache.NS.USERID_BY_USERNAME, username));
+      assert.notExists(cache.getUserId(username));
     }
 
     function isFull() {
       assert.exists(cache.getStreams(username, 'local'));
       assert.exists(cache.getAccessLogicForToken(username, appAccess.token));
       assert.exists(cache.getAccessLogicForId(username, appAccess.id));
-      assert.exists(cache.get(cache.NS.USERID_BY_USERNAME, username));
+      //assert.exists(cache.get(cache.NS.USERID_BY_USERNAME, username));
+      assert.exists(cache.getUserId(username));
     }
 
     // loop 3 times and calculate average time

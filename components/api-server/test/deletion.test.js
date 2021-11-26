@@ -235,7 +235,8 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert.isFalse(userFileExists);
         });
         it(`[${testIDs[i][10]}] should delete user from the cache`, async function() {
-          const usersExists = cache.get(cache.NS.USERID_BY_USERNAME, userToDelete.attrs.id);
+          //const usersExists = cache.get(cache.NS.USERID_BY_USERNAME, userToDelete.attrs.id);
+          const usersExists = cache.getUserId(userToDelete.attrs.id);
           assert.isUndefined(usersExists);
           assert.equal(natsDelivered.length, 1);
           assert.equal(natsDelivered[0].scopeName, 'cache.' + userToDelete.attrs.id);

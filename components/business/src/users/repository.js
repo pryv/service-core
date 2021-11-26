@@ -94,7 +94,8 @@ class UsersRepository {
     return users;
   }
   async getUserIdForUsername(username: string) {
-    let userId = cache.get(cache.NS.USERID_BY_USERNAME, username);
+    //let userId = cache.get(cache.NS.USERID_BY_USERNAME, username);
+    let userId = cache.getUserId(username);
     if (! userId) {
       const userIdEvent = await bluebird.fromCallback(
         cb => this.eventsStorage.database.findOne(
@@ -116,7 +117,8 @@ class UsersRepository {
         ),
       );
       userId = userIdEvent?.userId;
-      cache.set(cache.NS.USERID_BY_USERNAME, username, userId);
+      //cache.set(cache.NS.USERID_BY_USERNAME, username, userId);
+      cache.setUserId(username, userId);
     }
     return userId;
   }
@@ -147,9 +149,9 @@ class UsersRepository {
     let userId = await this.getUserIdForUsername(username);
     if (userId) {
       const user = await this.getUserById(userId);
-      if (! user) {
+      /*if (! user) {
          cache.unset(cache.NS.USERID_BY_USERNAME, username);
-      }
+      }*/
       return user;
     } 
     return null;
@@ -239,7 +241,7 @@ class UsersRepository {
     return true;
   }
   async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
-    cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
+    //cache.unset(cache.NS.USERID_BY_USERNAME, user.username);
     // first explicitly create a collection, because it would fail in the transation
     await bluebird.fromCallback(
       cb => this.eventsStorage.database.getCollection(this.collectionInfo, cb),
@@ -340,6 +342,7 @@ class UsersRepository {
       ),
     );
     //cache.clearUserId(userId, username);
+    cache.unsetUser(username);
     return result;
   }
   async checkUserPassword(userId: string, password: string): Promise<boolean> {
