@@ -107,23 +107,6 @@ function unsetUserData(userId: string, notifyOtherProcesses: boolean = true) {
   _clearAccessLogics(userId);
 }
 
-/**
- * Clear only all data related to userId 
- * @param {string} userId 
- * @param {[string]} andUserAccountWithUsername
- * @param {boolean} notifyOtherProcesses 
- * @returns 
- */
-/*function clearUserId(userId, andUserAccountWithUsername = null, notifyOtherProcesses = true) {
-  if (! isActive) return;
-  if (notifyOtherProcesses && synchro != null) synchro.clearUserId(userId, andUserAccountWithUsername);
-  _unsetStreams(userId, 'local'); // for now we hardcode local streams
-  _clearAccessLogics(userId);
-  if (andUserAccountWithUsername != null) {
-    unset(NS.USERID_BY_USERNAME, andUserAccountWithUsername);
-  }
-}*/
-
 //--------------- Streams ---------------//
 function getStreams(userId: string, storeId: string = 'local'): ?Array<Stream> {
   return get(NS.STREAMS_FOR_USERID + storeId, userId);
@@ -140,9 +123,7 @@ function _unsetStreams(userId: string, storeId: string = 'local'): void {
 }
 
 function unsetStreams(userId: string, storeId: string = 'local'): void { 
-  // TODO remove?
   unsetUserData(userId);
-  //clearUserId(userId); // for now we just fully clear this user.. 
 }
 
 
@@ -202,31 +183,27 @@ const NS = {
 }
 
 const cache = {
-  //set,
-  //unset,
-  //get,
   clear,
 
   getUserId,
   setUserId,
   unsetUser,
   unsetUserData,
-  //clearUserId,
+
+  setStreams,
+  getStreams,
+  unsetStreams,
 
   getAccessLogicForId,
   getAccessLogicForToken,
   unsetAccessLogic,
   setAccessLogic,
 
-  setStreams,
-  getStreams,
-  unsetStreams,
-
   loadConfiguration,
   isActive,
 
-  NS
-}
+  NS,
+};
 
 /** Used only from tests to reload configuration after settting changes */
 function loadConfiguration() {

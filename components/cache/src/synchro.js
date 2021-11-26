@@ -63,7 +63,6 @@ function handleMessage(userId: string, msg: Message) {
   }
   if (msg.action === MESSAGES.UNSET_USER) {
     return cache.unsetUser(userId, false);
-    //return cache.clearUserId(userId, msg.andAccountWithUsername, false);
   }
 }
 
@@ -93,18 +92,6 @@ function unsetUser(username: string): void {
   });
 }
 
-// emit message "clear" to listeners
-/**
- * 
- * @param {string} userId 
- * @param {string} [andAccountWithUsername] also clear account data cache if provided 
- */
-/*function clearUserId(userId, andAccountWithUsername = null) {
-  removeListenerForUserId(userId);
-  pubsub.cache.emit(userId, {action: 'clear', andAccountWithUsername: andAccountWithUsername});
-}*/
-
-
 // register cache here (to avoid require cycles)
 function setCache(c) {
   cache = c;
@@ -113,13 +100,11 @@ function setCache(c) {
   });
 }
 
-
 module.exports = {
   registerListenerForUserId,
   unsetAccessLogic,
   unsetUserData,
   unsetUser,
-  //clearUserId,
   setCache,
   listenerMap, // exported for tests only
   removeListenerForUserId, // exported for tests only

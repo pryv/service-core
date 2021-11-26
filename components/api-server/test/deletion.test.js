@@ -236,7 +236,6 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert.isFalse(userFileExists);
         });
         it(`[${testIDs[i][10]}] should delete user from the cache`, async function() {
-          //const usersExists = cache.get(cache.NS.USERID_BY_USERNAME, userToDelete.attrs.id);
           const usersExists = cache.getUserId(userToDelete.attrs.id);
           assert.isUndefined(usersExists);
           assert.equal(natsDelivered.length, 1);
@@ -328,8 +327,13 @@ describe('[PGTD] DELETE /users/:username', () => {
         const token = res.body.apiEndpoint.split('//')[1].split('@')[0];
 
         res = await request.post(`/${usernamex}/`).set('Authorization', token).send(
-          [{method: 'streams.create', params: {id: 'diary', name: 'Journal'}},
-           {method: 'events.create', params: {streamId: 'diary', type: 'mass/kg', content: '70'}}]);
+          [{
+            method: 'streams.create', params: {id: 'diary', name: 'Journal'}
+          },
+          {
+            method: 'events.create', params: {streamId: 'diary', type: 'mass/kg', content: '70'}
+          }]
+        );
         assert.equal(res.status, 200, 'should create a stream and an event');
         assert.isArray(res.body.results, 'should receive an array of results');
         assert.isObject(res.body.results[0].stream, 'should receive an stream');
@@ -343,11 +347,8 @@ describe('[PGTD] DELETE /users/:username', () => {
       }
 
       await createUser();
-      console.log('got in cache', cache.getUserId(usernamex));
       await deleteUser();
-      console.log('got in cache', cache.getUserId(usernamex));
       await createUser();
-      console.log('got in cache', cache.getUserId(usernamex));
       
       res = await request.post('/' + usernamex + '/auth/login')
       .set('Origin', 'http://test.pryv.local')
