@@ -56,13 +56,20 @@ describe('Synchro', function () {
     assert.notExists(cache.getAccessLogicForId('toto', 'test'));
   });
 
-  it('[8M1B] Registered listener should be removed on clearEvent', () => {
-    cache.setStreams('toto', 'test', 'titi');
-    assert.exists(synchro.listenerMap['toto'], 'should be registered');
-    //cache.unsetUserData('toto');
-    cache.clearUserId('toto'); // deletes listeners
-    cache.clearUserId('toto', 'username'); // does not notify
-    assert.notExists(synchro.listenerMap['toto'], 'should be removed');
+  it('[8M1B] Registered listener should be removed on clearEvent', async () => {
+    cache.setStreams('toto-id', 'test', 'titi');
+    assert.exists(synchro.listenerMap['toto-id'], 'should be registered');
+    cache.unsetUserData('toto-id');
+    assert.notExists(synchro.listenerMap['toto-id'], 'should be removed');
+  });
+
+
+  it('[KF7E] Registered listener should be removed on unsetUser', async () => {
+    cache.setUserId('toto', 'toto-id')
+    cache.setStreams('toto-id', 'test', 'titi');
+    assert.exists(synchro.listenerMap['toto-id'], 'should be registered');
+    cache.unsetUser('toto');
+    assert.notExists(synchro.listenerMap['toto-id'], 'should be removed');
   });
 
   it('[OKHQ] Listners should not receive "internal" messages', async () => {

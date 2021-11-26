@@ -54,10 +54,10 @@ function handleMessage(userId: string, msg: Message) {
     return cache.unsetAccessLogic(userId, {id: msg.accessId, token: msg.accessToken}, false);
   }
   if (msg.action === MESSAGES.UNSET_USER_DATA) { // streams and accesses
+    removeChangeTracker(userId);
     return cache.unsetUserData(userId, false);
   }
   if (msg.action === MESSAGES.UNSET_USER) {
-    removeChangeTracker(userId);
     return cache.unsetUser(userId, false);
     //return cache.clearUserId(userId, msg.andAccountWithUsername, false);
   }
@@ -75,15 +75,17 @@ function unsetAccessLogic(userId: string, accessLogic): void {
 }
 
 function unsetUserData(userId: string): void {
+  removeChangeTracker(userId);
   pubsub.cache.emit(userId, {
     action: MESSAGES.UNSET_USER_DATA,
     userId,
   });
 }
 
-function unsetUser(userId: string): void {
-  pubsub.cache.emit(userId, {
-    action: MESSAGES.UNSET_USER,
+function unsetUser(username: string): void {
+  removeChangeTracker(username);
+  pubsub.cache.emit(MESSAGES.UNSET_USER, {
+    username: username,
   });
 }
 
@@ -102,6 +104,9 @@ function unsetUser(userId: string): void {
 // register cache here (to avoid require cycles)
 function setCache(c) {
   cache = c;
+  pubsub.cache.on(MESSAGES.UNSET_USER, function(msg) {
+      cache.unsetUser(msg.username, false);
+  });
 }
 
 
