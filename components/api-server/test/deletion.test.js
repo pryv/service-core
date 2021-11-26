@@ -29,6 +29,7 @@ const { pubsub } = require('messages');
 const bluebird = require('bluebird');
 
 const cache = require('cache');
+const { MESSAGES } = require('cache/src/synchro');
 
 let app;
 let authKey;
@@ -239,10 +240,9 @@ describe('[PGTD] DELETE /users/:username', () => {
           const usersExists = cache.getUserId(userToDelete.attrs.id);
           assert.isUndefined(usersExists);
           assert.equal(natsDelivered.length, 1);
-          assert.equal(natsDelivered[0].scopeName, 'cache.' + userToDelete.attrs.id);
-          assert.equal(natsDelivered[0].eventName, userToDelete.attrs.id);
-          assert.equal(natsDelivered[0].payload.action, 'clear');
-          assert.equal(natsDelivered[0].payload.andAccountWithUsername, userToDelete.attrs.id);
+          assert.equal(natsDelivered[0].scopeName, 'cache.' + MESSAGES.UNSET_USER);
+          assert.equal(natsDelivered[0].eventName, MESSAGES.UNSET_USER);
+          assert.equal(natsDelivered[0].payload.username, userToDelete.attrs.id);
         })
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
           const user = await usersRepository.getUserById(username2);
@@ -343,11 +343,11 @@ describe('[PGTD] DELETE /users/:username', () => {
       }
 
       await createUser();
-      console.log('got in cache', cache.get(cache.NS.USERID_BY_USERNAME, usernamex));
+      console.log('got in cache', cache.getUserId(usernamex));
       await deleteUser();
-      console.log('got in cache', cache.get(cache.NS.USERID_BY_USERNAME, usernamex));
+      console.log('got in cache', cache.getUserId(usernamex));
       await createUser();
-      console.log('got in cache', cache.get(cache.NS.USERID_BY_USERNAME, usernamex));
+      console.log('got in cache', cache.getUserId(usernamex));
       
       res = await request.post('/' + usernamex + '/auth/login')
       .set('Origin', 'http://test.pryv.local')
