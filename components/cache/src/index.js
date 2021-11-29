@@ -95,7 +95,7 @@ function unsetUser(username: string, notifyOtherProcesses: boolean = true) {
   
   unsetUserData(userId, false);
   // notify userId delete
-  if (notifyOtherProcesses && isSynchroActive) synchro.unsetUser(userId);
+  if (notifyOtherProcesses && isSynchroActive) synchro.unsetUser(username);
   userIdForUsername.delete(username);
 }
 
