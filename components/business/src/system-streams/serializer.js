@@ -246,7 +246,7 @@ class SystemStreamsSerializer {
   static getAccountStreamIdsForUser(): Map<string, Array<string>> {
     if ( SystemStreamsSerializer.allAccountStreamIdsForUser != null ) return SystemStreamsSerializer.allAccountStreamIdsForUser;
     
-    const returnObject = new Map();
+    const returnObject = {};
     returnObject.uniqueAccountFields = [];
     returnObject.readableAccountFields = [];
     returnObject.accountFields = [];
@@ -465,7 +465,7 @@ class SystemStreamsSerializer {
  * @param string filter - boolean value used for filtering
  */
 function filterMapStreams (streams: Array<SystemStream>, filter: string = IS_SHOWN): Map<string, SystemStream> {
-  let streamsMap: Map<string, SystemStream> = new Map();
+  let streamsMap: Map<string, SystemStream> = {};
   
   if (! Array.isArray(streams)) {
     return streamsMap;
@@ -510,10 +510,10 @@ function initializeSerializer(serializer) {
   SystemStreamsSerializer.options = options;
 
   function initializeTranslationMaps(streamIdsWithPrefix: Array<string>) {
-    SystemStreamsSerializer.privateStreamIdWithoutPrefixToWith = new Map();
-    SystemStreamsSerializer.customerStreamIdWithoutPrefixToWith = new Map();
-    SystemStreamsSerializer.streamIdWithPrefixToWithout = new Map();
-    SystemStreamsSerializer.accountStreamIdWithoutPrefixToWith = new Map();
+    SystemStreamsSerializer.privateStreamIdWithoutPrefixToWith = {};
+    SystemStreamsSerializer.customerStreamIdWithoutPrefixToWith = {};
+    SystemStreamsSerializer.streamIdWithPrefixToWithout = {};
+    SystemStreamsSerializer.accountStreamIdWithoutPrefixToWith = {};
 
     streamIdsWithPrefix.forEach(streamIdWithPrefix => {
       const streamIdWithoutPrefix = _removePrefixFromStreamId(streamIdWithPrefix);

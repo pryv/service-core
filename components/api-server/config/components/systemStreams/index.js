@@ -304,12 +304,12 @@ function throwIfNotUnique(
 ): Array<Map<string, boolean>> {
   const streamIdWithoutPrefix: string = _removePrefixFromStreamId(streamId);
   
-  if (seenWithPrefix.get(streamId)) {
+  if (seenWithPrefix[streamId]) {
     throw new Error(`Config error: Custom system stream id duplicate. Remove duplicate custom system stream with streamId: "${streamIdWithoutPrefix}".`);
   } else if (seen[streamIdWithoutPrefix] && isBackwardCompatible) {
     throw new Error(`Config error: Custom system stream id unicity collision with default one. Deactivate retro-compatibility prefix or change streamId: "${streamIdWithoutPrefix}".`);
   } else {
-    seenWithPrefix.get(streamId) = true;
+    seenWithPrefix[streamId] = true;
     seen[streamIdWithoutPrefix] = true;
     return [seen, seenWithPrefix];
   }
