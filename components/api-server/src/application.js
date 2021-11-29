@@ -11,7 +11,7 @@
 
 const path = require('path');
 const boiler = require('@pryv/boiler').init({
-  appName: 'api-server',
+  appName: 'api-server' + process.pid,
   baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [{
     scope: 'serviceInfo',

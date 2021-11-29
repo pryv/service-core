@@ -7,7 +7,7 @@ const os = require('os')
 // check if the process is the master process
 if(cluster.isMaster){
     // get the number of available cpu cores 
-    const nCPUs = os.cpus().length;
+    const nCPUs = 2 ; //os.cpus().length;
     // fork worker processes for each available CPU core
     for(let i = 0; i< nCPUs; i++){
         cluster.fork();
