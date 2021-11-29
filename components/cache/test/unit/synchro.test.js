@@ -86,7 +86,7 @@ describe('Synchro', function () {
     assert.isTrue(synchro.listenerMap.has('toto-id'), 'should not be removed');
   });
 
-  it('[Y5GA] Listeners should receive "nats" messages', async () => {
+  it('[Y5GA] Listeners should receive "nats" messages UNSET_USER_DATA', async () => {
     cache.setUserId('toto', 'toto-id')
     cache.setStreams('toto-id', 'test', 'titi');
     assert.isTrue(synchro.listenerMap.has('toto-id'), 'should be registered');
@@ -94,6 +94,18 @@ describe('Synchro', function () {
     natsClient.publish('cache.toto-id', encode({eventName: 'toto-id', payload: {action: MESSAGES.UNSET_USER_DATA}}));
     await sleepMs(50);
     assert.isFalse(synchro.listenerMap.has('toto-id'), 'should be removed');
+  });
+
+  it('[Y5GU] Listeners should receive "nats" messages UNSET_USER', async () => {
+    cache.setUserId('toto', 'toto-id')
+    cache.setStreams('toto-id', 'test', 'titi');
+    assert.equal(cache.getUserId('toto'), 'toto-id', 'userId should be cached');
+    assert.isTrue(synchro.listenerMap.has('toto-id'), 'should be registered');
+    await sleepMs(50);
+    natsClient.publish('cache.unset-user', encode({eventName: 'unset-user', payload: {action: MESSAGES.UNSET_USER, username: 'toto'}}));
+    await sleepMs(50);
+    assert.isFalse(synchro.listenerMap.has('toto-id'), 'listner should be removed');
+    assert.isUndefined(cache.getUserId('toto'), 'userId should be removed');
   });
 
 });

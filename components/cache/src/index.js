@@ -80,16 +80,20 @@ function clear(namespace: string) {
 //--------------- Users ---------------//
 
 function getUserId(username: string) {
+  if (! isActive) return;
+  debug.get('user-id', username);
   return userIdForUsername.get(username);
 }
 
 function setUserId(username: string, userId: string) {
   if (! isActive) return;
+  debug.set('user-id', username, userId);
   userIdForUsername.set(username, userId);
 }
 
 function unsetUser(username: string, notifyOtherProcesses: boolean = true) {
   if (! isActive) return;
+  debug.unset('user-id', username);
   const userId = getUserId(username);
   if (userId == null) return;
   
@@ -101,8 +105,13 @@ function unsetUser(username: string, notifyOtherProcesses: boolean = true) {
 
 function unsetUserData(userId: string, notifyOtherProcesses: boolean = true) {
   if (! isActive) return;
+  if (isSynchroActive) {
+    synchro.removeListenerForUserId(userId);
+  }
   // notify user data delete
-  if (notifyOtherProcesses && isSynchroActive) synchro.unsetUserData(userId);
+  if (notifyOtherProcesses && isSynchroActive) {
+    synchro.unsetUserData(userId);
+  }
   _unsetStreams(userId, 'local'); // for now we hardcode local streams
   _clearAccessLogics(userId);
 }
@@ -147,7 +156,7 @@ function getAccessLogicForId(userId: string, accessId: string) {
 function unsetAccessLogic(userId: string, accessLogic: string, notifyOtherProcesses: boolean = true): void {
   if (! isActive) return;
   // notify others to unsed
-  if (notifyOtherProcesses && isSynchroActive) synchro.unsetAccessLogic(userId, accessLogic); // follow this user
+  if (notifyOtherProcesses && isSynchroActive) synchro.unsetAccessLogic(userId, accessLogic); 
   // perform unset
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return ;
