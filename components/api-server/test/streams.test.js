@@ -434,19 +434,6 @@ describe('streams', function () {
       });
     });
 
-    it('must accept streamId "size" in event', function (done) {
-      const data = {
-        id: 'size',
-        name: 'Size'
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        }, done);
-      });
-    });
-
   });
 
   describe('PUT /<id>', function () {
