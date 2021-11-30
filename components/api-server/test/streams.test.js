@@ -420,6 +420,20 @@ describe('streams', function () {
         }, done);
       });
     });
+
+    it('[Z3RC] must accept streamId "size"', function (done) {
+      const data = {
+        id: 'size',
+        name: 'Size'
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.check(res, {
+          status: 201,
+          schema: methodsSchema.create.result
+        }, done);
+      });
+    });
+
   });
 
   describe('PUT /<id>', function () {
