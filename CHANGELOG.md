@@ -3,6 +3,7 @@
 ### 1.7.7
 
 - Fix issue where a deleted user was kept in the cache, thus rendering the reuse of username possible, but failing all subsequent calls as the password and tokens were not returned (since the wrong userId was returned by the cache)
+- Fix issue where attempting to create streams with id 'size' would return an error
 
 ### 1.7.6
 
