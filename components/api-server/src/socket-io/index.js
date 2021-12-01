@@ -11,6 +11,11 @@
  */
 
 const socketIO = require('socket.io')({
+  cors: {
+    origin: true,
+    methods: "GET,POST",
+    credentials: true,
+  },
   allowEIO3: true // for compatibility with v2 clients
 });
 
