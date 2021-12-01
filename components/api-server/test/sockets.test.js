@@ -135,7 +135,7 @@ describe('Socket.IO', function () {
     });
   });
 
-  it('[9ZH8] must dsend correct CORS headers', async function () {
+  it('[9ZH8] must send correct CORS headers', async function () {
     const url = server.url + '/socket.io/' + namespace + '?auth=' + token + '&EIO=4&transport=polling';
     const res = await superagent.get(url).set('Origin', 'https://www.bogus.com:6752');
     assert.equal(res.headers['access-control-allow-origin'], 'https://www.bogus.com:6752');
