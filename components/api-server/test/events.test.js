@@ -567,10 +567,9 @@ describe('events', function () {
               .query({readToken: att.readToken})
               .end(function (res) {
             res.statusCode.should.eql(200);
-
             res.headers.should.have.property('content-type', att.type);
             res.headers.should.have.property('content-length', att.size.toString());
-            $$(res.headers);
+            res.headers.should.have.property('content-disposition', 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(att.fileName) );
             stepDone();
           });
         }
@@ -617,7 +616,6 @@ describe('events', function () {
               });
           },
           function retrieveAttachedFile(att, stepDone) {
-            $$(att);
             request
               .get(
                 path(event.id) +
