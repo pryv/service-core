@@ -552,6 +552,32 @@ describe('events', function () {
       ], done);
     });
 
+    it('[ZDY4] must accept special chars in Content-Disposition header', function (done) {
+      var event = testData.events[0],
+          attIndex = 1;
+      async.waterfall([
+        function retrieveAttachmentInfo(stepDone) {
+          request.get(basePath).query({sortAscending: true, streams: event.streamIds[0] }).end(function (res) {
+            stepDone(null, res.body.events[0].attachments[attIndex]);
+          });
+        },
+        function retrieveAttachedFile(att, stepDone) {
+          request.get(path(event.id) + '/' + att.id)
+              .unset('Authorization')
+              .query({readToken: att.readToken})
+              .end(function (res) {
+            res.statusCode.should.eql(200);
+
+            res.headers.should.have.property('content-type', att.type);
+            res.headers.should.have.property('content-length', att.size.toString());
+            $$(res.headers);
+            stepDone();
+          });
+        }
+      ], done);
+    });
+
+
     it('[TN27] must allow a filename path suffix after the file id', function (done) {
       var event = testData.events[0],
           attIndex = 1;
@@ -591,6 +617,7 @@ describe('events', function () {
               });
           },
           function retrieveAttachedFile(att, stepDone) {
+            $$(att);
             request
               .get(
                 path(event.id) +

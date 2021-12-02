@@ -145,7 +145,7 @@ const attachments = exports.attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
   document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
   document_modified: getAttachmentInfo('document', 'document.modified.pdf', 'application/pdf'),
-  image: getAttachmentInfo('image', 'image (space and special chars).png', 'image/png'),
+  image: getAttachmentInfo('image', 'image (space and special chars)é__.png', 'image/png'),
   imageBigger: getAttachmentInfo('imageBigger', 'image-bigger.jpg', 'image/jpeg'),
   text: getAttachmentInfo('text', 'text.txt', 'text/plain')
 };

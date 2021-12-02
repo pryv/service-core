@@ -28,7 +28,7 @@ const events =  [
       },
       {
         id: 'image',
-        fileName: 'image (space and special chars).png',
+        fileName: 'image (space and special chars)é__.png',
         type: 'image/png',
         size: 2765
       }
