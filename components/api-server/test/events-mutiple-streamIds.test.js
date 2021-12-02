@@ -565,7 +565,7 @@ describe('events.streamIds', function () {
         if (integrity.attachments.isActive) {
           assert.equal(res.headers.digest, 'SHA-256=' + event.attachments[0].integrity.split('-')[1]);
         }
-        assert.equal(res.headers['content-disposition'], 'attachment; filename="'+ event.attachments[0].fileName +'"');
+        assert.equal(res.headers['content-disposition'], 'attachment; filename*=UTF-8\'\'' + event.attachments[0].fileName);
         assert.equal(res.headers['content-length'],event.attachments[0].size);
         assert.equal(res.headers['content-type'], event.attachments[0].type);
       }); 
