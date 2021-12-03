@@ -30,7 +30,7 @@ exports = module.exports = function (action) {
     'time': number(),
     'duration': number({nullable: true}),
     'streamId': string(),
-    'streamIds': array(string(), { nullable: false }),
+    'streamIds': array(string(), { nullable: false, minItems: 1 }),
     'tags': array(string(), {nullable: true}),
     'type': string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
     'content': {},

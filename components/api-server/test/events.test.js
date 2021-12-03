@@ -1018,6 +1018,19 @@ describe('events', function () {
       });
     });
 
+    it('[Z87W] must not accept an empty streamIds array', (done) => {
+      request.post(basePath).send({
+        streamIds: [],
+        type: 'note/txt',
+        content: 'i should return an error!',
+      }).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidParametersFormat
+        }, done);
+      });
+    });
+
   });
 
   describe('POST / (multipart content)', function () {
