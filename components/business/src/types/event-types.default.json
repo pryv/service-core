@@ -1,6 +1,13 @@
 {
   "version": "0.3.0",
   "types": {
+    "numbers/array": {
+      "description": "array of numbers",
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
     "absorbed-dose/gy": {
       "description": "Gray",
       "type": "number"

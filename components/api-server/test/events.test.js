@@ -1031,6 +1031,17 @@ describe('events', function () {
       });
     });
 
+    it('[SHU9] must accept an array as a known type\'s event content', (done) => {
+      request.post(basePath).send({
+        type: 'numbers/array',
+        streamIds: [testData.streams[0].id],
+        content: [1,2,3],
+      }).end(function (res) {
+        console.log('got', JSON.stringify(res.body,null,2))
+        done(); 
+      });
+    });
+
   });
 
   describe('POST / (multipart content)', function () {
