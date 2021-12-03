@@ -627,6 +627,53 @@ describe('account', function () {
       });
     });
 
+    it('[VGRT] "reset" must return an error if the reset token was already used', function (done) {
+      let resetToken = null;
+      const newPassword = 'myN3wF4ncYp4ssw0rd';
+      const user = testData.users[0];
+
+      async.series([
+        function generateResetToken(stepDone) {
+          // generate a reset token for user1
+          pwdResetReqsStorage.generate(
+            user.username,
+            function (err, token) {
+              should.exist(token);
+              resetToken = token;
+              stepDone();
+            }
+          );
+        },
+        function doResetFirst(stepDone) {
+          const data = _.defaults({ resetToken, newPassword }, authData);
+          // use user1's resetToken to reset user0's password
+          request.post(resetPath).send(data)
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.requestPasswordReset.result
+              });
+              stepDone();
+            });
+        },
+        function doResetSecond(stepDone) {
+          const data = _.defaults({ resetToken, newPassword }, authData);
+          // use user1's resetToken to reset user0's password
+          request.post(resetPath).send(data)
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .end(function (res) {
+              validation.checkError(res, {
+                status: 401,
+                id: ErrorIds.InvalidAccessToken
+              }, stepDone);
+            });
+        },
+      ], done);
+    });
+
   });
 
   async function resetUsers() {

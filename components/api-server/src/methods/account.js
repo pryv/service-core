@@ -9,6 +9,8 @@ var errors = require('errors').factory,
   mailing = require('./helpers/mailing'),
   methodsSchema = require('../schema/accountMethods');
 
+const bluebird = require('bluebird');
+
 const { getConfig } = require('@pryv/boiler');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
@@ -184,6 +186,7 @@ module.exports = async function (api) {
     addUserBusinessToContext,
     addNewPasswordParameter,
     updateAccount,
+    destroyPasswordResetToken,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
   );
 
@@ -201,6 +204,7 @@ module.exports = async function (api) {
         if (! reqData) {
           return next(errors.invalidAccessToken('The reset token is invalid or expired'));
         }
+        context.passwordResetRequest = reqData;
         next();
       }
     );
@@ -256,6 +260,14 @@ module.exports = async function (api) {
     } catch (err) {
       return next(err);
     }
+    next();
+  }
+
+  async function destroyPasswordResetToken(context, params, result, next) {
+    const id = context.passwordResetRequest._id;
+
+    await bluebird.fromCallback(cb => passwordResetRequestsStorage.destroy(id, context.user.username, cb));
+    console.log('callin next, yo')
     next();
   }
 
