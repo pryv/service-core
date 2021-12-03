@@ -268,7 +268,6 @@ module.exports = async function (api) {
     const id = context.passwordResetRequest._id;
 
     await bluebird.fromCallback(cb => passwordResetRequestsStorage.destroy(id, context.user.username, cb));
-    console.log('callin next, yo')
     next();
   }
 
