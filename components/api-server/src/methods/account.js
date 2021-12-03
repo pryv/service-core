@@ -4,12 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var errors = require('errors').factory,
-  commonFns = require('./helpers/commonFunctions'),
-  mailing = require('./helpers/mailing'),
-  methodsSchema = require('../schema/accountMethods');
 
 const bluebird = require('bluebird');
+
+const errors = require('errors').factory;
+const commonFns = require('./helpers/commonFunctions');
+const mailing = require('./helpers/mailing');
+const methodsSchema = require('../schema/accountMethods');
 
 const { getConfig } = require('@pryv/boiler');
 const { pubsub } = require('messages');
