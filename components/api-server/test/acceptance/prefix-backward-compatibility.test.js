@@ -487,7 +487,6 @@ describe('backward-compatibility', () => {
         it('[CZN1] must return new prefixes in events.get', async () => {
           const res = await get(`/${username}/events`);
           assert.isNotEmpty(res.body.events);
-          //console.log(JSON.stringify(res.body,null,2))
           for (const event of res.body.events) {
             checkNewPrefixes(event.streamIds);
           }
