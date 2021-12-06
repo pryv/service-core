@@ -1213,9 +1213,9 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
-"@pryv/boiler@https://github.com/pryv/lib-node-boiler.git#1.0.4":
-  version "1.0.4"
-  resolved "https://github.com/pryv/lib-node-boiler.git#4ff2b1e9d85a011a28e4f0d20fb5affc79660f04"
+"@pryv/boiler@https://github.com/pryv/lib-node-boiler.git#1.0.5":
+  version "1.0.5"
+  resolved "https://github.com/pryv/lib-node-boiler.git#895f64392c0d82b24f45cff58806c790bfdf1966"
   dependencies:
     "@airbrake/node" "^1.4.2"
     debug "^4.3.1"
