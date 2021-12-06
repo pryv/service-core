@@ -10,6 +10,7 @@
 // to coercion and validation. 
 
 import type { EventType, Content }  from './types/interfaces';
+import type { Event } from './events';
 
 const lodash = require('lodash');
 const superagent = require('superagent');
@@ -85,6 +86,25 @@ class TypeValidator {
 //    const seriesType = repo.lookup('series:mass/kg');
 // 
 class TypeRepository {
+
+  _validator: ZSchemaValidator;
+
+  constructor() {
+    this._validator = new ZSchemaValidator();
+  }
+
+  /**
+   * Simple version of validate - to be used
+   */
+  async validate(event: Event) {
+    const content: {} = event.hasOwnProperty('content') ? event.content : null;
+    const schema = defaultTypes.types[event.type];
+    return bluebird
+      .fromCallback(
+        (cb) => this._validator.validate(content, schema, cb))
+      .then(() => content);
+  }
+
   // Returns true if the type given by `name` is known by Pryv. To be known, 
   // it needs to be part of our standard types list that we load on startup
   // (#tryUpdate). 

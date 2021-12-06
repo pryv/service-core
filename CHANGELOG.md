@@ -4,6 +4,8 @@
 
 - Fix issue with events.getAttachment making core crash if filename contained fancy characters by putting it in the 'Content-disposition' header
 - Security fix: make password reset token single-use
+- Security fix: hide "newPassword" in logs when an error occurs in account.resetPassword
+- API change: Don't coerce event content and simplify known type validation process in api-server
 
 ### 1.7.7
 

@@ -881,23 +881,6 @@ describe('events', function () {
       });
     });
 
-    it('[0IHM] must try casting string event content to number if appropriate', function (done) {
-      var data = {
-        streamId: testData.streams[2].id,
-        type: 'mass/kg',
-        content: '75.3'
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        });
-
-        res.body.event.content.should.equal(+data.content);
-
-        done();
-      });
-    });
 
     it('[UL6Y] must not stop the running period event if the stream allows overlapping', function (done) {
       var data = {
@@ -1033,12 +1016,14 @@ describe('events', function () {
 
     it('[SHU9] must accept an array as a known type\'s event content', (done) => {
       request.post(basePath).send({
-        type: 'numbers/array',
+        type: 'pryv-test/array-num',
         streamIds: [testData.streams[0].id],
         content: [1,2,3],
       }).end(function (res) {
-        console.log('got', JSON.stringify(res.body,null,2))
-        done(); 
+        validation.check(res, {
+          status: 201,
+          schema: methodsSchema.create.result
+        }, done);
       });
     });
 
