@@ -89,7 +89,7 @@ async function init() {
   mkdirp.sync(candidateAttachmentsBasePath);
   attachmentsBasePath = candidateAttachmentsBasePath;
 
-  logger.debug('User local files: ' + basePath + '  Attachemnts in: ' + attachmentsBasePath);
+  logger.debug('User local files: ' + basePath + '  Attachments in: ' + attachmentsBasePath);
 }
 
 

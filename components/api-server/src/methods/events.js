@@ -884,24 +884,16 @@ module.exports = async function (api)
         
     // assert: `type` is known
     
-    const eventType: {} = typeRepo.lookup(type);
-    if (eventType.isSeries()) {
+    if (isSeriesType(type)) {
       // Series cannot have content on update, not here at least.
       if (isCreateSeriesAndHasContent(params) || isUpdateSeriesAndHasContent(params)) {
         return next(errors.invalidParametersFormat('The event content\'s format is invalid.', 'Events of type High-frequency have a read-only content'));
       }
       return next();
     }
-    
-    // assert: `type` is not a series but is known
 
-    const content: {} = context.newEvent.hasOwnProperty('content') 
-      ? context.newEvent.content
-      : null;
-
-    const validator: {} = typeRepo.validator();
     try {
-      context.newEvent.content = await validator.validate(eventType, content);
+      await typeRepo.validate(context.newEvent);
       next();
     } catch (err) {
       next(errors.invalidParametersFormat('The event content\'s format is invalid.', err));

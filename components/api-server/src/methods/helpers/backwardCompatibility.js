@@ -149,7 +149,6 @@ function replaceTagsWithStreamIds(event: Event): Event {
  * put back tags in events, taken from its streamIds
  */
 function putOldTags(event: Event): Event {
-  // if (event.tags != null) console.log('WOW, should not have anymore tags in the storage');
   event.tags = [];
   for (const streamId: string of event.streamIds) {
     if (isTagStreamId(streamId)) {

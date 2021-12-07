@@ -216,7 +216,7 @@ class UserEvents {
 
 
   /**
-   * All attachemnts method
+   * All attachments method
    */
 
   /**

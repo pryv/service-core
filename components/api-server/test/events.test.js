@@ -881,23 +881,6 @@ describe('events', function () {
       });
     });
 
-    it('[0IHM] must try casting string event content to number if appropriate', function (done) {
-      var data = {
-        streamId: testData.streams[2].id,
-        type: 'mass/kg',
-        content: '75.3'
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        });
-
-        res.body.event.content.should.equal(+data.content);
-
-        done();
-      });
-    });
 
     it('[UL6Y] must not stop the running period event if the stream allows overlapping', function (done) {
       var data = {
@@ -1011,6 +994,19 @@ describe('events', function () {
 
     it('[WUSC] must not fail (500) when sending an array instead of an object', function (done) {
       request.post(basePath).send([{}]).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidParametersFormat
+        }, done);
+      });
+    });
+
+    it('[Z87W] must not accept an empty streamIds array', (done) => {
+      request.post(basePath).send({
+        streamIds: [],
+        type: 'note/txt',
+        content: 'i should return an error!',
+      }).end(function (res) {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.InvalidParametersFormat
