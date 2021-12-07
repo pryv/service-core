@@ -95,6 +95,13 @@ class TypeRepository {
 
   /**
    * Simple version of validate - to be used
+   * 
+   * In api-server, use only:
+   * - isSeriesType()
+   * - isKnown()
+   * - validate()
+   * 
+   * The old path: lookup(), then validator() are too heavy
    */
   async validate(event: Event) {
     const content: {} = event.hasOwnProperty('content') ? event.content : null;
