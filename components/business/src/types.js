@@ -99,6 +99,7 @@ class TypeRepository {
   async validate(event: Event) {
     const content: {} = event.hasOwnProperty('content') ? event.content : null;
     const schema = defaultTypes.types[event.type];
+    if (schema == null) throw new Error(`Event type validation was used on the unknown type "${event.type}".`);
     return bluebird
       .fromCallback(
         (cb) => this._validator.validate(content, schema, cb))
