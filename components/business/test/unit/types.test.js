@@ -33,16 +33,18 @@ describe('business.types.TypeRepository', function () {
   describe('type list update', function () {
     const sourceURL = 'https://pryv.github.io/event-types/flat.json';
     
-    it('[WMDW] should work (must be called manually)', function () {
+    it('[WMDW] should work (must be called manually)', async function () {
       // NOTE This test uses an internet URL. If internet is down, it will 
       // not work. Much like Pryv in general, also because of this function. 
        
-      return repository.tryUpdate(sourceURL);
+      await repository.tryUpdate(sourceURL);
     });
-    it('[6VL6] should fail gracefully', function () {
-      return repository.tryUpdate('bahbahblacksheep')
-        .catch(
-          (err) => should(err.message).match(/Could not update event types/));
+    it('[6VL6] should fail gracefully', async function () {
+      try {
+        await repository.tryUpdate('bahbahblacksheep')
+      } catch(err) {
+        should(err.message).match(/Could not update event types/);
+      }
     });
   });
   describe('basic types like mass/kg', function () {
@@ -194,6 +196,13 @@ describe('business.types.TypeRepository', function () {
       should(eventType.requiredFields()).be.eql(['deltaTime', 'value']);
       should(eventType.optionalFields()).be.eql([]);
       should(eventType.fields()).be.eql(['deltaTime', 'value']);
+    });
+  });
+  describe('validate()', function () {
+    it('[VK9J] should accept an array as a known type\'s event content', async () => {
+      await repository.tryUpdate('file://test/fixtures/event-types.json');
+      const event = { content: [1,2,3], type: 'pryv-test/array-num' };
+      repository.validate(event);
     });
   });
 });

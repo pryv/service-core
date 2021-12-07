@@ -1014,19 +1014,6 @@ describe('events', function () {
       });
     });
 
-    it('[SHU9] must accept an array as a known type\'s event content', (done) => {
-      request.post(basePath).send({
-        type: 'pryv-test/array-num',
-        streamIds: [testData.streams[0].id],
-        content: [1,2,3],
-      }).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        }, done);
-      });
-    });
-
   });
 
   describe('POST / (multipart content)', function () {

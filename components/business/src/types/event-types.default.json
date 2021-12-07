@@ -1,13 +1,6 @@
 {
   "version": "0.3.0",
   "types": {
-    "pryv-test/array-num": {
-      "description": "array of numbers for test SHU9",
-      "type": "array",
-      "items": {
-        "type": "number"
-      }
-    },
     "absorbed-dose/gy": {
       "description": "Gray",
       "type": "number"

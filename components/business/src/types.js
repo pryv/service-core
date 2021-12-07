@@ -12,6 +12,7 @@
 import type { EventType, Content }  from './types/interfaces';
 import type { Event } from './events';
 
+const fs = require('fs');
 const lodash = require('lodash');
 const superagent = require('superagent');
 const bluebird = require('bluebird');
@@ -170,7 +171,7 @@ class TypeRepository {
   // Tries to update the stored type definitions with a file found on the 
   // internet. 
   // 
-  tryUpdate(sourceURL: string, apiVersion: string): Promise<void> {
+  async tryUpdate(sourceURL: string, apiVersion: string): Promise<void> {
     function unavailableError(err) {
       throw new Error(
         'Could not update event types from ' + sourceURL +
@@ -181,25 +182,35 @@ class TypeRepository {
         'Invalid event types schema returned from ' + sourceURL +
         '\nErrors: ' + err.errors);
     }
+    const FILE_PROTOCOL: string = 'file://';
+    function isFileUrl(url) { return url.startsWith(FILE_PROTOCOL); }
+    function removeFileProtocol(url) { return url.substring(FILE_PROTOCOL.length); }
 
-    const USER_AGENT_PREFIX: string = 'Pryv.io/';
+    let eventTypesDefinition;
 
-    return superagent
-      .get(sourceURL)
-      .set('User-Agent', USER_AGENT_PREFIX + apiVersion)
-      .catch(unavailableError)
-      .then((res) => {
-        const validator = new ZSchemaValidator();
-        const schema = res.body;
+    try {
+      if (isFileUrl(sourceURL)) { // used for tests
+        const filePath: string = removeFileProtocol(sourceURL);
+        eventTypesDefinition = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      } else {
+        const USER_AGENT_PREFIX: string = 'Pryv.io/';
+        const res = await superagent
+          .get(sourceURL)
+          .set('User-Agent', USER_AGENT_PREFIX + apiVersion);
+        eventTypesDefinition = res.body;
+      }
+    } catch (err) {
+      unavailableError(err);
+    }
+    
+    const validator = this._validator;
+    await bluebird.try(() => {
+      if (!validator.validateSchema(eventTypesDefinition))
+        return invalidError(validator.lastReport);
+      // Overwrite defaultTypes with the merged list of type schemata. 
+      defaultTypes = lodash.merge(defaultTypes, eventTypesDefinition);
+    });
 
-        return bluebird.try(() => {
-          if (!validator.validateSchema(schema))
-            return invalidError(validator.lastReport);
-
-          // Overwrite defaultTypes with the merged list of type schemata. 
-          defaultTypes = lodash.merge(defaultTypes, schema);
-        });
-      });
   }
 }
 
