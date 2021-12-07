@@ -3,6 +3,7 @@
 ### 1.7.10
 
 - API change: Don't coerce event content and simplify known type validation process in api-server
+- serviceInfo:eventTypes URL now supports `file://` protocol allowing it to load definition from file system
 
 ### 1.7.9
 
