@@ -7,6 +7,7 @@
 const {UserEvents}  = require('../interfaces/DataStore');
 const _ = require('lodash');
 const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
+const StreamsUtils = require('./lib/StreamsUtils');
 
 /**
  * Handle Store.events.* methods
@@ -14,16 +15,25 @@ const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream
 class StoreUserEvents extends UserEvents {
   
   /**
-   * @param {Store} store 
+   * @param {Mall} mall 
    */
-  constructor(store) {
+  constructor(mall) {
     super();
-    this.store = store;
+    this.mall = mall;
+  }
+
+  async getOne(uid, fullEventId) {
+    const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
+    const store: DataStore = this.mall._storeForId(storeId);
+    if (store == null) return null;
+    const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all' });
+    if (events?.length === 1) return events[0];
+    return null;
   }
 
   async generateStreams(uid, paramsBySource, addEventStreamCB) {
     for (let storeId of Object.keys(paramsBySource)) {
-      const store = this.store._storeForId(storeId);
+      const store = this.mall._storeForId(storeId);
       const params = paramsBySource[storeId];
       await store.events.getStreamed(uid, params).then((eventsStream) => {
         if (storeId == 'local') {

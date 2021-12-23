@@ -201,20 +201,10 @@ module.exports = async function (api)
   );
 
   async function findEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const query = { 
-      streamIds: {
-        // forbid account stream ids
-        $nin: SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading()
-      },
-      id: params.id 
-    };
     try {
-      const event: Event = await bluebird.fromCallback(cb => userEventsStorage.findOne(context.user, query, null, cb));
-
+      const event = await mall.events.getOne(context.user.id, params.id);
       if (event == null) return next(errors.unknownResource('event', params.id));
-
       context.event = event;
-
       next();
     } catch (err) {
       return next(errors.unexpectedError(err));
@@ -226,14 +216,21 @@ module.exports = async function (api)
     let event: Event = context.event;
     delete context.event;
 
+    const systemStreamIdsForbiddenForReading = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
+
     let canReadEvent: boolean = false;
     for (const streamId of event.streamIds) { // ok if at least one
-      if (await context.access.canGetEventsOnStreamAndWithTags(streamId, event.tags)) {
-        canReadEvent = true;
+      if (systemStreamIdsForbiddenForReading.includes(streamId)) {
+        canReadEvent = false;
         break;
       }
+
+      if (await context.access.canGetEventsOnStreamAndWithTags(streamId, event.tags)) {
+        canReadEvent = true;
+      }
     }
-    if (! canReadEvent) return next(errors.forbidden());
+    // return 404 to avoid discovery of existing forbidden events 
+    if (! canReadEvent) return next(errors.unknownResource('event', params.id));
 
     event.attachments = setFileReadToken(context.access, event.attachments);
 
