@@ -234,10 +234,9 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
 /**
  * Transform queries for mongoDB - to be run on 
  * @param {Array.<StreamQuery>} streamQueriesArray - array of streamQuery 
- * @param {Array.<StreamId>} forbiddenStreamsIds - an array of streamIds not accessible
  * @returns {MongoQuey} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
  */
-exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray, forbiddenStreamsIds) {
+exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray) {
   let mongoQuery = null; // no streams
 
   if (streamQueriesArray !== null) {
@@ -249,16 +248,6 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray, forbiddenSt
   }
 
   if (mongoQuery === null) mongoQuery = { streamIds: { $in: [] } }; // no streams
-
-  if (forbiddenStreamsIds && forbiddenStreamsIds.length > 0) {
-    mongoQuery.streamIds = mongoQuery.streamIds || {};
-    if (mongoQuery.streamIds.$nin) {
-      mongoQuery.streamIds.$nin.push(...forbiddenStreamsIds);
-    } else {
-      mongoQuery.streamIds.$nin = forbiddenStreamsIds;
-    }
-  }
-
   return mongoQuery;
 }
 /**

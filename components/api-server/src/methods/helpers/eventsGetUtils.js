@@ -23,6 +23,8 @@ const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
 const ChangeStreamIdPrefixStream = require('../streams/ChangeStreamIdPrefixStream');
 const addTagsStream = require('../streams/AddTagsStream');
 
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+
 import type { Stream } from 'business/src/streams';
 import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
 import type { MethodContext } from 'business';
@@ -337,6 +339,20 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
 }
 
 /**
+ * Add Hidden StreamsId (System) to local queries
+ */
+function streamQueryAddHiddenStreams(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+  const forbiddenStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
+  for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
+    if (streamQuery.storeId !== 'local') continue;
+
+    if (streamQuery.and == null) streamQuery.and = [];
+    streamQuery.and.push({not: forbiddenStreamIds});
+  }
+  next();
+}
+
+/**
  * - Create a copy of the params per query
  * - Add specific stream queries to each of them
  */
@@ -347,7 +363,6 @@ async function findEventsFromStore(filesReadTokenSecret: string,
     result.events = [];
     return next();
   }
-
   // in> params.fromTime = 2 params.streams = [{any: '*' storeId: 'local'}, {any: 'access-gasgsg', storeId: 'audit'}, {any: 'action-events.get', storeId: 'audit'}]
   const paramsByStoreId: Map<string, GetEventsParams> = {};
   for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
@@ -364,7 +379,6 @@ async function findEventsFromStore(filesReadTokenSecret: string,
     paramsByStoreId[storeId].streams.push(streamQuery);
   }
   // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
-
 
   /**
    * Will be called by "mall" for each source of event that need to be streames to result
@@ -405,5 +419,6 @@ module.exports = {
   streamQueryCheckPermissionsAndReplaceStars,
   streamQueryAddForcedAndForbiddenStreams,
   streamQueryExpandStreams,
+  streamQueryAddHiddenStreams,
   findEventsFromStore,
 }

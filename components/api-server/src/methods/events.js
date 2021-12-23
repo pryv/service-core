@@ -111,6 +111,7 @@ module.exports = async function (api)
     eventsGetUtils.streamQueryCheckPermissionsAndReplaceStars,
     eventsGetUtils.streamQueryAddForcedAndForbiddenStreams,
     eventsGetUtils.streamQueryExpandStreams,
+    eventsGetUtils.streamQueryAddHiddenStreams,
     migrateTagsToStreamQueries,
     eventsGetUtils.findEventsFromStore.bind(null, authSettings.filesReadTokenSecret, 
       isStreamIdPrefixBackwardCompatibilityActive, isTagsBackwardCompatibilityActive),
@@ -135,7 +136,7 @@ module.exports = async function (api)
 
     for (const query: StreamQuery of params.arrayOfStreamQueriesWithStoreId) {
       if (query.storeId === 'local') {
-        if (query.and == null) query.and = [],
+        if (query.and == null) query.and = [];
         query.and.push({any: params.tags.map(t => TAG_PREFIX + t)})
       }  
     }

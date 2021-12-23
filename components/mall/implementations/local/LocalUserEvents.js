@@ -18,7 +18,6 @@ const _ = require('lodash');
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 
 const {UserEvents}  = require('../../interfaces/DataStore');
-const SystemStreamUtils = require('./SystemStreamUtils');
 
 const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 
@@ -61,7 +60,7 @@ function paramsToMongoquery(params) {
 
   // if streams are defined
   if (params.streams != null && params.streams.length != 0) {
-    const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams, SystemStreamUtils.forbiddenForReadingStreamIds);
+    const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams);
     
     if (streamsQuery.$or) query.$or = streamsQuery.$or;
     if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
