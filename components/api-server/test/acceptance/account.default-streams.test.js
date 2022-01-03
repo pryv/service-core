@@ -24,7 +24,9 @@ const { produceMongoConnection } = require('api-server/test/test-helpers');
 const helpers = require('api-server/test/helpers');
 const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
 
-describe('Account with system streams', function () {
+const { getMall } = require('mall');
+
+describe('[ACCO] Account with system streams', function () {
   let helpers;
   let app;
   let request;
@@ -36,6 +38,7 @@ describe('Account with system streams', function () {
   let serviceRegisterRequest;
   let config;
   let isDnsLess;
+  let mall;
 
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
@@ -56,16 +59,10 @@ describe('Account with system streams', function () {
 
   async function getActiveEvent(streamId, isPrivate = true) {
     const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-    return await bluebird.fromCallback(
-      (cb) => user.db.events.findOne({ id: user.attrs.id },
-        {
-          streamIds: {
-            $all: [
-              SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
-              streamIdWithPrefix
-            ]
-          }
-        }, null, cb));
+    const streamQuery = [{ any: [streamIdWithPrefix], and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}];
+    const res = await mall.events.get(user.attrs.id, {'local': {streams: streamQuery }});
+    if(res.length === 0) return null;
+    return res[0];
   }
 
   async function getNotActiveEvent (streamId, isPrivate = true) {
@@ -111,6 +108,7 @@ describe('Account with system streams', function () {
     await require("api-server/src/methods/account")(app.api);
     await require("api-server/src/methods/events")(app.api);
     request = supertest(app.expressApp);
+    mall = await getMall();
   });
 
   after(async function () {
@@ -143,13 +141,11 @@ describe('Account with system streams', function () {
           await createAdditionalEvent(editableStreamsId);
         }
 
-        allVisibleAccountEvents = await bluebird.fromCallback(
-          (cb) => user.db.events.find({ id: user.attrs.id },
-            {
-              $and: [
-                { streamIds: { $in: visibleStreamsIds } },
-                { streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE }]
-            }, null, cb));
+        allVisibleAccountEvents = await mall.events.get(user.attrs.id, 
+          {'local': {streams: [
+            {any: visibleStreamsIds}, 
+            {and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}
+          ]}});
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
       });

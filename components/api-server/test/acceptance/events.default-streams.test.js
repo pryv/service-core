@@ -24,6 +24,8 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 
+const { getMall } = require('mall');
+
 describe("Events of system streams", () => {
   let config;
   let validation;
@@ -37,6 +39,7 @@ describe("Events of system streams", () => {
   let serviceRegisterRequest;
   let scope;
   let isDnsLess;
+  let mall;
 
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
@@ -109,6 +112,8 @@ describe("Events of system streams", () => {
     await require("api-server/src/methods/events")(app.api);
 
     request = supertest(app.expressApp);
+
+    mall = await getMall();
   });
 
   after(async function () {
@@ -319,8 +324,10 @@ describe("Events of system streams", () => {
           });
           it('[A9DC] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
             assert.equal(res.body.event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
-            const allEvents = await bluebird.fromCallback(
-              (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')}, null, cb));
+
+            const allEvents = await mall.events.get(user.attrs.id, 
+              {local: {streams: [{any: [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]}]}});
+
             assert.equal(allEvents.length, 2);
             // check the order
             assert.deepEqual(allEvents[0].id, res.body.event.id);
@@ -363,8 +370,9 @@ describe("Events of system streams", () => {
               assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addPrivatePrefixToStreamId('language'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[467D] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
-              const allEvents = await bluebird.fromCallback(
-                (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('language') }, null, cb));
+              const allEvents = await mall.events.get(user.attrs.id, 
+                {local: {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]}]}});
+
               assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
               assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')), true);
               assert.equal(allEvents[1].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), false);
@@ -734,8 +742,9 @@ describe("Events of system streams", () => {
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[CF70] should remove the "active" streamId for events of the same stream', async () => {
-              const allEvents = await bluebird.fromCallback(
-                (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+              const allEvents = await mall.events.get(user.attrs.id, 
+                {local: {streams: [{any: [streamId]}]}});
+
               assert.equal(allEvents.length, 2);
               // check the order
               assert.deepEqual(allEvents[1].id, res.body.event.id);

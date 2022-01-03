@@ -26,10 +26,21 @@ class StoreUserEvents extends UserEvents {
     const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
-    const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all' });
+    const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all' , limit: 1});
     if (events?.length === 1) return events[0];
     return null;
   }
+
+  async get(uid, paramsBySource) {
+    const res = [];
+    for (let storeId of Object.keys(paramsBySource)) {
+      const store = this.mall._storeForId(storeId);
+      const params = paramsBySource[storeId];
+      const events = await store.events.get(uid, params);
+      res.push(...events);
+    }
+    return res;
+  };
 
   async generateStreams(uid, paramsBySource, addEventStreamCB) {
     for (let storeId of Object.keys(paramsBySource)) {

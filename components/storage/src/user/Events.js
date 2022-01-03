@@ -463,3 +463,23 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
     eventStore.findAndUpdateIfNeeded(userOrUserId, {integrityBatchCode: integrityBatchCode}, {}, updateIfNeeded, doneCallBack);
   }
 }
+
+/**
+ * Temp implementation for migration to Mall
+ */
+ Events.prototype.find = function (userOrUserId, query, options, callback, directOK = false) {
+  if (! directOK) {
+    
+    if (! stackContains('repository.js')) {
+      $$(userOrUserId, query, options);
+      //throw new Error();
+    }
+  }
+  Events.super_.prototype.find.call(this, userOrUserId, query, options, callback);
+};
+
+function stackContains(needle) {
+  const e = new Error();
+  const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 ).slice(1, 25);
+  return stack.some(l =>  l.indexOf(needle) >= 0);
+}

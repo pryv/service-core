@@ -35,9 +35,9 @@ class LocalUserEvents extends UserEvents {
     return await bluebird.fromCallback(cb => this.userEventsStorage.findStreamed(userId, query, options, cb));
   }
 
-  async get(userId, params) { 
+  async get(userId, params) {
     const {query, options} = paramsToMongoquery(params);
-    return await bluebird.fromCallback(cb => this.userEventsStorage.find(userId, query, options, cb));
+    return await bluebird.fromCallback(cb => this.userEventsStorage.find(userId, query, options, cb, true));
   }
 }
 
@@ -85,7 +85,7 @@ function paramsToMongoquery(params) {
       });
     }
     
-    if (params.toTime == null || ( params.toTime + DELTA_TO_CONSIDER_IS_NOW) > (Date.now() / 1000)) { // toTime is null or greater than now();
+    if (params.toTime == null || ( params.toTime + DELTA_TO_CONSIDER_IS_NOW) > (Date.now() / 1000)) { // toTime is null or greater than now();
       params.running = true;
     }
 
