@@ -27,6 +27,7 @@ const {
 
 const { pubsub } = require('messages');
 const bluebird = require('bluebird');
+const { getMall } = require('mall');
 
 const cache = require('cache');
 const { MESSAGES } = require('cache/src/synchro');
@@ -46,6 +47,7 @@ let influxRepository;
 let config;
 let isOpenSource = false;
 let regUrl;
+let mall;
 
 describe('[PGTD] DELETE /users/:username', () => {
 
@@ -87,6 +89,8 @@ describe('[PGTD] DELETE /users/:username', () => {
     username2 = charlatan.Internet.userName();
 
     authKey = config.get('auth:adminAccessKey');
+
+    mall = await getMall();
   });
   after(async function() {
     config.injectTestConfig({});
@@ -196,7 +200,6 @@ describe('[PGTD] DELETE /users/:username', () => {
 
           const dbCollections = [
             app.storageLayer.accesses,
-            app.storageLayer.events,
             app.storageLayer.streams,
             app.storageLayer.followedSlices,
             app.storageLayer.profile,
@@ -213,6 +216,11 @@ describe('[PGTD] DELETE /users/:username', () => {
           });
 
           await Promise.all(collectionsNotEmptyChecks);
+
+          // check events from mall
+          const events = await mall.events.get(username1,{local: {}});
+          assert.empty(events);
+
 
           const sessions = await bluebird.fromCallback((cb) =>
             app.storageLayer.sessions.getMatching({ username: username1 }, cb)
@@ -249,7 +257,6 @@ describe('[PGTD] DELETE /users/:username', () => {
 
           const dbCollections = [
             app.storageLayer.accesses,
-            app.storageLayer.events,
             app.storageLayer.streams,
           ];
           if (!isOpenSource) dbCollections.push(app.storageLayer.webhooks);
@@ -264,6 +271,10 @@ describe('[PGTD] DELETE /users/:username', () => {
           });
 
           await Promise.all(collectionsEmptyChecks);
+
+          // check events from mall
+          const events = await mall.events.get(username2,{local: {}});
+          assert.notEmpty(events);
 
           const sessions = await bluebird.fromCallback((cb) =>
             app.storageLayer.sessions.getMatching({ username: username2 }, cb)
