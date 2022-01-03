@@ -143,32 +143,7 @@ module.exports = async function (api)
     
     next();
   }
-  
-  async function findEventsFromStore(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (params.streams === null || params.streams.length === 0)  {
-      result.events = [];
-      return next();
-    }
 
-    // in> params.fromTime = 2 params.streams = [{any: '*' storeId: 'local'}, {any: 'access-gasgsg', storeId: 'audit'}, {any: 'action-events.get', storeId: 'audit'}]
-    const paramsByStoreId = {};
-    for (let streamQuery of params.streams) {
-      const storeId = streamQuery.storeId;
-      if (storeId == null) {
-        console.error('Missing storeId' + params.streams);
-        throw(new Error('Missing storeId' + params.streams));
-      }
-      if (! paramsByStoreId[storeId]) {
-        paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
-        paramsByStoreId[storeId].streams = []; // empty the stream query
-      }
-      delete streamQuery.storeId; 
-      paramsByStoreId[storeId].streams.push(streamQuery);
-    }
-    // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
-
-    next();
-  }
 
   function includeLocalStorageDeletionsIfRequested(context, params, result, next) {
 
