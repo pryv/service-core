@@ -17,15 +17,17 @@ const _ = require('lodash');
 const middleware = require('middleware');
 const { setMethodId } = require('middleware');
 const hasFileUpload = require('../middleware/uploads').hasFileUpload;
-const attachmentsAccessMiddleware = require('../middleware/attachment_access');
+const attachmentsAccessMiddlewareFactory = require('../middleware/attachment_access');
+
 
 import type Application  from '../application';
 
 // Set up events route handling.
-module.exports = function(expressApp: express$Application, app: Application) {
+module.exports = async function(expressApp: express$Application, app: Application) {
   const api = app.api;
   const config = app.config;
   const storage = app.storageLayer;
+
 
   const filesReadTokenSecret = config.get('auth:filesReadTokenSecret');
 
@@ -69,11 +71,12 @@ module.exports = function(expressApp: express$Application, app: Application) {
   //  and thus if something is missing from the (router-)visible url, something 
   //  will be missing upon file access. 
   // 
+  const attachmentsAccessMiddleware = await attachmentsAccessMiddlewareFactory();
   expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', 
     setMethodId('events.getAttachment'),
     retrieveAccessFromReadToken, 
     loadAccessMiddleware,
-    attachmentsAccessMiddleware(storage.events)
+    attachmentsAccessMiddleware
   );
 
   // Parses the 'readToken' and verifies that the access referred to by id in 

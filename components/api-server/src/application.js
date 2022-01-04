@@ -127,7 +127,7 @@ class Application {
         hostname,
       }
     ))
-    this.initiateRoutes();
+    await this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
     const errorsMiddleware = errorsMiddlewareMod(this.logging);
     this.expressApp.use(errorsMiddleware);
@@ -174,7 +174,7 @@ class Application {
     this.expressApp = await expressAppInit(this.logging);
   }
 
-  initiateRoutes() {
+  async initiateRoutes() {
     
     if (this.config.get('dnsLess:isActive')) {
       require('./routes/register')(this.expressApp, this);
@@ -194,7 +194,7 @@ class Application {
     require('./routes/accesses')(this.expressApp, this);
     require('./routes/account')(this.expressApp, this);
     require('./routes/auth/login')(this.expressApp, this);
-    require('./routes/events')(this.expressApp, this);
+    await require('./routes/events')(this.expressApp, this);
     require('./routes/followed-slices')(this.expressApp, this);
     require('./routes/profile')(this.expressApp, this);
     require('./routes/service')(this.expressApp, this);

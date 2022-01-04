@@ -19,7 +19,7 @@ import typeof DataStore from '../interfaces/DataStore';
 
 let mall: Mall;
 let initializing: boolean = false;
-async function getMall(): Array<DataStore> {
+async function getMall(): Promise<Mall> {
   while (initializing) {
     await new Promise((r) => setTimeout(r, 5));
   }
