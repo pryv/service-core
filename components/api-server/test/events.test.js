@@ -1387,7 +1387,6 @@ describe('events', function () {
         },
         async function verifyStoredItem() {
           const dbEvent = await mall.events.getOne(user.id, original.id);
-          $$(dbEvent)
           dbEvent.duration.should.eql(data.duration);
         }
       ], done);
@@ -1752,8 +1751,8 @@ describe('events', function () {
               stepDone();
             });
           },
-          function verifyEventData() {
-            const events = await mall.events.get(user.id, {local: {includeDeletions: true}});
+          async function verifyEventData() {
+            let events = await mall.events.get(user.id, {local: {state: 'all', includeDeletions: true}});
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
             events = separatedEvents.events;
             const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;

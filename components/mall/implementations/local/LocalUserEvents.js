@@ -37,7 +37,7 @@ class LocalUserEvents extends UserEvents {
 
   async get(userId, params) {
     const {query, options} = paramsToMongoquery(params);
-    return await bluebird.fromCallback(cb => this.userEventsStorage.find(userId, query, options, cb, true));
+    return await bluebird.fromCallback(cb => this.userEventsStorage.find_(userId, query, options, cb, true));
   }
 }
 
@@ -51,8 +51,25 @@ module.exports = LocalUserEvents;
  * @returns 
  */
 function paramsToMongoquery(params) {
-  const query = noDeletions(applyState({}, params.state));
+  const query = {};
 
+  // trashed
+  switch (params.state) {
+    case 'trashed':
+      query.trashed = true;
+      break;
+    case 'all':
+      break;
+    default:
+      query.trashed = null;
+  }
+
+  // deletions
+  if (! params.includeDeletions) {
+    query.deleted = null;
+    // query.headId = null; <= might be needed?
+  }
+ 
   // if getOne
   if (params.id != null) {
     query.id = params.id;
@@ -128,44 +145,10 @@ function paramsToMongoquery(params) {
  *
  * @param {String} requestedType
  */
- function getTypeQueryValue(requestedType) {
+function getTypeQueryValue(requestedType) {
   var wildcardIndex = requestedType.indexOf('/*');
   return wildcardIndex > 0 ?
-    new RegExp('^' + requestedType.substr(0, wildcardIndex + 1)) : 
+    new RegExp('^' + requestedType.substr(0, wildcardIndex + 1)) :
     requestedType;
-  }
+}
 
-  /**
- * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
- */
-/**
- * Utilities for storage queries.
- */
-
-/**
- * Applies the given state parameter to the given query object.
- *
- * @param {Object} query
- * @param {String} state "default", "trashed" or "all"
- * @returns {Object} The query object
- */
-function applyState (query = {}, state) {
-  switch (state) {
-  case 'trashed':
-    query.trashed = true;
-    break;
-  case 'all':
-    break;
-  default:
-    query.trashed = null;
-  }
-  return query;
-};
-
-function noDeletions (query) {
-  query.deleted = null;
-  return query;
-};

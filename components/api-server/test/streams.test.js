@@ -14,7 +14,6 @@ const commonTests = helpers.commonTests;
 const fs = require('fs');
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
-const eventsStorage = helpers.dependencies.storage.user.events;
 const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/streamsMethods');
 const should = require('should'); // explicit require to benefit from static function
@@ -24,6 +23,9 @@ const timestamp = require('unix-timestamp');
 const treeUtils = require('utils').treeUtils;
 const _ = require('lodash');
 const charlatan = require('charlatan');
+const bluebird = require('bluebird');
+
+const { getMall } = require('mall');
 
 const chai = require('chai');
 const assert = chai.assert; 
@@ -37,6 +39,9 @@ describe('streams', function () {
       request = null,
       accessId = null;
 
+  let mall;
+
+  before(async () => { mall = await getMall()});
   function path(id) {
     return basePath + '/' + id;
   }
@@ -823,17 +828,14 @@ describe('streams', function () {
           eventsNotifCount.should.eql(1, 'events notifications');
           stepDone();
         },
-        function verifyLinkedEvents(stepDone) {
-          eventsStorage.find(user, {streamIds: parentStream.id}, null, function (err, linkedEvents) {
-            _.map(linkedEvents, 'id').should.eql([
-              testData.events[4].id,
-              testData.events[3].id,
-              testData.events[2].id,
-              testData.events[1].id
-            ]);
-
-            stepDone();
-          });
+        async function verifyLinkedEvents() {
+          const linkedEvents = await mall.events.get(user.id, {local: {streams: [{any: [parentStream.id]}]}});
+          _.map(linkedEvents, 'id').should.eql([
+            testData.events[4].id,
+            testData.events[3].id,
+            testData.events[2].id,
+            testData.events[1].id
+          ]);
         }
       ],
       done );
@@ -876,8 +878,8 @@ describe('streams', function () {
               stepDone();
             });
         },
-        function verifyLinkedEvents(stepDone) {
-          eventsStorage.findAll(user, null, async function (err, events) {
+        async function verifyLinkedEvents() {
+          let events = await mall.events.get(user.id, {local: {includeDeletions: true, state: 'all'}});
 
             // lets separate system events from all other events and validate them separately
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
@@ -900,13 +902,14 @@ describe('streams', function () {
 
             // some time after returning to the client. Let's hang around and try 
             // this several times. 
-            assertEventuallyTrue(
-              () => ! fs.existsSync(dirPath), 
-              5, // second(s) 
-              'Event directory must be deleted' + dirPath, 
-              stepDone
-            );
-          });
+            await bluebird.fromCallback(cb => {
+              assertEventuallyTrue(
+                () => ! fs.existsSync(dirPath), 
+                5, // second(s) 
+                'Event directory must be deleted' + dirPath, 
+                cb
+              );
+            });
         }
       ], done);
       
