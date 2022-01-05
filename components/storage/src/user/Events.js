@@ -467,13 +467,10 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
 /**
  * Temp implementation for migration to Mall
  */
- Events.prototype.find = function (userOrUserId, query, options, callback, directOK = false) {
-  if (! directOK) {
-    
-    if (! stackContains('repository.js')) {
-      $$(userOrUserId, query, options);
-      //throw new Error();
-    }
+ Events.prototype.find = function (userOrUserId, query, options, callback) {
+  if (! stackContains('repository.js')) {
+    $$(userOrUserId, query, options);
+    //throw new Error();
   }
   Events.super_.prototype.find.call(this, userOrUserId, query, options, callback);
 };
