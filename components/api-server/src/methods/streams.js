@@ -428,30 +428,28 @@ module.exports = async function (api) {
           stepDone();
         });
       },
-      function checkIfRootStreamAndLinkedEventsExist(stepDone) {
+      async function checkIfRootStreamAndLinkedEventsExist() {
         if (params.mergeEventsWithParent === true && parentId == null) {
-          return stepDone(errors.invalidOperation(
+          throw errors.invalidOperation(
             'Deleting a root stream with mergeEventsWithParent=true is rejected ' +
             'since there is no parent stream to merge linked events in.',
-            { streamId: params.id }));
+            { streamId: params.id });
         }
-
-        userEventsStorage.find(context.user, {streamIds: { $in: streamAndDescendantIds }},
-          { limit: 1 }, function (err, events) {
-            if (err) {
-              return stepDone(errors.unexpectedError(err));
-            }
-
-            hasLinkedEvents = !!events.length;
-
-            if (hasLinkedEvents && params.mergeEventsWithParent === null) {
-              return stepDone(errors.invalidParametersFormat(
-                'There are events referring to the deleted items ' +
-                'and the `mergeEventsWithParent` parameter is missing.'));
-            }
-
-            stepDone();
-          });
+        try {
+          // the following should be done in a precedent step when mall.events.get & mall.streams.get is fully implemented
+          const [storeId, cleanStreamid] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
+          const cleanDescendantIds = streamAndDescendantIds.map((s) => StreamsUtils.storeIdAndStreamIdForStreamId(s)[1]);
+          const events = await mall.events.get(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}], limit: 1 }});
+         
+          hasLinkedEvents = !!events.length;
+        } catch (err) {
+          throw errors.unexpectedError(err);
+        }
+        if (hasLinkedEvents && params.mergeEventsWithParent === null) {
+          throw errors.invalidParametersFormat(
+            'There are events referring to the deleted items ' +
+            'and the `mergeEventsWithParent` parameter is missing.');
+        }       
       },
 
       function handleLinkedEvents(stepDone) {
