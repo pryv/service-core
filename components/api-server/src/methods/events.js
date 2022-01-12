@@ -228,8 +228,7 @@ module.exports = async function (api)
     try {
       const storeId = StreamsUtils.storeIdAndStreamIdForStreamId(params.id)[0];
       const events = await mall.events.get(context.user.id, {[storeId]: {id: params.id, state: 'all', includeDeletions: true, includeHistory: true}});
-      const history = await bluebird.fromCallback(cb => userEventsStorage.findHistory(context.user, params.id, options, cb));
-
+   
       result.history = [];
      
       events.forEach(e => {
