@@ -26,7 +26,7 @@ class StoreUserEvents extends UserEvents {
     const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
-    const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all' , limit: 1});
+    const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all' , limit: 1, includeDeletions: true});
     if (events?.length === 1) return events[0];
     return null;
   }

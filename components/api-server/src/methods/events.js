@@ -223,8 +223,10 @@ module.exports = async function (api)
     const options = { sort: {modified: 1} };
 
     try {
+      const storeId = StreamsUtils.storeIdAndStreamIdForStreamId(params.id)[0];
+      const events = await mall.events.get(context.user.id, {[storeId]: {id: params.id, state: 'all', includeDeletions: true, includeHistory: true}});
+      //throw new Error('not implemented');
       const history = await bluebird.fromCallback(cb => userEventsStorage.findHistory(context.user, params.id, options, cb))
-
       // To remove when streamId not necessary
       history.forEach(e => {
         _applyBackwardCompatibilityOnEvent(e, context);

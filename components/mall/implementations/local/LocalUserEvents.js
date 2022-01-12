@@ -67,7 +67,16 @@ function paramsToMongoquery(params) {
   // deletions
   if (! params.includeDeletions) {
     query.deleted = null;
-    // query.headId = null; <= might be needed?
+  }
+
+  // history
+  if (! params.includeHistory) { // no history;
+    query.headId = null;
+  } else {
+    if (params.id != null) { // get history of event
+      query.$or = [{headId: params.id}];
+    }
+    // if query.headId is undefined all history (in scope) will be returned
   }
  
   // if getOne

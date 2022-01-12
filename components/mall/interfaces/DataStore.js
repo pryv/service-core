@@ -171,7 +171,9 @@ class UserEvents {
    * Get the events for this user.
    * @param {identifier} uid  
    * @param {object} params - event query
-   * @returns {Array<Stream>}
+   * @param {boolean} [params.includeDeletions] - default false
+   * @param {boolean} [params.includeHistory] - default false
+   * @returns {Array<Event>}
    * @see https://api.pryv.com/reference/#get-events
    */
   async get(uid: string, params): Promise<Array<Event>> { toBeImplemented(); }

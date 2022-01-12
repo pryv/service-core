@@ -1752,7 +1752,7 @@ describe('events', function () {
             });
           },
           async function verifyEventData() {
-            let events = await mall.events.get(user.id, {local: {state: 'all', includeDeletions: true}});
+            let events = await mall.events.get(user.id, {local: {state: 'all', includeDeletions: true, includeHistory: true}});
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
             events = separatedEvents.events;
             const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
