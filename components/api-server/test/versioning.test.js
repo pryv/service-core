@@ -23,9 +23,15 @@ const charlatan = require('charlatan');
 const SystemStreamSerializer = require('business/src/system-streams/serializer');
 const { integrity } = require('business');
 const assert = require('chai').assert;
+const { getMall } = require('mall');
+
 require('date-utils');
 
 describe('Versioning', function () {
+  let mall = null;
+  before(async () => {
+    mall = await getMall();
+  });
 
   const user = Object.assign({}, testData.users[0]);
   let request = null;
@@ -126,28 +132,11 @@ describe('Versioning', function () {
                 stepDone();
               });
             },
-            function findDeletionInStorage(stepDone) {
-              storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
-                function (err, event) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  should.exist(event);
-                  event.id.should.eql(trashedEventWithHistory.id);
-                  should.exist(event.deleted);
-                  stepDone();
-                });
-            },
-            function checkThatHistoryIsDeleted(stepDone) {
-
-              storage.findHistory(user, trashedEventWithHistory.id, null,
-                function (err, events) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  (events.length).should.be.eql(0);
-                  stepDone();
-                });
+            async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
+              const events = await mall.events.get(user.id, {local: {id: trashedEventWithHistory.id, state: 'all', includeDeletions: true, includeHistory: true}})
+              events.length.should.be.eql(1); // only the event itself not the history 
+              events[0].id.should.eql(trashedEventWithHistory.id);
+              should.exist(events[0].deleted);
             }
           ], done);
         });
@@ -168,39 +157,32 @@ describe('Versioning', function () {
                 stepDone();
               });
             },
-            function verifyDeletedHeadInStorage(stepDone) {
-              storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
-                function (err, event) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  should.exist(event);
-                  (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
-                  event.id.should.eql(trashedEventWithHistory.id);
-                  should.exist(event.deleted);
-                  should.exist(event.modified);
-                  should.exist(event.modifiedBy);
-                  if (integrity.events.isActive) should.exist(event.integrity);
-                  stepDone();
-                });
-            },
-            function verifyDeletedHistoryInStorage(stepDone) {
-              storage.findHistory(user, trashedEventWithHistory.id, null,
-                function (err, events) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  (events.length).should.be.eql(2);
-                  events.forEach(function (event) {
-                    (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
-                    should.exist(event.id);
-                    should.exist(event.headId);
-                    should.exist(event.modified);
-                    should.exist(event.modifiedBy);
-                    if (integrity.events.isActive) should.exist(event.integrity);
-                  });
-                  stepDone();
-                });
+            async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
+              const events = await mall.events.get(user.id, {local: {id: trashedEventWithHistory.id, state: 'all', includeDeletions: true, includeHistory: true}})
+              events.length.should.be.eql(3); 
+
+              // deleted event
+              const deletedEvents = events.filter(e => e.deleted);
+              deletedEvents.length.should.be.eql(1);
+              const deletedEvent = deletedEvents[0];
+              (Object.keys(deletedEvent).length).should.eql(integrity.events.isActive ? 5 : 4);
+              deletedEvent.id.should.eql(trashedEventWithHistory.id);
+              should.exist(deletedEvent.deleted);
+              should.exist(deletedEvent.modified);
+              should.exist(deletedEvent.modifiedBy);
+              if (integrity.events.isActive) should.exist(deletedEvent.integrity);
+              
+              // history 
+              const history = events.filter(e => e.headId);
+              history.length.should.be.eql(2);
+              history.forEach(function (event) {
+                (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
+                should.exist(event.id);
+                should.exist(event.headId);
+                should.exist(event.modified);
+                should.exist(event.modifiedBy);
+                if (integrity.events.isActive) should.exist(event.integrity);
+              });
             }
           ], done);
         });
