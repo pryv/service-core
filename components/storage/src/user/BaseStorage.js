@@ -107,7 +107,6 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
  * Used by "mall" only 
  */
 BaseStorage.prototype.find_ = function(userOrUserId, query, options, callback) {
-
   this.database.find(
     this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),

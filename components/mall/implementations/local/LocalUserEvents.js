@@ -69,20 +69,23 @@ function paramsToMongoquery(params) {
     query.deleted = null;
   }
 
-  // history
-  if (! params.includeHistory) { // no history;
-    query.headId = null;
-  } else {
-    if (params.id != null) { // get history of event
-      query.$or = [{headId: params.id}];
-    }
-    // if query.headId is undefined all history (in scope) will be returned
-  }
- 
   // if getOne
   if (params.id != null) {
     query.id = params.id;
   }
+
+  // history
+  if (! params.includeHistory) { // no history;
+    query.headId = null;
+  } else {
+    if (params.id != null) { // get event and history of event
+      query.$or = [{_id: params.id}, {headId: params.id}];
+      delete query.id;
+    }
+    // if query.headId is undefined all history (in scope) will be returned
+  }
+ 
+  
 
   // if streams are defined
   if (params.streams != null && params.streams.length != 0) {
@@ -146,6 +149,9 @@ function paramsToMongoquery(params) {
     skip: params.skip,
     limit: params.limit
   };
+  if (params.includeHistory) {
+    options.sort.modified = 1; // also sort by modified time when history is requested
+  }
   return {query, options};
 }
 

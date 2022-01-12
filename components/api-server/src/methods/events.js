@@ -222,17 +222,24 @@ module.exports = async function (api)
     }
     const options = { sort: {modified: 1} };
 
+    // history is fetched in an extra step due to initial implementation,
+    // now that mall.events.get return all in a single call, it coul be implement all at once
+
     try {
       const storeId = StreamsUtils.storeIdAndStreamIdForStreamId(params.id)[0];
       const events = await mall.events.get(context.user.id, {[storeId]: {id: params.id, state: 'all', includeDeletions: true, includeHistory: true}});
-      //throw new Error('not implemented');
-      const history = await bluebird.fromCallback(cb => userEventsStorage.findHistory(context.user, params.id, options, cb))
-      // To remove when streamId not necessary
-      history.forEach(e => {
+      const history = await bluebird.fromCallback(cb => userEventsStorage.findHistory(context.user, params.id, options, cb));
+
+      result.history = [];
+     
+      events.forEach(e => {
+         // To remove when streamId not necessary
         _applyBackwardCompatibilityOnEvent(e, context);
+        if (e.headId != null) {
+          result.history.push(e);
+        }
       });
         
-      result.history = history;
       next();
 
     } catch (err) {
