@@ -257,29 +257,6 @@ Events.prototype.findStreamed = function (userOrUserId, query, options, callback
   );
 };
 
-/**
- * Implementation
- */
-Events.prototype.findDeletionsStreamed = function (
-  userOrUserId,
-  deletedSince,
-  options,
-  callback
-) {
-  var query = { deleted: { $gt: deletedSince } };
-  this.database.findStreamed(
-    this.getCollectionInfo(userOrUserId),
-    query,
-    this.applyOptionsToDB(options),
-    function (err, dbStreamedItems) {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, dbStreamedItems.pipe(new ApplyEventsFromDbStream(this.converters.itemFromDB)));
-    }.bind(this)
-  );
-};
-
 Events.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
 };

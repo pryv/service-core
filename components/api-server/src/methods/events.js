@@ -151,32 +151,12 @@ module.exports = async function (api)
       return next();
     }
 
-    const options = {
-      sort: {deleted: params.sortAscending ? 1 : -1},
-      skip: params.skip,
-      limit: params.limit
-    };
-
-    if (true) {
     // to be implemented also for stores that support deletion later on 
     const localDeletionsStreams = await mall.events.getStreamedWithParamsByStore(context.user.id, 
       { local: { skip: params.skip, limit: params.limit, deletedSince: params.modifiedSince}});
 
     result.addStream('eventDeletions', localDeletionsStreams);
-    
     next();
-    } else { 
-
-      userEventsStorage.findDeletionsStreamed(context.user, params.modifiedSince, options,
-        function (err, deletionsStream) {
-          if (err) {
-            return next(errors.unexpectedError(err));
-          }
-
-          result.addStream('eventDeletions', deletionsStream);
-          next();
-        });
-      }
   }
 
   api.register('events.getOne',
