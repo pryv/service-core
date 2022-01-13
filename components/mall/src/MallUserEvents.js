@@ -37,7 +37,56 @@ class StoreUserEvents extends UserEvents {
    * @param {*} params 
    */
   async get(uid, params) {
-    let singleStoreId, singleEventId;
+    return await this.getWithParamsByStore(uid, getParamsBySource(params));
+  }
+
+
+  async getWithParamsByStore(uid, paramsBySource) {
+    const res = [];
+    for (let storeId of Object.keys(paramsBySource)) {
+      const store = this.mall._storeForId(storeId);
+      const params = paramsBySource[storeId];
+      const events = await store.events.get(uid, params);
+      res.push(...events);
+    }
+    return res;
+  };
+
+  async getStreamed(uid, params) {
+    return await this.getStreamedWithParamsByStore(uid, getParamsBySource(params));
+  }
+
+  async getStreamedWithParamsByStore(uid, paramsBySource) {
+    const res = [];
+    if (Object.keys(paramsBySource).length != 1) {
+      return new Error('getStreamed only supported for one store at a time');
+    }
+    const storeId = Object.keys(paramsBySource)[0];
+    const store = this.mall._storeForId(storeId);
+    return await store.events.getStreamed(uid, paramsBySource[storeId]);
+  };
+
+  async generateStreamsWithParamsByStore(uid, paramsBySource, addEventStreamCB) {
+    for (let storeId of Object.keys(paramsBySource)) {
+      const store = this.mall._storeForId(storeId);
+      const params = paramsBySource[storeId];
+      await store.events.getStreamed(uid, params).then((eventsStream) => {
+        if (storeId == 'local') {
+          addEventStreamCB(store, eventsStream);
+        } else {
+          addEventStreamCB(store, eventsStream.pipe(new AddStorePrefixOnEventsStream(storeId)));
+        }
+      });
+    }
+  }
+
+}
+
+module.exports = StoreUserEvents;
+
+
+function getParamsBySource(params) {
+  let singleStoreId, singleEventId;
     if (params.id != null) { // a specific event is queried so we have a singleStore query;
       [singleStoreId, singleEventId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
     }
@@ -45,7 +94,7 @@ class StoreUserEvents extends UserEvents {
     // repack streamQueries by storeId
     const streamQueriesBySource = {};
     if (params.streams != null) { // must be an array
-      for (streamQuery of params.streams) {
+      for (let streamQuery of params.streams) {
         let storeId = null;
         
         function clean(subStreamQuery) {
@@ -90,45 +139,5 @@ class StoreUserEvents extends UserEvents {
       delete paramsBySource.local.streams;
     }
     $$('paramsBySource', paramsBySource);
-    return await this.getW(uid, paramsBySource);
-  }
-
-
-  async getW(uid, paramsBySource) {
-    const res = [];
-    for (let storeId of Object.keys(paramsBySource)) {
-      const store = this.mall._storeForId(storeId);
-      const params = paramsBySource[storeId];
-      const events = await store.events.get(uid, params);
-      res.push(...events);
-    }
-    return res;
-  };
-
-  async getStreamed(uid, paramsBySource) {
-    const res = [];
-    if (Object.keys(paramsBySource).length != 1) {
-      return new Error('getStreamed only supported for one store at a time');
-    }
-    const storeId = Object.keys(paramsBySource)[0];
-    const store = this.mall._storeForId(storeId);
-    return await store.events.getStreamed(uid, paramsBySource[storeId]);
-  };
-
-  async generateStreams(uid, paramsBySource, addEventStreamCB) {
-    for (let storeId of Object.keys(paramsBySource)) {
-      const store = this.mall._storeForId(storeId);
-      const params = paramsBySource[storeId];
-      await store.events.getStreamed(uid, params).then((eventsStream) => {
-        if (storeId == 'local') {
-          addEventStreamCB(store, eventsStream);
-        } else {
-          addEventStreamCB(store, eventsStream.pipe(new AddStorePrefixOnEventsStream(storeId)));
-        }
-      });
-    }
-  }
-
+    return paramsBySource;
 }
-
-module.exports = StoreUserEvents;

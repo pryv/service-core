@@ -289,7 +289,7 @@ describe('webhooks', function() {
       it('[EXQD] should register a new webhook in the service through NATS', async function() {
         let isWebhookActive = false;
         while (! isWebhookActive) {
-          const [ , webhook,  ] = webhooksService.getWebhook(username, webhookId);
+          const [ , webhook,  ] = webhooksService.getWithParamsByStoreebhook(username, webhookId);
           if (webhook != null) {
             isWebhookActive = true;
           }

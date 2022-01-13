@@ -509,7 +509,7 @@ describe('Versioning', function () {
             });
         },
         async function checkThatHistoryIsDeleted() {
-          let events = await mall.events.getW(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeHistory: true}});
+          let events = await mall.events.get(user.id, {id: eventOnChildStream.id, state: 'all', includeHistory: true});
           events = events.filter(e => e.headId); // only the history
           events.length.should.be.eql(0);
         }
@@ -585,7 +585,7 @@ describe('Versioning', function () {
             });
         },
         async function verifyDeletedHeadInStory() {
-          const events = await mall.events.getW(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeDeletions: true}});
+          const events = await mall.events.get(user.id, {id: eventOnChildStream.id, state: 'all', includeDeletions: true});
           events.length.should.be.eql(1);
           const event = events[0];
 

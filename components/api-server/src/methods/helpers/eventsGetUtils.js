@@ -400,7 +400,7 @@ async function findEventsFromStore(filesReadTokenSecret: string,
     result.addToConcatArrayStream('events', stream);
   }
 
-  await mall.events.generateStreams(context.user.id, paramsByStoreId, addnewEventStreamFromSource);
+  await mall.events.generateStreamsWithParamsByStore(context.user.id, paramsByStoreId, addnewEventStreamFromSource);
   result.closeConcatArrayStream('events');
 
   return next();

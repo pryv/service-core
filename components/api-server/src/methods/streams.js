@@ -445,7 +445,7 @@ module.exports = async function (api) {
             { streamId: params.id });
         }
         try {
-          const events = await mall.events.getW(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}], limit: 1 }});
+          const events = await mall.events.getWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}], limit: 1 }});
           hasLinkedEvents = !!events.length;
         } catch (err) {
           throw errors.unexpectedError(err);
@@ -469,7 +469,7 @@ module.exports = async function (api) {
                 return subStepDone();
               }
 
-              mall.events.getStreamed(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
+              mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
                 .then((eventsStream) => {
                   let eventToVersion;
                   eventsStream.on('data', (event) => {
@@ -531,7 +531,7 @@ module.exports = async function (api) {
                 return subStepDone();
               } else if (auditSettings.deletionMode === 'keep-authors') {
 
-                mall.events.getStreamed(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
+                mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
                 .then((eventsStream) => { 
                     eventsStream.on('data', (head) => {
                       userEventsStorage.minimizeEventsHistory(context.user, head.id,
@@ -556,7 +556,7 @@ module.exports = async function (api) {
               } else {
                 // default: deletionMode='keep-nothing'
 
-                mall.events.getStreamed(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
+                mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
                 .then((eventsStream) => { 
                     eventsStream.on('data', (head) => {
                       // multiple StreamIds &&
@@ -589,7 +589,7 @@ module.exports = async function (api) {
               }
             },
             function deleteEventsWithAttachments(subStepDone) {
-              mall.events.getStreamed(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
+              mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
               .then((eventsStream) => { 
                   eventsStream.on('data', (event) => {
                     // multiple StreamIds &&

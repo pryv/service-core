@@ -325,8 +325,8 @@ describe("Events of system streams", () => {
           it('[A9DC] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
             assert.equal(res.body.event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
 
-            const allEvents = await mall.events.getW(user.attrs.id, 
-              {local: {streams: [{any: [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]}]}});
+            const allEvents = await mall.events.get(user.attrs.id, 
+              {streams: [{any: [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]}]});
 
             assert.equal(allEvents.length, 2);
             // check the order
@@ -370,8 +370,8 @@ describe("Events of system streams", () => {
               assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addPrivatePrefixToStreamId('language'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[467D] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
-              const allEvents = await mall.events.getW(user.attrs.id, 
-                {local: {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]}]}});
+              const allEvents = await mall.events.get(user.attrs.id, 
+                {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]}]});
 
               assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
               assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')), true);
@@ -742,8 +742,7 @@ describe("Events of system streams", () => {
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[CF70] should remove the "active" streamId for events of the same stream', async () => {
-              const allEvents = await mall.events.getW(user.attrs.id, 
-                {local: {streams: [{any: [streamId]}]}});
+              const allEvents = await mall.events.get(user.attrs.id, {streams: [{any: [streamId]}]});
 
               assert.equal(allEvents.length, 2);
               // check the order
