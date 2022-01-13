@@ -715,7 +715,7 @@ describe('events', function () {
 
       async.series([
         async function countInitialEvents() {
-          const events = await mall.events.get(user.id, {local: {}});
+          const events = await mall.events.get(user.id, {});
           originalCount = events.length;
         },
         function addNewEvent(stepDone) {
@@ -744,7 +744,7 @@ describe('events', function () {
           });
         },
         async function verifyEventData() {
-          const events = await mall.events.get(user.id, {local: {}});
+          const events = await mall.events.get(user.id, {});
           
           events.length.should.eql(originalCount + 1, 'events');
 
@@ -1752,7 +1752,7 @@ describe('events', function () {
             });
           },
           async function verifyEventData() {
-            let events = await mall.events.get(user.id, {local: {state: 'all', includeDeletions: true, includeHistory: true}});
+            let events = await mall.events.get(user.id, {state: 'all', includeDeletions: true, includeHistory: true});
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
             events = separatedEvents.events;
             const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;

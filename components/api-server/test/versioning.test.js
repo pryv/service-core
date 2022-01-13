@@ -133,7 +133,7 @@ describe('Versioning', function () {
               });
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
-              const events = await mall.events.get(user.id, {local: {id: trashedEventWithHistory.id, state: 'all', includeDeletions: true, includeHistory: true}})
+              const events = await mall.events.get(user.id, {id: trashedEventWithHistory.id, state: 'all', includeDeletions: true, includeHistory: true})
               events.length.should.be.eql(1); // only the event itself not the history 
               events[0].id.should.eql(trashedEventWithHistory.id);
               should.exist(events[0].deleted);
@@ -158,7 +158,7 @@ describe('Versioning', function () {
               });
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
-              const events = await mall.events.get(user.id, {local: {id: trashedEventWithHistory.id, state: 'all', includeDeletions: true, includeHistory: true}})
+              const events = await mall.events.get(user.id,{id: trashedEventWithHistory.id, state: 'all', includeDeletions: true, includeHistory: true})
               events.length.should.be.eql(3); 
 
               // deleted event
@@ -222,7 +222,7 @@ describe('Versioning', function () {
                 });
             },
             async function checkThatHistoryIsUnchanged() {
-              let events = await mall.events.get(user.id, {local: {id: trashedEventWithHistory.id, state: 'all', includeHistory: true}});
+              let events = await mall.events.get(user.id, {id: trashedEventWithHistory.id, state: 'all', includeHistory: true});
               events = events.filter(e => e.headId); // only the history
 
               // TODO clean this test
@@ -509,7 +509,7 @@ describe('Versioning', function () {
             });
         },
         async function checkThatHistoryIsDeleted() {
-          let events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeHistory: true}});
+          let events = await mall.events.getW(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeHistory: true}});
           events = events.filter(e => e.headId); // only the history
           events.length.should.be.eql(0);
         }
@@ -536,7 +536,7 @@ describe('Versioning', function () {
             });
         },
         async function verifyDeletedHeadInStorage() {
-          const events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeDeletions: true}});
+          const events = await mall.events.get(user.id, {id: eventOnChildStream.id, state: 'all', includeDeletions: true});
           events.length.should.be.eql(1);
           const event = events[0];
  
@@ -549,7 +549,7 @@ describe('Versioning', function () {
           if (integrity.events.isActive) should.exist(event.integrity);
         },
         async function verifyDeletedHistoryInStorage() {
-          let events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeHistory: true}});
+          let events = await mall.events.get(user.id, {id: eventOnChildStream.id, state: 'all', includeHistory: true});
           events = events.filter(e => e.headId); // only the history
     
           events.length.should.be.eql(1);
@@ -585,7 +585,7 @@ describe('Versioning', function () {
             });
         },
         async function verifyDeletedHeadInStory() {
-          const events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeDeletions: true}});
+          const events = await mall.events.getW(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeDeletions: true}});
           events.length.should.be.eql(1);
           const event = events[0];
 
@@ -599,7 +599,7 @@ describe('Versioning', function () {
           event.should.eql(expected);
         },
         async function checkThatHistoryIsUnchanged() {
-          let events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeHistory: true}});
+          let events = await mall.events.get(user.id, {id: eventOnChildStream.id, state: 'all', includeHistory: true});
           events = events.filter(e => e.headId); // only the history
     
           let checked = false;

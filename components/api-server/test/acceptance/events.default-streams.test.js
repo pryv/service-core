@@ -325,7 +325,7 @@ describe("Events of system streams", () => {
           it('[A9DC] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
             assert.equal(res.body.event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
 
-            const allEvents = await mall.events.get(user.attrs.id, 
+            const allEvents = await mall.events.getW(user.attrs.id, 
               {local: {streams: [{any: [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]}]}});
 
             assert.equal(allEvents.length, 2);
@@ -370,7 +370,7 @@ describe("Events of system streams", () => {
               assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addPrivatePrefixToStreamId('language'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[467D] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
-              const allEvents = await mall.events.get(user.attrs.id, 
+              const allEvents = await mall.events.getW(user.attrs.id, 
                 {local: {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]}]}});
 
               assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
@@ -742,7 +742,7 @@ describe("Events of system streams", () => {
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[CF70] should remove the "active" streamId for events of the same stream', async () => {
-              const allEvents = await mall.events.get(user.attrs.id, 
+              const allEvents = await mall.events.getW(user.attrs.id, 
                 {local: {streams: [{any: [streamId]}]}});
 
               assert.equal(allEvents.length, 2);

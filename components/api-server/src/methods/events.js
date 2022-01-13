@@ -226,8 +226,7 @@ module.exports = async function (api)
     // now that mall.events.get return all in a single call, it coul be implement all at once
 
     try {
-      const [storeId, cleanEventId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
-      const events = await mall.events.get(context.user.id, {[storeId]: {id: cleanEventId, state: 'all', includeDeletions: true, includeHistory: true}});
+      const events = await mall.events.get(context.user.id, {id: params.id, state: 'all', includeDeletions: true, includeHistory: true});
    
       result.history = [];
      

@@ -60,7 +60,7 @@ describe('[ACCO] Account with system streams', function () {
   async function getActiveEvent(streamId, isPrivate = true) {
     const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
     const streamQuery = [{ any: [streamIdWithPrefix], and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}];
-    const res = await mall.events.get(user.attrs.id, {'local': {streams: streamQuery }});
+    const res = await mall.events.getW(user.attrs.id, {'local': {streams: streamQuery }});
     if(res.length === 0) return null;
     return res[0];
   }
@@ -141,7 +141,7 @@ describe('[ACCO] Account with system streams', function () {
           await createAdditionalEvent(editableStreamsId);
         }
 
-        allVisibleAccountEvents = await mall.events.get(user.attrs.id, 
+        allVisibleAccountEvents = await mall.events.getW(user.attrs.id, 
           {'local': {streams: [
             {any: visibleStreamsIds}, 
             {and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}

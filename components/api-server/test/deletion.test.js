@@ -218,7 +218,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           await Promise.all(collectionsNotEmptyChecks);
 
           // check events from mall
-          const events = await mall.events.get(username1,{local: {}});
+          const events = await mall.events.get(username1,{});
           assert.empty(events);
 
 
@@ -273,7 +273,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           await Promise.all(collectionsEmptyChecks);
 
           // check events from mall
-          const events = await mall.events.get(username2,{local: {}});
+          const events = await mall.events.get(username2,{});
           assert.notEmpty(events);
 
           const sessions = await bluebird.fromCallback((cb) =>

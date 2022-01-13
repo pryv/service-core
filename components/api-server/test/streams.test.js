@@ -829,7 +829,7 @@ describe('streams', function () {
           stepDone();
         },
         async function verifyLinkedEvents() {
-          const linkedEvents = await mall.events.get(user.id, {local: {streams: [{any: [parentStream.id]}]}});
+          const linkedEvents = await mall.events.get(user.id, {streams: [{any: [parentStream.id]}]});
           _.map(linkedEvents, 'id').should.eql([
             testData.events[4].id,
             testData.events[3].id,
@@ -879,7 +879,7 @@ describe('streams', function () {
             });
         },
         async function verifyLinkedEvents() {
-          let events = await mall.events.get(user.id, {local: {includeDeletions: true, state: 'all', includeHistory: true}});
+          let events = await mall.events.get(user.id, {includeDeletions: true, state: 'all', includeHistory: true});
 
             // lets separate system events from all other events and validate them separately
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);

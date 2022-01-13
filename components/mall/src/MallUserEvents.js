@@ -31,7 +31,70 @@ class StoreUserEvents extends UserEvents {
     return null;
   }
 
-  async get(uid, paramsBySource) {
+  /**
+   * Pack the params in a per store query object
+   * @param {*} uid 
+   * @param {*} params 
+   */
+  async get(uid, params) {
+    let singleStoreId, singleEventId;
+    if (params.id != null) { // a specific event is queried so we have a singleStore query;
+      [singleStoreId, singleEventId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
+    }
+
+    // repack streamQueries by storeId
+    const streamQueriesBySource = {};
+    if (params.streams != null) { // must be an array
+      for (streamQuery of params.streams) {
+        let storeId = null;
+        
+        function clean(subStreamQuery) {
+          const cleanStreamQuery = {};
+          for (let key of ['any', 'not']) { // for each possible segment of query
+            if (subStreamQuery[key] != null) {
+              for (let streamId of subStreamQuery[key]) {
+                const [streamStoreId, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+                if (storeId == null) storeId = streamStoreId;
+                if (storeId != streamStoreId) throw new Error('streams must be from the same store, per query segemnt');
+                cleanStreamQuery[key] = cleanStreamQuery[key] || [];
+                cleanStreamQuery[key].push(cleanStreamId);
+              }
+            }
+          }
+          if (subStreamQuery.and != null) {
+            cleanStreamQuery.and = subStreamQuery.and.map(clean);
+          }
+          return cleanStreamQuery;
+        }
+        const resCleanQuery = clean(streamQuery);
+
+        if (singleStoreId != null && singleStoreId != storeId) throw new Error('streams query must be from the same store than the requested event');
+        if (streamQueriesBySource[storeId] == null) streamQueriesBySource[storeId] = [];
+        streamQueriesBySource[storeId].push(resCleanQuery);
+      }
+    }
+      
+    const paramsBySource = {};
+    for (let storeId of Object.keys(streamQueriesBySource)) {
+      paramsBySource[storeId] = _.cloneDeep(params);
+      paramsBySource[storeId].streams = streamQueriesBySource[storeId];
+    }
+
+    if (singleStoreId != null) {
+      if (paramsBySource[singleStoreId] == null) paramsBySource[singleStoreId] = _.cloneDeep(params);
+      paramsBySource[singleStoreId].id = singleEventId;
+    }
+    
+    if (Object.keys(paramsBySource).length === 0) { // default is local
+      paramsBySource.local = _.cloneDeep(params);
+      delete paramsBySource.local.streams;
+    }
+    $$('paramsBySource', paramsBySource);
+    return await this.getW(uid, paramsBySource);
+  }
+
+
+  async getW(uid, paramsBySource) {
     const res = [];
     for (let storeId of Object.keys(paramsBySource)) {
       const store = this.mall._storeForId(storeId);

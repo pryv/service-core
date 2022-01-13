@@ -445,7 +445,7 @@ module.exports = async function (api) {
             { streamId: params.id });
         }
         try {
-          const events = await mall.events.get(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}], limit: 1 }});
+          const events = await mall.events.getW(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}], limit: 1 }});
           hasLinkedEvents = !!events.length;
         } catch (err) {
           throw errors.unexpectedError(err);
