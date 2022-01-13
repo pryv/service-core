@@ -42,6 +42,16 @@ class StoreUserEvents extends UserEvents {
     return res;
   };
 
+  async getStreamed(uid, paramsBySource) {
+    const res = [];
+    if (Object.keys(paramsBySource).length != 1) {
+      return new Error('getStreamed only supported for one store at a time');
+    }
+    const storeId = Object.keys(paramsBySource)[0];
+    const store = this.mall._storeForId(storeId);
+    return await store.events.getStreamed(uid, paramsBySource[storeId]);
+  };
+
   async generateStreams(uid, paramsBySource, addEventStreamCB) {
     for (let storeId of Object.keys(paramsBySource)) {
       const store = this.mall._storeForId(storeId);

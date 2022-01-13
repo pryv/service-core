@@ -69,6 +69,11 @@ function paramsToMongoquery(params) {
     query.deleted = null;
   }
 
+  // onlyDeletions
+  if (params.onlyDeletions === true) {
+    query.deleted = {$ne: null};
+  }
+
   // if getOne
   if (params.id != null) {
     query.id = params.id;
