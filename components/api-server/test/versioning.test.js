@@ -221,31 +221,27 @@ describe('Versioning', function () {
                   stepDone();
                 });
             },
-            function checkThatHistoryIsUnchanged(stepDone) {
-              storage.findHistory(user, trashedEventWithHistory.id, null,
-                function (err, events) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  // TODO clean this test
-                  const checked = {first: false, second: false};
-                  (events.length).should.eql(2);
-                  events.forEach(function (event) {
-                    if (event.id === testData.events[20].id) {
-                      const expected = _.cloneDeep(testData.events[20]);
-                      delete expected.tags;// this comes from the storage .. no need to test tags 
-                      event.should.eql(expected);
-                      checked.first = true;
-                    } else if (event.id === testData.events[21].id) {
-                      const expected = _.cloneDeep(testData.events[21]);
-                      delete expected.tags;// this comes from the storage .. no need to test tags 
-                      event.should.eql(expected);
-                      checked.second = true;
-                    }
-                  });
-                  checked.should.eql({first: true, second: true});
-                  stepDone();
-                });
+            async function checkThatHistoryIsUnchanged() {
+              let events = await mall.events.get(user.id, {local: {id: trashedEventWithHistory.id, state: 'all', includeHistory: true}});
+              events = events.filter(e => e.headId); // only the history
+
+              // TODO clean this test
+              const checked = {first: false, second: false};
+              (events.length).should.eql(2);
+              events.forEach(function (event) {
+                if (event.id === testData.events[20].id) {
+                  const expected = _.cloneDeep(testData.events[20]);
+                  delete expected.tags;// this comes from the storage .. no need to test tags 
+                  event.should.eql(expected);
+                  checked.first = true;
+                } else if (event.id === testData.events[21].id) {
+                  const expected = _.cloneDeep(testData.events[21]);
+                  delete expected.tags;// this comes from the storage .. no need to test tags 
+                  event.should.eql(expected);
+                  checked.second = true;
+                }
+              });
+              checked.should.eql({first: true, second: true});
             }
           ], done);
         });
@@ -512,15 +508,10 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        function checkThatHistoryIsDeleted(stepDone) {
-          storage.findHistory(user, eventOnChildStream.id, null,
-            function (err, events) {
-              if (err) {
-                return stepDone(err);
-              }
-              (events.length).should.be.eql(0);
-              stepDone();
-            });
+        async function checkThatHistoryIsDeleted() {
+          let events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeHistory: true}});
+          events = events.filter(e => e.headId); // only the history
+          events.length.should.be.eql(0);
         }
       ], done);
     });
@@ -544,39 +535,32 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        function verifyDeletedHeadInStorage(stepDone) {
-          storage.findDeletion(user, {id: eventOnChildStream.id}, null,
-            function (err, event) {
-              if (err) {
-                return stepDone(err);
-              }
-              should.exist(event);
-              (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
-              event.id.should.eql(eventOnChildStream.id);
-              should.exist(event.deleted);
-              should.exist(event.modified);
-              should.exist(event.modifiedBy);
-              if (integrity.events.isActive) should.exist(event.integrity);
-              stepDone();
-            });
+        async function verifyDeletedHeadInStorage() {
+          const events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeDeletions: true}});
+          events.length.should.be.eql(1);
+          const event = events[0];
+ 
+          should.exist(event);
+          (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
+          event.id.should.eql(eventOnChildStream.id);
+          should.exist(event.deleted);
+          should.exist(event.modified);
+          should.exist(event.modifiedBy);
+          if (integrity.events.isActive) should.exist(event.integrity);
         },
-        function verifyDeletedHistoryInStorage(stepDone) {
-          storage.findHistory(user, eventOnChildStream.id, null,
-            function (err, events) {
-              if (err) {
-                return stepDone(err);
-              }
-              (events.length).should.be.eql(1);
-              events.forEach(function (event) {
-                (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
-                should.exist(event.id);
-                should.exist(event.headId);
-                should.exist(event.modified);
-                should.exist(event.modifiedBy);
-                if (integrity.events.isActive) should.exist(event.integrity);
-              });
-              stepDone();
-            });
+        async function verifyDeletedHistoryInStorage() {
+          let events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeHistory: true}});
+          events = events.filter(e => e.headId); // only the history
+    
+          events.length.should.be.eql(1);
+          events.forEach(function (event) {
+            (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
+            should.exist(event.id);
+            should.exist(event.headId);
+            should.exist(event.modified);
+            should.exist(event.modifiedBy);
+            if (integrity.events.isActive) should.exist(event.integrity);
+          });
         }
       ], done);
     });
@@ -600,44 +584,36 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        function verifyDeletedHeadInStory(stepDone) {
-          storage.findDeletion(user, {id: eventOnChildStream.id}, null,
-            function (err, event) {
-              if (err) {
-                return stepDone(err);
-              }
-              should.exist(event);
-              const expected = _.cloneDeep(eventOnChildStream);
-              delete expected.streamId;
-              expected.deleted = event.deleted;
-              // we can remove tags as it comes from the db  
-              delete expected.tags;
-              integrity.events.set(expected);
-              event.should.eql(expected);
-              stepDone();
-            });
+        async function verifyDeletedHeadInStory() {
+          const events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeDeletions: true}});
+          events.length.should.be.eql(1);
+          const event = events[0];
+
+          should.exist(event);
+          const expected = _.cloneDeep(eventOnChildStream);
+          delete expected.streamId;
+          expected.deleted = event.deleted;
+          // we can remove tags as it comes from the db  
+          delete expected.tags;
+          integrity.events.set(expected);
+          event.should.eql(expected);
         },
-        function checkThatHistoryIsUnchanged(stepDone) {
-          storage.findHistory(user, eventOnChildStream.id, null,
-            function (err, events) {
-              if (err) {
-                return stepDone(err);
-              }
-              let checked = false;
-              (events.length).should.eql(1);
-              events.forEach(function (event) {
-                event.headId.should.eql(eventOnChildStream.id);
-                if (event.id === testData.events[26].id) {
-                   // we can remove tags as it comes from the db  
-                   const expected = _.cloneDeep(testData.events[26])
-                  delete expected.tags;
-                  event.should.eql(expected);
-                  checked = true;
-                }
-              });
-              checked.should.eql(true);
-              stepDone();
-            });
+        async function checkThatHistoryIsUnchanged() {
+          let events = await mall.events.get(user.id, {local: {id: eventOnChildStream.id, state: 'all', includeHistory: true}});
+          events = events.filter(e => e.headId); // only the history
+    
+          let checked = false;
+          (events.length).should.eql(1);
+          events.forEach(function (event) {
+            event.headId.should.eql(eventOnChildStream.id);
+            if (event.id === testData.events[26].id) {
+                // we can remove tags as it comes from the db  
+                const expected = _.cloneDeep(testData.events[26])
+              delete expected.tags;
+              event.should.eql(expected);
+              checked = true;
+            }
+          });
         }
       ], done);
     });

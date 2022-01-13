@@ -195,21 +195,6 @@ BaseStorage.prototype.findStreamed = function(user, query, options, callback) {
   // Implemented for Events only.
 };
 
-
-/**
- * Retrieves the history for a certain event
- *
- * @param user {Object} user The user owning the collection
- * @param headId {string} the id of the event whose history is queried
- * @param options {Object}
- * @param callback {Function}
- * @returns {Error}
- */
-BaseStorage.prototype.findHistory = function(user, headId, options, callback) {
-  callback( new Error('Not implemented (user: ' + user + ')') );
-  // Implemented for Events only
-};
-
 BaseStorage.prototype.findDeletions = function(
   userOrUserId,
   deletedSince,

@@ -264,23 +264,6 @@ Events.prototype.findStreamed = function (userOrUserId, query, options, callback
 /**
  * Implementation
  */
-Events.prototype.findHistory = function (userOrUserId, headId, options, callback) {
-  this.database.find(
-    this.getCollectionInfo(userOrUserId),
-    this.applyQueryToDB({ headId: headId }),
-    this.applyOptionsToDB(options),
-    function (err, dbItems) {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, this.applyItemsFromDB(dbItems));
-    }.bind(this)
-  );
-};
-
-/**
- * Implementation
- */
 Events.prototype.findDeletionsStreamed = function (
   userOrUserId,
   deletedSince,
