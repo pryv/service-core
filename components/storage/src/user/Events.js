@@ -241,10 +241,6 @@ Events.prototype.getCollectionInfoWithoutUserId = function () {
  * Implementation
  */
 Events.prototype.findStreamed = function (userOrUserId, query, options, callback) {
-  query.deleted = null;
-  // Ignore history of events for normal find.
-  query.headId = null;
-
   this.database.findStreamed(
     this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),

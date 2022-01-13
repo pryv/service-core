@@ -51,6 +51,14 @@ module.exports = LocalUserEvents;
  * @returns 
  */
 function paramsToMongoquery(params) {
+  const options = {
+    projection: params.returnOnlyIds ? {id: 1} : {},
+    sort: { time: params.sortAscending ? 1 : -1 },
+    skip: params.skip,
+    limit: params.limit
+  };
+
+
   const query = {};
 
   // trashed
@@ -64,14 +72,15 @@ function paramsToMongoquery(params) {
       query.trashed = null;
   }
 
-  // deletions
+  // all deletions (tests only)
   if (! params.includeDeletions) {
     query.deleted = null;
   }
 
   // onlyDeletions
-  if (params.onlyDeletions === true) {
-    query.deleted = {$ne: null};
+  if (params.deletedSince != null) {
+    query.deleted = {$gt: params.deletedSince};
+    options.sort = {deleted: -1};
   }
 
   // if getOne
@@ -88,6 +97,7 @@ function paramsToMongoquery(params) {
       delete query.id;
     }
     // if query.headId is undefined all history (in scope) will be returned
+    options.sort.modified = 1; // also sort by modified time when history is requested
   }
  
   
@@ -148,15 +158,6 @@ function paramsToMongoquery(params) {
     }
   }
 
-  const options = {
-    projection: params.returnOnlyIds ? {id: 1} : {},
-    sort: { time: params.sortAscending ? 1 : -1 },
-    skip: params.skip,
-    limit: params.limit
-  };
-  if (params.includeHistory) {
-    options.sort.modified = 1; // also sort by modified time when history is requested
-  }
   return {query, options};
 }
 

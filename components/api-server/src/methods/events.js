@@ -145,7 +145,7 @@ module.exports = async function (api)
   }
 
 
-  function includeLocalStorageDeletionsIfRequested(context, params, result, next) {
+  async function includeLocalStorageDeletionsIfRequested(context, params, result, next) {
 
     if (params.modifiedSince == null || !params.includeDeletions) {
       return next();
@@ -157,15 +157,26 @@ module.exports = async function (api)
       limit: params.limit
     };
 
-    userEventsStorage.findDeletionsStreamed(context.user, params.modifiedSince, options,
-      function (err, deletionsStream) {
-        if (err) {
-          return next(errors.unexpectedError(err));
-        }
+    if (true) {
+    // to be implemented also for stores that support deletion later on 
+    const localDeletionsStreams = await mall.events.getStreamedWithParamsByStore(context.user.id, 
+      { local: { skip: params.skip, limit: params.limit, deletedSince: params.modifiedSince}});
 
-        result.addStream('eventDeletions', deletionsStream);
-        next();
-      });
+    result.addStream('eventDeletions', localDeletionsStreams);
+    
+    next();
+    } else { 
+
+      userEventsStorage.findDeletionsStreamed(context.user, params.modifiedSince, options,
+        function (err, deletionsStream) {
+          if (err) {
+            return next(errors.unexpectedError(err));
+          }
+
+          result.addStream('eventDeletions', deletionsStream);
+          next();
+        });
+      }
   }
 
   api.register('events.getOne',

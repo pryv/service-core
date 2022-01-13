@@ -172,6 +172,7 @@ class UserEvents {
    * @param {identifier} uid  
    * @param {object} params - event query
    * @param {boolean} [params.includeDeletions] - default false
+   * @param {timestamp} [params.deletedSince] - default null, override includeDeletions. Only returns deleted events, sorted by deletion date descending
    * @param {boolean} [params.includeHistory] - default false
    * @returns {Array<Event>}
    * @see https://api.pryv.com/reference/#get-events

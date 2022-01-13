@@ -22,6 +22,12 @@ class StoreUserEvents extends UserEvents {
     this.mall = mall;
   }
 
+  /**
+   * Specific to Mall, allow query of a single event
+   * @param {*} uid 
+   * @param {*} fullEventId 
+   * @returns 
+   */
   async getOne(uid, fullEventId) {
     const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
     const store: DataStore = this.mall._storeForId(storeId);
@@ -31,21 +37,18 @@ class StoreUserEvents extends UserEvents {
     return null;
   }
 
-  /**
-   * Pack the params in a per store query object
-   * @param {*} uid 
-   * @param {*} params 
-   */
   async get(uid, params) {
     return await this.getWithParamsByStore(uid, getParamsBySource(params));
   }
 
-
-  async getWithParamsByStore(uid, paramsBySource) {
+  /**
+   * Specific to Mall, allow query with a prepared query by store 
+   */
+  async getWithParamsByStore(uid, paramsByStore) {
     const res = [];
-    for (let storeId of Object.keys(paramsBySource)) {
+    for (let storeId of Object.keys(paramsByStore)) {
       const store = this.mall._storeForId(storeId);
-      const params = paramsBySource[storeId];
+      const params = paramsByStore[storeId];
       const events = await store.events.get(uid, params);
       res.push(...events);
     }
@@ -56,16 +59,23 @@ class StoreUserEvents extends UserEvents {
     return await this.getStreamedWithParamsByStore(uid, getParamsBySource(params));
   }
 
-  async getStreamedWithParamsByStore(uid, paramsBySource) {
+  /**
+   * Specific to Mall, allow query with a prepared query by store 
+   */
+  async getStreamedWithParamsByStore(uid, paramsByStore) {
     const res = [];
-    if (Object.keys(paramsBySource).length != 1) {
+    if (Object.keys(paramsByStore).length != 1) {
       return new Error('getStreamed only supported for one store at a time');
     }
-    const storeId = Object.keys(paramsBySource)[0];
+    const storeId = Object.keys(paramsByStore)[0];
     const store = this.mall._storeForId(storeId);
-    return await store.events.getStreamed(uid, paramsBySource[storeId]);
+    return await store.events.getStreamed(uid, paramsByStore[storeId]);
   };
 
+  /**
+   * To create a streamed result from multiple stores. 'events.get' pass a callback in order to add the streams 
+   * To the result; 
+   */
   async generateStreamsWithParamsByStore(uid, paramsBySource, addEventStreamCB) {
     for (let storeId of Object.keys(paramsBySource)) {
       const store = this.mall._storeForId(storeId);
@@ -138,6 +148,5 @@ function getParamsBySource(params) {
       paramsBySource.local = _.cloneDeep(params);
       delete paramsBySource.local.streams;
     }
-    $$('paramsBySource', paramsBySource);
     return paramsBySource;
 }
