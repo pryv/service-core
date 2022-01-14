@@ -48,6 +48,7 @@ class User {
     passwordHash?: string,
     referer?: string,
   }) {
+    this.username = params.username;
     buildAccountFields(this);
     loadAccountData(this, params);
 

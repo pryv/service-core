@@ -137,7 +137,7 @@ describe("Accesses with account streams", function () {
             });
             it('[L99L] should allow to access visible events in storageUsed', async () => {
               res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
-              assert.equal(res.body.events.length, 7);
+              assert.equal(res.body.events.length, 6);
               validation.validateAccountEvents(res.body.events);
             });
           });

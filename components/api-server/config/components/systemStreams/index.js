@@ -69,15 +69,6 @@ function load(config: {}): {} {
       type: 'none/none',
       children: [
         {
-          id: 'username',
-          name: 'Username',
-          type: 'identifier/string',
-          [IS_INDEXED]: true,
-          [IS_UNIQUE]: true,
-          [IS_REQUIRED_IN_VALIDATION]: true,
-          [IS_EDITABLE]: false,
-        },
-        {
           id: 'language',
           name: 'Language',
           type: 'language/iso-639-1',

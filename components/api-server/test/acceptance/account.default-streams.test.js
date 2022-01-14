@@ -133,7 +133,7 @@ describe('[ACCO] Account with system streams', function () {
         const editableStreamsIds = ['email', 'phoneNumber', 'insurancenumber']
           .map(SystemStreamsSerializer.addCustomerPrefixToStreamId)
           .concat([SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]);
-        const visibleStreamsIds = ['username', 'language', 'dbDocuments', 'attachedFiles']
+        const visibleStreamsIds = ['language', 'dbDocuments', 'attachedFiles']
           .map(SystemStreamsSerializer.addPrivatePrefixToStreamId)
           .concat(['email', 'phoneNumber', 'insurancenumber'].map(SystemStreamsSerializer.addCustomerPrefixToStreamId));
 
@@ -153,8 +153,6 @@ describe('[ACCO] Account with system streams', function () {
         assert.equal(res.status, 200);
       });
       it('[JUHR] should return account information in the structure that is defined in system streams and only active values', async () => {
-        const usernameAccountEvent = allVisibleAccountEvents.find(event => event.streamIds.includes(
-          SystemStreamsSerializer.addPrivatePrefixToStreamId('username')));
         const emailAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('email')));
         const languageAccountEvent = allVisibleAccountEvents.find(event =>
@@ -168,7 +166,6 @@ describe('[ACCO] Account with system streams', function () {
         const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
 
-        assert.equal(res.body.account.username, usernameAccountEvent.content);
         assert.equal(res.body.account.email, emailAccountEvent.content);
         assert.equal(res.body.account.language, languageAccountEvent.content);
         assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);

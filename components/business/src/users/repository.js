@@ -48,25 +48,13 @@ class UsersRepository {
     await userIndex.init();
   }
 
+  // only for testing
   async getAll(): Promise<Array<User>> {
-    const query: {} = {
-      streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] },
-      deleted: null,
-      headId: null,
-    };
-
-    const userIdObjects: Array<{}> = await bluebird.fromCallback(
-      cb => this.eventsStorage.database.find(
-        this.collectionInfo,
-        this.eventsStorage.applyQueryToDB(query),
-        this.eventsStorage.applyOptionsToDB(null),
-        cb,
-      ),
-    );
+    const usersMap = await userIndex.allUsersMap(); 
 
     const users: Array<User> = [];
-    for (const userIdObject of userIdObjects) {
-      const user = await this.getUserById(userIdObject.userId);
+    for (const [username, userId] of usersMap) {
+      const user = await this.getUserById(userId);
       users.push(user);
     }
     return users;
@@ -74,24 +62,11 @@ class UsersRepository {
 
   
   async getAllUsernames(): Promise<Array<User>> {
-    const query: {} = {
-      streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] },
-      deleted: null,
-      headId: null,
-    };
-
-    const userIdObjects: Array<{}> = await bluebird.fromCallback(
-      cb => this.eventsStorage.database.find(
-        this.collectionInfo,
-        this.eventsStorage.applyQueryToDB(query),
-        this.eventsStorage.applyOptionsToDB(null),
-        cb,
-      ),
-    );
+    const usersMap = await userIndex.allUsersMap(); 
 
     const users: Array<User> = [];
-    for (const userIdObject of userIdObjects) {
-      users.push(new User({ id: userIdObject.userId, events: [userIdObject] }));
+    for (const [username, userId] of usersMap) {
+      users.push({id: userId, username: username});
     }
     return users;
   }
@@ -119,7 +94,8 @@ class UsersRepository {
     ) {
       return null;
     }
-    const user = new User({ id: userId, events: userAccountEvents });
+    const username = await userIndex.nameForId(userId);
+    const user = new User({ id: userId, username: username, events: userAccountEvents });
     return user;
   }
   async getUserByUsername(username: string): Promise<?User> {
@@ -248,6 +224,9 @@ class UsersRepository {
 
         const events: Array<Event> = await user.getEvents();
 
+        // add the user to local index
+        await userIndex.addUser(user.username, user.id);
+        
         await bluebird.fromCallback(
           cb => this.eventsStorage.insertMany(
             { id: user.id },
@@ -328,15 +307,8 @@ class UsersRepository {
     return isValid;
   }
   async count(): Promise<number> {
-    return await bluebird.fromCallback(
-      cb => {
-        this.eventsStorage.count(
-          {},
-          { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME },
-          cb,
-        );
-      },
-    );
+    const users = await userIndex.allUsersMap();
+    return Object.keys(users).length;
   }
 
   /**
@@ -345,6 +317,16 @@ class UsersRepository {
    * @param {User} user - a user object or 
    */
   async checkDuplicates(user: User): Promise<void> {
+    if (await userIndex.existsUsername(user.username)) {
+      throw (
+        errors.itemAlreadyExists(
+          "user",
+          {username: user.username},
+        )
+      );
+    }
+
+
     const orClause: Array<{}> = [];
     this.uniqueFields.forEach(field => {
       if (user[field] != null) {

@@ -8,6 +8,7 @@
  * Contains UserName >> UserId Mapping
  */
 
+const cuid = require('cuid');
 const bluebird = require('bluebird');
 const mkdirp = require('mkdirp');
 const sqlite3 = require('better-sqlite3');
@@ -45,32 +46,21 @@ class UserLocalIndex {
     this.db.addUser(username, userId);
   }
 
+  async existsUsername(username) {
+    return (await this.idForName(username) != null);
+  }
+
   async idForName(username) {
     let userId = cache.getUserId(username);
     if (! userId) {
-      const userIdEvent = await bluebird.fromCallback(
-        cb => this.eventsStorage.database.findOne(
-          this.collectionInfo,
-          this.eventsStorage.applyQueryToDB(
-            {
-              $and: [
-                {
-                  streamIds: {
-                    $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME],
-                  },
-                },
-                { content: { $eq: username } },
-              ],
-            },
-          ),
-          null,
-          cb,
-        ),
-      );
-      userId = userIdEvent?.userId;
+      userId = this.db.getIdForName(username);
       cache.setUserId(username, userId);
     }
     return userId;
+  }
+
+  async nameForId(userId) {
+    return this.db.getNameForId(userId);
   }
 
   async allUsersMap() {
@@ -86,8 +76,9 @@ class UserLocalIndex {
 class DBIndex {
   db;
   queryId4Name;
-  insertId4Name;
+  queryName4Id;
   queryAll;
+  insertId4Name;
   deleteAllStmt;
 
   constructor() { }
@@ -105,6 +96,7 @@ class DBIndex {
     this.db.prepare('CREATE INDEX IF NOT EXISTS id4name_id ON id4name(userId);').run();
 
     this.queryId4Name = this.db.prepare('SELECT userId FROM id4name WHERE username = ?');
+    this.queryName4Id = this.db.prepare('SELECT username FROM id4name WHERE userId = ?');
     this.insertId4Name = this.db.prepare('INSERT INTO id4name (username, userId) VALUES (@username, @userId)');
     this.queryAll = this.db.prepare('SELECT username, userId FROM id4name');
 
@@ -112,7 +104,11 @@ class DBIndex {
   }
 
   getIdForName(username) {
-    return this.queryId4Name.get(username).userId;
+    return this.queryId4Name.get(username)?.userId;
+  }
+
+  getNameForId(userId) {
+    return this.queryName4Id.get(userId)?.username;
   }
 
   addUser(username, userId) {

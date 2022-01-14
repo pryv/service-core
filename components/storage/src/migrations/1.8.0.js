@@ -35,13 +35,12 @@ module.exports = async function (context, callback) {
   async function migrateUserids() {
     const userIndex = require('business/src/users/UserLocalIndex');
     await userIndex.init();
-    const query =  { streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] } };
+    const query =  { streamIds: { $in: [':_system:username'] } };
     const cursor = await eventsCollection.find(query, {projection: {userId: 1, content: 1}});
     while (await cursor.hasNext()) {
       const user = await cursor.next();
       await userIndex.addUser(user.content, user.userId);
     }
-    $$('*******************************************************************************************');
   }
 
 };

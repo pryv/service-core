@@ -26,7 +26,7 @@ const { produceMongoConnection } = require('api-server/test/test-helpers');
 
 const { getMall } = require('mall');
 
-describe("Events of system streams", () => {
+describe("[FG5R] Events of system streams", () => {
   let config;
   let validation;
   let app;
@@ -196,10 +196,6 @@ describe("Events of system streams", () => {
         assert.isTrue(res.body.events[0].streamIds.includes(systemStreamId));
       });
 
-      it('[UZTS] should not return account event for which a permission was not explicitely provided', async () => {
-        res = await request.get(basePath).query({streams :[SystemStreamsSerializer.addPrivatePrefixToStreamId('username')]}).set('authorization', sharedAccess.attrs.token);
-        assert.equal(res.body.error.id, 'forbidden');
-      });
     });
 
     describe('When using a shared access with a read-level permission on all streams (star)', () => {
@@ -231,7 +227,7 @@ describe("Events of system streams", () => {
     describe('When using a personal access', () => {
       describe('to retrieve a visible system event', () => {
         let defaultEvent;
-        const streamId = 'username';
+        const streamId = 'language';
         let systemStreamId;
         before(async function () {
           systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
@@ -243,6 +239,7 @@ describe("Events of system streams", () => {
           assert.equal(res.status, 200);
         });
         it('[IYE6] should return the event', () => {
+          $$(res.body)
           assert.equal(res.body.event.id, defaultEvent.id);
           assert.equal(res.body.event.streamId, systemStreamId);
         });
@@ -267,7 +264,7 @@ describe("Events of system streams", () => {
       let defaultEvent;
       let systemStreamId ;
       before(async () => {
-        systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('username');
+        systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
         await createUser();
         sharedAccess = await user.access({
           token: cuid(),
@@ -562,9 +559,9 @@ describe("Events of system streams", () => {
         before(async () => {
           await createUser();
           eventData = {
-            streamIds: [SystemStreamsSerializer.options.STREAM_ID_USERNAME],
+            streamIds: [SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH],
             content: charlatan.Lorem.characters(7),
-            type: 'string/pryv'
+            type: 'password-hash/string'
           };
   
           res = await request.post(basePath)
@@ -576,7 +573,7 @@ describe("Events of system streams", () => {
         });
         it('[90E6] should return the correct error', () => {
           assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
-          assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
+          assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH});
           assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
         });
       });
@@ -1104,10 +1101,10 @@ describe("Events of system streams", () => {
           await createUser();
           eventData = {
             content: charlatan.Lorem.characters(7),
-            type: 'string/pryv'
+            type: 'password-hash/pryv'
           };
           const initialEvent = await bluebird.fromCallback(
-            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME }, null, cb));
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH }, null, cb));
   
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
@@ -1119,7 +1116,7 @@ describe("Events of system streams", () => {
         it('[BB5F] should return the correct error', () => {
           assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
           assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
-          assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
+          assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH});
         });
       });
     });
@@ -1288,7 +1285,7 @@ describe("Events of system streams", () => {
         let streamId;
         let initialEvent;
         before(async function () {
-          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('username');
+          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
           nock.cleanAll();
           scope = nock(config.get('services:register:url'));
           scope.put('/users',

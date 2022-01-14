@@ -62,7 +62,6 @@ describe('Migration - 1.8.0',function () {
     }
     assert.equal(Object.keys(initialUsers).length, 0, 'Not all users migrated');
 
-    $$('initialUsers: %j', initialUsers, newUsers);
   });
 
 });
@@ -70,7 +69,7 @@ describe('Migration - 1.8.0',function () {
 async function getInitialUsers() {
   const usersRepository = await getUsersRepository();
   const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
-  const query =  { streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] } };
+  const query =  { streamIds: { $in: [':_system:username'] } };
   const cursor = await eventsCollection.find(query, {projection: {userId: 1, content: 1}});
 
   const users = {};
