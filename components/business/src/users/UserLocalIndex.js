@@ -41,6 +41,10 @@ class UserLocalIndex {
     this.collectionInfo = this.eventsStorage.getCollectionInfoWithoutUserId();
   }
 
+  async addUser(username, userId) {
+    this.db.addUser(username, userId);
+  }
+
   async idForName(username) {
     let userId = cache.getUserId(username);
     if (! userId) {
@@ -68,12 +72,23 @@ class UserLocalIndex {
     }
     return userId;
   }
+
+  async allUsersMap() {
+    return this.db.allUsersMap();
+  }
+
+  // reset everything -- used by tests only 
+  async deleteAll() {
+    return this.db.deleteAll();
+  }
 }
 
 class DBIndex {
   db;
   queryId4Name;
   insertId4Name;
+  queryAll;
+  deleteAllStmt;
 
   constructor() { }
 
@@ -91,14 +106,29 @@ class DBIndex {
 
     this.queryId4Name = this.db.prepare('SELECT userId FROM id4name WHERE username = ?');
     this.insertId4Name = this.db.prepare('INSERT INTO id4name (username, userId) VALUES (@username, @userId)');
+    this.queryAll = this.db.prepare('SELECT username, userId FROM id4name');
+
+    this.deleteAllStmt = this.db.prepare('DELETE FROM id4name');
   }
 
-  async getIdForName(username) {
+  getIdForName(username) {
     return this.queryId4Name.get(username).userId;
   }
 
-  async setIdForName(username, userId) {
+  addUser(username, userId) {
     return this.insertId4Name.run({username, userId});
+  }
+
+  allUsersMap() {
+    const users = {};
+    for (const user of this.queryAll.iterate()) {
+      users[user.username] = user.userId;
+    }
+    return users;
+  }
+
+  deleteAll() {
+    return this.deleteAllStmt.run();
   }
 }
 
