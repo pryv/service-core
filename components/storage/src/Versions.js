@@ -50,7 +50,6 @@ Versions.prototype.getCurrent = function (callback) {
 Versions.prototype.migrateIfNeeded = function (callback) {
   this.getCurrent(function (err, v) {
     if (err) { return callback(err); }
-
     var currentVNum = v ? v._id : '0.0.0';
     var migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {
       return vNum > currentVNum;

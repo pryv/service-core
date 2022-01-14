@@ -16,29 +16,46 @@ const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
 
-const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
+const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin';
+
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getVersions } = require('./util');
+
+const { getUsersRepository } = require('business/src/users');
 
 
 describe('Migration - 1.8.0',function () {
   this.timeout(20000);
 
-
   before(async function() { 
-   
   });
 
   after(async function() {
     // erase alls
   });
 
-  it('must handle data migration from 1.7.5 to 1.8.0', async function () {
+  it('[WBIK] must handle data migration from 1.7.5 to 1.8.0', async function () {
     const newVersion = getVersions('1.8.0');
     const accessesStorage = storage.user.accesses;
 
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.7.5', mongoFolder, cb));
 
+     // perform migration
+     await bluebird.fromCallback(cb => newVersion.migrateIfNeeded(cb));
+
+    await getAllUsers();
   });
 
 });
+
+async function getAllUsers() {
+  const usersRepository = await getUsersRepository();
+  const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
+  const query =  { streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] } };
+  const cursor = await eventsCollection.find(query, {projection: {userId: 1, content: 1}});
+  while (await cursor.hasNext()) {
+    const user = await cursor.next();
+    console.log('***', user);
+  }
+}
