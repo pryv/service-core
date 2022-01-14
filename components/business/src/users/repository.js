@@ -20,6 +20,8 @@ const encryption = require('utils').encryption;
 const errors = require('errors').factory;
 const { safetyCleanDuplicate } = require('business/src/auth/service_register');
 
+const userIndex = require('./UserLocalIndex');
+
 const cache = require('cache');
 
 /**
@@ -43,7 +45,7 @@ class UsersRepository {
     this.sessionsStorage = this.storageLayer.sessions;
     this.accessStorage = this.storageLayer.accesses;
     this.collectionInfo = this.eventsStorage.getCollectionInfoWithoutUserId();
-
+    await userIndex.init();
   }
 
   async getAll(): Promise<Array<User>> {
@@ -94,31 +96,8 @@ class UsersRepository {
     return users;
   }
   async getUserIdForUsername(username: string) {
-    let userId = cache.getUserId(username);
-    if (! userId) {
-      const userIdEvent = await bluebird.fromCallback(
-        cb => this.eventsStorage.database.findOne(
-          this.collectionInfo,
-          this.eventsStorage.applyQueryToDB(
-            {
-              $and: [
-                {
-                  streamIds: {
-                    $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME],
-                  },
-                },
-                { content: { $eq: username } },
-              ],
-            },
-          ),
-          null,
-          cb,
-        ),
-      );
-      userId = userIdEvent?.userId;
-      cache.setUserId(username, userId);
-    }
-    return userId;
+    return await userIndex.idForName(username);
+    
   }
   async getUserById(userId: string): Promise<?User> {
     const userAccountStreamsIds =  SystemStreamsSerializer.getAccountMap();

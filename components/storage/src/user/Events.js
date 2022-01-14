@@ -424,7 +424,7 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
  * Temp implementation for migration to Mall
  */
  Events.prototype.find = function (userOrUserId, query, options, callback) {
-  if (stackContains('repository.js')) {
+  if (! stackContains('repository.js')) {
     $$(userOrUserId, query, options);
     //throw new Error();
   }

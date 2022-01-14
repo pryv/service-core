@@ -6,6 +6,9 @@
  */
 
 const Users = require('./Users');
+const { getLogger } = require('@pryv/boiler');
+
+const logger = getLogger('platform');
 
 /**
  * @class Platform
@@ -21,12 +24,13 @@ class Platform {
 
   async init() {
     if (this.initialized) {
-      throw new Error('Platform already initialized');
+      logger.warn('Platform already initialized, skipping');
+      return;
     }
     this.initialized = true;
 
-    users = new Users();
-    await users.init();
+    this.users = new Users();
+    await this.users.init();
   }
 }
 
