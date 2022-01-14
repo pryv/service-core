@@ -50,6 +50,8 @@ const { Extension, ExtensionLoader } = require('utils').extension;
 const { getAPIVersion } = require('middleware/src/project_version');
 const { tracingMiddleware } = require('tracing');
 
+const platform = require('platform');
+
 logger.debug('Loading app');
 
 import type { CustomAuthFunction } from 'business';
@@ -102,7 +104,9 @@ class Application {
     this.initializing = true;
     this.produceLogSubsystem();
     logger.debug('Init started');
+
     await UserLocalDirectory.init();
+    await platform.init();
 
     this.config = await getConfig();
     this.isOpenSource = this.config.get('openSource:isActive');
