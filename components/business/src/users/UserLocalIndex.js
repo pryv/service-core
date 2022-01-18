@@ -40,27 +40,36 @@ class UserLocalIndex {
     const storageLayer = await storage.getStorageLayer();
     this.eventsStorage = storageLayer.events;
     this.collectionInfo = this.eventsStorage.getCollectionInfoWithoutUserId();
+    logger.debug('init');
   }
 
   async addUser(username, userId) {
     this.db.addUser(username, userId);
+    logger.debug('addUser', username, userId);
   }
 
   async existsUsername(username) {
-    return (await this.idForName(username) != null);
+    const res = (await this.idForName(username) != null);
+    logger.debug('existsUsername', username, res);
+    return res;
   }
 
   async idForName(username) {
     let userId = cache.getUserId(username);
-    if (! userId) {
+    if (userId == null) {
       userId = this.db.getIdForName(username);
-      cache.setUserId(username, userId);
+      if (userId != null) {
+        cache.setUserId(username, userId);
+      } 
     }
+    logger.debug('idForName', username, userId);
     return userId;
   }
 
   async nameForId(userId) {
-    return this.db.getNameForId(userId);
+    const res = this.db.getNameForId(userId);
+    logger.debug('nameForId', userId, res);
+    return res;
   }
 
   async allUsersMap() {
@@ -69,7 +78,14 @@ class UserLocalIndex {
 
   // reset everything -- used by tests only 
   async deleteAll() {
+    logger.debug('deleteAll');
+    cache.clear();
     return this.db.deleteAll();
+  }
+
+  async deleteById(userId) {
+    logger.debug('deleteById', userId);
+    return this.db.deleteById(userId);
   }
 }
 
@@ -80,6 +96,7 @@ class DBIndex {
   queryAll;
   insertId4Name;
   deleteAllStmt;
+  deleteWithId;
 
   constructor() { }
 
@@ -100,6 +117,8 @@ class DBIndex {
     this.insertId4Name = this.db.prepare('INSERT INTO id4name (username, userId) VALUES (@username, @userId)');
     this.queryAll = this.db.prepare('SELECT username, userId FROM id4name');
 
+    this.deleteWithId = this.db.prepare('DELETE FROM id4name WHERE userId = @userId');
+
     this.deleteAllStmt = this.db.prepare('DELETE FROM id4name');
   }
 
@@ -113,6 +132,10 @@ class DBIndex {
 
   addUser(username, userId) {
     return this.insertId4Name.run({username, userId});
+  }
+
+  deleteById(userId) {
+    return this.deleteWithId.run({userId});
   }
 
   allUsersMap() {

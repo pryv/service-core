@@ -70,7 +70,7 @@ class Registration {
     next: ApiCallback
   ) {
     try {
-      const uniqueFields = {};
+      const uniqueFields = {username: context.newUser.username};
       for (const [streamIdWithPrefix, streamSettings] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
         if (streamSettings?.isUnique) {
@@ -194,12 +194,12 @@ class Registration {
           id: context.newUser.id
         },
         host: { name: context.host },
-        unique: SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()
+        unique: ['username', ...SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()],
+        user: {username: context.newUser.username}
       };
       userStreamsIds.forEach(streamId => {
         if (context.newUser[streamId] != null) userData.user[streamId] = context.newUser[streamId];
       });
-
       await this.serviceRegisterConn.createUser(userData);
     } catch (error) {
       return next(errors.unexpectedError(error));

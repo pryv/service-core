@@ -60,6 +60,11 @@ class UsersRepository {
     return users;
   }
 
+  // only for test data to be reset
+  async deleteAll(): Promise<void> {
+    await userIndex.deleteAll();
+  }
+
   
   async getAllUsernames(): Promise<Array<User>> {
     const usersMap = await userIndex.allUsersMap(); 
@@ -76,7 +81,6 @@ class UsersRepository {
   }
   async getUserById(userId: string): Promise<?User> {
     const userAccountStreamsIds =  SystemStreamsSerializer.getAccountMap();
-    
     const query: {} = {
       $and: [
         { streamIds: { $in: Object.keys(userAccountStreamsIds) } },
@@ -286,6 +290,10 @@ class UsersRepository {
       const user = await this.getUserById(userId);
       username = user?.username;
     }
+    cache.unsetUser(username);
+    await userIndex.init();
+    await userIndex.deleteById(userId);
+
     const result = await bluebird.fromCallback(
       cb => this.eventsStorage.database.deleteMany(
         this.eventsStorage.getCollectionInfo(userId),
@@ -293,7 +301,7 @@ class UsersRepository {
         cb,
       ),
     );
-    cache.unsetUser(username);
+    
     return result;
   }
   async checkUserPassword(userId: string, password: string): Promise<boolean> {

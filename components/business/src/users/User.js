@@ -98,7 +98,9 @@ class User {
    * Get account with id property added to it
    */
   getAccountWithId () {
-    return _.pick(this, this.accountFields.concat('id').filter(x => x !== 'dbDocuments' && x != 'attachedFiles'));
+    const res = _.pick(this, this.accountFields.concat('id').filter(x => x !== 'dbDocuments' && x != 'attachedFiles'));
+    res.username = this.username;
+    return res;
   }
 
   /**

@@ -41,8 +41,10 @@ exports.resetUsers = async () => {
         $in: SystemStreamsSerializer.getAccountStreamIds(),
       }
     }, cb));
+
   const usersRepository = await getUsersRepository(); 
-  
+  await usersRepository.deleteAll();  
+
   for (const user of users) {
     const userObj: User = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
     await usersRepository.insertOne(userObj);

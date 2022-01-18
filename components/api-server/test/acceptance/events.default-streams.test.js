@@ -559,7 +559,7 @@ describe("[FG5R] Events of system streams", () => {
         before(async () => {
           await createUser();
           eventData = {
-            streamIds: [SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH],
+            streamIds: [':_system:dbDocuments'],
             content: charlatan.Lorem.characters(7),
             type: 'password-hash/string'
           };
@@ -573,7 +573,7 @@ describe("[FG5R] Events of system streams", () => {
         });
         it('[90E6] should return the correct error', () => {
           assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
-          assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH});
+          assert.deepEqual(res.body.error.data, { streamId: ':_system:dbDocuments'});
           assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
         });
       });
@@ -1285,7 +1285,7 @@ describe("[FG5R] Events of system streams", () => {
         let streamId;
         let initialEvent;
         before(async function () {
-          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('email');
+          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments');
           nock.cleanAll();
           scope = nock(config.get('services:register:url'));
           scope.put('/users',

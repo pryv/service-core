@@ -141,10 +141,13 @@ describe('registration: cluster', function() {
           .reply(200, {
             username: 'anyusername'
           });
+        // first request
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = _.merge(buildValidationRequest(userData), { uniqueFields: { email: userData.email } });
         firstRegistrationRequest = buildRegistrationRequest(userData);
         firstUser = await usersRepository.getUserByUsername(userData.username);
+
+        // second request
         oldEmail = userData.email;
         userData.email = charlatan.Internet.email();
         res = await request.post(methodPath).send(userData);
@@ -177,6 +180,7 @@ describe('registration: cluster', function() {
         assert.deepEqual(secondValidationSent, secondValidationRequest, 'second validation request is invalid');
 
         let secondRegistrationSent = serviceRegisterRequests[3];
+        $$(serviceRegisterRequests);
         secondRegistrationSent = stripRegistrationRequest(secondRegistrationSent);
         const secondRegistrationRequest = buildRegistrationRequest(userData);
         assert.deepEqual(secondRegistrationSent, secondRegistrationRequest, ' second registration request is invalid');

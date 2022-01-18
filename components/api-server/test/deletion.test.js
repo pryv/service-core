@@ -100,7 +100,7 @@ describe('[PGTD] DELETE /users/:username', () => {
     );
   });
 
-  describe('depending on "user-account:delete"  config parameter', function() {
+  describe('[USAD] depending on "user-account:delete"  config parameter', function() {
     let personalAccessToken;
     beforeEach(async function () { 
       personalAccessToken = cuid();

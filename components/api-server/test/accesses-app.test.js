@@ -22,7 +22,7 @@ const { integrity } = require('business');
 
 import type Request  from './helpers';
 
-describe('accesses (app)', function () {
+describe('[ACCP] accesses (app)', function () {
 
   let helpers, server, validation, storage, testData;
   let additionalTestAccesses, user, access, basePath, accessesNotifCount;

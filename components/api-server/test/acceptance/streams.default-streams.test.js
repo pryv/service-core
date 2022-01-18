@@ -68,7 +68,7 @@ describe("System streams", function () {
   describe('GET /streams', () => {
     describe('When using a personal access', () => {
       it('[9CGO] Should return all streams - including system ones', async () => {
-        const expectedRes = [];
+        const expectedRes = [];
         validation.addStoreStreams(expectedRes)
         let readableStreams = [
           {
@@ -76,12 +76,6 @@ describe("System streams", function () {
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
             parentId: null,
             children: [
-              {
-                name: 'Username',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('username'),
-                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
-                children: []
-              },
               {
                 name: 'Language',
                 id: SystemStreamsSerializer.addPrivatePrefixToStreamId('language'),

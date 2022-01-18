@@ -160,6 +160,7 @@ describe('account', function () {
           },
           async function verifyData () {           
             const retrievedUser = await usersRepository.getUserByUsername(user.username);
+            $$(retrievedUser.getAccountWithId());
             validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
           }
         ], done);
