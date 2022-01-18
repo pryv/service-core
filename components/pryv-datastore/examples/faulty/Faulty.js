@@ -11,7 +11,7 @@
  */
 
 
-const {DataStore, UserStreams, UserEvents}  = require('../../interfaces/DataStore');
+const {DataStore}  = require('../../src/');
 
 class Faulty extends DataStore {
 
@@ -30,13 +30,13 @@ class Faulty extends DataStore {
 }
 
 
-class FaultyUserStreams extends UserStreams {
+class FaultyUserStreams extends DataStore.UserStreams {
   async get(uid, params) {
     throw new Error('Faulty');
   }
 }
 
-class FaultyUserEvents extends UserEvents {
+class FaultyUserEvents extends DataStore.UserEvents {
   async get(uid, params) {
     throw new Error('Faulty');
   }

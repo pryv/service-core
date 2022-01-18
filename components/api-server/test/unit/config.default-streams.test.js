@@ -12,7 +12,7 @@ const systemStreamsConfig = require('api-server/config/components/systemStreams'
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfig } = require('@pryv/boiler');
 const treeUtils = require('utils/src/treeUtils');
-const { DataStore } = require('mall/interfaces/DataStore');
+const { DataStore } = require('pryv-datastore');
 
 const PRIVATE_PREFIX = ':_system:';
 const CUSTOMER_PREFIX = ':system:';

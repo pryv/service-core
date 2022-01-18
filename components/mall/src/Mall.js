@@ -14,7 +14,7 @@
 
 const errors = require('errors').factory;
 
-const { DataStore } = require('../interfaces/DataStore');
+const { DataStore } = require('pryv-datastore');
 
 // --- Override Error handling 
 
@@ -31,7 +31,7 @@ DataStore.throwUnkownRessource = function(resourceType, id, innerError) {
 const MallUserStreams = require('./MallUserStreams');
 const StoreUserEvents = require('./MallUserEvents');
 
-class Mall extends DataStore {
+class Mall {
 
   _id: string = 'store';
   _name: string = 'Store';
@@ -42,7 +42,6 @@ class Mall extends DataStore {
   _events: StoreUserEvents;
 
   constructor() {
-    super();
     this.storesMap = {};
     this.stores = [];
     this.initialized = false;

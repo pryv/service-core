@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const {UserEvents}  = require('../interfaces/DataStore');
+const { DataStore }  = require('pryv-datastore');
 const _ = require('lodash');
 const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
 const StreamsUtils = require('./lib/StreamsUtils');
@@ -12,13 +12,12 @@ const StreamsUtils = require('./lib/StreamsUtils');
 /**
  * Handle Store.events.* methods
  */
-class StoreUserEvents extends UserEvents {
+class StoreUserEvents  {
   
   /**
    * @param {Mall} mall 
    */
   constructor(mall) {
-    super();
     this.mall = mall;
   }
 

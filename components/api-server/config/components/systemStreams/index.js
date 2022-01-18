@@ -24,7 +24,7 @@ const IS_UNIQUE: string = 'isUnique';
 const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
 const REGEX_VALIDATION: string = 'regexValidation';
 
-const { DataStore } = require('mall/interfaces/DataStore');
+const { DataStore } = require('pryv-datastore');
 
 module.exports.features = {
   IS_SHOWN,
