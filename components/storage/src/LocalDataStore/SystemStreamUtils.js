@@ -9,10 +9,10 @@
  */
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { UserStreams } = require('mall/interfaces/DataStore');
+const { DataStore } = require('pryv-datastore');
 
 const visibleStreamsTree = SystemStreamsSerializer.getReadable()
-UserStreams.applyDefaults(visibleStreamsTree);
+DataStore.UserStreams.applyDefaults(visibleStreamsTree);
 
 module.exports = {
   visibleStreamsTree

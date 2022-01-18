@@ -12,8 +12,8 @@
  */
 const bluebird = require('bluebird');
 
-const storage = require('storage');
-const {DataStore, UserStreams, UserEvents}  = require('../../interfaces/DataStore');
+const storage = require('../index');
+const {DataStore}  = require('pryv-datastore');
 
 const LocalUserStreams = require('./LocalUserStreams');
 const LocalUserEvents = require('./LocalUserEvents');
@@ -24,8 +24,8 @@ class LocalDataStore extends DataStore {
   
   _id: string = 'local';
   _name: string = 'Local Store';
-  _streams: UserStreams;
-  _events: UserEvents;
+  _streams: DataStore.UserStreams;
+  _events: DataStore.UserEvents;
   settings: any;
 
   constructor() {  

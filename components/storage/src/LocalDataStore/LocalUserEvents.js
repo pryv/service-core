@@ -17,11 +17,11 @@ const _ = require('lodash');
 
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 
-const {UserEvents}  = require('../../interfaces/DataStore');
+const {DataStore}  = require('pryv-datastore');
 
 const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 
-class LocalUserEvents extends UserEvents {
+class LocalUserEvents extends DataStore.UserEvents {
   userEventsStorage: any;
 
   constructor(userEventsStorage: any) {

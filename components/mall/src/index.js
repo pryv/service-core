@@ -15,7 +15,7 @@
 const { getConfig, getLogger } = require('@pryv/boiler');
 const Mall = require('./Mall');
 
-import typeof DataStore from '../interfaces/DataStore';
+import typeof DataStore from 'pryv-datastore';
 
 let mall: Mall;
 let initializing: boolean = false;
@@ -45,7 +45,7 @@ async function getMall(): Promise<Mall> {
 
   // -- Builds in
 
-  const LocalStore: DataStore = require('../implementations/local/LocalDataStore');
+  const LocalStore: DataStore = require('storage/src/LocalDataStore');
   mall.addStore(new LocalStore());
 
   if ( (! config.get('openSource:isActive')) && config.get('audit:active')) {

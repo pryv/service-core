@@ -9,7 +9,7 @@
  * Send predicatable static data
  */
 
-const { DataStore, UserStreams, UserEvents }  = require('../../interfaces/DataStore');
+const { DataStore } = require('../../src');
 
 class Dummy extends DataStore {
 
@@ -28,7 +28,7 @@ class Dummy extends DataStore {
 }
 
 
-class DummyUserStreams extends UserStreams {
+class DummyUserStreams extends DataStore.UserStreams {
   async get(uid, params) {
     let streams = [{
       id: 'myself',
@@ -45,7 +45,7 @@ class DummyUserStreams extends UserStreams {
     }];
 
 
-    UserStreams.applyDefaults(streams);
+    DataStore.UserStreams.applyDefaults(streams);
     
     function findStream(streamId, arrayOfStreams) {
       for (let stream of arrayOfStreams) {
@@ -67,7 +67,7 @@ class DummyUserStreams extends UserStreams {
   }
 }
 
-class DummyUserEvents extends UserEvents {
+class DummyUserEvents extends DataStore.UserEvents {
   async get(uid, params) {
     const events = [{
       id: 'dummyevent0',

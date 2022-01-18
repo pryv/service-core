@@ -7,7 +7,7 @@
 
 // @flow
 
-const { DataStore, UserStreams }  = require('../interfaces/DataStore');
+const { DataStore }  = require('pryv-datastore');
 const StreamsUtils = require('./lib/StreamsUtils');
 const { treeUtils } = require('utils');
 
@@ -18,7 +18,7 @@ import typeof Mall from './Mall';
 /**
  * Handle Store.streams.* methods
  */
-class MallUserStreams extends UserStreams {
+class MallUserStreams {
 
   mall: Mall;
  
@@ -26,7 +26,6 @@ class MallUserStreams extends UserStreams {
    * @param {Mall} mall 
    */
   constructor(mall: Mall) {
-    super();
     this.mall = mall;
   }
 

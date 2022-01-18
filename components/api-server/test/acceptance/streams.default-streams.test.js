@@ -19,7 +19,7 @@ const { databaseFixture } = require('test-helpers');
 const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { DataStore } = require('mall/interfaces/DataStore');
+const { DataStore } = require('pryv-datastore');
 const treeUtils = require('utils/src/treeUtils');
 
 describe("System streams", function () {
@@ -136,6 +136,9 @@ describe("System streams", function () {
             ] 
           }
         ];
+
+
+        const { DataStore } = require('pryv-datastore')
         
         readableStreams = treeUtils.cloneAndApply(readableStreams, (s) => {
           s.createdBy = DataStore.BY_SYSTEM;
@@ -143,8 +146,7 @@ describe("System streams", function () {
           return s;
         });
 
-        const { UserStreams } = require('mall/interfaces/DataStore')
-        UserStreams.applyDefaults(readableStreams);
+        DataStore.UserStreams.applyDefaults(readableStreams);
 
         expectedRes.push(...readableStreams);
 

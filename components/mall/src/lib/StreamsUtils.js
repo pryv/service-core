@@ -7,7 +7,7 @@
 
 // @flow
 
-const { DataStore } = require('../../interfaces/DataStore');
+const { DataStore } = require('pryv-datastore');
 const LOCAL_STORE = 'local';
 import type { Stream } from 'business/src/streams';
 

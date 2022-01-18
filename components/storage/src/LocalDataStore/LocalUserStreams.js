@@ -16,7 +16,7 @@ const bluebird = require('bluebird');
 const _ = require('lodash');
 
 const cache = require('cache');
-const { UserStreams } = require('../../interfaces/DataStore');
+const { DataStore } = require('pryv-datastore');
 const { treeUtils } = require('utils');
 
 const { StreamProperties } = require('business/src/streams');
@@ -27,7 +27,7 @@ const SystemStreamUtils = require('./SystemStreamUtils');
 import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { Stream } from 'business/src/streams';
 
-class LocalUserStreams extends UserStreams {
+class LocalUserStreams extends DataStore.UserStreams {
   userStreamsStorage: any;
 
   constructor(userStreamsStorage: any) {

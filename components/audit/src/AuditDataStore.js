@@ -10,7 +10,7 @@
  */
 
 
-const {DataStore, UserStreams, UserEvents}  = require('mall/interfaces/DataStore');
+const { DataStore }  = require('pryv-datastore');
 
 const audit = require('audit');
 
@@ -49,7 +49,7 @@ class AuditDataStore extends DataStore {
 
 
 
-class AuditUserStreams extends UserStreams {
+class AuditUserStreams extends DataStore.UserStreams {
 
   async get(uid, params) {
 
@@ -129,7 +129,7 @@ class AuditUserStreams extends UserStreams {
   }
 }
 
-class AuditUserEvents extends UserEvents {
+class AuditUserEvents extends DataStore.UserEvents {
   async getStreamed(uid, params) {
     const userStorage = await audit.storage.forUser(uid);
     return userStorage.getLogsStream(params);
