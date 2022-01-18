@@ -239,7 +239,6 @@ describe("[FG5R] Events of system streams", () => {
           assert.equal(res.status, 200);
         });
         it('[IYE6] should return the event', () => {
-          $$(res.body)
           assert.equal(res.body.event.id, defaultEvent.id);
           assert.equal(res.body.event.streamId, systemStreamId);
         });

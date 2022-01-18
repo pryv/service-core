@@ -317,6 +317,9 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
           { streamIds: { $in: Object.keys(accountStreams) } }]
       }, cb)
     });
+
+    const usersRepository = await getUsersRepository(); 
+    await usersRepository.deleteOne(this.context.user.id);
     
     const removeSessions = bluebird.fromCallback((cb) => 
       db.sessions.removeForUser(username, cb));

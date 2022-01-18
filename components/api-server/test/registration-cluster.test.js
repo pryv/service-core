@@ -180,7 +180,6 @@ describe('registration: cluster', function() {
         assert.deepEqual(secondValidationSent, secondValidationRequest, 'second validation request is invalid');
 
         let secondRegistrationSent = serviceRegisterRequests[3];
-        $$(serviceRegisterRequests);
         secondRegistrationSent = stripRegistrationRequest(secondRegistrationSent);
         const secondRegistrationRequest = buildRegistrationRequest(userData);
         assert.deepEqual(secondRegistrationSent, secondRegistrationRequest, ' second registration request is invalid');

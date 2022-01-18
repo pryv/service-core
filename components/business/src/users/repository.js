@@ -53,7 +53,7 @@ class UsersRepository {
     const usersMap = await userIndex.allUsersMap(); 
 
     const users: Array<User> = [];
-    for (const [username, userId] of usersMap) {
+    for (const [username, userId] of Object.entries(usersMap)) {
       const user = await this.getUserById(userId);
       users.push(user);
     }
