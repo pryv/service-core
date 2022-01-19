@@ -146,7 +146,7 @@ describe('XXXSystemStreams config', () => {
 
   describe('When retro-compatibility is activated and a streamId unicity conflict exists between a custom system streamId and a default one', () => {
     it('[3Z9N] must throw a config error', () => {
-      const streamId = 'username';
+      const streamId = 'language';
       const customStreams = {
         account: [
           {
