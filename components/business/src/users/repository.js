@@ -70,7 +70,7 @@ class UsersRepository {
     const usersMap = await userIndex.allUsersMap(); 
 
     const users: Array<User> = [];
-    for (const [username, userId] of usersMap) {
+    for (const [username, userId] of Object.entries(usersMap)) {
       users.push({id: userId, username: username});
     }
     return users;
@@ -325,7 +325,8 @@ class UsersRepository {
    * @param {User} user - a user object or 
    */
   async checkDuplicates(user: User): Promise<void> {
-    const uniquenessErrors = await getUniquessErrorFields(user).bind(this);
+    const that = this;
+    const uniquenessErrors = await getUniquessErrorFields(user);
 
     if (await userIndex.existsUsername(user.username)) {
       uniquenessErrors.username = user.username;
@@ -344,7 +345,7 @@ class UsersRepository {
     async function getUniquessErrorFields(user: User): Array<string> {
 
       const orClause: Array<{}> = [];
-      this.uniqueFields.forEach(field => {
+      that.uniqueFields.forEach(field => {
         if (user[field] != null) {
           orClause.push({
             content: { $eq: user[field] },
@@ -360,10 +361,10 @@ class UsersRepository {
       const query: {} = { $or: orClause };
       
       const duplicateEvents: ?Array<Object> = await bluebird.fromCallback(
-        cb => this.eventsStorage.find(
-          this.collectionInfo,
-          this.eventsStorage.applyQueryToDB(query),
-          this.eventsStorage.applyOptionsToDB(null),
+        cb => that.eventsStorage.find(
+          that.collectionInfo,
+          that.eventsStorage.applyQueryToDB(query),
+          that.eventsStorage.applyOptionsToDB(null),
           cb,
         ),
       );
@@ -372,7 +373,7 @@ class UsersRepository {
         duplicateEvents.forEach(
           duplicate => {
             const key = extractDuplicateField(
-              this.uniqueFields,
+              that.uniqueFields,
               duplicate.streamIds,
             );
             uniquenessErrors[key] = user[key];
