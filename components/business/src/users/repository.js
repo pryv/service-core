@@ -325,51 +325,13 @@ class UsersRepository {
    * @param {User} user - a user object or 
    */
   async checkDuplicates(user: User): Promise<void> {
+    const uniquenessErrors = await getUniquessErrorFields(user).bind(this);
+
     if (await userIndex.existsUsername(user.username)) {
-      throw (
-        errors.itemAlreadyExists(
-          "user",
-          {username: user.username},
-        )
-      );
+      uniquenessErrors.username = user.username;
     }
 
-
-    const orClause: Array<{}> = [];
-    this.uniqueFields.forEach(field => {
-      if (user[field] != null) {
-        orClause.push({
-          content: { $eq: user[field] },
-          streamIds: SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(field),
-          deleted: null,
-          headId: null,
-        });
-      }
-    });
-
-    if (orClause.length === 0) return;
-
-    const query: {} = { $or: orClause };
-    
-    const duplicateEvents: ?Array<Event> = await bluebird.fromCallback(
-      cb => this.eventsStorage.find(
-        this.collectionInfo,
-        this.eventsStorage.applyQueryToDB(query),
-        this.eventsStorage.applyOptionsToDB(null),
-        cb,
-      ),
-    );
-    if (duplicateEvents != null && duplicateEvents.length > 0) {
-      const uniquenessErrors = {};
-      duplicateEvents.forEach(
-        duplicate => {
-          const key = extractDuplicateField(
-            this.uniqueFields,
-            duplicate.streamIds,
-          );
-          uniquenessErrors[key] = user[key];
-        },
-      );
+    if (Object.keys(uniquenessErrors).length > 0) {
       throw (
         errors.itemAlreadyExists(
           "user",
@@ -379,11 +341,54 @@ class UsersRepository {
     }
     return;
 
-    function extractDuplicateField(streamIdsWithoutPrefix, streamIdsWithPrefix): string {
-      const intersection: Array<string> = streamIdsWithoutPrefix.filter(streamIdWithoutPrefix => 
-        streamIdsWithPrefix.includes(SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix))
-      )
-      return intersection[0];
+    async function getUniquessErrorFields(user: User): Array<string> {
+
+      const orClause: Array<{}> = [];
+      this.uniqueFields.forEach(field => {
+        if (user[field] != null) {
+          orClause.push({
+            content: { $eq: user[field] },
+            streamIds: SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(field),
+            deleted: null,
+            headId: null,
+          });
+        }
+      });
+
+      if (orClause.length === 0) return;
+
+      const query: {} = { $or: orClause };
+      
+      const duplicateEvents: ?Array<Object> = await bluebird.fromCallback(
+        cb => this.eventsStorage.find(
+          this.collectionInfo,
+          this.eventsStorage.applyQueryToDB(query),
+          this.eventsStorage.applyOptionsToDB(null),
+          cb,
+        ),
+      );
+      if (duplicateEvents != null && duplicateEvents.length > 0) {
+        const uniquenessErrors = {};
+        duplicateEvents.forEach(
+          duplicate => {
+            const key = extractDuplicateField(
+              this.uniqueFields,
+              duplicate.streamIds,
+            );
+            uniquenessErrors[key] = user[key];
+          },
+        );
+        return uniquenessErrors;
+      }
+      return {};
+    
+
+      function extractDuplicateField(streamIdsWithoutPrefix, streamIdsWithPrefix): string {
+        const intersection: Array<string> = streamIdsWithoutPrefix.filter(streamIdWithoutPrefix => 
+          streamIdsWithPrefix.includes(SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix))
+        )
+        return intersection[0];
+      }
     }
   }
 }
