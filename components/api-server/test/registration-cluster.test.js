@@ -147,7 +147,7 @@ describe('registration: cluster', function() {
         firstRegistrationRequest = buildRegistrationRequest(userData);
         firstUser = await usersRepository.getUserByUsername(userData.username);
 
-        // second request
+        // second request, same username but with another email
         oldEmail = userData.email;
         userData.email = charlatan.Internet.email();
         res = await request.post(methodPath).send(userData);

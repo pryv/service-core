@@ -109,6 +109,19 @@ class Registration {
       // assert that we have obtained a lock on register, so any conflicting fields here 
       // would be failed registration attempts that partially saved user data.
       const usersRepository = await getUsersRepository();
+
+      const matchingUserId = await usersRepository.getUserIdForUsername(context.newUser.username);
+
+      if (matchingUserId != null) {
+        await usersRepository.deleteOne(matchingUserId);
+
+          this.logger.error(
+            `User with id ${
+              matchingUserId
+            } was deleted because it was not found on service-register but uniqueness conflicted on service-core`
+          );
+      };
+
       const existingUsers = await usersRepository.findExistingUniqueFields(context.newUser.getUniqueFields());
 
       // if any of unique fields were already saved, it means that there was an error
