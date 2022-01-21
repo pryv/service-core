@@ -13,7 +13,10 @@ const {getConfig, getLogger, boiler} = require('@pryv/boiler').init({
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
-  },{
+  }, {
+    scope: 'defaults-paths',
+    file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
+  }, {
     scope: 'defaults-data',
     file: path.resolve(__dirname, '../config/default-config.yml')
   }, {

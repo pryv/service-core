@@ -356,7 +356,7 @@ class UsersRepository {
         }
       });
 
-      if (orClause.length === 0) return;
+      if (orClause.length === 0) return {};
 
       const query: {} = { $or: orClause };
       
