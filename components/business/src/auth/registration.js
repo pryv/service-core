@@ -122,30 +122,6 @@ class Registration {
           );
       };
 
-      const existingUsers = await usersRepository.findExistingUniqueFields(context.newUser.getUniqueFields());
-
-      // if any of unique fields were already saved, it means that there was an error
-      // saving in service register (before this step there is a check that unique fields 
-      // don't exist in service register)
-
-      if (existingUsers.length > 0) {
-        // DELETE users with conflicting unique properties
-        let userIds = existingUsers.map(conflictingEvent => conflictingEvent.userId);
-        const distinctUserIds = new Set(userIds);
-
-        for (let userId of distinctUserIds){
-          // assert that unique fields are free to take
-          // so if we get conflicting ones here, we can simply delete them
-          const usersRepository = await getUsersRepository();
-          await usersRepository.deleteOne(userId);
-
-          this.logger.error(
-            `User with id ${
-            userId
-            } was deleted because it was not found on service-register but uniqueness conflicted on service-core`
-          );
-        }
-      }
     } catch (error) {
       return next(errors.unexpectedError(error));
     }

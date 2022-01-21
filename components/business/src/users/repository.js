@@ -79,9 +79,9 @@ class UsersRepository {
     }
     return users;
   }
+
   async getUserIdForUsername(username: string) {
     return await userIndex.idForName(username);
-    
   }
 
   async getUserById(userId: string): Promise<?User> {
@@ -123,24 +123,6 @@ class UsersRepository {
     return userAccountEvents[0].content;
   };
 
-  async findExistingUniqueFields(fields: {}): Promise<{}> {
-    const query = { $or: [] }
-    Object.keys(fields).forEach(key => {
-      query['$or'].push({
-        $and:
-          [
-            { streamIds: SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key) },
-            { content: fields[key] }
-          ]
-      });
-    });
-
-    const existingUsers = await bluebird.fromCallback(
-      cb => this.eventsStorage.database.find(this.collectionInfo, query, {}, cb),
-    );
-    return existingUsers;
-  }
-
   async createSessionForUser(
     username: string,
     appId: string,
@@ -154,7 +136,7 @@ class UsersRepository {
       ),
     );
   }
-  
+
   async createPersonalAccessForUser(
     userId: string,
     token: string,
@@ -180,6 +162,7 @@ class UsersRepository {
       ),
     );
   }
+
   validateAllStorageObjectsInitialized(): boolean {
     if (this.accessStorage == null || this.sessionsStorage == null) {
       throw (
@@ -190,6 +173,7 @@ class UsersRepository {
     }
     return true;
   }
+
   async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
     // first explicitly create a collection, because it would fail in the transation
     await bluebird.fromCallback(
@@ -240,8 +224,8 @@ class UsersRepository {
     );
     return user;
   }
+
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
-   
    
     await this.checkDuplicates(update);
     
