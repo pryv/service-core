@@ -21,6 +21,7 @@ const errors = require('errors').factory;
 const { safetyCleanDuplicate } = require('business/src/auth/service_register');
 
 const userIndex = require('./UserLocalIndex');
+const { getMall } = require('mall');
 
 const cache = require('cache');
 
@@ -34,11 +35,14 @@ class UsersRepository {
   accessStorage: {};
   collectionInfo: {};
   uniqueFields: Array<string>;
+  mall: {};
   constructor() {
     this.uniqueFields = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
   }
 
   async init() {
+    this.mall = await getMall();
+
     const storage = require('storage');
     this.storageLayer = await storage.getStorageLayer();
     this.eventsStorage = this.storageLayer.events;
@@ -79,19 +83,12 @@ class UsersRepository {
     return await userIndex.idForName(username);
     
   }
+
   async getUserById(userId: string): Promise<?User> {
-    const userAccountStreamsIds =  SystemStreamsSerializer.getAccountMap();
-    const query: {} = {
-      $and: [
-        { streamIds: { $in: Object.keys(userAccountStreamsIds) } },
-        { streamIds: { $eq: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } },
-      ],
-    };
+    const userAccountStreamsIds =  Object.keys(SystemStreamsSerializer.getAccountMap());
 
-    const userAccountEvents: Array<Event> = await bluebird.fromCallback(
-      cb => this.eventsStorage.find({ id: userId }, query, null, cb),
-    );
-
+    const query = {state: 'all', streams: [{any: userAccountStreamsIds, and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}]};
+    const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
     // convert events to the account info structure
     if (
       userAccountEvents.length == 0
@@ -102,6 +99,7 @@ class UsersRepository {
     const user = new User({ id: userId, username: username, events: userAccountEvents });
     return user;
   }
+
   async getUserByUsername(username: string): Promise<?User> {
     let userId = await this.getUserIdForUsername(username);
     if (userId) {
@@ -119,14 +117,10 @@ class UsersRepository {
   }
 
   async getOnePropertyValue(userId: string, propertyKey: string) {
-    const res = await bluebird.fromCallback( 
-      cb => this.eventsStorage.find(
-        { id: userId}, 
-        { streamIds: {$in: [SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(propertyKey)] } }, 
-        {limit: 1},
-        cb));
-    if (! res || ! res[0]) return null;
-    return res[0].content;
+    const query = {limit: 1, state: 'all', streams: [{any: [SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(propertyKey)]}]};
+    const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
+    if (! userAccountEvents || ! userAccountEvents[0]) return null;
+    return userAccountEvents[0].content;
   };
 
   async findExistingUniqueFields(fields: {}): Promise<{}> {
@@ -146,6 +140,7 @@ class UsersRepository {
     );
     return existingUsers;
   }
+
   async createSessionForUser(
     username: string,
     appId: string,
@@ -159,6 +154,7 @@ class UsersRepository {
       ),
     );
   }
+  
   async createPersonalAccessForUser(
     userId: string,
     token: string,
