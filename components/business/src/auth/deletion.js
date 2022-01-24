@@ -29,13 +29,11 @@ class Deletion {
   logger: any;
   storageLayer: any;
   config: any;
-  serviceRegisterConn: ServiceRegister;
 
   constructor(logging: any, storageLayer: any, config: any) {
     this.logger = getLogger('business:deletion');
     this.storageLayer = storageLayer;
     this.config = config;
-    this.serviceRegisterConn = getServiceRegisterConn();
   }
 
   
@@ -223,7 +221,8 @@ class Deletion {
   ) {
     if (this.config.get('openSource:isActive') || this.config.get('dnsLess:isActive')) return next();
     try {
-      const res = await this.serviceRegisterConn.deleteUser(params.username);
+      const serviceRegisterConn = await getServiceRegisterConn();
+      const res = await serviceRegisterConn.deleteUser(params.username);
       this.logger.debug('on register: ' + params.username, res);
     } catch (e) { // user might have been deleted register we do not FW error just log it
       this.logger.error(e, e);

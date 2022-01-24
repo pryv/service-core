@@ -37,6 +37,7 @@ const {TypeRepository, isSeriesType} = require('business').types;
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
+const { getPlatform } = require('platform');
 
 const { pubsub } = require('messages');
 
@@ -77,6 +78,7 @@ module.exports = async function (api)
   const openSourceSettings = config.get('openSource')
   const usersRepository = await getUsersRepository(); 
   const mall = await getMall();
+  const platform = await getPlatform();
   await eventsGetUtils.init();
   
   // Initialise the project version as soon as we can. 
@@ -93,7 +95,7 @@ module.exports = async function (api)
   // initialize service-register connection
   let serviceRegisterConn = {};
   if (! config.get('dnsLess:isActive')) {
-    serviceRegisterConn = getServiceRegisterConn();
+    serviceRegisterConn = await getServiceRegisterConn();
   }
 
   const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
@@ -363,13 +365,15 @@ module.exports = async function (api)
     const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
 
     try{
-      if (systemStream.isIndexed) { // assume can be unique as per test #42A1
-        await sendDataToServiceRegister(context, isCreation);
-      }
       if (systemStream.isUnique) {
         await usersRepository.checkDuplicates({[streamIdWithoutPrefix]: context.newEvent.content});
       }
+      if (systemStream.isIndexed) { // assume can be unique as per test #42A1
+        await sendDataToServiceRegister(context, isCreation);
+      }
+      
     } catch (err) {
+      $$(err);
       return next(err);
     }
     next();
@@ -380,28 +384,41 @@ module.exports = async function (api)
      * @param {boolean} isCreation
      */
     async function sendDataToServiceRegister(context: MethodContext, isCreation: boolean): void {
-      if (config.get('dnsLess:isActive')) {
-        return;
-      }
+     
 
       const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
       const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
 
+      const operations = [{ update: { 
+          key: streamIdWithoutPrefix,
+          value: context.newEvent.content,
+          isUnique: editableAccountStreamsMap[context.accountStreamId].isUnique,
+        } 
+      }];
+
+      await platform.updateUser(context.user.username, operations, 
+        context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
+        context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
+        isCreation);
+
+
+      if (config.get('dnsLess:isActive')) {
+        return;
+      }
+
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(
         context.user.username,
-        [{ update: { 
-            key: streamIdWithoutPrefix,
-            value: context.newEvent.content,
-            isUnique: editableAccountStreamsMap[context.accountStreamId].isUnique,
-          } 
-        }],
+        operations,
         // for isActive, "context.removeActiveEvents" is not enough because, it would be set 
         // to false if old event was active and is still active (no change)
         context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
         context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
         isCreation,
       );
+
+   
+
     }
   }
 
@@ -1070,23 +1087,27 @@ module.exports = async function (api)
    * @param string accountStreamId - accountStreamId
    */
   async function sendDeletionToServiceRegister (username, content, accountStreamId) {
-    if (config.get('dnsLess:isActive')) {
-      return;
-    }
-
     const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
     const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(accountStreamId);
-
     if (editableAccountStreamsMap[accountStreamId].isUnique) { // TODO should be isIndexed??
-      await serviceRegisterConn.updateUserInServiceRegister(
-        username,
-        [{ 
-          delete: {
-            key: streamIdWithoutPrefix,
-            value: content,
-          }
-        }],
-      );
+      
+      const operations = [{ 
+        delete: {
+          key: streamIdWithoutPrefix,
+          value: content,
+          isUnique: true
+        }
+      }]
+
+      await platform.updateUser(username, operations);
+
+      if (! config.get('dnsLess:isActive')) {
+  
+        await serviceRegisterConn.updateUserInServiceRegister(
+          username,
+          operations,
+        );
+      }
     }
   }
   

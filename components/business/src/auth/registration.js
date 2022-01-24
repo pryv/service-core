@@ -37,7 +37,14 @@ class Registration {
     this.storageLayer = storageLayer;
     this.servicesSettings = servicesSettings;
 
-    this.serviceRegisterConn = getServiceRegisterConn();
+    
+  }
+
+  async init() {
+    if (this.serviceRegisterConn != null) {
+      this.serviceRegisterConn = await getServiceRegisterConn();
+    }
+    return this;
   }
 
   /**

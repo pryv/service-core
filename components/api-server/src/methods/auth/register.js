@@ -35,7 +35,8 @@ module.exports = async function (api) {
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
-  const serviceRegisterConn: ServiceRegister = getServiceRegisterConn();
+  await registration.init();
+  const serviceRegisterConn: ServiceRegister = await getServiceRegisterConn();
   const usersRepository = await getUsersRepository(); 
 
   function skip(context, params, result, next) { next(); }
@@ -94,7 +95,7 @@ module.exports = async function (api) {
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
     try {
-      await usersRepository.checkDuplicates({ [field]: params[field]});
+      await usersRepository.checkDuplicates({ [field]: params[field]}, context.user.username);
     } catch (error) {
       return next(error);
     }

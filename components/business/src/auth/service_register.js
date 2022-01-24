@@ -12,6 +12,8 @@ const ErrorIds = require('errors').ErrorIds;
 const errors = require('errors').factory;
 const ErrorMessages = require('errors/src/ErrorMessages');
 
+const { getPlatform } = require('platform');
+
 type OperationType = 'update' | 'delete';
 type AccountProperty = string;
 type Value = string;
@@ -23,15 +25,23 @@ type Operation = {
   },
 };
 
-const { getLogger, getConfigUnsafe, notifyAirbrake } = require('@pryv/boiler');
+const { getLogger, getConfig, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
-  config: {}; 
+  settings: {}; 
   logger: {};
+  platform;
 
-  constructor(config: {}) {
-    this.config = config; 
+  constructor() {
     this.logger = getLogger('service-register');
-    this.logger.debug('created with config', config);
+  }
+
+  async init() {
+    if (this.platform == null) {
+      this.settings = (await getConfig()).get('services:register')
+      this.platform = await getPlatform();
+      this.logger.debug('created with setttings:', this.settings);
+    }
+    return this;
   }
 
   async validateUser (
@@ -40,13 +50,13 @@ class ServiceRegister {
     uniqueFields: Object,
     core: String,
   ): Promise<void> {
-    const url = buildUrl('/users/validate', this.config.url);
+    const url = buildUrl('/users/validate', this.settings.url);
     // log fact about the event
     this.logger.info(`POST ${url} for username: ${username}`);
     try {
       await superagent
         .post(url)
-        .set('Authorization', this.config.key)
+        .set('Authorization', this.settings.key)
         .send({ 
           username: username,
           invitationToken: invitationToken,
@@ -54,7 +64,7 @@ class ServiceRegister {
           core: core
         });
     } catch (err) {
-      if(((err.status == 409) || (err.status == 400)) && err?.response?.body?.error){
+      if(((err.status == 409) || (err.status == 400)) && err?.response?.body?.error){
         if (err.response.body.error != null) {
           if (err.response.body.error.id === ErrorIds.InvalidInvitationToken) {
             throw errors.invalidOperation(ErrorMessages.InvalidInvitationToken);
@@ -73,7 +83,7 @@ class ServiceRegister {
   }
 
   async checkUsername(username: string): Promise<any> {
-    const url = buildUrl(`/${username}/check_username`, this.config.url);
+    const url = buildUrl(`/${username}/check_username`, this.settings.url);
     // log fact about the event
     this.logger.info(`GET ${url} for username: ${username}`);
     try {
@@ -90,13 +100,13 @@ class ServiceRegister {
   }
 
   async createUser(user): Promise<void> {
-    const url = buildUrl('/users', this.config.url);
+    const url = buildUrl('/users', this.settings.url);
     // log fact about the event
     this.logger.info(`POST ${url} for username:${user.user.username}`);
     try {
       const res = await superagent
         .post(url)
-        .set('Authorization', this.config.key)
+        .set('Authorization', this.settings.key)
         .send(user);     
       return res.body;
     } catch (err) {
@@ -106,13 +116,13 @@ class ServiceRegister {
   }
 
   async deleteUser(username): Promise<void> {
-    const url = buildUrl('/users/' + username + '?onlyReg=true', this.config.url);
+    const url = buildUrl('/users/' + username + '?onlyReg=true', this.settings.url);
     // log fact about the event
     this.logger.info(`DELETE ${url} for username:${username}`);
     try {
       const res = await superagent
         .delete(url)
-        .set('Authorization', this.config.key);     
+        .set('Authorization', this.settings.key);     
       return res.body;
     } catch (err) {
       this.logger.error(err, err);
@@ -130,7 +140,7 @@ class ServiceRegister {
     isActive: boolean,
     isCreation: boolean
   ): Promise<void> {
-    const url = buildUrl('/users', this.config.url);
+    const url = buildUrl('/users', this.settings.url);
     this.logger.info(`PUT ${url} for username:${username}`);
 
     // otherwise deletion
@@ -171,7 +181,7 @@ class ServiceRegister {
     try {
       const res = await superagent.put(url)
         .send(payload)
-        .set('Authorization', this.config.key);
+        .set('Authorization', this.settings.key);
       return res.body;
     } catch (err) {
       if (((err.status == 400) || (err.status == 409)) && err.response.body.error != null) {
@@ -201,9 +211,10 @@ let serviceRegisterConn = null;
 /**
  * @returns {ServiceRegister}
  */
-function getServiceRegisterConn() {
+async function getServiceRegisterConn() {
   if (! serviceRegisterConn) {
-    serviceRegisterConn = new ServiceRegister(getConfigUnsafe().get('services:register'))
+    serviceRegisterConn = new ServiceRegister();
+    serviceRegisterConn.init();
   }
   return serviceRegisterConn;
 }

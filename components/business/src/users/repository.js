@@ -22,6 +22,7 @@ const { safetyCleanDuplicate } = require('business/src/auth/service_register');
 
 const userIndex = require('./UserLocalIndex');
 const { getMall } = require('mall');
+const { getPlatform } = require('platform');
 
 const cache = require('cache');
 
@@ -36,12 +37,15 @@ class UsersRepository {
   collectionInfo: {};
   uniqueFields: Array<string>;
   mall: {};
+  platform: null;
+
   constructor() {
     this.uniqueFields = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
   }
 
   async init() {
     this.mall = await getMall();
+    this.platform = await getPlatform();
 
     const storage = require('storage');
     this.storageLayer = await storage.getStorageLayer();
@@ -67,6 +71,7 @@ class UsersRepository {
   // only for test data to be reset
   async deleteAll(): Promise<void> {
     await userIndex.deleteAll();
+    await this.platform.deleteAll();
   }
 
   
@@ -174,12 +179,22 @@ class UsersRepository {
     return true;
   }
 
+  async setUniqueFields(user: User): Array<string> {
+
+    const operations = this.uniqueFields.map(key => { 
+      return {update: {key: key, value: user[key], isUnique: true}};
+    }); 
+
+    await this.platform.updateUser(user.username, operations, true, true);
+ 
+  }
+
   async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
     // first explicitly create a collection, because it would fail in the transation
     await bluebird.fromCallback(
       cb => this.eventsStorage.database.getCollection(this.collectionInfo, cb),
     );
-
+    $$(`Creating user ${user.username} ${user.email} `);
     await this.checkDuplicates(user);
 
     const transactionSession = await this.eventsStorage.database.startSession();
@@ -210,6 +225,11 @@ class UsersRepository {
 
         // add the user to local index
         await userIndex.addUser(user.username, user.id);
+        $$('ADDED', user.username, user.email);
+
+        // add unique keys to the platform
+        await this.setUniqueFields(user);
+
         
         await bluebird.fromCallback(
           cb => this.eventsStorage.insertMany(
@@ -219,6 +239,8 @@ class UsersRepository {
             { transactionSession },
           ),
         );
+
+
       },
       getTransactionOptions(),
     );
@@ -226,8 +248,11 @@ class UsersRepository {
   }
 
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
+    $$('UPDATE', update);
    
-    await this.checkDuplicates(update);
+    await this.checkDuplicates(update, user.username);
+
+  
     
     // change password into hash if it exists
     if (update.password != null) {
@@ -299,17 +324,24 @@ class UsersRepository {
     return Object.keys(users).length;
   }
 
+  
+
   /**
    * Checks for duplicates for unique fields. Throws item already exists error if any.
    * 
-   * @param {User} user - a user object or 
+   * @param {any} fields - user fields to check for duplicates
    */
-  async checkDuplicates(user: User): Promise<void> {
+  async checkDuplicates(fields: any, ignoreValue): Promise<void> {
     const that = this;
-    const uniquenessErrors = await getUniquessErrorFields(user);
+    const uniquenessErrors2 = await getUniquessErrorFieldsOld(fields);
+    const uniquenessErrors = await getUniquessErrorFields(fields, ignoreValue);
+    //if (Object.keys(uniquenessErrors2).length > 0) {
+      $$({uniquenessErrors, uniquenessErrors2});
+    //}
 
-    if (await userIndex.existsUsername(user.username)) {
-      uniquenessErrors.username = user.username;
+    // check locally for username (To be check if neccesssary after full platform-db implementation)
+    if (fields.username && await userIndex.existsUsername(fields.username)) {
+      uniquenessErrors.username = fields.username;
     }
 
     if (Object.keys(uniquenessErrors).length > 0) {
@@ -322,8 +354,20 @@ class UsersRepository {
     }
     return;
 
-    async function getUniquessErrorFields(user: User): Array<string> {
+    
+    async function getUniquessErrorFields(fields: any, ignoreValue: string): Promise<any> {
+      const uniquenessErrors = {};
+      for (const key of that.uniqueFields) {
+        const value = await that.platform.getUserUniqueField(key, fields[key]);
+        $$({value, key, ignoreValue})
+        if (value != null && ignoreValue != value) { // exclude from error values already assigned to him
+          uniquenessErrors[key] = fields[key];
+        }
+      }
+      return uniquenessErrors;
+    }
 
+    async function getUniquessErrorFieldsOld(user: User): Array<string> {
       const orClause: Array<{}> = [];
       that.uniqueFields.forEach(field => {
         if (user[field] != null) {

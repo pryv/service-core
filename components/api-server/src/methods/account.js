@@ -15,6 +15,7 @@ const methodsSchema = require('../schema/accountMethods');
 const { getConfig } = require('@pryv/boiler');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
+const {getPlatform } = require('platform');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
@@ -33,12 +34,13 @@ module.exports = async function (api) {
   const servicesSettings = config.get('services');
   const storageLayer = await getStorageLayer();
   const passwordResetRequestsStorage = storageLayer.passwordResetRequests;
+  const platform = await getPlatform();
 
   var emailSettings = servicesSettings.email,
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // initialize service-register connection
-  const serviceRegisterConn = getServiceRegisterConn();
+  const serviceRegisterConn = await getServiceRegisterConn();
   const usersRepository = await getUsersRepository(); 
 
   const isDnsLess = config.get('dnsLess:isActive');
@@ -220,10 +222,7 @@ module.exports = async function (api) {
   }
 
   async function notifyServiceRegister (context, params, result, next) {
-    // no need to update service register if it is single node setup
-    if (isDnsLess) {
-      return next();
-    }
+    
     try {
       const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
 
@@ -237,6 +236,13 @@ module.exports = async function (api) {
           }
         })
       }
+      await platform.updateUser(context.user.username, operations, true, false);
+
+      // no need to update service register if it is single node setup
+      if (isDnsLess) {
+        return next();
+      }
+
       await serviceRegisterConn.updateUserInServiceRegister(
         context.user.username,
         operations,

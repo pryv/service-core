@@ -526,6 +526,7 @@ describe("[FG5R] Events of system streams", () => {
                 content: email,
                 type: 'string/pryv'
               };
+              $$({eventData})
   
               nock.cleanAll();
               nock(config.get('services:register:url')).put('/users',
