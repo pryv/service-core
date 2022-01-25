@@ -11,10 +11,12 @@
  */
 
 
-const {DataStore}  = require('../../src/');
+const {DataStore}  = require('pryv-datastore');
 
 class Faulty extends DataStore {
-
+  _streams;
+  _events;
+  
   constructor() {  super(); }
 
   async init(config) {

@@ -22,8 +22,8 @@ DataStore.throwInvalidRequestStructure = function(message, data) {
   throw(errors.invalidRequestStructure(message, data, innerError));
 }
 
-DataStore.throwUnkownRessource = function(resourceType, id, innerError) {
-  throw(errors.unknownResource(resourceType, id, innerError));
+DataStore.throwUnkownRessource = function(resourceType, ressourceId, innerError) {
+  throw(errors.unknownResource(resourceType, ressourceId, innerError));
 }
 
 

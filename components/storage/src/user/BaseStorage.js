@@ -100,13 +100,13 @@ BaseStorage.prototype.count = function(userOrUserId, query, callback) {
 BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
   query.deleted = null;
   query.headId = null;
-  this.find_(userOrUserId, query, options, callback);
+  this.findIncludingDeletionsAndVersions(userOrUserId, query, options, callback);
 };
 
 /**
  * Used by "mall" only 
  */
-BaseStorage.prototype.find_ = function(userOrUserId, query, options, callback) {
+BaseStorage.prototype.findIncludingDeletionsAndVersions = function(userOrUserId, query, options, callback) {
   this.database.find(
     this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),

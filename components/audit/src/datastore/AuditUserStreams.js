@@ -4,37 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/**
- * Audit Data Store. 
- * Send predicatable static data
- */
-
-
-const { DataStore }  = require('pryv-datastore');
 
 const audit = require('audit');
-
-const STORE_ID = '_audit';
-const STORE_NAME = 'Audit Store';
-
-class AuditDataStore extends DataStore {
-  
-  get id() { return STORE_ID; }
-  get name() { return STORE_NAME; }
-
-  constructor() {  super(); }
-
-  async init() {
-    // get config and load approriated data sources componenst;
-    this._streams = new AuditUserStreams();
-    this._events = new AuditUserEvents();
-    return this;
-  }
-
-  get streams() { return this._streams; }
-  get events() { return this._events; }
-
-}
+const { DataStore }  = require('pryv-datastore');
 
 /**
  * 
@@ -47,9 +19,7 @@ class AuditDataStore extends DataStore {
  * 
  */
 
-
-
-class AuditUserStreams extends DataStore.UserStreams {
+ class AuditUserStreams extends DataStore.UserStreams {
 
   async get(uid, params) {
 
@@ -129,11 +99,4 @@ class AuditUserStreams extends DataStore.UserStreams {
   }
 }
 
-class AuditUserEvents extends DataStore.UserEvents {
-  async getStreamed(uid, params) {
-    const userStorage = await audit.storage.forUser(uid);
-    return userStorage.getLogsStream(params);
-  }
-}
-
-module.exports = AuditDataStore;
+module.exports = AuditUserStreams;

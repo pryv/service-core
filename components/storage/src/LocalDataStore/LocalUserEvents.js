@@ -37,7 +37,7 @@ class LocalUserEvents extends DataStore.UserEvents {
 
   async get(userId, params) {
     const {query, options} = paramsToMongoquery(params);
-    return await bluebird.fromCallback(cb => this.userEventsStorage.find_(userId, query, options, cb));
+    return await bluebird.fromCallback(cb => this.userEventsStorage.findIncludingDeletionsAndVersions(userId, query, options, cb));
   }
 }
 
