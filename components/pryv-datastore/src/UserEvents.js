@@ -14,7 +14,7 @@ const Constants = require('./Constants');
 
   /**
    * Get the events for this user.
-   * @param {identifier} uid  
+   * @param {identifier} uid
    * @param {object} params - event query
    * @param {boolean} [params.includeDeletions] - default false
    * @param {timestamp} [params.deletedSince] - default null, override includeDeletions. Only returns deleted events, sorted by deletion date descending
@@ -26,8 +26,8 @@ const Constants = require('./Constants');
 
 
   /**
-   * Get the events as a stream for this user.  
-   * @param {identifier} uid  
+   * Get the events as a stream for this user.
+   * @param {identifier} uid
    * @param {object} params - event query
    * @returns {ReadableStream}
    * @see https://api.pryv.com/reference/#get-events
@@ -36,7 +36,7 @@ const Constants = require('./Constants');
 
   /**
    * @see https://api.pryv.com/reference/#create-event
-   * @param {identifier} uid 
+   * @param {identifier} uid
    * @throws item-already-exists
    * @throws invalid-item-id
    * @throws ressource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
@@ -46,7 +46,7 @@ const Constants = require('./Constants');
 
   /**
    * @see https://api.pryv.com/reference/#update-event
-   * @param {identifier} uid 
+   * @param {identifier} uid
    * @throws item-already-exists
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Event
@@ -55,7 +55,7 @@ const Constants = require('./Constants');
 
   /**
    * @see https://api.pryv.com/reference/#delete-event
-   * @param {identifier} uid 
+   * @param {identifier} uid
    * @throws item-already-exists
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Event|EventDeletionItem} - The trashed Event
@@ -68,7 +68,7 @@ const Constants = require('./Constants');
    */
 
   /**
-   * Add series ? do we have specific methods for series ... ? 
+   * Add series ? do we have specific methods for series ... ?
    */
 
 
@@ -83,8 +83,8 @@ const Constants = require('./Constants');
     for (const event: Event of events) {
       if (typeof event.created === 'undefined') event.created = Constants.UNKNOWN_DATE;
       if (typeof event.modified === 'undefined') event.modified = Constants.UNKNOWN_DATE;
-      if (typeof event.createdBy === 'undefined') event.createdBy = Constants.BY_UNKOWN;
-      if (typeof event.modifiedBy === 'undefined') event.modifiedBy = Constants.BY_UNKOWN;
+      if (typeof event.createdBy === 'undefined') event.createdBy = Constants.BY_UNKNOWN;
+      if (typeof event.modifiedBy === 'undefined') event.modifiedBy = Constants.BY_UNKNOWN;
     }
   }
 }

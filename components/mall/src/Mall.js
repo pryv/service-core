@@ -8,7 +8,7 @@
 // @flow
 
 /**
- * Data Store aggregator. 
+ * Data Store aggregator.
  * Pack configured datastores into one
  */
 
@@ -16,13 +16,13 @@ const errors = require('errors').factory;
 
 const { DataStore } = require('pryv-datastore');
 
-// --- Override Error handling 
+// --- Override Error handling
 
 DataStore.throwInvalidRequestStructure = function(message, data) {
   throw(errors.invalidRequestStructure(message, data, innerError));
 }
 
-DataStore.throwUnkownRessource = function(resourceType, ressourceId, innerError) {
+DataStore.throwUnknownRessource = function(resourceType, ressourceId, innerError) {
   throw(errors.unknownResource(resourceType, ressourceId, innerError));
 }
 
@@ -52,7 +52,7 @@ class Mall {
 
   /**
    * register a new DataStore
-   * @param 
+   * @param
    */
   addStore(store: DataStore): void {
     if (this.initialized) throw(new Error('Sources cannot be added after init()'));
@@ -72,14 +72,14 @@ class Mall {
     // expose streams and events;
     this._streams = new MallUserStreams(this);
     this._events = new StoreUserEvents(this);
-    
+
     return this;
   }
 
   /**
    * @private
-   * @param {identifier} storeId 
-   * @returns 
+   * @param {identifier} storeId
+   * @returns
    */
   _storeForId(storeId: string): DataStore {
     return this.storesMap[storeId];

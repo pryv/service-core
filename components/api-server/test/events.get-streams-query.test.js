@@ -19,16 +19,16 @@ const { StreamsUtils } = require('mall');
  * A-----ad-a
  *  |-B--be-b
  *  |-C--fc-c
- * 
+ *
  * D-----ad-d
  *  |-E--be-e
  *  |-F--fc-f
- * 
+ *
  * T--t (trashed stream)
- * 
+ *
  * .account
  *  |.account-email
- * 
+ *
  * A,D => ad, be, fc, a, b, c, d, e, f
  * A,E => ad, be, fc, a, b, c, e
  * A,&B => be, b
@@ -36,8 +36,8 @@ const { StreamsUtils } = require('mall');
  * T => t
  */
 
-const STREAMS = { 
-  A: {}, B: { parentId: 'A' }, C: { parentId: 'A' }, D: {}, E: { parentId: 'D' }, F: { parentId: 'D' }, T: { trashed: true }, 
+const STREAMS = {
+  A: {}, B: { parentId: 'A' }, C: { parentId: 'A' }, D: {}, E: { parentId: 'D' }, F: { parentId: 'D' }, T: { trashed: true },
   '.account': {}, '.account-email': { parentId: '.account'}
 };
 const EVENTS = {
@@ -68,7 +68,7 @@ ALL_AUTHORIZED_STREAMS.forEach((streamId) => {
   if (STREAMS[streamId].trashed !== true) {
     if (StreamsUtils.storeIdAndStreamIdForStreamId(streamId)[0] === 'local') {
       ALL_ACCESSIBLE_STREAMS_LOCAL.push(streamId);
-      if (STREAMS[streamId].parentId == null) 
+      if (STREAMS[streamId].parentId == null)
         ALL_ACCESSIBLE_ROOT_STREAMS_LOCAL.push(streamId);
     }
   }
@@ -133,23 +133,23 @@ describe('events.get streams query', function () {
       it('[HFT2] must convert streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
         const res = await validateQuery({ any: ['A'], all: ['D','F'] });
         assert.deepEqual(res, [
-          { any: ['A', 'B', 'C'], 
+          { any: ['A', 'B', 'C'],
             and: [
-              {any: ['D', 'E', 'F']}, 
+              {any: ['D', 'E', 'F']},
               {any: ['F']}
-            ], 
-            storeId: 'local' 
+            ],
+            storeId: 'local'
           }]);
       });
 
       it('[PLMO] must convert streams query property "all" to "and: [{any..}]) with each containing expanded streamIds', async function () {
         const res = await validateQuery({ any: ['A'], all: ['F'] });
         assert.deepEqual(res, [
-          { any: ['A', 'B', 'C'], 
+          { any: ['A', 'B', 'C'],
             and: [
-              {any: ['F']}, 
-            ], 
-            storeId: 'local' 
+              {any: ['F']},
+            ],
+            storeId: 'local'
           }]);
       });
 
@@ -205,7 +205,7 @@ describe('events.get streams query', function () {
 
 
       describe('with multiple stores', function () { 
-        
+
         it('[U6GS] group query streamIds per store', async function () {
           const res = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(['A', ':_audit:test']);
           assert.deepEqual(res, [{ any: ['A']},{ any: [':_audit:test']}]);
@@ -240,7 +240,7 @@ describe('events.get streams query', function () {
           'must contain at least one of \'any\'': [
             { not: ['A', 'B'] },
           ],
-          'unkown property': [
+          'unknown property': [
             { any: ['A', 'B'], zz: ['A'] },
           ],
           'must be an array': [
@@ -273,26 +273,26 @@ describe('events.get streams query', function () {
 
     });
 
-    
+
     describe('toMongoQuery()', function() {
 
       it('[KKIH] must convert to MongoDB including expansion', async function () {
         const clean = await validateQuery(['A','B']);
-        const mongo = streamsQueryUtils.toMongoDBQuery(clean);      
+        const mongo = streamsQueryUtils.toMongoDBQuery(clean);
         assert.deepEqual(mongo, { streamIds: { '$in': [ 'A', 'B', 'C' ] } });
       });
 
       it('[4QMR] must convert to MongoDB including with "ALL"', async function () {
         const clean = await validateQuery({any: ['A', 'B'], all: ['E']});
-        const mongo = streamsQueryUtils.toMongoDBQuery(clean);  
+        const mongo = streamsQueryUtils.toMongoDBQuery(clean);
         assert.deepEqual(mongo, { streamIds: { '$in': [ 'A', 'B', 'C' ]}, '$and': [ { streamIds: { '$eq': 'E' } } ] });
       });
 
       it('[NG7F] must convert to MongoDB including expansion with "NOT"', async function () {
         const clean = await validateQuery({any: ['A', 'B'], not: ['E']});
         const mongo = streamsQueryUtils.toMongoDBQuery(clean);
-        assert.deepEqual(mongo, { 
-          streamIds: { '$in': [ 'A', 'B', 'C' ]}, 
+        assert.deepEqual(mongo, {
+          streamIds: { '$in': [ 'A', 'B', 'C' ]},
           '$and': [ { streamIds: { '$ne': 'E' } } ] });
       });
 
@@ -515,7 +515,7 @@ describe('events.get streams query', function () {
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ any: ['A'], not: ['D']}) });
-      
+
       assert.exists(res.body.events)
       const events = res.body.events;
       const expectedEvents = ['b', 'a', 'c'];

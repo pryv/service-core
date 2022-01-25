@@ -6,15 +6,15 @@
  */
 
 /**
- * @property {timestamp} UNKNOWN_DATE - Unkown creation / modification date
+ * @property {timestamp} UNKNOWN_DATE - Unknown creation / modification date
  * @property {string} BY_SYSTEM - When createdBy / modifiedBy value is SYSTEM
- * @property {string} BY_UNKOWN - When createdBy / modifiedBy value is UNKOWN
+ * @property {string} BY_UNKNOWN - When createdBy / modifiedBy value is UNKNOWN
  * @property {string} BY_EXTERNAL_PREFIX - When createdBy / modifiedBy value is an external Reference
  */
 const Constants = {
   UNKNOWN_DATE: 10000000.00000001,
   BY_SYSTEM: 'system',
-  BY_UNKOWN: 'unkown',
+  BY_UNKNOWN: 'unknown',
   BY_EXTERNAL_PREFIX: 'external-'
 };
 

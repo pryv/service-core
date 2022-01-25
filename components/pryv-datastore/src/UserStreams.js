@@ -17,11 +17,11 @@ const Constants = require('./Constants');
    * @see https://api.pryv.com/reference/#get-streams
    * @param {identifier} uid
    * @param {Object} params
-   * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by stores 
+   * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by stores
    * @param {identifier} [params.expandChildren] default false, if true also return childrens
    * @param {identifiers} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is true, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
-   * @param {timestamp} [params.includeDeletionsSince] 
+   * @param {timestamp} [params.includeDeletionsSince]
    * @returns {UserStream|null} - the stream or null if not found:
    */
   async get(uid: string, params): Promise<Array<Stream>> { throw new Error('Not Implemented'); }
@@ -71,14 +71,14 @@ const Constants = require('./Constants');
  * @private
  * recursively apply default streamId datastore namne and streams default value
  * @param {string} storeIdNameSpace - namespacing for streamIds
- * @param {Array<Streams>} streams 
+ * @param {Array<Streams>} streams
  */
 function _applyDefaults(streams: Array<Stream>, parentId: ?string): void {
   for (const stream: Stream of streams) {
     if (typeof stream.created === 'undefined') stream.created = Constants.UNKNOWN_DATE;
     if (typeof stream.modified === 'undefined') stream.modified = Constants.UNKNOWN_DATE;
-    if (typeof stream.createdBy === 'undefined') stream.createdBy = Constants.BY_UNKOWN;
-    if (typeof stream.modifiedBy === 'undefined') stream.modifiedBy = Constants.BY_UNKOWN;
+    if (typeof stream.createdBy === 'undefined') stream.createdBy = Constants.BY_UNKNOWN;
+    if (typeof stream.modifiedBy === 'undefined') stream.modifiedBy = Constants.BY_UNKNOWN;
     if (stream.children == null) stream.children = [];
     if (stream.children.length > 0) _applyDefaults(stream.children, stream.id);
     // force parentId
