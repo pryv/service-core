@@ -17,7 +17,7 @@ const _ = require('lodash');
 const middleware = require('middleware');
 const { setMethodId } = require('middleware');
 const hasFileUpload = require('../middleware/uploads').hasFileUpload;
-const attachmentsAccessMiddlewareFactory = require('../middleware/attachment_access');
+const attachmentsAccessMiddlewareFactory = require('../middleware/attachment-access');
 
 
 import type Application  from '../application';

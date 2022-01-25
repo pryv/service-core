@@ -151,7 +151,7 @@ class WebhooksService {
   }
 
   stopWebhook(username: string, webhookId: string): void {
-    const [usersWebhooks: Array<Webhook>, webhook: Webhook, idx: number ] = this.getWithParamsByStoreebhook(username, webhookId);
+    const [usersWebhooks: Array<Webhook>, webhook: Webhook, idx: number ] = this.getWebhook(username, webhookId);
     if (webhook == null || usersWebhooks == null || idx == null) {
         this.logger.warn(`Could not retrieve webhook ${webhookId} for ${username} to stop it.`);
       return;
@@ -162,7 +162,7 @@ class WebhooksService {
     this.logger.info(`Stopped webhook ${webhookId} for ${username}`);
   }
 
-  getWithParamsByStoreebhook(username: string, webhookId: string): [ ?Array<Webhook>, ?Webhook, ?number ] {
+  getWebhook(username: string, webhookId: string): [ ?Array<Webhook>, ?Webhook, ?number ] {
     const usersWebhooks: ?Array<Webhook> = this.webhooks.get(username);
 
     if (usersWebhooks == null) {

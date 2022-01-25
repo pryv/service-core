@@ -21,21 +21,17 @@ const Constants = require('./Constants');
  * - series
  */
 
-function toBeImplemented() {
-  throw new Error('Should be Implemented');
-}
-
 /**
  * @property {UserStreams} streams 
  * @property {UserEvents} events 
- * @property {timestamp} UNKOWN_DATE - Unkown creation / modification date
+ * @property {timestamp} UNKNOWN_DATE - Unkown creation / modification date
  * @property {string} BY_SYSTEM - When createdBy / modifiedBy value is SYSTEM
  * @property {string} BY_UNKOWN - When createdBy / modifiedBy value is UNKOWN
  * @property {string} BY_EXTERNAL_PREFIX - When createdBy / modifiedBy value is an external Reference
  */
 class DataStore { 
 
-  static UNKOWN_DATE: number = Constants.UNKOWN_DATE;
+  static UNKNOWN_DATE: number = Constants.UNKNOWN_DATE;
   static BY_SYSTEM: string = Constants.BY_SYSTEM;
   static BY_UNKOWN: string =  Constants.BY_UNKOWN;
   static BY_EXTERNAL_PREFIX: string = Constants.BY_EXTERNAL_PREFIX;
@@ -44,23 +40,21 @@ class DataStore {
 
   _id: string;
   _name: string;
-  _streams: UserStreams;
-  _events: UserEvents;
 
   set id(id: string): void { this._id = id; }
   set name(name: string): void { this._name = name; }
   get id(): string { return this._id; }
   get name(): string { return this._name; }
   
-  async init(config: {}): Promise<void> { toBeImplemented(); }
+  async init(config: {}): Promise<void> { throw new Error('Not Implemented'); }
 
   /** @returns  UserStreams */
-  get streams(): UserStreams { toBeImplemented(); } 
+  get streams(): UserStreams { throw new Error('Not Implemented'); } 
   /** @returns  UserEvents */
-  get events(): UserEvents { toBeImplemented(); } 
+  get events(): UserEvents { throw new Error('Not Implemented'); } 
 
   // -- will be overriden by the system to throw appropriate error
-  static throwUnkownRessource(resourceType, id, innerError) { // APIError.UnknownResource 
+  static throwUnkownRessource(resourceType, ressourceId, innerError) { // APIError.UnknownResource 
     console.error('unkownRessource', resourceType, id, innerError);
     throw(new Error('unkownRessource ' + resourceType + ' id: '+  id));
   } 
@@ -77,13 +71,9 @@ class DataStore {
    * @param {identifier} streamId - the streamId to expand (should be returned in Array list)
    * @returns {Streams<Array>|string|null> returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
    */
-  //async expandStreamForStreamQuery(streamId) { toBeImplemented(); }
-
-  // ----------- Store Settings ------ //
-
+  //async expandStreamForStreamQuery(streamId) { throw new Error('Not Implemented'); }
 
 }
-
 
 module.exports = DataStore;
 

@@ -7,7 +7,7 @@
 
 
 const Constants = {
-  UNKOWN_DATE: 10000000.00000001,
+  UNKNOWN_DATE: 10000000.00000001,
   BY_SYSTEM: 'system',
   BY_UNKOWN:'unkown',
   BY_EXTERNAL_PREFIX:'external-',

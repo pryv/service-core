@@ -249,12 +249,12 @@ describe("[FG5R] Events of system streams", () => {
           const defaultEvent = await findDefaultCoreEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash'));
           res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
         });
-        it('[Y2OA] should return 404', () => {
-          assert.equal(res.status, 404);
+        it('[Y2OA] should return 403', () => {
+          assert.equal(res.status, 403);
         });
   
         it('[DHZE] should return the right error message', () => {
-          assert.equal(res.body.error.id, ErrorIds.UnknownResource);
+          assert.equal(res.body.error.id, ErrorIds.Forbidden);
         });
       });
     });
