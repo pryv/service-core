@@ -396,7 +396,14 @@ module.exports = async function (api)
         } 
       }];
 
-      await platform.updateUser(context.user.username, operations, 
+      const operations2 = [{ 
+          action: 'update', 
+          key: streamIdWithoutPrefix,
+          value: context.newEvent.content,
+          isUnique: editableAccountStreamsMap[context.accountStreamId].isUnique,
+        }];
+
+      await platform.updateUser(context.user.username, operations2, 
         context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
         context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
         isCreation);
@@ -1097,9 +1104,16 @@ module.exports = async function (api)
           value: content,
           isUnique: true
         }
+      }];
+
+      const operations2 = [{ 
+        action: 'delete',
+        key: streamIdWithoutPrefix,
+        value: content,
+        isUnique: true
       }]
 
-      await platform.updateUser(username, operations);
+      await platform.updateUser(username, operations2);
 
       if (! config.get('dnsLess:isActive')) {
   

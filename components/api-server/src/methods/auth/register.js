@@ -93,9 +93,10 @@ module.exports = async function (api) {
   async function checkUniqueField(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     // the check for the required field is done by the schema
+    $$('context:', Object.keys(context));
     const field = Object.keys(params)[0];
     try {
-      await usersRepository.checkDuplicates({ [field]: params[field]}, context.user.username);
+      await usersRepository.checkDuplicates({ [field]: params[field]}, context.username);
     } catch (error) {
       return next(error);
     }

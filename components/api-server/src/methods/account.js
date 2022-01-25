@@ -236,7 +236,18 @@ module.exports = async function (api) {
           }
         })
       }
-      await platform.updateUser(context.user.username, operations, true, false);
+      const operations2: Array<{}> = [];
+      for (const [key, value] of Object.entries(params.update)) {
+        operations2.push({
+            action: 'update',
+            key,
+            value,
+            isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
+          }
+        );
+      }
+
+      await platform.updateUser(context.user.username, operations2, true, false);
 
       // no need to update service register if it is single node setup
       if (isDnsLess) {

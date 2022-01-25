@@ -83,23 +83,27 @@ class Platform {
     $$('******', {username, operations, isActive, isCreation});
     // otherwise deletion
     for (const op of operations) {
-      if (op.update) {
-        const update = op.update;
-        if (update.isUnique) {
-          const existingValue = await this.getUserUniqueField(update.key, update.value);
-          if (existingValue !== null && existingValue !== username) {
-            throw(errors.itemAlreadyExists('user', {[update.key]: update.value}));
+      switch (op.action) {
+        case 'update':
+          if (op.isUnique) {
+            const existingValue = await this.getUserUniqueField(op.key, op.value);
+            if (existingValue !== null && existingValue !== username) {
+              throw(errors.itemAlreadyExists('user', {[op.key]: op.value}));
+            }
+            await this.setUserUniqueField(username, op.key, op.value);
+          } else { // is Indexed
+            await this.setUserIndexedField(username, op.key, op.value);
           }
-          await this.setUserUniqueField(username, update.key, update.value);
-        } else { // is Indexed
-          await this.setUserIndexedField(username, update.key, update.value);
-        }
-      }
-      if (op.delete) { 
-        if (op.delete.isUnique) {
+        break;
 
-        }
-      }
+      case 'delete':  
+        $$('Not implemented yet');
+        throw new Error('Not implemented');
+        break;
+
+      default:
+        throw new Error('Unknown action');
+        break;
     }
   }
 }

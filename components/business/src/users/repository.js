@@ -182,7 +182,7 @@ class UsersRepository {
   async setUniqueFields(user: User): Array<string> {
 
     const operations = this.uniqueFields.map(key => { 
-      return {update: {key: key, value: user[key], isUnique: true}};
+      return {action: 'update', key: key, value: user[key], isUnique: true};
     }); 
 
     await this.platform.updateUser(user.username, operations, true, true);
@@ -195,7 +195,7 @@ class UsersRepository {
       cb => this.eventsStorage.database.getCollection(this.collectionInfo, cb),
     );
     $$(`Creating user ${user.username} ${user.email} `);
-    await this.checkDuplicates(user);
+    await this.checkDuplicates(user, user.username);
 
     const transactionSession = await this.eventsStorage.database.startSession();
     await transactionSession.withTransaction(
@@ -330,19 +330,18 @@ class UsersRepository {
    * Checks for duplicates for unique fields. Throws item already exists error if any.
    * 
    * @param {any} fields - user fields to check for duplicates
+   * @param {string} ignoreValue - ignore matching duplicates with this value
    */
-  async checkDuplicates(fields: any, ignoreValue): Promise<void> {
+  async checkDuplicates(fields: any, ignoreValue: string): Promise<void> {
     const that = this;
-    const uniquenessErrors2 = await getUniquessErrorFieldsOld(fields);
     const uniquenessErrors = await getUniquessErrorFields(fields, ignoreValue);
-    //if (Object.keys(uniquenessErrors2).length > 0) {
-      $$({uniquenessErrors, uniquenessErrors2});
-    //}
-
-    // check locally for username (To be check if neccesssary after full platform-db implementation)
+    $$('1', uniquenessErrors);
+    // check locally for username (Maybe moved to platfom after full platform-db implementation)
     if (fields.username && await userIndex.existsUsername(fields.username)) {
       uniquenessErrors.username = fields.username;
     }
+
+    $$('2', uniquenessErrors);
 
     if (Object.keys(uniquenessErrors).length > 0) {
       throw (
@@ -367,54 +366,6 @@ class UsersRepository {
       return uniquenessErrors;
     }
 
-    async function getUniquessErrorFieldsOld(user: User): Array<string> {
-      const orClause: Array<{}> = [];
-      that.uniqueFields.forEach(field => {
-        if (user[field] != null) {
-          orClause.push({
-            content: { $eq: user[field] },
-            streamIds: SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(field),
-            deleted: null,
-            headId: null,
-          });
-        }
-      });
-
-      if (orClause.length === 0) return {};
-
-      const query: {} = { $or: orClause };
-      
-      const duplicateEvents: ?Array<Object> = await bluebird.fromCallback(
-        cb => that.eventsStorage.find(
-          that.collectionInfo,
-          that.eventsStorage.applyQueryToDB(query),
-          that.eventsStorage.applyOptionsToDB(null),
-          cb,
-        ),
-      );
-      if (duplicateEvents != null && duplicateEvents.length > 0) {
-        const uniquenessErrors = {};
-        duplicateEvents.forEach(
-          duplicate => {
-            const key = extractDuplicateField(
-              that.uniqueFields,
-              duplicate.streamIds,
-            );
-            uniquenessErrors[key] = user[key];
-          },
-        );
-        return uniquenessErrors;
-      }
-      return {};
-    
-
-      function extractDuplicateField(streamIdsWithoutPrefix, streamIdsWithPrefix): string {
-        const intersection: Array<string> = streamIdsWithoutPrefix.filter(streamIdWithoutPrefix => 
-          streamIdsWithPrefix.includes(SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix))
-        )
-        return intersection[0];
-      }
-    }
   }
 }
 
