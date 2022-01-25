@@ -9,7 +9,7 @@
   "main": "src/index.js",
   "scripts": {
     "cover": "nyc --reporter=lcov --reporter=text-summary npm run test",
-    "test": "NODE_ENV=test mocha --reporter=dot test/**/*.test.js --exit"
+    "test": "NODE_ENV=test ../../node_modules/.bin/mocha  --reporter=dot test/**/*.test.js --exit"
   },
   "dependencies": {
   },

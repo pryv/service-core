@@ -27,8 +27,8 @@ describe('XXXSystemStreams config', () => {
     [systemStreamsConfig.features.IS_SHOWN]: true, // if true, will be returned in events.get
     [systemStreamsConfig.features.IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
     [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: false, // if true, the field will be required in the validation
-    created: DataStore.UNKOWN_DATE,
-    modified: DataStore.UNKOWN_DATE,
+    created: DataStore.UNKNOWN_DATE,
+    modified: DataStore.UNKNOWN_DATE,
     createdBy: DataStore.BY_SYSTEM,
     modifiedBy: DataStore.BY_SYSTEM,
   };

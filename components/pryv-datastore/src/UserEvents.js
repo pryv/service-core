@@ -85,8 +85,8 @@ function toBeImplemented() {
    */
   static applyDefaults(events: Array<Event>) {
     for (const event: Event of events) {
-      if (typeof event.created === 'undefined') event.created = Constants.UNKOWN_DATE;
-      if (typeof event.modified === 'undefined') event.modified = Constants.UNKOWN_DATE;
+      if (typeof event.created === 'undefined') event.created = Constants.UNKNOWN_DATE;
+      if (typeof event.modified === 'undefined') event.modified = Constants.UNKNOWN_DATE;
       if (typeof event.createdBy === 'undefined') event.createdBy = Constants.BY_UNKOWN;
       if (typeof event.modifiedBy === 'undefined') event.modifiedBy = Constants.BY_UNKOWN;
     }

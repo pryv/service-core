@@ -21,8 +21,8 @@ function storeToStream(store: DataStore, extraProperties: mixed): Stream {
     id: ':' + store.id + ':',
     name: store.name,
     parentId: null,  
-    created: DataStore.UNKOWN_DATE,
-    modified: DataStore.UNKOWN_DATE,
+    created: DataStore.UNKNOWN_DATE,
+    modified: DataStore.UNKNOWN_DATE,
     createdBy: DataStore.BY_SYSTEM,
     modifiedBy: DataStore.BY_SYSTEM,
   }, extraProperties);

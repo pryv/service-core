@@ -348,7 +348,7 @@ describe('permissions create-only level', () => {
           .request()
           .get(reqPath(createOnlyEventId))
           .set('Authorization', createOnlyToken);
-        assert.equal(res.status, 404); // recieve unexistant to avoid discovery
+        assert.equal(res.status, 403); // recieve unexistant to avoid discovery
       });
     });
 

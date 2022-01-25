@@ -79,8 +79,8 @@ function toBeImplemented() {
  */
 function _applyDefaults(streams: Array<Stream>, parentId: ?string): void {
   for (const stream: Stream of streams) {
-    if (typeof stream.created === 'undefined') stream.created = Constants.UNKOWN_DATE;
-    if (typeof stream.modified === 'undefined') stream.modified = Constants.UNKOWN_DATE;
+    if (typeof stream.created === 'undefined') stream.created = Constants.UNKNOWN_DATE;
+    if (typeof stream.modified === 'undefined') stream.modified = Constants.UNKNOWN_DATE;
     if (typeof stream.createdBy === 'undefined') stream.createdBy = Constants.BY_UNKOWN;
     if (typeof stream.modifiedBy === 'undefined') stream.modifiedBy = Constants.BY_UNKOWN;
     if (stream.children == null) stream.children = [];

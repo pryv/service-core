@@ -76,11 +76,11 @@ stores:
   loadExternal:
     - id: dummy
       name: Dummy Store
-      path: ../../pryv-datastore/examples/dummy # should be fully qualified path for external store
+      path: ../../mall/test-helpers/dummy # should be fully qualified path for external store
       config: null
     - id: faulty
       name: Faulty Store
-      path: ../../pryv-datastore/examples/faulty # should be fully qualified path
+      path: ../../mall/test-helpers/faulty # should be fully qualified path
       config: null
 trace:
   enable: true

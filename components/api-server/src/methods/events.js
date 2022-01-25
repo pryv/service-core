@@ -196,8 +196,8 @@ module.exports = async function (api)
         canReadEvent = true;
       }
     }
-    // return 404 to avoid discovery of existing forbidden events 
-    if (! canReadEvent) return next(errors.unknownResource('event', params.id));
+    // might return 404 to avoid discovery of existing forbidden events 
+    if (! canReadEvent) return next(errors.forbidden());
 
     event.attachments = setFileReadToken(context.access, event.attachments);
 

@@ -46,8 +46,8 @@ const DEFAULT_VALUES_FOR_FIELDS: {} = {
   [IS_SHOWN]: true, // if true, will be returned in events.get
   [IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
   [IS_REQUIRED_IN_VALIDATION]: false, // if true, the field will be required in the validation
-  created: DataStore.UNKOWN_DATE,
-  modified: DataStore.UNKOWN_DATE,
+  created: DataStore.UNKNOWN_DATE,
+  modified: DataStore.UNKNOWN_DATE,
   createdBy: DataStore.BY_SYSTEM,
   modifiedBy: DataStore.BY_SYSTEM,
 };

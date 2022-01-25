@@ -28,14 +28,14 @@ function toBeImplemented() {
 /**
  * @property {UserStreams} streams 
  * @property {UserEvents} events 
- * @property {timestamp} UNKOWN_DATE - Unkown creation / modification date
+ * @property {timestamp} UNKNOWN_DATE - Unkown creation / modification date
  * @property {string} BY_SYSTEM - When createdBy / modifiedBy value is SYSTEM
  * @property {string} BY_UNKOWN - When createdBy / modifiedBy value is UNKOWN
  * @property {string} BY_EXTERNAL_PREFIX - When createdBy / modifiedBy value is an external Reference
  */
 class DataStore { 
 
-  static UNKOWN_DATE: number = Constants.UNKOWN_DATE;
+  static UNKNOWN_DATE: number = Constants.UNKNOWN_DATE;
   static BY_SYSTEM: string = Constants.BY_SYSTEM;
   static BY_UNKOWN: string =  Constants.BY_UNKOWN;
   static BY_EXTERNAL_PREFIX: string = Constants.BY_EXTERNAL_PREFIX;

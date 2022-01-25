@@ -11,7 +11,7 @@
  */
 
 
-const {DataStore}  = require('../../src/');
+const {DataStore}  = require('pryv-datastore');
 
 class Faulty extends DataStore {
 
