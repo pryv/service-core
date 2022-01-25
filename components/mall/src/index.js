@@ -49,7 +49,7 @@ async function getMall(): Promise<Mall> {
   mall.addStore(new LocalStore());
 
   if ( (! config.get('openSource:isActive')) && config.get('audit:active')) {
-    const AuditDataStore = require('audit/src/AuditDataStore');
+    const AuditDataStore = require('audit/src/datastore/AuditDataStore');
     mall.addStore(new AuditDataStore());
   }
   await mall.init()
