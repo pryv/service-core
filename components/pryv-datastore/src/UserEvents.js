@@ -39,7 +39,7 @@ const Constants = require('./Constants');
    * @param {identifier} uid
    * @throws item-already-exists
    * @throws invalid-item-id
-   * @throws ressource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
+   * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
   async create(uid: string, params): Promise<void>  { throw new Error('Not Implemented'); }
@@ -48,7 +48,7 @@ const Constants = require('./Constants');
    * @see https://api.pryv.com/reference/#update-event
    * @param {identifier} uid
    * @throws item-already-exists
-   * @throws ressource-is-readonly <=== Thrown because item cannot be updated
+   * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Event
    */
   async update(uid: string, eventId: string, params): Promise<void> { throw new Error('Not Implemented'); }
@@ -57,7 +57,7 @@ const Constants = require('./Constants');
    * @see https://api.pryv.com/reference/#delete-event
    * @param {identifier} uid
    * @throws item-already-exists
-   * @throws ressource-is-readonly <=== Thrown because item cannot be updated
+   * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Event|EventDeletionItem} - The trashed Event
    */
   async delete(uid: string, eventId: string, params): Promise<void> { throw new Error('Not Implemented'); }

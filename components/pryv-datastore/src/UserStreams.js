@@ -32,7 +32,7 @@ const Constants = require('./Constants');
    * @param {identifier} uid
    * @throws item-already-exists
    * @throws invalid-item-id
-   * @throws ressource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
+   * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Stream} - The created Stream
    */
   async create(uid: string, params): Promise<void> { throw new Error('Not Implemented'); }
@@ -41,7 +41,7 @@ const Constants = require('./Constants');
    * @see https://api.pryv.com/reference/#update-stream
    * @param {identifier} uid
    * @throws item-already-exists
-   * @throws ressource-is-readonly <=== Thrown because item cannot be updated
+   * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Stream
    */
   async update(uid: string, streamId: string, params): Promise<void> { throw new Error('Not Implemented'); }
@@ -50,7 +50,7 @@ const Constants = require('./Constants');
    * @see https://api.pryv.com/reference/#delete-stream
    * @param {identifier} uid
    * @throws item-already-exists
-   * @throws ressource-is-readonly <=== Thrown because item cannot be updated
+   * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream|StreamDeletionItem} - The trashed Stream
    */
   async delete(uid: string, streamId: string, params): Promise<void> { throw new Error('Not Implemented'); }
