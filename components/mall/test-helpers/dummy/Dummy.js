@@ -12,6 +12,8 @@
 const { DataStore } = require('pryv-datastore');
 
 class Dummy extends DataStore {
+  _streams;
+  _events;
 
   constructor() {  super(); }
 

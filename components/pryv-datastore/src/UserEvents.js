@@ -7,10 +7,6 @@
 
 const Constants = require('./Constants');
 
-function toBeImplemented() {
-  throw new Error('Should be Implemented');
-}
-
 /**
  * Holder for per-user Stream tree structure under this user
  */
@@ -26,7 +22,7 @@ function toBeImplemented() {
    * @returns {Array<Event>}
    * @see https://api.pryv.com/reference/#get-events
    */
-  async get(uid: string, params): Promise<Array<Event>> { toBeImplemented(); }
+  async get(uid: string, params): Promise<Array<Event>> { throw new Error('Not Implemented'); }
 
 
   /**
@@ -36,7 +32,7 @@ function toBeImplemented() {
    * @returns {ReadableStream}
    * @see https://api.pryv.com/reference/#get-events
    */
-  async getStreamed(uid: string, params): Promise<ReadableStream> { toBeImplemented(); }
+  async getStreamed(uid: string, params): Promise<ReadableStream> { throw new Error('Not Implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#create-event
@@ -46,7 +42,7 @@ function toBeImplemented() {
    * @throws ressource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-  async create(uid: string, params): Promise<void>  { toBeImplemented(); }
+  async create(uid: string, params): Promise<void>  { throw new Error('Not Implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#update-event
@@ -55,7 +51,7 @@ function toBeImplemented() {
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Event
    */
-  async update(uid: string, eventId: string, params): Promise<void> { toBeImplemented(); }
+  async update(uid: string, eventId: string, params): Promise<void> { throw new Error('Not Implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#delete-event
@@ -64,7 +60,7 @@ function toBeImplemented() {
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Event|EventDeletionItem} - The trashed Event
    */
-  async delete(uid: string, eventId: string, params): Promise<void> { toBeImplemented(); }
+  async delete(uid: string, eventId: string, params): Promise<void> { throw new Error('Not Implemented'); }
 
 
   /**

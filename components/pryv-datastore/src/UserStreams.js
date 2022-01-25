@@ -7,10 +7,6 @@
 
 const Constants = require('./Constants');
 
-function toBeImplemented() {
-  throw new Error('Should be Implemented');
-}
-
 /**
  * Holder for per-user Stream tree structure under this user
  */
@@ -28,7 +24,7 @@ function toBeImplemented() {
    * @param {timestamp} [params.includeDeletionsSince] 
    * @returns {UserStream|null} - the stream or null if not found:
    */
-  async get(uid: string, params): Promise<Array<Stream>> { toBeImplemented(); }
+  async get(uid: string, params): Promise<Array<Stream>> { throw new Error('Not Implemented'); }
 
 
   /**
@@ -39,7 +35,7 @@ function toBeImplemented() {
    * @throws ressource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Stream} - The created Stream
    */
-  async create(uid: string, params): Promise<void> { toBeImplemented(); }
+  async create(uid: string, params): Promise<void> { throw new Error('Not Implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#update-stream
@@ -48,7 +44,7 @@ function toBeImplemented() {
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Stream
    */
-  async update(uid: string, streamId: string, params): Promise<void> { toBeImplemented(); }
+  async update(uid: string, streamId: string, params): Promise<void> { throw new Error('Not Implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#delete-stream
@@ -57,7 +53,7 @@ function toBeImplemented() {
    * @throws ressource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream|StreamDeletionItem} - The trashed Stream
    */
-  async delete(uid: string, streamId: string, params): Promise<void> { toBeImplemented(); }
+  async delete(uid: string, streamId: string, params): Promise<void> { throw new Error('Not Implemented'); }
 
   /**
    * Utility to complete a stream structure with missing properties and streamIds.

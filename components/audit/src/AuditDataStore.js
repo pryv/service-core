@@ -18,7 +18,9 @@ const STORE_ID = '_audit';
 const STORE_NAME = 'Audit Store';
 
 class AuditDataStore extends DataStore {
-  
+  _streams;
+  _events;
+
   get id() { return STORE_ID; }
   get name() { return STORE_NAME; }
 
