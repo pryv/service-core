@@ -54,7 +54,7 @@ class DataStore {
   get events(): UserEvents { throw new Error('Not Implemented'); } 
 
   // -- will be overriden by the system to throw appropriate error
-  static throwUnkownRessource(resourceType, id, innerError) { // APIError.UnknownResource 
+  static throwUnkownRessource(resourceType, ressourceId, innerError) { // APIError.UnknownResource 
     console.error('unkownRessource', resourceType, id, innerError);
     throw(new Error('unkownRessource ' + resourceType + ' id: '+  id));
   } 
