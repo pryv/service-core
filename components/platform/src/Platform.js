@@ -10,9 +10,11 @@ const mkdirp = require('mkdirp');
 const sqlite3 = require('better-sqlite3');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
+const logger = getLogger('platform');
+
 const errors = require('errors').factory;
 
-const logger = getLogger('platform');
+const { getServiceRegisterConn } = require('business/src/auth/service_register');
 
 /**
  * @class Platform
@@ -21,6 +23,7 @@ const logger = getLogger('platform');
 class Platform {
   initialized = false;
   db;
+  serviceRegisterConn;
 
   constructor() {
     this.db = new PlatformWideDB();
@@ -32,7 +35,13 @@ class Platform {
       return this;
     }
     this.initialized = true;
+    const config = await getConfig();
+    const isDnsLess = config.get('dnsLess:isActive');
     await this.db.init();
+    if (! isDnsLess) {
+      this.serviceRegisterConn = await getServiceRegisterConn();
+    }
+
     return this;
   }
 
@@ -73,6 +82,15 @@ class Platform {
   async setUserIndexedField(username, field, value) {
     const key = 'user-indexed/' + field + '/' + username;
     this.db.set(key, username);
+  }
+
+  async updateUserAndForward(username, operations, isActive, isCreation) {
+    await this.updateUser(username, operations, isActive, isCreation);
+    if (this.serviceRegisterConn != null) {
+      const ops2 = operations.map(op => ({[op.action]: {key: op.key, value: op.value, isUnique: op.isUnique}}));
+      $$({username, ops2});
+      await this.serviceRegisterConn.updateUserInServiceRegister(username, ops2, isActive, isCreation);
+    }
   }
 
   /**

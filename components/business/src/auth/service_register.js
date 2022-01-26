@@ -12,8 +12,6 @@ const ErrorIds = require('errors').ErrorIds;
 const errors = require('errors').factory;
 const ErrorMessages = require('errors/src/ErrorMessages');
 
-const { getPlatform } = require('platform');
-
 type OperationType = 'update' | 'delete';
 type AccountProperty = string;
 type Value = string;
@@ -27,18 +25,17 @@ type Operation = {
 
 const { getLogger, getConfig, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
-  settings: {}; 
+  settings: null; 
   logger: {};
-  platform;
 
   constructor() {
     this.logger = getLogger('service-register');
+    this.settings = null;
   }
 
   async init() {
-    if (this.platform == null) {
+    if (this.settings == null) {
       this.settings = (await getConfig()).get('services:register')
-      this.platform = await getPlatform();
       this.logger.debug('created with setttings:', this.settings);
     }
     return this;

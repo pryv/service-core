@@ -22,7 +22,6 @@ const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUti
 const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),
   ErrorIds = require('errors').ErrorIds,
-  { getServiceRegisterConn } = require('business/src/auth/service_register'),
   { getUsersRepository, UserRepositoryOptions} = require('business/src/users');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
   /**
@@ -40,10 +39,7 @@ module.exports = async function (api) {
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // initialize service-register connection
-  const serviceRegisterConn = await getServiceRegisterConn();
   const usersRepository = await getUsersRepository(); 
-
-  const isDnsLess = config.get('dnsLess:isActive');
 
   // RETRIEVAL
 
@@ -247,19 +243,8 @@ module.exports = async function (api) {
         );
       }
 
-      await platform.updateUser(context.user.username, operations2, true, false);
+      await platform.updateUserAndForward(context.user.username, operations2, true, false);
 
-      // no need to update service register if it is single node setup
-      if (isDnsLess) {
-        return next();
-      }
-
-      await serviceRegisterConn.updateUserInServiceRegister(
-        context.user.username,
-        operations,
-        true,
-        false,
-      );
     } catch (err) {
       return next(err);
     }
