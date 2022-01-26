@@ -215,7 +215,7 @@ class UsersRepository {
 
         // update unique fields on the platform
         const operations = this.uniqueFields.map(key => { 
-          return {action: 'update', key: key, value: user[key], isUnique: true};
+          return {action: 'create', key: key, value: user[key], isUnique: true};
         }); 
         await this.platform.updateUser(user.username, operations, true, true);
 

@@ -63,7 +63,7 @@ module.exports = async function (api) {
     commonFns.basicAccessAuthorizationCheck,  
     commonFns.getParamsValidation(methodsSchema.update.params),
     validateThatAllFieldsAreEditable,
-    notifyServiceRegister,
+    updateDataOnPlatform,
     updateAccount,
     addUserBusinessToContext,
     buildResultData,
@@ -217,17 +217,21 @@ module.exports = async function (api) {
     next();
   }
 
-  async function notifyServiceRegister (context, params, result, next) {
+  async function updateDataOnPlatform (context, params, result, next) {
     
     try {
       const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
       
       const operations: Array<{}> = [];
       for (const [key, value] of Object.entries(params.update)) {
+        // get previous value of the field;
+        const previousValue = await usersRepository.getOnePropertyValue(context.user.id, key);
+
         operations.push({
             action: 'update',
             key,
             value,
+            previousValue,
             isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
           }
         );

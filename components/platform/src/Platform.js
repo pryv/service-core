@@ -103,7 +103,10 @@ class Platform {
   async updateUserAndForward(username, operations, isActive, isCreation) {
     await this.updateUser(username, operations, isActive, isCreation);
     if (this.serviceRegisterConn != null) {
-      const ops2 = operations.map(op => ({[op.action]: {key: op.key, value: op.value, isUnique: op.isUnique}}));
+      const ops2 = operations.map(op => {
+        const action = op.action == 'delete' ? 'delete' : 'update';
+        return {[action]: {key: op.key, value: op.value, isUnique: op.isUnique}};
+      });
       await this.serviceRegisterConn.updateUserInServiceRegister(username, ops2, isActive, isCreation);
     }
   }
@@ -116,14 +119,33 @@ class Platform {
     // otherwise deletion
     for (const op of operations) {
       switch (op.action) {
-        case 'update':
+        case 'create':
           if (op.isUnique) {
-            const existingValue = await this.getUserUniqueField(op.key, op.value);
-            if (existingValue !== null && existingValue !== username) {
+            const potentialCollisionUsername = await this.getUserUniqueField(op.key, op.value);
+            if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
             }
             await this.setUserUniqueField(username, op.key, op.value);
           } else { // is Indexed
+            await this.setUserIndexedField(username, op.key, op.value);
+          }
+          break;
+
+        case 'update':
+          if (op.isUnique) {
+            const existingUsernameValue = await this.getUserUniqueField(op.key, op.previousValue);
+            if (existingUsernameValue !== null && existingUsernameValue === username) {
+              // only delete eventual existing value if it is the same user
+              await this.deleteUserUniqueField(op.key, op.previousValue);
+            }
+          
+            const potentialCollisionUsername = await this.getUserUniqueField(op.key, op.value);
+            if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
+              throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
+            }
+            await this.setUserUniqueField(username, op.key, op.value);
+          } else { // is Indexed
+            await this.deleteUserUniqueField(op.key, op.previousValue);
             await this.setUserIndexedField(username, op.key, op.value);
           }
           break;

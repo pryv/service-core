@@ -244,7 +244,7 @@ module.exports = async function (api)
     validateSystemStreamsContent,
     validateAccountStreamsForCreation,
     appendAccountStreamsDataForCreation,
-    verifyUnicity,
+    createOnPlatform,
     handleSeries,
     createEvent,
     removeActiveFromSibling,
@@ -345,56 +345,71 @@ module.exports = async function (api)
   }
 
   /**
-   * Update data on register and verify unicity on register and core
+   * register this new information on the platform
    */
-  async function verifyUnicity(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function createOnPlatform(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if(! context.doesEventBelongToAccountStream) {
       return next();
     }
 
-    const isCreation: boolean = context.oldEvent == null;
-
-    const systemStream: SystemStream = context.systemStream;
-    const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
-
     try{
-      if (systemStream.isUnique) {
-        await usersRepository.checkDuplicates({[streamIdWithoutPrefix]: context.newEvent.content});
+      if (context.systemStream.isUnique) {
+        await usersRepository.checkDuplicates({[context.accountStreamIdWithoutPrefix]: context.newEvent.content});
       }
-      if (systemStream.isIndexed) { // assume can be unique as per test #42A1
-        await updateDataOnPlatform(context, isCreation);
+      if (context.systemStream.isIndexed) { // assume can be unique as per test #42A1
+        const operations = [{ 
+          action: 'create', 
+          key: context.accountStreamIdWithoutPrefix,
+          value: context.newEvent.content,
+          isUnique: context.systemStream.isUnique,
+        }];
+
+        await platform.updateUserAndForward(context.user.username, operations, 
+          context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
+          context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
+          true);
       }
       
     } catch (err) {
       return next(err);
     }
     next();
+  }
 
-    /**
-     * Build request and send data to service-register about unique or indexed fields update
-     * @param {MethodContext} context 
-     * @param {boolean} isCreation
-     */
-    async function updateDataOnPlatform(context: MethodContext, isCreation: boolean): void {
-     
+  /**
+   * register this new information on the platform
+   */
+   async function updateOnPlatform(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if(! context.doesEventBelongToAccountStream) {
+      return next();
+    }
 
-      const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
-      const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
-
-      const operations = [{ 
+    try{
+      if (context.systemStream.isUnique) {
+        await usersRepository.checkDuplicates({[context.accountStreamIdWithoutPrefix]: context.newEvent.content});
+      }
+      if (context.systemStream.isIndexed) { // assume can be unique as per test #42A1
+        const operations = [{ 
           action: 'update', 
-          key: streamIdWithoutPrefix,
+          key: context.accountStreamIdWithoutPrefix,
           value: context.newEvent.content,
-          isUnique: editableAccountStreamsMap[context.accountStreamId].isUnique,
+          previousValue: context.oldEvent.content,
+          isUnique: context.systemStream.isUnique,
         }];
 
-      await platform.updateUserAndForward(context.user.username, operations, 
-        context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
-        context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
-        isCreation);
-
+        await platform.updateUserAndForward(context.user.username, operations, 
+          context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
+          context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
+          false);
+      }
+      
+    } catch (err) {
+      return next(err);
     }
+    next();
   }
+
+ 
 
   function handleSeries(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (isSeriesType(context.newEvent.type)) {
@@ -527,7 +542,7 @@ module.exports = async function (api)
     generateVersionIfNeeded,
     updateAttachments,
     appendAccountStreamsDataForUpdate,
-    verifyUnicity,
+    updateOnPlatform,
     updateEvent,
     backwardCompatibilityOnResult,
     removeActiveFromSibling,
@@ -546,7 +561,6 @@ module.exports = async function (api)
 
     context.updateTrackingProperties(eventUpdate);
 
-    let event;
     try {
       event = await bluebird.fromCallback(cb => userEventsStorage.findOne(context.user, {id: params.id}, null, cb));
     } catch (err) {
@@ -602,6 +616,7 @@ module.exports = async function (api)
       }
     }
 
+    context.originalEvent = _.cloneDeep(event);
     context.oldEvent = _.cloneDeep(event);
     context.newEvent = _.extend(event, eventUpdate);
     next();
