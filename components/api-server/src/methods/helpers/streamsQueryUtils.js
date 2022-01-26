@@ -7,8 +7,8 @@
 
 /**
  * Utilities for events.get stream queries.
- * 
- * Documentation and specifications can be found on 
+ *
+ * Documentation and specifications can be found on
  * https://github.com/pryv/docs-pryv/blob/master/pryv.io/events.get-filtering/README.md
  */
 const util = require('util');
@@ -20,8 +20,8 @@ import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
 
 /**
  * @typedef {Object} StreamQueryScoped
- * @property {Array.<StreamQuery>} streamQuery - An array of streamQueries 
- * @property {Array} nonAuthorizedStreams - The list of stream that have been unAuthorized 
+ * @property {Array.<StreamQuery>} streamQuery - An array of streamQueries
+ * @property {Array} nonAuthorizedStreams - The list of stream that have been unAuthorized
  */
 
 /**
@@ -39,7 +39,7 @@ import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
 /**
  * For backwardCompatibility with older streams parameter ['A', 'B'] transform it to streams query [{any: ['A', 'B']}]
  * Takes care of grouping by store. ['A', 'B', ':_audit:xx'] => [{any: ['A', 'B']}, {any: ':audit:xx'}]
- * @param {Array.<StreamQuery>} arrayOfQueries 
+ * @param {Array.<StreamQuery>} arrayOfQueries
  * @throws - Error if mixed strings and other are found in array
  */
 function transformArrayOfStringsToStreamsQuery(arrayOfQueries: Array<any>): Array<StreamQueryWithStoreId> {
@@ -76,7 +76,7 @@ function transformArrayOfStringsToStreamsQuery(arrayOfQueries: Array<any>): Arra
 exports.transformArrayOfStringsToStreamsQuery = transformArrayOfStringsToStreamsQuery;
 
 /**
- * @param {Array.<StreamQuery>} arrayOfQueries 
+ * @param {Array.<StreamQuery>} arrayOfQueries
  * @throws - Error if query does not respect the schema
  */
 function validateStreamsQueriesAndSetStore(arrayOfQueries: Array<StreamQuery>) {
@@ -88,10 +88,10 @@ function validateStreamsQueriesAndSetStore(arrayOfQueries: Array<StreamQuery>) {
 exports.validateStreamsQueriesAndSetStore = validateStreamsQueriesAndSetStore;
 
 /**
- * throw an error if streamQuery is not of the form {any: all: not: } with at least one of any or all 
+ * throw an error if streamQuery is not of the form {any: all: not: } with at least one of any or all
  * [{any: ['A', 'B', '.email']}, {any: ':_audit:xx'}] => [{any: ['A', 'B', '.email'], storeId: 'local'}, {any: 'xx', storeId: 'audit'}]
  * @param {Array.<StreamQuery>} arrayOfQueries - the full request for error message
- * @param {StreamQuery} streamQuery 
+ * @param {StreamQuery} streamQuery
  */
 function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery>, streamQuery: StreamQuery): void {
 
@@ -101,7 +101,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
    * @returns {string} streamId without its prefix
    */
   function validateAndAttachStore(streamIdWithPrefix: string): string {
-    // queries must be grouped by store 
+    // queries must be grouped by store
     const [thisStore: string, streamId: string] = StreamsUtils.storeIdAndStreamIdForStreamId(streamIdWithPrefix);
     if (streamQuery.storeId == null) streamQuery.storeId = thisStore;
     if (streamQuery.storeId !== thisStore) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' queries must me grouped by store.');
@@ -115,18 +115,18 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
   let hasAnyStar: boolean = false;
   for (const [property: string, arrayOfStreamIds: Array<string>] of Object.entries(streamQuery)) {
     if (!['all', 'any', 'not'].includes(property))
-      throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' unkown property: \'' + property + '\' in streams query \'' + objectToString(streamQuery) + '\'');
+      throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' unknown property: \'' + property + '\' in streams query \'' + objectToString(streamQuery) + '\'');
 
     if (!Array.isArray(arrayOfStreamIds)) {
       throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' value of : \'' + property + '\' must be an array. Found: \'' + objectToString(arrayOfStreamIds) + '\'');
     }
 
     const arrayOfCleanStreamIds: Array<string> = [];
-    
+
     for (const item: string of arrayOfStreamIds) {
       if (typeof item !== 'string')
         throw ('Error in \'streams\' parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) + ' must be streamIds. Found: ' + objectToString(item));
-      
+
       if (item === '#*') throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + ', "#*" is not valid.');
 
       const forbiddenChar: string = findForbiddenChar(item);
@@ -139,7 +139,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
         hasAnyStar = true;
         if (arrayOfStreamIds.length > 1)
           throw ('Error in \'streams\' parameter[' + objectToString(arrayOfQueries) + '] \'*\' cannot be mixed with other streamIds in \'any\': ' + objectToString(arrayOfStreamIds));
-      } 
+      }
       const cleanStreamid: string = validateAndAttachStore(item);
       arrayOfCleanStreamIds.push(cleanStreamid);
 
@@ -166,9 +166,9 @@ function uniqueStreamIds(arrayOfStreamiIs) {
 }
 
 /**
- * @param {Array.<StreamQuery>} streamQueries 
- * @param {ExpandStream} expandStream 
- * @returns 
+ * @param {Array.<StreamQuery>} streamQueries
+ * @param {ExpandStream} expandStream
+ * @returns
  */
 exports.expandAndTransformStreamQueries = async function expandAndTransformStreamQueries(streamQueries, expandStream) {
 
@@ -190,7 +190,7 @@ exports.expandAndTransformStreamQueries = async function expandAndTransformStrea
 }
 
 async function expandAndTransformStreamQuery(streamQuery, expandSet) {
-  let containsAtLeastOneInclusion = false; 
+  let containsAtLeastOneInclusion = false;
   const res = { storeId: streamQuery.storeId };
 
   // any
@@ -216,10 +216,10 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
   // not
   if (streamQuery.not) {
     const not = [];
-    for (let streamId of streamQuery.not) { 
+    for (let streamId of streamQuery.not) {
       let expandedSet = await expandSet([streamId], streamQuery.storeId, streamQuery.any);
       if (expandedSet.length == 0) continue; // escape
-      
+
       not.push(...expandedSet);
     }
     if (not.length > 0) {
@@ -232,8 +232,8 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
 }
 
 /**
- * Transform queries for mongoDB - to be run on 
- * @param {Array.<StreamQuery>} streamQueriesArray - array of streamQuery 
+ * Transform queries for mongoDB - to be run on
+ * @param {Array.<StreamQuery>} streamQueriesArray - array of streamQuery
  * @returns {MongoQuey} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
  */
 exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray) {
@@ -251,8 +251,8 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray) {
   return mongoQuery;
 }
 /**
- * Convert a streamQuery to a query usable by MongoDB 
- * @param {StreamQuery} streamQuery 
+ * Convert a streamQuery to a query usable by MongoDB
+ * @param {StreamQuery} streamQuery
  */
 function streamQueryToMongoDBQuery(streamQuery) {
   const res = {};

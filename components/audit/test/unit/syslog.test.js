@@ -40,13 +40,13 @@ describe('Syslog', () => {
       this.timeout(5000);
       const randomString = cuid();
 
-      const logString = userid + 
-      ' log/unkown createdBy:' + createdBy +
+      const logString = userid +
+      ' log/unknown createdBy:' + createdBy +
       ' [":_audit:test"] ' +  JSON.stringify({action: 'events.get', message: randomString});
 
       syslogWatch(
-        function() { // syslog Watch is ready 
-          send({type: 'log/unkown', content: {message: randomString}});
+        function() { // syslog Watch is ready
+          send({type: 'log/unknown', content: {message: randomString}});
         },
         function(err, res) { // string found or err
           assert.notExists(err);
@@ -60,12 +60,12 @@ describe('Syslog', () => {
       this.timeout(5000);
       const randomString = cuid();
 
-      const logString = userid + 
+      const logString = userid +
       ' log/test createdBy:' + createdBy +
       ' streamIds:[":_audit:test"] ' +  randomString;
 
-      syslogWatch( 
-        function() { // syslog Watch is ready 
+      syslogWatch(
+        function() { // syslog Watch is ready
           send({ content: {message: randomString}});
         },
         function(err, res) { // string found or err
@@ -83,8 +83,8 @@ describe('Syslog', () => {
 
       const logString = userid + ' TEST FILTERED ' +  randomString;
 
-      syslogWatch( 
-        function() { // syslog Watch is ready 
+      syslogWatch(
+        function() { // syslog Watch is ready
           send({type: 'log/test-filtered', content: {message: randomString}});
         },
         function(err, res) { // string found or err
@@ -99,8 +99,8 @@ describe('Syslog', () => {
       this.timeout(10000);
       const randomString = cuid();
 
-      syslogWatch( 
-        function() { // syslog Watch is ready 
+      syslogWatch(
+        function() { // syslog Watch is ready
           send({type: 'log/test-filtered', content: {skip: true, message: randomString}});
         },
         function(err, res) { // string found or err

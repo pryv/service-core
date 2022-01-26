@@ -21,7 +21,7 @@ const algorithm = config.get('integrity:algorithm');
  * @private
  * mapping algo codes to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Digest supported codes
  */
-const subRessourceCodeToDigestMap = {
+const subResourceCodeToDigestMap = {
   sha256: 'SHA-256',
   sha512: 'SHA-512',
   sha1: 'SHA',
@@ -29,14 +29,14 @@ const subRessourceCodeToDigestMap = {
 }
 
 /**
- * @param {string} subRessourceIntegrity in the form of `<algo>-<hash>` example `sha256-uZKmWZ+CQ7UY3GUqFWD4sNPPEUKm8OPcAWr4780Acnk=`
+ * @param {string} subResourceIntegrity in the form of `<algo>-<hash>` example `sha256-uZKmWZ+CQ7UY3GUqFWD4sNPPEUKm8OPcAWr4780Acnk=`
  * @returns {string} An HTTP Digest header value in the form of `<algo>=<hash>` example `SHA-256=uZKmWZ+CQ7UY3GUqFWD4sNPPEUKm8OPcAWr4780Acnk=`
  */
-function getHTTPDigestHeaderForAttachment(subRessourceIntegrity) {
-  const splitAt = subRessourceIntegrity.indexOf('-');
-  const algo = subRessourceIntegrity.substr(0, splitAt);
-  const sum = subRessourceIntegrity.substr(splitAt + 1);
-  const digestAlgo = subRessourceCodeToDigestMap[algo];
+function getHTTPDigestHeaderForAttachment(subResourceIntegrity) {
+  const splitAt = subResourceIntegrity.indexOf('-');
+  const algo = subResourceIntegrity.substr(0, splitAt);
+  const sum = subResourceIntegrity.substr(splitAt + 1);
+  const digestAlgo = subResourceCodeToDigestMap[algo];
   if (digestAlgo == null) return null;
   return digestAlgo + '=' + sum;
 }
@@ -45,7 +45,7 @@ function getHTTPDigestHeaderForAttachment(subRessourceIntegrity) {
  * Integrity access and computation for attachments
  * @typedef {Object} IntegrityAttachments
  * @property {boolean} isActive - Setting: Add integrity hash to attachment if true
- * @property {IntegrityMulterDiskStorage} MulterIntegrityDiskStorage 
+ * @property {IntegrityMulterDiskStorage} MulterIntegrityDiskStorage
  */
 const attachments = {
   isActive: attachmentsIsActive,
@@ -66,7 +66,7 @@ const attachments = {
  * Returns integrity and key of an object
  * @callback IntegrityCompute
  * @param {*} item - Object to compute on
- * @param {boolean} save - This computation should be saved for audit 
+ * @param {boolean} save - This computation should be saved for audit
  * @returns {IntegrityComputeResult}
  */
 
@@ -74,7 +74,7 @@ const attachments = {
  * Compute and set integrity property to an item
  * @callback IntegritySet
  * @param {*} item - Object to compute on
- * @param {boolean} save - This computation should be saved for audit 
+ * @param {boolean} save - This computation should be saved for audit
  * @returns {*} - the item
  */
 
@@ -82,15 +82,15 @@ const attachments = {
  * Get the hash (only .integrity) of an item item
  * @callback IntegrityHash
  * @param {*} item - Object to compute on
- * @param {boolean} save - This computation should be saved for audit 
+ * @param {boolean} save - This computation should be saved for audit
  * @returns {*} - the item
  */
 
 /**
  * Setting and computation tools for a Pryv.io db item
- * @typedef {Object} IntegrityItem 
+ * @typedef {Object} IntegrityItem
  * @property {boolean} isActive - Setting: Add integrity hash to item if true
- * @property {IntegrityCompute} compute 
+ * @property {IntegrityCompute} compute
  * @property {IntegritySet} set
  * @property {IntegrityHash} hash
  */
@@ -115,8 +115,8 @@ function setOnEvent(event) {
   return event;
 }
 
-/** 
- * @type {IntegrityItem} 
+/**
+ * @type {IntegrityItem}
  */
 const events = {
   isActive: eventsIsActive,
@@ -146,8 +146,8 @@ function setOnAccess(access) {
   return access;
 }
 
-/** 
- * @type {IntegrityItem} 
+/**
+ * @type {IntegrityItem}
  */
 const accesses = {
   isActive: accessesIsActive,
@@ -176,8 +176,8 @@ const integrity = {
 // config check
 // output message and crash if algorythm is not supported
 
-if ((events.isActive || attachments.isActive) && (subRessourceCodeToDigestMap[algorithm] == null)) {
-  const message = 'Integrity is active and algorithm [' + algorithm + '] is unsupported. Choose one of: ' + Object.keys(subRessourceCodeToDigestMap).join(', ');
+if ((events.isActive || attachments.isActive) && (subResourceCodeToDigestMap[algorithm] == null)) {
+  const message = 'Integrity is active and algorithm [' + algorithm + '] is unsupported. Choose one of: ' + Object.keys(subResourceCodeToDigestMap).join(', ');
   logger.error(message);
   console.log('Error: ' + message);
   process.exit(1);
