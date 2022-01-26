@@ -22,7 +22,7 @@
    * @param {timestamp} [params.includeDeletionsSince]
    * @returns {UserStream|null} - the stream or null if not found:
    */
-  async get(uid: string, params): Promise<Array<Stream>> { throw new Error('Not Implemented'); }
+  async get(uid: string, params): Promise<Array<Stream>> { throw new Error('Not implemented'); }
 
 
   /**
@@ -33,7 +33,7 @@
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Stream} - The created Stream
    */
-  async create(uid: string, params): Promise<void> { throw new Error('Not Implemented'); }
+  async create(uid: string, params): Promise<void> { throw new Error('Not implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#update-stream
@@ -42,7 +42,7 @@
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Stream
    */
-  async update(uid: string, streamId: string, params): Promise<void> { throw new Error('Not Implemented'); }
+  async update(uid: string, streamId: string, params): Promise<void> { throw new Error('Not implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#delete-stream
@@ -51,7 +51,7 @@
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream|StreamDeletionItem} - The trashed Stream
    */
-  async delete(uid: string, streamId: string, params): Promise<void> { throw new Error('Not Implemented'); }
+  async delete(uid: string, streamId: string, params): Promise<void> { throw new Error('Not implemented'); }
 
 }
 

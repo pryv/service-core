@@ -21,7 +21,7 @@
    * @returns {Array<Event>}
    * @see https://api.pryv.com/reference/#get-events
    */
-  async get(uid: string, params): Promise<Array<Event>> { throw new Error('Not Implemented'); }
+  async get(uid: string, params): Promise<Array<Event>> { throw new Error('Not implemented'); }
 
 
   /**
@@ -31,7 +31,7 @@
    * @returns {ReadableStream}
    * @see https://api.pryv.com/reference/#get-events
    */
-  async getStreamed(uid: string, params): Promise<ReadableStream> { throw new Error('Not Implemented'); }
+  async getStreamed(uid: string, params): Promise<ReadableStream> { throw new Error('Not implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#create-event
@@ -41,7 +41,7 @@
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-  async create(uid: string, params): Promise<void>  { throw new Error('Not Implemented'); }
+  async create(uid: string, params): Promise<void>  { throw new Error('Not implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#update-event
@@ -50,7 +50,7 @@
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Event
    */
-  async update(uid: string, eventId: string, params): Promise<void> { throw new Error('Not Implemented'); }
+  async update(uid: string, eventId: string, params): Promise<void> { throw new Error('Not implemented'); }
 
   /**
    * @see https://api.pryv.com/reference/#delete-event
@@ -59,7 +59,7 @@
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Event|EventDeletionItem} - The trashed Event
    */
-  async delete(uid: string, eventId: string, params): Promise<void> { throw new Error('Not Implemented'); }
+  async delete(uid: string, eventId: string, params): Promise<void> { throw new Error('Not implemented'); }
 
 
   /**
