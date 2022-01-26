@@ -5,10 +5,12 @@
  * Proprietary and confidential
  */
 
+// @flow
+
 /**
- * Holder for per-user Stream tree structure under this user
+ * Per-user streams data (tree structure)
  */
- class UserStreams {
+class UserStreams {
 
   /**
    * Get the stream that will be set as root for all Stream Structure of this Data Store.
@@ -54,7 +56,5 @@
   async delete(uid: string, streamId: string, params): Promise<void> { throw new Error('Not implemented'); }
 
 }
-
-
 
 module.exports = UserStreams;

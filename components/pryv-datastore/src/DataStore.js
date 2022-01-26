@@ -49,13 +49,6 @@ class DataStore {
    */
   get events(): UserEvents { throw new Error('Not implemented'); }
 
-  /**
-   * Uncomment and implement the following if this storage supports it
-   * @param {identifier} streamId - the streamId to expand (should be returned in Array list)
-   * @returns {Streams<Array>|string|null> returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
-   */
-  //async expandStreamForStreamQuery(streamId) { throw new Error('Not implemented'); }
-
 }
 
 module.exports = DataStore;

@@ -5,11 +5,12 @@
  * Proprietary and confidential
  */
 
+// @flow
 
 /**
- * Holder for per-user Stream tree structure under this user
+ * Per-user events data
  */
- class UserEvents {
+class UserEvents {
 
   /**
    * Get the events for this user.
@@ -22,7 +23,6 @@
    * @see https://api.pryv.com/reference/#get-events
    */
   async get(uid: string, params): Promise<Array<Event>> { throw new Error('Not implemented'); }
-
 
   /**
    * Get the events as a stream for this user.
@@ -61,15 +61,13 @@
    */
   async delete(uid: string, eventId: string, params): Promise<void> { throw new Error('Not implemented'); }
 
-
   /**
-   * All attachments method
+   * Attachments methods
    */
 
   /**
-   * Add series ? do we have specific methods for series ... ?
+   * Series methods? do we have specific methods for series ... ?
    */
-
 
 }
 
