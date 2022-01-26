@@ -68,7 +68,7 @@ class UsersRepository {
     return users;
   }
 
-  // only for test data to be reset
+  // only for test data to reset all users Dbs.
   async deleteAll(): Promise<void> {
     await userIndex.deleteAll();
     await this.platform.deleteAll();
@@ -91,7 +91,6 @@ class UsersRepository {
 
   async getUserById(userId: string): Promise<?User> {
     const userAccountStreamsIds =  Object.keys(SystemStreamsSerializer.getAccountMap());
-
     const query = {state: 'all', streams: [{any: userAccountStreamsIds, and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}]};
     const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
     // convert events to the account info structure
@@ -291,13 +290,18 @@ class UsersRepository {
   }
   async deleteOne(userId: string, username: ?string): Promise<number> {
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
+   
+    const user = await this.getUserById(userId);
     if (username == null) {
-      const user = await this.getUserById(userId);
       username = user?.username;
     }
     cache.unsetUser(username);
     await userIndex.init();
     await userIndex.deleteById(userId);
+    await this.platform.deleteUser(username, user);
+
+    // Clear data for this user in Platform 
+
 
     const result = await bluebird.fromCallback(
       cb => this.eventsStorage.database.deleteMany(

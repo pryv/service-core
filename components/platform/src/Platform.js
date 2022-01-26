@@ -15,6 +15,7 @@ const logger = getLogger('platform');
 const errors = require('errors').factory;
 
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 /**
  * @class Platform
@@ -91,7 +92,12 @@ class Platform {
    */
   async setUserIndexedField(username, field, value) {
     const key = 'user-indexed/' + field + '/' + username;
-    this.db.set(key, username);
+    this.db.set(key, value);
+  }
+
+  async deleteUserIndexedField(username, field) {
+    const key = 'user-indexed/' + field + '/' + username;
+    this.db.delete(key);
   }
 
   async updateUserAndForward(username, operations, isActive, isCreation) {
@@ -133,9 +139,8 @@ class Platform {
             if (existingValue != null) {
               await this.deleteUserUniqueField(op.key, op.value);
             }
-            
           } else { // is Indexed
-            throw new Error('Not implemented');
+            await this.deleteUserIndexedField(username, op.key);
           }
           break;
 
@@ -146,6 +151,38 @@ class Platform {
     }
   }
 
+  /**
+   * Fully delete a user
+   * @param {string} username
+   * @param {[User]} User -- // for some tests User might be null
+   */
+  async deleteUser(username, user) {
+    // unique fields
+    const operations = [];
+    if (user != null) { // cannot delete unique keys if user is null! (as the current value is needed)
+      for (const field of SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()) {
+        operations.push({action: 'delete', key: field, value: user[field], isUnique: true});
+      }
+    }
+    
+    // indexed fields
+    for (const field of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
+      operations.push({action: 'delete', key: field, isUnique: false});
+    }
+
+    await this.updateUser(username, operations, false, false);
+
+    // forward to register
+    if (this.serviceRegisterConn) {
+      try {
+        const res = await this.serviceRegisterConn.deleteUser(username);
+        logger.debug('on register: ' + username, res);
+      } catch (e) { // user might have been deleted register we do not FW error just log it
+        logger.error(e);
+      }
+    }
+
+  }
 }
 
 class PlatformWideDB {

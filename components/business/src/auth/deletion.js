@@ -11,7 +11,6 @@ const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
 const { getUsersRepository } = require('business/src/users');
-const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const errors = require('errors').factory;
 
 import type { MethodContext } from 'business';
@@ -212,23 +211,6 @@ class Deletion {
     result.userDeletion = { username: context.user.username };
     next();
   }
-
-  async deleteOnRegister(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    if (this.config.get('openSource:isActive') || this.config.get('dnsLess:isActive')) return next();
-    try {
-      const serviceRegisterConn = await getServiceRegisterConn();
-      const res = await serviceRegisterConn.deleteUser(params.username);
-      this.logger.debug('on register: ' + params.username, res);
-    } catch (e) { // user might have been deleted register we do not FW error just log it
-      this.logger.error(e, e);
-    }
-    next();
-  };
 }
 
 function findNotExistingDir(paths: Array<string>): string {
