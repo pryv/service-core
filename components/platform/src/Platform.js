@@ -72,6 +72,16 @@ class Platform {
   }
 
   /**
+   * Delete a unique key for this user. 
+   * @param {string} field example 'email'
+   * @param {string} value example 'bob@bob.com'
+   */
+   async deleteUserUniqueField(field, value) {
+    const key = 'user-unique/' + field + '/' + value;
+    this.db.delete(key);
+  }
+
+  /**
    * Set a user indexed field. 
    * Mock etcd implementation of prefixes 
    * @param {*} username 
@@ -115,8 +125,18 @@ class Platform {
           break;
 
         case 'delete':
-          $$('Not implemented yet');
-          throw new Error('Not implemented');
+          if (op.isUnique) {
+            const existingValue = await this.getUserUniqueField(op.key, op.value);
+            if (existingValue !== null && existingValue !== username) {
+              throw (errors.forbidden('unique field ' + op.key + ' with value ' + op.value + ' is associated to another user'));
+            }
+            if (existingValue != null) {
+              await this.deleteUserUniqueField(op.key, op.value);
+            }
+            
+          } else { // is Indexed
+            throw new Error('Not implemented');
+          }
           break;
 
         default:
@@ -151,6 +171,7 @@ class PlatformWideDB {
     // in the following query see the trick to pass a list of values as parameter
     this.queryUniqueKey = this.db.prepare('SELECT key, value FROM uniqueKeys WHERE key = ?');
     this.upsertUniqueKeyValue = this.db.prepare('INSERT OR REPLACE INTO uniqueKeys (key, value) VALUES (@key, @value);');
+    this.deleteUniqueKey = this.db.prepare('DELETE FROM uniqueKeys WHERE key = ?;');
     this.deleteAll = this.db.prepare('DELETE FROM uniqueKeys;');
   }
 
@@ -175,6 +196,11 @@ class PlatformWideDB {
   set(key, value) {
     logger.debug('db:set', key, value);
     return this.upsertUniqueKeyValue.run({ key, value });
+  }
+
+  delete(key) {
+    logger.debug('db:delete', key);
+    return this.deleteUniqueKey.run(key);
   }
 
   reset() {

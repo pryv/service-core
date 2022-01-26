@@ -21,7 +21,6 @@ const addTagsStream = require('./streams/AddTagsStream');
 
 const { getMall, StreamsUtils } = require('mall');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
 const { getUsersRepository } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
@@ -91,12 +90,6 @@ module.exports = async function (api)
   const logger = getLogger('methods:events');
 
   const STREAM_ID_ACTIVE: string = SystemStreamsSerializer.options.STREAM_ID_ACTIVE;
-
-  // initialize service-register connection
-  let serviceRegisterConn = {};
-  if (! config.get('dnsLess:isActive')) {
-    serviceRegisterConn = await getServiceRegisterConn();
-  }
 
   const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
   const isTagsBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:tags:isActive');
@@ -369,7 +362,7 @@ module.exports = async function (api)
         await usersRepository.checkDuplicates({[streamIdWithoutPrefix]: context.newEvent.content});
       }
       if (systemStream.isIndexed) { // assume can be unique as per test #42A1
-        await sendDataToServiceRegister(context, isCreation);
+        await updateDataOnPlatform(context, isCreation);
       }
       
     } catch (err) {
@@ -383,48 +376,23 @@ module.exports = async function (api)
      * @param {MethodContext} context 
      * @param {boolean} isCreation
      */
-    async function sendDataToServiceRegister(context: MethodContext, isCreation: boolean): void {
+    async function updateDataOnPlatform(context: MethodContext, isCreation: boolean): void {
      
 
       const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
       const streamIdWithoutPrefix: string = context.accountStreamIdWithoutPrefix;
 
-      const operations = [{ update: { 
-          key: streamIdWithoutPrefix,
-          value: context.newEvent.content,
-          isUnique: editableAccountStreamsMap[context.accountStreamId].isUnique,
-        } 
-      }];
-
-      const operations2 = [{ 
+      const operations = [{ 
           action: 'update', 
           key: streamIdWithoutPrefix,
           value: context.newEvent.content,
           isUnique: editableAccountStreamsMap[context.accountStreamId].isUnique,
         }];
 
-      await platform.updateUser(context.user.username, operations2, 
+      await platform.updateUserAndForward(context.user.username, operations, 
         context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
         context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
         isCreation);
-
-
-      if (config.get('dnsLess:isActive')) {
-        return;
-      }
-
-      // send information update to service regsiter
-      await serviceRegisterConn.updateUserInServiceRegister(
-        context.user.username,
-        operations,
-        // for isActive, "context.removeActiveEvents" is not enough because, it would be set 
-        // to false if old event was active and is still active (no change)
-        context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
-        context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
-        isCreation,
-      );
-
-   
 
     }
   }
@@ -1093,35 +1061,20 @@ module.exports = async function (api)
    * @param object event
    * @param string accountStreamId - accountStreamId
    */
-  async function sendDeletionToServiceRegister (username, content, accountStreamId) {
+  async function updateDeletionOnPlatform (username, content, accountStreamId) {
     const editableAccountStreamsMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
     const streamIdWithoutPrefix: string = SystemStreamsSerializer.removePrefixFromStreamId(accountStreamId);
     if (editableAccountStreamsMap[accountStreamId].isUnique) { // TODO should be isIndexed??
       
       const operations = [{ 
-        delete: {
-          key: streamIdWithoutPrefix,
-          value: content,
-          isUnique: true
-        }
-      }];
-
-      const operations2 = [{ 
         action: 'delete',
         key: streamIdWithoutPrefix,
         value: content,
         isUnique: true
       }]
 
-      await platform.updateUser(username, operations2);
+      await platform.updateUserAndForward(username, operations);
 
-      if (! config.get('dnsLess:isActive')) {
-  
-        await serviceRegisterConn.updateUserInServiceRegister(
-          username,
-          operations,
-        );
-      }
     }
   }
   
@@ -1132,7 +1085,7 @@ module.exports = async function (api)
     context.updateTrackingProperties(updatedData);
     try {
       if (context.doesEventBelongToAccountStream){
-        await sendDeletionToServiceRegister(
+        await updateDeletionOnPlatform(
           context.user.username,
           context.oldEvent.content,
           context.accountStreamId,

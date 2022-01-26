@@ -221,20 +221,10 @@ module.exports = async function (api) {
     
     try {
       const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
-
+      
       const operations: Array<{}> = [];
       for (const [key, value] of Object.entries(params.update)) {
         operations.push({
-          update: {
-            key,
-            value,
-            isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
-          }
-        })
-      }
-      const operations2: Array<{}> = [];
-      for (const [key, value] of Object.entries(params.update)) {
-        operations2.push({
             action: 'update',
             key,
             value,
@@ -243,7 +233,7 @@ module.exports = async function (api) {
         );
       }
 
-      await platform.updateUserAndForward(context.user.username, operations2, true, false);
+      await platform.updateUserAndForward(context.user.username, operations, true, false);
 
     } catch (err) {
       return next(err);
