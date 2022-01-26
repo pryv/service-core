@@ -14,7 +14,7 @@ const logger = getLogger('platform');
 
 const errors = require('errors').factory;
 
-const { getServiceRegisterConn } = require('business/src/auth/service_register');
+const { getServiceRegisterConn } = require('platform/src/service_register');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 /**
@@ -104,7 +104,6 @@ class Platform {
     await this.updateUser(username, operations, isActive, isCreation);
     if (this.serviceRegisterConn != null) {
       const ops2 = operations.map(op => ({[op.action]: {key: op.key, value: op.value, isUnique: op.isUnique}}));
-      $$({username, ops2});
       await this.serviceRegisterConn.updateUserInServiceRegister(username, ops2, isActive, isCreation);
     }
   }
@@ -114,7 +113,6 @@ class Platform {
    * @param {*} key 
    */
   async updateUser(username, operations, isActive, isCreation) {
-    $$('******', { username, operations, isActive, isCreation });
     // otherwise deletion
     for (const op of operations) {
       switch (op.action) {
@@ -183,6 +181,38 @@ class Platform {
     }
 
   }
+
+  // ----------------  Simple abstractions for service register calls (to be removed)  ----------------
+
+  /**
+   * Check if username is available (FW to service register)
+   */
+  async isUsernameReserved(username) {
+    if (this.serviceRegisterConn) {
+      const response = await serviceRegisterConn.checkUsername(username);
+      if (response.reserved === true) {
+        return true;
+      } 
+      return false;
+    }
+  }
+
+  /**
+   * Validate user and pre-register it (FW to service register)
+   */
+  async createUserStep1_ValidateUser(username, invitationToken, uniqueFields, hostname) {
+    await this.serviceRegisterConn.validateUser(username, invitationToken, uniqueFields, hostname);
+  }
+
+  /**
+   * Validate user and pre-register it (FW to service register)
+   */
+   async createUserStep2_CreateUser(userData) {
+    await this.serviceRegisterConn.createUser(userData);
+  }
+
+
+
 }
 
 class PlatformWideDB {

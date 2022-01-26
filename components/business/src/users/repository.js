@@ -18,7 +18,6 @@ import type { SystemStream } from 'business/src/system-streams';
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
-const { safetyCleanDuplicate } = require('business/src/auth/service_register');
 
 const userIndex = require('./UserLocalIndex');
 const { getMall } = require('mall');
@@ -178,22 +177,11 @@ class UsersRepository {
     return true;
   }
 
-  async setUniqueFields(user: User): Array<string> {
-
-    const operations = this.uniqueFields.map(key => { 
-      return {action: 'update', key: key, value: user[key], isUnique: true};
-    }); 
-
-    await this.platform.updateUser(user.username, operations, true, true);
- 
-  }
-
   async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
     // first explicitly create a collection, because it would fail in the transation
     await bluebird.fromCallback(
       cb => this.eventsStorage.database.getCollection(this.collectionInfo, cb),
     );
-    $$(`Creating user ${user.username} ${user.email} `);
     await this.checkDuplicates(user, user.username);
 
     const transactionSession = await this.eventsStorage.database.startSession();
@@ -224,10 +212,12 @@ class UsersRepository {
 
         // add the user to local index
         await userIndex.addUser(user.username, user.id);
-        $$('ADDED', user.username, user.email);
 
-        // add unique keys to the platform
-        await this.setUniqueFields(user);
+        // update unique fields on the platform
+        const operations = this.uniqueFields.map(key => { 
+          return {action: 'update', key: key, value: user[key], isUnique: true};
+        }); 
+        await this.platform.updateUser(user.username, operations, true, true);
 
         
         await bluebird.fromCallback(
@@ -247,7 +237,6 @@ class UsersRepository {
   }
 
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
-    $$('UPDATE', update);
    
     await this.checkDuplicates(update, user.username);
 
@@ -290,15 +279,19 @@ class UsersRepository {
   }
   async deleteOne(userId: string, username: ?string): Promise<number> {
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
-   
+
     const user = await this.getUserById(userId);
     if (username == null) {
       username = user?.username;
     }
-    cache.unsetUser(username);
+    
     await userIndex.init();
     await userIndex.deleteById(userId);
-    await this.platform.deleteUser(username, user);
+
+    if (username != null) { // can happen during tests
+      cache.unsetUser(username); 
+     await this.platform.deleteUser(username, user);
+    }
 
     // Clear data for this user in Platform 
 
@@ -339,13 +332,10 @@ class UsersRepository {
   async checkDuplicates(fields: any, ignoreValue: string): Promise<void> {
     const that = this;
     const uniquenessErrors = await getUniquessErrorFields(fields, ignoreValue);
-    $$('1', uniquenessErrors);
     // check locally for username (Maybe moved to platfom after full platform-db implementation)
     if (fields.username && await userIndex.existsUsername(fields.username)) {
       uniquenessErrors.username = fields.username;
     }
-
-    $$('2', uniquenessErrors);
 
     if (Object.keys(uniquenessErrors).length > 0) {
       throw (
@@ -362,7 +352,6 @@ class UsersRepository {
       const uniquenessErrors = {};
       for (const key of that.uniqueFields) {
         const value = await that.platform.getUserUniqueField(key, fields[key]);
-        $$({value, key, ignoreValue})
         if (value != null && ignoreValue != value) { // exclude from error values already assigned to him
           uniquenessErrors[key] = fields[key];
         }

@@ -11,7 +11,9 @@ const cuid = require('cuid');
 const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
-const { getServiceRegisterConn } = require('./service_register');
+
+const { getPlatform } = require('platform');
+
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
 const ErrorIds = require('errors').ErrorIds;
@@ -28,20 +30,19 @@ import type { ApiCallback } from 'api-server/src/API';
 class Registration {
   logger: any;
   storageLayer: any;
-  serviceRegisterConn: ServiceRegister;
   accountStreamsSettings: any = SystemStreamsSerializer.getAccountMap();
   servicesSettings: any; // settigns to get the email to send user welcome email
+  platform: Platform;
 
   constructor(logging, storageLayer, servicesSettings) {
     this.logger = getLogger('business:registration');
     this.storageLayer = storageLayer;
     this.servicesSettings = servicesSettings;
-
   }
 
   async init() {
-    if (this.serviceRegisterConn == null) {
-      this.serviceRegisterConn = await getServiceRegisterConn();
+    if (this.platform == null) {
+      this.platform = await getPlatform();
     }
     return this;
   }
@@ -69,7 +70,7 @@ class Registration {
    * @param {*} result
    * @param {*} next
    */
-  async validateUserInServiceRegister(
+  async createUserStep1_ValidateUserOnPlatform(
     context: MethodContext,
     params: mixed,
     result: Result,
@@ -86,7 +87,7 @@ class Registration {
       }
       
       // do the validation and reservation in service-register
-      await this.serviceRegisterConn.validateUser(
+      await this.platform.createUserStep1_ValidateUser(
         context.newUser.username,
         context.newUser.invitationToken,
         uniqueFields,
@@ -172,7 +173,7 @@ class Registration {
    * @param {*} result
    * @param {*} next
    */
-  async createUserInServiceRegister (
+  async createUserStep2_CreateUserOnPlatform (
     context: MethodContext,
     params: mixed,
     result: Result,
@@ -195,7 +196,7 @@ class Registration {
       userStreamsIds.forEach(streamId => {
         if (context.newUser[streamId] != null) userData.user[streamId] = context.newUser[streamId];
       });
-      await this.serviceRegisterConn.createUser(userData);
+      await this.platform.createUserStep2_CreateUser(userData);
     } catch (error) {
       return next(errors.unexpectedError(error));
     }

@@ -366,7 +366,6 @@ module.exports = async function (api)
       }
       
     } catch (err) {
-      $$(err);
       return next(err);
     }
     next();
