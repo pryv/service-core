@@ -47,7 +47,7 @@ class DummyUserStreams extends DataStore.UserStreams {
     }];
 
 
-    DataStore.UserStreams.applyDefaults(streams);
+    DataStore.Defaults.applyOnStreams(streams);
     
     function findStream(streamId, arrayOfStreams) {
       for (let stream of arrayOfStreams) {
@@ -77,7 +77,7 @@ class DummyUserEvents extends DataStore.UserEvents {
       content: 'hello',
       time: Date.now() / 1000,
     }];
-    UserEvents.applyDefaults(events);
+    DataStore.Defaults.applyOnEvents(events);
     return events;
   }
 }

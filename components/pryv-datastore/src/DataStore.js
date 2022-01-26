@@ -10,7 +10,7 @@
 
 const UserEvents = require('./UserEvents');
 const UserStreams = require('./UserStreams');
-const Constants = require('./Constants');
+const Defaults = require('./Defaults');
 
 /**
  * Notes:
@@ -27,7 +27,7 @@ const Constants = require('./Constants');
  */
 class DataStore {
 
-  static Constants: any = Constants;
+  static Defaults = Defaults;
   static UserEvents = UserEvents;
   static UserStreams = UserStreams;
 

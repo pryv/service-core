@@ -5,8 +5,6 @@
  * Proprietary and confidential
  */
 
-const Constants = require('./Constants');
-
 /**
  * Holder for per-user Stream tree structure under this user
  */
@@ -55,35 +53,8 @@ const Constants = require('./Constants');
    */
   async delete(uid: string, streamId: string, params): Promise<void> { throw new Error('Not Implemented'); }
 
-  /**
-   * Utility to complete a stream structure with missing properties and streamIds.
-   * **Note** streams object will be modified
-   * @property {string} storeId - to be happend to streamId with '.${storeId}-'
-   * @property {Array<Streams>} streams
-   * @returns null;
-   */
-  static applyDefaults(streams: Array<Stream>): void {
-    _applyDefaults(streams, null);
-  }
 }
 
-/**
- * @private
- * recursively apply default streamId datastore namne and streams default value
- * @param {string} storeIdNameSpace - namespacing for streamIds
- * @param {Array<Streams>} streams
- */
-function _applyDefaults(streams: Array<Stream>, parentId: ?string): void {
-  for (const stream: Stream of streams) {
-    if (typeof stream.created === 'undefined') stream.created = Constants.UNKNOWN_DATE;
-    if (typeof stream.modified === 'undefined') stream.modified = Constants.UNKNOWN_DATE;
-    if (typeof stream.createdBy === 'undefined') stream.createdBy = Constants.BY_UNKNOWN;
-    if (typeof stream.modifiedBy === 'undefined') stream.modifiedBy = Constants.BY_UNKNOWN;
-    if (stream.children == null) stream.children = [];
-    if (stream.children.length > 0) _applyDefaults(stream.children, stream.id);
-    // force parentId
-    stream.parentId = parentId;
-  }
-}
+
 
 module.exports = UserStreams;

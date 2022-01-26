@@ -147,12 +147,12 @@ describe("System streams", function () {
         const { DataStore } = require('pryv-datastore')
         
         readableStreams = treeUtils.cloneAndApply(readableStreams, (s) => {
-          s.createdBy = DataStore.BY_SYSTEM;
-          s.modifiedBy = DataStore.BY_SYSTEM;
+          s.createdBy = DataStore.Defaults.BY_SYSTEM;
+          s.modifiedBy = DataStore.Defaults.BY_SYSTEM;
           return s;
         });
 
-        DataStore.UserStreams.applyDefaults(readableStreams);
+        DataStore.Defaults.applyOnStreams(readableStreams);
 
         expectedRes.push(...readableStreams);
 

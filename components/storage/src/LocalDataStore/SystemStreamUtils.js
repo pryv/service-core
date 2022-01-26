@@ -12,7 +12,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { DataStore } = require('pryv-datastore');
 
 const visibleStreamsTree = SystemStreamsSerializer.getReadable()
-DataStore.UserStreams.applyDefaults(visibleStreamsTree);
+DataStore.Defaults.applyOnStreams(visibleStreamsTree);
 
 module.exports = {
   visibleStreamsTree

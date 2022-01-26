@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 
-const Constants = require('./Constants');
 
 /**
  * Holder for per-user Stream tree structure under this user
@@ -72,21 +71,6 @@ const Constants = require('./Constants');
    */
 
 
-  /**
-   * Utility to complete a event properties with missing properties and complete streamIds.
-   * **Note** events object will be modified
-   * @property {string} storeId - to be happend to streamId with '.${storeId}-'
-   * @property {Array<Events>} events
-   * @returns null;
-   */
-  static applyDefaults(events: Array<Event>) {
-    for (const event: Event of events) {
-      if (typeof event.created === 'undefined') event.created = Constants.UNKNOWN_DATE;
-      if (typeof event.modified === 'undefined') event.modified = Constants.UNKNOWN_DATE;
-      if (typeof event.createdBy === 'undefined') event.createdBy = Constants.BY_UNKNOWN;
-      if (typeof event.modifiedBy === 'undefined') event.modifiedBy = Constants.BY_UNKNOWN;
-    }
-  }
 }
 
 module.exports = UserEvents;
