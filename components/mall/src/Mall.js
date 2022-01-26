@@ -12,20 +12,7 @@
  * Pack configured datastores into one
  */
 
-const errors = require('errors').factory;
-
 const { DataStore } = require('pryv-datastore');
-
-// --- Override Error handling
-
-DataStore.throwInvalidRequestStructure = function(message, data) {
-  throw(errors.invalidRequestStructure(message, data, innerError));
-}
-
-DataStore.throwUnknownResource = function(resourceType, resourceId, innerError) {
-  throw(errors.unknownResource(resourceType, resourceId, innerError));
-}
-
 
 // -- Core properties
 const MallUserStreams = require('./MallUserStreams');

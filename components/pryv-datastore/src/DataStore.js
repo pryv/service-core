@@ -7,7 +7,6 @@
 
 // @flow
 
-
 const UserEvents = require('./UserEvents');
 const UserStreams = require('./UserStreams');
 const Defaults = require('./Defaults');
@@ -39,32 +38,16 @@ class DataStore {
   get id(): string { return this._id; }
   get name(): string { return this._name; }
 
-  async init(config: {}): Promise<void> { throw new Error('Not Implemented'); }
-
-  /** @returns  UserStreams */
-  get streams(): UserStreams { throw new Error('Not Implemented'); }
-  /** @returns  UserEvents */
-  get events(): UserEvents { throw new Error('Not Implemented'); }
-
-  // -- will be overriden by the system to throw appropriate error
-  static throwUnknownResource(resourceType, resourceId, innerError) { // APIError.UnknownResource
-    console.error('unknownResource', resourceType, id, innerError);
-    throw(new Error('unknownResource ' + resourceType + ' id: '+  id));
-  }
-
-  // -- will be overriden by the system to throw appropriate error
-  static throwInvalidRequestStructure(message, data) { // APIError.InvalidRequestStructure
-    console.error('invalidRequestStructure', message, data);
-    throw(new Error('invalidRequestStructure ' + message + ' ' + data));
-  }
-
+  async init(config: {}): Promise<void> { throw new Error('Not implemented'); }
 
   /**
-   * Uncomment and implement the following if this storage supports it
-   * @param {identifier} streamId - the streamId to expand (should be returned in Array list)
-   * @returns {Streams<Array>|string|null> returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
+   * @returns UserStreams
    */
-  //async expandStreamForStreamQuery(streamId) { throw new Error('Not Implemented'); }
+  get streams(): UserStreams { throw new Error('Not implemented'); }
+  /**
+   * @returns UserEvents
+   */
+  get events(): UserEvents { throw new Error('Not implemented'); }
 
 }
 
