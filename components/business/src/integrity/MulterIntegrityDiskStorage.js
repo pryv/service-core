@@ -6,7 +6,7 @@
  */
 /**
  * Inspired from multer/storage/DiskStorage
- * Add an integrity field to file upload following the subressource integrity schema 
+ * Add an integrity field to file upload following the subresource integrity schema
  *  <algo>-<base64 digest>
  * https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
  */
@@ -28,7 +28,7 @@ function getDestination (req, file, cb) {
 
 /**
  * @function IntegrityMulterDiskStorage - Returns a StorageEngine implementation configured to store files on the local file system and computes a hash.
- * @param {*} opts 
+ * @param {*} opts
  */
 function MulterIntegrityDiskStorage (opts) {
   this.getFilename = (opts.filename || getFilename)
@@ -89,7 +89,7 @@ module.exports = function (opts) {
   return new MulterIntegrityDiskStorage(opts)
 }
 
-// -- CHECKSUM STREAM 
+// -- CHECKSUM STREAM
 
 const PassThrough = require('stream').PassThrough;
 

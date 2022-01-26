@@ -5,9 +5,8 @@
  * Proprietary and confidential
  */
 
-const DataStore  = require('./DataStore');
-
+const DataStore = require('./DataStore');
 
 module.exports = {
-  DataStore,
-}
+  DataStore
+};

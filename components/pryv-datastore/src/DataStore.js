@@ -10,31 +10,24 @@
 
 const UserEvents = require('./UserEvents');
 const UserStreams = require('./UserStreams');
-const Constants = require('./Constants');
+const Defaults = require('./Defaults');
 
 /**
  * Notes:
- * - supports 
+ * - supports
  *    - attachments
  *    - series
- * 
+ *
  * - series
  */
 
 /**
- * @property {UserStreams} streams 
- * @property {UserEvents} events 
- * @property {timestamp} UNKNOWN_DATE - Unkown creation / modification date
- * @property {string} BY_SYSTEM - When createdBy / modifiedBy value is SYSTEM
- * @property {string} BY_UNKOWN - When createdBy / modifiedBy value is UNKOWN
- * @property {string} BY_EXTERNAL_PREFIX - When createdBy / modifiedBy value is an external Reference
+ * @property {UserStreams} streams
+ * @property {UserEvents} events
  */
-class DataStore { 
+class DataStore {
 
-  static UNKNOWN_DATE: number = Constants.UNKNOWN_DATE;
-  static BY_SYSTEM: string = Constants.BY_SYSTEM;
-  static BY_UNKOWN: string =  Constants.BY_UNKOWN;
-  static BY_EXTERNAL_PREFIX: string = Constants.BY_EXTERNAL_PREFIX;
+  static Defaults = Defaults;
   static UserEvents = UserEvents;
   static UserStreams = UserStreams;
 
@@ -45,25 +38,25 @@ class DataStore {
   set name(name: string): void { this._name = name; }
   get id(): string { return this._id; }
   get name(): string { return this._name; }
-  
+
   async init(config: {}): Promise<void> { throw new Error('Not Implemented'); }
 
   /** @returns  UserStreams */
-  get streams(): UserStreams { throw new Error('Not Implemented'); } 
+  get streams(): UserStreams { throw new Error('Not Implemented'); }
   /** @returns  UserEvents */
-  get events(): UserEvents { throw new Error('Not Implemented'); } 
+  get events(): UserEvents { throw new Error('Not Implemented'); }
 
   // -- will be overriden by the system to throw appropriate error
-  static throwUnkownRessource(resourceType, ressourceId, innerError) { // APIError.UnknownResource 
-    console.error('unkownRessource', resourceType, id, innerError);
-    throw(new Error('unkownRessource ' + resourceType + ' id: '+  id));
-  } 
+  static throwUnknownResource(resourceType, resourceId, innerError) { // APIError.UnknownResource
+    console.error('unknownResource', resourceType, id, innerError);
+    throw(new Error('unknownResource ' + resourceType + ' id: '+  id));
+  }
 
   // -- will be overriden by the system to throw appropriate error
-  static throwInvalidRequestStructure(message, data) { // APIError.InvalidRequestStructure 
+  static throwInvalidRequestStructure(message, data) { // APIError.InvalidRequestStructure
     console.error('invalidRequestStructure', message, data);
     throw(new Error('invalidRequestStructure ' + message + ' ' + data));
-  } 
+  }
 
 
   /**
@@ -76,7 +69,3 @@ class DataStore {
 }
 
 module.exports = DataStore;
-
-
-
-
