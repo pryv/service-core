@@ -17,10 +17,9 @@ const _ = require('lodash');
 
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 
-const {DataStore}  = require('pryv-datastore');
+const {DataStore, errors}  = require('pryv-datastore');
 
 const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
-
 class LocalUserEvents extends DataStore.UserEvents {
   userEventsStorage: any;
 
@@ -29,6 +28,16 @@ class LocalUserEvents extends DataStore.UserEvents {
     this.userEventsStorage = userEventsStorage;
   }
 
+  async create(userId, event) {
+    try {
+      return await bluebird.fromCallback(cb => this.userEventsStorage.insertOne(userId, event, cb));
+    } catch (err) {
+      if (err.isDuplicateIndex != null && err.isDuplicateIndex('id')) {
+        throw errors.itemAlreadyExists('event', {id: event.id}, err);
+      }
+      throw errors.unexpectedError(err);
+    }
+  }
 
   async getStreamed(userId, params) {
     const {query, options} = paramsToMongoquery(params);

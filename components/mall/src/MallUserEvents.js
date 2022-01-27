@@ -9,6 +9,8 @@ const _ = require('lodash');
 const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
 const StreamsUtils = require('./lib/StreamsUtils');
 
+const errorFactory = require('errors').factory;
+
 /**
  * Handle Store.events.* methods
  */
@@ -21,6 +23,45 @@ class StoreUserEvents  {
     this.mall = mall;
   }
 
+  // --------------------------- CREATE ----------------- //
+
+  /**
+   * 
+   * @param {*} uid 
+   * @param {*} eventData 
+   */
+  async create(uid, eventData) {
+    const eventForStore = _.clone(eventData);
+    let storeId;
+    // cleanup storeId from streamId
+    for (let i = 0; i < eventData.streamIds.length; i++) {
+      // check that the event belongs to a single store.
+      const [testStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[i]);
+      if (storeId == null) { storeId = testStoreId; }
+      else if (testStoreId !== storeId) {
+        throw errorFactory.invalidRequestStructure('Cannot create event with multiple streams belonging to different stores', eventData);
+      }
+      eventForStore.streamIds[i] = streamId;
+    }
+    // if eventId is provided make sure it's compatible with the storeId & clean it
+    if (eventData.id) {
+      const [testStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+      if (testStoreId !== storeId) {
+        throw errorFactory.invalidRequestStructure('Event id should match the store of streamIds', eventData);
+      }
+      eventForStore.id = eventId;
+    }
+    const store = this.mall._storeForId(storeId);
+    try {
+      return await store.events.create(uid, eventForStore);
+    } catch (e) {
+      this.mall.throwAPIError(e, storeId);
+    }
+  }
+
+
+  // --------------------------- GET ------------------- //
+
   /**
    * Specific to Mall, allow query of a single event
    * @param {*} uid 
@@ -31,8 +72,12 @@ class StoreUserEvents  {
     const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
-    const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all' , limit: 1, includeDeletions: true});
-    if (events?.length === 1) return events[0];
+    try {
+      const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all' , limit: 1, includeDeletions: true});
+      if (events?.length === 1) return events[0];
+    } catch (e) {
+      this.mall.throwAPIError(e, storeId);
+    }
     return null;
   }
 
@@ -48,8 +93,12 @@ class StoreUserEvents  {
     for (let storeId of Object.keys(paramsByStore)) {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
-      const events = await store.events.get(uid, params);
-      res.push(...events);
+      try {
+        const events = await store.events.get(uid, params);
+        res.push(...events);
+      } catch (e) {
+        this.mall.throwAPIError(e, storeId);
+      }
     }
     return res;
   };
@@ -68,7 +117,11 @@ class StoreUserEvents  {
     }
     const storeId = Object.keys(paramsByStore)[0];
     const store = this.mall._storeForId(storeId);
-    return await store.events.getStreamed(uid, paramsByStore[storeId]);
+    try {
+      return await store.events.getStreamed(uid, paramsByStore[storeId]);
+    } catch (e) {
+      this.mall.throwAPIError(e, storeId);
+    }
   };
 
   /**
@@ -79,13 +132,17 @@ class StoreUserEvents  {
     for (let storeId of Object.keys(paramsBySource)) {
       const store = this.mall._storeForId(storeId);
       const params = paramsBySource[storeId];
-      await store.events.getStreamed(uid, params).then((eventsStream) => {
-        if (storeId == 'local') {
-          addEventStreamCB(store, eventsStream);
-        } else {
-          addEventStreamCB(store, eventsStream.pipe(new AddStorePrefixOnEventsStream(storeId)));
-        }
-      });
+      try {
+        await store.events.getStreamed(uid, params).then((eventsStream) => {
+          if (storeId == 'local') {
+            addEventStreamCB(store, eventsStream);
+          } else {
+            addEventStreamCB(store, eventsStream.pipe(new AddStorePrefixOnEventsStream(storeId)));
+          }
+        });
+      } catch (e) {
+        this.mall.throwAPIError(e, storeId);
+      }
     }
   }
 

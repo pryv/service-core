@@ -7,6 +7,8 @@
 
 // @flow
 
+const errors = require('./errors');
+
 /**
  * Per-user events data
  */
@@ -22,7 +24,7 @@ class UserEvents {
    * @returns {Array<Event>}
    * @see https://api.pryv.com/reference/#get-events
    */
-  async get(uid: string, params): Promise<Array<Event>> { throw new Error('Not implemented'); }
+  async get(uid: string, params): Promise<Array<Event>> { throw(errors.unsupportedOperation('events.get')); }
 
   /**
    * Get the events as a stream for this user.
@@ -31,7 +33,7 @@ class UserEvents {
    * @returns {ReadableStream}
    * @see https://api.pryv.com/reference/#get-events
    */
-  async getStreamed(uid: string, params): Promise<ReadableStream> { throw new Error('Not implemented'); }
+  async getStreamed(uid: string, params): Promise<ReadableStream> { throw(errors.unsupportedOperation('events.getStreamed')); }
 
   /**
    * @see https://api.pryv.com/reference/#create-event
@@ -41,7 +43,7 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-  async create(uid: string, params): Promise<void>  { throw new Error('Not implemented'); }
+  async create(uid: string, params): Promise<void>  { throw(errors.unsupportedOperation('events.create')); }
 
   /**
    * @see https://api.pryv.com/reference/#update-event
@@ -50,7 +52,7 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Event
    */
-  async update(uid: string, eventId: string, params): Promise<void> { throw new Error('Not implemented'); }
+  async update(uid: string, eventId: string, params): Promise<void> { throw(errors.unsupportedOperation('events.update')); }
 
   /**
    * @see https://api.pryv.com/reference/#delete-event
@@ -59,7 +61,7 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Event|EventDeletionItem} - The trashed Event
    */
-  async delete(uid: string, eventId: string, params): Promise<void> { throw new Error('Not implemented'); }
+  async delete(uid: string, eventId: string, params): Promise<void> { throw(errors.unsupportedOperation('events.delete')); }
 
   /**
    * Attachments methods

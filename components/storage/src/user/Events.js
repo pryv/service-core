@@ -425,8 +425,20 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
  * @see mall.events.get()
  */
  Events.prototype.find = function (userOrUserId, query, options, callback) {
-  throw new Error('Depreacated, use mall.events.get()');
-  Events.super_.prototype.find.call(this, userOrUserId, query, options, callback);
+  throw new Error('Deprecated, use mall.events.get()');
+  //Events.super_.prototype.find.call(this, userOrUserId, query, options, callback);
+};
+
+/**
+ * Do not use!
+ * @see mall.events.create()
+ */
+ Events.prototype.insertOne = function (userOrUserId, item, callback) {
+  if (false && ! stackContains('repository.js')) {
+    $$('insertOne', userOrUserId, item, callback);
+    //throw new Error();
+  }
+  Events.super_.prototype.insertOne.call(this, userOrUserId, item, callback);
 };
 
 function stackContains(needle) {

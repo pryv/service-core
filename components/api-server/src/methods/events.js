@@ -25,6 +25,7 @@ const Registration = require('business/src/auth/registration');
 const { getUsersRepository } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
+const APIError = require('errors/src/APIError');
 const assert = require('assert');
 const MultiStream = require('multistream');
 
@@ -429,17 +430,13 @@ module.exports = async function (api)
 
   async function createEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      let newEvent: Event = await bluebird.fromCallback(cb => userEventsStorage.insertOne(context.user, context.newEvent, cb));
-
+      let newEvent = await mall.events.create(context.user.id, context.newEvent);
       // To remove when streamId not necessary
       newEvent.streamId = newEvent.streamIds[0];
       result.event = newEvent;
-      next();
+      return next();
     } catch (err) {
-      if (err.isDuplicateIndex('id')) {
-        return next(errors.itemAlreadyExists('event', {id: params.id}, err));
-      }
-      // Any other error
+      if (err instanceof APIError) return next(err);
       return next(errors.unexpectedError(err));
     }
   }
