@@ -23,6 +23,8 @@ const { getUsersRepository, User } = require('business/src/users');
 const userIndex = require('business/src/users/UserLocalIndex');
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
+const { getMall } = require('mall');
+let mall;
 class Context {
   databaseConn: storage.Database; 
   
@@ -41,6 +43,7 @@ class Context {
     });
     await userIndex.init();
     await userIndex.deleteAll();
+    mall = await getMall();
 
     // await Promise.all(collections);
     // console.log(await bluebird.fromCallback(cb =>
@@ -406,15 +409,14 @@ class FixtureEvent extends FixtureTreeNode implements ChildResource {
   
   create() {
     return bluebird
-      .try(() => this.createEvent());
+      .try(async () => await this.createEvent());
   }
-  createEvent() {
+  async createEvent() {
     const db = this.db; 
     const user = this.context.user; 
     const attributes = this.attrs; 
-
-    return bluebird.fromCallback((cb) => 
-      db.events.insertOne(user, attributes, cb)); 
+    if (mall == null) mall = await getMall();
+    return await mall.events.create(user.id, attributes);
   }
 
   fakeAttributes() {

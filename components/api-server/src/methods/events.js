@@ -626,7 +626,7 @@ module.exports = async function (api)
   /**
    * Depends on context.oldEvent
    */
-  function generateVersionIfNeeded(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function generateVersionIfNeeded(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (! auditSettings.forceKeepHistory) {
       return next();
     }
@@ -635,12 +635,13 @@ module.exports = async function (api)
     delete context.oldEvent.id;
     // otherwise the history value will squat
     context.oldEvent = removeUniqueStreamId(context.oldEvent);
-    userEventsStorage.insertOne(context.user, context.oldEvent, function (err) {
-      if (err) {
-        return next(errors.unexpectedError(err));
-      }
-      next();
-    });
+    try {
+      await mall.events.create(context.user.id, context.oldEvent);
+    } catch (err) {
+      if (err instanceof APIError) return next(err);
+      return next(errors.unexpectedError(err));
+    }
+    return next();
 
     function removeUniqueStreamId(event: Event): Event {
       const index = event.streamIds.indexOf(SystemStreamsSerializer.addPrivatePrefixToStreamId('unique'));

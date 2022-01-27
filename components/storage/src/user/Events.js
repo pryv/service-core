@@ -431,10 +431,20 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
 
 /**
  * Do not use!
+ * @see mall.events.getOne()
+ */
+ Events.prototype.findOne = function (userOrUserId, query, options, callback) {
+   //$$('findOne', userOrUserId, query, options, callback);
+   Events.super_.prototype.findOne.call(this, userOrUserId, query, options, callback);
+  //throw new Error('Deprecated, use mall.events.getOne()');
+ };
+
+/**
+ * Reserved for LocalStoreUser use only mall.events.create();
  * @see mall.events.create()
  */
  Events.prototype.insertOne = function (userOrUserId, item, callback) {
-  if (false && ! stackContains('repository.js')) {
+  if ( ! stackContains('LocalUserEvents.js')) {
     $$('insertOne', userOrUserId, item, callback);
     //throw new Error();
   }

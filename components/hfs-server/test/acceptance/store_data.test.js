@@ -20,7 +20,7 @@ const awaiting = require('awaiting');
 
 const { 
   spawnContext, produceMongoConnection, 
-  produceInfluxConnection, produceStorageLayer } = require('./test-helpers');
+  produceInfluxConnection } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
 
 const apiServerContext = require('api-server/test/test-helpers').context;
@@ -30,6 +30,8 @@ const metadata = require('metadata');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('store_data.test');
+
+const { getMall } = require('mall');
 
 const { getUsersRepository, User } = require('business/src/users');
 
@@ -58,9 +60,12 @@ describe('Storing data in a HF series', function() {
   let database,
     pryv,
     config;
+
+  let mall;
   before(async function () {
     config = await getConfig();
     database = await produceMongoConnection();
+    mall = await getMall();
     pryv = databaseFixture(database);
   });
   const influx = produceInfluxConnection();
@@ -137,7 +142,6 @@ describe('Storing data in a HF series', function() {
     }
 
     it('[ZUBI] should convert timestamp to deltaTime', async () => {
-      const storageLayer = produceStorageLayer(database);
 
       const nowPlus1Sec = nowEvent + 1;
       const response = await storeData({ timestamp: nowPlus1Sec, value: 80.3 }, accessToken);
@@ -277,10 +281,6 @@ describe('Storing data in a HF series', function() {
       });
     });
 
-    let storageLayer;
-    before(function () {
-      storageLayer = produceStorageLayer(database);
-    });
 
     // Tries to store `data` in an event with attributes `attrs`. Returns 
     // true if the whole operation is successful. 
@@ -294,8 +294,7 @@ describe('Storing data in a HF series', function() {
       const user: User = await usersRepository.getUserById(userId);
       assert.isNotNull(user);
 
-      const event = await bluebird.fromCallback(
-        cb => storageLayer.events.insertOne(user, effectiveAttrs, cb));
+      const event = await mall.events.create(user.id, effectiveAttrs);
 
       const requestData = {
         format: 'flatJSON',
@@ -773,10 +772,6 @@ describe('Storing data in a HF series', function() {
         });
       });
       
-      let storageLayer;
-      before(function () {
-        storageLayer = produceStorageLayer(database);
-      });
             
       // Tries to store `data` in an event with attributes `attrs`. Returns 
       // true if the whole operation is successful. 
@@ -792,8 +787,7 @@ describe('Storing data in a HF series', function() {
 
         assert.isNotNull(user);
           
-        const event = await bluebird.fromCallback(
-          cb => storageLayer.events.insertOne(user, effectiveAttrs, cb));
+        const event = await mall.events.create(user.id, effectiveAttrs);
 
         const requestData = {
           format: 'flatJSON',

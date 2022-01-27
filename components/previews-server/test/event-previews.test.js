@@ -22,6 +22,7 @@ const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const superagent = require('superagent');
+const { getMall } = require('mall');
 
 describe('event previews', function () {
 
@@ -29,6 +30,11 @@ describe('event previews', function () {
   const token = testData.accesses[2].token;
   const basePath = '/' + user.username + '/events';
   let request = null;
+  let mall = null;
+
+  before(async function() { 
+    mall = await getMall();
+  });
 
   function path(id) {
     return basePath + '/' + id;
@@ -235,10 +241,10 @@ describe('event previews', function () {
       let createdEvent;
       async.series([
         function addCorruptEvent(stepDone) {
-          storage.user.events.insertOne(user, data, function (err, event) {
+          mall.events.create(user.id, data).then((event) => {
             createdEvent = event;
             stepDone();
-          });
+          }, stepDone);
         },
         function getPreview(stepDone) {
           request.get(path(createdEvent.id), token).end(function (res) {
