@@ -421,13 +421,11 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
 }
 
 /**
- * Temp implementation for migration to Mall
+ * Do not use!
+ * @see mall.events.get()
  */
  Events.prototype.find = function (userOrUserId, query, options, callback) {
-  if (! stackContains('repository.js')) {
-    $$(userOrUserId, query, options);
-    //throw new Error();
-  }
+  throw new Error('Depreacated, use mall.events.get()');
   Events.super_.prototype.find.call(this, userOrUserId, query, options, callback);
 };
 
