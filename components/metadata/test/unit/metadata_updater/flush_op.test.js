@@ -25,6 +25,9 @@ const { PendingUpdate } =
   require('../../../src/metadata_updater/pending_updates');
 const { Flush, CustomUsersRepository } = require('../../../src/metadata_updater/flush');
 const { getLogger } = require('@pryv/boiler');
+const { getMall } = require('mall');
+
+let mall;
 
 describe('Flush', () => {
   const connection = produceMongoConnection();
@@ -47,6 +50,8 @@ describe('Flush', () => {
   // Construct a simple database fixture containing an event to update
   let userId, parentStreamId, eventId, eventWithContentId; 
   before(async () => {
+    mall = await getMall();
+
     userId = cuid(); 
     parentStreamId = cuid(); 
     eventId = cuid(); 
@@ -96,7 +101,7 @@ describe('Flush', () => {
     
     it('[D5N1] writes event metadata to disk', async () => {
       await op.run();
-      const event = await loadEvent(db, userId, eventId);
+      const event = await mall.events.getOne(userId, eventId);
       assert.strictEqual(event.modifiedBy, 'author123');
       assert.approximately(event.modified, modifiedTime, 3);
       assert.strictEqual(event.duration, toDeltaTime); 
@@ -117,14 +122,14 @@ describe('Flush', () => {
     
     it('[5QO0] doesn\'t modify duration', async () => {
       await op.run(); 
-      const event = await loadEvent(db, userId, eventWithContentId);
+      const event = await mall.events.getOne(userId, eventWithContentId);
       // See fixture above
       assert.strictEqual(event.duration, initialDuration ); 
     });
 
     it('[Z70F] leaves base data intact', async () => {
       await op.run(); 
-      const event = await loadEvent(db, userId, eventWithContentId);
+      const event = await mall.events.getOne(userId, eventWithContentId);
 
       const content = event.content;
       assert.strictEqual(content.elementType, 'mass/kg');
@@ -141,7 +146,7 @@ describe('Flush', () => {
       }); 
       const op2 = new Flush(update, db, logger);
       await op2.run(); 
-      const event = await loadEvent(db, userId, eventWithContentId);
+      const event = await mall.events.getOne(userId, eventWithContentId);
       // See fixture above
       assert.strictEqual(event.duration, toDeltaTime + 100 ); 
     });
@@ -227,11 +232,4 @@ function produceMongoConnection(): storage.Database {
 // 
 function produceStorageLayer(connection: storage.Database): storage.StorageLayer {
   return storage.getStorageLayerSync();
-}
-
-function loadEvent(db: storage.StorageLayer, userId: string, eventId: string): Promise<any> {
-  const user = { id: userId };
-  const query = { id: eventId };
-  return bluebird.fromCallback(
-    cb => db.events.findOne(user, query, null, cb));
 }

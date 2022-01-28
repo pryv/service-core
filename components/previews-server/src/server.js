@@ -79,7 +79,7 @@ async function start() {
 
   // setup routes
   require('./routes/index')(expressApp);
-  require('./routes/event-previews')(expressApp, initContextMiddleware, loadAccessMiddleware, storageLayer.events, storageLayer.eventFiles, logger);
+  await require('./routes/event-previews')(expressApp, initContextMiddleware, loadAccessMiddleware, storageLayer.events, storageLayer.eventFiles, logger);
 
   // Finalize middleware stack: 
   routesDefined();

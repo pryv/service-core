@@ -14,6 +14,8 @@ const { PendingUpdate } = require('./pending_updates');
 
 import type { Operation }  from './controller';
 
+const { getMall } = require('mall');
+
 // Operation that flushes the update to MongoDB. 
 // 
 class Flush implements Operation {
@@ -60,14 +62,13 @@ class Flush implements Operation {
     // 
     // The chosen option at least leaves duration correct.
 
-    const query = {
-      id: request.eventId,
-    };
+   
     const { from, to } = request.dataExtent;
    
     // first get event... because we need it's current time 
     // we could optimze here if the call sent the time of the event.. or use agregate call of mongo
-    const event = await bluebird.fromCallback(cb => db.events.findOne(user, query, {}, cb));
+    const mall = await getMall(); // too bad we cannot easily pass mall here 
+    const event = await mall.events.getOne(user.id, request.eventId);
    
     if (event.duration == null || to > event.duration) { // update only if needed.
       const endTime = event.time + to;
@@ -77,6 +78,11 @@ class Flush implements Operation {
         modified: request.timestamp,
       };
       // ADD AUDIT HERE ??
+      const query = {
+        id: request.eventId,
+      };
+
+      // when changing for mall remove all reference to DB 
       await bluebird.fromCallback(
               cb => db.events.updateOne(user, query, updatedData, cb));
     } 

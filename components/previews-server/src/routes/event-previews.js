@@ -18,6 +18,7 @@ const bluebird = require('bluebird');
 const getAuth = require('middleware/src/getAuth');
 
 const {getLogger} = require('@pryv/boiler');
+const { getMall } = require('mall');
 
 // constants
 const StandardDimensions = [ 256, 512, 768, 1024 ];
@@ -35,10 +36,11 @@ const StandardDimensionsLength = StandardDimensions.length;
  * @param userEventFilesStorage
  * @param logging
  */
-module.exports = function (
+module.exports = async function (
   expressApp, initContextMiddleware, loadAccessMiddleware, userEventsStorage,
   userEventFilesStorage, logging) {
 
+  const mall = await getMall();
   // SERVING PREVIEWS
 
   expressApp.all('/*', getAuth);

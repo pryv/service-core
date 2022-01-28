@@ -434,9 +434,7 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
  * @see mall.events.getOne()
  */
  Events.prototype.findOne = function (userOrUserId, query, options, callback) {
-   $$('findOne', userOrUserId, query, options, callback);
-   Events.super_.prototype.findOne.call(this, userOrUserId, query, options, callback);
-    throw new Error('Deprecated, use mall.events.getOne()');
+    throw new Error('Deprecated, use mall.events.getOne() or .get()');
  };
 
 /**
