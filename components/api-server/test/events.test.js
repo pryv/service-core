@@ -101,7 +101,9 @@ describe('events', function () {
         let allEvents;
         let accountStreamsEvents;
         async.series([
-          storage.insertMany.bind(storage, user, additionalEvents),
+          async function createEvents() { 
+            return mall.events.createMany(user.id,  additionalEvents)
+          },
           function getDefault (stepDone) {
             request.get(basePath).end(function (res) {
               response = res;

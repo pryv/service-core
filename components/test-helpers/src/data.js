@@ -22,6 +22,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getUsersRepository, User } = require('business/src/users');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
+const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
 
 // users
@@ -112,7 +113,10 @@ exports.resetEvents = function (done, user) {
         }
       }
     ),
-    storage.user.events.insertMany.bind(storage.user.events, user, eventsToWrite),
+    async function createEvents() { 
+      const mall = await getMall();
+      return mall.events.createMany(user.id,  eventsToWrite)
+    },
     function removeZerosDuration(done2) {
       events.forEach( e => { if (e.duration === 0) delete e.duration});
       done2();

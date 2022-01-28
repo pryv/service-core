@@ -33,29 +33,41 @@ class StoreUserEvents  {
   async create(uid, eventData) {
     const eventForStore = _.clone(eventData);
     let storeId;
-    // cleanup storeId from streamId
-    for (let i = 0; i < eventData.streamIds.length; i++) {
-      // check that the event belongs to a single store.
-      const [testStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[i]);
-      if (storeId == null) { storeId = testStoreId; }
-      else if (testStoreId !== storeId) {
-        throw errorFactory.invalidRequestStructure('Cannot create event with multiple streams belonging to different stores', eventData);
-      }
-      eventForStore.streamIds[i] = streamId;
-    }
+
     // if eventId is provided make sure it's compatible with the storeId & clean it
     if (eventData.id) {
       const [testStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
-      if (testStoreId !== storeId) {
-        throw errorFactory.invalidRequestStructure('Event id should match the store of streamIds', eventData);
-      }
+      storeId = testStoreId;
       eventForStore.id = eventId;
     }
+    
+    // cleanup storeId from streamId
+    if (eventData.streamIds != null) { // it might happen that deleted is set but streamIds is not when loading test data
+      for (let i = 0; i < eventData.streamIds.length; i++) {
+        // check that the event belongs to a single store.
+        const [testStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[i]);
+        if (storeId == null) { storeId = testStoreId; }
+        else if (testStoreId !== storeId) {
+          throw errorFactory.invalidRequestStructure('Cannot create event with multiple streams belonging to different stores', eventData);
+        }
+        eventForStore.streamIds[i] = streamId;
+      }
+    }
+    if (storeId == null) {
+      throw errorFactory.invalidRequestStructure('Cannot find store information in new event', eventData);
+    }
+    
     const store = this.mall._storeForId(storeId);
     try {
       return await store.events.create(uid, eventForStore);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
+    }
+  }
+
+  async createMany(uid, eventsData) {
+    for (let eventData of eventsData) {
+      await this.create(uid, eventData);
     }
   }
 

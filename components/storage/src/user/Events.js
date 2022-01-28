@@ -437,6 +437,18 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
     throw new Error('Deprecated, use mall.events.getOne() or .get()');
  };
 
+ /**
+ * Reserved for LocalStoreUser use only mall.events.create();
+ * @see mall.events.create()
+ */
+  Events.prototype.insertMany = function (userOrUserId, items, callback) {
+    if ( ! stackContains('LocalUserEvents.js') && ! stackContains('repository.js')) {
+      $$('insertMany', userOrUserId, items, callback);
+      //throw new Error();
+    }
+    Events.super_.prototype.insertMany.call(this, userOrUserId, items, callback);
+  };
+
 /**
  * Reserved for LocalStoreUser use only mall.events.create();
  * @see mall.events.create()
