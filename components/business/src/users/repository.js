@@ -21,7 +21,7 @@ const errors = require('errors').factory;
 
 const userIndex = require('./UserLocalIndex');
 const { getMall } = require('mall');
-const { getPlatform } = require('platform');
+const { getPlatform } = require('platform');
 
 const cache = require('cache');
 
@@ -307,7 +307,7 @@ class UsersRepository {
     return result;
   }
   async checkUserPassword(userId: string, password: string): Promise<boolean> {
-    const currentPass = await getUserPasswordHash(userId, this.eventsStorage);
+    const currentPass = await getUserPasswordHash(userId, this.mall);
     let isValid: boolean = false;
     if (currentPass != null) {
       isValid = await bluebird.fromCallback(
@@ -377,16 +377,15 @@ function getTransactionOptions() {
  * Get user password hash
  * @param string userId 
  */
-async function getUserPasswordHash(userId: string, storage: any): Promise<?string> {
-  const userPass: Event = await bluebird.fromCallback(cb =>
-    storage.findOne({ id: userId },
-      {
-        $and: [
-          { streamIds: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH }
-        ]
-      }, null, cb));
-  return (userPass?.content != null) ? userPass.content : null;
+async function getUserPasswordHash(userId: string, mall: any): Promise<?string> {
+  const userPassEvents = await mall.events.get(userId, {streams: [{any: [SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH]}]});
+  if (userPassEvents.length > 0) {
+    return (userPassEvents[0].content != null) ? userPassEvents[0].content : null;
+  }
+  return null;
 }
+
+  
 
 
 let usersRepository = null;

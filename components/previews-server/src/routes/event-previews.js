@@ -54,7 +54,7 @@ module.exports = function (
 
     try {
       // Check Event
-      const event = await bluebird.fromCallback((cb) => userEventsStorage.findOne(user, {id: id}, null, cb));
+      const event = await mall.events.getOne(user.id, id);
       if (event == null) { 
         return next(errors.unknownResource('event', id));
       }

@@ -21,6 +21,8 @@ const { InfluxRowType } = require('business').types;
 
 const { pubsub } = require('messages');
 
+const { getMall } = require('mall');
+
 import type { LRUCache }  from 'lru-cache';
 
 import type { TypeRepository, Repository } from 'business';
@@ -79,10 +81,10 @@ class MetadataCache implements MetadataRepository {
    */
   cache: LRUCache<string, mixed>; 
   series: Repository;
+  mall: any;
+  config: any;
 
-  config;
-
-  constructor(series: Repository, metadataLoader: MetadataRepository, config) {
+  constructor(series: Repository, metadataLoader: MetadataRepository, config: any) {
 
     this.loader = metadataLoader;
     this.series = series;
@@ -96,6 +98,10 @@ class MetadataCache implements MetadataRepository {
 
     // messages
     this.subscribeToNotifications();
+  }
+
+  async init() {
+    this.mall = await getMall();
   }
 
   // nats messages
@@ -168,9 +174,11 @@ class MetadataCache implements MetadataRepository {
 class MetadataLoader {
   databaseConn: storage.Database; 
   storage: storage.StorageLayer;
+  mall: any;
   
-  constructor(databaseConn: storage.Database, logger) {
+  constructor(databaseConn: storage.Database, mall: any, logger) {
     this.databaseConn = databaseConn; 
+    this.mall = mall;
     // NOTE We pass bogus values to the last few arguments of StorageLayer - 
     // we're not using anything but the 'events' collection. Anyhow - these 
     // should be abstracted away from the storage. Also - this is currently  
@@ -183,6 +191,7 @@ class MetadataLoader {
   
   forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
     const storage = this.storage; 
+    const mall = this.mall;
     
     // Retrieve Access (including accessLogic)
     const contextSource: ContextSource = {
@@ -205,10 +214,9 @@ class MetadataLoader {
           (next) => toCallback(methodContext.retrieveExpandedAccess(storage), next), 
           function loadEvent(done) { // result is used in success handler!
             const user = methodContext.user; 
-            const query = {id: eventId};
-            const findOpts = null; 
 
-            storage.events.findOne(user, query, findOpts, done);
+            mall.events.getOne(user.id, eventId).then((event) => {done(null, event);}, (err) => {done(err);});
+            
           },
         ], 
         (err, results) => {

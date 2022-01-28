@@ -559,7 +559,7 @@ module.exports = async function (api)
     context.updateTrackingProperties(eventUpdate);
 
     try {
-      event = await bluebird.fromCallback(cb => userEventsStorage.findOne(context.user, {id: params.id}, null, cb));
+      event = await mall.events.getOne(context.user.id, params.id);
     } catch (err) {
       return next(errors.unexpectedError(err));
     }
@@ -1244,7 +1244,7 @@ module.exports = async function (api)
     
     let event: ?Event;
     try {
-      event = await bluebird.fromCallback(cb => userEventsStorage.findOne(context.user, { id: eventId }, null, cb));
+      event = await mall.events.getOne(context.user.id, eventId);
     } catch (err) {
       return next(errors.unexpectedError(err));
     }
