@@ -316,13 +316,22 @@ describe('backward-compatibility', () => {
               content: 'hello',
               streamId: 'account'
             }
+          },
+          {
+            method: 'events.get',
+            params: {
+              streams: ['account']
+            }
           }
         ];
         const res = await post(`/${username}/`, batchOps);
         const results = res.body.results;
-        assert.equal(results?.length, 2);
+        assert.equal(results?.length, 3);
         assert.equal(results[0]?.stream?.id, 'account', 'stream should have been created');
         assert.equal(results[1]?.event?.streamId, 'account', 'event should have been created in account stream');
+        assert.isArray(results[2]?.events, 'events should have been returned');
+        assert.equal(results[2]?.events?.length, 1, 'events should have been returned');
+        assert.equal(results[2]?.events?.[0]?.streamId, 'account', 'event should have been returned in account stream');
       });
     });
   

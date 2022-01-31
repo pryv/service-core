@@ -1,5 +1,9 @@
 ## 1.7
 
+### 1.7.11
+
+- Fix issue when BACKWARD_COMPATIBILITY_SYSTEM_STREAMS_PREFIX is set to "true" - "account" streamId was handled as ".account" 
+
 ### 1.7.10
 
 - API change: Don't coerce event content and simplify known type validation process in api-server
