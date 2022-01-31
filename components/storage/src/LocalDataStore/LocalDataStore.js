@@ -50,6 +50,10 @@ class LocalDataStore extends DataStore {
 
   get streams() { return this._streams; }
   get events() { return this._events; }
+
+  async newTransaction(): Promise<DataStore.Transaction> {
+    
+  }
 }
 
 module.exports = LocalDataStore;

@@ -178,11 +178,18 @@ class UsersRepository {
   }
 
   async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
-    // first explicitly create a collection, because it would fail in the transation
+    // first explicitly create a collection, because it would fail in the transaction if collection does not exist 
     await bluebird.fromCallback(
       cb => this.eventsStorage.database.getCollection(this.collectionInfo, cb),
     );
     await this.checkDuplicates(user, user.username);
+
+    const mallTransaction = await this.mall.newTransaction();
+    const localTransaction = await mallTransaction.forStoreId('local');
+
+    await localTransaction(async () => {
+      
+    });
 
     const transactionSession = await this.eventsStorage.database.startSession();
     await transactionSession.withTransaction(
@@ -219,6 +226,9 @@ class UsersRepository {
         }); 
         await this.platform.updateUser(user.username, operations, true, true);
 
+        
+        const localTransaction = 
+        mallTransaction.registerExernalTransaction('local', transaction)
         
         await bluebird.fromCallback(
           cb => this.eventsStorage.insertMany(

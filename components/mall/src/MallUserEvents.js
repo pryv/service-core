@@ -30,7 +30,7 @@ class StoreUserEvents  {
    * @param {*} uid 
    * @param {*} eventData 
    */
-  async create(uid, eventData) {
+  async create(uid, eventData, transaction) {
     const eventForStore = _.clone(eventData);
     let storeId;
 
@@ -58,16 +58,22 @@ class StoreUserEvents  {
     }
     
     const store = this.mall._storeForId(storeId);
+
+    // handle eventual transaction
+    if (transaction != null) {
+      storeTransaction = await transaction.forStore(store);
+    }
+
     try {
-      return await store.events.create(uid, eventForStore);
+      return await store.events.create(uid, eventForStore, storeTransaction);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
   }
 
-  async createMany(uid, eventsData) {
+  async createMany(uid, eventsData, transaction) {
     for (let eventData of eventsData) {
-      await this.create(uid, eventData);
+      await this.create(uid, eventData, transaction);
     }
   }
 

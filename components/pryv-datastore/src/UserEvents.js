@@ -8,6 +8,7 @@
 // @flow
 
 const errors = require('./errors');
+const Transaction = require('./Transaction');
 
 /**
  * Per-user events data
@@ -43,7 +44,7 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-  async create(uid: string, params): Promise<void>  { throw(errors.unsupportedOperation('events.create')); }
+  async create(uid: string, params: {}, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.create')); }
 
   /**
    * @see https://api.pryv.com/reference/#update-event

@@ -9,6 +9,7 @@
 
 const UserEvents = require('./UserEvents');
 const UserStreams = require('./UserStreams');
+const Transaction = require('./Transaction');
 const Defaults = require('./Defaults');
 
 /**
@@ -48,6 +49,11 @@ class DataStore {
    * @returns UserEvents
    */
   get events(): UserEvents { throw new Error('Not implemented'); }
+
+  /**
+   * @returns a new Transaction
+   */
+  async newTransaction(): Transaction { throw new Error('Not implemented'); }
 
 }
 

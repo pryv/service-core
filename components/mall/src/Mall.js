@@ -22,7 +22,8 @@ errors._setFactory(errorFactory);
 
 // -- Core properties
 const MallUserStreams = require('./MallUserStreams');
-const StoreUserEvents = require('./MallUserEvents');
+const MallUserEvents = require('./MallUserEvents');
+const MallTransaction = require('./MallTransaction');
 
 class Mall {
 
@@ -32,7 +33,7 @@ class Mall {
   storesMap: Map<string, DataStore>;
   initialized: boolean;
   _streams: MallUserStreams;
-  _events: StoreUserEvents;
+  _events: MallUserEvents;
 
   constructor() {
     this.storesMap = {};
@@ -41,7 +42,7 @@ class Mall {
   }
 
   get streams(): MallUserStreams { return this._streams; }
-  get events(): StoreUserEvents { return this._events; }
+  get events(): MallUserEvents { return this._events; }
 
   /**
    * register a new DataStore
@@ -64,9 +65,18 @@ class Mall {
 
     // expose streams and events;
     this._streams = new MallUserStreams(this);
-    this._events = new StoreUserEvents(this);
+    this._events = new MallUserEvents(this);
 
     return this;
+  }
+
+  /**
+   * 
+   * @param {*} storeId 
+   * @returns 
+   */
+  async newTransaction() {
+    return new MallTransaction();
   }
 
   /**
