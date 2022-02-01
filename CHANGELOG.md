@@ -1,6 +1,6 @@
 ## 1.7
 
-### 1.7.11
+### 1.7.12
 
 - Fix issue when BACKWARD_COMPATIBILITY_SYSTEM_STREAMS_PREFIX is set to "true" - "account" streamId was handled as ".account" 
 
