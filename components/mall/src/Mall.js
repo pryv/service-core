@@ -76,7 +76,7 @@ class Mall {
    * @returns 
    */
   async newTransaction() {
-    return new MallTransaction();
+    return new MallTransaction(this);
   }
 
   /**

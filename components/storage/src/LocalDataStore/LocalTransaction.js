@@ -5,15 +5,42 @@
  * Proprietary and confidential
  */
 
+// @flow
 
- const {DataStore, errors}  = require('pryv-datastore');
+const {DataStore, errors}  = require('pryv-datastore');
+
+const { getDatabase } = require('../index');
+
+const defaultOptions = {
+  readPreference: 'primary',
+  readConcern: { level: 'local' },
+  writeConcern: { w: 'majority' },
+};
 
 /**
  * Per-user events data
  */
- class Transaction extends DataStore.Transaction {
+class LocalTransaction extends DataStore.Transaction {
+  transactionSession: any;
+  transactionOptions: any;
 
-  constructor()
+  constructor(transactionOptions: any) { 
+    super();
+    this.transactionOptions = transactionOptions || defaultOptions;
+  };
+
+  async init() {
+    const database = await getDatabase();
+    this.transactionSession = await database.startSession();
+  }
+
+  /**
+   * 
+   * @param {Function} func 
+   */
+  async exec(func: Function) {
+    await this.transactionSession.withTransaction(func, this.transactionOptions);
+  }
 
   async commit(): Promise<void> { throw(new Error('not implemented')); }
 
@@ -21,4 +48,4 @@
 
 }
 
-module.exports = Transaction;
+module.exports = LocalTransaction;

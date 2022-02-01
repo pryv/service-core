@@ -17,6 +17,7 @@ const {DataStore}  = require('pryv-datastore');
 
 const LocalUserStreams = require('./LocalUserStreams');
 const LocalUserEvents = require('./LocalUserEvents');
+const LocalTransaction = require('./LocalTransaction');
 
 const STORE_ID = 'local';
 const STORE_NAME = 'Local Store';
@@ -52,7 +53,9 @@ class LocalDataStore extends DataStore {
   get events() { return this._events; }
 
   async newTransaction(): Promise<DataStore.Transaction> {
-    
+    const transaction = new LocalTransaction();
+    await transaction.init();
+    return transaction;
   }
 }
 

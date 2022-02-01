@@ -30,6 +30,7 @@ class DataStore {
   static Defaults = Defaults;
   static UserEvents = UserEvents;
   static UserStreams = UserStreams;
+  static Transaction = Transaction;
 
   _id: string;
   _name: string;

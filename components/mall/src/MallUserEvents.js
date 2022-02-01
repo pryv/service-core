@@ -59,13 +59,8 @@ class StoreUserEvents  {
     
     const store = this.mall._storeForId(storeId);
 
-    // handle eventual transaction
-    if (transaction != null) {
-      storeTransaction = await transaction.forStore(store);
-    }
-
     try {
-      return await store.events.create(uid, eventForStore, storeTransaction);
+      return await store.events.create(uid, eventForStore);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }

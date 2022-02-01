@@ -187,13 +187,7 @@ class UsersRepository {
     const mallTransaction = await this.mall.newTransaction();
     const localTransaction = await mallTransaction.forStoreId('local');
 
-    await localTransaction(async () => {
-      
-    });
-
-    const transactionSession = await this.eventsStorage.database.startSession();
-    await transactionSession.withTransaction(
-      async () => {
+    await localTransaction.exec(async () => {
         let accessId = UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
         if (
           withSession && this.validateAllStorageObjectsInitialized() &&
@@ -202,13 +196,13 @@ class UsersRepository {
           const token: string = await this.createSessionForUser(
             user.username,
             user.appId,
-            transactionSession,
+            localTransaction.transactionSession,
           );
           const access = await this.createPersonalAccessForUser(
             user.id,
             token,
             user.appId,
-            transactionSession,
+            localTransaction.transactionSession,
           );
           accessId = access?.id;
           user.token = access.token;
@@ -225,21 +219,15 @@ class UsersRepository {
           return {action: 'create', key: key, value: user[key], isUnique: true};
         }); 
         await this.platform.updateUser(user.username, operations, true, true);
-
-        
-        const localTransaction = 
-        mallTransaction.registerExernalTransaction('local', transaction)
         
         await bluebird.fromCallback(
           cb => this.eventsStorage.insertMany(
             { id: user.id },
             events,
             cb,
-            { transactionSession },
+            { transactionSession: localTransaction.transactionSession },
           ),
         );
-
-
       },
       getTransactionOptions(),
     );

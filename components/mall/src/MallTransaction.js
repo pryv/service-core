@@ -8,10 +8,11 @@
 const { DataStore }  = require('pryv-datastore');
 
 class MallTransaction {
-
+  mall: Mall;
   transactionsByStoreId: Map<string, DataStore.Transaction>;
   
-  constructor() {
+  constructor(mall) {
+    this.mall = mall;
     this.transactionsByStoreId = new Map();
   }
 
@@ -25,11 +26,11 @@ class MallTransaction {
     this.transactionsByStoreId.set(storeId, transaction);
   }
 
-  async forStore(store): DataStore.Transaction {
-    if (this.transactionsByStoreId.has(store.id)) {
-      return this.transactionsByStoreId.get(store.id);
+  async forStoreId(storeId): DataStore.Transaction {
+    if (this.transactionsByStoreId.has(storeId)) {
+      return this.transactionsByStoreId.get(storeId);
     } 
-
+    const store = this.mall._storeForId(storeId);
     const transaction = await store.newTransaction();
     this.transactionsByStoreId.set(store.id, transaction);
     return transaction;
@@ -46,3 +47,5 @@ class MallTransaction {
   }
 
 }
+
+module.exports = MallTransaction;
