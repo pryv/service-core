@@ -441,24 +441,24 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
  * Reserved for LocalStoreUser use only mall.events.create();
  * @see mall.events.create()
  */
-  Events.prototype.insertMany = function (userOrUserId, items, callback) {
+  Events.prototype.insertMany = function (userOrUserId, items, callback, options) {
     if ( ! stackContains('LocalUserEvents.js') && ! stackContains('repository.js')) {
       $$('insertMany', userOrUserId, items, callback);
       //throw new Error();
     }
-    Events.super_.prototype.insertMany.call(this, userOrUserId, items, callback);
+    Events.super_.prototype.insertMany.call(this, userOrUserId, items, callback, options);
   };
 
 /**
  * Reserved for LocalStoreUser use only mall.events.create();
  * @see mall.events.create()
  */
- Events.prototype.insertOne = function (userOrUserId, item, callback) {
+ Events.prototype.insertOne = function (userOrUserId, item, callback, options) {
   if ( ! stackContains('LocalUserEvents.js')) {
     $$('insertOne', userOrUserId, item, callback);
     //throw new Error();
   }
-  Events.super_.prototype.insertOne.call(this, userOrUserId, item, callback);
+  Events.super_.prototype.insertOne.call(this, userOrUserId, item, callback, options);
 };
 
 function stackContains(needle) {

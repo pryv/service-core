@@ -220,16 +220,8 @@ class UsersRepository {
         }); 
         await this.platform.updateUser(user.username, operations, true, true);
         
-        await bluebird.fromCallback(
-          cb => this.eventsStorage.insertMany(
-            { id: user.id },
-            events,
-            cb,
-            { transactionSession: localTransaction.transactionSession },
-          ),
-        );
-      },
-      getTransactionOptions(),
+        await this.mall.events.createMany(user.id, events, mallTransaction);
+      }
     );
     return user;
   }

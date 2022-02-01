@@ -28,9 +28,9 @@ class LocalUserEvents extends DataStore.UserEvents {
     this.userEventsStorage = userEventsStorage;
   }
 
-  async create(userId, event) {
+  async create(userId, event, transaction) {
     try {
-      return await bluebird.fromCallback(cb => this.userEventsStorage.insertOne(userId, event, cb));
+      return await bluebird.fromCallback(cb => this.userEventsStorage.insertOne(userId, event, cb, { transactionSession: transaction?.transactionSession}));
     } catch (err) {
       if (err.isDuplicateIndex != null && err.isDuplicateIndex('id')) {
         throw errors.itemAlreadyExists('event', {id: event.id}, err);

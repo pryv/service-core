@@ -283,7 +283,7 @@ BaseStorage.prototype.aggregate = function(
   );
 };
 
-BaseStorage.prototype.insertOne = function (userOrUserId, item, callback) {
+BaseStorage.prototype.insertOne = function (userOrUserId, item, callback, options) {
   const itemToInsert = this.applyItemToDB(this.applyItemDefaults(item));
   this.database.insertOne(
     this.getCollectionInfo(userOrUserId),
@@ -293,7 +293,8 @@ BaseStorage.prototype.insertOne = function (userOrUserId, item, callback) {
         return callback(err);
       }
       callback(null, this.applyItemFromDB(itemToInsert));
-    }.bind(this)
+    }.bind(this),
+    options
   );
 };
 
@@ -435,13 +436,14 @@ BaseStorage.prototype.findAll = function(userOrUserId, options, callback) {
 /**
  * Inserts an array of items; each item must have a valid id and data already. For tests only.
  */
-BaseStorage.prototype.insertMany = function(userOrUserId, items, callback) {
+BaseStorage.prototype.insertMany = function(userOrUserId, items, callback, options) {
   // Groumpf... Many tests are relying on this.. 
   const nItems = _.cloneDeep(items);
   this.database.insertMany(
     this.getCollectionInfo(userOrUserId),
     this.applyItemsToDB(nItems),
-    callback
+    callback,
+    options
   );
 };
 
