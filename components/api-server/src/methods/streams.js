@@ -476,11 +476,9 @@ module.exports = async function (api) {
                   eventsStream.on('data', (event) => {
                     eventToVersion = _.extend(event, { headId: event.id });
                     delete eventToVersion.id;
-                    userEventsStorage.insertOne(context.user, eventToVersion,
-                      function (err) {
-                        if (err) {
-                          return subStepDone(errors.unexpectedError(err));
-                        }
+                    mall.events.create(context.user.id, eventToVersion).then(
+                      () => { subStepDone(); }, 
+                      (err) => { subStepDone(errors.unexpectedError(err)); 
                       });
                   });
 

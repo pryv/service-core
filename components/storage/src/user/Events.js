@@ -442,7 +442,7 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
  * @see mall.events.create()
  */
   Events.prototype.insertMany = function (userOrUserId, items, callback, options) {
-    if ( ! stackContains('LocalUserEvents.js') && ! stackContains('repository.js')) {
+    if ( ! stackContains('LocalUserEvents.js')) {
       $$('insertMany', userOrUserId, items, callback);
       //throw new Error();
     }
