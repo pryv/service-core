@@ -298,6 +298,42 @@ describe('backward-compatibility', () => {
         .set('Authorization', token)
         .query(query);
     }
+
+    describe(' Account streams reserved words', () => {
+      it('[4L48] Can create an "account" stream, and add event to it', async () => { 
+        const batchOps = [
+          {
+            method: 'streams.create',
+            params: {
+              id: 'account',
+              name: 'account',
+            }
+          },
+          {
+            method: 'events.create',
+            params: {
+              type: 'note/txt',
+              content: 'hello',
+              streamId: 'account'
+            }
+          },
+          {
+            method: 'events.get',
+            params: {
+              streams: ['account']
+            }
+          }
+        ];
+        const res = await post(`/${username}/`, batchOps);
+        const results = res.body.results;
+        assert.equal(results?.length, 3);
+        assert.equal(results[0]?.stream?.id, 'account', 'stream should have been created');
+        assert.equal(results[1]?.event?.streamId, 'account', 'event should have been created in account stream');
+        assert.isArray(results[2]?.events, 'events should have been returned');
+        assert.equal(results[2]?.events?.length, 1, 'events should have been returned');
+        assert.equal(results[2]?.events?.[0]?.streamId, 'account', 'event should have been returned in account stream');
+      });
+    });
   
     describe('events', () => {
       it('[Q40I] must return old prefixes in events.get', async () => {
