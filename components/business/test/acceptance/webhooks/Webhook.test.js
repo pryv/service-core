@@ -430,7 +430,7 @@ describe('Webhook', () => {
 
       it('[FYOR] should rotate the runs', async () => {
         await webhook.send(message);
-        await sleep(200);
+        await sleep(500);
         runs2 = _.cloneDeep(webhook.runs);
         assert.deepEqual(runs2[2], runs1[1]);
         assert.deepEqual(runs2[1], runs1[0]);
@@ -438,7 +438,7 @@ describe('Webhook', () => {
 
         //should rotate the runs more'
         await webhook.send(message);
-        await sleep(200);
+        await sleep(500);
         runs3 = webhook.runs;
         assert.deepEqual(runs3[1], runs2[0]);
         assert.deepEqual(runs3[2], runs2[1]);

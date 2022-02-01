@@ -85,13 +85,14 @@ function changeToOldPrefix(streamId: string): string {
 }
 
 function replaceWithNewPrefix(streamId: string): string {
+  if (! streamId.startsWith(OLD_PREFIX)) return streamId;
   const streamIdWithoutPrefix: string = removeOldPrefix(streamId);
   if (SystemStreamsSerializer.isCustomerSystemStreamId(streamIdWithoutPrefix)) return SystemStreamsSerializer.addCustomerPrefixToStreamId(streamIdWithoutPrefix);
   if (SystemStreamsSerializer.isPrivateSystemStreamId(streamIdWithoutPrefix)) return SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix);
   return streamIdWithoutPrefix;
 
   function removeOldPrefix(streamId: string): string {
-    if (streamId.startsWith(OLD_PREFIX)) return streamId.substr(1);
+    if (streamId.startsWith(OLD_PREFIX)) return streamId.substr(OLD_PREFIX.length);
     return streamId;
   }
 }

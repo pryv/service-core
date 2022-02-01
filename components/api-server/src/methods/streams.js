@@ -279,11 +279,12 @@ module.exports = async function (api) {
    * @param {*} next
    */
   function forbidSystemStreamsActions (context, params, result, next) {
+   
     if (params.id != null) {
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         params.id = replaceWithNewPrefix(params.id);
       }
-
+    
       if (SystemStreamsSerializer.isSystemStreamId(params.id)) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
