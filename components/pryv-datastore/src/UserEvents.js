@@ -49,7 +49,6 @@ class UserEvents {
   /**
    * @see https://api.pryv.com/reference/#update-event
    * @param {identifier} uid
-   * @throws item-already-exists
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Event
    */

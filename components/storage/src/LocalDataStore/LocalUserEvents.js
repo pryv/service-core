@@ -28,6 +28,14 @@ class LocalUserEvents extends DataStore.UserEvents {
     this.userEventsStorage = userEventsStorage;
   }
 
+  async update(userId, eventId, params, transaction) {
+    try {
+      return await bluebird.fromCallback(cb => this.userEventsStorage.updateOne(userId, {_id: eventId}, params, cb, { transactionSession: transaction?.transactionSession}));
+    } catch (err) {
+      throw errors.unexpectedError(err);
+    }
+  }
+
   async create(userId, event, transaction) {
     try {
       return await bluebird.fromCallback(cb => this.userEventsStorage.insertOne(userId, event, cb, { transactionSession: transaction?.transactionSession}));
@@ -167,6 +175,13 @@ function paramsToMongoquery(params) {
     }
   }
 
+  // excludes. (only supported for ID.. specific to one updateEvent in SystemsStream .. might be removed)
+  if (params.NOT != null) {
+    if (params.NOT.id != null) {
+      if (query.id != null) throw new Error('NOT.id is not supported with id');
+      query.id = {$ne: params.NOT.id};
+    }
+  }
   return {query, options};
 }
 

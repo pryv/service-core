@@ -172,7 +172,11 @@ function getDbIndexes () {
  * @param updatedData
  * @param callback
  */
-Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
+Events.prototype.updateOne = function (userOrUserId, query, update, callback, options) {
+  if ( ! stackContains('LocalUserEvents.js')) {
+    $$('updateOne', userOrUserId, query, update);
+    //throw new Error('updateOne should not be called outside LocalUserEvents.js');
+  }
   const that = this;
 
   // unset eventually existing integrity field. Unless integrity is in set request
@@ -195,7 +199,7 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
       // only update if there is a mismatch of integrity
       if (integrityCheck != eventData.integrity) {
         // could be optimized by using "updateOne" instead of findOne and update
-        return Events.super_.prototype.findOneAndUpdate.call(that, userOrUserId, {_id: eventData.id}, {integrity: eventData.integrity}, callback);
+        return Events.super_.prototype.findOneAndUpdate.call(that, userOrUserId, {_id: eventData.id}, {integrity: eventData.integrity}, callback, options);
       } 
       callback(err, eventData);
     }

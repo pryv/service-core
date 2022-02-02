@@ -492,17 +492,14 @@ module.exports = async function (api)
       }
 
       result.event.attachments = attachments;
-      userEventsStorage.updateOne(context.user, { id: result.event.id }, { attachments: attachments },
-        function (err, updatedEvent) {
-          if (err) {
-            return next(errors.unexpectedError(err));
-          }
-          // To remove when streamId not necessary
-          updatedEvent.streamId = updatedEvent.streamIds[0];   
-          result.event = updatedEvent;
-          result.event.attachments = setFileReadToken(context.access, result.event.attachments);
-          next();
-        });
+      const updatedEvent = await mall.events.update(context.user.id, result.event.id, { attachments });
+
+      // To remove when streamId not necessary
+      updatedEvent.streamId = updatedEvent.streamIds[0];   
+      result.event = updatedEvent;
+      result.event.attachments = setFileReadToken(context.access, result.event.attachments);
+      next();
+        
     } catch (err) {
       next(err);
     }
@@ -692,8 +689,7 @@ module.exports = async function (api)
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      let updatedEvent: Event = await bluebird.fromCallback(cb =>
-        userEventsStorage.updateOne(context.user, { _id: context.newEvent.id }, context.newEvent, cb));
+      const updatedEvent = await mall.events.update(context.user.id, context.newEvent.id, context.newEvent);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
@@ -719,19 +715,11 @@ module.exports = async function (api)
     if (! context.removeActiveEvents) {
       return next();
     }
-    await bluebird.fromCallback(cb =>
-      userEventsStorage.updateOne(context.user,
-        {
-          id: { $ne: result.event.id },
-          streamIds: {
-            $all: [
-              context.accountStreamId, 
-              STREAM_ID_ACTIVE
-            ]
-          }
-        },
-        { $pull: { streamIds: STREAM_ID_ACTIVE } }, cb)
-    );
+    const query = {NOT: {id: result.event.id}, streams: [{any: [context.accountStreamId], and: [{any: [STREAM_ID_ACTIVE]}]}]};
+
+    const updatedEvents = await mall.events.updateMany(context.user.id, query, { }, [], [STREAM_ID_ACTIVE]);
+   
+
     next();
   }
 

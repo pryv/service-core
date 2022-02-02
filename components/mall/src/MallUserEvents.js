@@ -11,6 +11,8 @@ const StreamsUtils = require('./lib/StreamsUtils');
 
 const errorFactory = require('errors').factory;
 
+const { Readable } = require('stream');
+
 /**
  * Handle Store.events.* methods
  */
@@ -21,6 +23,104 @@ class StoreUserEvents  {
    */
   constructor(mall) {
     this.mall = mall;
+  }
+
+  // --------------------------- UPDATE ----------------- //
+  async update(uid, fullEventId, eventData) {
+    const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
+    const store: DataStore = this.mall._storeForId(storeId);
+    if (store == null) return null;
+    try {
+      return await store.events.update(uid, eventId, eventData);
+    } catch (e) {
+      this.mall.throwAPIError(e, storeId);
+    }
+  }
+
+  /**
+   * Utility to change streams for multiple matching events 
+   * @param {string} uid - userId
+   * @param {*} query - query to find events @see events.get parms
+   * @param {*} update - perform replacement of values for matching events
+   * @param {Array<string>} addStreamsIds - array of streams to add to the events streamIds
+   * @param {Array<string>} removeStreamsIds - array of streams to be remove from the events streamIds
+   * @returns Streams of updated events
+   */
+  async updateMany(uid, query, update = {}, addStreams = [], removeStreams = []) {
+    const streamedUpdate = await this.updateStreamedMany(uid, query, update, addStreams, removeStreams);
+    const result = [];
+    for await (let event of streamedUpdate) {
+      result.push(event);
+    }
+    $$('updateManyDONE', {query, update, addStreams, removeStreams, result});
+    return result;
+  }
+
+  /**
+   * Utility to change streams for multiple matching events 
+   * @param {string} uid - userId
+   * @param {*} query - query to find events @see events.get parms
+   * @param {*} update - perform replacement of values for matching events
+   * @param {Array<string>} addStreamsIds - array of streams to add to the events streamIds
+   * @param {Array<string>} removeStreamsIds - array of streams to be remove from the events streamIds
+   * @returns Streams of updated events
+   */
+  async updateStreamedMany(uid, query, update = {}, addStreams = [], removeStreams = []) {
+    const paramsByStore = getParamsBySource(query);
+
+    // check updates does not move events to a different store
+    let singleStoreId = null;
+    if (query.id != null) { // event id is provided
+      const [eventStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(query.id); 
+      singleStoreId = eventStoreId;
+    }
+    if (update.streamIds != null) { // update streamIds is provided
+      for (let fullStreamId of update.streamIds) {
+        const [streamStoreId, fullStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId); 
+        if (singleStoreId == null) singleStoreId = streamStoreId;
+        if (singleStoreId != streamStoreId) throw new Error('events cannot be moved to a different store');
+      }
+    }
+    if (addStreams.length > 0) { // add streamIds is provided
+      for (let fullStreamId of addStreams) {
+        const [streamStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId); 
+        if (singleStoreId == null) singleStoreId = streamStoreId;
+        if (singleStoreId != streamStoreId) throw new Error('events cannot be moved to a different store');
+      }
+    }
+    // if we are in a single store mode check that the query matches
+    if (singleStoreId != null) { 
+      for (let storeId of Object.keys(paramsByStore)) {
+        if (storeId !== singleStoreId) {
+          throw new Error('events cannot be moved to a different store');
+        }
+      }
+    }
+    // fetch events to be updated 
+    const streamedMatchingEvents = await this.getStreamedWithParamsByStore(uid, paramsByStore);
+
+    const that = this;
+    async function* reader() {
+      for await (const event of streamedMatchingEvents) {
+        const eventToUpdate = _.merge(event, update);
+        if (addStreams.length > 0) {
+          eventToUpdate.streamIds = eventToUpdate.streamIds.concat(addStreams);
+        }
+        if (removeStreams.length > 0) {
+          eventToUpdate.streamIds = _.difference(eventToUpdate.streamIds, removeStreams);
+        }
+        const eventId = eventToUpdate.id;
+        delete eventToUpdate.id;
+        const updatedEvent = await that.update(uid, eventId, eventToUpdate);
+        yield updatedEvent;
+      }
+    
+      // finish the iterator
+      return true;
+    }
+
+
+    return Readable.from(reader());
   }
 
   // --------------------------- CREATE ----------------- //
