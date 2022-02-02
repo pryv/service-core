@@ -1091,8 +1091,8 @@ module.exports = async function (api)
           context.accountStreamId,
         );
       }
-      let updatedEvent: Event = await bluebird.fromCallback(cb =>
-        userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
+      const updatedEvent = await mall.events.update(context.user.id, params.id, updatedData);
+
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams ---- WTF
@@ -1193,8 +1193,7 @@ module.exports = async function (api)
       const updatedData: {} = { attachments: context.event.attachments };
       context.updateTrackingProperties(updatedData);
 
-      const alreadyUpdatedEvent: Event = await bluebird.fromCallback(cb =>
-        userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
+      const alreadyUpdatedEvent = await mall.events.update(context.user.id, params.id, updatedData);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams

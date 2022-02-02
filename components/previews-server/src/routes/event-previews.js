@@ -94,8 +94,7 @@ module.exports = async function (
         return next(adjustGMResultError(err));
       }
 
-      await bluebird.fromCallback((cb) => userEventsStorage.updateOne(
-        req.context.user, {id: req.params.id},{attachments: event.attachments}, cb));
+      await mall.events.update(req.context.user.id, req.params.id, {attachments: event.attachments});
 
       // Prepare path
       const targetSize = getPreviewSize(originalSize, {
