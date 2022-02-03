@@ -182,16 +182,13 @@ describe('event previews', function () {
           const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           cachedFileModified = modified.toString();
         },
-        function updateEvent(stepDone) {
+        async function updateEvent() {
           const update = {
             description: 'Updated',
             modified: timestamp.now(),
             modifiedBy: testData.accesses[2].id
           };
-          storage.user.events.updateOne(user, {id: event.id}, update, function (err, updatedEvt) {
-            updatedEvent = updatedEvt;
-            stepDone();
-          });
+           updatedEvent = await mall.events.update(user.id, event.id, update);
         },
         async function retrieveAgain() {
           const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {

@@ -1740,7 +1740,9 @@ describe('events', function () {
           deletionTime;
 
       async.series([
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
+          async function trashEvent() {
+            await mall.events.update(user.id, id, {trashed: true});
+          },
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {
 

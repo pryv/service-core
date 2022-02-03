@@ -78,13 +78,9 @@ class Flush implements Operation {
         modified: request.timestamp,
       };
       // ADD AUDIT HERE ??
-      const query = {
-        id: request.eventId,
-      };
 
       // when changing for mall remove all reference to DB 
-      await bluebird.fromCallback(
-              cb => db.events.updateOne(user, query, updatedData, cb));
+      await mall.events.update(user.id, request.eventId, updatedData);      
     } 
 
     return true;
