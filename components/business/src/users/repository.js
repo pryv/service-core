@@ -230,8 +230,6 @@ class UsersRepository {
    
     await this.checkDuplicates(update, user.username);
 
-  
-    
     // change password into hash if it exists
     if (update.password != null) {
       update.passwordHash = await bluebird.fromCallback(
@@ -241,32 +239,29 @@ class UsersRepository {
     delete update.password;
     
     // Start a transaction session
-    const transactionSession = await this.eventsStorage.database.startSession();
-    await transactionSession.withTransaction(async () => {
+    const mallTransaction = await this.mall.newTransaction();
+    const localTransaction = await mallTransaction.forStoreId('local');
+
+    await localTransaction.exec(async () => {
       // update all account streams and don't allow additional properties
       for (const [streamIdWithoutPrefix, content] of Object.entries(update)) {
       //for (let i = 0; i < eventsForUpdate.length; i++) {
-        await bluebird.fromCallback(cb => this.eventsStorage.updateOne(
-          { id: user.id },
-          {
-            streamIds: {
-              $all: [
-                SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix),
-                SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
-              ]
-            }
-          },
-          {
-            content,
-            modified: timestamp.now(),
-            modifiedBy: accessId,
-          },
-          cb,
-          { transactionSession }
-        ));
+
+        const query = {streams: [{
+          any: [SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix)],
+          and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]
+        }]};
+        const updateFields =  {
+          content,
+          modified: timestamp.now(),
+          modifiedBy: accessId,
+        };
+        await this.mall.events.updateMany(user.id, query, {merge: updateFields}, mallTransaction);
       }
-    }, getTransactionOptions());
+    });
+
   }
+
   async deleteOne(userId: string, username: ?string): Promise<number> {
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
 
