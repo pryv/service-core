@@ -458,56 +458,42 @@ module.exports = async function (api) {
         }
       },
 
-      function handleLinkedEvents(stepDone) {
+     function handleLinkedEvents(stepDone) {
         if (!hasLinkedEvents) {
           return stepDone();
         }
 
         if (params.mergeEventsWithParent) {
+          
           async.series([
-            function generateLogIfNecessary(subStepDone) {
-              if (!auditSettings.forceKeepHistory) {
-                return subStepDone();
-              }
-
-              mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
-                .then((eventsStream) => {
-                  
-                  let eventToVersion;
-                  eventsStream.on('data', (event) => {
-                    eventToVersion = _.extend(event, { headId: event.id });
+            async function generateLogIfNecessary() {
+              if (auditSettings.forceKeepHistory) { // generateLogIfNecessary
+                try {
+                  const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}});
+                  for await (event of eventsStream) {
+                    const  eventToVersion = _.extend(event, { headId: event.id });
                     delete eventToVersion.id;
-                    mall.events.create(context.user.id, eventToVersion).then(
-                      () => { subStepDone(); }, 
-                      (err) => { subStepDone(errors.unexpectedError(err)); 
-                      });
-                  });
-
-                  eventsStream.on('error', (err) => {
-                    subStepDone(errors.unexpectedError(err));
-                  });
-
-                  eventsStream.on('end', () => {
-                    subStepDone();
-                  });
-                }, (err) => {
-                  return subStepDone(errors.unexpectedError(err));
-                });
-
+                    await mall.events.create(context.user.id, eventToVersion);
+                  }
+                } catch (err) {
+                  throw errors.unexpectedError(err);
+                }
+              }
             },
-            function addParentStreamIdIfNeededAndRemoveDeletedStreamIds(subStepDone) {
+            async function addParentStreamIdIfNeededAndRemoveDeletedStreamIds() {
               const query = { streams: [{ any: streamAndDescendantIds}] };
-
-              // the following add "parentId" if not present and remove "streamAndDescendantIds"
-              mall.events.updateMany(context.user.id, query, {}, [parentId], streamAndDescendantIds).then(
-                (result) => { // resolve
-                  pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
-                  subStepDone()
-                }, 
-                (err) => { subStepDone(errors.unexpectedError(err))}
-              );
+              try {
+                // the following add "parentId" if not present and remove "streamAndDescendantIds"
+                await mall.events.updateMany(context.user.id, query, { addStreams: [parentId], removeStreams: streamAndDescendantIds});
+                pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+              } catch (err) {
+                throw errors.unexpectedError(err);
+              }
             }
           ], stepDone);
+
+
+
         } else {
           // case mergeEventsWithParent = false
 

@@ -717,7 +717,7 @@ module.exports = async function (api)
     }
     const query = {NOT: {id: result.event.id}, streams: [{any: [context.accountStreamId], and: [{any: [STREAM_ID_ACTIVE]}]}]};
 
-    const updatedEvents = await mall.events.updateMany(context.user.id, query, { }, [], [STREAM_ID_ACTIVE]);
+    const updatedEvents = await mall.events.updateMany(context.user.id, query, { removeStreams: [STREAM_ID_ACTIVE]});
    
 
     next();

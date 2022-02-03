@@ -41,18 +41,19 @@ class StoreUserEvents  {
    * Utility to change streams for multiple matching events 
    * @param {string} uid - userId
    * @param {*} query - query to find events @see events.get parms
-   * @param {*} update - perform replacement of values for matching events
-   * @param {Array<string>} addStreamsIds - array of streams to add to the events streamIds
-   * @param {Array<string>} removeStreamsIds - array of streams to be remove from the events streamIds
-   * @returns Streams of updated events
+   * @param {any} update - perform update as per the following
+   * @param {any} update.merge - provided object fields with matching events
+   * @param {Array<string>} update.deletes - remove fields from matching events
+   * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
+   * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
+   * @returns Array of updated events
    */
-  async updateMany(uid, query, update = {}, addStreams = [], removeStreams = []) {
-    const streamedUpdate = await this.updateStreamedMany(uid, query, update, addStreams, removeStreams);
+  async updateMany(uid, query, update): Array {
+    const streamedUpdate = await this.updateStreamedMany(uid, query, update);
     const result = [];
     for await (let event of streamedUpdate) {
       result.push(event);
     }
-    $$('updateManyDONE', {query, update, addStreams, removeStreams, result});
     return result;
   }
 
@@ -60,12 +61,14 @@ class StoreUserEvents  {
    * Utility to change streams for multiple matching events 
    * @param {string} uid - userId
    * @param {*} query - query to find events @see events.get parms
-   * @param {*} update - perform replacement of values for matching events
-   * @param {Array<string>} addStreamsIds - array of streams to add to the events streamIds
-   * @param {Array<string>} removeStreamsIds - array of streams to be remove from the events streamIds
+   * @param {any} update - perform update as per the following
+   * @param {any} update.merge - provided object fields with matching events
+   * @param {Array<string>} update.deletes - remove fields from matching events
+   * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
+   * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
    * @returns Streams of updated events
    */
-  async updateStreamedMany(uid, query, update = {}, addStreams = [], removeStreams = []) {
+  async updateStreamedMany(uid, query, update = {}): Readable {
     const paramsByStore = getParamsBySource(query);
 
     // check updates does not move events to a different store
@@ -74,15 +77,15 @@ class StoreUserEvents  {
       const [eventStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(query.id); 
       singleStoreId = eventStoreId;
     }
-    if (update.streamIds != null) { // update streamIds is provided
-      for (let fullStreamId of update.streamIds) {
+    if (update.merge?.streamIds) { // update streamIds is provided
+      for (let fullStreamId of update.merge.streamIds) {
         const [streamStoreId, fullStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId); 
         if (singleStoreId == null) singleStoreId = streamStoreId;
         if (singleStoreId != streamStoreId) throw new Error('events cannot be moved to a different store');
       }
     }
-    if (addStreams.length > 0) { // add streamIds is provided
-      for (let fullStreamId of addStreams) {
+    if (update.addStreams && update.addStreams.length > 0) { // add streamIds is provided
+      for (let fullStreamId of update.addStreams) {
         const [streamStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId); 
         if (singleStoreId == null) singleStoreId = streamStoreId;
         if (singleStoreId != streamStoreId) throw new Error('events cannot be moved to a different store');
@@ -102,12 +105,12 @@ class StoreUserEvents  {
     const that = this;
     async function* reader() {
       for await (const event of streamedMatchingEvents) {
-        const eventToUpdate = _.merge(event, update);
-        if (addStreams.length > 0) {
-          eventToUpdate.streamIds = _.union(eventToUpdate.streamIds, addStreams);
+        const eventToUpdate = _.merge(event, update.merge);
+        if (update.addStreams && update.addStreams.length > 0) {
+          eventToUpdate.streamIds = _.union(eventToUpdate.streamIds, update.addStreams);
         }
-        if (removeStreams.length > 0) {
-          eventToUpdate.streamIds = _.difference(eventToUpdate.streamIds, removeStreams);
+        if (update.removeStreams && update.removeStreams.length > 0) {
+          eventToUpdate.streamIds = _.difference(eventToUpdate.streamIds, update.removeStreams);
         }
         const eventId = eventToUpdate.id;
         delete eventToUpdate.id;
