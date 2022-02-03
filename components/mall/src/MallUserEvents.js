@@ -104,7 +104,7 @@ class StoreUserEvents  {
       for await (const event of streamedMatchingEvents) {
         const eventToUpdate = _.merge(event, update);
         if (addStreams.length > 0) {
-          eventToUpdate.streamIds = eventToUpdate.streamIds.concat(addStreams);
+          eventToUpdate.streamIds = _.union(eventToUpdate.streamIds, addStreams);
         }
         if (removeStreams.length > 0) {
           eventToUpdate.streamIds = _.difference(eventToUpdate.streamIds, removeStreams);

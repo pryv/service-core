@@ -472,6 +472,7 @@ module.exports = async function (api) {
 
               mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
                 .then((eventsStream) => {
+                  
                   let eventToVersion;
                   eventsStream.on('data', (event) => {
                     eventToVersion = _.extend(event, { headId: event.id });
@@ -494,28 +495,16 @@ module.exports = async function (api) {
                 });
 
             },
-            function addParentStreamIdIfNeeded(subStepDone) {
-              userEventsStorage.updateMany(context.user,
-                { streamIds: { $ne: parentId, $in: streamAndDescendantIds }, headId: { $exists: false } }, // not already containing parentId
-                { 'streamIds.$': parentId }, // set first element only (not multi)
-                function (err) {
-                  if (err) {
-                    return subStepDone(errors.unexpectedError(err));
-                  }
+            function addParentStreamIdIfNeededAndRemoveDeletedStreamIds(subStepDone) {
+              const query = { streams: [{ any: streamAndDescendantIds}] };
+
+              // the following add "parentId" if not present and remove "streamAndDescendantIds"
+              mall.events.updateMany(context.user.id, query, {}, [parentId], streamAndDescendantIds).then(
+                (result) => { // resolve
                   pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
-                  subStepDone();
-                });
-            },
-            function removeStreamdIds(subStepDone) {
-              userEventsStorage.updateMany(context.user,
-                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
-                { $pull: { streamIds: { $in: streamAndDescendantIds } } },
-                function (err) {
-                  if (err) {
-                    return subStepDone(errors.unexpectedError(err));
-                  }
-                  subStepDone();
-                }
+                  subStepDone()
+                }, 
+                (err) => { subStepDone(errors.unexpectedError(err))}
               );
             }
           ], stepDone);
