@@ -597,21 +597,16 @@ module.exports = async function (api) {
                 }
               );
             },
-            function removeStreamdIdsFromAllEvents(subStepDone) {
+            async function removeStreamdIdsFromAllEvents() {
               if (auditSettings.deletionMode === 'keep-everything') {
                 // not removing anything
-                return subStepDone();
+                return;
               }
-              userEventsStorage.updateMany(context.user,
-                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
-                { $pull: { streamIds: { $in: streamAndDescendantIds } } },
-                function (err) {
-                  if (err) {
-                    return subStepDone(errors.unexpectedError(err));
-                  }
-                  subStepDone();
-                }
-              );
+              try {
+                await mall.events.updateMany(context.user.id, { streams: [{ any: streamAndDescendantIds}] }, { removeStreams: streamAndDescendantIds });
+              } catch (err) {
+                throw(errors.unexpectedError(err))
+              } 
             },
             function deleteEvents(subStepDone) {
               const filter = {

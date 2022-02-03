@@ -122,7 +122,6 @@ class StoreUserEvents  {
       return true;
     }
 
-
     return Readable.from(reader());
   }
 
