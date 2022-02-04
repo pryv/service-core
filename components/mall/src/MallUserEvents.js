@@ -26,12 +26,24 @@ class StoreUserEvents  {
   }
 
   // --------------------------- UPDATE ----------------- //
-  async update(uid, fullEventId, eventData) {
+  /**
+   * 
+   * @param {string} uid 
+   * @param {string} fullEventId 
+   * @param {any} fieldsToSet - Object with fields to set
+   * @param {Array<string>} fieldsToDelete - Array of fields to delete
+   * @param {MallTransaction} mallTransaction
+   * @returns 
+   */
+  async update(uid, fullEventId, fieldsToSet, fieldsToDelete, mallTransaction) {
     const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
+
+    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
+
     try {
-      return await store.events.update(uid, eventId, eventData);
+      return await store.events.update(uid, eventId, fieldsToSet, fieldsToDelete, storeTransaction);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -42,14 +54,15 @@ class StoreUserEvents  {
    * @param {string} uid - userId
    * @param {*} query - query to find events @see events.get parms
    * @param {any} update - perform update as per the following
-   * @param {any} update.merge - provided object fields with matching events
-   * @param {Array<string>} update.deletes - remove fields from matching events
+   * @param {any} update.fieldsToSet - provided object fields with matching events
+   * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
    * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
    * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
+   * @param {MallTransaction} mallTransaction
    * @returns Array of updated events
    */
-  async updateMany(uid, query, update): Array {
-    const streamedUpdate = await this.updateStreamedMany(uid, query, update);
+  async updateMany(uid, query, update, mallTransaction): Array {
+    const streamedUpdate = await this.updateStreamedMany(uid, query, update, mallTransaction);
     const result = [];
     for await (let event of streamedUpdate) {
       result.push(event);
@@ -62,13 +75,14 @@ class StoreUserEvents  {
    * @param {string} uid - userId
    * @param {*} query - query to find events @see events.get parms
    * @param {any} update - perform update as per the following
-   * @param {any} update.merge - provided object fields with matching events
-   * @param {Array<string>} update.deletes - remove fields from matching events
+   * @param {any} update.fieldsToSet - provided object fields with matching events
+   * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
    * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
    * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
+   * @param {MallTransaction} mallTransaction
    * @returns Streams of updated events
    */
-  async updateStreamedMany(uid, query, update = {}): Readable {
+  async updateStreamedMany(uid, query, update = {}, mallTransaction): Readable {
     const paramsByStore = getParamsBySource(query);
 
     // check updates does not move events to a different store
@@ -100,21 +114,31 @@ class StoreUserEvents  {
       }
     }
     // fetch events to be updated 
+    const events = await this.getWithParamsByStore(uid, paramsByStore);
     const streamedMatchingEvents = await this.getStreamedWithParamsByStore(uid, paramsByStore);
 
     const that = this;
     async function* reader() {
       for await (const event of streamedMatchingEvents) {
-        const eventToUpdate = _.merge(event, update.merge);
+        const fieldsToSet = _.merge(event, update.fieldsToSet);
         if (update.addStreams && update.addStreams.length > 0) {
-          eventToUpdate.streamIds = _.union(eventToUpdate.streamIds, update.addStreams);
+          fieldsToSet.streamIds = _.union(fieldsToSet.streamIds, update.addStreams);
         }
         if (update.removeStreams && update.removeStreams.length > 0) {
-          eventToUpdate.streamIds = _.difference(eventToUpdate.streamIds, update.removeStreams);
+          fieldsToSet.streamIds = _.difference(fieldsToSet.streamIds, update.removeStreams);
         }
-        const eventId = eventToUpdate.id;
-        delete eventToUpdate.id;
-        const updatedEvent = await that.update(uid, eventId, eventToUpdate);
+        const eventId = fieldsToSet.id;
+        delete fieldsToSet.id;
+
+        // eventually remove fields from event
+        if (update.fieldsToDelete && update.fieldsToDelete.length > 0) {
+          for (let field of update.fieldsToDelete) {
+            delete fieldsToSet[field];
+          }
+        }
+        // here we should set a new integrity ..
+
+        const updatedEvent = await that.update(uid, eventId, fieldsToSet, update.fieldsToDelete, mallTransaction);
         yield updatedEvent;
       }
     
@@ -124,6 +148,25 @@ class StoreUserEvents  {
 
     return Readable.from(reader());
   }
+
+  /**
+   * Utility to remove data from event history (versions)
+   * @param {*} uid 
+   * @param {*} eventId 
+   */
+  async updateMinimizeEventHistory(uid, eventId) {
+    const fieldsToDelete = [
+      'streamIds',   'time',
+      'duration',    'endTime',
+      'type',        'content',
+      'tags',        'description',
+      'attachments', 'clientData',
+      'trashed',     'created',
+      'createdBy',   'integrity'
+    ];
+    const res = await this.updateMany(uid, { headId: eventId, state: 'all', includeDeletions: true }, { fieldsToDelete: fieldsToDelete });
+    return res;
+  };
 
   // --------------------------- CREATE ----------------- //
 
@@ -161,10 +204,7 @@ class StoreUserEvents  {
     
     const store = this.mall._storeForId(storeId);
 
-    let storeTransaction = null;
-    if (mallTransaction != null) {
-      storeTransaction = await mallTransaction.forStoreId(storeId);
-    }
+    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
 
     try {
       return await store.events.create(uid, eventForStore, storeTransaction);

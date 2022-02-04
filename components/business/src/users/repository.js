@@ -256,7 +256,7 @@ class UsersRepository {
           modified: timestamp.now(),
           modifiedBy: accessId,
         };
-        await this.mall.events.updateMany(user.id, query, {merge: updateFields}, mallTransaction);
+        await this.mall.events.updateMany(user.id, query, {fieldsToSet: updateFields}, mallTransaction);
       }
     });
 

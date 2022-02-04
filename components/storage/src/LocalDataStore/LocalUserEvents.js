@@ -28,9 +28,16 @@ class LocalUserEvents extends DataStore.UserEvents {
     this.userEventsStorage = userEventsStorage;
   }
 
-  async update(userId, eventId, params, transaction) {
+  async update(userId, eventId, fieldsToSet, fieldsToDelete, transaction) {
     try {
-      return await bluebird.fromCallback(cb => this.userEventsStorage.updateOne(userId, {_id: eventId}, params, cb, { transactionSession: transaction?.transactionSession}));
+      const operations = Object.assign({}, fieldsToSet);
+      if (fieldsToDelete != null && fieldsToDelete.length > 0) {
+        operations.$unset = {};
+        fieldsToDelete.forEach(field => {
+          operations.$unset[field] = 1;
+        });
+      }
+      return await bluebird.fromCallback(cb => this.userEventsStorage.updateOne(userId, {_id: eventId}, operations, cb, { transactionSession: transaction?.transactionSession}));
     } catch (err) {
       throw errors.unexpectedError(err);
     }
@@ -106,15 +113,19 @@ function paramsToMongoquery(params) {
   }
 
   // history
-  if (! params.includeHistory) { // no history;
-    query.headId = null;
+  if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
+    query.headId = params.headId;
   } else {
-    if (params.id != null) { // get event and history of event
-      query.$or = [{_id: params.id}, {headId: params.id}];
-      delete query.id;
+    if (! params.includeHistory) { // no history;
+      query.headId = null;
+    } else {
+      if (params.id != null) { // get event and history of event
+        query.$or = [{_id: params.id}, {headId: params.id}];
+        delete query.id;
+      }
+      // if query.headId is undefined all history (in scope) will be returned
+      options.sort.modified = 1; // also sort by modified time when history is requested
     }
-    // if query.headId is undefined all history (in scope) will be returned
-    options.sort.modified = 1; // also sort by modified time when history is requested
   }
  
   

@@ -508,12 +508,10 @@ module.exports = async function (api) {
                 mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}})
                 .then((eventsStream) => {
                     eventsStream.on('data', (head) => {
-                      userEventsStorage.minimizeEventsHistory(context.user, head.id,
-                        function (err) {
-                          if (err) {
-                            return subStepDone(errors.unexpectedError(err));
-                          }
-                        });
+                      mall.events.updateMinimizeEventHistory(context.user.id, head.id).then(
+                        () => {},
+                        (err) => { return subStepDone(errors.unexpectedError(err)); }
+                      );
                     });
 
                     eventsStream.on('error', (err) => {

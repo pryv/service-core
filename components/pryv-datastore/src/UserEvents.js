@@ -48,11 +48,15 @@ class UserEvents {
 
   /**
    * @see https://api.pryv.com/reference/#update-event
-   * @param {identifier} uid
+   * @param {identifier} uid 
+   * @param {string} fullEventId 
+   * @param {any} fieldsToSet - Object with fields to set
+   * @param {Array<string>} fieldsToDelete - Array of fields to delete
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
-   * @returns {Stream} - The update Event
+   * @returns {Event} - the updated event
    */
-  async update(uid: string, eventId: string, params): Promise<void> { throw(errors.unsupportedOperation('events.update')); }
+   async update(uid: string, fullEventId: string, fieldsToSet: any, fieldsToDelete: Array<string>): Promise<void> { throw(errors.unsupportedOperation('events.update')); }
+
 
   /**
    * @see https://api.pryv.com/reference/#delete-event

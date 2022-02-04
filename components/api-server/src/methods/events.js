@@ -1125,16 +1125,11 @@ module.exports = async function (api)
           stepDone();
         });
       },
-      function minimizeHistory(stepDone) {
+      async function minimizeHistory() {
         if (auditSettings.deletionMode !== 'keep-authors') {
-          return stepDone();
+          return ;
         }
-        userEventsStorage.minimizeEventsHistory(context.user, params.id, function (err) {
-          if (err) {
-            return stepDone(errors.unexpectedError(err));
-          }
-          stepDone();
-        });
+        await mall.events.updateMinimizeEventHistory(context.user.id, params.id);
       },
       function deleteEvent(stepDone) {
         userEventsStorage.delete(context.user, {id: params.id}, auditSettings.deletionMode,

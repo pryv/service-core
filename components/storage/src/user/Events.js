@@ -265,39 +265,6 @@ Events.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
 };
 
-/**
- * Implementation
- */
-Events.prototype.minimizeEventsHistory = function (userOrUserId, headId, callback) {
-  var update = {
-    $unset: {
-      streamIds: 1,
-      time: 1,
-      duration: 1,
-      endTime: 1,
-      type: 1,
-      content: 1,
-      tags: 1,
-      description: 1,
-      attachments: 1,
-      clientData: 1,
-      trashed: 1,
-      created: 1,
-      createdBy: 1,
-      integrity: 1
-    },
-  };
-
-  // if integrity for events in "ON" add extra check step after update
-  const query = { headId: headId };
-  let finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);
-  this.database.updateMany(
-    this.getCollectionInfo(userOrUserId),
-    this.applyQueryToDB(query),
-    update,
-    finalCallBack
-  );
-};
 
 /* jshint -W024 */
 /**

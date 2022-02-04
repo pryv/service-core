@@ -369,52 +369,6 @@ class Database {
   }
 
   /**
-   * Aggregates documents based on the given group expression.
-   *
-   * @param {Object} collectionInfo
-   * @param {Object} query Optional; Mongo-style query object
-   * @param {Object} projectExpression Mongo-style `$project` object
-   * @param {Object} groupExpression Mongo-style `$group` object
-   * @param {Object} options Properties:
-   *    * {Object} sort Mongo-style sorting definition
-   *    * {Number} skip Number of records to skip (or `null`)
-   *    * {Number} limit Number of records to return (or `null`)
-   * @param {Function} callback
-   */
-  aggregate(
-    collectionInfo: CollectionInfo, query: Object, 
-    projectExpression: Object, groupExpression: Object,
-    options: Object, callback: DatabaseCallback) 
-  {
-    this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      var aggregationCmds = [];
-      if (query) {
-        aggregationCmds.push({$match: query});
-      }
-      if (projectExpression) {
-        aggregationCmds.push({$project: projectExpression});
-      }
-      if (groupExpression) {
-        aggregationCmds.push({$group: groupExpression});
-      }
-      if (options.sort) {
-        aggregationCmds.push({$sort: options.sort});
-      }
-      if (options.skip) {
-        aggregationCmds.push({$skip: options.skip});
-      }
-      if (options.limit) {
-        aggregationCmds.push({$limit: options.limit});
-      }
-      collection.aggregate(aggregationCmds, function (err, results) {
-        if (err) { return callback(err); }
-        callback(null, results);
-      });
-    });
-  }
-
-  /**
    * Inserts a single item (must have a valid id).
    *
    * @param {Object} collectionInfo
@@ -422,6 +376,7 @@ class Database {
    * @param {Function} callback
    */
   insertOne (collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback, options: Object = {}) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, item);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertOne(item, options, (err, res) => {
@@ -437,6 +392,7 @@ class Database {
    * Inserts an array of items (each item must have a valid id already).
    */
   insertMany (collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback, options: Object = {}) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertMany(items, options, (err, res) => {
@@ -458,6 +414,7 @@ class Database {
    * @param {Function} callback
    */
   updateOne (collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback, options: Object = {}) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, options, (err, res) => {
@@ -479,6 +436,7 @@ class Database {
    * @param {Function} callback
    */
   updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, {}, callback);
