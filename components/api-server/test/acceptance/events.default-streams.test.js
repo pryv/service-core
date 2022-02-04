@@ -444,12 +444,7 @@ describe("[FG5R] Events of system streams", () => {
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
-              allEventsInDb = await bluebird.fromCallback(
-                (cb) => user.db.events.database.find(
-                  { name: 'events' },
-                  { userId: user.attrs.id, streamIds: streamId },
-                  {}, cb)
-              );
+              allEventsInDb = await mall.events.get(user.attrs.id, {streams: [{any: [streamId]}], state: 'all', includeDeletions: true, includeHistory: true});
             });
             it('[SQZ2] should return 201', () => {
               assert.equal(res.status, 201);

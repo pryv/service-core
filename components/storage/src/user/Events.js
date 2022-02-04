@@ -392,7 +392,7 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
   }
 
   // return a callback that will be executed after the update
-  return function(err, res) {
+  return function integrityResetCallback(err, res) {
     if (err) return callback(err);
     const initialModifiedCount = res.modifiedCount;
 

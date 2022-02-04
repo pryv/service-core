@@ -287,6 +287,7 @@ class Database {
    * @param {Function} callback
    */
   findCursor(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js','callbackIntegrity', 'integrity-final-check.js', 'integrityResetCallback'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
@@ -360,6 +361,7 @@ class Database {
    * @param {Function} callback
    */
   findOne(collectionInfo: CollectionInfo, query: Object, options: FindOptions, callback: DatabaseCallback) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOne(query, options || {}, callback);
@@ -717,4 +719,16 @@ function getTotalSizeFromStats(stats) {
   return stats.count * 16 + // ie. record headers
       stats.size +
       stats.totalIndexSize;
+}
+
+function tellMeIfStackDoesNotContains(needles, info) {
+  const e = new Error();
+  const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 ).slice(1, 25);
+  for (const needle of needles) {
+    if (stack.some(l => l.indexOf(needle) >= 0)) {
+      return true;
+    }
+  }
+  console.log(info, stack);
+  return false;
 }
