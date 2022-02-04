@@ -1131,15 +1131,9 @@ module.exports = async function (api)
         }
         await mall.events.updateMinimizeEventHistory(context.user.id, params.id);
       },
-      function deleteEvent(stepDone) {
-        userEventsStorage.delete(context.user, {id: params.id}, auditSettings.deletionMode,
-          function (err) {
-            if (err) {
-              return stepDone(errors.unexpectedError(err));
-            }
-            result.eventDeletion = {id: params.id};
-            stepDone();
-          });
+      async function deleteEvent() {
+        const res = await mall.events.updateDeleteByMode(context.user.id, auditSettings.deletionMode, {id: params.id, state: 'all'});
+        result.eventDeletion = { id: params.id };
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       async function () {

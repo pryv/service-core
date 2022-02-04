@@ -461,6 +461,7 @@ class Database {
    * @param {Function} callback
    */
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js', 'callbackIntegrity'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, { returnDocument: 'after' }, function (err, r) {
@@ -482,6 +483,7 @@ class Database {
    * @param {Function} callback
    */
   upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {upsert: true}, callback);

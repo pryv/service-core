@@ -13,6 +13,28 @@ const errorFactory = require('errors').factory;
 
 const { Readable } = require('stream');
 
+const DELETION_MODES_FIELDS = {
+  'keep-authors': [
+    'streamIds',   'time',
+    'duration',    'endTime',
+    'type',        'content',
+    'tags',        'description',
+    'attachments', 'clientData',
+    'trashed',     'created',
+    'createdBy', 'integrity'
+  ],
+  'keep-nothing': [
+    'streamIds',   'time',
+    'duration',    'endTime',
+    'type',        'content',
+    'tags',        'description',
+    'attachments', 'clientData',
+    'trashed',     'created',
+    'createdBy',   'modified',
+    'modifiedBy', 'integrity'
+  ]
+}
+
 /**
  * Handle Store.events.* methods
  */
@@ -114,7 +136,6 @@ class StoreUserEvents  {
       }
     }
     // fetch events to be updated 
-    const events = await this.getWithParamsByStore(uid, paramsByStore);
     const streamedMatchingEvents = await this.getStreamedWithParamsByStore(uid, paramsByStore);
 
     const that = this;
@@ -154,7 +175,7 @@ class StoreUserEvents  {
    * @param {*} uid 
    * @param {*} eventId 
    */
-  async updateMinimizeEventHistory(uid, eventId) {
+   async updateMinimizeEventHistory(uid, eventId) {
     const fieldsToDelete = [
       'streamIds',   'time',
       'duration',    'endTime',
@@ -164,9 +185,25 @@ class StoreUserEvents  {
       'trashed',     'created',
       'createdBy',   'integrity'
     ];
-    const res = await this.updateMany(uid, { headId: eventId, state: 'all', includeDeletions: true }, { fieldsToDelete: fieldsToDelete });
+    const res = await this.updateMany(uid, { headId: eventId, state: 'all', includeDeletions: true }, { fieldsToDelete });
     return res;
   };
+
+  /**
+   * Utility to remove data from event history (versions)
+   * @param {*} uid
+   * @param {string} deletetionMode one of 'keep-nothing', 'keep-authors'
+   * @param {any} query get query
+   * @param {MallTransaction} mallTransaction
+   * @returns {Promise<Array<Events>>}
+   **/
+  async updateDeleteByMode(uid, deletetionMode, query, mallTransaction) {
+    const fieldsToSet = {deleted: Date.now() / 1000};
+    const fieldsToDelete = DELETION_MODES_FIELDS[deletetionMode] || ['integrity'];
+    
+    const res = await this.updateMany(uid, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
+    $$({query, fieldsToSet, fieldsToDelete, res});
+  }
 
   // --------------------------- CREATE ----------------- //
 
