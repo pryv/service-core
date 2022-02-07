@@ -59,7 +59,7 @@ class MallUserStreams {
     // -------- cleanup params --------- //
     const streamId: string = params.id || '*'; // why?? -- IT SHOULD NOT HAVE DEFAULT VALUES
     const storeId: string = params.storeId; // might me null -- how? IT DOES NOT HAPPEN
-    const excludedIds: Array<string> = params.excludedIds;
+    const excludedIds: Array<string> = params.excludedIds || [];
 
     // ------- create result ------//
     let res: Array<Stream> = [];
@@ -78,7 +78,7 @@ class MallUserStreams {
       includeDeletionsSince: params.includeDeletionsSince,
       includeTrashed: params.includeTrashed,
       expandChildren: params.expandChildren,
-      excludedIds: store.streams.hasFeatureGetParamsExcludedIds ? excludedIds : null,
+      excludedIds: store.streams.hasFeatureGetParamsExcludedIds ? excludedIds : [],
       storeId: null, // we'll address this request to the store directly
     }
 

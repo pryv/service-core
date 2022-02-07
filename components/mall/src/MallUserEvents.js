@@ -202,7 +202,6 @@ class StoreUserEvents  {
     const fieldsToDelete = DELETION_MODES_FIELDS[deletetionMode] || ['integrity'];
     
     const res = await this.updateMany(uid, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
-    $$({query, fieldsToSet, fieldsToDelete, res});
   }
 
   // --------------------------- CREATE ----------------- //
