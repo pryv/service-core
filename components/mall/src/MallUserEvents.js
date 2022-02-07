@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const { DataStore }  = require('pryv-datastore');
+const { DataStore } = require('pryv-datastore');
 const _ = require('lodash');
 const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
 const StreamsUtils = require('./lib/StreamsUtils');
@@ -15,22 +15,22 @@ const { Readable } = require('stream');
 
 const DELETION_MODES_FIELDS = {
   'keep-authors': [
-    'streamIds',   'time',
-    'duration',    'endTime',
-    'type',        'content',
-    'tags',        'description',
+    'streamIds', 'time',
+    'duration', 'endTime',
+    'type', 'content',
+    'tags', 'description',
     'attachments', 'clientData',
-    'trashed',     'created',
+    'trashed', 'created',
     'createdBy', 'integrity'
   ],
   'keep-nothing': [
-    'streamIds',   'time',
-    'duration',    'endTime',
-    'type',        'content',
-    'tags',        'description',
+    'streamIds', 'time',
+    'duration', 'endTime',
+    'type', 'content',
+    'tags', 'description',
     'attachments', 'clientData',
-    'trashed',     'created',
-    'createdBy',   'modified',
+    'trashed', 'created',
+    'createdBy', 'modified',
     'modifiedBy', 'integrity'
   ]
 }
@@ -38,8 +38,8 @@ const DELETION_MODES_FIELDS = {
 /**
  * Handle Store.events.* methods
  */
-class StoreUserEvents  {
-  
+class StoreUserEvents {
+
   /**
    * @param {Mall} mall 
    */
@@ -110,25 +110,25 @@ class StoreUserEvents  {
     // check updates does not move events to a different store
     let singleStoreId = null;
     if (query.id != null) { // event id is provided
-      const [eventStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(query.id); 
+      const [eventStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(query.id);
       singleStoreId = eventStoreId;
     }
     if (update.merge?.streamIds) { // update streamIds is provided
       for (let fullStreamId of update.merge.streamIds) {
-        const [streamStoreId, fullStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId); 
+        const [streamStoreId, fullStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
         if (singleStoreId == null) singleStoreId = streamStoreId;
         if (singleStoreId != streamStoreId) throw new Error('events cannot be moved to a different store');
       }
     }
     if (update.addStreams && update.addStreams.length > 0) { // add streamIds is provided
       for (let fullStreamId of update.addStreams) {
-        const [streamStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId); 
+        const [streamStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
         if (singleStoreId == null) singleStoreId = streamStoreId;
         if (singleStoreId != streamStoreId) throw new Error('events cannot be moved to a different store');
       }
     }
     // if we are in a single store mode check that the query matches
-    if (singleStoreId != null) { 
+    if (singleStoreId != null) {
       for (let storeId of Object.keys(paramsByStore)) {
         if (storeId !== singleStoreId) {
           throw new Error('events cannot be moved to a different store');
@@ -162,7 +162,7 @@ class StoreUserEvents  {
         const updatedEvent = await that.update(uid, eventId, fieldsToSet, update.fieldsToDelete, mallTransaction);
         yield updatedEvent;
       }
-    
+
       // finish the iterator
       return true;
     }
@@ -175,15 +175,15 @@ class StoreUserEvents  {
    * @param {*} uid 
    * @param {*} eventId 
    */
-   async updateMinimizeEventHistory(uid, eventId) {
+  async updateMinimizeEventHistory(uid, eventId) {
     const fieldsToDelete = [
-      'streamIds',   'time',
-      'duration',    'endTime',
-      'type',        'content',
-      'tags',        'description',
+      'streamIds', 'time',
+      'duration', 'endTime',
+      'type', 'content',
+      'tags', 'description',
       'attachments', 'clientData',
-      'trashed',     'created',
-      'createdBy',   'integrity'
+      'trashed', 'created',
+      'createdBy', 'integrity'
     ];
     const res = await this.updateMany(uid, { headId: eventId, state: 'all', includeDeletions: true }, { fieldsToDelete });
     return res;
@@ -207,7 +207,7 @@ class StoreUserEvents  {
       storeId = testStoreId;
       eventForStore.id = eventId;
     }
-    
+
     // cleanup storeId from streamId
     if (eventData.streamIds != null) { // it might happen that deleted is set but streamIds is not when loading test data
       for (let i = 0; i < eventData.streamIds.length; i++) {
@@ -223,7 +223,7 @@ class StoreUserEvents  {
     if (storeId == null) {
       throw errorFactory.invalidRequestStructure('Cannot find store information in new event', eventData);
     }
-    
+
     const store = this.mall._storeForId(storeId);
 
     const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
@@ -255,7 +255,7 @@ class StoreUserEvents  {
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     try {
-      const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all' , limit: 1, includeDeletions: true});
+      const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all', limit: 1, includeDeletions: true });
       if (events?.length === 1) return events[0];
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
@@ -338,27 +338,11 @@ class StoreUserEvents  {
    * @param {MallTransaction} mallTransaction
    * @returns {Promise<Array<Events>>}
    **/
-     async updateDeleteByMode(uid, deletetionMode, query, mallTransaction) {
-      const fieldsToSet = {deleted: Date.now() / 1000};
-      const fieldsToDelete = DELETION_MODES_FIELDS[deletetionMode] || ['integrity'];
-      
-      const res = await this.updateMany(uid, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
-    }
-  
+  async updateDeleteByMode(uid, deletetionMode, query, mallTransaction) {
+    const fieldsToSet = { deleted: Date.now() / 1000 };
+    const fieldsToDelete = DELETION_MODES_FIELDS[deletetionMode] || ['integrity'];
 
-  // --------------------------- DELETE ----------------- //
-
-  async delete(uid, params) {
-    const paramsByStore = getParamsByStore(params);
-    for (let storeId of Object.keys(paramsByStore)) {
-      const store = this.mall._storeForId(storeId);
-      const params = paramsByStore[storeId];
-      try {
-        await store.events.delete(uid, params);
-      } catch (e) {
-        this.mall.throwAPIError(e, storeId);
-      }
-    }
+    const res = await this.updateMany(uid, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
   }
 
 }
@@ -368,56 +352,56 @@ module.exports = StoreUserEvents;
 
 function getParamsByStore(params) {
   let singleStoreId, singleEventId;
-    if (params.id != null) { // a specific event is queried so we have a singleStore query;
-      [singleStoreId, singleEventId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
-    }
+  if (params.id != null) { // a specific event is queried so we have a singleStore query;
+    [singleStoreId, singleEventId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
+  }
 
-    // repack streamQueries by storeId
-    const streamQueriesBySource = {};
-    if (params.streams != null) { // must be an array
-      for (let streamQuery of params.streams) {
-        let storeId = null;
-        
-        function clean(subStreamQuery) {
-          const cleanStreamQuery = {};
-          for (let key of ['any', 'not']) { // for each possible segment of query
-            if (subStreamQuery[key] != null) {
-              for (let streamId of subStreamQuery[key]) {
-                const [streamStoreId, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
-                if (storeId == null) storeId = streamStoreId;
-                if (storeId != streamStoreId) throw new Error('streams must be from the same store, per query segemnt');
-                cleanStreamQuery[key] = cleanStreamQuery[key] || [];
-                cleanStreamQuery[key].push(cleanStreamId);
-              }
+  // repack streamQueries by storeId
+  const streamQueriesBySource = {};
+  if (params.streams != null) { // must be an array
+    for (let streamQuery of params.streams) {
+      let storeId = null;
+
+      function clean(subStreamQuery) {
+        const cleanStreamQuery = {};
+        for (let key of ['any', 'not']) { // for each possible segment of query
+          if (subStreamQuery[key] != null) {
+            for (let streamId of subStreamQuery[key]) {
+              const [streamStoreId, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+              if (storeId == null) storeId = streamStoreId;
+              if (storeId != streamStoreId) throw new Error('streams must be from the same store, per query segemnt');
+              cleanStreamQuery[key] = cleanStreamQuery[key] || [];
+              cleanStreamQuery[key].push(cleanStreamId);
             }
           }
-          if (subStreamQuery.and != null) {
-            cleanStreamQuery.and = subStreamQuery.and.map(clean);
-          }
-          return cleanStreamQuery;
         }
-        const resCleanQuery = clean(streamQuery);
-
-        if (singleStoreId != null && singleStoreId != storeId) throw new Error('streams query must be from the same store than the requested event');
-        if (streamQueriesBySource[storeId] == null) streamQueriesBySource[storeId] = [];
-        streamQueriesBySource[storeId].push(resCleanQuery);
+        if (subStreamQuery.and != null) {
+          cleanStreamQuery.and = subStreamQuery.and.map(clean);
+        }
+        return cleanStreamQuery;
       }
-    }
-      
-    const paramsByStore = {};
-    for (let storeId of Object.keys(streamQueriesBySource)) {
-      paramsByStore[storeId] = _.cloneDeep(params);
-      paramsByStore[storeId].streams = streamQueriesBySource[storeId];
-    }
+      const resCleanQuery = clean(streamQuery);
 
-    if (singleStoreId != null) {
-      if (paramsByStore[singleStoreId] == null) paramsByStore[singleStoreId] = _.cloneDeep(params);
-      paramsByStore[singleStoreId].id = singleEventId;
+      if (singleStoreId != null && singleStoreId != storeId) throw new Error('streams query must be from the same store than the requested event');
+      if (streamQueriesBySource[storeId] == null) streamQueriesBySource[storeId] = [];
+      streamQueriesBySource[storeId].push(resCleanQuery);
     }
-    
-    if (Object.keys(paramsByStore).length === 0) { // default is local
-      paramsByStore.local = _.cloneDeep(params);
-      delete paramsByStore.local.streams;
-    }
-    return paramsByStore;
+  }
+
+  const paramsByStore = {};
+  for (let storeId of Object.keys(streamQueriesBySource)) {
+    paramsByStore[storeId] = _.cloneDeep(params);
+    paramsByStore[storeId].streams = streamQueriesBySource[storeId];
+  }
+
+  if (singleStoreId != null) {
+    if (paramsByStore[singleStoreId] == null) paramsByStore[singleStoreId] = _.cloneDeep(params);
+    paramsByStore[singleStoreId].id = singleEventId;
+  }
+
+  if (Object.keys(paramsByStore).length === 0) { // default is local
+    paramsByStore.local = _.cloneDeep(params);
+    delete paramsByStore.local.streams;
+  }
+  return paramsByStore;
 }
