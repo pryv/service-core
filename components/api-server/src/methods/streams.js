@@ -437,17 +437,13 @@ module.exports = async function (api) {
     hasLinkedEvents = !!events.length;
 
     if (hasLinkedEvents) {
-
-
       // has linked events -----------------
-    
       if (params.mergeEventsWithParent === null) {
         return next(errors.invalidParametersFormat(
           'There are events referring to the deleted items ' +
           'and the `mergeEventsWithParent` parameter is missing.'));
       }
 
-      
       if (params.mergeEventsWithParent) { // -- Case 1 -- Merge events with parent
         if (auditSettings.forceKeepHistory) { // generateLogIfNecessary
           const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}});
@@ -462,77 +458,44 @@ module.exports = async function (api) {
         // the following add "parentId" if not present and remove "streamAndDescendantIds"
         const query = { streams: [{ any: streamAndDescendantIds}] };
         await mall.events.updateMany(context.user.id, query, { addStreams: [parentId], removeStreams: streamAndDescendantIds});
-        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+        
 
       } else { 
         // case  mergeEventsWithParent = false
 
-        if (auditSettings.deletionMode === 'keep-everything') {
-          // history is untouched
-        } else if (auditSettings.deletionMode === 'keep-authors') {
-          const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}});
-          for await (head of eventsStream) {
-            await mall.events.updateMinimizeEventHistory(context.user.id, head.id);
-          }
-              
-        } else { // default: deletionMode='keep-nothing'
-          const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}});
-          for await (head of eventsStream) {
-            if (head.streamIds.length > 1 && ! arrayAIsIncludedInB(head.streamIds, streamAndDescendantIds)) {
-                // event is still attached to existing streamId(s)
-                // we will remove the streamIds later on
-            } else {
-              // remove the events
-              await bluebird.fromCallback((cb) => userEventsStorage.removeMany(context.user, { headId: head.id } ,cb));
-            }
-          }
-        }
-
-        // deleteEventsWithAttachments
         const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}});
         for await (event of eventsStream) {
-          if (event.streamIds.length > 1 &&
-            ! arrayAIsIncludedInB(event.streamIds, streamAndDescendantIds)) {
-            // event is still attached to existing streamId(s)
-            // we will remove the streamIds later on
-          } else {
-            if (event.attachments != null && event.attachments.length > 0) {
-              // this might cause Too much I/O open error if a lot of files have to be removed .. maybe batch by 100 files?
-              userEventFilesStorage.removeAllForEvent(context.user, event.id, function (err) {
-                if (err) {
-                  // async delete attached files (if any) – don't wait for
-                  // this, just log possible errors
-                  errorHandling.logError(err, null, logger);
-                }
-              });
+
+          if (auditSettings.deletionMode === 'keep-everything') {
+            const res = await mall.events.updateDeleteByMode(context.user.id,  'keep-everything', {id: event.id, state: 'all'});
+
+          // history is untouched
+          } else if (auditSettings.deletionMode === 'keep-authors') { // update event history
+            await mall.events.updateMinimizeEventHistory(context.user.id, event.id);
+            const res = await mall.events.updateDeleteByMode(context.user.id,  'keep-authors', {id: event.id, state: 'all'});
+
+          } else { // default: deletionMode='keep-nothing'
+            const remaningStreamsIds = _.difference(event.streamIds, streamAndDescendantIds);
+            if (remaningStreamsIds.length > 0) {
+                // event is still attached to existing streamId(s)
+                // update the event without the streamIds
+                const fieldsToSet = {streamIds: remaningStreamsIds};
+                await mall.events.update(context.user.id, event.id, fieldsToSet);
+
+            } else { // remove the event and any attached data
+              // remove the event's history
+              await bluebird.fromCallback((cb) => userEventsStorage.removeMany(context.user, { headId: event.id } ,cb));
+              // remove event's attachments 
+              if (event.attachments != null && event.attachments.length > 0) {
+                await bluebird.fromCallback((cb) => userEventFilesStorage.removeAllForEvent(context.user, event.id,cb));
+              }
+              const res = await mall.events.updateDeleteByMode(context.user.id,  'keep-nothing', {id: event.id, state: 'all'});
             }
           }
         }
-
-        //removeStreamdIdsFromAllEvents
-        if (auditSettings.deletionMode !== 'keep-everything') {
-          await mall.events.updateMany(context.user.id, { streams: [{ any: streamAndDescendantIds}] }, { removeStreams: streamAndDescendantIds });
-        } 
-
-        //deleteEvents
-        const filter = {
-          headId: { $exists: false },
-        };
-        if (auditSettings.deletionMode === 'keep-everything') {
-          // they still have all their streamIds
-          filter.streamIds = { $in: streamAndDescendantIds };
-        } else {
-          // their streamIds were removed by removeStreamdIdsFromAllEvents()
-          filter.streamIds = [];
-        }
-
-        // we do a "raw" delete on all streamless events
-        // we do not want to change the "modifiedBy" and "modifiedDate"
-        // to prevent running condition where another process would
-        // delete these data and mark the vent modified
-        await bluebird.fromCallback((cb) => userEventsStorage.delete(context.user, filter, auditSettings.deletionMode, cb));
-        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
       }
+
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     }
     // finally delete stream
     

@@ -105,7 +105,7 @@ class StoreUserEvents  {
    * @returns Streams of updated events
    */
   async updateStreamedMany(uid, query, update = {}, mallTransaction): Readable {
-    const paramsByStore = getParamsBySource(query);
+    const paramsByStore = getParamsByStore(query);
 
     // check updates does not move events to a different store
     let singleStoreId = null;
@@ -189,20 +189,6 @@ class StoreUserEvents  {
     return res;
   };
 
-  /**
-   * Utility to remove data from event history (versions)
-   * @param {*} uid
-   * @param {string} deletetionMode one of 'keep-nothing', 'keep-authors'
-   * @param {any} query get query
-   * @param {MallTransaction} mallTransaction
-   * @returns {Promise<Array<Events>>}
-   **/
-  async updateDeleteByMode(uid, deletetionMode, query, mallTransaction) {
-    const fieldsToSet = {deleted: Date.now() / 1000};
-    const fieldsToDelete = DELETION_MODES_FIELDS[deletetionMode] || ['integrity'];
-    
-    const res = await this.updateMany(uid, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
-  }
 
   // --------------------------- CREATE ----------------- //
 
@@ -278,7 +264,7 @@ class StoreUserEvents  {
   }
 
   async get(uid, params) {
-    return await this.getWithParamsByStore(uid, getParamsBySource(params));
+    return await this.getWithParamsByStore(uid, getParamsByStore(params));
   }
 
   /**
@@ -300,7 +286,7 @@ class StoreUserEvents  {
   };
 
   async getStreamed(uid, params) {
-    return await this.getStreamedWithParamsByStore(uid, getParamsBySource(params));
+    return await this.getStreamedWithParamsByStore(uid, getParamsByStore(params));
   }
 
   /**
@@ -324,10 +310,10 @@ class StoreUserEvents  {
    * To create a streamed result from multiple stores. 'events.get' pass a callback in order to add the streams 
    * To the result; 
    */
-  async generateStreamsWithParamsByStore(uid, paramsBySource, addEventStreamCB) {
-    for (let storeId of Object.keys(paramsBySource)) {
+  async generateStreamsWithParamsByStore(uid, paramsByStore, addEventStreamCB) {
+    for (let storeId of Object.keys(paramsByStore)) {
       const store = this.mall._storeForId(storeId);
-      const params = paramsBySource[storeId];
+      const params = paramsByStore[storeId];
       try {
         await store.events.getStreamed(uid, params).then((eventsStream) => {
           if (storeId == 'local') {
@@ -342,12 +328,45 @@ class StoreUserEvents  {
     }
   }
 
+  // --------------------------- DELETE / UPDATE ------------------- //
+
+  /**
+   * Utility to remove data from event history (versions)
+   * @param {*} uid
+   * @param {string} deletetionMode one of 'keep-nothing', 'keep-authors'
+   * @param {any} query get query
+   * @param {MallTransaction} mallTransaction
+   * @returns {Promise<Array<Events>>}
+   **/
+     async updateDeleteByMode(uid, deletetionMode, query, mallTransaction) {
+      const fieldsToSet = {deleted: Date.now() / 1000};
+      const fieldsToDelete = DELETION_MODES_FIELDS[deletetionMode] || ['integrity'];
+      
+      const res = await this.updateMany(uid, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
+    }
+  
+
+  // --------------------------- DELETE ----------------- //
+
+  async delete(uid, params) {
+    const paramsByStore = getParamsByStore(params);
+    for (let storeId of Object.keys(paramsByStore)) {
+      const store = this.mall._storeForId(storeId);
+      const params = paramsByStore[storeId];
+      try {
+        await store.events.delete(uid, params);
+      } catch (e) {
+        this.mall.throwAPIError(e, storeId);
+      }
+    }
+  }
+
 }
 
 module.exports = StoreUserEvents;
 
 
-function getParamsBySource(params) {
+function getParamsByStore(params) {
   let singleStoreId, singleEventId;
     if (params.id != null) { // a specific event is queried so we have a singleStore query;
       [singleStoreId, singleEventId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
@@ -385,20 +404,20 @@ function getParamsBySource(params) {
       }
     }
       
-    const paramsBySource = {};
+    const paramsByStore = {};
     for (let storeId of Object.keys(streamQueriesBySource)) {
-      paramsBySource[storeId] = _.cloneDeep(params);
-      paramsBySource[storeId].streams = streamQueriesBySource[storeId];
+      paramsByStore[storeId] = _.cloneDeep(params);
+      paramsByStore[storeId].streams = streamQueriesBySource[storeId];
     }
 
     if (singleStoreId != null) {
-      if (paramsBySource[singleStoreId] == null) paramsBySource[singleStoreId] = _.cloneDeep(params);
-      paramsBySource[singleStoreId].id = singleEventId;
+      if (paramsByStore[singleStoreId] == null) paramsByStore[singleStoreId] = _.cloneDeep(params);
+      paramsByStore[singleStoreId].id = singleEventId;
     }
     
-    if (Object.keys(paramsBySource).length === 0) { // default is local
-      paramsBySource.local = _.cloneDeep(params);
-      delete paramsBySource.local.streams;
+    if (Object.keys(paramsByStore).length === 0) { // default is local
+      paramsByStore.local = _.cloneDeep(params);
+      delete paramsByStore.local.streams;
     }
-    return paramsBySource;
+    return paramsByStore;
 }
