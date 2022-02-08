@@ -424,6 +424,8 @@ describe("[FG5R] Events of system streams", () => {
           describe('whose content is unique', () => {
             let allEventsInDb;
             let streamId;
+            let newEventFromDB;
+            let oldEventFromDB;
             before(async function () {
               streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
               await createUser();
@@ -445,6 +447,8 @@ describe("[FG5R] Events of system streams", () => {
                 .send(eventData)
                 .set('authorization', access.token);
               allEventsInDb = await mall.events.get(user.attrs.id, {streams: [{any: [streamId]}], state: 'all', includeDeletions: true, includeHistory: true});
+              newEventFromDB = allEventsInDb.find(event => event.id === res.body.event.id);
+              oldEventFromDB = allEventsInDb.find(event => event.id !== res.body.event.id);
             });
             it('[SQZ2] should return 201', () => {
               assert.equal(res.status, 201);
@@ -455,10 +459,10 @@ describe("[FG5R] Events of system streams", () => {
             });
             it('[DA23] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
-              assert.deepEqual(allEventsInDb[0].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+              assert.deepEqual(oldEventFromDB.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
               // check that second event is our new event and that it contains active streamId
-              assert.deepEqual(allEventsInDb[1]._id, res.body.event.id);
-              assert.deepEqual(allEventsInDb[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+              assert.deepEqual(newEventFromDB.id, res.body.event.id);
+              assert.deepEqual(newEventFromDB.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
             });
             it('[D316] should notify register with the new data', function () {
               if (isDnsLess) this.skip();
