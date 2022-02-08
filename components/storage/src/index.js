@@ -10,7 +10,7 @@ const Access = require('./user/Accesses');
 const Stream = require('./user/Streams');
 const Database =  require('./Database');
 const StorageLayer = require('./storage_layer');
-const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
+const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const  { dataBaseTracer } = require('tracing');
 
 let database;

@@ -81,6 +81,21 @@ class Mall {
   }
 
   /**
+   * Return the quantity of storage used by the user in bytes
+   */
+  async storageUsedForUser(uid: string) { 
+    let storageUsed = 0;
+    for (const store of this.stores) {
+      try {
+        storageUsed += await store.storageUsedForUser(uid);
+      } catch (error) {
+        this.throwAPIError(error, store.id);
+      }
+    }
+    return storageUsed;
+  }
+
+  /**
    * 
    * @param {*} storeId 
    * @returns 

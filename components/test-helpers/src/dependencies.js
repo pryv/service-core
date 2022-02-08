@@ -37,6 +37,6 @@ var deps = module.exports = {
 };
 
 const dbDocumentsItems = _.values(_.pick(deps.storage.user, 
-  'accesses', 'events', 'followedSlices', 'streams', 'profile'));
+  'accesses', 'followedSlices', 'profile'));
 const attFilesItems = _.values(_.pick(deps.storage.user, 'eventFiles'));
 deps.storage.size = new storage.Size(deps.storage.user.events, dbDocumentsItems, attFilesItems);

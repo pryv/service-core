@@ -39,9 +39,9 @@ class AuditDataStore extends DataStore {
   get streams() { return this._streams; }
   get events() { return this._events; }
 
-  async deleteUser(userId) {
+  async deleteUser(userId) { }
 
-  }
+  async storageUsedForUser(uid: string) { return 0; } // ToDo return size of DB
 }
 
 

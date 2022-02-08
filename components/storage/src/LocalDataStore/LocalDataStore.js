@@ -62,6 +62,12 @@ class LocalDataStore extends DataStore {
     await this._streams._deleteUser(uid);
     await this._events._deleteUser(uid);
   }
+
+  async storageUsedForUser(uid: string) { 
+    const streamsSize = await this._streams._storageUsedForUser(uid);
+    const eventsSize = await this._events._storageUsedForUser(uid); 
+    return streamsSize + eventsSize;
+  } 
 }
 
 module.exports = LocalDataStore;

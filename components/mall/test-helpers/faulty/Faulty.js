@@ -30,6 +30,7 @@ class Faulty extends DataStore {
   get events() { return this._events; }
 
   async deleteUser(userId) {}
+  async storageUsedForUser(uid: string) { return 0; }
 }
 
 

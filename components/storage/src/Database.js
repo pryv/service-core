@@ -226,7 +226,7 @@ class Database {
    * @param {Function} callback
    */
   countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     if (collectionInfo.useUserId) {
       return this.count(collectionInfo, {}, callback);
     }
@@ -258,7 +258,7 @@ class Database {
     function addUserIdProperty(object) {
       object.userId = collectionInfo.useUserId;
     }
-}
+  }
 
   /**
    * Counts documents matching the given query.
@@ -268,6 +268,7 @@ class Database {
    * @param {Function} callback
    */
   count(collectionInfo: CollectionInfo, query: {}, callback: DatabaseCallback) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.find(query).count(callback);
@@ -528,6 +529,7 @@ class Database {
    * @param {Function} callback
    */
   totalSize(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     if (collectionInfo.useUserId) {
       return this.countAll(collectionInfo, callback);
     }
@@ -546,6 +548,7 @@ class Database {
    * @param {Function} callback
    */
   dropCollection(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     if (collectionInfo.useUserId) {
       return this.deleteMany(collectionInfo, {}, callback);
     } else {

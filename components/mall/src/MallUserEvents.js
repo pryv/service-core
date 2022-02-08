@@ -4,6 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+// @flow
+
 const { DataStore } = require('pryv-datastore');
 const _ = require('lodash');
 const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
@@ -43,7 +46,7 @@ class StoreUserEvents {
   /**
    * @param {Mall} mall 
    */
-  constructor(mall) {
+  constructor(mall: Mall) {
     this.mall = mall;
   }
 

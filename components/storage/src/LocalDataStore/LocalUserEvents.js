@@ -72,6 +72,10 @@ class LocalUserEvents extends DataStore.UserEvents {
   async _deleteUser(userId: string): Promise<void> {
     return await bluebird.fromCallback(cb => this.userEventsStorage.removeMany(userId, {}, cb));
   }
+
+  async _storageUsedForUser(userId: string) { 
+    return await bluebird.fromCallback(cb => this.userEventsStorage.getTotalSize(userId, cb));
+  }
 }
 
 module.exports = LocalUserEvents;
