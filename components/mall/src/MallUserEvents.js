@@ -365,9 +365,14 @@ module.exports = StoreUserEvents;
 
 
 function getParamsByStore(params) {
-  let singleStoreId, singleEventId;
+  let singleStoreId, singleEventId, headId;
   if (params.id != null) { // a specific event is queried so we have a singleStore query;
     [singleStoreId, singleEventId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
+  }
+
+  if (params.headId != null) { // a specific "head" is queried so we have a singleStore query;
+    if (params.id != null) throw new Error('Cannot mix headId and id in query');
+    [singleStoreId, headId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.headId);
   }
 
   // repack streamQueries by storeId
@@ -410,7 +415,11 @@ function getParamsByStore(params) {
 
   if (singleStoreId != null) {
     if (paramsByStore[singleStoreId] == null) paramsByStore[singleStoreId] = _.cloneDeep(params);
-    paramsByStore[singleStoreId].id = singleEventId;
+    if (headId != null) {
+      paramsByStore[singleStoreId].headId = headId;
+    } else { // singleEventId != null
+      paramsByStore[singleStoreId].id = singleEventId;
+    }
   }
 
   if (Object.keys(paramsByStore).length === 0) { // default is local

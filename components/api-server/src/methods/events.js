@@ -1114,16 +1114,10 @@ module.exports = async function (api)
 
   function deleteWithData(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     async.series([
-      function deleteHistoryCompletely(stepDone) {
-        if (auditSettings.deletionMode !== 'keep-nothing') {
-          return stepDone();
-        }
-        userEventsStorage.removeMany(context.user, {headId: params.id}, function (err) {
-          if (err) {
-            return stepDone(errors.unexpectedError(err));
-          }
-          stepDone();
-        });
+      async function deleteHistoryCompletely() {
+        if (auditSettings.deletionMode !== 'keep-nothing') return ;
+        
+        await mall.events.delete(context.user.id, {headId: params.id, state: 'all'});
       },
       async function minimizeHistory() {
         if (auditSettings.deletionMode !== 'keep-authors') {

@@ -79,7 +79,7 @@ Request.prototype.login = function (user: any, callback: any) {
   return superagent.post(targetURL)
     .set('Origin', 'http://test.pryv.local')
     .send(authData).end(function (err, res) {
-      assert.isNull(err, 'Request must be a success');
+      assert.isNull(err?.message || null, 'Request must be a success');
       assert.isDefined(res, 'Request has a result');
       res.statusCode.should.eql(200);
 

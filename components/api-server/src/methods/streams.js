@@ -484,7 +484,7 @@ module.exports = async function (api) {
 
             } else { // remove the event and any attached data
               // remove the event's history
-              await bluebird.fromCallback((cb) => userEventsStorage.removeMany(context.user, { headId: event.id } ,cb));
+              await mall.events.delete(context.user.id, { headId: event.id, state: 'all' });
               // remove event's attachments 
               if (event.attachments != null && event.attachments.length > 0) {
                 await bluebird.fromCallback((cb) => userEventFilesStorage.removeAllForEvent(context.user, event.id,cb));

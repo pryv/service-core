@@ -97,18 +97,14 @@ exports.resetEvents = function (done, user) {
     delete eventToWrite.tags;
     return eventToWrite;
   })
+  let mall;
   async.series([
-    storage.user.events.removeMany.bind(storage.user.events, 
-      user,
-      { 
-        streamIds: {
-          $nin: allAccountStreamIds
-        }
-      }
-    ),
+    async function removeAccountEvents() {
+      mall = await getMall();
+      await mall.events.delete(user.id, {state: 'all', includeDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
+    },
     async function createEvents() { 
-      const mall = await getMall();
-      return mall.events.createMany(user.id,  eventsToWrite)
+      await mall.events.createMany(user.id,  eventsToWrite)
     },
     function removeZerosDuration(done2) {
       events.forEach( e => { if (e.duration === 0) delete e.duration});
