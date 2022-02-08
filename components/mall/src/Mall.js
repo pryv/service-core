@@ -70,12 +70,22 @@ class Mall {
     return this;
   }
 
+  async deleteUser(uid) {
+    for (const store of this.stores) {
+      try {
+        await store.deleteUser(uid);
+      } catch (error) {
+        this.throwAPIError(error, store.id);
+      }
+    }
+  }
+
   /**
    * 
    * @param {*} storeId 
    * @returns 
    */
-  async newTransaction() {
+  async newTransaction(): Promise<MallTransaction> {
     return new MallTransaction(this);
   }
 

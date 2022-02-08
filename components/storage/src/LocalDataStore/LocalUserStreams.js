@@ -59,6 +59,10 @@ class LocalUserStreams extends DataStore.UserStreams {
     }
     return streams;
   }
+
+  async _deleteUser(userId: string): Promise<void> {
+    return await bluebird.fromCallback(cb => this.userStreamsStorage.removeMany(userId, {}, cb));
+  }
 }
 
 module.exports = LocalUserStreams;

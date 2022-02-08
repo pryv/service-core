@@ -333,16 +333,30 @@ class StoreUserEvents {
   /**
    * Utility to remove data from event history (versions)
    * @param {*} uid
-   * @param {string} deletetionMode one of 'keep-nothing', 'keep-authors'
+   * @param {string} deletionMode one of 'keep-nothing', 'keep-authors'
    * @param {any} query get query
    * @param {MallTransaction} mallTransaction
    * @returns {Promise<Array<Events>>}
    **/
-  async updateDeleteByMode(uid, deletetionMode, query, mallTransaction) {
+  async updateDeleteByMode(uid, deletionMode, query, mallTransaction) {
     const fieldsToSet = { deleted: Date.now() / 1000 };
-    const fieldsToDelete = DELETION_MODES_FIELDS[deletetionMode] || ['integrity'];
+    const fieldsToDelete = DELETION_MODES_FIELDS[deletionMode] || ['integrity'];
 
     const res = await this.updateMany(uid, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
+  }
+
+  // --------------------------- DELETE ----------------------- //
+  async delete(uid, query) {
+    const paramsByStore = getParamsByStore(query);
+    for (let storeId of Object.keys(paramsByStore)) {
+      const store = this.mall._storeForId(storeId);
+      const params = paramsByStore[storeId];
+      try {
+        await store.events.delete(uid, params);
+      } catch (e) {
+        this.mall.throwAPIError(e, storeId);
+      }
+    }
   }
 
 }

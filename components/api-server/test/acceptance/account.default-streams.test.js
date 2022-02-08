@@ -202,12 +202,8 @@ describe('[ACCO] Account with system streams', function () {
         await createUser();
         basePath += '/change-password'
         // remove passwordHash event from the database
-        await bluebird.fromCallback(
-          (cb) => user.db.events.removeOne({ id: user.attrs.id },
-            {
-              streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')
-            }, cb));
-        
+        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
+       
         // make sure the event was deleted
         let password = await getActiveEvent('passwordHash');
         assert.isNull(password);
@@ -239,11 +235,7 @@ describe('[ACCO] Account with system streams', function () {
         await createUser();
         basePath += '/reset-password'
         // remove passwordHash event from the database
-        await bluebird.fromCallback(
-          (cb) => user.db.events.removeOne({ id: user.attrs.id },
-            {
-              streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')
-            }, cb));
+        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
 
         // make sure the event was deleted
         let password = await getActiveEvent('passwordHash');

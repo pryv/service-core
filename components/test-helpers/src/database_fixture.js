@@ -37,7 +37,7 @@ class Context {
   }
 
   async cleanEverything (): Promise<mixed> {
-    const collectionNames = ['events', 'accesses', 'sessions', 'streams', 'followedSlices', 'webhooks', 'versions']
+    const collectionNames = ['accesses', 'sessions', 'followedSlices', 'webhooks', 'versions']
     const collections = collectionNames.map(collectionName => {
       return bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb))
     });
@@ -307,7 +307,6 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     const username = this.context.userName; 
     const collections = [
       db.streams, 
-      db.events,
       db.accesses, 
       db.webhooks,
     ];
@@ -318,12 +317,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     //  db.users.removeOne(user, {username: username}, cb));
     // get streams ids from the config that should be deleted
     const accountStreams = SystemStreamsSerializer.getAccountMap();
-    const removeUser = bluebird.fromCallback((cb) => {
-      db.events.removeMany(this.context.user, {
-        $and:[
-          { streamIds: { $in: Object.keys(accountStreams) } }]
-      }, cb)
-    });
+
 
     const usersRepository = await getUsersRepository(); 
     await usersRepository.deleteOne(this.context.user.id);
@@ -332,7 +326,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
       db.sessions.removeForUser(username, cb));
 
     return bluebird
-      .all([removeUser, removeSessions])
+      .all([removeSessions])
       .then(() => 
         bluebird.map(collections, (coll) => this.safeRemoveColl(coll)) );
   }

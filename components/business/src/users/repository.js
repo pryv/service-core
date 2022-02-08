@@ -69,6 +69,10 @@ class UsersRepository {
 
   // only for test data to reset all users Dbs.
   async deleteAll(): Promise<void> {
+    const usersMap = await userIndex.allUsersMap(); 
+    for (const [username, userId] of Object.entries(usersMap)) {
+      await this.mall.deleteUser(userId);
+    }
     await userIndex.deleteAll();
     await this.platform.deleteAll();
   }
@@ -275,22 +279,13 @@ class UsersRepository {
 
     if (username != null) { // can happen during tests
       cache.unsetUser(username); 
+      // Clear data for this user in Platform 
      await this.platform.deleteUser(username, user);
     }
 
-    // Clear data for this user in Platform 
-
-
-    const result = await bluebird.fromCallback(
-      cb => this.eventsStorage.database.deleteMany(
-        this.eventsStorage.getCollectionInfo(userId),
-        { streamIds: { $in: userAccountStreamsIds } },
-        cb,
-      ),
-    );
-    
-    return result;
+    await this.mall.deleteUser(userId);
   }
+
   async checkUserPassword(userId: string, password: string): Promise<boolean> {
     const currentPass = await getUserPasswordHash(userId, this.mall);
     let isValid: boolean = false;

@@ -56,6 +56,11 @@ class DataStore {
    */
   async newTransaction(): Transaction { throw new Error('Not implemented'); }
 
+  /**
+   * Delete all data related to the user
+   */
+  async deleteUser(uid: string): Promise<void> { throw new Error('Not implemented'); }
+
 }
 
 module.exports = DataStore;

@@ -15,6 +15,8 @@ const { DataStore }  = require('pryv-datastore');
 const AuditUserEvents = require('./AuditUserEvents');
 const AuditUserStreams = require('./AuditUserStreams');
 
+const audit = require('audit');
+
 const STORE_ID = '_audit';
 const STORE_NAME = 'Audit Store';
 
@@ -36,6 +38,10 @@ class AuditDataStore extends DataStore {
 
   get streams() { return this._streams; }
   get events() { return this._events; }
+
+  async deleteUser(userId) {
+
+  }
 }
 
 

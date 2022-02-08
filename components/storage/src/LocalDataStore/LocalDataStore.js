@@ -57,6 +57,11 @@ class LocalDataStore extends DataStore {
     await transaction.init();
     return transaction;
   }
+
+  async deleteUser(uid: string): Promise<void> {
+    await this._streams._deleteUser(uid);
+    await this._events._deleteUser(uid);
+  }
 }
 
 module.exports = LocalDataStore;

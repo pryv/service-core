@@ -35,13 +35,6 @@ const customAccountProperties = buildCustomAccountProperties();
 exports.resetUsers = async () => {
   logger.debug('resetUsers');
   await getConfig(); // lock up to the time config is ready
-  await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
-    { name: 'events' },
-    {
-      streamIds: {
-        $in: SystemStreamsSerializer.getAccountStreamIds(),
-      }
-    }, cb));
 
   const usersRepository = await getUsersRepository(); 
   await usersRepository.deleteAll();  

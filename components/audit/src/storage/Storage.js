@@ -6,6 +6,7 @@
  */
 const path = require('path');
 const mkdirp = require('mkdirp').sync;
+const unlinkSync = require('fs').unlinkSync;
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
@@ -53,6 +54,24 @@ class Storage {
     logger.debug('forUser: ' + userid);
     this.checkInititalized();
     return this.userDBsCache.get(userid) || await open(this, userid);
+  }
+
+  /**
+   * close and delete the database relative to a specific user
+   * @param {string} userid 
+   * @returns {void} 
+   */
+   async deleteUser(userid) {
+    logger.info('deleteUser: ' + userid);
+    const userDb = await this.forUser(userid);
+    await userDb.close();
+    this.userDBsCache.del(userid);
+    const dbPath = await dbPathForUserid(userid);
+    try {
+      unlinkSync(dbPath);
+    } catch (err) {
+      logger.debug('deleteUser: Error' + err);
+    }
   }
 
   close() {

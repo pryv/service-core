@@ -63,6 +63,15 @@ class LocalUserEvents extends DataStore.UserEvents {
     const {query, options} = paramsToMongoquery(params);
     return await bluebird.fromCallback(cb => this.userEventsStorage.findIncludingDeletionsAndVersions(userId, query, options, cb));
   }
+
+  async delete(userId, params) {
+    const {query, options} = paramsToMongoquery(params);
+    return await bluebird.fromCallback(cb => this.userEventsStorage.removeMany(userId, query, cb));
+  }
+
+  async _deleteUser(userId: string): Promise<void> {
+    return await bluebird.fromCallback(cb => this.userEventsStorage.removeMany(userId, {}, cb));
+  }
 }
 
 module.exports = LocalUserEvents;

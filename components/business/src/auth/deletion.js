@@ -175,7 +175,6 @@ class Deletion {
     try {
       const dbCollections = [
         this.storageLayer.accesses,
-        this.storageLayer.events,
         this.storageLayer.streams,
         this.storageLayer.followedSlices,
         this.storageLayer.profile,
