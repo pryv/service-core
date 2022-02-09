@@ -492,7 +492,7 @@ module.exports = async function (api)
       }
 
       result.event.attachments = attachments;
-      const updatedEvent = await mall.events.update(context.user.id, result.event.id, { attachments });
+      const updatedEvent = await mall.events.updateWithOriginal(context.user.id, result.event, { attachments });
 
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];   
@@ -610,7 +610,6 @@ module.exports = async function (api)
       }
     }
 
-    context.originalEvent = _.cloneDeep(event);
     context.oldEvent = _.cloneDeep(event);
     context.newEvent = _.extend(event, eventUpdate);
     next();
@@ -628,12 +627,13 @@ module.exports = async function (api)
       return next();
     }
 
-    context.oldEvent = _.extend(context.oldEvent, {headId: context.oldEvent.id});
-    delete context.oldEvent.id;
+    const versionEvent = _.clone(context.oldEvent);
+    versionEvent.headId = context.oldEvent.id;
+    delete versionEvent.id;
     // otherwise the history value will squat
-    context.oldEvent = removeUniqueStreamId(context.oldEvent);
+    removeUniqueStreamId(versionEvent);
     try {
-      await mall.events.create(context.user.id, context.oldEvent);
+      await mall.events.create(context.user.id, versionEvent);
     } catch (err) {
       if (err instanceof APIError) return next(err);
       return next(errors.unexpectedError(err));
@@ -1092,7 +1092,8 @@ module.exports = async function (api)
           context.accountStreamId,
         );
       }
-      const updatedEvent = await mall.events.update(context.user.id, params.id, updatedData);
+    
+      const updatedEvent = await mall.events.updateWithOriginal(context.user.id, context.oldEvent, updatedData);
 
 
       // if update was not done and no errors were catched
@@ -1177,7 +1178,7 @@ module.exports = async function (api)
       const updatedData: {} = { attachments: context.event.attachments };
       context.updateTrackingProperties(updatedData);
 
-      const alreadyUpdatedEvent = await mall.events.update(context.user.id, params.id, updatedData);
+      const alreadyUpdatedEvent = await mall.events.updateWithOriginal(context.user.id, context.oldEvent, updatedData);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
