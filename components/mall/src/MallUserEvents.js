@@ -17,6 +17,8 @@ const integrity = require('business/src/integrity');
 
 const { Readable } = require('stream');
 
+const cuid = require('cuid');
+
 const DELETION_MODES_FIELDS = {
   'keep-authors': [
     'streamIds', 'time',
@@ -235,17 +237,18 @@ class StoreUserEvents {
    */
   async create(uid, eventData, mallTransaction) {
     const eventForStore = _.clone(eventData);
-    let storeId;
-
+    
+    // add id if needed
+    eventForStore.id = eventForStore.id || cuid();
 
     // update integrity field and recalculate if needed
     // integrity caclulation is done on event.id and streamIds that includes the store prefix
     delete eventForStore.integrity;
-    if (! integrity.events.isActive) {
+    if (integrity.events.isActive) {
       integrity.events.set(eventForStore);
     } 
 
-
+    let storeId;
     // if eventId is provided make sure it's compatible with the storeId & clean it
     if (eventData.id) {
       const [testStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);

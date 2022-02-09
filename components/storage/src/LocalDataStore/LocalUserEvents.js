@@ -37,7 +37,7 @@ class LocalUserEvents extends DataStore.UserEvents {
           operations.$unset[field] = 1;
         });
       }
-      return await bluebird.fromCallback(cb => this.userEventsStorage.updateOneRaw(userId, {_id: eventId}, operations, cb, { transactionSession: transaction?.transactionSession}));
+      return await bluebird.fromCallback(cb => this.userEventsStorage.updateOne(userId, {_id: eventId}, operations, cb, { transactionSession: transaction?.transactionSession}));
     } catch (err) {
       throw errors.unexpectedError(err);
     }
