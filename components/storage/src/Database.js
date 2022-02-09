@@ -288,7 +288,7 @@ class Database {
    * @param {Function} callback
    */
   findCursor(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js','callbackIntegrity', 'integrity-final-check.js', 'integrityResetCallback'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js','integrity-final-check.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
