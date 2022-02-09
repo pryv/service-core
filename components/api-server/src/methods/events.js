@@ -689,7 +689,7 @@ module.exports = async function (api)
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      const updatedEvent = await mall.events.update(context.user.id, context.newEvent.id, context.newEvent);
+      const updatedEvent = await mall.events.updateReplace(context.user.id, context.newEvent);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
@@ -716,6 +716,7 @@ module.exports = async function (api)
       return next();
     }
     const query = {NOT: {id: result.event.id}, streams: [{any: [context.accountStreamId], and: [{any: [STREAM_ID_ACTIVE]}]}]};
+
 
     const updatedEvents = await mall.events.updateMany(context.user.id, query, { removeStreams: [STREAM_ID_ACTIVE]});
    

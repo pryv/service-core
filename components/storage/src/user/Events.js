@@ -105,6 +105,13 @@ function endTimeUpdate (update) {
     }
     delete update.$set.duration ;
   }
+  if (update.$unset) {
+    if (update.$unset.duration != null) {
+      delete update.$unset.duration;
+      update.$unset.endTime = 1;
+    }
+  }
+
   return update;
 }
 
@@ -207,6 +214,9 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback, op
   Events.super_.prototype.findOneAndUpdate.call(this, userOrUserId, query, update, cb);
 };
 
+Events.prototype.updateOneRaw = function (userOrUserId, query, update, callback, options) {
+  Events.super_.prototype.updateOne.call(this, userOrUserId, query, update, callback);
+};
 
 
 /**

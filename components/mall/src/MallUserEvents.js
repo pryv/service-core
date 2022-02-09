@@ -13,30 +13,41 @@ const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream
 const StreamsUtils = require('./lib/StreamsUtils');
 
 const errorFactory = require('errors').factory;
+const integrity = require('business/src/integrity');
 
 const { Readable } = require('stream');
 
 const DELETION_MODES_FIELDS = {
   'keep-authors': [
     'streamIds', 'time',
-    'duration', 'endTime',
+    'duration', 
     'type', 'content',
-    'tags', 'description',
+    'description',
     'attachments', 'clientData',
     'trashed', 'created',
     'createdBy', 'integrity'
   ],
   'keep-nothing': [
     'streamIds', 'time',
-    'duration', 'endTime',
+    'duration', 
     'type', 'content',
-    'tags', 'description',
+    'description',
     'attachments', 'clientData',
     'trashed', 'created',
     'createdBy', 'modified',
     'modifiedBy', 'integrity'
   ]
 }
+
+const ALL_FIELDS = 
+  ['streamIds', 'time', 
+  'duration', 
+  'type', 'content', 
+  'description', 'attachments', 
+  'clientData', 'trashed', 
+  'created', 'createdBy',
+  'modified', 'modifiedBy', 
+  'integrity'];
 
 /**
  * Handle Store.events.* methods
@@ -54,6 +65,68 @@ class StoreUserEvents {
   /**
    * 
    * @param {string} uid 
+   * @param {Event} originalEvent - Providing the original event to be updated prevent the need to fetch it from the store for integrity calculation
+   * @param {any} fieldsToSet - Object with fields to set
+   * @param {Array<string>} fieldsToDelete - Array of fields to delete
+   * @param {MallTransaction} mallTransaction
+   * @returns 
+   */
+  async updateWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction) {
+    const newEventData = _.clone(originalEvent);
+    for (const fieldKey of Object.keys(fieldsToSet)) {
+      newEventData[fieldKey] = fieldsToSet[fieldKey];
+    }
+    if (fieldsToDelete != null) {
+      for (const fieldKey of fieldsToDelete) {
+        delete newEventData[fieldKey];
+      }
+    }
+    return await this.updateReplace(uid, newEventData, mallTransaction);
+  }
+
+  async updateReplace(uid, eventData, mallTransaction) {
+    const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    const eventForStore = _.clone(eventData);
+
+
+    // update integrity field and recalculate if needed
+    // integrity caclulation is done on event.id and streamIds that includes the store prefix
+    delete eventForStore.integrity;
+    if (integrity.events.isActive) {
+      integrity.events.set(eventForStore);
+    } 
+
+    // delete Id
+    delete eventForStore.id;
+
+    // replace all streamIds by store-less streamIds
+    if ((eventForStore?.streamIds)) {
+      const newStreamIds = [];
+      for (const fullStreamId of eventForStore.streamIds) {
+        const [streamStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
+        if (streamStoreId != storeId) { throw new Error('events cannot be moved to a different store'); }
+        newStreamIds.push(streamId);
+      }
+      eventForStore.streamIds = newStreamIds;
+    }
+
+
+    // build up list of fields to delete 
+    const fieldsToDelete = ALL_FIELDS.filter(field => eventForStore[field] === undefined);
+
+    const store = this.mall._storeForId(storeId);
+    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
+    try {
+      return await store.events.update(uid, eventId, eventForStore, fieldsToDelete, storeTransaction);
+    } catch (e) {
+      this.mall.throwAPIError(e, storeId);
+    }
+  }
+
+
+  /**
+   * 
+   * @param {string} uid 
    * @param {string} fullEventId 
    * @param {any} fieldsToSet - Object with fields to set
    * @param {Array<string>} fieldsToDelete - Array of fields to delete
@@ -61,17 +134,8 @@ class StoreUserEvents {
    * @returns 
    */
   async update(uid, fullEventId, fieldsToSet, fieldsToDelete, mallTransaction) {
-    const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
-    const store: DataStore = this.mall._storeForId(storeId);
-    if (store == null) return null;
-
-    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
-
-    try {
-      return await store.events.update(uid, eventId, fieldsToSet, fieldsToDelete, storeTransaction);
-    } catch (e) {
-      this.mall.throwAPIError(e, storeId);
-    }
+    const originalEvent = await this.getOne(uid, fullEventId);
+    return await this.updateWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction);
   }
 
   /**
@@ -110,34 +174,6 @@ class StoreUserEvents {
   async updateStreamedMany(uid, query, update = {}, mallTransaction): Readable {
     const paramsByStore = getParamsByStore(query);
 
-    // check updates does not move events to a different store
-    let singleStoreId = null;
-    if (query.id != null) { // event id is provided
-      const [eventStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(query.id);
-      singleStoreId = eventStoreId;
-    }
-    if (update.merge?.streamIds) { // update streamIds is provided
-      for (let fullStreamId of update.merge.streamIds) {
-        const [streamStoreId, fullStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
-        if (singleStoreId == null) singleStoreId = streamStoreId;
-        if (singleStoreId != streamStoreId) throw new Error('events cannot be moved to a different store');
-      }
-    }
-    if (update.addStreams && update.addStreams.length > 0) { // add streamIds is provided
-      for (let fullStreamId of update.addStreams) {
-        const [streamStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
-        if (singleStoreId == null) singleStoreId = streamStoreId;
-        if (singleStoreId != streamStoreId) throw new Error('events cannot be moved to a different store');
-      }
-    }
-    // if we are in a single store mode check that the query matches
-    if (singleStoreId != null) {
-      for (let storeId of Object.keys(paramsByStore)) {
-        if (storeId !== singleStoreId) {
-          throw new Error('events cannot be moved to a different store');
-        }
-      }
-    }
     // fetch events to be updated 
     const streamedMatchingEvents = await this.getStreamedWithParamsByStore(uid, paramsByStore);
 
@@ -151,8 +187,6 @@ class StoreUserEvents {
         if (update.removeStreams && update.removeStreams.length > 0) {
           fieldsToSet.streamIds = _.difference(fieldsToSet.streamIds, update.removeStreams);
         }
-        const eventId = fieldsToSet.id;
-        delete fieldsToSet.id;
 
         // eventually remove fields from event
         if (update.fieldsToDelete && update.fieldsToDelete.length > 0) {
@@ -160,9 +194,8 @@ class StoreUserEvents {
             delete fieldsToSet[field];
           }
         }
-        // here we should set a new integrity ..
 
-        const updatedEvent = await that.update(uid, eventId, fieldsToSet, update.fieldsToDelete, mallTransaction);
+        const updatedEvent = await that.updateWithOriginal(uid, event, fieldsToSet, update.fieldsToDelete, mallTransaction);
         yield updatedEvent;
       }
 
@@ -181,7 +214,7 @@ class StoreUserEvents {
   async updateMinimizeEventHistory(uid, eventId) {
     const fieldsToDelete = [
       'streamIds', 'time',
-      'duration', 'endTime',
+      'duration',
       'type', 'content',
       'tags', 'description',
       'attachments', 'clientData',
@@ -203,6 +236,15 @@ class StoreUserEvents {
   async create(uid, eventData, mallTransaction) {
     const eventForStore = _.clone(eventData);
     let storeId;
+
+
+    // update integrity field and recalculate if needed
+    // integrity caclulation is done on event.id and streamIds that includes the store prefix
+    delete eventForStore.integrity;
+    if (! integrity.events.isActive) {
+      integrity.events.set(eventForStore);
+    } 
+
 
     // if eventId is provided make sure it's compatible with the storeId & clean it
     if (eventData.id) {
