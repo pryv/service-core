@@ -8,7 +8,9 @@
 const _ = require('lodash');
 const Transform = require('stream').Transform;
 
-function durationToEndTime (eventData) {
+// ------------  Duration -----------// 
+
+function durationToStoreEndTime (eventData) {
   if (eventData.time == null) {delete eventData.duration; return eventData; }// deleted event 
 
   if (eventData.duration === null) { // exactly null 
@@ -24,7 +26,7 @@ function durationToEndTime (eventData) {
   return eventData;
 }
 
-function endTimeToDuration (eventData) {
+function endTimeFromStoreToDuration (eventData) {
   if (eventData.time == null) { delete eventData.endTime; return eventData; }// deleted event 
 
   if (eventData.endTime === null) {
@@ -44,29 +46,48 @@ function endTimeToDuration (eventData) {
 
 // state
 
-function stateForStore(item) {
-  item.trashed = (item.trashed === true);
-  return item;
+function stateToStore(eventData) {
+  eventData.trashed = (eventData.trashed === true);
+  return eventData;
 };
 
-function stateFromStore(item) {
-  if (item.trashed !== true) delete item.trashed;
-  return item;
+function stateFromStore(eventData) {
+  if (eventData.trashed !== true) delete eventData.trashed;
+  return eventData;
+};
+
+// ---------  deletion ------ // 
+
+function deletionToStore (eventData) {
+  if (eventData.deleted === undefined) { // undefined => null 
+    eventData.deleted = null;
+  }
+  return eventData;
+};
+
+function deletionFromStore (eventData) {
+  if (eventData == null) { return eventData; }
+
+  if (eventData.deleted == null) { // undefined or null
+    delete eventData.deleted;
+  }
+  return eventData;
 };
 
 
-
-function convertEventForStore(eventData) {
+function convertEventToStore(eventData) {
   const event = _.cloneDeep(eventData);
-  durationToEndTime(event);
-  stateForStore(event);
+  durationToStoreEndTime(event);
+  stateToStore(event);
+  deletionToStore(event);
   return event;
 }
 
 function convertEventFromStore(eventData) {
   const event = _.cloneDeep(eventData);
-  endTimeToDuration(event);
+  endTimeFromStoreToDuration(event);
   stateFromStore(event);
+  deletionFromStore(event);
   return event;
 }
 
@@ -81,7 +102,7 @@ class ConvertEventFromStoreStream extends Transform {
 }
 
 module.exports = {
-  convertEventForStore,
+  convertEventToStore,
   convertEventFromStore,
   ConvertEventFromStoreStream,
 }

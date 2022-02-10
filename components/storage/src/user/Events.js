@@ -31,34 +31,16 @@ function Events (database) {
 
   _.extend(this.converters, {
     itemDefaults: [],
-    itemToDB: [
-      converters.deletionToDB,
-    ],
-    itemsToDB: [
-      function (items) { 
-        if (items == null) return null;  
-        const res = items.map(e => converters.deletionToDB(e)); 
-        return res;
-      }
-    ],
+    itemToDB: [],
+    itemsToDB: [],
     updateToDB: [
       converters.getKeyValueSetUpdateFn('clientData'),
     ],
-    itemFromDB: [
-      converters.deletionFromDB,
-    ],
-    itemsFromDB: [
-      function (items) { 
-        if (items == null) return null;  
-        const res = items.map(e => converters.deletionFromDB(e)); 
-        return res;
-      }
-    ],
+    itemFromDB: [],
+    itemsFromDB: [],
   });
 
-  this.defaultOptions = {
-    sort: { time: -1 },
-  };
+  this.defaultOptions = {};
 }
 util.inherits(Events, BaseStorage);
 

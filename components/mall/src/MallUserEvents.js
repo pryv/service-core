@@ -89,7 +89,7 @@ class StoreUserEvents {
   }
 
   async updateReplace(uid, eventData, mallTransaction) {
-    const eventForStore = EventsUtils.convertEventForStore(eventData);
+    const eventForStore = EventsUtils.convertEventToStore(eventData);
     
     const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventForStore.id);
 
@@ -240,7 +240,7 @@ class StoreUserEvents {
    * @param {*} eventData 
    */
   async create(uid, eventData, mallTransaction) {
-    const eventForStore =  EventsUtils.convertEventForStore(eventData);
+    const eventForStore =  EventsUtils.convertEventToStore(eventData);
 
    
     // add id if needed
