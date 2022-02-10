@@ -42,7 +42,7 @@ function eventToDB(sourceEvent, defaulTime) {
 
   event.time = setTimeIfNot(sourceEvent.time, defaulTime);
 
-  event.duration = nullIfUndefined(sourceEvent.duration);
+  event.duration = 0; // Anyway no duration for audit setTimeIfNot(sourceEvent.endTime);
 
   if (! sourceEvent.type) throw('Type is required');
   event.type = sourceEvent.type;
@@ -98,6 +98,11 @@ function eventFromDB(event, addStorePrefix) {
   for (key of Object.keys(event)) {
     if (event[key] == null) delete event[key];
   }
+
+  // duration endTime hack 
+  delete event.duration;
+  event.endTime = event.time;
+
   return event;
 }
 

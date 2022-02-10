@@ -32,30 +32,27 @@ function Events (database) {
   _.extend(this.converters, {
     itemDefaults: [converters.createIdIfMissing],
     itemToDB: [
-      durationToEndTime,
       converters.deletionToDB,
       converters.stateToDB,
     ],
     itemsToDB: [
       function (items) { 
         if (items == null) return null;  
-        const res = items.map(e => converters.stateToDB(converters.deletionToDB(durationToEndTime(e)))); 
+        const res = items.map(e => converters.stateToDB(converters.deletionToDB(e))); 
         return res;
       }
     ],
     updateToDB: [
-      endTimeUpdate,
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData'),
     ],
     itemFromDB: [
-      endTimeToDuration,
       converters.deletionFromDB,
     ],
     itemsFromDB: [
       function (items) { 
         if (items == null) return null;  
-        const res = items.map(e => converters.deletionFromDB(endTimeToDuration(e))); 
+        const res = items.map(e => converters.deletionFromDB(e)); 
         return res;
       }
     ],
@@ -66,65 +63,6 @@ function Events (database) {
   };
 }
 util.inherits(Events, BaseStorage);
-
-function durationToEndTime (eventData) {
-  if (eventData.endTime !== undefined) {
-    //console.log('endTime should no be defined ', {id: eventData.id, endTime: eventData.endTime, duration: eventData.duration});
-    return eventData;
-  }
-  if (eventData.duration === null) { // exactly null 
-    eventData.endTime = null;
-  } else if (eventData.duration === undefined) { // (no undefined)
-    // event.time is not defined for deleted events
-    if (eventData.time != null) eventData.endTime = eventData.time;
-  } else { // defined
-    eventData.endTime = eventData.time + eventData.duration;
-  }
-  delete eventData.duration;
-  return eventData;
-}
-
-
-function endTimeUpdate (update) {
-  if (update.$set) {
-    if (update.$set.duration === null) {
-      update.$set.endTime = null;
-    } else if (update.$set.duration != null) { // (no undefined)
-      if (update.$set.time == null) {
-        throw (new Error('Cannot update duration without known the time' + JSON.stringify(update)));
-      }
-      update.$set.endTime = update.$set.time + update.$set.duration;
-    }
-    delete update.$set.duration ;
-  }
-  if (update.$unset) {
-    if (update.$unset.duration != null) {
-      delete update.$unset.duration;
-      update.$unset.endTime = 1;
-    }
-  }
-
-  return update;
-}
-
-function endTimeToDuration (event) {
-  if (event == null) {
-    return event;
-  }
-  if (event.endTime === null) {
-    event.duration = null;
-  } else if (event.endTime !== undefined) {
-    const prevDuration = event.duration;
-    event.duration = event.endTime - event.time;
-    if (prevDuration != null && prevDuration != event.duration) {
-      console.log('What !! ', new Error('Duration issue.. This should not thappen'));
-    }
-  }
-  delete event.endTime;
-  // force duration property undefined if 0
-  if (event.duration === 0) { delete event.duration; }
-  return event;
-}
 
 function getDbIndexes () {
   // TODO: review indexes against 1) real usage and 2) how Mongo actually uses them

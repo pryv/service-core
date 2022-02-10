@@ -11,6 +11,7 @@ const { DataStore } = require('pryv-datastore');
 const _ = require('lodash');
 const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
 const StreamsUtils = require('./lib/StreamsUtils');
+const EventsUtils = require('./lib/EventsUtils');
 const EventsGetUtils = require('./lib/EventsGetUtils');
 
 const errorFactory = require('errors').factory;
@@ -23,7 +24,7 @@ const cuid = require('cuid');
 const DELETION_MODES_FIELDS = {
   'keep-authors': [
     'streamIds', 'time',
-    'duration', 
+    'endTime', 
     'type', 'content',
     'description',
     'attachments', 'clientData',
@@ -32,7 +33,7 @@ const DELETION_MODES_FIELDS = {
   ],
   'keep-nothing': [
     'streamIds', 'time',
-    'duration', 
+    'endTime', 
     'type', 'content',
     'description',
     'attachments', 'clientData',
@@ -44,7 +45,7 @@ const DELETION_MODES_FIELDS = {
 
 const ALL_FIELDS = 
   ['streamIds', 'time', 
-  'duration', 
+  'endTime', 
   'type', 'content', 
   'description', 'attachments', 
   'clientData', 'trashed', 
@@ -88,8 +89,9 @@ class StoreUserEvents {
   }
 
   async updateReplace(uid, eventData, mallTransaction) {
-    const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
-    const eventForStore = _.clone(eventData);
+    const eventForStore = EventsUtils.convertEventForStore(eventData);
+    
+    const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventForStore.id);
 
 
     // update integrity field and recalculate if needed
@@ -120,7 +122,8 @@ class StoreUserEvents {
     const store = this.mall._storeForId(storeId);
     const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
     try {
-      return await store.events.update(uid, eventId, eventForStore, fieldsToDelete, storeTransaction);
+      const res = await store.events.update(uid, eventId, eventForStore, fieldsToDelete, storeTransaction);
+      return EventsUtils.convertEventFromStore(res);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -217,7 +220,7 @@ class StoreUserEvents {
   async updateMinimizeEventHistory(uid, eventId) {
     const fieldsToDelete = [
       'streamIds', 'time',
-      'duration',
+      'endTime',
       'type', 'content',
       'tags', 'description',
       'attachments', 'clientData',
@@ -237,8 +240,9 @@ class StoreUserEvents {
    * @param {*} eventData 
    */
   async create(uid, eventData, mallTransaction) {
-    const eventForStore = _.clone(eventData);
-    
+    const eventForStore =  EventsUtils.convertEventForStore(eventData);
+
+   
     // add id if needed
     eventForStore.id = eventForStore.id || cuid();
 
@@ -247,7 +251,7 @@ class StoreUserEvents {
     delete eventForStore.integrity;
     if (integrity.events.isActive) {
       integrity.events.set(eventForStore);
-    } 
+    }
 
     let storeId;
     // if eventId is provided make sure it's compatible with the storeId & clean it
@@ -278,7 +282,8 @@ class StoreUserEvents {
     const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
 
     try {
-      return await store.events.create(uid, eventForStore, storeTransaction);
+      const res = await store.events.create(uid, eventForStore, storeTransaction);
+      return EventsUtils.convertEventFromStore(res);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -305,7 +310,7 @@ class StoreUserEvents {
     if (store == null) return null;
     try {
       const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all', limit: 1, includeDeletions: true });
-      if (events?.length === 1) return events[0];
+      if (events?.length === 1) return EventsUtils.convertEventFromStore(events[0]);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -326,7 +331,9 @@ class StoreUserEvents {
       const params = paramsByStore[storeId];
       try {
         const events = await store.events.get(uid, params);
-        res.push(...events);
+        for (let event of events) {
+          res.push(EventsUtils.convertEventFromStore(event));
+        }
       } catch (e) {
         this.mall.throwAPIError(e, storeId);
       }
@@ -366,9 +373,9 @@ class StoreUserEvents {
       try {
         await store.events.getStreamed(uid, params).then((eventsStream) => {
           if (storeId == 'local') {
-            addEventStreamCB(store, eventsStream);
+            addEventStreamCB(store, eventsStream.pipe(new EventsUtils.ConvertEventFromStoreStream()));
           } else {
-            addEventStreamCB(store, eventsStream.pipe(new AddStorePrefixOnEventsStream(storeId)));
+            addEventStreamCB(store, eventsStream.pipe(new AddStorePrefixOnEventsStream(storeId)).pipe(new EventsUtils.ConvertEventFromStoreStream()));
           }
         });
       } catch (e) {
