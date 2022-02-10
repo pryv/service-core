@@ -106,7 +106,7 @@ function paramsToMongoquery(params) {
     case 'all':
       break;
     default:
-      query.trashed = null;
+      query.trashed = false;
   }
 
   // all deletions (tests only)

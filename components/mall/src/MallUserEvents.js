@@ -356,7 +356,13 @@ class StoreUserEvents {
     const storeId = Object.keys(paramsByStore)[0];
     const store = this.mall._storeForId(storeId);
     try {
-      return await store.events.getStreamed(uid, paramsByStore[storeId]);
+      const eventsStreamFromDB = await store.events.getStreamed(uid, paramsByStore[storeId]);
+      const eventsStream = eventsStreamFromDB.pipe(new EventsUtils.ConvertEventFromStoreStream());
+      if (storeId == 'local') {
+        return eventsStream;
+      } else {
+        return eventsStream.pipe(new AddStorePrefixOnEventsStream(storeId));
+      }
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -371,13 +377,7 @@ class StoreUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        await store.events.getStreamed(uid, params).then((eventsStream) => {
-          if (storeId == 'local') {
-            addEventStreamCB(store, eventsStream.pipe(new EventsUtils.ConvertEventFromStoreStream()));
-          } else {
-            addEventStreamCB(store, eventsStream.pipe(new AddStorePrefixOnEventsStream(storeId)).pipe(new EventsUtils.ConvertEventFromStoreStream()));
-          }
-        });
+        addEventStreamCB(store, await this.getStreamedWithParamsByStore(uid, { [storeId]: params }));
       } catch (e) {
         this.mall.throwAPIError(e, storeId);
       }

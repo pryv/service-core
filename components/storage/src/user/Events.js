@@ -30,20 +30,18 @@ function Events (database) {
   SystemStreamsSerializer.getSerializer(); // TODO remove to load it correctly in tests
 
   _.extend(this.converters, {
-    itemDefaults: [converters.createIdIfMissing],
+    itemDefaults: [],
     itemToDB: [
       converters.deletionToDB,
-      converters.stateToDB,
     ],
     itemsToDB: [
       function (items) { 
         if (items == null) return null;  
-        const res = items.map(e => converters.stateToDB(converters.deletionToDB(e))); 
+        const res = items.map(e => converters.deletionToDB(e)); 
         return res;
       }
     ],
     updateToDB: [
-      converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData'),
     ],
     itemFromDB: [
@@ -75,10 +73,6 @@ function getDbIndexes () {
       index: { streamIds: 1 },
       options: {},
     },
-    {
-      index: { tags: 1 },
-      options: {},
-    },
     // no index by content until we have more actual usage feedback
     {
       index: { trashed: 1 },
@@ -107,7 +101,7 @@ function getDbIndexes () {
  * @param callback
 */
 Events.prototype.updateMany = function (userOrUserId, query, update, callback) {
-  const finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);;
+  throw new Error('Deprecated, use mall.events.update*()');
   Events.super_.prototype.updateMany.call(this, userOrUserId, query, update, finalCallBack);
 };
 
