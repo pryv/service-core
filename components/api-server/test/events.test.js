@@ -1417,13 +1417,14 @@ describe('events', function () {
         });
 
         should(res.body.event.modified).be.approximately(time, 2);
-        var expected = _.clone(original);
+        var expected = _.cloneDeep(original);
         delete expected.modified; 
         expected.modifiedBy = access.id;
         expected.streamId = expected.streamIds[0];
         expected.modified = res.body.event.modified;
         expected.created = res.body.event.created;
-        _.extend(expected.clientData, data.clientData);
+        expected.clientData = _.extend(expected.clientData, data.clientData);
+       
         delete expected.clientData.numberProp;
         integrity.events.set(expected);
         validation.checkObjectEquality(res.body.event, expected);

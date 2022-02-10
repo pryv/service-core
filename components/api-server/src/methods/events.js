@@ -612,6 +612,19 @@ module.exports = async function (api)
 
     context.oldEvent = _.cloneDeep(event);
     context.newEvent = _.extend(event, eventUpdate);
+
+    // clientData key-map handling 
+    if (eventUpdate.clientData != null) {
+      context.newEvent.clientData = _.cloneDeep(context.oldEvent.clientData || {});
+      for (const [key, value] of Object.entries(eventUpdate.clientData)) {
+        if (value == null) { // delete keys with null value
+          delete context.newEvent.clientData[key]; 
+        } else { // update or add keys
+          context.newEvent.clientData[key] = value;
+        }
+      }
+    }
+ 
     next();
 
     function hasStreamIdsModification(event: Event): boolean {

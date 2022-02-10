@@ -15,7 +15,7 @@ const  { dataBaseTracer } = require('tracing');
 
 let database;
 function _getDatabase(config) {
-  if (! database) { 
+  if (! database) {
     database = new Database(config.get('database')); 
     dataBaseTracer(database);
   }

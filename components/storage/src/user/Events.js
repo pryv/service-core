@@ -33,9 +33,7 @@ function Events (database) {
     itemDefaults: [],
     itemToDB: [],
     itemsToDB: [],
-    updateToDB: [
-      converters.getKeyValueSetUpdateFn('clientData'),
-    ],
+    updateToDB: [],
     itemFromDB: [],
     itemsFromDB: [],
   });
