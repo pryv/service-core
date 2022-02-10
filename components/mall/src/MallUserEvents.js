@@ -11,6 +11,7 @@ const { DataStore } = require('pryv-datastore');
 const _ = require('lodash');
 const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
 const StreamsUtils = require('./lib/StreamsUtils');
+const EventsGetUtils = require('./lib/EventsGetUtils');
 
 const errorFactory = require('errors').factory;
 const integrity = require('business/src/integrity');
@@ -174,7 +175,7 @@ class StoreUserEvents {
    * @returns Streams of updated events
    */
   async updateStreamedMany(uid, query, update = {}, mallTransaction): Readable {
-    const paramsByStore = getParamsByStore(query);
+    const paramsByStore = EventsGetUtils.getParamsByStore(query);
 
     // fetch events to be updated 
     const streamedMatchingEvents = await this.getStreamedWithParamsByStore(uid, paramsByStore);
@@ -312,7 +313,7 @@ class StoreUserEvents {
   }
 
   async get(uid, params) {
-    return await this.getWithParamsByStore(uid, getParamsByStore(params));
+    return await this.getWithParamsByStore(uid, EventsGetUtils.getParamsByStore(params));
   }
 
   /**
@@ -334,7 +335,7 @@ class StoreUserEvents {
   };
 
   async getStreamed(uid, params) {
-    return await this.getStreamedWithParamsByStore(uid, getParamsByStore(params));
+    return await this.getStreamedWithParamsByStore(uid, EventsGetUtils.getParamsByStore(params));
   }
 
   /**
@@ -395,7 +396,7 @@ class StoreUserEvents {
 
   // --------------------------- DELETE ----------------------- //
   async delete(uid, query) {
-    const paramsByStore = getParamsByStore(query);
+    const paramsByStore = EventsGetUtils.getParamsByStore(query);
     for (let storeId of Object.keys(paramsByStore)) {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
@@ -410,69 +411,3 @@ class StoreUserEvents {
 }
 
 module.exports = StoreUserEvents;
-
-
-function getParamsByStore(params) {
-  let singleStoreId, singleEventId, headId;
-  if (params.id != null) { // a specific event is queried so we have a singleStore query;
-    [singleStoreId, singleEventId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
-  }
-
-  if (params.headId != null) { // a specific "head" is queried so we have a singleStore query;
-    if (params.id != null) throw new Error('Cannot mix headId and id in query');
-    [singleStoreId, headId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.headId);
-  }
-
-  // repack streamQueries by storeId
-  const streamQueriesBySource = {};
-  if (params.streams != null) { // must be an array
-    for (let streamQuery of params.streams) {
-      let storeId = null;
-
-      function clean(subStreamQuery) {
-        const cleanStreamQuery = {};
-        for (let key of ['any', 'not']) { // for each possible segment of query
-          if (subStreamQuery[key] != null) {
-            for (let streamId of subStreamQuery[key]) {
-              const [streamStoreId, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
-              if (storeId == null) storeId = streamStoreId;
-              if (storeId != streamStoreId) throw new Error('streams must be from the same store, per query segemnt');
-              cleanStreamQuery[key] = cleanStreamQuery[key] || [];
-              cleanStreamQuery[key].push(cleanStreamId);
-            }
-          }
-        }
-        if (subStreamQuery.and != null) {
-          cleanStreamQuery.and = subStreamQuery.and.map(clean);
-        }
-        return cleanStreamQuery;
-      }
-      const resCleanQuery = clean(streamQuery);
-
-      if (singleStoreId != null && singleStoreId != storeId) throw new Error('streams query must be from the same store than the requested event');
-      if (streamQueriesBySource[storeId] == null) streamQueriesBySource[storeId] = [];
-      streamQueriesBySource[storeId].push(resCleanQuery);
-    }
-  }
-
-  const paramsByStore = {};
-  for (let storeId of Object.keys(streamQueriesBySource)) {
-    paramsByStore[storeId] = _.cloneDeep(params);
-    paramsByStore[storeId].streams = streamQueriesBySource[storeId];
-  }
-
-  if (singleStoreId != null) {
-    if (paramsByStore[singleStoreId] == null) paramsByStore[singleStoreId] = _.cloneDeep(params);
-    if (headId != null) {
-      paramsByStore[singleStoreId].headId = headId;
-    } else { // singleEventId != null
-      paramsByStore[singleStoreId].id = singleEventId;
-    }
-  }
-
-  if (Object.keys(paramsByStore).length === 0) { // default is local
-    paramsByStore.local = _.cloneDeep(params);
-    delete paramsByStore.local.streams;
-  }
-  return paramsByStore;
-}

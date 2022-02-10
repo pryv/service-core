@@ -68,7 +68,7 @@ function Events (database) {
 util.inherits(Events, BaseStorage);
 
 function durationToEndTime (eventData) {
-  if (eventData.endTime !== undefined ) {
+  if (eventData.endTime !== undefined) {
     //console.log('endTime should no be defined ', {id: eventData.id, endTime: eventData.endTime, duration: eventData.duration});
     return eventData;
   }

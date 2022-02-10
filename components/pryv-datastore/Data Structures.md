@@ -1,0 +1,37 @@
+# Mall - Data Structures
+
+## Events
+
+Events data model is very similar to events exposed by the API with some differences. The following table exposes the expected data model.
+
+https://api.pryv.com/reference/#event
+
+| Field       | Index | Type                     | Description                                            |
+| ----------- | ----- | ------------------------ | ------------------------------------------------------ |
+| id          | X     | string                   | a **unique** value within the store.                   |
+| headId      | X     | string \| null           | "historical event" an Id refering to the "root" event. |
+| streamIds   | X     | Array of string          | array of Stream Ids. Cannot be empty                   |
+| time        | X     | timestamp                |                                                        |
+| endTime     | X     | timestamp \| null        | endTime is computed from an to "duration" API event    |
+| type        | X     | string                   | The type of the event.                                 |
+| content     |       | Object \| null           |                                                        |
+| description |       | string                   |                                                        |
+| attachments |       | Array of **Attachments** | Only for Store supporting attachements                 |
+| clientData  |       | Key-Value                |                                                        |
+| trashed     | X     | boolean                  | `true` if the event is in the trash                    |
+| integrity   |       | string                   | As per integrity specification                         |
+| created     |       | timestamp                | When the data was created                              |
+| createdBy   | X     | string                   | Identifier of the Access that created the data.        |
+| modified    | X     | timestamp                |                                                        |
+| modifedBy   | X     | string                   | Identifier of the Access that created the data.        |
+| deleted     |       | timestamp \| null        | When set the event is marked as deleted                |
+
+Events can be 3 states "live", "historical", "deleted". Depending on each states some fields are mandatory.
+
+- **live**
+  - **Non-null fields**: id, streamIds (should contain at least one streamId), time, type, created createdBy, modified, modifiedBy
+  - **Must be null**: deleted, headId
+- **historical**
+  - **Non-null fields**: headId, id
+- **deleted**
+  - **Non-null fields**: deleted, id
