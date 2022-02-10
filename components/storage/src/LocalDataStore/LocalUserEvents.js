@@ -18,36 +18,54 @@ const _ = require('lodash');
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 
 const {DataStore, errors}  = require('pryv-datastore');
+const handleDuplicateError = require('../Database').handleDuplicateError;
 
 const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 class LocalUserEvents extends DataStore.UserEvents {
+  eventsCollection: any;
   userEventsStorage: any;
 
-  constructor(userEventsStorage: any) {
+
+  constructor(eventsCollection: any,  userEventsStorage: any) {
     super();
+    this.eventsCollection = eventsCollection;
     this.userEventsStorage = userEventsStorage;
   }
 
   async update(userId, eventId, fieldsToSet, fieldsToDelete, transaction) {
     try {
-      const operations = Object.assign({}, fieldsToSet);
+      const update = {$set: Object.assign({}, fieldsToSet)};
       if (fieldsToDelete != null && fieldsToDelete.length > 0) {
-        operations.$unset = {};
+        update.$unset = {};
         fieldsToDelete.forEach(field => {
-          operations.$unset[field] = 1;
+          update.$unset[field] = 1;
         });
       }
-      return await bluebird.fromCallback(cb => this.userEventsStorage.updateOne(userId, {_id: eventId}, operations, cb, { transactionSession: transaction?.transactionSession}));
+      const query = {userId: userId, _id: eventId};
+      const options = {  returnDocument: 'after' , transactionSession: transaction?.transactionSession };
+      const res = await this.eventsCollection.findOneAndUpdate(query, update, options);
+      return cleanResult(res);
     } catch (err) {
+      handleDuplicateError(err);
+      if (err.isDuplicateIndex != null && err.isDuplicateIndex('id')) {
+        throw errors.itemAlreadyExists('event', {id: eventId}, err);
+      }
       throw errors.unexpectedError(err);
     }
   }
 
   async create(userId, event, transaction) {
     try {
-      return await bluebird.fromCallback(cb => this.userEventsStorage.insertOne(userId, event, cb, { transactionSession: transaction?.transactionSession}));
+      const options = { transactionSession: transaction?.transactionSession };
+      const toInsert = _.cloneDeep(event);
+      toInsert.userId = userId;
+      toInsert._id = event.id;
+      delete toInsert.id;
+      const res =  await this.eventsCollection.insertOne(toInsert, options);
+      return event;
     } catch (err) {
-      if (err.isDuplicateIndex != null && err.isDuplicateIndex('id')) {
+      handleDuplicateError(err);
+      if (err.isDuplicateIndex != null && err.isDuplicateIndex('_id')) {
         throw errors.itemAlreadyExists('event', {id: event.id}, err);
       }
       throw errors.unexpectedError(err);
@@ -81,6 +99,22 @@ class LocalUserEvents extends DataStore.UserEvents {
 module.exports = LocalUserEvents;
 
 //--------------- helpers ------------//
+
+/**
+ * change _id to id and remove userId from result 
+ * @param {any}  
+ * @returns 
+ */
+function cleanResult(result) {
+  if (result?.value == null) return result;
+  const value = result.value;
+  if (value != null) {
+    value.id = value._id;
+    delete value._id;
+    delete value.userId;
+  }
+  return value
+}
 
 /**
  * transform params to mongoQuery 
@@ -141,8 +175,6 @@ function paramsToMongoquery(params) {
     }
   }
  
-  
-
   // if streams are defined
   if (params.streams != null && params.streams.length != 0) {
     const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams);

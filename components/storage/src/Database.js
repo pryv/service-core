@@ -146,13 +146,16 @@ class Database {
 
   // Internal function. 
   // 
-  async getCollection(collectionInfo: CollectionInfo, callback: GetCollectionCallback) {
+  async getCollection(collectionInfo: CollectionInfo, callback: ?GetCollectionCallback) {
     try {    
       // Make sure we have a connect
-      await bluebird.fromCallback( 
-        cb => this.ensureConnect(cb) ); 
+      await bluebird.fromCallback(  cb => this.ensureConnect(cb) ); 
+
       if (this.collectionConnectionsCache[collectionInfo.name]) {
-        return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
+        if (callback != null) {
+          return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
+        } 
+        return this.collectionConnectionsCache[collectionInfo.name];
       }
         
       // Load the collection
@@ -166,10 +169,16 @@ class Database {
       
       this.collectionConnectionsCache[collectionInfo.name] = collection;
       // returning the collection.
-      return callback(null, collection);
+      if (callback != null) {
+        return callback(null, collection);
+      }
+      return collection;
     }
     catch (err) {
-      return callback(err);
+      if (callback != null) {
+        return callback(err);
+      } 
+      throw err;
     }
     
     // Called with `this` set to the Database instance. 
@@ -592,7 +601,7 @@ class Database {
   }
 
   static handleDuplicateError(err: MongoDBError) {
-    err.isDuplicate = this.isDuplicateError(err);
+    err.isDuplicate = Database.isDuplicateError(err);
     err.isDuplicateIndex = (key) => {
       if (err != null && err.errmsg != null && err.isDuplicate) {
         // This check depends on the MongoDB storage engine

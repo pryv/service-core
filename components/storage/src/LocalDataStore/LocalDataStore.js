@@ -43,8 +43,10 @@ class LocalDataStore extends DataStore {
     const userStreamsStorage = (await storage.getStorageLayer()).streams;
     this._streams = new LocalUserStreams(userStreamsStorage);
     
+    const database = await storage.getDatabase();
+    const eventsCollections = await database.getCollection({ name: 'events' });
     const userEventsStorage = (await storage.getStorageLayer()).events;
-    this._events = new LocalUserEvents(userEventsStorage);
+    this._events = new LocalUserEvents(eventsCollections, userEventsStorage);
 
     return this;
   }
