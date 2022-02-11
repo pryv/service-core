@@ -14,6 +14,7 @@
 
 const bluebird = require('bluebird');
 const _ = require('lodash');
+const Readable = require('stream').Readable;
 
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 
@@ -23,13 +24,10 @@ const handleDuplicateError = require('../Database').handleDuplicateError;
 const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 class LocalUserEvents extends DataStore.UserEvents {
   eventsCollection: any;
-  userEventsStorage: any;
 
-
-  constructor(eventsCollection: any,  userEventsStorage: any) {
+  constructor(eventsCollection: any) {
     super();
     this.eventsCollection = eventsCollection;
-    this.userEventsStorage = userEventsStorage;
   }
 
   async update(userId, eventId, fieldsToSet, fieldsToDelete, transaction) {
@@ -72,27 +70,56 @@ class LocalUserEvents extends DataStore.UserEvents {
     }
   }
 
-  async getStreamed(userId, params) {
+  _getCursor(userId, params) {
     const {query, options} = paramsToMongoquery(params);
-    return await bluebird.fromCallback(cb => this.userEventsStorage.findStreamed(userId, query, options, cb));
+    query.userId = userId;
+    const queryOptions = { projection: options.projection};
+    let cursor = this.eventsCollection.find(query, queryOptions).sort(options.sort);
+    if (options.skip != null) { cursor = cursor.skip(options.skip); }
+    if (options.limit != null) { cursor = cursor.limit(options.limit); }
+    return cursor;
+  }
+
+  async getStreamed(userId, params) {
+    const cursor = this._getCursor(userId, params);
+    // streaming with backpressure - highWaterMark has really some effect
+    const readableUnderPressure = new Readable({objectMode: true, highWaterMark: 4000});
+    readableUnderPressure._read = async () => {
+      try {
+        let push = true;
+        while (push) {
+          if (! await cursor.hasNext()) { readableUnderPressure.push(null); break; } // stop
+          const value = await cursor.next();
+          push = readableUnderPressure.push(cleanResult({value})); // if null reader is "full"
+        } 
+      } catch (err) {
+        readableUnderPressure.emit('error', err);
+      }
+    };
+    return readableUnderPressure;
   }
 
   async get(userId, params) {
     const {query, options} = paramsToMongoquery(params);
-    return await bluebird.fromCallback(cb => this.userEventsStorage.findIncludingDeletionsAndVersions(userId, query, options, cb));
+    const cursor = this._getCursor(userId, params);
+    const res = (await cursor.toArray()).map((value) => cleanResult({value}));
+    return res;
   }
 
-  async delete(userId, params) {
+  async delete(userId, params, transaction) {
     const {query, options} = paramsToMongoquery(params);
-    return await bluebird.fromCallback(cb => this.userEventsStorage.removeMany(userId, query, cb));
+    query.userId = userId;
+    options.transactionSession = transaction?.transactionSession;
+    return await this.eventsCollection.deleteMany(query, options);
   }
 
   async _deleteUser(userId: string): Promise<void> {
-    return await bluebird.fromCallback(cb => this.userEventsStorage.removeMany(userId, {}, cb));
+    const query = {userId};
+    return await this.eventsCollection.deleteMany(query, {});
   }
 
   async _storageUsedForUser(userId: string) { 
-    return await bluebird.fromCallback(cb => this.userEventsStorage.getTotalSize(userId, cb));
+    return await (await this.eventsCollection.find({userId})).count();
   }
 }
 
@@ -156,7 +183,7 @@ function paramsToMongoquery(params) {
 
   // if getOne
   if (params.id != null) {
-    query.id = params.id;
+    query._id = params.id;
   }
 
   // history
@@ -168,7 +195,7 @@ function paramsToMongoquery(params) {
     } else {
       if (params.id != null) { // get event and history of event
         query.$or = [{_id: params.id}, {headId: params.id}];
-        delete query.id;
+        delete query._id;
       }
       // if query.headId is undefined all history (in scope) will be returned
       options.sort.modified = 1; // also sort by modified time when history is requested
@@ -234,8 +261,8 @@ function paramsToMongoquery(params) {
   // excludes. (only supported for ID.. specific to one updateEvent in SystemsStream .. might be removed)
   if (params.NOT != null) {
     if (params.NOT.id != null) {
-      if (query.id != null) throw new Error('NOT.id is not supported with id');
-      query.id = {$ne: params.NOT.id};
+      if (query._id != null) throw new Error('NOT.id is not supported with id');
+      query._id = {$ne: params.NOT.id};
     }
   }
   return {query, options};
