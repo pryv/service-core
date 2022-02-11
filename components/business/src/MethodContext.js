@@ -86,7 +86,6 @@ class MethodContext {
     username: string,
     auth: ?string,
     customAuthStepFn: ?CustomAuthFunction,
-    eventsStorage: ?StorageLayer,
     headers: Map<string, any>,
     query: ?{},
     tracing: ?Tracing,

@@ -10,8 +10,6 @@ const { getUsersRepository, UserRepositoryOptions, User } = require('business/sr
 const { getMall } = require('mall');
 
 class Size {
-
-  userEventsStorage;
   dbDocumentsItems;
   attachedFilesItems;
 
@@ -24,8 +22,7 @@ class Size {
  * @param {Array} attachedFilesItems
  * @constructor
  */
-  constructor(userEventsStorage, dbDocumentsItems, attachedFilesItems) {
-    this.userEventsStorage = userEventsStorage;
+  constructor(dbDocumentsItems, attachedFilesItems) {
     this.dbDocumentsItems = dbDocumentsItems;
     this.attachedFilesItems = attachedFilesItems;
   }

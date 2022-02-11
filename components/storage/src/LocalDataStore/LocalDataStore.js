@@ -47,8 +47,14 @@ class LocalDataStore extends DataStore {
     this._streams = new LocalUserStreams(userStreamsStorage);
     
     const database = await storage.getDatabase();
-    const eventsCollections = await database.getCollection({ name: 'events' });
-    this._events = new LocalUserEvents(eventsCollections);
+    const eventsCollection = await database.getCollection({ name: 'events' });
+
+    for (const item of eventsIndexes) {
+      item.options.background = true;
+      await eventsCollection.createIndex(item.index, item.options);
+    }
+
+    this._events = new LocalUserEvents(eventsCollection);
 
     return this;
   }
@@ -75,5 +81,37 @@ class LocalDataStore extends DataStore {
 }
 
 module.exports = LocalDataStore;
+
+const eventsIndexes = [
+  {
+    index: { userId: 1 },
+    options: {},
+  },
+  {
+    index: { userId: 1, _id: 1, },
+    options: {},
+  },
+  {
+    index: { userId: 1, time: 1 },
+    options: {},
+  },
+  {
+    index: { userId: 1, streamIds: 1 },
+    options: {},
+  },
+  // no index by content until we have more actual usage feedback
+  {
+    index: { userId: 1, trashed: 1 },
+    options: {},
+  },
+  {
+    index: { userId: 1, modified: 1 },
+    options: {},
+  },
+  {
+    index: { userId: 1, endTime: 1 },
+    options: { partialFilterExpression: { endTime: { $exists: true } } },
+  }
+];
 
 

@@ -68,7 +68,6 @@ module.exports = async function (api)
 {
   const config = await getConfig();
   const storageLayer = await getStorageLayer();
-  const userEventsStorage = storageLayer.events;
   const userEventFilesStorage = storageLayer.eventFiles;
   const userStreamsStorage = storageLayer.streams;
   const authSettings = config.get('auth');

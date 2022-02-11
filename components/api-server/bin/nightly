@@ -20,7 +20,6 @@ const { getUsersRepository } = require('business/src/users/repository');
   const storage = require('../../storage');
   const storageLayer = app.storageLayer;
   const storageSize = new storage.Size(
-    storageLayer.events,
     [ storageLayer.accesses,
       storageLayer.followedSlices,
       storageLayer.profile ],

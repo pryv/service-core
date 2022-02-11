@@ -55,7 +55,6 @@ type DatabaseShortcuts = {
   sessions: Sessions, 
   
   streams: storage.user.Streams, 
-  events: storage.user.Events, 
   accesses: storage.user.Accesses, 
   webhooks: storage.user.Webhooks,
 }
@@ -81,7 +80,6 @@ class UserContext {
       sessions: new Sessions(conn),
       
       streams: new storage.user.Streams(conn),
-      events: new storage.user.Events(conn),
       accesses: new storage.user.Accesses(conn),
       webhooks: new storage.user.Webhooks(conn),
     };

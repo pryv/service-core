@@ -32,12 +32,11 @@ const StandardDimensionsLength = StandardDimensions.length;
  * @param expressApp
  * @param initContextMiddleware
  * @param loadAccessMiddleware
- * @param userEventsStorage
  * @param userEventFilesStorage
  * @param logging
  */
 module.exports = async function (
-  expressApp, initContextMiddleware, loadAccessMiddleware, userEventsStorage,
+  expressApp, initContextMiddleware, loadAccessMiddleware,
   userEventFilesStorage, logging) {
 
   const mall = await getMall();

@@ -64,7 +64,6 @@ module.exports = {
   user: {
     Accesses: Access,
     EventFiles: require('./user/EventFiles'),
-    Events: require('./user/Events'),
     FollowedSlices: require('./user/FollowedSlices'),
     Profile: require('./user/Profile'),
     Streams: Stream,

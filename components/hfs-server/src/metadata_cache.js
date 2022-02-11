@@ -204,7 +204,6 @@ class MetadataLoader {
       userName,
       accessToken,
       customAuthStep,
-      storage.events,
     );
     
     return bluebird.fromCallback((returnValueCallback) => {

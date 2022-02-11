@@ -200,6 +200,9 @@ class Database {
     }
   }
 
+  
+
+
   // Internal function. Does the same job as `getCollection` above, but calls `errCallback`
   // when error would not be null. Otherwise it calls '`callback`, whose code can 
   // assume that there has been no error. 

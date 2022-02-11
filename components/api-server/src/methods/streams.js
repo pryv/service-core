@@ -33,7 +33,6 @@ const { getStorageLayer } = require('storage');
  *
  * @param api
  * @param userStreamsStorage
- * @param userEventsStorage
  * @param userEventFilesStorage
  * @param notifyTests
  * @param logging
@@ -44,7 +43,6 @@ module.exports = async function (api) {
   const config = await getConfig();
   const storageLayer = await getStorageLayer();
   const userStreamsStorage = storageLayer.streams;
-  const userEventsStorage = storageLayer.events;
   const userEventFilesStorage = storageLayer.eventFiles;
   const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');

@@ -30,10 +30,8 @@ const cache = require('cache');
  */
 class UsersRepository {
   storageLayer: {};
-  eventsStorage: {};
   sessionsStorage: {};
   accessStorage: {};
-  collectionInfo: {};
   uniqueFields: Array<string>;
   mall: {};
   platform: null;
@@ -48,10 +46,8 @@ class UsersRepository {
 
     const storage = require('storage');
     this.storageLayer = await storage.getStorageLayer();
-    this.eventsStorage = this.storageLayer.events;
     this.sessionsStorage = this.storageLayer.sessions;
     this.accessStorage = this.storageLayer.accesses;
-    this.collectionInfo = this.eventsStorage.getCollectionInfoWithoutUserId();
     await userIndex.init();
   }
 
@@ -182,10 +178,6 @@ class UsersRepository {
   }
 
   async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
-    // first explicitly create a collection, because it would fail in the transaction if collection does not exist 
-    await bluebird.fromCallback(
-      cb => this.eventsStorage.database.getCollection(this.collectionInfo, cb),
-    );
     await this.checkDuplicates(user, user.username);
 
     const mallTransaction = await this.mall.newTransaction();

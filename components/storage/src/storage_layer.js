@@ -17,7 +17,6 @@ const PasswordResetRequests = require('./PasswordResetRequests');
 const Sessions = require('./Sessions');
 const Accesses = require('./user/Accesses');
 const EventFiles = require('./user/EventFiles');
-const Events = require('./user/Events');
 const FollowedSlices = require('./user/FollowedSlices');
 const Profile = require('./user/Profile');
 const Streams = require('./user/Streams');
@@ -31,7 +30,6 @@ class StorageLayer {
   sessions: Sessions;
   accesses: Accesses;
   eventFiles: EventFiles;
-  events: Events;
   followedSlices: FollowedSlices;
   profile: Profile;
   streams: Streams;
@@ -64,7 +62,6 @@ class StorageLayer {
         previewsDirPath: previewsDirPath,
       }, 
       logger);  
-    this.events = new Events(connection);
     this.followedSlices = new FollowedSlices(connection);
     this.profile = new Profile(connection);
     this.streams = new Streams(connection);
