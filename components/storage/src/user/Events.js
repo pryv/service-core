@@ -6,12 +6,8 @@
  */
 const BaseStorage = require('./BaseStorage');
 const converters = require('./../converters');
-const timestamp = require('unix-timestamp');
 const util = require('util');
 const _ = require('lodash');
-const ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const logger = require('@pryv/boiler').getLogger('storage:events');
 
 module.exports = Events;
 /**
@@ -26,9 +22,7 @@ module.exports = Events;
  */
 function Events (database) {
   Events.super_.call(this, database);
-
-  SystemStreamsSerializer.getSerializer(); // TODO remove to load it correctly in tests
-
+  
   _.extend(this.converters, {
     itemDefaults: [],
     itemToDB: [],
@@ -108,24 +102,11 @@ Events.prototype.getCollectionInfoWithoutUserId = function () {
  * Implementation
  */
 Events.prototype.findStreamed = function (userOrUserId, query, options, callback) {
-  this.database.findStreamed(
-    this.getCollectionInfo(userOrUserId),
-    this.applyQueryToDB(query),
-    this.applyOptionsToDB(options),
-    function (err, dbStreamedItems) {
-      if (err) {
-        return callback(err);
-      }
-      callback(null,
-        dbStreamedItems
-          .pipe(new ApplyEventsFromDbStream(this.converters.itemFromDB))
-      );
-    }.bind(this)
-  );
+  throw new Error('Deprecated, use mall');
 };
 
 Events.prototype.countAll = function (user, callback) {
-  this.count(user, {}, callback);
+  throw new Error('Deprecated, use mall');
 };
 
 

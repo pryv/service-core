@@ -188,11 +188,11 @@ class Database {
       const collectionName: string = collection.collectionName;
       if (indexes == null) return; 
       if (initializedCollections[collectionName]) return; 
-      
       for (const item of indexes) {
         const options = lodash.merge({}, item.options, {
           background: true
         });
+       
         await collection.createIndex(item.index, options);
       }
 

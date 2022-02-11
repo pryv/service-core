@@ -23,6 +23,7 @@ const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const superagent = require('superagent');
 const { getMall } = require('mall');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('event previews', function () {
 
@@ -33,6 +34,7 @@ describe('event previews', function () {
   let mall = null;
 
   before(async function() { 
+    await SystemStreamsSerializer.init();
     mall = await getMall();
   });
 

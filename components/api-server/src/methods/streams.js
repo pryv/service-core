@@ -28,8 +28,6 @@ const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/ba
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
 
-SystemStreamsSerializer.getSerializer(); // ensure it's loaded
-
 /**
  * Event streams API methods implementation.
  *

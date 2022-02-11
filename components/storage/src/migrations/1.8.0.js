@@ -24,7 +24,7 @@ module.exports = async function (context, callback) {
 
   const logger = getLogger('migration-1.8.0');
   logger.info('V1.7.5 => v1.8.0 Migration started');
-
+  await SystemStreamsSerializer.init();
   const eventsCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'events' }, cb));
 
   await migrateUserids();

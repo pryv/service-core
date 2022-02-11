@@ -31,6 +31,7 @@ const middleware = require('middleware');
 const storage = require('storage');
 const utils = require('utils');
 const { axonMessaging } = require('messages');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const ExtensionLoader = utils.extension.ExtensionLoader;
 
@@ -56,7 +57,8 @@ async function start() {
 
   // load config settings
   var config = await getConfig();
-
+  await SystemStreamsSerializer.init();
+  
   const customAuthStepExt = loadCustomAuthStepFn(config.get('customExtensions'));
 
   const logger = getLogger('server');

@@ -26,6 +26,7 @@ describe('Metadata Loader', function () {
   let database, config, pryv, mall;
   before(async function () {
     config = await getConfig();
+    await require('business/src/system-streams/serializer').init();
     database = await storage.getDatabase(); 
     pryv = databaseFixture(database);
     mall = await getMall();
@@ -71,6 +72,7 @@ describe('Metadata Cache', function () {
   let config;
   before(async function () {
     config = await getConfig();
+    await require('business/src/system-streams/serializer').init();
   });
   it('[O8AE] returns loaded metadata for N minutes', async () => {
     let n = 0; 

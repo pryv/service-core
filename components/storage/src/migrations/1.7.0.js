@@ -23,6 +23,7 @@ module.exports = async function (context, callback) {
   const logger = getLogger('migration-1.7.0');
   logger.info('V1.6.21 => v1.7.0 Migration started');
 
+  await SystemStreamsSerializer.init();
   const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
   const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
   const eventsCollection = await bluebird.fromCallback(cb =>
@@ -32,6 +33,8 @@ module.exports = async function (context, callback) {
   const accessesCollection = await bluebird.fromCallback(cb =>
     context.database.getCollection({ name: 'accesses' }, cb));
   const userEventsStorage = new (require('../user/Events'))(context.database);
+
+
   
   await migrateAccounts(eventsCollection);
   await migrateTags(eventsCollection, streamsCollection);

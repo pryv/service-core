@@ -15,6 +15,8 @@ const bluebird = require('bluebird');
 const storage = require('../index');
 const {DataStore}  = require('pryv-datastore');
 
+const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront 
+
 const LocalUserStreams = require('./LocalUserStreams');
 const LocalUserEvents = require('./LocalUserEvents');
 const LocalTransaction = require('./LocalTransaction');
@@ -39,6 +41,7 @@ class LocalDataStore extends DataStore {
   }
 
   async init(): Promise<DataStore> {
+    await SystemStreamsSerializer.init();
     // get config and load approriated data store components;
     const userStreamsStorage = (await storage.getStorageLayer()).streams;
     this._streams = new LocalUserStreams(userStreamsStorage);

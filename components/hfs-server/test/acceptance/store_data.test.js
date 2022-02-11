@@ -66,6 +66,7 @@ describe('Storing data in a HF series', function() {
     config = await getConfig();
     database = await produceMongoConnection();
     mall = await getMall();
+    await require('business/src/system-streams/serializer').init();
     pryv = databaseFixture(database);
   });
   const influx = produceInfluxConnection();

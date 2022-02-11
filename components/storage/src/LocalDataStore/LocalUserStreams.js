@@ -22,17 +22,19 @@ const { treeUtils } = require('utils');
 const { StreamProperties } = require('business/src/streams');
 const StreamPropsWithoutChildren: Array<string> = StreamProperties.filter(p => p !== 'children');
 
-const SystemStreamUtils = require('./SystemStreamUtils');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
 
 import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { Stream } from 'business/src/streams';
 
+let visibleStreamsTree = [];
 class LocalUserStreams extends DataStore.UserStreams {
   userStreamsStorage: any;
 
   constructor(userStreamsStorage: any) {
     super();
     this.userStreamsStorage = userStreamsStorage;
+    loadVisibleStreamsTree();
   }
 
   async get(uid: string, params: StoreQuery): Promise<Array<Stream>> {
@@ -40,7 +42,7 @@ class LocalUserStreams extends DataStore.UserStreams {
     if (allStreamsForAccount == null) { // get from DB
       allStreamsForAccount = await bluebird.fromCallback(cb => this.userStreamsStorage.find({ id: uid }, {}, null, cb));
       // add system streams
-      allStreamsForAccount = allStreamsForAccount.concat(SystemStreamUtils.visibleStreamsTree);
+      allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
       cache.setStreams(uid, 'local', allStreamsForAccount);
     }
 
@@ -85,5 +87,14 @@ function cloneStream(storeStream: Stream, includeChildren: boolean): Stream {
     stream.childrenHidden = true;
     stream.children = [];
     return stream;
+  }
+}
+
+function loadVisibleStreamsTree() {
+  try {
+    visibleStreamsTree = SystemStreamsSerializer.getReadable();
+    DataStore.Defaults.applyOnStreams(visibleStreamsTree);
+  } catch (err) {
+    console.log('This should be fixed!! It happens when the system streams are not yet loaded during some test suites.. ', err);
   }
 }

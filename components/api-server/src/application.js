@@ -44,6 +44,7 @@ const errorsMiddlewareMod = require('./middleware/errors');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { Extension, ExtensionLoader } = require('utils').extension;
 
@@ -103,11 +104,13 @@ class Application {
     this.produceLogSubsystem();
     logger.debug('Init started');
 
-    await UserLocalDirectory.init();
-
+  
     this.config = await getConfig();
     this.isOpenSource = this.config.get('openSource:isActive');
-    this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active')
+    this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active');
+
+    await UserLocalDirectory.init();
+    await SystemStreamsSerializer.init();
     
     if (this.isAuditActive) {
       const audit = require('audit');

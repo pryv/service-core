@@ -29,12 +29,11 @@ const logger = getLogger('test-helpers:data');
 const users = exports.users = require('./data/users');
 const defaultUser = users[0];
 
-const customAccountProperties = buildCustomAccountProperties();
-
-
 exports.resetUsers = async () => {
   logger.debug('resetUsers');
   await getConfig(); // lock up to the time config is ready
+  await SystemStreamsSerializer.init();
+  const customAccountProperties = buildCustomAccountProperties();
 
   const usersRepository = await getUsersRepository(); 
   await usersRepository.deleteAll();  

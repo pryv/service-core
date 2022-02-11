@@ -104,7 +104,6 @@ class MethodContext {
     this.headers = headers;
 
     this.methodId = null;
-    SystemStreamsSerializer.getSerializer(); // ensure it's loaded
     if (auth != null) this.parseAuth(auth);
     this.originalQuery = _.cloneDeep(query);
     if (this.originalQuery?.auth) delete this.originalQuery.auth;

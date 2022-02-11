@@ -12,7 +12,6 @@ exports.mochaHooks = {
     const config = await getConfig();
 
     const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-    SystemStreamsSerializer.getSerializer();
 
     // create preview directories that would notmally be created in normal setup
     const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
