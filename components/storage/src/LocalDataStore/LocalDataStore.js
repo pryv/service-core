@@ -49,12 +49,14 @@ class LocalDataStore extends DataStore {
     const database = await storage.getDatabase();
     const eventsCollection = await database.getCollection({ name: 'events' });
 
+    const eventFilesStorage = (await storage.getStorageLayer()).eventFiles;
+
     for (const item of eventsIndexes) {
       item.options.background = true;
       await eventsCollection.createIndex(item.index, item.options);
     }
 
-    this._events = new LocalUserEvents(eventsCollection);
+    this._events = new LocalUserEvents(eventsCollection, eventFilesStorage);
 
     return this;
   }

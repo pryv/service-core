@@ -9,7 +9,6 @@
 
 const { DataStore } = require('pryv-datastore');
 const _ = require('lodash');
-const AddStorePrefixOnEventsStream = require('./lib/AddStorePrefixOnEventsStream');
 const StreamsUtils = require('./lib/StreamsUtils');
 const EventsUtils = require('./lib/EventsUtils');
 const EventsGetUtils = require('./lib/EventsGetUtils');
@@ -99,7 +98,7 @@ class StoreUserEvents {
     delete eventForStore.integrity;
     if (integrity.events.isActive) {
       integrity.events.set(eventForStore);
-    } 
+    }
 
     // delete Id
     delete eventForStore.id;
@@ -123,7 +122,7 @@ class StoreUserEvents {
     const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
     try {
       const res = await store.events.update(uid, eventId, eventForStore, fieldsToDelete, storeTransaction);
-      return EventsUtils.convertEventFromStore(res);
+      return EventsUtils.convertEventFromStore(storeId, res);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -240,50 +239,12 @@ class StoreUserEvents {
    * @param {*} eventData 
    */
   async create(uid, eventData, mallTransaction) {
-    const eventForStore =  EventsUtils.convertEventToStore(eventData);
-
-   
-    // add id if needed
-    eventForStore.id = eventForStore.id || cuid();
-
-    // update integrity field and recalculate if needed
-    // integrity caclulation is done on event.id and streamIds that includes the store prefix
-    delete eventForStore.integrity;
-    if (integrity.events.isActive) {
-      integrity.events.set(eventForStore);
-    }
-
-    let storeId;
-    // if eventId is provided make sure it's compatible with the storeId & clean it
-    if (eventData.id) {
-      const [testStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
-      storeId = testStoreId;
-      eventForStore.id = eventId;
-    }
-
-    // cleanup storeId from streamId
-    if (eventData.streamIds != null) { // it might happen that deleted is set but streamIds is not when loading test data
-      for (let i = 0; i < eventData.streamIds.length; i++) {
-        // check that the event belongs to a single store.
-        const [testStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[i]);
-        if (storeId == null) { storeId = testStoreId; }
-        else if (testStoreId !== storeId) {
-          throw errorFactory.invalidRequestStructure('Cannot create event with multiple streams belonging to different stores', eventData);
-        }
-        eventForStore.streamIds[i] = streamId;
-      }
-    }
-    if (storeId == null) {
-      throw errorFactory.invalidRequestStructure('Cannot find store information in new event', eventData);
-    }
-
+    const {storeId, eventForStore} = prepareForCreate(eventData);
     const store = this.mall._storeForId(storeId);
-
     const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
-
     try {
       const res = await store.events.create(uid, eventForStore, storeTransaction);
-      return EventsUtils.convertEventFromStore(res);
+      return EventsUtils.convertEventFromStore(storeId, res);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -293,6 +254,43 @@ class StoreUserEvents {
     for (let eventData of eventsData) {
       await this.create(uid, eventData, mallTransaction);
     }
+  }
+
+  async createWithAttachment(uid: string, eventDataWithoutAttachments: {}, attachmentsData: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void>  { 
+    const {storeId, eventForStore} = prepareForCreate(eventDataWithoutAttachments);
+
+    const store = this.mall._storeForId(storeId);
+    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
+
+    try {
+
+      //** This will be called when attachments have been saved on store */
+      async function finalizeEventCallBack(attachmentsResponse) {
+        const attachmentsFields = [];
+
+        for (let i = 0; i < attachmentsResponse.length; i++) {
+          attachmentsFields.push({
+            id: attachmentsResponse[i].id, // ids comes from storage
+            fileName: attachmentsData[i].fileName,
+            type: attachmentsData[i].type,
+            size: attachmentsData[i].size,
+            integrity: attachmentsData[i].integrity,
+          });
+        }
+        eventForStore.attachments = attachmentsFields;
+
+        // Prepare result event 
+        const resultEvent = EventsUtils.convertEventFromStore(storeId, eventForStore);
+        const finalEventForStore = prepareForCreate(resultEvent).eventForStore; // add integrity to resultEveent
+        return finalEventForStore;
+      }
+
+      const res = await store.events.createWithAttachment(uid, eventForStore, attachmentsData, finalizeEventCallBack, storeTransaction);
+      return EventsUtils.convertEventFromStore(storeId, res);
+    } catch (e) {
+      this.mall.throwAPIError(e, storeId);
+    }
+    throw(errors.unsupportedOperation('events.create with attachment')); 
   }
 
 
@@ -310,7 +308,7 @@ class StoreUserEvents {
     if (store == null) return null;
     try {
       const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all', limit: 1, includeDeletions: true });
-      if (events?.length === 1) return EventsUtils.convertEventFromStore(events[0]);
+      if (events?.length === 1) return EventsUtils.convertEventFromStore(storeId, events[0]);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -332,7 +330,7 @@ class StoreUserEvents {
       try {
         const events = await store.events.get(uid, params);
         for (let event of events) {
-          res.push(EventsUtils.convertEventFromStore(event));
+          res.push(EventsUtils.convertEventFromStore(storeId, event));
         }
       } catch (e) {
         this.mall.throwAPIError(e, storeId);
@@ -357,12 +355,7 @@ class StoreUserEvents {
     const store = this.mall._storeForId(storeId);
     try {
       const eventsStreamFromDB = await store.events.getStreamed(uid, paramsByStore[storeId]);
-      const eventsStream = eventsStreamFromDB.pipe(new EventsUtils.ConvertEventFromStoreStream());
-      if (storeId == 'local') {
-        return eventsStream;
-      } else {
-        return eventsStream.pipe(new AddStorePrefixOnEventsStream(storeId));
-      }
+      return eventsStreamFromDB.pipe(new EventsUtils.ConvertEventFromStoreStream(storeId));
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -418,3 +411,44 @@ class StoreUserEvents {
 }
 
 module.exports = StoreUserEvents;
+
+
+function prepareForCreate(eventData) {
+  const eventForStore =  EventsUtils.convertEventToStore(eventData);
+
+  // add id if needed
+  eventForStore.id = eventForStore.id || cuid();
+
+  // update integrity field and recalculate if needed
+  // integrity caclulation is done on event.id and streamIds that includes the store prefix
+  delete eventForStore.integrity;
+  if (integrity.events.isActive) {
+    integrity.events.set(eventForStore);
+  }
+
+  let storeId;
+  // if eventId is provided make sure it's compatible with the storeId & clean it
+  if (eventData.id) {
+    const [testStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    storeId = testStoreId;
+    eventForStore.id = eventId;
+  }
+
+  // cleanup storeId from streamId
+  if (eventData.streamIds != null) { // it might happen that deleted is set but streamIds is not when loading test data
+    for (let i = 0; i < eventData.streamIds.length; i++) {
+      // check that the event belongs to a single store.
+      const [testStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[i]);
+      if (storeId == null) { storeId = testStoreId; }
+      else if (testStoreId !== storeId) {
+        throw errorFactory.invalidRequestStructure('Cannot create event with multiple streams belonging to different stores', eventData);
+      }
+      eventForStore.streamIds[i] = streamId;
+    }
+  }
+  if (storeId == null) {
+    throw errorFactory.invalidRequestStructure('Cannot find store information in new event', eventData);
+  }
+
+  return { storeId, eventForStore };
+}

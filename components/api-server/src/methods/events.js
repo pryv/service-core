@@ -10,6 +10,7 @@ const utils = require('utils');
 const errors = require('errors').factory;
 const async = require('async');
 const bluebird = require('bluebird');
+const fs = require('fs');
 const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/eventsMethods');
 const eventSchema = require('../schema/event');
@@ -54,7 +55,7 @@ import type { ApiCallback } from 'api-server/src/API';
 // for typing
 import type { Attachment, Event } from 'business/src/events';
 import type { Stream } from 'business/src/streams';
-import type { SystemStream } from 'business/src/system-streams';
+import type { SystemStream } from 'business/src/system-streams';
 
 // Type repository that will contain information about what is allowed/known
 // for events. 
@@ -248,7 +249,7 @@ module.exports = async function (api)
     handleSeries,
     createEvent,
     removeActiveFromSibling,
-    createAttachments,
+    //createAttachments,
     backwardCompatibilityOnResult,
     addIntegrityToContext,
     notify);
@@ -428,16 +429,41 @@ module.exports = async function (api)
   }
 
   async function createEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    try {
-      let newEvent = await mall.events.create(context.user.id, context.newEvent);
-      // To remove when streamId not necessary
-      newEvent.streamId = newEvent.streamIds[0];
-      result.event = newEvent;
-      return next();
-    } catch (err) {
-      if (err instanceof APIError) return next(err);
-      return next(errors.unexpectedError(err));
+    let newEvent = null;
+
+    // if event has attachments 
+    if (context.files != null && context.files.length > 0) {
+
+      const attachmentItems = [];
+      for (const file of context.files) {
+        attachmentItems.push({
+          fileName: file.originalname,
+          type: file.mimetype,
+          size: file.size,
+          integrity: file.integrity,
+          attachmentData: fs.createReadStream(file.path), // simulate full pass-thru of attachement until implemented
+        });
+      }
+      try {
+        newEvent = await mall.events.createWithAttachment(context.user.id, context.newEvent,  attachmentItems);
+        newEvent.attachments = setFileReadToken(context.access, newEvent.attachments);
+      } catch (err) {
+        if (err instanceof APIError) return next(err);
+        return next(errors.unexpectedError(err));
+      }
+    } else { 
+      try {
+        newEvent = await mall.events.create(context.user.id, context.newEvent);
+      } catch (err) {
+        if (err instanceof APIError) return next(err);
+        return next(errors.unexpectedError(err));
+      }
     }
+
+    // To remove when streamId not necessary
+    newEvent.streamId = newEvent.streamIds[0];
+    result.event = newEvent;
+    return next();
   }
 
   function backwardCompatibilityOnResult(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -1021,8 +1047,7 @@ module.exports = async function (api)
 
     for (const file of files) {
       //saveFile
-      const fileId: string = await bluebird.fromCallback(cb =>
-        userEventFilesStorage.saveAttachedFile(file.path, context.user, eventInfo.id, cb));
+      const fileId: string = await userEventFilesStorage.saveAttachedFileFromTemp(file.path, context.user.id, eventInfo.id);
 
       const attachmentData = {
         id: fileId,

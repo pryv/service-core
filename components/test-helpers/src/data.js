@@ -102,7 +102,7 @@ exports.resetEvents = function (done, user) {
       mall = await getMall();
       await mall.events.delete(user.id, {state: 'all', includeDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
     },
-    async function createEvents() { 
+    async function createEvents() {
       await mall.events.createMany(user.id,  eventsToWrite)
     },
     function removeZerosDuration(done2) {
@@ -192,7 +192,8 @@ function copyAttachmentFn(attachmentInfo, user, eventId) {
     } catch (e) {
       return callback(e);
     }
-    storage.user.eventFiles.saveAttachedFile(tmpPath, user, eventId, attachmentInfo.id, callback);
+    storage.user.eventFiles.saveAttachedFileFromTemp(tmpPath, user.id, eventId, attachmentInfo.id).then(
+      (fileID) => { callback(null, fileID); }, (err) => { callback(err); });
   };
 }
 

@@ -394,15 +394,10 @@ async function initiateUserWithData(username: string) {
 
   const filePath = `test-file-${username}`;
   fs.writeFileSync(filePath, 'Just some text');
-  await bluebird.fromCallback((cb) =>
-    app.storageLayer.eventFiles.saveAttachedFile(
+  await app.storageLayer.eventFiles.saveAttachedFileFromTemp(
       path.resolve(filePath),
-      { id: username },
-      charlatan.Lorem.word(),
-      charlatan.Lorem.word(),
-      cb
-    )
-  );
+      username ,
+      charlatan.Lorem.word());
   
   if (! isOpenSource) {
     const usersSeries = await influxRepository.get(

@@ -24,10 +24,12 @@ const handleDuplicateError = require('../Database').handleDuplicateError;
 const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 class LocalUserEvents extends DataStore.UserEvents {
   eventsCollection: any;
+  eventsFileStorage: any;
 
-  constructor(eventsCollection: any) {
+  constructor(eventsCollection: any, eventsFileStorage: any) {
     super();
     this.eventsCollection = eventsCollection;
+    this.eventsFileStorage = eventsFileStorage;
   }
 
   async update(userId, eventId, fieldsToSet, fieldsToDelete, transaction) {
@@ -68,6 +70,17 @@ class LocalUserEvents extends DataStore.UserEvents {
       }
       throw errors.unexpectedError(err);
     }
+  }
+
+  async createWithAttachment(userId: string, partialEventData: {}, attachmentsData: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void> {
+    const attachmentsResponse = [];
+    
+    for (const attachment of attachmentsData) {
+      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, partialEventData.id);
+      attachmentsResponse.push({id: fileId});
+    }
+    const eventData = await finalizeEventCallBack(attachmentsResponse);
+    return await this.create(userId, eventData, transaction);
   }
 
   _getCursor(userId, params) {

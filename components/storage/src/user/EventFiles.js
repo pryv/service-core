@@ -5,12 +5,15 @@
  * Proprietary and confidential
  */
 var async = require('async'),
-    generateId = require('cuid'),
+    cuid = require('cuid'),
     fs = require('fs'),
     mkdirp = require('mkdirp'),
     path = require('path'),
     rimraf = require('rimraf'),
     toString = require('utils').toString;
+
+const bluebird = require('bluebird');
+const { pipeline } = require('stream/promises');
 
 module.exports = EventFiles;
 /**
@@ -77,47 +80,25 @@ function getSizeRecursive(filePath, callback) {
 }
 
 /**
- * Generates a new id for the given file.
- *
- * @param {String} filePath
- * @returns {String}
- */
-EventFiles.prototype.generateFileId = function (filePath) {
-  filePath;
-  
-  // for now we just generate a random id (in the future we could do a SHA digest)
-  return generateId();
-};
-
-/**
  * @param tempPath The current, temporary path of the file to save (the file will actually be moved
  *                 from that path)
  */
-EventFiles.prototype.saveAttachedFile = function (tempPath, user, eventId, fileId, callback) {
-  if (typeof(fileId) === 'function') {
-    // no fileId provided
-    callback = fileId;
-    fileId = this.generateFileId(tempPath);
-  }
-  var dirPath = this.getAttachmentPath(user.id, eventId);
-  mkdirp(dirPath).then(function (res, err) {
-    if (err) { return callback(err); }
-
-    var readStream = fs.createReadStream(tempPath);
-    var writeStream = fs.createWriteStream(path.join(dirPath, fileId));
-
-    readStream.on('error', callback);
-    writeStream.on('error', callback);
-    writeStream.on('close', function () {
-      fs.unlink(tempPath, function (err) {
-        if (err) { return callback(err); }
-        callback(null, fileId);
-      });
-    });
-
-    readStream.pipe(writeStream);
-  });
+EventFiles.prototype.saveAttachedFileFromTemp = async function (tempPath, userId, eventId, fileId) {
+  const readStream = fs.createReadStream(tempPath);
+  fileId = await this.saveAttachedFileFromStream(readStream, userId, eventId, fileId);
+  await bluebird.fromCallback((cb) => fs.unlink(tempPath, cb));
+  return fileId;
 };
+
+EventFiles.prototype.saveAttachedFileFromStream = async function (readableStream, userId, eventId, fileId) {
+  fileId = fileId || cuid();
+  var dirPath = this.getAttachmentPath(userId, eventId);
+  await mkdirp(dirPath);
+  const writeStream = fs.createWriteStream(path.join(dirPath, fileId));
+  await pipeline(readableStream, writeStream);
+  return fileId;
+};
+
 
 EventFiles.prototype.removeAttachedFile = function (user, eventId, fileId, callback) {
   var filePath = this.getAttachmentPath(user.id, eventId, fileId);

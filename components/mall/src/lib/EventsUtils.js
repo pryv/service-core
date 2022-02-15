@@ -83,20 +83,33 @@ function convertEventToStore(eventData) {
   return event;
 }
 
-function convertEventFromStore(eventData) {
+function convertEventFromStore(storeId, eventData) {
   const event = _.cloneDeep(eventData);
   endTimeFromStoreToDuration(event);
   stateFromStore(event);
   deletionFromStore(event);
+  addStoreId(storeId, event);
   return event;
 }
 
+function addStoreId(storeId, eventData) {
+  if (storeId === 'local') return eventData;
+  const storePrefix = ':' + storeId + ':';
+  eventData.id = storePrefix + eventData.id;
+  if (eventData.streamIds != null) {
+   eventData.streamIds = eventData.streamIds.map(streamId => storePrefix +streamId);
+  }
+  return eventData;
+}
+
 class ConvertEventFromStoreStream extends Transform {
-  constructor() {
+  storeId : string;
+  constructor(storeId) {
     super({objectMode: true});
+    this.storeId = storeId;
   }
   _transform = function (event, encoding, callback) {
-    this.push(convertEventFromStore(event));
+    this.push(convertEventFromStore(this.storeId, event));
     callback();
   };
 }
