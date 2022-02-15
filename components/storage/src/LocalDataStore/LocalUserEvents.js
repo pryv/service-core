@@ -72,10 +72,10 @@ class LocalUserEvents extends DataStore.UserEvents {
     }
   }
 
-  async createWithAttachment(userId: string, partialEventData: {}, attachmentsData: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void> {
+  async createWithAttachment(userId: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void> {
     const attachmentsResponse = [];
     
-    for (const attachment of attachmentsData) {
+    for (const attachment of attachmentsItems) {
       const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, partialEventData.id);
       attachmentsResponse.push({id: fileId});
     }
@@ -124,6 +124,18 @@ class LocalUserEvents extends DataStore.UserEvents {
     query.userId = userId;
     options.transactionSession = transaction?.transactionSession;
     return await this.eventsCollection.deleteMany(query, options);
+  }
+
+  // ----------------- attachments ----------------- //
+  async attachmentAdd(userId: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction) {
+    const attachmentsResponse = [];
+    
+    for (const attachment of attachmentsItems) {
+      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, partialEventData.id);
+      attachmentsResponse.push({id: fileId});
+    }
+    const eventData = await finalizeEventCallBack(attachmentsResponse);
+    return await this.update(userId, eventData, {}, transaction);
   }
 
   async _deleteUser(userId: string): Promise<void> {

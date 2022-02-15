@@ -74,24 +74,24 @@ class UserEvents {
    * @see https://api.pryv.com/reference/#create-event
    * @param {identifier} uid
    * @param {any} partialEventData - eventData (without attachments and integrity property)
-   * @param {Array<AttachmentItem>} attachmentsData - Array of attachments informations. 
+   * @param {Array<AttachmentItem>} attachmentsItems - Array of attachments informations. 
    * @throws item-already-exists
    * @throws invalid-item-id
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-   async createWithAttachment(uid: string, partialEventData: {}, attachmentsData: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.create with attachment')); }
+   async createWithAttachment(uid: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.create with attachment')); }
 
    /**
    * @see https://api.pryv.com/reference/#create-event
    * @param {identifier} uid
    * @param {string} eventId
-   * @param {Array<AttachmentItem>} attachmentsData - The data to attach
+   * @param {Array<AttachmentItem>} attachmentsItems - The data to attach
    * @throws invalid-item-id
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-    async addAttachment(uid: string, eventId: string, attachmentsData: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.addAttachment')); }
+    async addAttachment(uid: string, eventId: string, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.addAttachment')); }
 
   /**
    * @see https://api.pryv.com/reference/#update-event

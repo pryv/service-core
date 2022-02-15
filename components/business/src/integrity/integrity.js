@@ -110,6 +110,7 @@ function hashEvent(event) {
 }
 
 function setOnEvent(event) {
+  delete event.integrity;
   if (! eventsIsActive) return;
   event.integrity = hashEvent(event);
   return event;

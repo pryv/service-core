@@ -7,6 +7,8 @@
 
 const _ = require('lodash');
 const Transform = require('stream').Transform;
+const StreamsUtils = require('./StreamsUtils');
+const errorFactory = require('errors').factory;
 
 // ------------  Duration -----------// 
 
@@ -47,7 +49,11 @@ function endTimeFromStoreToDuration (eventData) {
 // state
 
 function stateToStore(eventData) {
-  eventData.trashed = (eventData.trashed === true);
+  if (eventData.delete !== undefined) {
+    delete eventData.trashed;
+  } else {
+    eventData.trashed = (eventData.trashed === true);
+  }
   return eventData;
 };
 
@@ -75,8 +81,47 @@ function deletionFromStore (eventData) {
 };
 
 
-function convertEventToStore(eventData) {
+// ------------ storeId ------------- //
+
+
+function removeStoreIds(storeId, eventData) {
+  const [eventStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+  if (eventStoreId !== storeId) {
+    throw errorFactory.invalidRequestStructure('Cannot create event with id and streamIds belonging to different stores', eventData);
+  }
+  eventData.id = eventId;
+
+  // cleanup storeId from streamId
+  if (eventData.streamIds != null) { // it might happen that deleted is set but streamIds is not when loading test data
+    for (let i = 0; i < eventData.streamIds.length; i++) {
+      // check that the event belongs to a single store.
+      const [testStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[i]);
+      if (storeId == null) { storeId = testStoreId; }
+      else if (testStoreId !== storeId) {
+        throw errorFactory.invalidRequestStructure('Cannot create event with id and streamIds belonging to different stores', eventData);
+      }
+      eventData.streamIds[i] = streamId;
+    }
+  }
+  return eventData;
+}
+
+function addStoreId(storeId, eventData) {
+  if (storeId === 'local') return eventData;
+  const storePrefix = ':' + storeId + ':';
+  eventData.id = storePrefix + eventData.id;
+  if (eventData.streamIds != null) {
+   eventData.streamIds = eventData.streamIds.map(streamId => storePrefix +streamId);
+  }
+  return eventData;
+}
+
+
+// ------------- pack ----------------//
+
+function convertEventToStore(storeId, eventData) {
   const event = _.cloneDeep(eventData);
+  removeStoreIds(storeId, event);
   durationToStoreEndTime(event);
   stateToStore(event);
   deletionToStore(event);
@@ -92,15 +137,7 @@ function convertEventFromStore(storeId, eventData) {
   return event;
 }
 
-function addStoreId(storeId, eventData) {
-  if (storeId === 'local') return eventData;
-  const storePrefix = ':' + storeId + ':';
-  eventData.id = storePrefix + eventData.id;
-  if (eventData.streamIds != null) {
-   eventData.streamIds = eventData.streamIds.map(streamId => storePrefix +streamId);
-  }
-  return eventData;
-}
+
 
 class ConvertEventFromStoreStream extends Transform {
   storeId : string;

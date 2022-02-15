@@ -43,7 +43,7 @@ Events can be 3 states "live", "historical", "deleted". Depending on each states
 
 In order to compute `integrity` property for attachments and events, the creation of events is done in two phases. 
 
-1- **Loading the attachment with** `mall.events.loadAttachmentFor(partialEventData, attachmentsData, attachmentsInformations, finalizeEvent)`
+1- **Loading the attachment with** `mall.events.loadAttachmentFor(partialEventData, attachmentsItems, attachmentsInformations, finalizeEvent)`
 
 
 ## Ids
