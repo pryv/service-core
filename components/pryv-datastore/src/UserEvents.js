@@ -80,7 +80,7 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-   async createWithAttachment(uid: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.create with attachment')); }
+   async createWithAttachments(uid: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.create with attachment')); }
 
    /**
    * @see https://api.pryv.com/reference/#create-event

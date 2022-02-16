@@ -72,7 +72,7 @@ class LocalUserEvents extends DataStore.UserEvents {
     }
   }
 
-  async createWithAttachment(userId: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void> {
+  async createWithAttachments(userId: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void> {
     const attachmentsResponse = [];
     
     for (const attachment of attachmentsItems) {

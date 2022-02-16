@@ -249,7 +249,6 @@ module.exports = async function (api)
     handleSeries,
     createEvent,
     removeActiveFromSibling,
-    //createAttachments,
     backwardCompatibilityOnResult,
     addIntegrityToContext,
     notify);
@@ -445,7 +444,7 @@ module.exports = async function (api)
         });
       }
       try {
-        newEvent = await mall.events.createWithAttachment(context.user.id, context.newEvent,  attachmentItems);
+        newEvent = await mall.events.createWithAttachments(context.user.id, context.newEvent,  attachmentItems);
         newEvent.attachments = setFileReadToken(context.access, newEvent.attachments);
       } catch (err) {
         if (err instanceof APIError) return next(err);
@@ -559,7 +558,7 @@ module.exports = async function (api)
     validateSystemStreamsContent,
     validateAccountStreamsForUpdate,
     generateVersionIfNeeded,
-    updateAttachments,
+    //updateAttachments,
     appendAccountStreamsDataForUpdate,
     updateOnPlatform,
     updateEvent,
@@ -726,6 +725,29 @@ module.exports = async function (api)
   }
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if (context.files != null && context.files.length > 0) {
+
+      const attachmentItems = [];
+      for (const file of context.files) {
+        attachmentItems.push({
+          fileName: file.originalname,
+          type: file.mimetype,
+          size: file.size,
+          integrity: file.integrity,
+          attachmentData: fs.createReadStream(file.path), // simulate full pass-thru of attachement until implemented
+        });
+      }
+      try {
+        newEvent = await mall.events.createWithAttachments(context.user.id, context.newEvent,  attachmentItems);
+        newEvent.attachments = setFileReadToken(context.access, newEvent.attachments);
+      } catch (err) {
+        if (err instanceof APIError) return next(err);
+        return next(errors.unexpectedError(err));
+      }
+    }
+
+
+
     try {
       const updatedEvent = await mall.events.updateReplace(context.user.id, context.newEvent);
 

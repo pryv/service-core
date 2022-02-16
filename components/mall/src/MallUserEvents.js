@@ -23,7 +23,7 @@ const cuid = require('cuid');
 const DELETION_MODES_FIELDS = {
   'keep-authors': [
     'streamIds', 'time',
-    'endTime', 'duration', // we keep endTime and duration as delete can occur logically (not in db)
+    'duration', 
     'type', 'content',
     'description',
     'attachments', 'clientData',
@@ -32,7 +32,7 @@ const DELETION_MODES_FIELDS = {
   ],
   'keep-nothing': [
     'streamIds', 'time',
-    'endTime', 'duration', // we keep endTime and duration as delete can occur logically (not in db)
+    'duration', 
     'type', 'content',
     'description',
     'attachments', 'clientData',
@@ -42,9 +42,9 @@ const DELETION_MODES_FIELDS = {
   ]
 }
 
-const ALL_FIELDS =
+const STORE_FIELDS =
   ['streamIds', 'time',
-    'endTime',
+    'endTime', // on stores, duration is replaced by endTime
     'type', 'content',
     'description', 'attachments',
     'clientData', 'trashed',
@@ -65,28 +65,14 @@ class StoreUserEvents {
   }
 
   // --------------------------- UPDATE ----------------- //
+ 
   /**
-   * 
+   * Fully Replace the event with the same id with eventData
    * @param {string} uid 
-   * @param {Event} originalEvent - Providing the original event to be updated prevent the need to fetch it from the store for integrity calculation
-   * @param {any} fieldsToSet - Object with fields to set
-   * @param {Array<string>} fieldsToDelete - Array of fields to delete
-   * @param {MallTransaction} mallTransaction
+   * @param {Event} eventData 
+   * @param {MallTransaction} mallTransaction 
    * @returns 
    */
-  async updateWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction) {
-    const newEventData = _.clone(originalEvent);
-    for (const fieldKey of Object.keys(fieldsToSet)) {
-      newEventData[fieldKey] = fieldsToSet[fieldKey];
-    }
-    if (fieldsToDelete != null) {
-      for (const fieldKey of fieldsToDelete) {
-        delete newEventData[fieldKey];
-      }
-    }
-    return await this.updateReplace(uid, newEventData, mallTransaction);
-  }
-
   async updateReplace(uid, eventData, mallTransaction) {
     const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
 
@@ -112,7 +98,7 @@ class StoreUserEvents {
 
 
     // build up list of fields to delete 
-    const fieldsToDelete = ALL_FIELDS.filter(field => eventForStore[field] === undefined);
+    const fieldsToDelete = STORE_FIELDS.filter(field => eventForStore[field] === undefined);
 
     const store = this.mall._storeForId(storeId);
     const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
@@ -123,6 +109,28 @@ class StoreUserEvents {
       this.mall.throwAPIError(e, storeId);
     }
   }
+
+  /**
+   * 
+   * @param {string} uid 
+   * @param {Event} originalEvent - Providing the original event to be updated prevent the need to fetch it from the store for integrity calculation
+   * @param {any} fieldsToSet - Object with fields to set
+   * @param {Array<string>} fieldsToDelete - Array of fields to delete
+   * @param {MallTransaction} mallTransaction
+   * @returns 
+   */
+    async updateWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction) {
+      const newEventData = _.clone(originalEvent);
+      for (const fieldKey of Object.keys(fieldsToSet)) {
+        newEventData[fieldKey] = fieldsToSet[fieldKey];
+      }
+      if (fieldsToDelete != null) {
+        for (const fieldKey of fieldsToDelete) {
+          delete newEventData[fieldKey];
+        }
+      }
+      return await this.updateReplace(uid, newEventData, mallTransaction);
+    }
 
 
   /**
@@ -208,7 +216,7 @@ class StoreUserEvents {
   }
 
   /**
-   * Utility to remove data from event history (versions)
+   * Utility to remove data from event history (versions) used by methods 'events' and 'streams'
    * @param {*} uid 
    * @param {*} eventId 
    */
@@ -250,12 +258,12 @@ class StoreUserEvents {
     }
   }
 
-  async createWithAttachment(uid: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
+  async createWithAttachments(uid: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
     const {store, eventForStore, storeTransaction} = await this._prepareForCreate(eventDataWithoutAttachments, mallTransaction);
     
 
     try {
-      const res = await store.events.createWithAttachment(uid, eventForStore, attachmentsItems, finalizeEventCallBack, storeTransaction);
+      const res = await store.events.createWithAttachments(uid, eventForStore, attachmentsItems, finalizeEventCallBack, storeTransaction);
       return EventsUtils.convertEventFromStore(store.id, res);
     } catch (e) {
       this.mall.throwAPIError(e, store.id);
@@ -284,6 +292,42 @@ class StoreUserEvents {
     }
 
 
+  }
+
+  async attachmentAdd(uid: string, eventDataWithoutNewAttachments: any, newAttachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
+    const [storeId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventDataWithoutNewAttachments.id);
+    const eventForStore = EventsUtils.convertEventToStore(storeId, eventDataWithoutNewAttachments);
+    const store = this.mall._storeForId(storeId);
+    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
+
+    try {
+      const res = await store.events.attachmentAdd(uid, eventForStore, newAttachmentsItems, finalizeEventCallBack, storeTransaction);
+      return EventsUtils.convertEventFromStore(store.id, res);
+    } catch (e) {
+      this.mall.throwAPIError(e, store.id);
+    }
+
+    //** This will be called when attachments have been saved on store */
+    async function finalizeEventCallBack(attachmentsResponse) {
+      const eventWithFullIds = _.cloneDeep(eventDataWithoutAttachments); // needed to compute integrity
+      
+      eventWithFullIds.attachments = eventWithFullIds.attachments || [];
+      for (let i = 0; i < attachmentsResponse.length; i++) {
+        eventWithFullIds.attachments.push({
+          id: attachmentsResponse[i].id, // ids comes from storage
+          fileName: attachmentsItems[i].fileName,
+          type: attachmentsItems[i].type,
+          size: attachmentsItems[i].size,
+          integrity: attachmentsItems[i].integrity,
+        });
+      }
+       
+      integrity.events.set(eventWithFullIds);
+
+      // Prepare result event 
+      const finalEventForStore = EventsUtils.convertEventToStore(store.id, eventWithFullIds);
+      return finalEventForStore;
+    }
   }
 
 
@@ -407,7 +451,7 @@ class StoreUserEvents {
   // ------------------- UTILS ---------//
 
   /**
- * Common utils for events.create and events.createWithAttachments
+ * Common utils for events.create and events.createWithAttachmentss
  * @param {*} eventData 
  * @param {*} mallTransaction 
  * @returns 
