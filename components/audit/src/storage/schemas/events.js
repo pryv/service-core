@@ -9,16 +9,23 @@ const cuid = require('cuid');
 const _ = require('lodash');
 const { STORE_PREFIX } = require('../../Constants');
 
+// new schema for events
+// - renamed duration to endTime
+// - added deleted
+// - added attachments
+
 
 const dbSchema = { 
   eventid : {type: 'TEXT UNIQUE', index: true},
   streamIds: {type: 'TEXT NOT NULL'},
   time: {type: 'REAL NOT NULL', index: true},
-  duration: {type: 'REAL'},
+  endTime: {type: 'REAL', index: true},
   type: {type: 'TEXT NOT NULL', index: true},
   content: {type: 'TEXT'},
   description: {type: 'TEXT'},
   clientData: {type: 'TEXT'},
+  integrity: {type: 'TEXT'},
+  attachments: {type: 'TEXT'},
   trashed: {type: 'INTEGER DEFAULT 0', index: true},
   created: {type: 'REAL NOT NULL', index: true},
   createdBy: {type: 'TEXT NOT NULL', index: true},
@@ -34,7 +41,7 @@ const dbSchema = {
 function eventToDB(sourceEvent, defaulTime) {
   const event = {};
   defaulTime = setTimeIfNot(defaulTime, now());
-  event.eventid = sourceEvent.id || cuid();
+  event.eventid = sourceEvent.id || cuid();
 
   if (! sourceEvent.streamIds) throw('StreamIds is required');
   if (! Array.isArray(sourceEvent.streamIds)) throw('StreamIds must be an Array');
@@ -42,16 +49,19 @@ function eventToDB(sourceEvent, defaulTime) {
 
   event.time = setTimeIfNot(sourceEvent.time, defaulTime);
 
-  event.duration = 0; // Anyway no duration for audit setTimeIfNot(sourceEvent.endTime);
+  event.endTime = nullIfUndefined(sourceEvent.endTime);
+  event.deleted = nullIfUndefined(sourceEvent.deleted);
+  event.integrity = nullIfUndefined(sourceEvent.integrity);
 
   if (! sourceEvent.type) throw('Type is required');
   event.type = sourceEvent.type;
   
-  event.content = (typeof sourceEvent.content != 'undefined') ? JSON.stringify(sourceEvent.content) : null;
+  event.content = nullOrJSON(sourceEvent.content);
   
   event.description = nullIfUndefined(sourceEvent.description);
   event.created = defaulTime;
-  event.clientData = nullIfUndefined(sourceEvent.clientData);
+  event.clientData = nullOrJSON(sourceEvent.clientData);
+  event.attachments = nullOrJSON(sourceEvent.attachments);
   event.trashed = (sourceEvent.trashed) ? 1 : 0;
 
   if (! sourceEvent.createdBy) throw('CreatedBy is required');
@@ -64,6 +74,11 @@ function eventToDB(sourceEvent, defaulTime) {
 
 function nullIfUndefined(value) {
   return  (typeof value != 'undefined') ? value : null ;
+}
+
+function nullOrJSON(value) {
+  if (typeof value == null) return null ;
+  return JSON.stringify(value);
 }
 
 
@@ -95,13 +110,15 @@ function eventFromDB(event, addStorePrefix) {
     event.content = JSON.parse(event.content);
   }
 
+  if (event.attachments) {
+    event.attachments = JSON.parse(event.attachments);
+  } else {
+    event.attachments = [];
+  }
+
   for (key of Object.keys(event)) {
     if (event[key] == null) delete event[key];
   }
-
-  // duration endTime hack 
-  delete event.duration;
-  event.endTime = event.time;
 
   return event;
 }

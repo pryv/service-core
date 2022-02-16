@@ -12,7 +12,7 @@ let storage;
  */
 async function getStorage() {
   if (! storage) {
-    storage = new Storage();
+    storage = new Storage('audit');
     await storage.init();
   }
   return storage;

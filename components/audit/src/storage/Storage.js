@@ -10,7 +10,6 @@ const unlinkSync = require('fs').unlinkSync;
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
-const logger = getLogger('audit:storage');
 const ensureUserDirectory = require('business').users.UserLocalDirectory.ensureUserDirectory;
 
 const CACHE_SIZE = 500;
@@ -19,19 +18,22 @@ class Storage {
   initialized = false;
   userDBsCache = null;
   options = null;
+  id = null;
 
   async init() {
     if (this.initialized) {
       throw('Database already initalized');
     } 
     this.config = await getConfig();
-    logger.debug('Db initalized');
+    this.logger.debug('Db initalized');
     this.initialized = true;
     return this;
   }
 
-  constructor(options) { 
-    this.options = options || {}; 
+  constructor(id, options) { 
+    this.id = id;
+    this.logger = getLogger(this.id + ':storage');
+    this.options = options || {}; 
     this.userDBsCache = new LRU({
       max: this.options.max || CACHE_SIZE,
       dispose: function (key, db) { db.close(); }
@@ -51,9 +53,9 @@ class Storage {
    * @returns {UserDatabase} 
    */
   async forUser(userid) {
-    logger.debug('forUser: ' + userid);
+    this.logger.debug('forUser: ' + userid);
     this.checkInititalized();
-    return this.userDBsCache.get(userid) || await open(this, userid);
+    return this.userDBsCache.get(userid) || await this._open(userid);
   }
 
   /**
@@ -62,15 +64,15 @@ class Storage {
    * @returns {void} 
    */
    async deleteUser(userid) {
-    logger.info('deleteUser: ' + userid);
+    this.logger.info('deleteUser: ' + userid);
     const userDb = await this.forUser(userid);
     await userDb.close();
     this.userDBsCache.del(userid);
-    const dbPath = await dbPathForUserid(userid);
+    const dbPath = await this._dbPathForUserid(this.id, userid);
     try {
       unlinkSync(dbPath);
     } catch (err) {
-      logger.debug('deleteUser: Error' + err);
+      this.logger.debug('deleteUser: Error' + err);
     }
   }
 
@@ -78,23 +80,26 @@ class Storage {
     this.checkInititalized();
     this.userDBsCache.reset();
   }
+
+  async _open(userid) {
+    this.logger.debug('open: ' + userid);
+    const db = new UserDatabase({dbPath: await this._dbPathForUserid(userid)});
+    this.userDBsCache.set(userid, db);
+    return db;
+  }
+  
+  
+   /**
+   * @param {string} uid -- user id (cuid format)
+   */
+  async _dbPathForUserid(userid) {
+    const userPath = await ensureUserDirectory(userid);
+    return path.join(userPath, this.id + '.sqlite');
+  }
+
 }
 
-async function open(storage, userid) {
-  logger.debug('open: ' + userid);
-  const db = new UserDatabase({dbPath: await dbPathForUserid(userid)});
-  storage.userDBsCache.set(userid, db);
-  return db;
-}
 
-
- /**
- * @param {string} uid -- user id (cuid format)
- */
-async function dbPathForUserid(userid) {
-  const userPath = await ensureUserDirectory(userid);
-  return path.join(userPath, 'audit.sqlite');
-}
 
 
 

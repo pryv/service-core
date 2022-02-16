@@ -33,7 +33,7 @@ class UserDatabase {
   get;
   getAll;
   queryGetTerms;
-
+  columnNames;
 
   /**
    * 
@@ -47,7 +47,7 @@ class UserDatabase {
     this.create = {};
     this.getAll = {};
     this.get = {};
-    
+    this.columnNames = {};
 
     // --- Create all Tables
     Object.keys(tables).map((tableName) => {
@@ -83,6 +83,16 @@ class UserDatabase {
     this.db = db;
   }
 
+  async updateEvent(eventId, event, fieldsToDelete) {
+    if (fieldsToDelete != null && fieldsToDelete.length > 0) {
+      fieldsToDelete.forEach(field => { eventForDb[field] = null;});
+    }
+    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
+    const update = this.db.prepare(`UPDATE events SET ${Object.keys(eventForDb).map(key => `${key} = @${key}`).join(', ')} WHERE id = @id`);
+    return update.run(eventForDb);
+  }
+
+
   /**
    * Use only during tests or migration
    * Not safe within a multi-process environement
@@ -94,9 +104,8 @@ class UserDatabase {
 
   async createEvent(event, defaultTime) {
     const eventForDb = eventSchemas.eventToDB(event, defaultTime);
-    const that = this;
     await this.concurentSafeWriteStatement(() => {
-      that.create.events.run(eventForDb);
+      this.create.events.run(eventForDb);
     }, 10000);
   }
 
@@ -108,8 +117,14 @@ class UserDatabase {
     return this.queryGetTerms.all('access-%');
   }
 
-  getLogs(params) {
-    const queryString = prepareLogQuery(params);
+  deleteEvents(params) {
+    const queryString = prepareEventsDeleteQuery(params);
+    const res = this.db.prepare(queryString).run();
+    return res;
+  }
+
+  getEvents(params) {
+    const queryString = prepareEventsGetQuery(params);
     
     logger.debug(queryString);
     const res = this.db.prepare(queryString).all();
@@ -121,8 +136,8 @@ class UserDatabase {
 
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
 
-  getLogsStream(params, addStorePrefix) {
-    const queryString = prepareLogQuery(params);
+  getEventsStream(params, addStorePrefix = false) {
+    const queryString = prepareEventsGetQuery(params);
     logger.debug(queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
@@ -142,6 +157,10 @@ class UserDatabase {
     }
 
     return Readable.from(iterateTransform);
+  }
+
+  eventsCount() {
+    return this.db.prepare('SELECT COUNT(*) FROM events').get();
   }
 
 
@@ -170,15 +189,18 @@ class UserDatabase {
   }
 }
 
-
-
-
-function prepareTermQuery(params = {}) {
-  let queryString = 'SELECT * FROM events_fts_v';
-  return queryString;
+function prepareEventsDeleteQuery(params) {
+  if (params.streams) { throw new Error('events DELETE with stream query not supported yet'); }
+  return 'DELETE FROM events ' + prepareQuery(params);
 }
 
-function prepareLogQuery(params = {}) {
+
+function prepareEventsGetQuery(params) {
+  return 'SELECT * FROM events_fts ' + prepareQuery(params);
+}
+
+
+function prepareQuery(params = {}) {
   const ands = [];
 
   if (params.type != null) {
@@ -201,7 +223,7 @@ function prepareLogQuery(params = {}) {
     if (str) ands.push('streamIds MATCH \'' + str + '\'');
   }
   
-  let queryString = 'SELECT * FROM events_fts';
+  let queryString = '';
 
   if (ands.length > 0) {
     queryString += ' WHERE ' + ands.join(' AND ') ;

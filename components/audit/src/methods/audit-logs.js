@@ -104,7 +104,7 @@ async function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = await auditStorage.forUser(context.user.id);
     params.streams = params.arrayOfStreamQueries;
-    result.addStream('auditLogs', userStorage.getLogsStream(params, true));
+    result.addStream('auditLogs', userStorage.getEventsStream(params, true));
   } catch (err) {
     return next(err);
   }     
