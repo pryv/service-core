@@ -68,7 +68,7 @@ describe('events streaming with ' + N_ITEMS + ' entries', function () {
     var options = {
       host: apiServer.host,
       port: apiServer.port,
-      path: '/' + username + '/events?limit=10000&auth=' + appAccessToken,
+      path: '/' + username + '/events?limit=' + N_ITEMS + '&auth=' + appAccessToken,
       method: 'GET'
     };
 

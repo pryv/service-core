@@ -21,8 +21,8 @@ exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
   function processBlock(block) {
     if (typeof block === 'string') return '"'+block+'"';
     let res = ''; // A OR B
-    const allExists = block.any && block.any.length > 0 && block.any[0] !== '*';
-    if (allExists) { 
+    const anyExists = block.any && block.any.length > 0 && block.any[0] !== '*';
+    if (anyExists) { 
       if (block.any.length === 1) {
         res += addQuotes(block.any)[0];
       } else {
@@ -30,11 +30,12 @@ exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
       }
     }
     if (block.and && block.and.length > 0) {
-      if (allExists) res+= ' AND ';
+      if (anyExists) res+= ' AND ';
       const subs = block.and.map(processBlock);
       res +=  subs.join(' AND ');
     }
     if (block.not && block.not.length > 0) { 
+      if (! anyExists) res += ' ".." ';
       res += ' NOT ';
       res += addQuotes(block.not).join(' NOT ');
     }

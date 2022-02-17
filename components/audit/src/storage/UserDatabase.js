@@ -98,7 +98,6 @@ class UserDatabase {
       throw new Error('Event not found');
     }
     const resultEvent = eventSchemas.eventFromDB(eventForDb);
-    $$({event, eventForDb, resultEvent})
     return resultEvent;
   }
 
@@ -146,7 +145,7 @@ class UserDatabase {
 
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
 
-  getEventsStream(params, addStorePrefix = false) {
+  getEventsStream(params) {
     const queryString = prepareEventsGetQuery(params);
     this.logger.debug(queryString);
 
@@ -156,7 +155,7 @@ class UserDatabase {
       next: function() {
         const res = iterateSource.next();
         if (res && res.value) {
-          res.value = eventSchemas.eventFromDB(res.value, addStorePrefix);
+          res.value = eventSchemas.eventFromDB(res.value);
         }
         return res;
       }
@@ -193,6 +192,7 @@ class UserDatabase {
         }
         const waitTime = i > (WAIT_LIST_MS.length - 1) ? 100 : WAIT_LIST_MS[i];
         await new Promise((r) => setTimeout(r, waitTime));
+        this.logger.debug('SQLITE_BUSY, retrying in ' + waitTime + 'ms');
       }
     }
     throw new Error('Failed write action on Audit after ' + retries + ' rertries');

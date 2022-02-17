@@ -10,7 +10,7 @@ const unlinkSync = require('fs').unlinkSync;
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
-const ensureUserDirectory = require('business').users.UserLocalDirectory.ensureUserDirectory;
+const UserLocalDirectory = require('business').users.UserLocalDirectory;
 
 const CACHE_SIZE = 500;
 
@@ -25,6 +25,7 @@ class Storage {
       throw('Database already initalized');
     } 
     this.config = await getConfig();
+    await UserLocalDirectory.init();
     this.logger.debug('Db initalized');
     this.initialized = true;
     return this;
@@ -93,7 +94,7 @@ class Storage {
    * @param {string} uid -- user id (cuid format)
    */
   async _dbPathForUserid(userid) {
-    const userPath = await ensureUserDirectory(userid);
+    const userPath = await UserLocalDirectory.ensureUserDirectory(userid);
     return path.join(userPath, this.id + '.sqlite');
   }
 

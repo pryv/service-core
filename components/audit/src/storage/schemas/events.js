@@ -7,7 +7,7 @@
 
 const cuid = require('cuid');
 const _ = require('lodash');
-const { STORE_PREFIX } = require('../../Constants');
+const ALL_EVENTS_TAG = '..';
 
 // new schema for events
 // - renamed duration to endTime
@@ -45,9 +45,12 @@ function eventToDB(sourceEvent, defaulTime) {
   defaulTime = setTimeIfNot(defaulTime, now());
   event.eventid = sourceEvent.id || cuid();
 
-  if (! sourceEvent.streamIds) throw('StreamIds is required');
-  if (! Array.isArray(sourceEvent.streamIds)) throw('StreamIds must be an Array');
-  event.streamIds = sourceEvent.streamIds.join(' ');
+  if (sourceEvent.streamIds == null) {
+    event.streamIds = ALL_EVENTS_TAG;
+  } else {
+    if (! Array.isArray(sourceEvent.streamIds)) throw('StreamIds must be an Array');
+    event.streamIds = sourceEvent.streamIds.join(' ') + ' ' + ALL_EVENTS_TAG;
+  }
 
   event.time = setTimeIfNot(sourceEvent.time, defaulTime);
 
@@ -82,22 +85,17 @@ function nullOrJSON(value) {
   return JSON.stringify(value);
 }
 
-function addStorePrefixToId(streamId) {
-  return STORE_PREFIX + streamId;
-}
-
 /**
  * transform events out of db
  */
-function eventFromDB(event, addStorePrefix) {
+function eventFromDB(event, addStorePrefix = false) {
   event.streamIds = event.streamIds.split(' ');
-
-  if (addStorePrefix) {
-    event.id = addStorePrefixToId(event.eventid);
-    event.streamIds = event.streamIds.map(addStorePrefixToId);
-  } else {
-    event.id = event.eventid;
-  }
+  event.streamIds.pop();
+  $$({event});
+  //.pop(); // pop removes the last element whihc is set on all events ALL_EVENTS_TAG
+  if (event.streamIds.length === 0) delete event.streamIds; // it was a "deleted" event
+  $$({event});
+  event.id = event.eventid;
   delete event.eventid;
   
   if (event.trashed === 1) {
@@ -119,7 +117,6 @@ function eventFromDB(event, addStorePrefix) {
   for (key of Object.keys(event)) {
     if (event[key] == null) delete event[key];
   }
-
   return event;
 }
 

@@ -12,6 +12,7 @@ const Database =  require('./Database');
 const StorageLayer = require('./storage_layer');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const  { dataBaseTracer } = require('tracing');
+const bluebird = require('bluebird');
 
 let database;
 function _getDatabase(config) {
@@ -47,7 +48,9 @@ function getStorageLayerSync(warnOnly) {
 
 
 async function getDatabase() {
-  return _getDatabase(await getConfig());
+  const db = _getDatabase(await getConfig());
+  await bluebird.fromCallback(cb => db.ensureConnect(cb));
+  return db;
 }
 
 async function getStorageLayer() {
@@ -64,6 +67,7 @@ module.exports = {
   user: {
     Accesses: Access,
     EventFiles: require('./user/EventFiles'),
+
     FollowedSlices: require('./user/FollowedSlices'),
     Profile: require('./user/Profile'),
     Streams: Stream,
