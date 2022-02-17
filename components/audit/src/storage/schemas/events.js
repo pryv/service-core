@@ -90,11 +90,9 @@ function nullOrJSON(value) {
  */
 function eventFromDB(event, addStorePrefix = false) {
   event.streamIds = event.streamIds.split(' ');
-  event.streamIds.pop();
-  $$({event});
-  //.pop(); // pop removes the last element whihc is set on all events ALL_EVENTS_TAG
+  event.streamIds.pop(); // pop removes the last element whihc is set on all events ALL_EVENTS_TAG
   if (event.streamIds.length === 0) delete event.streamIds; // it was a "deleted" event
-  $$({event});
+  
   event.id = event.eventid;
   delete event.eventid;
   

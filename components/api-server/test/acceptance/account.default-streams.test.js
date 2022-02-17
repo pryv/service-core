@@ -142,7 +142,6 @@ describe('[ACCO] Account with system streams', function () {
             {any: visibleStreamsIds, and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]},
           ]});
 
-        $$(allVisibleAccountEvents);
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
       });
@@ -163,7 +162,6 @@ describe('[ACCO] Account with system streams', function () {
         const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
 
-        $$(res.body);
         assert.equal(res.body.account.email, emailAccountEvent.content);
         assert.equal(res.body.account.language, languageAccountEvent.content);
         assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);

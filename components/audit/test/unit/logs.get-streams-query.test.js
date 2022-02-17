@@ -54,7 +54,7 @@ describe('toSqliteQuery()', function() {
       and: [ { any: [ 'F' ] }, { not: [ 'D', 'E', 'F' ] }, { not: [ 'E' ] } ]
     }];
     const sqllite = toSQLiteQuery(clean);      
-    assert.deepEqual(sqllite, '("A" OR "B" OR "C") AND "F" AND  NOT "D" NOT "E" NOT "F" AND  NOT "E"');
+    assert.deepEqual(sqllite, '("A" OR "B" OR "C") AND "F" AND  ".."  NOT "D" NOT "E" NOT "F" AND  ".."  NOT "E"');
   });
 
   it('[3TTK] must convert to SQLite including expansion with "ALL" and "NOT"', async function () {
@@ -64,7 +64,7 @@ describe('toSqliteQuery()', function() {
   });
 
   it('[1ZJU] must handle array of queries', async function () {
-    const clean = [{any: ['B']},{and: ['D'] , not: ['E']}];
+    const clean = [{any: ['B']},{any: ['D'] , not: ['E']}];
     const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '("B") OR ("D" NOT "E")');
   });

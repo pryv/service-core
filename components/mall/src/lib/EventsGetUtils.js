@@ -60,10 +60,6 @@ function getParamsByStore(query) {
 
       function clean(subStreamQuery) {
         const cleanStreamQuery = {};
-        if (subStreamQuery.any == null || subStreamQuery.any.length == 0) {
-          $$({streamQuery, subStreamQuery});
-          throw new Error('streams must have at least one "any" item');
-        }
         for (let key of ['any', 'not']) { // for each possible segment of query
           if (subStreamQuery[key] != null) {
             const streamIds = subStreamQuery[key];

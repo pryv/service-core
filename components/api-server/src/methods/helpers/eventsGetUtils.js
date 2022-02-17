@@ -345,7 +345,10 @@ function streamQueryAddHiddenStreams(context: MethodContext, params: GetEventsPa
   const forbiddenStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
   for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
     if (streamQuery.storeId !== 'local') continue;
-
+    if (streamQuery.and == null) streamQuery.and = [];
+     streamQuery.and.push({not: forbiddenStreamIds});
+  }
+     /** 
     if (streamQuery.and == null) {
       appendNots(streamQuery);
     } else {
@@ -358,7 +361,7 @@ function streamQueryAddHiddenStreams(context: MethodContext, params: GetEventsPa
     if (query.not == null) { query.not = notItems; return; }
     query.not = _.union(query.not, notItems);
     return;
-  }
+  }*/
 
   next();
 }

@@ -333,7 +333,6 @@ describe('Audit', function() {
           .set('Authorization', access.token)
       });
       it('[176G] must return 404', function() {
-        $$(res.body);
         assert.equal(res.status, 404);
       });
       it('[7132] must return logs when queried', async function() {

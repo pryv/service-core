@@ -213,8 +213,12 @@ function prepareEventsGetQuery(params) {
 function prepareQuery(params = {}, forDelete = false) {
   const ands = [];
 
-  if (params.type != null) {
-    ands.push('type = ' + params.type);
+  if (params.id != null) {
+    ands.push('eventid = \'' + params.id + '\'');
+  }
+
+  if (params.types != null) {
+    ands.push('types IN (\'' + params.types.join('\', \'') + '\')');
   } 
 
   if (params.fromTime != null) {

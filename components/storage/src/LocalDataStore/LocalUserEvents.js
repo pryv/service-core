@@ -85,6 +85,7 @@ class LocalUserEvents extends DataStore.UserEvents {
 
   _getCursor(userId, params) {
     const {query, options} = paramsToMongoquery(params);
+    $$({params, query});
     query.userId = userId;
     const queryOptions = { projection: options.projection};
     let cursor = this.eventsCollection.find(query, queryOptions).sort(options.sort);
