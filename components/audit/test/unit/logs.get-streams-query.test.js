@@ -68,4 +68,5 @@ describe('toSqliteQuery()', function() {
     const sqllite = toSQLiteQuery(clean);      
     assert.deepEqual(sqllite, '("B") OR ("D" NOT "E")');
   });
+
 });

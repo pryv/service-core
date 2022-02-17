@@ -11,7 +11,6 @@
  */
 exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
   if (streamQuery == null) return null;
-  
 
   if (streamQuery.length === 1) {
     return processBlock(streamQuery[0]);

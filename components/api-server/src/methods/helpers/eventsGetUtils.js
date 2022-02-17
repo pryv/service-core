@@ -346,9 +346,20 @@ function streamQueryAddHiddenStreams(context: MethodContext, params: GetEventsPa
   for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
     if (streamQuery.storeId !== 'local') continue;
 
-    if (streamQuery.and == null) streamQuery.and = [];
-    streamQuery.and.push({not: forbiddenStreamIds});
+    if (streamQuery.and == null) {
+      appendNots(streamQuery);
+    } else {
+      for (const andQuery of streamQuery.and) {
+        appendNots(andQuery);
+      }
+    }
   }
+  function appendNots(query, notItems) {
+    if (query.not == null) { query.not = notItems; return; }
+    query.not = _.union(query.not, notItems);
+    return;
+  }
+
   next();
 }
 

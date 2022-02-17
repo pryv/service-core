@@ -119,10 +119,11 @@ class Mall {
    * @param {*} storeId 
    */
   throwAPIError(error, storeId) {
+    $$(error);
     if (! error instanceof Error) {
       error = new Error(error);
     }
-    if (! error instanceof APIError) {
+    if (! (error instanceof APIError)) {
       error = errorFactory.unexpectedError(error);
     }
     if (storeId != null) {

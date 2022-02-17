@@ -44,6 +44,7 @@ class LocalDataStoreSQLite extends DataStore {
     const eventFilesStorage = (await storage.getStorageLayer()).eventFiles;
     
     const userStorage = new Storage('local');
+    await userStorage.init();
     this._events = new LocalUserEventsSQLite(userStorage, eventFilesStorage);
     
     return this;

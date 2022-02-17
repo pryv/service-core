@@ -104,6 +104,7 @@ class StoreUserEvents {
     const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
     try {
       const res = await store.events.update(uid, eventId, eventForStore, fieldsToDelete, storeTransaction);
+      $$(res);
       return EventsUtils.convertEventFromStore(storeId, res);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);

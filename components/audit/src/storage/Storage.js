@@ -83,7 +83,7 @@ class Storage {
 
   async _open(userid) {
     this.logger.debug('open: ' + userid);
-    const db = new UserDatabase({dbPath: await this._dbPathForUserid(userid)});
+    const db = new UserDatabase(this.logger, {dbPath: await this._dbPathForUserid(userid)});
     this.userDBsCache.set(userid, db);
     return db;
   }

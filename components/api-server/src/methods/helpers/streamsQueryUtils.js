@@ -15,6 +15,7 @@ const util = require('util');
 
 const { StreamsUtils } = require('mall');
 const { findForbiddenChar } = require('../../schema/streamId');
+const _ = require('lodash');
 
 import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
 
@@ -223,8 +224,9 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
       not.push(...expandedSet);
     }
     if (not.length > 0) {
-      if (! res.and) res.and = [];
-      res.and.push({not: uniqueStreamIds(not)});
+      if (! res.not) res.not = [];
+      res.not = uniqueStreamIds(_.union(res.not, not));
+      //res.and.push({not: uniqueStreamIds(not)});
     }
   }
 

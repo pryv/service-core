@@ -13,24 +13,26 @@ const { STORE_PREFIX } = require('../../Constants');
 // - renamed duration to endTime
 // - added deleted
 // - added attachments
+// changed most of the fields to be nullable
 
 
 const dbSchema = { 
   eventid : {type: 'TEXT UNIQUE', index: true},
-  streamIds: {type: 'TEXT NOT NULL'},
-  time: {type: 'REAL NOT NULL', index: true},
+  streamIds: {type: 'TEXT'},
+  time: {type: 'REAL', index: true},
+  deleted: {type: 'REAL', index: true},
   endTime: {type: 'REAL', index: true},
-  type: {type: 'TEXT NOT NULL', index: true},
+  type: {type: 'TEXT', index: true},
   content: {type: 'TEXT'},
   description: {type: 'TEXT'},
   clientData: {type: 'TEXT'},
   integrity: {type: 'TEXT'},
   attachments: {type: 'TEXT'},
   trashed: {type: 'INTEGER DEFAULT 0', index: true},
-  created: {type: 'REAL NOT NULL', index: true},
-  createdBy: {type: 'TEXT NOT NULL', index: true},
-  modified: {type: 'READ NOT NULL', index: true},
-  modifiedBy: {type: 'TEXT NOT NULL', index: true}
+  created: {type: 'REAL', index: true},
+  createdBy: {type: 'TEXT', index: true},
+  modified: {type: 'READ', index: true},
+  modifiedBy: {type: 'TEXT', index: true}
 }
 
 /**
@@ -59,16 +61,15 @@ function eventToDB(sourceEvent, defaulTime) {
   event.content = nullOrJSON(sourceEvent.content);
   
   event.description = nullIfUndefined(sourceEvent.description);
-  event.created = defaulTime;
+  event.created = setTimeIfNot(sourceEvent.created, defaulTime);
   event.clientData = nullOrJSON(sourceEvent.clientData);
   event.attachments = nullOrJSON(sourceEvent.attachments);
   event.trashed = (sourceEvent.trashed) ? 1 : 0;
 
-  if (! sourceEvent.createdBy) throw('CreatedBy is required');
+  if (sourceEvent.createdBy == null) throw('CreatedBy is required');
   event.createdBy = sourceEvent.createdBy;
-
-  event.modified = defaulTime;
-  if (! sourceEvent.modifiedBy) event.modifiedBy = sourceEvent.createdBy;
+  event.modifiedBy = sourceEvent.modifiedBy || sourceEvent.createdBy;
+  event.modified = setTimeIfNot(sourceEvent.modified, defaulTime);;
   return event;
 };
 
@@ -80,7 +81,6 @@ function nullOrJSON(value) {
   if (typeof value == null) return null ;
   return JSON.stringify(value);
 }
-
 
 function addStorePrefixToId(streamId) {
   return STORE_PREFIX + streamId;

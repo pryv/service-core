@@ -45,7 +45,7 @@ async function getMall(): Promise<Mall> {
 
   // -- Builds in
 
-  const LocalStore: DataStore = require('storage/src/LocalDataStore');
+  const LocalStore: DataStore = require('storage/src/LocalDataStoreSQLite');
   mall.addStore(new LocalStore());
 
   if ( (! config.get('openSource:isActive')) && config.get('audit:active')) {

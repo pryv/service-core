@@ -9,7 +9,6 @@ const eventSchemas = require('./schemas/events')
 const {createFTSFor } = require('./FullTextSearchDataBase');
 const events = require('./schemas/events');
 const { getLogger } = require('@pryv/boiler');
-const logger = getLogger('audit:user-database');
 const { Readable } = require('stream');
 
 const { toSQLiteQuery } = require('audit/src/storage/sqLiteStreamQueryUtils');
@@ -34,13 +33,15 @@ class UserDatabase {
   getAll;
   queryGetTerms;
   columnNames;
+  logger;
 
   /**
    * 
    * @param {Object} params
    * @param {string} params.dbPath // the file to use as database
    */
-  constructor(params) {
+  constructor(logger, params) {
+    this.logger = logger.getLogger('user-database');
     const db = new sqlite3(params.dbPath, DB_OPTIONS);
     db.pragma('journal_mode = WAL');
     db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
@@ -64,7 +65,7 @@ class UserDatabase {
         columnsTypes.join(', ') +
       ');').run();
 
-      indexes.map((columnName) => { 
+      indexes.map((columnName) => {
         db.prepare(`CREATE INDEX IF NOT EXISTS ${tableName}_${columnName} ON ${tableName}(${columnName})`).run();
       });
 
@@ -76,7 +77,7 @@ class UserDatabase {
     });
 
     // -- create FTS for streamIds on events
-    createFTSFor(db, 'events', tables['events'], ['streamIds'], 'rowid');
+    createFTSFor(db, 'events', tables['events'], ['streamIds']);
 
     this.queryGetTerms = db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
     
@@ -84,12 +85,21 @@ class UserDatabase {
   }
 
   async updateEvent(eventId, event, fieldsToDelete) {
+    const eventForDb = eventSchemas.eventToDB(event);
     if (fieldsToDelete != null && fieldsToDelete.length > 0) {
       fieldsToDelete.forEach(field => { eventForDb[field] = null;});
     }
-    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
-    const update = this.db.prepare(`UPDATE events SET ${Object.keys(eventForDb).map(key => `${key} = @${key}`).join(', ')} WHERE id = @id`);
-    return update.run(eventForDb);
+    delete eventForDb.eventid;
+    const queryString = `UPDATE events SET ${Object.keys(eventForDb).map(field => `${field} = @${field}`).join(', ')} WHERE eventid = @eventid`;
+    eventForDb.eventid = eventId;
+    const update = this.db.prepare(queryString);
+    const res = update.run(eventForDb);
+    if (res.changes !== 1) {
+      throw new Error('Event not found');
+    }
+    const resultEvent = eventSchemas.eventFromDB(eventForDb);
+    $$({event, eventForDb, resultEvent})
+    return resultEvent;
   }
 
 
@@ -126,7 +136,7 @@ class UserDatabase {
   getEvents(params) {
     const queryString = prepareEventsGetQuery(params);
     
-    logger.debug(queryString);
+    this.logger.debug(queryString);
     const res = this.db.prepare(queryString).all();
     if (res != null) {
       return res.map(eventSchemas.eventFromDB);
@@ -138,7 +148,7 @@ class UserDatabase {
 
   getEventsStream(params, addStorePrefix = false) {
     const queryString = prepareEventsGetQuery(params);
-    logger.debug(queryString);
+    this.logger.debug(queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
 
@@ -164,7 +174,7 @@ class UserDatabase {
   }
 
 
-  close() { 
+  close() {
     this.db.close();
   }
 
@@ -191,7 +201,7 @@ class UserDatabase {
 
 function prepareEventsDeleteQuery(params) {
   if (params.streams) { throw new Error('events DELETE with stream query not supported yet'); }
-  return 'DELETE FROM events ' + prepareQuery(params);
+  return 'DELETE FROM events ' + prepareQuery(params, true);
 }
 
 
@@ -200,7 +210,7 @@ function prepareEventsGetQuery(params) {
 }
 
 
-function prepareQuery(params = {}) {
+function prepareQuery(params = {}, forDelete = false) {
   const ands = [];
 
   if (params.type != null) {
@@ -229,14 +239,17 @@ function prepareQuery(params = {}) {
     queryString += ' WHERE ' + ands.join(' AND ') ;
   }
   
-  if (params.sortAscending) {
-    queryString += ' ORDER BY time ASC';
-  } else { 
-    queryString += ' ORDER BY time DESC';
-  }
+  if (!forDelete) {
 
-  if (params.limit) {
-    queryString += ' LIMIT ' + params.limit;
+    if (params.sortAscending) {
+      queryString += ' ORDER BY time ASC';
+    } else { 
+      queryString += ' ORDER BY time DESC';
+    }
+
+    if (params.limit) {
+      queryString += ' LIMIT ' + params.limit;
+    }
   }
 
   //console.log(params, queryString);
