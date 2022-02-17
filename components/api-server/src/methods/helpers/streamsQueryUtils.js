@@ -257,10 +257,12 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray) {
 function streamQueryToMongoDBQuery(streamQuery) {
   const res = {};
   if (streamQuery.any && streamQuery.any.length > 0) {
-    if (streamQuery.any.length === 1) {
-      res.streamIds = { $eq: streamQuery.any[0] };
-    } else {
-      res.streamIds = { $in: streamQuery.any };
+    if (! streamQuery.any.includes('*') ) { // ignore queries that contains '*';
+      if (streamQuery.any.length === 1) {
+        res.streamIds = { $eq: streamQuery.any[0] };
+      } else {
+        res.streamIds = { $in: streamQuery.any };
+      }
     }
   }
   // only reached from a "and" property
