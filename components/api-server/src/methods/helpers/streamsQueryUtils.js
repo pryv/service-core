@@ -172,7 +172,7 @@ function uniqueStreamIds(arrayOfStreamiIs) {
  * @returns
  */
 exports.expandAndTransformStreamQueries = async function expandAndTransformStreamQueries(streamQueries, expandStream) {
-
+  
   async function expandSet(streamIds, storeId, excludedIds = []) {
     const expandedSet = new Set(); // use a Set to avoid duplicate entries;
     for (let streamId of streamIds) {
@@ -261,10 +261,10 @@ function streamQueryToMongoDBQuery(streamQuery) {
   const res = {};
   if (streamQuery.any && streamQuery.any.length > 0) {
     if (! streamQuery.any.includes('*') ) { // ignore queries that contains '*';
-    if (streamQuery.any.length === 1) {
-      res.streamIds = { $eq: streamQuery.any[0] };
-    } else {
-      res.streamIds = { $in: streamQuery.any };
+      if (streamQuery.any.length === 1) {
+        res.streamIds = { $eq: streamQuery.any[0] };
+      } else {
+        res.streamIds = { $in: streamQuery.any };
       }
     }
   }

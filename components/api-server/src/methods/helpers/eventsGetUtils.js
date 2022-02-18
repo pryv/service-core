@@ -42,7 +42,7 @@ export type GetEventsParams = {
   sortAscending?: boolean,
   skip?: number,
   limit?: number,
-  state?: 'default' | 'all' | 'trashed',
+  state?: 'default' | 'all' | 'trashed',
   modifiedSince?: number,
   includeDeletions?: boolean,
 };
@@ -52,6 +52,7 @@ export type StoreQuery = {
   includeTrashed: boolean,
   expandChildren: boolean,
   excludedIds: Array<string>,
+  hideStoreRoots?: boolean,
 };
 
 let mall;
@@ -311,7 +312,8 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
       storeId: storeId, 
       includeTrashed: params.state === 'all' || params.state === 'trashed',
       expandChildren: true,
-      excludedIds: excludedIds
+      excludedIds: excludedIds,
+      hideStoreRoots: true
     };
 
     const tree: Array<Stream> = await mall.streams.get(context.user.id, query);
@@ -339,29 +341,36 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
 }
 
 /**
- * Add Hidden StreamsId (System) to local queries
+ * Add Hidden StreamsId (System) to local queries and eventually trashed streams if state != 'all'
  */
-function streamQueryAddHiddenStreams(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+async function streamQueryAddHiddenStreams(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
+  // forbidden stream
   const forbiddenStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
   for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
     if (streamQuery.storeId !== 'local') continue;
     if (streamQuery.and == null) streamQuery.and = [];
      streamQuery.and.push({not: forbiddenStreamIds});
   }
-     /** 
-    if (streamQuery.and == null) {
-      appendNots(streamQuery);
-    } else {
-      for (const andQuery of streamQuery.and) {
-        appendNots(andQuery);
-      }
+
+  // trashed stream (it's enough to add only root streams, as they will expanded later on)
+  if (params.state !== 'all' && params.state !== 'trashed') {
+    // if query contains '*' make sure to not include Trashed root streams 
+    for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
+      if (streamQuery.any == null || ! streamQuery.any.includes('*')) continue;
+      // get trashed root streams from store 
+      const rootStreams = await mall.streams.get(context.user.id,
+        {
+          id: '*',
+          storeId: streamQuery.storeId,
+          expandChildren: false,
+          includeTrashed: true,
+          excludedIds: [],
+        });
+      const trashedRootStreamsIds = rootStreams.filter(stream => stream.trashed).map(stream => stream.id);
+      if (streamQuery.and == null) streamQuery.and = [];
+      streamQuery.and.push({not: trashedRootStreamsIds});
     }
   }
-  function appendNots(query, notItems) {
-    if (query.not == null) { query.not = notItems; return; }
-    query.not = _.union(query.not, notItems);
-    return;
-  }*/
 
   next();
 }
