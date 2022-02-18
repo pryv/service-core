@@ -161,7 +161,6 @@ describe('[ACCO] Account with system streams', function () {
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
         const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
-        $$(res.body.account, allVisibleAccountEvents);
         assert.equal(res.body.account.email, emailAccountEvent.content);
         assert.equal(res.body.account.language, languageAccountEvent.content);
         assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);

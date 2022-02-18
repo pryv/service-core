@@ -98,9 +98,12 @@ exports.resetEvents = function (done, user) {
   })
   let mall;
   async.series([
-    async function removeAccountEvents() {
+    async function removeNonAccountEvents() {
       mall = await getMall();
-      await mall.events.delete(user.id, {state: 'all', includeDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
+      const nonAccountEvents = await mall.events.get(user.id, {state: 'all', includeDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
+      for (const event of nonAccountEvents) {
+        await mall.events.delete(user.id, {id: event.id, state: 'all', includeDeletions: true, includeHistory: true});
+      }
     },
     async function createEvents() {
       await mall.events.createMany(user.id,  eventsToWrite)

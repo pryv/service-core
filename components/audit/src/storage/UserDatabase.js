@@ -89,6 +89,8 @@ class UserDatabase {
     if (fieldsToDelete != null && fieldsToDelete.length > 0) {
       fieldsToDelete.forEach(field => { eventForDb[field] = null;});
     }
+    if (eventForDb.streamIds == null) { eventForDb.streamIds = '..'; }
+
     delete eventForDb.eventid;
     const queryString = `UPDATE events SET ${Object.keys(eventForDb).map(field => `${field} = @${field}`).join(', ')} WHERE eventid = @eventid`;
     eventForDb.eventid = eventId;
@@ -132,6 +134,7 @@ class UserDatabase {
   deleteEvents(params) {
     const queryString = prepareEventsDeleteQuery(params);
     const res = this.db.prepare(queryString).run();
+    this.logger.debug('(async) CREATE event: ' +queryString);
     return res;
   }
 
@@ -172,7 +175,8 @@ class UserDatabase {
   }
 
   eventsCount() {
-    return this.db.prepare('SELECT COUNT(*) FROM events').get();
+    const res = this.db.prepare('SELECT count(*) as count FROM events').get();
+    return res?.count || 0;
   }
 
 
@@ -216,6 +220,7 @@ function prepareEventsGetQuery(params) {
 function prepareQuery(params = {}, forDelete = false) {
   const ands = [];
   let specialSort = null;
+  const orderBy = [];
 
   // trashed
   switch (params.state) {
@@ -240,26 +245,25 @@ function prepareQuery(params = {}, forDelete = false) {
     specialSort = 'deleted';
   }
 
-  // if getOne
-  if (params.id != null) {
-    ands.push('eventid = \'' + params.id + '\'');
-  }
+ 
 
-  /** 
+  
   if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
     ands.push('headId = \'' + params.headId + '\'');
   } else {
     if (! params.includeHistory) { // no history;
-      query.headId = null;
+      ands.push('headId IS NULL');
     } else {
       if (params.id != null) { // get event and history of event
-        query.$or = [{_id: params.id}, {headId: params.id}];
-        delete query._id;
+        ands.push('( eventid = \'' + params.id + '\' OR headId = \'' + params.id + '\' )');
       }
-      // if query.headId is undefined all history (in scope) will be returned
-      options.sort.modified = 1; // also sort by modified time when history is requested
     }
-  }*/
+  }
+
+  // if getOne
+  if (params.id != null && (params.headId == null && ! params.includeHistory)) {
+    ands.push('eventid = \'' + params.id + '\'');
+  }
 
   if (params.types != null) {
     ands.push('types IN (\'' + params.types.join('\', \'') + '\')');
@@ -270,6 +274,18 @@ function prepareQuery(params = {}, forDelete = false) {
   } 
   if (params.toTime != null) {
     ands.push('time <= ' + params.toTime);
+  }
+
+  if (params.modifiedSince != null) {
+    ands.push('modified <= ' +  params.modifiedSince);
+  }
+
+  if (params.running) {
+    if (query.$or) { 
+      query.$or.push({endTime: null})
+    } else {
+      query.endTime = null; // matches when duration exists and is null
+    }
   }
     
   if (params.createdBy != null) {
@@ -303,6 +319,10 @@ function prepareQuery(params = {}, forDelete = false) {
       queryString += ' ORDER BY ' + orderBy + ' ASC';
     } else { 
       queryString += ' ORDER BY '  + orderBy + ' DESC';
+    }
+
+    if (params.includeHistory) {
+      queryString += ', modified DESC'
     }
 
     if (params.limit) {

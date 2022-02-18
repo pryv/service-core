@@ -155,7 +155,6 @@ describe('events.get streams query', function () {
 
       it('[JYUR] must convert streams query property "all" and "not" to "and: [{any..}] not:) with each containing expanded streamIds', async function () {
         const res = await validateQuery({ any: ['A'], all: ['F'] , not: ['D', 'E']});
-        $$(res);
         assert.deepEqual(res, [
           {
             storeId: 'local',
@@ -430,7 +429,6 @@ describe('events.get streams query', function () {
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ any: ['*'], not: ['D'] }) });
       const events = res.body.events;
-      $$(events);
       assert.equal(events.length, 3);
       events.forEach(e => {
         let isFound = false;

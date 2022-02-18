@@ -14,10 +14,12 @@ const ALL_EVENTS_TAG = '..';
 // - added deleted
 // - added attachments
 // changed most of the fields to be nullable
+// - added headId
 
 
 const dbSchema = { 
   eventid : {type: 'TEXT UNIQUE', index: true},
+  headId : {type: 'TEXT'},
   streamIds: {type: 'TEXT'},
   time: {type: 'REAL', index: true},
   deleted: {type: 'REAL', index: true},
@@ -57,9 +59,9 @@ function eventToDB(sourceEvent, defaulTime) {
   event.endTime = nullIfUndefined(sourceEvent.endTime);
   event.deleted = nullIfUndefined(sourceEvent.deleted);
   event.integrity = nullIfUndefined(sourceEvent.integrity);
+  event.headId = nullIfUndefined(sourceEvent.headId);
 
-  if (! sourceEvent.type) throw('Type is required');
-  event.type = sourceEvent.type;
+  event.type = nullIfUndefined(sourceEvent.type);
   
   event.content = nullOrJSON(sourceEvent.content);
   
@@ -69,8 +71,7 @@ function eventToDB(sourceEvent, defaulTime) {
   event.attachments = nullOrJSON(sourceEvent.attachments);
   event.trashed = (sourceEvent.trashed) ? 1 : 0;
 
-  if (sourceEvent.createdBy == null) throw('CreatedBy is required');
-  event.createdBy = sourceEvent.createdBy;
+  event.createdBy =  nullIfUndefined(sourceEvent.createdBy);
   event.modifiedBy = sourceEvent.modifiedBy || sourceEvent.createdBy;
   event.modified = setTimeIfNot(sourceEvent.modified, defaulTime);;
   return event;
