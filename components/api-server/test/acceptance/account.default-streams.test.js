@@ -161,7 +161,7 @@ describe('[ACCO] Account with system streams', function () {
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
         const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
-
+        $$(res.body.account, allVisibleAccountEvents);
         assert.equal(res.body.account.email, emailAccountEvent.content);
         assert.equal(res.body.account.language, languageAccountEvent.content);
         assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
@@ -202,8 +202,16 @@ describe('[ACCO] Account with system streams', function () {
         await createUser();
         basePath += '/change-password'
         // remove passwordHash event from the database
-        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
-       
+        const passwordEvents = await mall.events.get(user.attrs.id, {
+          streams: [{
+            any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]
+          }]
+        });
+        for (const event of passwordEvents) {
+          await mall.events.delete(user.attrs.id, {id: event.id});
+        } // make sure the event was deleted
+
+
         // make sure the event was deleted
         let password = await getActiveEvent('passwordHash');
         assert.isNull(password);
@@ -235,7 +243,14 @@ describe('[ACCO] Account with system streams', function () {
         await createUser();
         basePath += '/reset-password'
         // remove passwordHash event from the database
-        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
+        const passwordEvents = await mall.events.get(user.attrs.id, {
+          streams: [{
+            any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]
+          }]
+        });
+        for (const event of passwordEvents) {
+          await mall.events.delete(user.attrs.id, {id: event.id});
+        } // make sure the event was deleted
 
         // make sure the event was deleted
         let password = await getActiveEvent('passwordHash');

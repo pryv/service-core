@@ -94,6 +94,7 @@ class UserDatabase {
     eventForDb.eventid = eventId;
     const update = this.db.prepare(queryString);
     const res = update.run(eventForDb);
+    this.logger.debug('UPDATE events changes:' + res.changes + ' eventId:' + eventId + ' event:' + JSON.stringify(eventForDb));
     if (res.changes !== 1) {
       throw new Error('Event not found');
     }
@@ -109,12 +110,14 @@ class UserDatabase {
   createEventSync(event, defaultTime) {
     const eventForDb = eventSchemas.eventToDB(event, defaultTime);
     this.create.events.run(eventForDb);
+    this.logger.debug('(sync) CREATE event:' + JSON.stringify(eventForDb));
   }  
 
   async createEvent(event, defaultTime) {
     const eventForDb = eventSchemas.eventToDB(event, defaultTime);
     await this.concurentSafeWriteStatement(() => {
       this.create.events.run(eventForDb);
+      this.logger.debug('(async) CREATE event:' + JSON.stringify(eventForDb));
     }, 10000);
   }
 
@@ -200,7 +203,7 @@ class UserDatabase {
 }
 
 function prepareEventsDeleteQuery(params) {
-  if (params.streams) { throw new Error('events DELETE with stream query not supported yet'); }
+  if (params.streams) { throw new Error('events DELETE with stream query not supported yet: ' + JSON.stringify(params)); }
   return 'DELETE FROM events ' + prepareQuery(params, true);
 }
 
@@ -212,10 +215,51 @@ function prepareEventsGetQuery(params) {
 
 function prepareQuery(params = {}, forDelete = false) {
   const ands = [];
+  let specialSort = null;
 
+  // trashed
+  switch (params.state) {
+    case 'trashed':
+      ands.push('trashed = 1');
+      break;
+    case 'all':
+      break;
+    default:
+      ands.push('trashed = 0');
+  }
+
+  let deletedAnd = null;
+  // all deletions (tests only)
+  if (! params.includeDeletions) {
+    deletedAnd = 'deleted IS NULL';
+  }
+
+  // onlyDeletions
+  if (params.deletedSince != null) {
+    deletedAnd = 'deleted > ' + params.deletedSince;
+    specialSort = 'deleted';
+  }
+
+  // if getOne
   if (params.id != null) {
     ands.push('eventid = \'' + params.id + '\'');
   }
+
+  /** 
+  if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
+    ands.push('headId = \'' + params.headId + '\'');
+  } else {
+    if (! params.includeHistory) { // no history;
+      query.headId = null;
+    } else {
+      if (params.id != null) { // get event and history of event
+        query.$or = [{_id: params.id}, {headId: params.id}];
+        delete query._id;
+      }
+      // if query.headId is undefined all history (in scope) will be returned
+      options.sort.modified = 1; // also sort by modified time when history is requested
+    }
+  }*/
 
   if (params.types != null) {
     ands.push('types IN (\'' + params.types.join('\', \'') + '\')');
@@ -236,7 +280,16 @@ function prepareQuery(params = {}, forDelete = false) {
     const str = toSQLiteQuery(params.streams);
     if (str) ands.push('streamIds MATCH \'' + str + '\'');
   }
-  
+
+  // excludes. (only supported for ID.. specific to one updateEvent in SystemsStream .. might be removed)
+  if (params.NOT != null) {
+    if (params.NOT.id != null) {
+      if (params.id != null) throw new Error('NOT.id is not supported with id');
+      ands.push('eventid != \'' + params.NOT.id + '\'');
+    }
+  }
+
+
   let queryString = '';
 
   if (ands.length > 0) {
@@ -245,16 +298,19 @@ function prepareQuery(params = {}, forDelete = false) {
   
   if (!forDelete) {
 
+    const orderBy = specialSort || ' time ';
     if (params.sortAscending) {
-      queryString += ' ORDER BY time ASC';
+      queryString += ' ORDER BY ' + orderBy + ' ASC';
     } else { 
-      queryString += ' ORDER BY time DESC';
+      queryString += ' ORDER BY '  + orderBy + ' DESC';
     }
 
     if (params.limit) {
       queryString += ' LIMIT ' + params.limit;
     }
   }
+
+ 
 
   //console.log(params, queryString);
   return queryString;

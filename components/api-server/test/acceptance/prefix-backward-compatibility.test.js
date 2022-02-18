@@ -19,6 +19,11 @@ const { findById } = require('utils/src/treeUtils');
 
 describe('backward-compatibility', () => {
 
+  before(async () => {
+    await SystemStreamsSerializer.init();
+  });
+  
+
   describe('Tags as prefixed streams', () => {
     let config;
     let mongoFixtures;
