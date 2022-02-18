@@ -266,7 +266,7 @@ function prepareQuery(params = {}, forDelete = false) {
   }
 
   if (params.types != null) {
-    ands.push('types IN (\'' + params.types.join('\', \'') + '\')');
+    ands.push('type IN (\'' + params.types.join('\', \'') + '\')');
   } 
 
   if (params.fromTime != null) {
@@ -280,13 +280,14 @@ function prepareQuery(params = {}, forDelete = false) {
     ands.push('modified <= ' +  params.modifiedSince);
   }
 
+  /** 
   if (params.running) {
     if (query.$or) { 
       query.$or.push({endTime: null})
     } else {
       query.endTime = null; // matches when duration exists and is null
     }
-  }
+  }*/
     
   if (params.createdBy != null) {
     ands.push('createdBy = \'' + params.createdBy + '\'');

@@ -116,6 +116,15 @@ function addStoreId(storeId, eventData) {
   return eventData;
 }
 
+function removeEmptyAttachments(eventData) {
+  if (eventData?.attachments != null && eventData.attachments.length == 0) { 
+    delete eventData.attachments; 
+  }
+
+
+  return eventData;
+}
+
 
 // ------------- pack ----------------//
 
@@ -133,6 +142,7 @@ function convertEventFromStore(storeId, eventData) {
   endTimeFromStoreToDuration(event);
   stateFromStore(event);
   deletionFromStore(event);
+  removeEmptyAttachments(event);
   addStoreId(storeId, event);
   return event;
 }

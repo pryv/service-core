@@ -103,15 +103,17 @@ function eventFromDB(event, addStorePrefix = false) {
     delete event.trashed; // don't return it to API if false
   }
 
-  if (event.content) {
+  if (event.content != null) {
     event.content = JSON.parse(event.content);
   }
 
-  if (event.attachments) {
+  if (event.attachments != null) {
     event.attachments = JSON.parse(event.attachments);
-  } else {
-    event.attachments = [];
-  }
+  } 
+
+  if (event.clientData != null) {
+    event.clientData = JSON.parse(event.clientData);
+  } 
 
   for (key of Object.keys(event)) {
     if (event[key] == null) delete event[key];

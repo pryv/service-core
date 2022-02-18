@@ -204,12 +204,14 @@ function paramsToMongoquery(params) {
   if (params.fromTime != null) {
     const timeQuery = [
       { // Event started before fromTime, but finished inside from->to.
+        // e.time - fromTime - e.endTime
         time: {$lt: params.fromTime},
         endTime: {$gte: params.fromTime}
       }
     ];
     if (params.toTime != null) {
       timeQuery.push({ // Event has started inside the interval.
+        // 
         time: { $gte: params.fromTime, $lte: params.toTime }
       });
     }

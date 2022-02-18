@@ -427,8 +427,8 @@ class StoreUserEvents {
   async updateDeleteByMode(uid, deletionMode, query, mallTransaction) {
     const fieldsToSet = { deleted: Date.now() / 1000 };
     const fieldsToDelete = DELETION_MODES_FIELDS[deletionMode] || ['integrity'];
-
     const res = await this.updateMany(uid, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
+    return res;
   }
 
   // --------------------------- DELETE ----------------------- //
