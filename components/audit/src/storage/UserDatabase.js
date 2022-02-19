@@ -323,7 +323,7 @@ function prepareQuery(params = {}, forDelete = false) {
     }
 
     if (params.includeHistory) {
-      queryString += ', modified DESC'
+      queryString += ', modified ASC'
     }
 
     if (params.limit) {

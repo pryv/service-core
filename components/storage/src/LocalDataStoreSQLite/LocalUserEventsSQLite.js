@@ -36,8 +36,7 @@ class LocalUserEvents extends DataStore.UserEvents {
     try {
       return db.updateEvent(eventId, fieldsToSet, fieldsToDelete);
     } catch (err) {
-      $$(err);
-      if (err.isDuplicateIndex != null && err.isDuplicateIndex('id')) {
+      if (err.message === 'UNIQUE constraint failed: events.eventid') {
         throw errors.itemAlreadyExists('event', {id: eventId}, err);
       }
       throw errors.unexpectedError(err);
@@ -50,8 +49,7 @@ class LocalUserEvents extends DataStore.UserEvents {
       await db.createEvent(event);
       return event;
     } catch (err) {
-     $$(err);
-      if (err.isDuplicateIndex != null && err.isDuplicateIndex('_id')) {
+      if (err.message === 'UNIQUE constraint failed: events.eventid') { 
         throw errors.itemAlreadyExists('event', {id: event.id}, err);
       }
       throw errors.unexpectedError(err);

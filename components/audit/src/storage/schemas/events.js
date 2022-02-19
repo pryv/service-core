@@ -116,7 +116,8 @@ function eventFromDB(event, addStorePrefix = false) {
   } 
 
   for (key of Object.keys(event)) {
-    if (event[key] == null) delete event[key];
+    // delete all "null" fields but "duration" which mean "running".
+    if (key !== 'endTime' && event[key] == null) delete event[key];
   }
   return event;
 }
