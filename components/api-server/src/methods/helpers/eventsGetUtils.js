@@ -382,7 +382,7 @@ async function streamQueryAddHiddenStreams(context: MethodContext, params: GetEv
 async function findEventsFromStore(filesReadTokenSecret: string, 
   isStreamIdPrefixBackwardCompatibilityActive: boolean, isTagsBackwardCompatibilityActive: boolean,
   context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
-  if (params.arrayOfStreamQueriesWithStoreId?.length === 0)  {
+  if (params.arrayOfStreamQueriesWithStoreId?.length === 0) {
     result.events = [];
     return next();
   }
@@ -399,6 +399,7 @@ async function findEventsFromStore(filesReadTokenSecret: string,
       paramsByStoreId[storeId].streams = []; // empty the stream query
     }
     delete streamQuery.storeId; 
+    streamQuery.includeDeletions = false; // if deletions have been requested they will be included later in the result
     paramsByStoreId[storeId].streams.push(streamQuery);
   }
   // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}

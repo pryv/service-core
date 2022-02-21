@@ -134,14 +134,14 @@ class UserDatabase {
   deleteEvents(params) {
     const queryString = prepareEventsDeleteQuery(params);
     const res = this.db.prepare(queryString).run();
-    this.logger.debug('(async) CREATE event: ' +queryString);
+    this.logger.debug('DELETE events: ' +queryString);
     return res;
   }
 
   getEvents(params) {
     const queryString = prepareEventsGetQuery(params);
     
-    this.logger.debug(queryString);
+    this.logger.debug('GET Events:' + queryString);
     const res = this.db.prepare(queryString).all();
     if (res != null) {
       return res.map(eventSchemas.eventFromDB);
@@ -153,7 +153,7 @@ class UserDatabase {
 
   getEventsStream(params) {
     const queryString = prepareEventsGetQuery(params);
-    this.logger.debug(queryString);
+    this.logger.debug('GET Events Stream:' + queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
 
@@ -244,7 +244,9 @@ function prepareQuery(params = {}, forDelete = false) {
     deletedAnd = 'deleted > ' + params.deletedSince;
     specialSort = 'deleted';
   }
-
+  if (deletedAnd != null) {
+    ands.push(deletedAnd);
+  }
  
 
   
