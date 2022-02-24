@@ -23,6 +23,7 @@ const tables = {
 
 const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25,  25,  50,  50, 100];
 
+const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 class UserDatabase {
   /**
    * sqlite3 instance
@@ -133,8 +134,8 @@ class UserDatabase {
 
   deleteEvents(params) {
     const queryString = prepareEventsDeleteQuery(params);
-    const res = this.db.prepare(queryString).run();
     this.logger.debug('DELETE events: ' +queryString);
+    const res = this.db.prepare(queryString).run();
     return res;
   }
 
@@ -271,25 +272,31 @@ function prepareQuery(params = {}, forDelete = false) {
     ands.push('type IN (\'' + params.types.join('\', \'') + '\')');
   } 
 
+  // -- start time query 
+
+  const timeQuery = [];
   if (params.fromTime != null) {
-    ands.push('time >= ' + params.fromTime);
-  } 
-  if (params.toTime != null) {
-    ands.push('time <= ' + params.toTime);
+    timeQuery.push('( time < ' + params.fromTime + ' AND endTime >= ' + params.fromTime + ' )');
+  
+    if (params.toTime != null)  
+      timeQuery.push('( time >= ' + params.fromTime + ' AND time <= ' + params.toTime + ' )');
   }
+
+  if (params.running || ( params.toTime != null && ( (params.toTime + DELTA_TO_CONSIDER_IS_NOW) > (Date.now() / 1000) ) )) { // toTime is null or greater than now();
+    timeQuery.push('endTime IS NULL');
+  }
+  
+  if (timeQuery.length > 0) {
+    ands.push('(' + timeQuery.join(' OR ') + ')');
+  }
+
+  // -- end time query 
+
 
   if (params.modifiedSince != null) {
     ands.push('modified <= ' +  params.modifiedSince);
   }
 
-  /** 
-  if (params.running) {
-    if (query.$or) { 
-      query.$or.push({endTime: null})
-    } else {
-      query.endTime = null; // matches when duration exists and is null
-    }
-  }*/
     
   if (params.createdBy != null) {
     ands.push('createdBy = \'' + params.createdBy + '\'');

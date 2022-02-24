@@ -75,6 +75,7 @@ class Mall {
       try {
         await store.deleteUser(uid);
       } catch (error) {
+        $$(error);
         this.throwAPIError(error, store.id);
       }
     }
