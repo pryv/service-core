@@ -13,7 +13,7 @@ var treeUtils = require('utils').treeUtils,
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
-const { StreamsUtils, getMall } = require('mall');
+const { streamsUtils, getMall } = require('mall');
 
 let auditIsActive = null;
 function addAuditStreams() {
@@ -126,7 +126,7 @@ Object.freeze(PermissionLevels);
   }
 
   _loadStreamPermission (perm) {
-    const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
+    const [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(perm.streamId);
     if (this._streamByStorePermissionsMap[storeId] == null) this._streamByStorePermissionsMap[storeId] = {}
     this._streamByStorePermissionsMap[storeId][streamId] = {streamId: streamId, level: perm.level};
   }
@@ -198,7 +198,7 @@ Object.freeze(PermissionLevels);
 
     for (const perm of Object.values(perms)) {
       if (perm.level == null || perm.level === 'none') { 
-        res.push(StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
+        res.push(streamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
       }
     }
     return res;
@@ -218,7 +218,7 @@ Object.freeze(PermissionLevels);
 
     for (const perm of Object.values(localPerms)) {
       if (perm.level === 'create-only' || perm.level == null || perm.level === 'none') { 
-        res.push(StreamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
+        res.push(streamsUtils.storeIdAndStreamIdForStreamId(perm.streamId)[1]);
       }
     }
     return res;
@@ -242,7 +242,7 @@ Object.freeze(PermissionLevels);
   _registerFeaturePermission (perm) {
     this.featurePermissionsMap[perm.feature] = perm;
     if (perm.feature === 'forcedStreams') { // load them by store
-      const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(perm.streams);
+      const [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(perm.streams);
       if (this._streamByStoreForced[storeId] == null) this._streamByStoreForced[storeId] = [];
       this._streamByStoreForced[storeId].push(...perm.streams);
     }
@@ -398,7 +398,7 @@ Object.freeze(PermissionLevels);
   async canGetEventsOnStream (streamId, storeId) {
     if (this.isPersonal()) return true;
 
-    const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
+    const fullStreamId = streamsUtils.streamIdForStoreId(streamId, storeId);
 
     const level = await this._getStreamPermissionLevel(fullStreamId);
     if (level == null || level === 'create-only') return false;
@@ -512,7 +512,7 @@ Object.freeze(PermissionLevels);
 
   async _getStreamPermissions(streamIdFull) {
 
-    const [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamIdFull);
+    const [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamIdFull);
 
     let currentStream = (streamId !== '*') ? streamId : null;
 

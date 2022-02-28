@@ -19,7 +19,7 @@ import type { StreamQuery } from 'business/src/events';
 const audit = require('audit');
 const auditStorage = audit.storage;
 
-const { ConvertEventFromStoreStream } = require('mall/src/lib/EventsUtils');
+const { ConvertEventFromStoreStream } = require('mall/src/lib/eventsUtils');
 
 /**
 * @param api

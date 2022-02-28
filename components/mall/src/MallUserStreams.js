@@ -8,7 +8,7 @@
 // @flow
 
 const { DataStore }  = require('pryv-datastore');
-const StreamsUtils = require('./lib/StreamsUtils');
+const streamsUtils = require('./lib/streamsUtils');
 const { treeUtils } = require('utils');
 
 import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
@@ -33,7 +33,7 @@ class MallUserStreams {
    * Helper to get a single stream
    */
   async getOne(uid: string, streamId: string, storeId: string): Promise<?Stream> {
-    if (storeId == null) { [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId); }
+    if (storeId == null) { [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId); }
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     const streams: Array<Stream> = await store.streams.get(uid, { id: streamId, includeTrashed: true, storeId });
@@ -98,9 +98,9 @@ class MallUserStreams {
     }
 
     if (storeId !== 'local') { // add Prefix
-      StreamsUtils.addStoreIdPrefixToStreams(storeId, res);
+      streamsUtils.addStoreIdPrefixToStreams(storeId, res);
       if (streamId === '*') { // add root stream
-        res = [StreamsUtils.storeToStream(store, {
+        res = [streamsUtils.storeToStream(store, {
           children: res,
         })];
       }
@@ -112,7 +112,7 @@ class MallUserStreams {
       const res: Array<Stream> = [];
       for (const store: DataStore of stores) {
         if (store.id !== 'local') {
-          res.push(StreamsUtils.storeToStream(store, {
+          res.push(streamsUtils.storeToStream(store, {
             children: [],
             childrenHidden: true // To be discussed
           }));

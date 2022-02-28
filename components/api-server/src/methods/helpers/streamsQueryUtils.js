@@ -13,7 +13,7 @@
  */
 const util = require('util');
 
-const { StreamsUtils } = require('mall');
+const { streamsUtils } = require('mall');
 const { findForbiddenChar } = require('../../schema/streamId');
 const _ = require('lodash');
 
@@ -54,7 +54,7 @@ function transformArrayOfStringsToStreamsQuery(arrayOfQueries: Array<any>): Arra
   // group streamIds per "store"
   const map: Map<string, Array<string>> = {};
   for (const streamId: string of streamIds) {
-    const [store: string, cleanStreamId: string] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    const [store: string, cleanStreamId: string] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
     if (map[store] == null) map[store] = [];
     map[store].push(streamId);
   }
@@ -103,7 +103,7 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
    */
   function validateAndAttachStore(streamIdWithPrefix: string): string {
     // queries must be grouped by store
-    const [thisStore: string, streamId: string] = StreamsUtils.storeIdAndStreamIdForStreamId(streamIdWithPrefix);
+    const [thisStore: string, streamId: string] = streamsUtils.storeIdAndStreamIdForStreamId(streamIdWithPrefix);
     if (streamQuery.storeId == null) streamQuery.storeId = thisStore;
     if (streamQuery.storeId !== thisStore) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' queries must me grouped by store.');
     return streamId;
