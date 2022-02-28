@@ -20,7 +20,7 @@ const { getUsersRepository } = require('business/src/users');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getMall, StreamsUtils } = require('mall');
+const { getMall, streamsUtils } = require('mall');
 
 const cache = require('cache');
 
