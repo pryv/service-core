@@ -75,6 +75,7 @@ class Mall {
       try {
         await store.deleteUser(uid);
       } catch (error) {
+        $$(error);
         this.throwAPIError(error, store.id);
       }
     }
@@ -119,7 +120,6 @@ class Mall {
    * @param {*} storeId 
    */
   throwAPIError(error, storeId) {
-    $$(error);
     if (! error instanceof Error) {
       error = new Error(error);
     }

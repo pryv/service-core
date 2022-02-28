@@ -134,9 +134,12 @@ class Audit {
 module.exports = Audit;
 
 function buildDefaultEvent(context) {
+  const time = Date.now() / 1000;
   const event = {
     createdBy: 'system',
     streamIds: [CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id, CONSTANTS.ACTION_STREAM_ID_PREFIX + context.methodId],
+    time: time,
+    endTime: time,
     content: {
       source: context.source,
       action: context.methodId,

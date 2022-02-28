@@ -23,6 +23,7 @@ const tables = {
 
 const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25,  25,  50,  50, 100];
 
+const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 class UserDatabase {
   /**
    * sqlite3 instance
@@ -133,15 +134,15 @@ class UserDatabase {
 
   deleteEvents(params) {
     const queryString = prepareEventsDeleteQuery(params);
+    this.logger.debug('DELETE events: ' +queryString);
     const res = this.db.prepare(queryString).run();
-    this.logger.debug('(async) CREATE event: ' +queryString);
     return res;
   }
 
   getEvents(params) {
     const queryString = prepareEventsGetQuery(params);
     
-    this.logger.debug(queryString);
+    this.logger.debug('GET Events:' + queryString);
     const res = this.db.prepare(queryString).all();
     if (res != null) {
       return res.map(eventSchemas.eventFromDB);
@@ -153,7 +154,7 @@ class UserDatabase {
 
   getEventsStream(params) {
     const queryString = prepareEventsGetQuery(params);
-    this.logger.debug(queryString);
+    this.logger.debug('GET Events Stream:' + queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
 
@@ -244,7 +245,9 @@ function prepareQuery(params = {}, forDelete = false) {
     deletedAnd = 'deleted > ' + params.deletedSince;
     specialSort = 'deleted';
   }
-
+  if (deletedAnd != null) {
+    ands.push(deletedAnd);
+  }
  
 
   
@@ -269,25 +272,31 @@ function prepareQuery(params = {}, forDelete = false) {
     ands.push('type IN (\'' + params.types.join('\', \'') + '\')');
   } 
 
+  // -- start time query 
+
+  const timeQuery = [];
   if (params.fromTime != null) {
-    ands.push('time >= ' + params.fromTime);
-  } 
-  if (params.toTime != null) {
-    ands.push('time <= ' + params.toTime);
+    timeQuery.push('( time < ' + params.fromTime + ' AND endTime >= ' + params.fromTime + ' )');
+  
+    if (params.toTime != null)  
+      timeQuery.push('( time >= ' + params.fromTime + ' AND time <= ' + params.toTime + ' )');
   }
+
+  if (params.running || ( params.toTime != null && ( (params.toTime + DELTA_TO_CONSIDER_IS_NOW) > (Date.now() / 1000) ) )) { // toTime is null or greater than now();
+    timeQuery.push('endTime IS NULL');
+  }
+  
+  if (timeQuery.length > 0) {
+    ands.push('(' + timeQuery.join(' OR ') + ')');
+  }
+
+  // -- end time query 
+
 
   if (params.modifiedSince != null) {
     ands.push('modified <= ' +  params.modifiedSince);
   }
 
-  /** 
-  if (params.running) {
-    if (query.$or) { 
-      query.$or.push({endTime: null})
-    } else {
-      query.endTime = null; // matches when duration exists and is null
-    }
-  }*/
     
   if (params.createdBy != null) {
     ands.push('createdBy = \'' + params.createdBy + '\'');
@@ -323,7 +332,7 @@ function prepareQuery(params = {}, forDelete = false) {
     }
 
     if (params.includeHistory) {
-      queryString += ', modified DESC'
+      queryString += ', modified ASC'
     }
 
     if (params.limit) {
