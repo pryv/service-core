@@ -7,7 +7,7 @@
 
 const _ = require('lodash');
 const Transform = require('stream').Transform;
-const StreamsUtils = require('./StreamsUtils');
+const streamsUtils = require('./streamsUtils');
 const errorFactory = require('errors').factory;
 
 // ------------  Duration -----------// 
@@ -85,7 +85,7 @@ function deletionFromStore (eventData) {
 
 
 function removeStoreIds(storeId, eventData) {
-  const [eventStoreId, eventId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+  const [eventStoreId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
   if (eventStoreId !== storeId) {
     throw errorFactory.invalidRequestStructure('Cannot create event with id and streamIds belonging to different stores', eventData);
   }
@@ -95,7 +95,7 @@ function removeStoreIds(storeId, eventData) {
   if (eventData.streamIds != null) { // it might happen that deleted is set but streamIds is not when loading test data
     for (let i = 0; i < eventData.streamIds.length; i++) {
       // check that the event belongs to a single store.
-      const [testStoreId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[i]);
+      const [testStoreId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[i]);
       if (storeId == null) { storeId = testStoreId; }
       else if (testStoreId !== storeId) {
         throw errorFactory.invalidRequestStructure('Cannot create event with id and streamIds belonging to different stores', eventData);
