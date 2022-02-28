@@ -21,6 +21,7 @@ describe('Cache', function() {
   let user, username, password, access, appAccess;
   let personalToken;
   let mongoFixtures;
+  let eventsPath, streamsPath, batchPath;
   
   const streamId = 'yo';
   before(async function() {
@@ -53,6 +54,7 @@ describe('Cache', function() {
     accessesPath = '/' + username + '/accesses/';
     eventsPath = '/' + username + '/events/';
     streamsPath = '/' + username + '/streams/';
+    batchPath = '/' + username;
     
     const res = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)
@@ -156,6 +158,33 @@ describe('Cache', function() {
     assert.equal(res5.status, 403, 'should not have acces once move out of authorized scope');
   });
 
+  it('[EO93]  Stream cache should be invallidated during a batch call that implies streams.create', async () => {
+    const batchCall = [{
+      method: 'streams.create',
+      params: {
+        name: 'stream A3',
+        parentId: 'A',
+        id: 'A3'
+      }
+    }, {
+      method: 'streams.create',
+      params: {
+        name: 'stream A31',
+        parentId: 'A3',
+        id: 'A31'
+      }
+    }, {
+      method: 'events.create',
+      params: {
+        type: 'note/txt',
+        content: 'hello',
+        streamIds: ['A31']
+      }
+    }]
+    const res = await coreRequest.post(batchPath).set('Authorization', appAccess.token).send(batchCall);
+    $$(res.body);
+    assert.equal(res.status, 200);
+  });
 
 });
 

@@ -67,6 +67,7 @@ async function initCore() {
 
   await require('api-server/src/methods/events')(app.api);
   await require('api-server/src/methods/streams')(app.api);
+  await require('api-server/src/methods/utility')(app.api); // callBatch
   require('api-server/src/methods/service')(app.api);
   await require('api-server/src/methods/auth/login')(app.api);
   await require('api-server/src/methods/auth/register')(app.api);
