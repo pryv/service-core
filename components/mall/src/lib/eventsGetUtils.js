@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
- const StreamsUtils = require('./StreamsUtils');
+ const streamsUtils = require('./streamsUtils');
  const _ = require('lodash');
  
 /**
@@ -44,39 +44,22 @@
 function getParamsByStore(query) {
   let singleStoreId, singleEventId, headId;
   if (query.id != null) { // a specific event is queried so we have a singleStore query;
-    [singleStoreId, singleEventId] = StreamsUtils.storeIdAndStreamIdForStreamId(query.id);
+    [singleStoreId, singleEventId] = streamsUtils.storeIdAndStreamIdForStreamId(query.id);
   }
 
   if (query.headId != null) { // a specific "head" is queried so we have a singleStore query;
     if (query.id != null) throw new Error('Cannot mix headId and id in query');
-    [singleStoreId, headId] = StreamsUtils.storeIdAndStreamIdForStreamId(query.headId);
+    [singleStoreId, headId] = streamsUtils.storeIdAndStreamIdForStreamId(query.headId);
   }
 
   // repack streamQueries by storeId
   const streamQueriesBySource = {};
   if (query.streams != null) { // must be an array
     for (let streamQuery of query.streams) {
-      let storeId = null;
+      const storeIdHolder = { id: null};
 
-      function clean(subStreamQuery) {
-        const cleanStreamQuery = {};
-        for (let key of ['any', 'not']) { // for each possible segment of query
-          if (subStreamQuery[key] != null) {
-            for (let streamId of subStreamQuery[key]) {
-              const [streamStoreId, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
-              if (storeId == null) storeId = streamStoreId;
-              if (storeId != streamStoreId) throw new Error('streams must be from the same store, per query segemnt');
-              cleanStreamQuery[key] = cleanStreamQuery[key] || [];
-              cleanStreamQuery[key].push(cleanStreamId);
-            }
-          }
-        }
-        if (subStreamQuery.and != null) {
-          cleanStreamQuery.and = subStreamQuery.and.map(clean);
-        }
-        return cleanStreamQuery;
-      }
-      const resCleanQuery = clean(streamQuery);
+      const resCleanQuery = cleanSQ(streamQuery, storeIdHolder);
+      const storeId = storeIdHolder.id;
 
       if (singleStoreId != null && singleStoreId != storeId) throw new Error('streams query must be from the same store than the requested event');
       if (streamQueriesBySource[storeId] == null) streamQueriesBySource[storeId] = [];
@@ -106,7 +89,24 @@ function getParamsByStore(query) {
   return paramsByStore;
 }
 
-
+function cleanSQ(subStreamQuery, storeIdHolder) {
+  const cleanStreamQuery = {};
+  for (let key of ['any', 'not']) { // for each possible segment of query
+    if (subStreamQuery[key] != null) {
+      for (let streamId of subStreamQuery[key]) {
+        const [streamStoreId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
+        if (storeIdHolder.id == null) storeIdHolder.id = streamStoreId;
+        if (storeIdHolder.id != streamStoreId) throw new Error('streams must be from the same store, per query segemnt');
+        cleanStreamQuery[key] = cleanStreamQuery[key] || [];
+        cleanStreamQuery[key].push(cleanStreamId);
+      }
+    }
+  }
+  if (subStreamQuery.and != null) {
+    cleanStreamQuery.and = subStreamQuery.and.map(sq => { return cleanSQ(sq, storeIdHolder); });
+  }
+  return cleanStreamQuery;
+}
 
 
 module.exports = {

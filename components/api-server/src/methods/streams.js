@@ -23,7 +23,7 @@ const ErrorIds = require('errors/src/ErrorIds');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
-const { getMall, StreamsUtils } = require('mall');
+const { getMall, streamsUtils } = require('mall');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
@@ -99,7 +99,7 @@ module.exports = async function (api) {
 
     let storeId = params.storeId; // might me null
     if (storeId == null) {
-      [storeId, streamId] = StreamsUtils.storeIdAndStreamIdForStreamId(streamId);
+      [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
     }
 
     let streams = await mall.streams.get(context.user.id,
@@ -113,7 +113,7 @@ module.exports = async function (api) {
       });
 
     if (streamId !== '*') {
-      const fullStreamId = StreamsUtils.streamIdForStoreId(streamId, storeId);
+      const fullStreamId = streamsUtils.streamIdForStoreId(streamId, storeId);
       const inResult = treeUtils.findById(streams, fullStreamId);
       if (!inResult) {
         return next(errors.unknownReferencedResource('unknown Stream:', params.parentId ? 'parentId' : 'id', fullStreamId, null));
@@ -130,7 +130,7 @@ module.exports = async function (api) {
       const listables = context.access.getListableStreamIds();
       const filteredStreams = [];
       for (const listable of listables) {
-        const listableFullStreamId = StreamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
+        const listableFullStreamId = streamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
         const inResult = treeUtils.findById(streams, listableFullStreamId);
         if (inResult) {
           const copy = _.cloneDeep(inResult);
@@ -408,7 +408,7 @@ module.exports = async function (api) {
 
   async function deleteWithData(context, params, result, next) {
     let hasLinkedEvents;
-    const [storeId, cleanStreamId] = StreamsUtils.storeIdAndStreamIdForStreamId(params.id);
+    const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(params.id);
    
     // Load stream and chlidren (context.stream does not have expanded children tree)
     const streamToDeleteSingleArray = await mall.streams.get(context.user.id, { id: cleanStreamId, includeTrashed: true, expandChildren: true, storeId });
@@ -419,7 +419,7 @@ module.exports = async function (api) {
     context.streamToDeleteAndDescendantIds = streamAndDescendantIds;
 
     const parentId = streamToDelete.parentId;
-    const cleanDescendantIds = streamAndDescendantIds.map((s) => StreamsUtils.storeIdAndStreamIdForStreamId(s)[1]);
+    const cleanDescendantIds = streamAndDescendantIds.map((s) => streamsUtils.storeIdAndStreamIdForStreamId(s)[1]);
     
     // check if root stream and linked events exist
     if (params.mergeEventsWithParent === true && parentId == null) {

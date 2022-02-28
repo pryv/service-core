@@ -19,7 +19,7 @@ const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
 const addTagsStream = require('./streams/AddTagsStream');
 
-const { getMall, StreamsUtils } = require('mall');
+const { getMall, streamsUtils } = require('mall');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const Registration = require('business/src/auth/registration');
 const { getUsersRepository } = require('business/src/users');
