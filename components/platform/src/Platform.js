@@ -22,16 +22,17 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
  * @property {Users} users
  */
 class Platform {
-  initialized = false;
+  #initialized;
   db;
   serviceRegisterConn;
 
   constructor() {
+    this.#initialized = false;
     this.db = new PlatformWideDB();
   }
 
   async init() {
-    if (this.initialized) {
+    if (this.#initialized) {
       logger.warn('Platform already initialized, skipping');
       return this;
     }
