@@ -93,6 +93,7 @@ class StoreUserEvents {
     
     const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventForStore.id);
 
+    nullifyUndefinedFields(eventForStore);
 
     // update integrity field and recalculate if needed
     // integrity caclulation is done on event.id and streamIds that includes the store prefix
@@ -415,3 +416,16 @@ class StoreUserEvents {
 }
 
 module.exports = StoreUserEvents;
+
+/**
+ * Set to null if an field is not present
+ * This will make sure that during and update all fields are set for stores
+ * @param {*} eventData 
+ */
+function nullifyUndefinedFields(eventData) {
+  for (let field of ALL_FIELDS) {
+    if (eventData[field] == undefined) {
+      eventData[field] = null;
+    }
+  }
+}

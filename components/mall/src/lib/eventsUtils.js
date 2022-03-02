@@ -74,12 +74,42 @@ function deletionFromStore (eventData) {
   return eventData;
 };
 
+// ----------- All events fields ------- //
+const ALL_FIELDS = 
+  ['streamIds', 'time', 
+  'endTime', 
+  'type', 'content', 
+  'description', 'attachments', 
+  'clientData', 'trashed', 
+  'created', 'createdBy',
+  'modified', 'modifiedBy', 
+  'integrity'];
+
+/** set to null all undefined fields */
+function nullifyToStore(eventData) {
+  for (const field of ALL_FIELDS) {
+    if (eventData[field] === undefined) {
+      eventData[field] = null;
+    }
+  }
+  return eventData;
+}
+
+function nullifyFromStore(eventData) {
+  for (const field of ALL_FIELDS) {
+    if (eventData[field] === null && field !== 'endTime') {
+      delete eventData[field];
+    }
+  }
+  return eventData;
+}
 
 function convertEventToStore(eventData) {
   const event = _.cloneDeep(eventData);
   durationToStoreEndTime(event);
   stateToStore(event);
   deletionToStore(event);
+  nullifyToStore(event);
   return event;
 }
 
@@ -88,6 +118,7 @@ function convertEventFromStore(eventData) {
   endTimeFromStoreToDuration(event);
   stateFromStore(event);
   deletionFromStore(event);
+  nullifyFromStore(event);
   return event;
 }
 
