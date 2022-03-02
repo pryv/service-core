@@ -491,7 +491,7 @@ module.exports = async function (api)
       }
 
       result.event.attachments = attachments;
-      const updatedEvent = await mall.events.updateWithOriginal(context.user.id, result.event, { attachments });
+      const updatedEvent = await mall.events.updateFieldsWithOriginal(context.user.id, result.event, { attachments });
 
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];   
@@ -701,7 +701,7 @@ module.exports = async function (api)
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      const updatedEvent = await mall.events.updateReplace(context.user.id, context.newEvent);
+      const updatedEvent = await mall.events.update(context.user.id, context.newEvent);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
@@ -1105,7 +1105,7 @@ module.exports = async function (api)
         );
       }
     
-      const updatedEvent = await mall.events.updateWithOriginal(context.user.id, context.oldEvent, updatedData);
+      const updatedEvent = await mall.events.updateFieldsWithOriginal(context.user.id, context.oldEvent, updatedData);
 
 
       // if update was not done and no errors were catched
@@ -1190,7 +1190,7 @@ module.exports = async function (api)
       const updatedData: {} = { attachments: context.event.attachments };
       context.updateTrackingProperties(updatedData);
 
-      const alreadyUpdatedEvent = await mall.events.updateWithOriginal(context.user.id, context.oldEvent, updatedData);
+      const alreadyUpdatedEvent = await mall.events.updateFieldsWithOriginal(context.user.id, context.oldEvent, updatedData);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams

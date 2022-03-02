@@ -66,7 +66,7 @@ class Flush implements Operation {
       // ADD AUDIT HERE ??
 
       // when changing for mall remove all reference to DB 
-      await mall.events.updateWithOriginal(userId, originalEvent, updatedData);      
+      await mall.events.updateFieldsWithOriginal(userId, originalEvent, updatedData);      
     } 
 
     return true;

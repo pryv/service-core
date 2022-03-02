@@ -75,7 +75,7 @@ class StoreUserEvents {
    * @param {MallTransaction} mallTransaction
    * @returns 
    */
-  async updateWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction) {
+  async updateFieldsWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction) {
     const newEventData = _.clone(originalEvent);
     for (const fieldKey of Object.keys(fieldsToSet)) {
       newEventData[fieldKey] = fieldsToSet[fieldKey];
@@ -85,10 +85,10 @@ class StoreUserEvents {
         delete newEventData[fieldKey];
       }
     }
-    return await this.updateReplace(uid, newEventData, mallTransaction);
+    return await this.update(uid, newEventData, mallTransaction);
   }
 
-  async updateReplace(uid, eventData, mallTransaction) {
+  async update(uid, eventData, mallTransaction) {
     const eventForStore = eventsUtils.convertEventToStore(eventData);
     
     const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventForStore.id);
@@ -99,10 +99,7 @@ class StoreUserEvents {
     delete eventForStore.integrity;
     if (integrity.events.isActive) {
       integrity.events.set(eventForStore);
-    } 
-
-    // delete Id
-    delete eventForStore.id;
+    }
 
     // replace all streamIds by store-less streamIds
     if ((eventForStore?.streamIds)) {
@@ -115,15 +112,15 @@ class StoreUserEvents {
       eventForStore.streamIds = newStreamIds;
     }
 
-
-    // build up list of fields to delete 
-    const fieldsToDelete = ALL_FIELDS.filter(field => eventForStore[field] === undefined);
-
     const store = this.mall._storeForId(storeId);
     const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
     try {
-      const res = await store.events.update(uid, eventId, eventForStore, fieldsToDelete, storeTransaction);
-      return eventsUtils.convertEventFromStore(res);
+      const success = await store.events.update(uid, eventForStore, storeTransaction);
+      if (! success) {
+        throw errorFactory.invalidItemId('Coulnd not update event with id ' + eventData.id);
+      }
+
+      return eventsUtils.convertEventFromStore(eventForStore);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
@@ -139,9 +136,9 @@ class StoreUserEvents {
    * @param {MallTransaction} mallTransaction
    * @returns 
    */
-  async update(uid, fullEventId, fieldsToSet, fieldsToDelete, mallTransaction) {
+  async updateFields(uid, fullEventId, fieldsToSet, fieldsToDelete, mallTransaction) {
     const originalEvent = await this.getOne(uid, fullEventId);
-    return await this.updateWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction);
+    return await this.updateFieldsWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction);
   }
 
   /**
@@ -201,7 +198,7 @@ class StoreUserEvents {
           }
         }
 
-        const updatedEvent = await that.updateWithOriginal(uid, event, fieldsToSet, update.fieldsToDelete, mallTransaction);
+        const updatedEvent = await that.updateFieldsWithOriginal(uid, event, fieldsToSet, update.fieldsToDelete, mallTransaction);
         yield updatedEvent;
       }
 

@@ -190,7 +190,7 @@ describe('event previews', function () {
             modified: timestamp.now(),
             modifiedBy: testData.accesses[2].id
           };
-           updatedEvent = await mall.events.update(user.id, event.id, update);
+           updatedEvent = await mall.events.updateFields(user.id, event.id, update);
         },
         async function retrieveAgain() {
           const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {

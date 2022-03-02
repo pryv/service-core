@@ -1742,7 +1742,7 @@ describe('events', function () {
 
       async.series([
           async function trashEvent() {
-            await mall.events.update(user.id, id, {trashed: true});
+            await mall.events.updateFields(user.id, id, {trashed: true});
           },
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {

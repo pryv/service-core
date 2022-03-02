@@ -44,18 +44,16 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-  async create(uid: string, params: {}, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.create')); }
+  async create(uid: string, eventData: any, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.create')); }
 
   /**
-   * @see https://api.pryv.com/reference/#update-event
+   * Fully replace an event with new Data
    * @param {identifier} uid 
-   * @param {string} fullEventId 
-   * @param {any} fieldsToSet - Object with fields to set
-   * @param {Array<string>} fieldsToDelete - Array of fields to delete
+   * @param {any} eventData - New event data
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
-   * @returns {Event} - the updated event
+   * @returns {boolean} - true if an event was updated
    */
-   async update(uid: string, fullEventId: string, fieldsToSet: any, fieldsToDelete: Array<string>): Promise<void> { throw(errors.unsupportedOperation('events.update')); }
+  async update(uid: string, eventData: any): Promise<void> { throw(errors.unsupportedOperation('events.replace')); }
 
 
   /**

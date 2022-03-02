@@ -93,7 +93,7 @@ module.exports = async function (
         return next(adjustGMResultError(err));
       }
 
-      await mall.events.updateWithOriginal(req.context.user.id, event, {attachments: event.attachments});
+      await mall.events.updateFieldsWithOriginal(req.context.user.id, event, {attachments: event.attachments});
 
       // Prepare path
       const targetSize = getPreviewSize(originalSize, {
