@@ -172,11 +172,15 @@ describe('event previews', function () {
     });
 
     it('[2MME] must regenerate the cached file if obsolete', function (done) {
-      const event = testData.events[2];
+      const eventId = testData.events[2].id;
+      let event;
       let cachedPath, cachedFileModified, updatedEvent;
       async.series([
+        async function retrieveEvent() {
+          event = await mall.events.getOne(user.id, eventId);
+        },
         async function retrieveInitialPreview() {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
+          const res = await bluebird.fromCallback(cb => request.get(path(eventId), token).end((res) => {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
@@ -185,12 +189,12 @@ describe('event previews', function () {
           cachedFileModified = modified.toString();
         },
         async function updateEvent() {
-          const update = {
+          Object.assign(event, {
             description: 'Updated',
             modified: timestamp.now(),
             modifiedBy: testData.accesses[2].id
-          };
-           updatedEvent = await mall.events.updateFields(user.id, event.id, update);
+          });
+          updatedEvent = await mall.events.update(user.id, event);
         },
         async function retrieveAgain() {
           const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {

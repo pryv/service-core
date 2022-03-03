@@ -43,16 +43,6 @@ const DELETION_MODES_FIELDS = {
   ]
 }
 
-const ALL_FIELDS = 
-  ['streamIds', 'time', 
-  'endTime', 
-  'type', 'content', 
-  'description', 'attachments', 
-  'clientData', 'trashed', 
-  'created', 'createdBy',
-  'modified', 'modifiedBy', 
-  'integrity'];
-
 /**
  * Handle Store.events.* methods
  */
@@ -66,34 +56,11 @@ class StoreUserEvents {
   }
 
   // --------------------------- UPDATE ----------------- //
-  /**
-   * 
-   * @param {string} uid 
-   * @param {Event} originalEvent - Providing the original event to be updated prevent the need to fetch it from the store for integrity calculation
-   * @param {any} fieldsToSet - Object with fields to set
-   * @param {Array<string>} fieldsToDelete - Array of fields to delete
-   * @param {MallTransaction} mallTransaction
-   * @returns 
-   */
-  async updateFieldsWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction) {
-    const newEventData = _.clone(originalEvent);
-    for (const fieldKey of Object.keys(fieldsToSet)) {
-      newEventData[fieldKey] = fieldsToSet[fieldKey];
-    }
-    if (fieldsToDelete != null) {
-      for (const fieldKey of fieldsToDelete) {
-        delete newEventData[fieldKey];
-      }
-    }
-    return await this.update(uid, newEventData, mallTransaction);
-  }
 
   async update(uid, eventData, mallTransaction) {
     const eventForStore = eventsUtils.convertEventToStore(eventData);
     
     const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventForStore.id);
-
-    nullifyUndefinedFields(eventForStore);
 
     // update integrity field and recalculate if needed
     // integrity caclulation is done on event.id and streamIds that includes the store prefix
@@ -125,21 +92,6 @@ class StoreUserEvents {
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
-  }
-
-
-  /**
-   * 
-   * @param {string} uid 
-   * @param {string} fullEventId 
-   * @param {any} fieldsToSet - Object with fields to set
-   * @param {Array<string>} fieldsToDelete - Array of fields to delete
-   * @param {MallTransaction} mallTransaction
-   * @returns 
-   */
-  async updateFields(uid, fullEventId, fieldsToSet, fieldsToDelete, mallTransaction) {
-    const originalEvent = await this.getOne(uid, fullEventId);
-    return await this.updateFieldsWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction);
   }
 
   /**
@@ -181,25 +133,24 @@ class StoreUserEvents {
     // fetch events to be updated 
     const streamedMatchingEvents = await this.getStreamedWithParamsByStore(uid, paramsByStore);
 
-    const that = this;
+    const mallEvents = this;
     async function* reader() {
-      for await (const event of streamedMatchingEvents) {
-        const fieldsToSet = _.merge(event, update.fieldsToSet);
+      for await (const eventData of streamedMatchingEvents) {
+        const newEventData = _.merge(eventData, update.fieldsToSet);
         if (update.addStreams && update.addStreams.length > 0) {
-          fieldsToSet.streamIds = _.union(fieldsToSet.streamIds, update.addStreams);
+          newEventData.streamIds = _.union(newEventData.streamIds, update.addStreams);
         }
         if (update.removeStreams && update.removeStreams.length > 0) {
-          fieldsToSet.streamIds = _.difference(fieldsToSet.streamIds, update.removeStreams);
+          newEventData.streamIds = _.difference(newEventData.streamIds, update.removeStreams);
         }
 
         // eventually remove fields from event
         if (update.fieldsToDelete && update.fieldsToDelete.length > 0) {
           for (let field of update.fieldsToDelete) {
-            delete fieldsToSet[field];
+            delete newEventData[field];
           }
         }
-
-        const updatedEvent = await that.updateFieldsWithOriginal(uid, event, fieldsToSet, update.fieldsToDelete, mallTransaction);
+        const updatedEvent = await mallEvents.update(uid, newEventData, mallTransaction);
         yield updatedEvent;
       }
 
@@ -416,16 +367,3 @@ class StoreUserEvents {
 }
 
 module.exports = StoreUserEvents;
-
-/**
- * Set to null if an field is not present
- * This will make sure that during and update all fields are set for stores
- * @param {*} eventData 
- */
-function nullifyUndefinedFields(eventData) {
-  for (let field of ALL_FIELDS) {
-    if (eventData[field] == undefined) {
-      eventData[field] = null;
-    }
-  }
-}

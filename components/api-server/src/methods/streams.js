@@ -475,8 +475,8 @@ module.exports = async function (api) {
             if (remaningStreamsIds.length > 0) {
                 // event is still attached to existing streamId(s)
                 // update the event without the streamIds
-                const fieldsToSet = {streamIds: remaningStreamsIds};
-                await mall.events.updateFieldsWithOriginal(context.user.id, event, fieldsToSet);
+                event.streamIds = remaningStreamsIds;
+                await mall.events.update(context.user.id, event);
 
             } else { // remove the event and any attached data
               // remove the event's history
