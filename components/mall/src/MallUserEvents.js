@@ -186,7 +186,7 @@ class StoreUserEvents {
    * @param {*} eventData 
    */
   async create(uid, eventData, mallTransaction) {
-    const {store, eventForStore, storeTransaction} = await this._prepareForCreate(eventData, mallTransaction);
+    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
     try {
       const res = await store.events.create(uid, eventForStore, storeTransaction);
       return eventsUtils.convertEventFromStore(store.id, res);
@@ -201,76 +201,21 @@ class StoreUserEvents {
     }
   }
 
-  async createWithAttachments(uid: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
-    const {store, eventForStore, storeTransaction} = await this._prepareForCreate(eventDataWithoutAttachments, mallTransaction);
-    
-
-    try {
-      const res = await store.events.createWithAttachments(uid, eventForStore, attachmentsItems, finalizeEventCallBack, storeTransaction);
-      return eventsUtils.convertEventFromStore(store.id, res);
-    } catch (e) {
-      this.mall.throwAPIError(e, store.id);
-    }
-
-    //** This will be called when attachments have been saved on store */
-    async function finalizeEventCallBack(attachmentsResponse) {
-      const eventWithFullIds = _.cloneDeep(eventDataWithoutAttachments); // needed to compute integrity
-      
-      eventWithFullIds.attachments = [];
-      for (let i = 0; i < attachmentsResponse.length; i++) {
-        eventWithFullIds.attachments.push({
-          id: attachmentsResponse[i].id, // ids comes from storage
-          fileName: attachmentsItems[i].fileName,
-          type: attachmentsItems[i].type,
-          size: attachmentsItems[i].size,
-          integrity: attachmentsItems[i].integrity,
-        });
-      }
-       
-      integrity.events.set(eventWithFullIds);
-
-      // Prepare result event 
-      const finalEventForStore = eventsUtils.convertEventToStore(store.id, eventWithFullIds);
-      return finalEventForStore;
-    }
-
-
+  async attachmentsLoad(userId: string, eventDataWithoutAttachments: any, isExistingEvent: boolean, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction) {
+    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventDataWithoutAttachments, mallTransaction);
+    return await store.events.attachmentsLoad(userId, eventForStore, isExistingEvent, attachmentsItems, storeTransaction);
   }
 
-  async attachmentAdd(uid: string, eventDataWithoutNewAttachments: any, newAttachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
-    const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventDataWithoutNewAttachments.id);
-    const eventForStore = eventsUtils.convertEventToStore(storeId, eventDataWithoutNewAttachments);
-    const store = this.mall._storeForId(storeId);
-    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
+  async createWithAttachments(uid: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
+    const attachmentsResponse = await this.attachmentsLoad(uid, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
+    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutAttachments, attachmentsResponse, attachmentsItems);
+    return await this.create(uid, eventDataWithNewAttachments, mallTransaction);
+  }
 
-    try {
-      const res = await store.events.attachmentAdd(uid, eventForStore, newAttachmentsItems, finalizeEventCallBack, storeTransaction);
-      return eventsUtils.convertEventFromStore(store.id, res);
-    } catch (e) {
-      this.mall.throwAPIError(e, store.id);
-    }
-
-    //** This will be called when attachments have been saved on store */
-    async function finalizeEventCallBack(attachmentsResponse) {
-      const eventWithFullIds = _.cloneDeep(eventDataWithoutAttachments); // needed to compute integrity
-      
-      eventWithFullIds.attachments = eventWithFullIds.attachments || [];
-      for (let i = 0; i < attachmentsResponse.length; i++) {
-        eventWithFullIds.attachments.push({
-          id: attachmentsResponse[i].id, // ids comes from storage
-          fileName: attachmentsItems[i].fileName,
-          type: attachmentsItems[i].type,
-          size: attachmentsItems[i].size,
-          integrity: attachmentsItems[i].integrity,
-        });
-      }
-       
-      integrity.events.set(eventWithFullIds);
-
-      // Prepare result event 
-      const finalEventForStore = eventsUtils.convertEventToStore(store.id, eventWithFullIds);
-      return finalEventForStore;
-    }
+  async updateWithAttachments(uid: string, eventDataWithoutNewAttachments: any, newAttachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
+    const attachmentsResponse = await this.attachmentsLoad(uid, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
+    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, newAttachmentsItems);
+    return await this.update(uid, eventDataWithNewAttachments, mallTransaction);
   }
 
 
@@ -394,36 +339,54 @@ class StoreUserEvents {
   // ------------------- UTILS ---------//
 
   /**
- * Common utils for events.create and events.createWithAttachmentss
- * @param {*} eventData 
- * @param {*} mallTransaction 
- * @returns 
- */
-async _prepareForCreate(eventData, mallTransaction) {
-  
-  let storeId = null; 
-  let dummyId = null; // unused.
+   * Common utils for events.create and events.createWithAttachmentss
+   * @param {*} eventData 
+   * @param {*} mallTransaction 
+   * @returns 
+   */
+  async _prepareForStore(eventData, mallTransaction) {
+    
+    let storeId = null; 
+    let dummyId = null; // unused.
 
-  // add eventual missing id and get storeId from first streamId then 
-  if (eventData.id == null) {
-    [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[0]);
-    const prefix = (storeId == 'local') ? '' : ':' + storeId + ':';
-    eventData.id = prefix + cuid();
-  } else { // get storeId from event id 
-    [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    // add eventual missing id and get storeId from first streamId then 
+    if (eventData.id == null) {
+      [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[0]);
+      const prefix = (storeId == 'local') ? '' : ':' + storeId + ':';
+      eventData.id = prefix + cuid();
+    } else { // get storeId from event id 
+      [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    }
+
+    // set integrity
+    integrity.events.set(eventData);
+
+    // get an event ready for this store
+    const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
+
+    const store = this.mall._storeForId(storeId);
+    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
+
+    return { store, eventForStore, storeTransaction };
   }
-
-  // set integrity
-  integrity.events.set(eventData);
-
-  // get an event ready for this store
-  const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
-
-  const store = this.mall._storeForId(storeId);
-  const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
-
-  return { store, eventForStore, storeTransaction };
-}
 }
 
 module.exports = StoreUserEvents;
+
+/**
+ * Add attachment response to eventData
+ */
+_attachmentsResponseToEvent = function (eventDataWithoutNewAttachments, attachmentsResponse, attachmentsItems) {
+  const eventDataWithNewAttachments = _.cloneDeep(eventDataWithoutNewAttachments);
+  eventDataWithNewAttachments.attachments = eventDataWithNewAttachments.attachments || [];
+  for (let i = 0; i < attachmentsResponse.length; i++) {
+    eventDataWithNewAttachments.attachments.push({
+      id: attachmentsResponse[i].id, // ids comes from storage
+      fileName: attachmentsItems[i].fileName,
+      type: attachmentsItems[i].type,
+      size: attachmentsItems[i].size,
+      integrity: attachmentsItems[i].integrity,
+    });
+  }
+  return eventDataWithNewAttachments;
+}
