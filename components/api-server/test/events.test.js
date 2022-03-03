@@ -1739,10 +1739,15 @@ describe('events', function () {
     it('[73CD] must delete the event when already trashed including all its attachments', function (done) {
       var id = testData.events[0].id,
           deletionTime;
+      let event;
 
       async.series([
+          async function getEvent() {
+            event = await mall.events.getOne(user.id, id);
+          },
           async function trashEvent() {
-            await mall.events.update(user.id, id, {trashed: true});
+            event.trashed = true;
+            await mall.events.update(user.id, event);
           },
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {

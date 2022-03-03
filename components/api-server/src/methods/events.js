@@ -516,7 +516,7 @@ module.exports = async function (api)
       }
 
       result.event.attachments = attachments;
-      const updatedEvent = await mall.events.updateWithOriginal(context.user.id, result.event, { attachments });
+      const updatedEvent = await mall.events.update(context.user.id, result.event);
 
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];   
@@ -749,7 +749,7 @@ module.exports = async function (api)
 
 
     try {
-      const updatedEvent = await mall.events.updateReplace(context.user.id, context.newEvent);
+      const updatedEvent = await mall.events.update(context.user.id, context.newEvent);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
@@ -1139,10 +1139,9 @@ module.exports = async function (api)
   }
   
   async function flagAsTrashed(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const updatedData: {} = {
-      trashed: true
-    };
-    context.updateTrackingProperties(updatedData);
+    const newEvent = _.cloneDeep(context.oldEvent);
+    newEvent.trashed = true;
+    context.updateTrackingProperties(newEvent);
     try {
       if (context.doesEventBelongToAccountStream){
         await updateDeletionOnPlatform(
@@ -1151,9 +1150,9 @@ module.exports = async function (api)
           context.accountStreamId,
         );
       }
-    
-      const updatedEvent = await mall.events.updateWithOriginal(context.user.id, context.oldEvent, updatedData);
 
+      
+      const updatedEvent = await mall.events.update(context.user.id, newEvent);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams ---- WTF
@@ -1234,10 +1233,11 @@ module.exports = async function (api)
       const deletedAtt: Attachment = context.event.attachments[attIndex];
       context.event.attachments.splice(attIndex, 1);
 
-      const updatedData: {} = { attachments: context.event.attachments };
-      context.updateTrackingProperties(updatedData);
+      const newEvent = _.cloneDeep(context.oldEvent);
+      newEvent.attachments = context.event.attachments;
+      context.updateTrackingProperties(newEvent);
 
-      const alreadyUpdatedEvent = await mall.events.updateWithOriginal(context.user.id, context.oldEvent, updatedData);
+      const alreadyUpdatedEvent = await mall.events.update(context.user.id, newEvent);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams

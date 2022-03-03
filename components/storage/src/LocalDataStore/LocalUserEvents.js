@@ -32,24 +32,20 @@ class LocalUserEvents extends DataStore.UserEvents {
     this.eventsFileStorage = eventsFileStorage;
   }
 
-  async update(userId, eventId, fieldsToSet, fieldsToDelete, transaction) {
+  async update(userId, eventData, transaction) {
     try {
-      const update = {$set: Object.assign({}, fieldsToSet)};
-      if (fieldsToDelete != null && fieldsToDelete.length > 0) {
-        update.$unset = {};
-        fieldsToDelete.forEach(field => {
-          update.$unset[field] = 1;
-        });
-      }
-      const query = {userId: userId, _id: eventId};
-      const options = {  returnDocument: 'after' , transactionSession: transaction?.transactionSession };
-      const res = await this.eventsCollection.findOneAndUpdate(query, update, options);
-      return cleanResult(res);
+      const update = Object.assign({}, eventData);
+      update._id = update.id;
+      update.userId = userId;
+      delete update.id;
+
+      const query = {userId: userId, _id: update._id};
+      const options = {transactionSession: transaction?.transactionSession };
+      
+      const res = await this.eventsCollection.replaceOne(query, update, options);
+      const res2 = await this.eventsCollection.findOne({userId: userId, _id: update._id});
+      return (res.modifiedCount === 1); // true if an event was updated
     } catch (err) {
-      handleDuplicateError(err);
-      if (err.isDuplicateIndex != null && err.isDuplicateIndex('id')) {
-        throw errors.itemAlreadyExists('event', {id: eventId}, err);
-      }
       throw errors.unexpectedError(err);
     }
   }

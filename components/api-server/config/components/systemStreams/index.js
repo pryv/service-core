@@ -15,7 +15,7 @@ const validation = require('api-server/src/schema/validation');
 const string = require('api-server/src/methods/helpers/string');
 const slugify = require('slug');
 const systemStreamSchema = require('./systemStreamSchema');
-import type { SystemStream } from 'business/src/system-streams';
+import type { SystemStream } from 'business/src/system-streams';
 
 const IS_SHOWN: string = 'isShown';
 const IS_INDEXED: string = 'isIndexed';

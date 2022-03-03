@@ -94,15 +94,13 @@ class UserEvents {
     async addAttachment(uid: string, eventId: string, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.addAttachment')); }
 
   /**
-   * @see https://api.pryv.com/reference/#update-event
+   * Fully replace an event with new Data
    * @param {identifier} uid 
-   * @param {string} eventId 
-   * @param {any} fieldsToSet - Object with fields to set
-   * @param {Array<string>} fieldsToDelete - Array of fields to delete
+   * @param {any} eventData - New event data
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
-   * @returns {Event} - the updated event
+   * @returns {boolean} - true if an event was updated
    */
-   async update(uid: string, eventId: string, fieldsToSet: any, fieldsToDelete: Array<string>): Promise<void> { throw(errors.unsupportedOperation('events.update')); }
+  async update(uid: string, eventData: any): Promise<void> { throw(errors.unsupportedOperation('events.replace')); }
 
 
   /**
