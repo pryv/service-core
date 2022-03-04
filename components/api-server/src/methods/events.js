@@ -262,9 +262,6 @@ module.exports = async function (api)
     }
     
     event.tags = cleanupEventTags(event.tags);
-    
-    context.files = sanitizeRequestFiles(params.files);
-    delete params.files;
 
     context.initTrackingProperties(event);
     
@@ -429,12 +426,13 @@ module.exports = async function (api)
 
   async function createEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     let newEvent = null;
-
     // if event has attachments 
-    if (context.files != null && context.files.length > 0) {
+    const files = sanitizeRequestFiles(params.files);
+    delete params.files;
+    if (files != null && files.length > 0) {
 
       const attachmentItems = [];
-      for (const file of context.files) {
+      for (const file of files) {
         attachmentItems.push({
           fileName: file.originalname,
           type: file.mimetype,
@@ -506,28 +504,6 @@ module.exports = async function (api)
     };
   }
 
-  async function createAttachments(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-  
-    try {
-      const attachments = await attachFiles(context, { id: result.event.id }, context.files);
-
-      if (!attachments) {
-        return next();
-      }
-
-      result.event.attachments = attachments;
-      const updatedEvent = await mall.events.update(context.user.id, result.event);
-
-      // To remove when streamId not necessary
-      updatedEvent.streamId = updatedEvent.streamIds[0];   
-      result.event = updatedEvent;
-      result.event.attachments = setFileReadToken(context.access, result.event.attachments);
-      next();
-        
-    } catch (err) {
-      next(err);
-    }
-  }
 
   function addIntegrityToContext(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if(result?.event?.integrity != null ) {
@@ -686,22 +662,6 @@ module.exports = async function (api)
     }
   }
 
-  async function updateAttachments(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const eventInfo: {} = {
-      id: context.newEvent.id,
-      attachments: context.newEvent.attachments || []
-    };
-    try{
-      const attachments: Array<Attachment> = await attachFiles(context, eventInfo, sanitizeRequestFiles(params.files));
-      if (attachments) {
-        context.newEvent.attachments = attachments;
-      }
-      return next();
-    } catch (err) {
-      return next(err);
-    }
-  }
-
 
   /**
    * Do additional actions if event belongs to account stream
@@ -725,10 +685,13 @@ module.exports = async function (api)
   }
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (context.files != null && context.files.length > 0) {
+
+    const files = sanitizeRequestFiles(params.files);
+    delete params.files;
+    if (files != null && files.length > 0) {
 
       const attachmentItems = [];
-      for (const file of context.files) {
+      for (const file of files) {
         attachmentItems.push({
           fileName: file.originalname,
           type: file.mimetype,
@@ -738,12 +701,15 @@ module.exports = async function (api)
         });
       }
       try {
-        newEvent = await mall.events.createWithAttachments(context.user.id, context.newEvent,  attachmentItems);
-        newEvent.attachments = setFileReadToken(context.access, newEvent.attachments);
+        const updatedEvent = await mall.events.updateWithAttachments(context.user.id, context.newEvent,  attachmentItems);
+        updatedEvent.attachments = setFileReadToken(context.access, updatedEvent.attachments);
+        updatedEvent.streamId = updatedEvent.streamIds[0];
+        result.event = updatedEvent;
       } catch (err) {
         if (err instanceof APIError) return next(err);
         return next(errors.unexpectedError(err));
       }
+      return next(); // --- update has been done
     }
 
 
@@ -1231,28 +1197,25 @@ module.exports = async function (api)
         ));
       }
       const deletedAtt: Attachment = context.event.attachments[attIndex];
-      context.event.attachments.splice(attIndex, 1);
-
+      
       const newEvent = _.cloneDeep(context.oldEvent);
-      newEvent.attachments = context.event.attachments;
       context.updateTrackingProperties(newEvent);
-
-      const alreadyUpdatedEvent = await mall.events.update(context.user.id, newEvent);
+      const newEventData = await mall.events.updateDeleteAttachment(context.user.id, newEvent, params.fileId);
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
-      if (!alreadyUpdatedEvent) {
+      if (!newEventData) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
       }
 
       // To remove when streamId not necessary
-      alreadyUpdatedEvent.streamId = alreadyUpdatedEvent.streamIds[0];
+      newEventData.streamId = newEventData.streamIds[0];
 
-      result.event = alreadyUpdatedEvent;
+      result.event = newEventData;
       result.event.attachments = setFileReadToken(context.access, result.event.attachments);
 
-      await bluebird.fromCallback(cb => userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, cb));
+     
 
       const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
 

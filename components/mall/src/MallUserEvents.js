@@ -206,6 +206,11 @@ class StoreUserEvents {
     return await store.events.attachmentsLoad(userId, eventForStore, isExistingEvent, attachmentsItems, storeTransaction);
   }
 
+  async attachmentDelete(userId: string, eventData: any, attachmentId: string, mallTransaction?: MallTransaction) {
+    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
+    return await store.events.attachmentDelete(userId, eventForStore, attachmentId, storeTransaction);
+  }
+
   async createWithAttachments(uid: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
     const attachmentsResponse = await this.attachmentsLoad(uid, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
     const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutAttachments, attachmentsResponse, attachmentsItems);
@@ -216,6 +221,13 @@ class StoreUserEvents {
     const attachmentsResponse = await this.attachmentsLoad(uid, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
     const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, newAttachmentsItems);
     return await this.update(uid, eventDataWithNewAttachments, mallTransaction);
+  }
+
+  async updateDeleteAttachment(uid: string, eventData: any, attachmentId: string, mallTransaction?: MallTransaction): Promise<void> {
+    await this.attachmentDelete(uid, eventData, attachmentId, mallTransaction);
+    const newEventData = _.cloneDeep(eventData);
+    newEventData.attachments = newEventData.attachments.filter((attachment) => { return attachment.id !== attachmentId });
+    return await this.update(uid, newEventData, mallTransaction);
   }
 
 

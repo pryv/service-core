@@ -65,7 +65,7 @@ class UserEvents {
 
   /**
    * @param {identifier} uid
-   * @param {any} partialEventData - eventData (without attachments and integrity property)
+   * @param {any} partialEventData - eventData (without the new attachments and integrity property)
    * @param {boolean} isExistingEvent - true if the event already exists
    * @param {Array<AttachmentItem>} attachmentsItems - Array of attachments informations. 
    * @throws item-already-exists
@@ -74,6 +74,16 @@ class UserEvents {
    * @returns {AttachmentResponseItem} - The ids and other information related to the attachments
    */
   async attachmentsLoad(uid: string, partialEventData, isExistingEvent, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) { throw(errors.unsupportedOperation('events.attachmentsLoad')); }
+
+  /**
+   * @param {identifier} uid
+   * @param {any} eventData - eventData 
+   * @param {string} attachmentId - attachmentId
+   * @throws invalid-item-id
+   * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
+   * @returns {AttachmentResponseItem} - The ids and other information related to the attachments
+   */
+  async attachmentDelete(uid: string, eventData, attachmentId: string, transaction?: Transaction) { throw(errors.unsupportedOperation('events.attachmentDelete')); }
 
   /**
    * Fully replace an event with new Data

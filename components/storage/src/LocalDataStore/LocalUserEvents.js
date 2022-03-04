@@ -77,6 +77,17 @@ class LocalUserEvents extends DataStore.UserEvents {
     return attachmentsResponse;
   }
 
+  async attachmentDelete(uid: string, eventData, attachmentId: string, transaction?: Transaction) { 
+    for (const attachment of eventData.attachments) {
+      if (attachment.id === attachmentId) {
+        await this.eventsFileStorage.removeAttachedFile(uid, eventData.id, attachmentId);
+        return true;
+      }
+    }
+    return false;
+  }
+
+
   _getCursor(userId, params) {
     const {query, options} = paramsToMongoquery(params);
     query.userId = userId;
