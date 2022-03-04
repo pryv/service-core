@@ -143,6 +143,13 @@ class StoreUserEvents {
 
         // eventually remove fields from event
         if (update.fieldsToDelete && update.fieldsToDelete.length > 0) {
+          // remove attachments if needed
+          if (update.fieldsToDelete.includes('attachments') && eventData.attachments != null) {
+            for (let attachment of eventData.attachments) {
+              await mallEvents.attachmentDelete(uid, eventData, attachment.id, mallTransaction);
+            }
+          }
+
           for (let field of update.fieldsToDelete) {
             delete newEventData[field];
           }

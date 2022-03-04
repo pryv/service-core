@@ -128,6 +128,15 @@ class LocalUserEvents extends DataStore.UserEvents {
     const {query, options} = paramsToMongoquery(params);
     query.userId = userId;
     options.transactionSession = transaction?.transactionSession;
+
+    // logic might be adapated, but in case of delete the attachments are removed by the store
+    const queryForAttachments = _.clone(query);
+    queryForAttachments.attachments = {$exits: true, $ne: []};
+    const eventsWithAttachments = await this._getCursor(userId, queryForAttachments).toArray();
+    for (const eventWithAttachment of eventsWithAttachments) {
+      await this.eventsFileStorage.removeAllForEvent(userId, eventWithAttachment._id);
+    }
+    
     return await this.eventsCollection.deleteMany(query, options);
   }
 

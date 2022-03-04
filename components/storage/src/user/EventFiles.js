@@ -106,12 +106,10 @@ EventFiles.prototype.removeAttachedFile = async function (userId, eventId, fileI
   await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(filePath), cb));
 };
 
-EventFiles.prototype.removeAllForEvent = function (user, eventId, callback) {
-  var dirPath = this.getAttachmentPath(user.id, eventId);
-  rimraf(dirPath, function (err) {
-    if (err) { return callback(err); }
-    this.cleanupStructure(path.dirname(dirPath), callback);
-  }.bind(this));
+EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
+  var dirPath = this.getAttachmentPath(userId, eventId);
+  await bluebird.fromCallback((cb) => rimraf(dirPath, cb));
+  await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(dirPath), cb));
 };
 
 EventFiles.prototype.removeAllForUser = function (user, callback) {

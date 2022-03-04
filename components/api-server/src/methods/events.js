@@ -69,7 +69,6 @@ module.exports = async function (api)
 {
   const config = await getConfig();
   const storageLayer = await getStorageLayer();
-  const userEventFilesStorage = storageLayer.eventFiles;
   const userStreamsStorage = storageLayer.streams;
   const authSettings = config.get('auth');
   const eventTypesUrl = config.get('service:eventTypes');
@@ -534,7 +533,6 @@ module.exports = async function (api)
     validateSystemStreamsContent,
     validateAccountStreamsForUpdate,
     generateVersionIfNeeded,
-    //updateAttachments,
     appendAccountStreamsDataForUpdate,
     updateOnPlatform,
     updateEvent,
@@ -1021,46 +1019,6 @@ module.exports = async function (api)
     return tags;
   }
 
-  /**
-   * Saves the uploaded files (if any) as attachments, returning the corresponding attachments info.
-   *
-   * @param {Object} context
-   * @param {Object} eventInfo Expected properties: id, attachments
-   * @param files Express-style uploaded files object (as in req.files)
-   */
-  async function attachFiles(context: MethodContext, eventInfo: {}, files: Array<{}>) {
-    if (! files) return;
-
-    const attachments: Array<{}> = eventInfo.attachments ? eventInfo.attachments.slice() : [];
-
-    for (const file of files) {
-      //saveFile
-      const fileId: string = await userEventFilesStorage.saveAttachedFileFromTemp(file.path, context.user.id, eventInfo.id);
-
-      const attachmentData = {
-        id: fileId,
-        fileName: file.originalname,
-        type: file.mimetype,
-        size: file.size
-      };
-      if (file.integrity != null) attachmentData.integrity = file.integrity;
-
-      attachments.push(attachmentData);
-      
-      const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
-
-      // approximately update account storage size
-      storagedUsed.attachedFiles += file.size;
-      
-      await usersRepository.updateOne(
-        context.user,
-        { attachedFiles: storagedUsed.attachedFiles },
-        'system',
-      );
-    }
-    return attachments;
-  }
-
   // DELETION
 
   api.register('events.delete',
@@ -1143,7 +1101,7 @@ module.exports = async function (api)
       async function deleteHistoryCompletely() {
         if (auditSettings.deletionMode !== 'keep-nothing') return ;
         
-        await mall.events.delete(context.user.id, {headId: params.id, state: 'all'});
+        await mall.events.delete(context.user.id, {headId: params.id, state: 'all', includeDeletions: true});
       },
       async function minimizeHistory() {
         if (auditSettings.deletionMode !== 'keep-authors') {
@@ -1155,7 +1113,6 @@ module.exports = async function (api)
         const res = await mall.events.updateDeleteByMode(context.user.id, auditSettings.deletionMode, {id: params.id, state: 'all'});
         result.eventDeletion = { id: params.id };
       },
-      userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       async function () {
         const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
 
