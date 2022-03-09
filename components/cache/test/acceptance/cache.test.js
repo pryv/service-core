@@ -159,7 +159,6 @@ describe('Cache', function() {
   });
 
   it('[EO93]  Stream cache should be invalidated during a batch call that implies streams.create', async () => {
-    config.injectTestConfig({caching: {isActive : false }}); // deactivate cache
     cache.clear(); // reset cache fully
     const batchCall = [{
       method: 'streams.create',
