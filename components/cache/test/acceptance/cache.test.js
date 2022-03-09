@@ -158,13 +158,23 @@ describe('Cache', function() {
     assert.equal(res5.status, 403, 'should not have acces once move out of authorized scope');
   });
 
-  it('[EO93]  Stream cache should be invallidated during a batch call that implies streams.create', async () => {
+  it('[EO93]  Stream cache should be invalidated during a batch call that implies streams.create', async () => {
+    config.injectTestConfig({caching: {isActive : false }}); // deactivate cache
+    cache.clear(); // reset cache fully
     const batchCall = [{
       method: 'streams.create',
       params: {
         name: 'stream A3',
         parentId: 'A',
         id: 'A3'
+      }
+    }, {
+      method: 'events.create',
+      params: {
+        type: 'note/txt',
+        content: 'hello A3',
+        streamIds: ['A3'],
+        'time': 1646123703, 'clientData': {'acquisition_id': 'cl07vlzcy03cx1qp8gtp4g95r'}
       }
     }, {
       method: 'streams.create',
@@ -177,13 +187,16 @@ describe('Cache', function() {
       method: 'events.create',
       params: {
         type: 'note/txt',
-        content: 'hello',
+        content: 'hello A31',
         streamIds: ['A31']
       }
     }]
     const res = await coreRequest.post(batchPath).set('Authorization', appAccess.token).send(batchCall);
-    $$(res.body);
     assert.equal(res.status, 200);
+    assert.equal(res.body.results?.length, 4);
+    for (let result of res.body.results) {
+      assert.isUndefined(result.error);
+    }
   });
 
 });
