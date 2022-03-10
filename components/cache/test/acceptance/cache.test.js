@@ -159,7 +159,6 @@ describe('Cache', function() {
   });
 
   it('[EO93]  Stream cache should be invalidated during a batch call that implies streams.create', async () => {
-    cache.clear(); // reset cache fully
     const batchCall = [{
       method: 'streams.create',
       params: {
@@ -172,8 +171,7 @@ describe('Cache', function() {
       params: {
         type: 'note/txt',
         content: 'hello A3',
-        streamIds: ['A3'],
-        'time': 1646123703, 'clientData': {'acquisition_id': 'cl07vlzcy03cx1qp8gtp4g95r'}
+        streamIds: ['A3']
       }
     }, {
       method: 'streams.create',
