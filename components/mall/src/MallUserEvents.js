@@ -103,6 +103,7 @@ class StoreUserEvents {
    * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
    * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
    * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
+   * @param {Function} update.filter - function to filter events to update (return true to update)
    * @param {MallTransaction} mallTransaction
    * @returns Array of updated events
    */
@@ -124,6 +125,7 @@ class StoreUserEvents {
    * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
    * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
    * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
+   * @param {Function} update.filter - function to filter events to update (return true to update)
    * @param {MallTransaction} mallTransaction
    * @returns Streams of updated events
    */
@@ -150,8 +152,10 @@ class StoreUserEvents {
             delete newEventData[field];
           }
         }
-        const updatedEvent = await mallEvents.update(uid, newEventData, mallTransaction);
-        yield updatedEvent;
+        if (update.filter == null || update.filter(newEventData)) {
+          const updatedEvent = await mallEvents.update(uid, newEventData, mallTransaction);
+          yield updatedEvent;
+        }
       }
 
       // finish the iterator

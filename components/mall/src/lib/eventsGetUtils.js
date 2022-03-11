@@ -23,8 +23,6 @@
  * @property {timestamp} [toTime] - events with a time of endTime before this timestamp 
  * @property {timestamp} [modifiedSince] - events modified after this timestamp
  * @property {boolean} [running] - events with an EndTime "null"
- * @property {Object} [NOT] - events without the given field value
- * @property {string} [NOT.id] - events not matching this id (inconpatible with id)
  */
 
 /**

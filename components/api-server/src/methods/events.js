@@ -727,10 +727,13 @@ module.exports = async function (api)
     if (! context.removeActiveEvents) {
       return next();
     }
-    const query = {NOT: {id: result.event.id}, streams: [{any: [context.accountStreamId], and: [{any: [STREAM_ID_ACTIVE]}]}]};
+    const query = {streams: [{any: [context.accountStreamId], and: [{any: [STREAM_ID_ACTIVE]}]}]};
 
+    const filter = function(eventData) {
+      return eventData.id != result.event.id;
+    }
 
-    const updatedEvents = await mall.events.updateMany(context.user.id, query, { removeStreams: [STREAM_ID_ACTIVE]});
+    const updatedEvents = await mall.events.updateMany(context.user.id, query, { filter: filter, removeStreams: [STREAM_ID_ACTIVE]});
    
 
     next();

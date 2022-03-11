@@ -146,7 +146,6 @@ function cleanResult(result) {
  */
 function paramsToMongoquery(params) {
   const options = {
-    projection: params.returnOnlyIds ? {id: 1} : {},
     sort: { time: params.sortAscending ? 1 : -1 },
     skip: params.skip,
     limit: params.limit
@@ -236,14 +235,6 @@ function paramsToMongoquery(params) {
 
   if (params.modifiedSince != null) {
     query.modified = {$gt: params.modifiedSince};
-  }
-
-  // excludes. (only supported for ID.. specific to one updateEvent in SystemsStream .. might be removed)
-  if (params.NOT != null) {
-    if (params.NOT.id != null) {
-      if (query._id != null) throw new Error('NOT.id is not supported with id');
-      query._id = {$ne: params.NOT.id};
-    }
   }
   
   if (query.$and.length == 0) delete query.$and; // remove empty $and
