@@ -153,7 +153,7 @@ function paramsToMongoquery(params) {
   };
 
 
-  const query = {};
+  const query = {$and: []}; // add an empty $and query discard it at this end if empty 
 
   // trashed
   switch (params.state) {
@@ -190,7 +190,7 @@ function paramsToMongoquery(params) {
       query.headId = null;
     } else {
       if (params.id != null) { // get event and history of event
-        query.$or = [{_id: params.id}, {headId: params.id}];
+        query.$and.push({$or: [{_id: params.id}, {headId: params.id}]});
         delete query._id;
       }
       // if query.headId is undefined all history (in scope) will be returned
@@ -202,9 +202,9 @@ function paramsToMongoquery(params) {
   if (params.streams != null && params.streams.length != 0) {
     const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams);
     
-    if (streamsQuery.$or) query.$or = streamsQuery.$or;
+    if (streamsQuery.$or) query.$and.push({$or: streamsQuery.$or});
     if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
-    if (streamsQuery.$and) query.$and = streamsQuery.$and;
+    if (streamsQuery.$and) query.$and.push(...streamsQuery.$and);
   }
 
   if (params.types && params.types.length > 0) {
@@ -212,46 +212,30 @@ function paramsToMongoquery(params) {
     const types = params.types.map(getTypeQueryValue);
     query.type = {$in: types};
   }
-  if (params.fromTime != null) {
-    const timeQuery = [
-      { // Event started before fromTime, but finished inside from->to.
-        time: {$lt: params.fromTime},
-        endTime: {$gte: params.fromTime}
-      }
-    ];
-    if (params.toTime != null) {
-      timeQuery.push({ // Event has started inside the interval.
-        time: { $gte: params.fromTime, $lte: params.toTime }
-      });
-    }
-    
-    if (params.toTime == null || ( params.toTime + DELTA_TO_CONSIDER_IS_NOW) > (Date.now() / 1000)) { // toTime is null or greater than now();
-      params.running = true;
-    }
 
-    if (query.$or) { // mongo support only one $or .. so we nest them into a $and
-      if (! query.$and) query.$and = [];
-      query.$and.push({$or: query.$or});
-      query.$and.push({$or: timeQuery});
-      delete query.$or; // clean; 
-    } else {
-      query.$or = timeQuery;
-    }
-
-  }
+  // -------------- time selection -------------- //
   if (params.toTime != null) {
-    _.defaults(query, {time: {}});
-    query.time.$lte = params.toTime;
+    query.time = { $lte: params.toTime }
   }
+
+
+  // running
+  if (params.running) {
+    query.endTime = null;
+  } else if (params.fromTime != null) {
+    const now = Date.now() / 1000 - DELTA_TO_CONSIDER_IS_NOW;
+    if (params.fromTime <= now && ( params.toTime == null || params.toTime >= now)) { // timeFrame includes now
+      query.$and.push({ $or: [{ endTime: { $gte: params.fromTime } }, { endTime: null }] });
+    } else {
+      query.endTime = { $gte: params.fromTime };
+    }
+  }
+
+  // ----------- end time --//
+
+
   if (params.modifiedSince != null) {
     query.modified = {$gt: params.modifiedSince};
-  }
-  if (params.running) {
-    if (query.$or) { 
-      query.$or.push({endTime: null})
-    } else {
-      query.endTime = null; // matches when duration exists and is null
-    }
   }
 
   // excludes. (only supported for ID.. specific to one updateEvent in SystemsStream .. might be removed)
@@ -261,6 +245,8 @@ function paramsToMongoquery(params) {
       query._id = {$ne: params.NOT.id};
     }
   }
+  
+  if (query.$and.length == 0) delete query.$and; // remove empty $and
   return {query, options};
 }
 

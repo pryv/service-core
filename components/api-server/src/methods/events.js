@@ -54,7 +54,7 @@ import type { ApiCallback } from 'api-server/src/API';
 // for typing
 import type { Attachment, Event } from 'business/src/events';
 import type { Stream } from 'business/src/streams';
-import type { SystemStream } from 'business/src/system-streams';
+import type { SystemStream } from 'business/src/system-streams';
 
 // Type repository that will contain information about what is allowed/known
 // for events. 
