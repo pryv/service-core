@@ -262,7 +262,8 @@ class StoreUserEvents {
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     try {
-      const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all', limit: 1, includeDeletions: true });
+      const paramsForStore = prepareParamsForStore({ id: eventId, state: 'all', limit: 1, includeDeletions: true });
+      const events: Array<Events> = await store.events.get(uid, paramsForStore);
       if (events?.length === 1) return eventsUtils.convertEventFromStore(events[0]);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
@@ -283,7 +284,8 @@ class StoreUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        const events = await store.events.get(uid, params);
+        const paramsForStore = prepareParamsForStore(params);
+        const events = await store.events.get(uid, paramsForStore);
         for (let event of events) {
           res.push(eventsUtils.convertEventFromStore(event));
         }
@@ -309,7 +311,8 @@ class StoreUserEvents {
     const storeId = Object.keys(paramsByStore)[0];
     const store = this.mall._storeForId(storeId);
     try {
-      const eventsStreamFromDB = await store.events.getStreamed(uid, paramsByStore[storeId]);
+      const paramsForStore = prepareParamsForStore(paramsByStore[storeId]);
+      const eventsStreamFromDB = await store.events.getStreamed(uid, paramsForStore);
       const eventsStream = eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream());
       if (storeId == 'local') {
         return eventsStream;
@@ -361,7 +364,8 @@ class StoreUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        await store.events.delete(uid, params);
+        const paramsForStore = prepareParamsForStore(params);
+        await store.events.delete(uid, paramsForStore);
       } catch (e) {
         this.mall.throwAPIError(e, storeId);
       }
@@ -371,3 +375,59 @@ class StoreUserEvents {
 }
 
 module.exports = StoreUserEvents;
+
+function prepareParamsForStore(params) {
+  const options = {
+    sort: { time: params.sortAscending ? 1 : -1 },
+    skip: params.skip,
+    limit: params.limit
+  };
+
+  const query = {
+    equals: {},
+    gte: {},
+    gt: {},
+    lte: {},
+    or: [],
+  }
+
+  // [{ time: {$gt : 0}, time: {$lt : 2}], 
+  // [{$and: [{time: {$gt : 0}, head: 2}, {time: {$lt : 2}}]}]
+  //  (TIME > 0 AND HEAD > 2) AND TIME < 2
+
+  // trashed
+  switch (params.state) {
+    case 'trashed':
+      query.equals.trashed = true;
+      break;
+    case 'all':
+      break;
+    default:
+      query.equals.trashed = false;
+  }
+
+  // if getOne
+  if (params.id != null) {
+    query.equals.id = params.id;
+  }
+
+  // all deletions (tests only)
+  if (!params.includeDeletions) {
+    query.equals.deleted = null;
+  }
+
+  // onlyDeletions
+  if (params.deletedSince != null) {
+    query.gt.deleted = params.deletedSince;
+    options.sort = { deleted: -1 };
+  }
+
+
+  const res = {
+    todo : params,
+    options,
+    query
+  }
+
+  return res;
+}

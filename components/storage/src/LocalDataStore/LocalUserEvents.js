@@ -144,42 +144,45 @@ function cleanResult(result) {
  * @param {*} requestedType 
  * @returns 
  */
-function paramsToMongoquery(params) {
+function paramsToMongoquery(paramsTemp) {
+  const params = paramsTemp.todo;
   const options = {
-    sort: { time: params.sortAscending ? 1 : -1 },
-    skip: params.skip,
-    limit: params.limit
-  };
-
-
-  const query = {$and: []}; // add an empty $and query discard it at this end if empty 
-
-  // trashed
-  switch (params.state) {
-    case 'trashed':
-      query.trashed = true;
-      break;
-    case 'all':
-      break;
-    default:
-      query.trashed = false;
+    skip: paramsTemp.options.skip,
+    limit: paramsTemp.options.limit,
+    sort: paramsTemp.options.sort,
   }
 
-  // all deletions (tests only)
-  if (! params.includeDeletions) {
-    query.deleted = null;
-  }
+  
 
-  // onlyDeletions
-  if (params.deletedSince != null) {
-    query.deleted = {$gt: params.deletedSince};
-    options.sort = {deleted: -1};
-  }
+  function processQuery(subQuery = {} ) {
+    const res = {$and: []};
 
-  // if getOne
-  if (params.id != null) {
-    query._id = params.id;
+    for (const [comparisonKey, comparisonValue] of Object.entries({equals: '$eq', gt: '$gt', gte: '$gte', lt: '$lt', lte: '$lte'})) {
+      if (subQuery[comparisonKey] != null) {
+        for (const [key, value] of Object.entries(subQuery[comparisonKey])) {
+          const mongoKey = key === 'id' ? '_id' : key;
+          res[mongoKey] = {[comparisonValue]: value};
+        }
+      }
+    }
+
+    if (subQuery.or != null) {
+      const orItems = [];
+      for (const or in subQuery.or) {
+        orItems.push(processQuery(or));
+      }
+      res.$and.push({$or: orItems});
+    }
+
+    if (subQuery.and != null) {
+      const orItems = [];
+      res.$and.push(processQuery(subQuery.and));
+    }
+
+    return res;
   }
+  const query = processQuery(paramsTemp.query);
+  query.$and = []; 
 
   // history
   if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
