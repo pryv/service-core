@@ -388,9 +388,6 @@ function prepareParamsForStore(params) {
     greaterThan: {},
   }
 
-  // [{ time: {$gt : 0}, time: {$lt : 2}], 
-  // [{$and: [{time: {$gt : 0}, head: 2}, {time: {$lt : 2}}]}]
-  //  (TIME > 0 AND HEAD > 2) AND TIME < 2
 
   // trashed
   switch (params.state) {
@@ -408,15 +405,14 @@ function prepareParamsForStore(params) {
     query.equals.id = params.id;
   }
 
-  // all deletions (tests only)
-  if (!params.includeDeletions) {
-    query.equals.deleted = null;
-  }
-
-  // onlyDeletions
   if (params.deletedSince != null) {
     query.greaterThan.deleted = params.deletedSince;
     options.sort = { deleted: -1 };
+  } else {
+    // all deletions (tests only)
+    if (!params.includeDeletions) {
+      query.equals.deleted = null; // <<== actual default value
+    }  
   }
 
   // mondified since

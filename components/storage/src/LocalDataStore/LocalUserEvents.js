@@ -140,6 +140,12 @@ function cleanResult(result) {
 }
 
 
+const converters = {
+  equals: (key, value) => { return {[key]: {$eq :value}}},
+  greaterThan: (key, value) => { return {[key]: {$gt :value}}},
+}
+
+
 /**
  * transform params to mongoQuery 
  * @param {*} requestedType 
@@ -152,34 +158,19 @@ function paramsToMongoquery(paramsTemp) {
     limit: paramsTemp.options.limit,
     sort: paramsTemp.options.sort,
   }
-
+  const query = {$and: []};
   
-
-  function processQuery(subQuery = {} ) {
-    const res = {$and: []};
-
-    for (const [comparisonKey, comparisonValue] of Object.entries({equals: '$eq', greaterThan: '$gt', gte: '$gte', lt: '$lt', lte: '$lte'})) {
-      if (subQuery[comparisonKey] != null) {
-        for (const [key, value] of Object.entries(subQuery[comparisonKey])) {
-          const mongoKey = key === 'id' ? '_id' : key;
-          res[mongoKey] = {[comparisonValue]: value};
-        }
+  
+  for (const [selector, content] of Object.entries(paramsTemp.query)) {
+    const items = Array.isArray(content) ? content : [content]; // if it's a single item, make it an array
+    for (const item of items) {
+      for (const [field, value] of Object.entries(item)) {
+        const realField = field === 'id' ? '_id' : field;
+        query.$and.push(converters[selector](realField, value));
       }
     }
-
-    if (subQuery.or != null) {
-      const orItems = [];
-      for (const or in subQuery.or) {
-        orItems.push(processQuery(or));
-      }
-      res.$and.push({$or: orItems});
-    }
-
-    return res;
   }
-  const query = processQuery(paramsTemp.query);
-  query.$and = []; 
-
+  //$$(paramsTemp, query, query2);
  
  
   // if streams are defined
@@ -187,7 +178,7 @@ function paramsToMongoquery(paramsTemp) {
     const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams);
     
     if (streamsQuery.$or) query.$and.push({$or: streamsQuery.$or});
-    if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
+    if (streamsQuery.streamIds) query.$and.push({streamIds: streamsQuery.streamIds});
     if (streamsQuery.$and) query.$and.push(...streamsQuery.$and);
   }
 
