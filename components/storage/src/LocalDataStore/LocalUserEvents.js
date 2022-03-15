@@ -139,6 +139,7 @@ function cleanResult(result) {
   return value
 }
 
+
 /**
  * transform params to mongoQuery 
  * @param {*} requestedType 
@@ -157,7 +158,7 @@ function paramsToMongoquery(paramsTemp) {
   function processQuery(subQuery = {} ) {
     const res = {$and: []};
 
-    for (const [comparisonKey, comparisonValue] of Object.entries({equals: '$eq', gt: '$gt', gte: '$gte', lt: '$lt', lte: '$lte'})) {
+    for (const [comparisonKey, comparisonValue] of Object.entries({equals: '$eq', greaterThan: '$gt', gte: '$gte', lt: '$lt', lte: '$lte'})) {
       if (subQuery[comparisonKey] != null) {
         for (const [key, value] of Object.entries(subQuery[comparisonKey])) {
           const mongoKey = key === 'id' ? '_id' : key;
@@ -174,31 +175,12 @@ function paramsToMongoquery(paramsTemp) {
       res.$and.push({$or: orItems});
     }
 
-    if (subQuery.and != null) {
-      const orItems = [];
-      res.$and.push(processQuery(subQuery.and));
-    }
-
     return res;
   }
   const query = processQuery(paramsTemp.query);
   query.$and = []; 
 
-  // history
-  if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
-    query.headId = params.headId;
-  } else {
-    if (! params.includeHistory) { // no history;
-      query.headId = null;
-    } else {
-      if (params.id != null) { // get event and history of event
-        query.$and.push({$or: [{_id: params.id}, {headId: params.id}]});
-        delete query._id;
-      }
-      // if query.headId is undefined all history (in scope) will be returned
-      options.sort.modified = 1; // also sort by modified time when history is requested
-    }
-  }
+ 
  
   // if streams are defined
   if (params.streams != null && params.streams.length != 0) {
@@ -235,11 +217,6 @@ function paramsToMongoquery(paramsTemp) {
 
   // ----------- end time --//
 
-
-  if (params.modifiedSince != null) {
-    query.modified = {$gt: params.modifiedSince};
-  }
-  
   if (query.$and.length == 0) delete query.$and; // remove empty $and
   return {query, options};
 }

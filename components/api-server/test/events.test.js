@@ -1762,7 +1762,7 @@ describe('events', function () {
             });
           },
           async function verifyEventData() {
-            let events = await mall.events.get(user.id, {state: 'all', deletedSince: 0, includeHistory: true});
+            let events = await mall.events.get(user.id, {state: 'all', deletedSince: 0});
 
             var deletion = _.find(events, function (event) {
               return event.id === id;

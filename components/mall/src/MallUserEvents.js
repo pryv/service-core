@@ -385,10 +385,7 @@ function prepareParamsForStore(params) {
 
   const query = {
     equals: {},
-    gte: {},
-    gt: {},
-    lte: {},
-    or: [],
+    greaterThan: {},
   }
 
   // [{ time: {$gt : 0}, time: {$lt : 2}], 
@@ -418,10 +415,23 @@ function prepareParamsForStore(params) {
 
   // onlyDeletions
   if (params.deletedSince != null) {
-    query.gt.deleted = params.deletedSince;
+    query.greaterThan.deleted = params.deletedSince;
     options.sort = { deleted: -1 };
   }
 
+  // mondified since
+  if (params.modifiedSince != null) {
+    query.greaterThan.modified = params.modifiedSince;
+  }
+  
+   // history
+  if (! params.includeHistory) { // no history;
+    query.equals.headId = null;
+  }
+  if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
+    query.equals.headId = params.headId;
+    options.sort.modified = 1; // also sort by modified time when history is requested
+  } 
 
   const res = {
     todo : params,

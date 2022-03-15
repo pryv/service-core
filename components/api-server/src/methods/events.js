@@ -212,7 +212,7 @@ module.exports = async function (api)
     // now that mall.events.get return all in a single call, it coul be implement all at once
 
     try {
-      const events = await mall.events.get(context.user.id, {id: params.id, state: 'all', includeDeletions: true, includeHistory: true});
+      const events = await mall.events.get(context.user.id, {state: 'all', includeDeletions: true, headId: params.id});
    
       result.history = [];
      
