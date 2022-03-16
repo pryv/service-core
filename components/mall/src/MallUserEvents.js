@@ -21,6 +21,8 @@ const { Readable } = require('stream');
 
 const cuid = require('cuid');
 
+const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
+
 const DELETION_MODES_FIELDS = {
   'keep-authors': [
     'streamIds', 'time',
@@ -383,51 +385,77 @@ function prepareParamsForStore(params) {
     limit: params.limit
   };
 
-  const query = {
-    equals: {},
-    greaterThan: {},
-  }
+  const query = [];
 
 
   // trashed
   switch (params.state) {
     case 'trashed':
-      query.equals.trashed = true;
+      query.push({type: 'equal', content: {field: 'trashed', value: true}});
       break;
     case 'all':
       break;
     default:
-      query.equals.trashed = false;
+      query.push({type: 'equal', content:{ field: 'trashed', value: false}});
   }
 
   // if getOne
   if (params.id != null) {
-    query.equals.id = params.id;
+    query.push({type: 'equal', content:{ field: 'id', value: params.id}});
   }
 
   if (params.deletedSince != null) {
-    query.greaterThan.deleted = params.deletedSince;
+    query.push({type: 'greater', content:{ field: 'deleted', value: params.deletedSince}});
     options.sort = { deleted: -1 };
   } else {
     // all deletions (tests only)
     if (!params.includeDeletions) {
-      query.equals.deleted = null; // <<== actual default value
+      query.push({type: 'equal', content:{field: 'deleted', value: null}}); // <<== actual default value
     }  
   }
 
   // mondified since
   if (params.modifiedSince != null) {
-    query.greaterThan.modified = params.modifiedSince;
+    query.push({type: 'greater', content:{ field: 'modified', value: params.modifiedSince}});
+  }
+
+  // types
+  if (params.types && params.types.length > 0) {
+    query.push({type: 'typesList', content: params.types});
   }
   
    // history
-  if (! params.includeHistory) { // no history;
-    query.equals.headId = null;
-  }
-  if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
-    query.equals.headId = params.headId;
+   if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
+    query.push({type: 'equal', content: {field: 'headId', value: params.headId}});
     options.sort.modified = 1; // also sort by modified time when history is requested
-  } 
+  } else if (! params.includeHistory) { // no history;
+    query.push({type: 'equal', content: {field: 'headId', value: null}});
+  }
+  
+  // if streams are defined
+  if (params.streams != null && params.streams.length != 0) {
+    query.push({type: 'streamsQuery', content: params.streams});
+  }
+
+
+  // -------------- time selection -------------- //
+  if (params.toTime != null) {
+    query.push({type: 'lowerOrEqual', content: { field: 'time', value: params.toTime }});
+  }
+
+
+  // running
+  if (params.running) {
+    query.push({type: 'equal', content: {field: 'endTime', value: null}});
+  } else if (params.fromTime != null) {
+    const now = Date.now() / 1000 - DELTA_TO_CONSIDER_IS_NOW;
+    if (params.fromTime <= now && ( params.toTime == null || params.toTime >= now)) { // timeFrame includes now
+      query.push({type: 'greaterOrEqualOrNull', content: { field: 'endTime', value: params.fromTime }});
+     
+    } else {
+      query.push({type: 'greaterOrEqual', content: {field: 'endTime', value: params.fromTime}});
+    }
+  }
 
   const res = {
     todo : params,

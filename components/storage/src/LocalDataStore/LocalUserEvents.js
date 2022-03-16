@@ -21,7 +21,7 @@ const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUt
 const {DataStore, errors}  = require('pryv-datastore');
 const handleDuplicateError = require('../Database').handleDuplicateError;
 
-const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
+
 class LocalUserEvents extends DataStore.UserEvents {
   eventsCollection: any;
 
@@ -141,8 +141,29 @@ function cleanResult(result) {
 
 
 const converters = {
-  equals: (key, value) => { return {[key]: {$eq :value}}},
-  greaterThan: (key, value) => { return {[key]: {$gt :value}}},
+  equal: (content) => { 
+    const realfield = (content.field === 'id') ? '_id' : content.field;
+    return {[realfield]: {$eq : content.value}}
+  },
+  greater: (content) => { 
+    return {[content.field]: {$gt :content.value}}
+  },
+  greaterOrEqual: (content) => { 
+    return {[content.field]: {$gte :content.value}}
+  },
+  lowerOrEqual: (content) => { 
+    return {[content.field]: {$lte :content.value}}
+  },
+  greaterOrEqualOrNull: (content) => { 
+    return { $or: [{ [content.field]: { $gte: content.value } }, { [content.field]: null }] }
+  },
+  typesList: (list) => { 
+    if (list.length == 0) return null;
+    return {type: {$in: list.map(getTypeQueryValue)}}
+  },
+  streamsQuery: (content) => {
+    return streamsQueryUtils.toMongoDBQuery(content)
+  }
 }
 
 
@@ -161,53 +182,14 @@ function paramsToMongoquery(paramsTemp) {
   const query = {$and: []};
   
   
-  for (const [selector, content] of Object.entries(paramsTemp.query)) {
-    const items = Array.isArray(content) ? content : [content]; // if it's a single item, make it an array
-    for (const item of items) {
-      for (const [field, value] of Object.entries(item)) {
-        const realField = field === 'id' ? '_id' : field;
-        query.$and.push(converters[selector](realField, value));
-      }
-    }
-  }
-  //$$(paramsTemp, query, query2);
- 
- 
-  // if streams are defined
-  if (params.streams != null && params.streams.length != 0) {
-    const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams);
-    
-    if (streamsQuery.$or) query.$and.push({$or: streamsQuery.$or});
-    if (streamsQuery.streamIds) query.$and.push({streamIds: streamsQuery.streamIds});
-    if (streamsQuery.$and) query.$and.push(...streamsQuery.$and);
-  }
-
-  if (params.types && params.types.length > 0) {
-    // unofficially accept wildcard for sub-type parts
-    const types = params.types.map(getTypeQueryValue);
-    query.type = {$in: types};
-  }
-
-  // -------------- time selection -------------- //
-  if (params.toTime != null) {
-    query.time = { $lte: params.toTime }
-  }
-
-
-  // running
-  if (params.running) {
-    query.endTime = null;
-  } else if (params.fromTime != null) {
-    const now = Date.now() / 1000 - DELTA_TO_CONSIDER_IS_NOW;
-    if (params.fromTime <= now && ( params.toTime == null || params.toTime >= now)) { // timeFrame includes now
-      query.$and.push({ $or: [{ endTime: { $gte: params.fromTime } }, { endTime: null }] });
-    } else {
-      query.endTime = { $gte: params.fromTime };
+  for (const item of paramsTemp.query) {
+    const newCondition = converters[item.type](item.content);
+    if (newCondition != null) {
+      query.$and.push(newCondition);
     }
   }
 
-  // ----------- end time --//
-
+  //$$({query, paramsTemp});
   if (query.$and.length == 0) delete query.$and; // remove empty $and
   return {query, options};
 }
