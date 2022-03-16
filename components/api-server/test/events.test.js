@@ -1762,13 +1762,7 @@ describe('events', function () {
             });
           },
           async function verifyEventData() {
-            let events = await mall.events.get(user.id, {state: 'all', includeDeletions: true, includeHistory: true});
-            const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
-            events = separatedEvents.events;
-            const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-            validation.validateAccountEvents(actualAccountStreamsEvents);
-
-            events.length.should.eql(testData.events.length, 'events');
+            let events = await mall.events.get(user.id, {state: 'all', deletedSince: 0});
 
             var deletion = _.find(events, function (event) {
               return event.id === id;

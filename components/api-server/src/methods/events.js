@@ -212,7 +212,7 @@ module.exports = async function (api)
     // now that mall.events.get return all in a single call, it coul be implement all at once
 
     try {
-      const events = await mall.events.get(context.user.id, {id: params.id, state: 'all', includeDeletions: true, includeHistory: true});
+      const events = await mall.events.get(context.user.id, {state: 'all', includeDeletions: true, headId: params.id});
    
       result.history = [];
      
@@ -739,10 +739,13 @@ module.exports = async function (api)
     if (! context.removeActiveEvents) {
       return next();
     }
-    const query = {NOT: {id: result.event.id}, streams: [{any: [context.accountStreamId], and: [{any: [STREAM_ID_ACTIVE]}]}]};
+    const query = {streams: [{any: [context.accountStreamId], and: [{any: [STREAM_ID_ACTIVE]}]}]};
 
+    const filter = function(eventData) {
+      return eventData.id != result.event.id;
+    }
 
-    const updatedEvents = await mall.events.updateMany(context.user.id, query, { removeStreams: [STREAM_ID_ACTIVE]});
+    const updatedEvents = await mall.events.updateMany(context.user.id, query, { filter: filter, removeStreams: [STREAM_ID_ACTIVE]});
    
 
     next();
