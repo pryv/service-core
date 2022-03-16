@@ -18,23 +18,23 @@ const ALL_EVENTS_TAG = '..';
 
 
 const dbSchema = { 
-  eventid : {type: 'TEXT UNIQUE', index: true},
-  headId : {type: 'TEXT'},
-  streamIds: {type: 'TEXT'},
-  time: {type: 'REAL', index: true},
-  deleted: {type: 'REAL', index: true},
-  endTime: {type: 'REAL', index: true},
-  type: {type: 'TEXT', index: true},
-  content: {type: 'TEXT'},
-  description: {type: 'TEXT'},
-  clientData: {type: 'TEXT'},
-  integrity: {type: 'TEXT'},
-  attachments: {type: 'TEXT'},
-  trashed: {type: 'INTEGER DEFAULT 0', index: true},
-  created: {type: 'REAL', index: true},
-  createdBy: {type: 'TEXT', index: true},
-  modified: {type: 'READ', index: true},
-  modifiedBy: {type: 'TEXT', index: true}
+  eventid : {type: 'TEXT UNIQUE', index: true, coerce: 'txt'},
+  headId : {type: 'TEXT DEFAULT NULL', coerce: 'txt'},
+  streamIds: {type: 'TEXT', coerce: 'txt'},
+  time: {type: 'REAL', index: true, coerce: 'num'},
+  deleted: {type: 'REAL DEFAULT NULL', index: true, coerce: 'num'},
+  endTime: {type: 'REAL', index: true, coerce: 'num'},
+  type: {type: 'TEXT', index: true, coerce: 'txt'},
+  content: {type: 'TEXT', coerce: 'txt'},
+  description: {type: 'TEXT', coerce: 'txt'},
+  clientData: {type: 'TEXT', coerce: 'txt'},
+  integrity: {type: 'TEXT', coerce: 'txt'},
+  attachments: {type: 'TEXT', coerce: 'txt'},
+  trashed: {type: 'INTEGER DEFAULT 0', index: true, coerce: 'bool'},
+  created: {type: 'REAL', index: true, coerce: 'num'},
+  createdBy: {type: 'TEXT', index: true, coerce: 'txt'},
+  modified: {type: 'REAL', index: true, coerce: 'num'},
+  modifiedBy: {type: 'TEXT', index: true, coerce: 'txt'}
 }
 
 /**
@@ -122,11 +122,30 @@ function eventFromDB(event, addStorePrefix = false) {
   return event;
 }
 
+/**
+ * - Add eventual '' to values that are not of type "REAL" and escape eventual '
+ * - Transform booleans to 0/1
+ * - Check that numbers are numbers
+ * Does not handle "null" values
+ * @param {*} column 
+ * @param {*} value 
+ */
+function coerceSelectValueForCollumn(column, value) {
+  return coerces[dbSchema[column].coerce](value);
+}
+
+const coerces = {
+  'txt': (value) => {return "'" + (value + '').replaceAll("'", "\\'") + "'"},
+  'num': (value) => {return (typeof value === 'number') ? value : parseFloat(value)},
+  'bool': (value) => {return value ? 1 : 0}
+}
+
 
 module.exports = {
   eventToDB : eventToDB,
   eventFromDB: eventFromDB,
-  dbSchema: dbSchema
+  dbSchema: dbSchema,
+  coerceSelectValueForCollumn
 }
 
 

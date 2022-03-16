@@ -217,132 +217,62 @@ function prepareEventsGetQuery(params) {
   return 'SELECT * FROM events_fts ' + prepareQuery(params);
 }
 
+const converters = {
+  equal: (content) => { 
+    if (content.value === null) return `${content.field} IS NULL`;
+    const value = events.coerceSelectValueForCollumn(content.field, content.value);
+    return `${content.field} = ${value}`;
+  },
+  greater: (content) => { 
+    const value = events.coerceSelectValueForCollumn(content.field, content.value);
+    return `${content.field} > ${value}`;
+  },
+  greaterOrEqual: (content) => {
+    const value = events.coerceSelectValueForCollumn(content.field, content.value);
+    return `${content.field} >= ${value}`;
+  },
+  lowerOrEqual: (content) => { 
+    const value = events.coerceSelectValueForCollumn(content.field, content.value);
+    return `${content.field} <= ${value}`;
+  },
+  greaterOrEqualOrNull: (content) => { 
+    const value = events.coerceSelectValueForCollumn(content.field, content.value);
+    return `(${content.field} >= ${value} OR ${content.field} IS NULL)`;
+  },
+  typesList: (list) => { 
+    if (list.length == 0) return null;
+    const lt = list.map((type) => {
+      const typeCorced = events.coerceSelectValueForCollumn('type', type);
+      return `type = '${typeCorced}'`
+    });
+    return '('+ lt.join(' OR ') + ')';
+  },
+  streamsQuery: (content) => {
+    const str = toSQLiteQuery(content);
+    if (str === null) return null;
+    return 'streamIds MATCH \'' + str + '\'';
+  }
+}
 
-function prepareQuery(params = {}, forDelete = false) {
+
+function prepareQuery(params = {}) {
   const ands = [];
-  let specialSort = null;
-  const orderBy = [];
 
-  // trashed
-  switch (params.state) {
-    case 'trashed':
-      ands.push('trashed = 1');
-      break;
-    case 'all':
-      break;
-    default:
-      ands.push('trashed = 0');
-  }
-
-  let deletedAnd = null;
-  // all deletions (tests only)
-  if (! params.includeDeletions) {
-    deletedAnd = 'deleted IS NULL';
-  }
-
-  // onlyDeletions
-  if (params.deletedSince != null) {
-    deletedAnd = 'deleted > ' + params.deletedSince;
-    specialSort = 'deleted';
-  }
-  if (deletedAnd != null) {
-    ands.push(deletedAnd);
-  }
- 
-
-  
-  if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
-    ands.push('headId = \'' + params.headId + '\'');
-  } else {
-    if (! params.includeHistory) { // no history;
-      ands.push('headId IS NULL');
-    } else {
-      if (params.id != null) { // get event and history of event
-        ands.push('( eventid = \'' + params.id + '\' OR headId = \'' + params.id + '\' )');
-      }
+  for (const item of params.query) {
+    const newCondition = converters[item.type](item.content);
+    if (newCondition != null) {
+      ands.push(newCondition);
     }
   }
-
-  // if getOne
-  if (params.id != null && (params.headId == null && ! params.includeHistory)) {
-    ands.push('eventid = \'' + params.id + '\'');
-  }
-
-  if (params.types != null) {
-    ands.push('type IN (\'' + params.types.join('\', \'') + '\')');
-  } 
-
-  // -- start time query 
-
-  const timeQuery = [];
-  if (params.fromTime != null) {
-    timeQuery.push('( time < ' + params.fromTime + ' AND endTime >= ' + params.fromTime + ' )');
-  
-    if (params.toTime != null)  
-      timeQuery.push('( time >= ' + params.fromTime + ' AND time <= ' + params.toTime + ' )');
-  }
-
-  if (params.running || ( params.toTime != null && ( (params.toTime + DELTA_TO_CONSIDER_IS_NOW) > (Date.now() / 1000) ) )) { // toTime is null or greater than now();
-    timeQuery.push('endTime IS NULL');
-  }
-  
-  if (timeQuery.length > 0) {
-    ands.push('(' + timeQuery.join(' OR ') + ')');
-  }
-
-  // -- end time query 
-
-
-  if (params.modifiedSince != null) {
-    ands.push('modified <= ' +  params.modifiedSince);
-  }
-
-    
-  if (params.createdBy != null) {
-    ands.push('createdBy = \'' + params.createdBy + '\'');
-  }
-
-  if (params.streams != null) {
-    const str = toSQLiteQuery(params.streams);
-    if (str) ands.push('streamIds MATCH \'' + str + '\'');
-  }
-
-  // excludes. (only supported for ID.. specific to one updateEvent in SystemsStream .. might be removed)
-  if (params.NOT != null) {
-    if (params.NOT.id != null) {
-      if (params.id != null) throw new Error('NOT.id is not supported with id');
-      ands.push('eventid != \'' + params.NOT.id + '\'');
-    }
-  }
-
 
   let queryString = '';
-
   if (ands.length > 0) {
     queryString += ' WHERE ' + ands.join(' AND ') ;
   }
   
-  if (!forDelete) {
-
-    const orderBy = specialSort || ' time ';
-    if (params.sortAscending) {
-      queryString += ' ORDER BY ' + orderBy + ' ASC';
-    } else { 
-      queryString += ' ORDER BY '  + orderBy + ' DESC';
-    }
-
-    if (params.includeHistory) {
-      queryString += ', modified ASC'
-    }
-
-    if (params.limit) {
-      queryString += ' LIMIT ' + params.limit;
-    }
+  if (params.options?.limit) {
+    queryString += ' LIMIT ' + params.options.limit;
   }
-
- 
-
-  //console.log(params, queryString);
   return queryString;
 }
 

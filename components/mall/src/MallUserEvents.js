@@ -20,8 +20,6 @@ const { Readable } = require('stream');
 
 const cuid = require('cuid');
 
-const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
-
 const DELETION_MODES_FIELDS = {
   'keep-authors': [
     'streamIds', 'time',
@@ -257,7 +255,7 @@ class StoreUserEvents {
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     try {
-      const paramsForStore = prepareParamsForStore({ id: eventId, state: 'all', limit: 1, includeDeletions: true });
+      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore({ id: eventId, state: 'all', limit: 1, includeDeletions: true });
       const events: Array<Events> = await store.events.get(uid, paramsForStore);
       if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
     } catch (e) {
@@ -279,7 +277,7 @@ class StoreUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        const paramsForStore = prepareParamsForStore(params);
+        const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(params);
         const events = await store.events.get(uid, paramsForStore);
         for (let event of events) {
           res.push(eventsUtils.convertEventFromStore(storeId, event));
@@ -306,7 +304,7 @@ class StoreUserEvents {
     const storeId = Object.keys(paramsByStore)[0];
     const store = this.mall._storeForId(storeId);
     try {
-      const paramsForStore = prepareParamsForStore(paramsByStore[storeId]);
+      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(paramsByStore[storeId]);
       const eventsStreamFromDB = await store.events.getStreamed(uid, paramsForStore);
       return eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream(storeId));
    } catch (e) {
@@ -354,7 +352,7 @@ class StoreUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        const paramsForStore = prepareParamsForStore(params);
+        const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(params);
         await store.events.delete(uid, paramsForStore);
       } catch (e) {
         this.mall.throwAPIError(e, storeId);
@@ -420,89 +418,3 @@ function _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachments
   return eventDataWithNewAttachments;
 }
 
-function prepareParamsForStore(params) {
-  const options = {
-    sort: { time: params.sortAscending ? 1 : -1 },
-    skip: params.skip,
-    limit: params.limit
-  };
-
-  const query = [];
-
-
-  // trashed
-  switch (params.state) {
-    case 'trashed':
-      query.push({type: 'equal', content: {field: 'trashed', value: true}});
-      break;
-    case 'all':
-      break;
-    default:
-      query.push({type: 'equal', content:{ field: 'trashed', value: false}});
-  }
-
-  // if getOne
-  if (params.id != null) {
-    query.push({type: 'equal', content:{ field: 'id', value: params.id}});
-  }
-
-  if (params.deletedSince != null) {
-    query.push({type: 'greater', content:{ field: 'deleted', value: params.deletedSince}});
-    options.sort = { deleted: -1 };
-  } else {
-    // all deletions (tests only)
-    if (!params.includeDeletions) {
-      query.push({type: 'equal', content:{field: 'deleted', value: null}}); // <<== actual default value
-    }  
-  }
-
-  // mondified since
-  if (params.modifiedSince != null) {
-    query.push({type: 'greater', content:{ field: 'modified', value: params.modifiedSince}});
-  }
-
-  // types
-  if (params.types && params.types.length > 0) {
-    query.push({type: 'typesList', content: params.types});
-  }
-  
-   // history
-   if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
-    query.push({type: 'equal', content: {field: 'headId', value: params.headId}});
-    options.sort.modified = 1; // also sort by modified time when history is requested
-  } else if (! params.includeHistory) { // no history;
-    query.push({type: 'equal', content: {field: 'headId', value: null}});
-  }
-  
-  // if streams are defined
-  if (params.streams != null && params.streams.length != 0) {
-    query.push({type: 'streamsQuery', content: params.streams});
-  }
-
-
-  // -------------- time selection -------------- //
-  if (params.toTime != null) {
-    query.push({type: 'lowerOrEqual', content: { field: 'time', value: params.toTime }});
-  }
-
-
-  // running
-  if (params.running) {
-    query.push({type: 'equal', content: {field: 'endTime', value: null}});
-  } else if (params.fromTime != null) {
-    const now = Date.now() / 1000 - DELTA_TO_CONSIDER_IS_NOW;
-    if (params.fromTime <= now && ( params.toTime == null || params.toTime >= now)) { // timeFrame includes now
-      query.push({type: 'greaterOrEqualOrNull', content: { field: 'endTime', value: params.fromTime }});
-     
-    } else {
-      query.push({type: 'greaterOrEqual', content: {field: 'endTime', value: params.fromTime}});
-    }
-  }
-
-  const res = {
-    options,
-    query
-  }
-
-  return res;
-}
