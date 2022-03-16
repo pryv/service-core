@@ -500,7 +500,6 @@ function prepareParamsForStore(params) {
   }
 
   const res = {
-    todo : params,
     options,
     query
   }
