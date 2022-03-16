@@ -73,36 +73,4 @@ class LocalDataStoreSQLite extends DataStore {
 
 module.exports = LocalDataStoreSQLite;
 
-const eventsIndexes = [
-  {
-    index: { userId: 1 },
-    options: {},
-  },
-  {
-    index: { userId: 1, _id: 1, },
-    options: {},
-  },
-  {
-    index: { userId: 1, time: 1 },
-    options: {},
-  },
-  {
-    index: { userId: 1, streamIds: 1 },
-    options: {},
-  },
-  // no index by content until we have more actual usage feedback
-  {
-    index: { userId: 1, trashed: 1 },
-    options: {},
-  },
-  {
-    index: { userId: 1, modified: 1 },
-    options: {},
-  },
-  {
-    index: { userId: 1, endTime: 1 },
-    options: { partialFilterExpression: { endTime: { $exists: true } } },
-  }
-];
-
 

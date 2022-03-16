@@ -85,11 +85,9 @@ class UserDatabase {
     this.db = db;
   }
 
-  async updateEvent(eventId, event, fieldsToDelete) {
-    const eventForDb = eventSchemas.eventToDB(event);
-    if (fieldsToDelete != null && fieldsToDelete.length > 0) {
-      fieldsToDelete.forEach(field => { eventForDb[field] = null;});
-    }
+  async updateEvent(eventId, eventData) {
+    const eventForDb = eventSchemas.eventToDB(eventData);
+   
     if (eventForDb.streamIds == null) { eventForDb.streamIds = '..'; }
 
     delete eventForDb.eventid;
@@ -219,9 +217,10 @@ function prepareEventsGetQuery(params) {
 
 const converters = {
   equal: (content) => { 
-    if (content.value === null) return `${content.field} IS NULL`;
-    const value = events.coerceSelectValueForCollumn(content.field, content.value);
-    return `${content.field} = ${value}`;
+    const realField = (content.field === 'id') ? 'eventid' : content.field;
+    if (content.value === null) return `${realField} IS NULL`;
+    const value = events.coerceSelectValueForCollumn(realField, content.value);
+    return `${realField} = ${value}`;
   },
   greater: (content) => { 
     const value = events.coerceSelectValueForCollumn(content.field, content.value);

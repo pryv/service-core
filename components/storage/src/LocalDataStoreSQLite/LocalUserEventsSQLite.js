@@ -20,7 +20,6 @@ const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUt
 
 const {DataStore, errors}  = require('pryv-datastore');
 
-const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 class LocalUserEvents extends DataStore.UserEvents {
   storage: any;
   eventsFileStorage: any;
@@ -31,10 +30,10 @@ class LocalUserEvents extends DataStore.UserEvents {
     this.eventsFileStorage = eventsFileStorage;
   }
 
-  async update(userId, eventId, fieldsToSet, fieldsToDelete, transaction) {
+  async update(userId, eventData, transaction) {
     const db = await this.storage.forUser(userId);
     try {
-      return db.updateEvent(eventId, fieldsToSet, fieldsToDelete);
+      return db.updateEvent(eventData.id, eventData);
     } catch (err) {
       if (err.message === 'UNIQUE constraint failed: events.eventid') {
         throw errors.itemAlreadyExists('event', {id: eventId}, err);
@@ -95,7 +94,7 @@ class LocalUserEvents extends DataStore.UserEvents {
   }
 
   async _deleteUser(userId: string): Promise<void> {
-    return await this.delete(userId, {fromTime: 0});
+    return await this.delete(userId, {query: [{type: 'equal', content: {field: 'time', value: 0}}]});
   }
 
   async _storageUsedForUser(userId: string) { 

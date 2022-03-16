@@ -120,6 +120,7 @@ class Mall {
    * @param {*} storeId 
    */
   throwAPIError(error, storeId) {
+    $$(error);
     if (! error instanceof Error) {
       error = new Error(error);
     }
