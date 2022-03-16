@@ -172,24 +172,22 @@ const converters = {
  * @param {*} requestedType 
  * @returns 
  */
-function paramsToMongoquery(paramsTemp) {
-  const params = paramsTemp.todo;
+function paramsToMongoquery(params) {
   const options = {
-    skip: paramsTemp.options.skip,
-    limit: paramsTemp.options.limit,
-    sort: paramsTemp.options.sort,
+    skip: params.options.skip,
+    limit: params.options.limit,
+    sort: params.options.sort,
   }
   const query = {$and: []};
   
   
-  for (const item of paramsTemp.query) {
+  for (const item of params.query) {
     const newCondition = converters[item.type](item.content);
     if (newCondition != null) {
       query.$and.push(newCondition);
     }
   }
 
-  //$$({query, paramsTemp});
   if (query.$and.length == 0) delete query.$and; // remove empty $and
   return {query, options};
 }
