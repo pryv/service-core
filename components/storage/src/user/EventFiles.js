@@ -86,7 +86,7 @@ function getSizeRecursive(filePath, callback) {
 EventFiles.prototype.saveAttachedFileFromTemp = async function (tempPath, userId, eventId, fileId) {
   const readStream = fs.createReadStream(tempPath);
   fileId = await this.saveAttachedFileFromStream(readStream, userId, eventId, fileId);
-  await bluebird.fromCallback((cb) => fs.unlink(tempPath, cb));
+  await fs.promises.unlink(tempPath);
   return fileId;
 };
 
@@ -100,20 +100,16 @@ EventFiles.prototype.saveAttachedFileFromStream = async function (readableStream
 };
 
 
-EventFiles.prototype.removeAttachedFile = function (user, eventId, fileId, callback) {
-  var filePath = this.getAttachmentPath(user.id, eventId, fileId);
-  fs.unlink(filePath, function (err) {
-    if (err) { return callback(err); }
-    this.cleanupStructure(path.dirname(filePath), callback);
-  }.bind(this));
+EventFiles.prototype.removeAttachedFile = async function (userId, eventId, fileId) {
+  var filePath = this.getAttachmentPath(userId, eventId, fileId);
+  await fs.promises.unlink(filePath);
+  await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(filePath), cb));
 };
 
-EventFiles.prototype.removeAllForEvent = function (user, eventId, callback) {
-  var dirPath = this.getAttachmentPath(user.id, eventId);
-  rimraf(dirPath, function (err) {
-    if (err) { return callback(err); }
-    this.cleanupStructure(path.dirname(dirPath), callback);
-  }.bind(this));
+EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
+  var dirPath = this.getAttachmentPath(userId, eventId);
+  await bluebird.fromCallback((cb) => rimraf(dirPath, cb));
+  await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(dirPath), cb));
 };
 
 EventFiles.prototype.removeAllForUser = function (user, callback) {

@@ -52,14 +52,14 @@ class MallUserStreams {
    * @param {Array<identifier>} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is true, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @param {timestamp} [params.includeDeletionsSince] 
-   * @param {boolean} [params.hideStoreRoots] default false return the root streams of each store
+   * @param {boolean} [params.hideStoreRoots] When false, returns the root streams of each store
    * @returns {UserStream|null} - the stream or null if not found:
    */
   async get(uid: string, params: StoreQuery) {
 
     // -------- cleanup params --------- //
-    const streamId: string = params.id || '*'; // why?? -- IT SHOULD NOT HAVE DEFAULT VALUES
-    const storeId: string = params.storeId; // might me null -- how? IT DOES NOT HAPPEN
+    const streamId: string = params.id || '*'; 
+    const storeId: string = params.storeId;
     const excludedIds: Array<string> = params.excludedIds || [];
     const hideStoreRoots: boolean = params.hideStoreRoots || false;
 

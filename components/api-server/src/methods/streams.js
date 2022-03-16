@@ -33,7 +33,6 @@ const { getStorageLayer } = require('storage');
  *
  * @param api
  * @param userStreamsStorage
- * @param userEventFilesStorage
  * @param notifyTests
  * @param logging
  * @param auditSettings
@@ -43,7 +42,6 @@ module.exports = async function (api) {
   const config = await getConfig();
   const storageLayer = await getStorageLayer();
   const userStreamsStorage = storageLayer.streams;
-  const userEventFilesStorage = storageLayer.eventFiles;
   const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
   const mall = await getMall();
@@ -475,16 +473,13 @@ module.exports = async function (api) {
             if (remaningStreamsIds.length > 0) {
                 // event is still attached to existing streamId(s)
                 // update the event without the streamIds
-                const fieldsToSet = {streamIds: remaningStreamsIds};
-                await mall.events.updateWithOriginal(context.user.id, event, fieldsToSet);
+                event.streamIds = remaningStreamsIds;
+                await mall.events.update(context.user.id, event);
 
             } else { // remove the event and any attached data
               // remove the event's history
               await mall.events.delete(context.user.id, { headId: event.id, state: 'all' });
-              // remove event's attachments 
-              if (event.attachments != null && event.attachments.length > 0) {
-                await bluebird.fromCallback((cb) => userEventFilesStorage.removeAllForEvent(context.user, event.id,cb));
-              }
+              // remove the event itself (update)
               const res = await mall.events.updateDeleteByMode(context.user.id,  'keep-nothing', {id: event.id, state: 'all'});
             }
           }

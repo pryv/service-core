@@ -56,17 +56,17 @@ class Flush implements Operation {
     // first get event... because we need it's current time 
     // we could optimze here if the call sent the time of the event.. or use agregate call of mongo
     const mall = await getMall(); // too bad we cannot easily pass mall here 
-    const originalEvent = await mall.events.getOne(userId, request.eventId);
-    if (originalEvent.duration == null || to > originalEvent.duration) { // update only if needed.
-      const updatedData = {
+    const eventData = await mall.events.getOne(userId, request.eventId);
+    if (eventData.duration == null || to > eventData.duration) { // update only if needed.
+      Object.assign(eventData, {
         duration: to,
         modifiedBy: request.author, 
         modified: request.timestamp,
-      };
+      });
       // ADD AUDIT HERE ??
 
       // when changing for mall remove all reference to DB 
-      await mall.events.updateWithOriginal(userId, originalEvent, updatedData);      
+      await mall.events.update(userId, eventData);      
     } 
 
     return true;

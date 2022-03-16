@@ -32,6 +32,13 @@ const boiler = require('@pryv/boiler').init({
     file: path.resolve(__dirname, '../../audit/config/default-path.js')
   }, {
     plugin: require('../config/config-validation')
+  }, {
+    plugin: {load: async () => { 
+      // this is not a plugin, but a way to ensure some component are initialized after config
+      // @sgoumaz - should we promote this pattern for all singletons that need to be initialized ?
+      const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+      await SystemStreamsSerializer.init();
+    }}
   }]
 });
 
@@ -44,7 +51,7 @@ const errorsMiddlewareMod = require('./middleware/errors');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+
 
 const { Extension, ExtensionLoader } = require('utils').extension;
 
@@ -110,7 +117,6 @@ class Application {
     this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active');
 
     await UserLocalDirectory.init();
-    await SystemStreamsSerializer.init();
     
     if (this.isAuditActive) {
       const audit = require('audit');

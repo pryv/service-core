@@ -63,46 +63,36 @@ class UserEvents {
    * @param {string} id - mandatory id of the attachement - unique - per event 
    */
 
-   /**
-     * After Attachments have been fully Reaad, integrity checksum can be computed and set. 
-     * @typedef {Promise} FinalizeEventCallBack
-     * @param {Array<AttachmentResponseItem>} attachmentsResponse
-     * @return {EventData} eventData - The event data with integrity and attachments property
-     */
-
   /**
-   * @see https://api.pryv.com/reference/#create-event
    * @param {identifier} uid
-   * @param {any} partialEventData - eventData (without attachments and integrity property)
+   * @param {any} partialEventData - eventData (without the new attachments and integrity property)
+   * @param {boolean} isExistingEvent - true if the event already exists
    * @param {Array<AttachmentItem>} attachmentsItems - Array of attachments informations. 
    * @throws item-already-exists
    * @throws invalid-item-id
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
-   * @returns {Event} - The created event
+   * @returns {AttachmentResponseItem} - The ids and other information related to the attachments
    */
-   async createWithAttachments(uid: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.create with attachment')); }
-
-   /**
-   * @see https://api.pryv.com/reference/#create-event
-   * @param {identifier} uid
-   * @param {string} eventId
-   * @param {Array<AttachmentItem>} attachmentsItems - The data to attach
-   * @throws invalid-item-id
-   * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
-   * @returns {Event} - The created event
-   */
-    async addAttachment(uid: string, eventId: string, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.addAttachment')); }
+  async attachmentsLoad(uid: string, partialEventData, isExistingEvent, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) { throw(errors.unsupportedOperation('events.attachmentsLoad')); }
 
   /**
-   * @see https://api.pryv.com/reference/#update-event
-   * @param {identifier} uid 
-   * @param {string} eventId 
-   * @param {any} fieldsToSet - Object with fields to set
-   * @param {Array<string>} fieldsToDelete - Array of fields to delete
-   * @throws resource-is-readonly <=== Thrown because item cannot be updated
-   * @returns {Event} - the updated event
+   * @param {identifier} uid
+   * @param {any} eventData - eventData 
+   * @param {string} attachmentId - attachmentId
+   * @throws invalid-item-id
+   * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
+   * @returns {AttachmentResponseItem} - The ids and other information related to the attachments
    */
-   async update(uid: string, eventId: string, fieldsToSet: any, fieldsToDelete: Array<string>): Promise<void> { throw(errors.unsupportedOperation('events.update')); }
+  async attachmentDelete(uid: string, eventData, attachmentId: string, transaction?: Transaction) { throw(errors.unsupportedOperation('events.attachmentDelete')); }
+
+  /**
+   * Fully replace an event with new Data
+   * @param {identifier} uid 
+   * @param {any} eventData - New event data
+   * @throws resource-is-readonly <=== Thrown because item cannot be updated
+   * @returns {boolean} - true if an event was updated
+   */
+  async update(uid: string, eventData: any): Promise<void> { throw(errors.unsupportedOperation('events.replace')); }
 
 
   /**

@@ -21,7 +21,7 @@ const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUt
 const {DataStore, errors}  = require('pryv-datastore');
 const handleDuplicateError = require('../Database').handleDuplicateError;
 
-const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
+
 class LocalUserEvents extends DataStore.UserEvents {
   eventsCollection: any;
   eventsFileStorage: any;
@@ -32,24 +32,20 @@ class LocalUserEvents extends DataStore.UserEvents {
     this.eventsFileStorage = eventsFileStorage;
   }
 
-  async update(userId, eventId, fieldsToSet, fieldsToDelete, transaction) {
+  async update(userId, eventData, transaction) {
     try {
-      const update = {$set: Object.assign({}, fieldsToSet)};
-      if (fieldsToDelete != null && fieldsToDelete.length > 0) {
-        update.$unset = {};
-        fieldsToDelete.forEach(field => {
-          update.$unset[field] = 1;
-        });
-      }
-      const query = {userId: userId, _id: eventId};
-      const options = {  returnDocument: 'after' , transactionSession: transaction?.transactionSession };
-      const res = await this.eventsCollection.findOneAndUpdate(query, update, options);
-      return cleanResult(res);
+      const update = Object.assign({}, eventData);
+      update._id = update.id;
+      update.userId = userId;
+      delete update.id;
+
+      const query = {userId: userId, _id: update._id};
+      const options = {transactionSession: transaction?.transactionSession };
+      
+      const res = await this.eventsCollection.replaceOne(query, update, options);
+      const res2 = await this.eventsCollection.findOne({userId: userId, _id: update._id});
+      return (res.modifiedCount === 1); // true if an event was updated
     } catch (err) {
-      handleDuplicateError(err);
-      if (err.isDuplicateIndex != null && err.isDuplicateIndex('id')) {
-        throw errors.itemAlreadyExists('event', {id: eventId}, err);
-      }
       throw errors.unexpectedError(err);
     }
   }
@@ -72,19 +68,27 @@ class LocalUserEvents extends DataStore.UserEvents {
     }
   }
 
-  async createWithAttachments(userId: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void> {
+  async attachmentsLoad(userId: string, eventData, isExistingEvent, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) {
     const attachmentsResponse = [];
-    
     for (const attachment of attachmentsItems) {
-      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, partialEventData.id);
+      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, eventData.id);
       attachmentsResponse.push({id: fileId});
     }
-    const eventData = await finalizeEventCallBack(attachmentsResponse);
-    return await this.create(userId, eventData, transaction);
+    return attachmentsResponse;
   }
 
-  _getCursor(userId, params) {
-    const {query, options} = paramsToMongoquery(params);
+  async attachmentDelete(uid: string, eventData, attachmentId: string, transaction?: Transaction) { 
+    for (const attachment of eventData.attachments) {
+      if (attachment.id === attachmentId) {
+        await this.eventsFileStorage.removeAttachedFile(uid, eventData.id, attachmentId);
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+  _getCursor(userId, query, options) {
     query.userId = userId;
     const queryOptions = { projection: options.projection};
     let cursor = this.eventsCollection.find(query, queryOptions).sort(options.sort);
@@ -94,7 +98,8 @@ class LocalUserEvents extends DataStore.UserEvents {
   }
 
   async getStreamed(userId, params) {
-    const cursor = this._getCursor(userId, params);
+    const {query, options} = paramsToMongoquery(params);
+    const cursor = this._getCursor(userId, query, options);
     // streaming with backpressure - highWaterMark has really some effect
     const readableUnderPressure = new Readable({objectMode: true, highWaterMark: 4000});
     readableUnderPressure._read = async () => {
@@ -114,7 +119,7 @@ class LocalUserEvents extends DataStore.UserEvents {
 
   async get(userId, params) {
     const {query, options} = paramsToMongoquery(params);
-    const cursor = this._getCursor(userId, params);
+    const cursor = this._getCursor(userId, query, options);
     const res = (await cursor.toArray()).map((value) => cleanResult({value}));
     return res;
   }
@@ -123,19 +128,16 @@ class LocalUserEvents extends DataStore.UserEvents {
     const {query, options} = paramsToMongoquery(params);
     query.userId = userId;
     options.transactionSession = transaction?.transactionSession;
-    return await this.eventsCollection.deleteMany(query, options);
-  }
 
-  // ----------------- attachments ----------------- //
-  async attachmentAdd(userId: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction) {
-    const attachmentsResponse = [];
-    
-    for (const attachment of attachmentsItems) {
-      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, partialEventData.id);
-      attachmentsResponse.push({id: fileId});
+    // logic might be adapated, but in case of delete the attachments are removed by the store
+    const queryForAttachments = _.clone(query);
+    queryForAttachments.attachments = {$exists: true, $ne: []};
+    const eventsWithAttachments = await this._getCursor(userId, queryForAttachments, options).toArray();
+    for (const eventWithAttachment of eventsWithAttachments) {
+      await this.eventsFileStorage.removeAllForEvent(userId, eventWithAttachment._id);
     }
-    const eventData = await finalizeEventCallBack(attachmentsResponse);
-    return await this.update(userId, eventData, {}, transaction);
+    
+    return await this.eventsCollection.deleteMany(query, options);
   }
 
   async _deleteUser(userId: string): Promise<void> {
@@ -168,6 +170,34 @@ function cleanResult(result) {
   return value
 }
 
+
+const converters = {
+  equal: (content) => { 
+    const realfield = (content.field === 'id') ? '_id' : content.field;
+    return {[realfield]: {$eq : content.value}}
+  },
+  greater: (content) => { 
+    return {[content.field]: {$gt :content.value}}
+  },
+  greaterOrEqual: (content) => { 
+    return {[content.field]: {$gte :content.value}}
+  },
+  lowerOrEqual: (content) => { 
+    return {[content.field]: {$lte :content.value}}
+  },
+  greaterOrEqualOrNull: (content) => { 
+    return { $or: [{ [content.field]: { $gte: content.value } }, { [content.field]: null }] }
+  },
+  typesList: (list) => { 
+    if (list.length == 0) return null;
+    return {type: {$in: list.map(getTypeQueryValue)}}
+  },
+  streamsQuery: (content) => {
+    return streamsQueryUtils.toMongoDBQuery(content)
+  }
+}
+
+
 /**
  * transform params to mongoQuery 
  * @param {*} requestedType 
@@ -175,121 +205,21 @@ function cleanResult(result) {
  */
 function paramsToMongoquery(params) {
   const options = {
-    projection: params.returnOnlyIds ? {id: 1} : {},
-    sort: { time: params.sortAscending ? 1 : -1 },
-    skip: params.skip,
-    limit: params.limit
-  };
-
-
-  const query = {};
-
-  // trashed
-  switch (params.state) {
-    case 'trashed':
-      query.trashed = true;
-      break;
-    case 'all':
-      break;
-    default:
-      query.trashed = false;
+    skip: params.options.skip,
+    limit: params.options.limit,
+    sort: params.options.sort,
   }
-
-  // all deletions (tests only)
-  if (! params.includeDeletions) {
-    query.deleted = null;
-  }
-
-  // onlyDeletions
-  if (params.deletedSince != null) {
-    query.deleted = {$gt: params.deletedSince};
-    options.sort = {deleted: -1};
-  }
-
-  // if getOne
-  if (params.id != null) {
-    query._id = params.id;
-  }
-
-  // history
-  if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
-    query.headId = params.headId;
-  } else {
-    if (! params.includeHistory) { // no history;
-      query.headId = null;
-    } else {
-      if (params.id != null) { // get event and history of event
-        query.$or = [{_id: params.id}, {headId: params.id}];
-        delete query._id;
-      }
-      // if query.headId is undefined all history (in scope) will be returned
-      options.sort.modified = 1; // also sort by modified time when history is requested
-    }
-  }
- 
-  // if streams are defined
-  if (params.streams != null && params.streams.length != 0) {
-    const streamsQuery = streamsQueryUtils.toMongoDBQuery(params.streams);
-    
-    if (streamsQuery.$or) query.$or = streamsQuery.$or;
-    if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
-    if (streamsQuery.$and) query.$and = streamsQuery.$and;
-  }
-
-  if (params.types && params.types.length > 0) {
-    // unofficially accept wildcard for sub-type parts
-    const types = params.types.map(getTypeQueryValue);
-    query.type = {$in: types};
-  }
-  if (params.fromTime != null) {
-    const timeQuery = [
-      { // Event started before fromTime, but finished inside from->to.
-        time: {$lt: params.fromTime},
-        endTime: {$gte: params.fromTime}
-      }
-    ];
-    if (params.toTime != null) {
-      timeQuery.push({ // Event has started inside the interval.
-        time: { $gte: params.fromTime, $lte: params.toTime }
-      });
-    }
-    
-    if (params.toTime == null || ( params.toTime + DELTA_TO_CONSIDER_IS_NOW) > (Date.now() / 1000)) { // toTime is null or greater than now();
-      params.running = true;
-    }
-
-    if (query.$or) { // mongo support only one $or .. so we nest them into a $and
-      if (! query.$and) query.$and = [];
-      query.$and.push({$or: query.$or});
-      query.$and.push({$or: timeQuery});
-      delete query.$or; // clean; 
-    } else {
-      query.$or = timeQuery;
-    }
-
-  }
-  if (params.toTime != null) {
-    _.defaults(query, {time: {}});
-    query.time.$lte = params.toTime;
-  }
-  if (params.modifiedSince != null) {
-    query.modified = {$gt: params.modifiedSince};
-  }
-  if (params.running) {
-    if (query.$or) { 
-      query.$or.push({endTime: null})
-    } else {
-      query.endTime = null; // matches when duration exists and is null
+  const query = {$and: []};
+  
+  
+  for (const item of params.query) {
+    const newCondition = converters[item.type](item.content);
+    if (newCondition != null) {
+      query.$and.push(newCondition);
     }
   }
 
-  // excludes. (only supported for ID.. specific to one updateEvent in SystemsStream .. might be removed)
-  if (params.NOT != null) {
-    if (params.NOT.id != null) {
-      if (query._id != null) throw new Error('NOT.id is not supported with id');
-      query._id = {$ne: params.NOT.id};
-    }
-  }
+  if (query.$and.length == 0) delete query.$and; // remove empty $and
   return {query, options};
 }
 

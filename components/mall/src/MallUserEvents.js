@@ -20,6 +20,8 @@ const { Readable } = require('stream');
 
 const cuid = require('cuid');
 
+const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
+
 const DELETION_MODES_FIELDS = {
   'keep-authors': [
     'streamIds', 'time',
@@ -42,16 +44,6 @@ const DELETION_MODES_FIELDS = {
   ]
 }
 
-const STORE_FIELDS =
-  ['streamIds', 'time',
-    'endTime', // on stores, duration is replaced by endTime
-    'type', 'content',
-    'description', 'attachments',
-    'clientData', 'trashed',
-    'created', 'createdBy',
-    'modified', 'modifiedBy',
-    'integrity'];
-
 /**
  * Handle Store.events.* methods
  */
@@ -65,26 +57,17 @@ class StoreUserEvents {
   }
 
   // --------------------------- UPDATE ----------------- //
- 
-  /**
-   * Fully Replace the event with the same id with eventData
-   * @param {string} uid 
-   * @param {Event} eventData 
-   * @param {MallTransaction} mallTransaction 
-   * @returns 
-   */
-  async updateReplace(uid, eventData, mallTransaction) {
-    const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
 
+  async update(uid, eventData, mallTransaction) {
+    const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
 
     // update integrity field and recalculate if needed
     // integrity caclulation is done on event.id and streamIds that includes the store prefix
-    integrity.events.set(eventData);
-
-    const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
-
-    // delete Id
-    delete eventForStore.id;
+    delete eventForStore.integrity;
+    if (integrity.events.isActive) {
+      integrity.events.set(eventForStore);
+    }
 
     // replace all streamIds by store-less streamIds
     if ((eventForStore?.streamIds)) {
@@ -97,55 +80,17 @@ class StoreUserEvents {
       eventForStore.streamIds = newStreamIds;
     }
 
-
-    // build up list of fields to delete 
-    const fieldsToDelete = STORE_FIELDS.filter(field => eventForStore[field] === undefined);
-
     const store = this.mall._storeForId(storeId);
     const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
     try {
-      const res = await store.events.update(uid, eventId, eventForStore, fieldsToDelete, storeTransaction);
-      return eventsUtils.convertEventFromStore(storeId, res);
+      const success = await store.events.update(uid, eventForStore, storeTransaction);
+      if (! success) {
+        throw errorFactory.invalidItemId('Coulnd not update event with id ' + eventData.id);
+      }
+      return eventsUtils.convertEventFromStore(storeId, eventForStore);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
-  }
-
-  /**
-   * 
-   * @param {string} uid 
-   * @param {Event} originalEvent - Providing the original event to be updated prevent the need to fetch it from the store for integrity calculation
-   * @param {any} fieldsToSet - Object with fields to set
-   * @param {Array<string>} fieldsToDelete - Array of fields to delete
-   * @param {MallTransaction} mallTransaction
-   * @returns 
-   */
-    async updateWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction) {
-      const newEventData = _.clone(originalEvent);
-      for (const fieldKey of Object.keys(fieldsToSet)) {
-        newEventData[fieldKey] = fieldsToSet[fieldKey];
-      }
-      if (fieldsToDelete != null) {
-        for (const fieldKey of fieldsToDelete) {
-          delete newEventData[fieldKey];
-        }
-      }
-      return await this.updateReplace(uid, newEventData, mallTransaction);
-    }
-
-
-  /**
-   * 
-   * @param {string} uid 
-   * @param {string} fullEventId 
-   * @param {any} fieldsToSet - Object with fields to set
-   * @param {Array<string>} fieldsToDelete - Array of fields to delete
-   * @param {MallTransaction} mallTransaction
-   * @returns 
-   */
-  async update(uid, fullEventId, fieldsToSet, fieldsToDelete, mallTransaction) {
-    const originalEvent = await this.getOne(uid, fullEventId);
-    return await this.updateWithOriginal(uid, originalEvent, fieldsToSet, fieldsToDelete, mallTransaction);
   }
 
   /**
@@ -157,6 +102,7 @@ class StoreUserEvents {
    * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
    * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
    * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
+   * @param {Function} update.filter - function to filter events to update (return true to update)
    * @param {MallTransaction} mallTransaction
    * @returns Array of updated events
    */
@@ -178,6 +124,7 @@ class StoreUserEvents {
    * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
    * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
    * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
+   * @param {Function} update.filter - function to filter events to update (return true to update)
    * @param {MallTransaction} mallTransaction
    * @returns Streams of updated events
    */
@@ -187,26 +134,34 @@ class StoreUserEvents {
     // fetch events to be updated 
     const streamedMatchingEvents = await this.getStreamedWithParamsByStore(uid, paramsByStore);
 
-    const that = this;
+    const mallEvents = this;
     async function* reader() {
-      for await (const event of streamedMatchingEvents) {
-        const fieldsToSet = _.merge(event, update.fieldsToSet);
+      for await (const eventData of streamedMatchingEvents) {
+        const newEventData = _.merge(eventData, update.fieldsToSet);
         if (update.addStreams && update.addStreams.length > 0) {
-          fieldsToSet.streamIds = _.union(fieldsToSet.streamIds, update.addStreams);
+          newEventData.streamIds = _.union(newEventData.streamIds, update.addStreams);
         }
         if (update.removeStreams && update.removeStreams.length > 0) {
-          fieldsToSet.streamIds = _.difference(fieldsToSet.streamIds, update.removeStreams);
+          newEventData.streamIds = _.difference(newEventData.streamIds, update.removeStreams);
         }
 
         // eventually remove fields from event
         if (update.fieldsToDelete && update.fieldsToDelete.length > 0) {
+          // remove attachments if needed
+          if (update.fieldsToDelete.includes('attachments') && eventData.attachments != null) {
+            for (let attachment of eventData.attachments) {
+              await mallEvents.attachmentDelete(uid, eventData, attachment.id, mallTransaction);
+            }
+          }
+
           for (let field of update.fieldsToDelete) {
-            delete fieldsToSet[field];
+            delete newEventData[field];
           }
         }
-
-        const updatedEvent = await that.updateWithOriginal(uid, event, fieldsToSet, update.fieldsToDelete, mallTransaction);
-        yield updatedEvent;
+        if (update.filter == null || update.filter(newEventData)) {
+          const updatedEvent = await mallEvents.update(uid, newEventData, mallTransaction);
+          yield updatedEvent;
+        }
       }
 
       // finish the iterator
@@ -244,7 +199,7 @@ class StoreUserEvents {
    * @param {*} eventData 
    */
   async create(uid, eventData, mallTransaction) {
-    const {store, eventForStore, storeTransaction} = await this._prepareForCreate(eventData, mallTransaction);
+    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
     try {
       const res = await store.events.create(uid, eventForStore, storeTransaction);
       return eventsUtils.convertEventFromStore(store.id, res);
@@ -259,76 +214,33 @@ class StoreUserEvents {
     }
   }
 
-  async createWithAttachments(uid: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
-    const {store, eventForStore, storeTransaction} = await this._prepareForCreate(eventDataWithoutAttachments, mallTransaction);
-    
-
-    try {
-      const res = await store.events.createWithAttachments(uid, eventForStore, attachmentsItems, finalizeEventCallBack, storeTransaction);
-      return eventsUtils.convertEventFromStore(store.id, res);
-    } catch (e) {
-      this.mall.throwAPIError(e, store.id);
-    }
-
-    //** This will be called when attachments have been saved on store */
-    async function finalizeEventCallBack(attachmentsResponse) {
-      const eventWithFullIds = _.cloneDeep(eventDataWithoutAttachments); // needed to compute integrity
-      
-      eventWithFullIds.attachments = [];
-      for (let i = 0; i < attachmentsResponse.length; i++) {
-        eventWithFullIds.attachments.push({
-          id: attachmentsResponse[i].id, // ids comes from storage
-          fileName: attachmentsItems[i].fileName,
-          type: attachmentsItems[i].type,
-          size: attachmentsItems[i].size,
-          integrity: attachmentsItems[i].integrity,
-        });
-      }
-       
-      integrity.events.set(eventWithFullIds);
-
-      // Prepare result event 
-      const finalEventForStore = eventsUtils.convertEventToStore(store.id, eventWithFullIds);
-      return finalEventForStore;
-    }
-
-
+  async attachmentsLoad(userId: string, eventDataWithoutAttachments: any, isExistingEvent: boolean, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction) {
+    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventDataWithoutAttachments, mallTransaction);
+    return await store.events.attachmentsLoad(userId, eventForStore, isExistingEvent, attachmentsItems, storeTransaction);
   }
 
-  async attachmentAdd(uid: string, eventDataWithoutNewAttachments: any, newAttachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
-    const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventDataWithoutNewAttachments.id);
-    const eventForStore = eventsUtils.convertEventToStore(storeId, eventDataWithoutNewAttachments);
-    const store = this.mall._storeForId(storeId);
-    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
+  async attachmentDelete(userId: string, eventData: any, attachmentId: string, mallTransaction?: MallTransaction) {
+    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
+    return await store.events.attachmentDelete(userId, eventForStore, attachmentId, storeTransaction);
+  }
 
-    try {
-      const res = await store.events.attachmentAdd(uid, eventForStore, newAttachmentsItems, finalizeEventCallBack, storeTransaction);
-      return eventsUtils.convertEventFromStore(store.id, res);
-    } catch (e) {
-      this.mall.throwAPIError(e, store.id);
-    }
+  async createWithAttachments(uid: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
+    const attachmentsResponse = await this.attachmentsLoad(uid, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
+    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutAttachments, attachmentsResponse, attachmentsItems);
+    return await this.create(uid, eventDataWithNewAttachments, mallTransaction);
+  }
 
-    //** This will be called when attachments have been saved on store */
-    async function finalizeEventCallBack(attachmentsResponse) {
-      const eventWithFullIds = _.cloneDeep(eventDataWithoutAttachments); // needed to compute integrity
-      
-      eventWithFullIds.attachments = eventWithFullIds.attachments || [];
-      for (let i = 0; i < attachmentsResponse.length; i++) {
-        eventWithFullIds.attachments.push({
-          id: attachmentsResponse[i].id, // ids comes from storage
-          fileName: attachmentsItems[i].fileName,
-          type: attachmentsItems[i].type,
-          size: attachmentsItems[i].size,
-          integrity: attachmentsItems[i].integrity,
-        });
-      }
-       
-      integrity.events.set(eventWithFullIds);
+  async updateWithAttachments(uid: string, eventDataWithoutNewAttachments: any, newAttachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
+    const attachmentsResponse = await this.attachmentsLoad(uid, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
+    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, newAttachmentsItems);
+    return await this.update(uid, eventDataWithNewAttachments, mallTransaction);
+  }
 
-      // Prepare result event 
-      const finalEventForStore = eventsUtils.convertEventToStore(store.id, eventWithFullIds);
-      return finalEventForStore;
-    }
+  async updateDeleteAttachment(uid: string, eventData: any, attachmentId: string, mallTransaction?: MallTransaction): Promise<void> {
+    await this.attachmentDelete(uid, eventData, attachmentId, mallTransaction);
+    const newEventData = _.cloneDeep(eventData);
+    newEventData.attachments = newEventData.attachments.filter((attachment) => { return attachment.id !== attachmentId });
+    return await this.update(uid, newEventData, mallTransaction);
   }
 
 
@@ -345,7 +257,8 @@ class StoreUserEvents {
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     try {
-      const events: Array<Events> = await store.events.get(uid, { id: eventId, state: 'all', limit: 1, includeDeletions: true });
+      const paramsForStore = prepareParamsForStore({ id: eventId, state: 'all', limit: 1, includeDeletions: true });
+      const events: Array<Events> = await store.events.get(uid, paramsForStore);
       if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
     } catch (e) {
       this.mall.throwAPIError(e, storeId);
@@ -366,7 +279,8 @@ class StoreUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        const events = await store.events.get(uid, params);
+        const paramsForStore = prepareParamsForStore(params);
+        const events = await store.events.get(uid, paramsForStore);
         for (let event of events) {
           res.push(eventsUtils.convertEventFromStore(storeId, event));
         }
@@ -392,9 +306,10 @@ class StoreUserEvents {
     const storeId = Object.keys(paramsByStore)[0];
     const store = this.mall._storeForId(storeId);
     try {
-      const eventsStreamFromDB = await store.events.getStreamed(uid, paramsByStore[storeId]);
+      const paramsForStore = prepareParamsForStore(paramsByStore[storeId]);
+      const eventsStreamFromDB = await store.events.getStreamed(uid, paramsForStore);
       return eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream(storeId));
-    } catch (e) {
+   } catch (e) {
       this.mall.throwAPIError(e, storeId);
     }
   };
@@ -439,7 +354,8 @@ class StoreUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        await store.events.delete(uid, params);
+        const paramsForStore = prepareParamsForStore(params);
+        await store.events.delete(uid, paramsForStore);
       } catch (e) {
         this.mall.throwAPIError(e, storeId);
       }
@@ -452,37 +368,141 @@ class StoreUserEvents {
   // ------------------- UTILS ---------//
 
   /**
- * Common utils for events.create and events.createWithAttachmentss
- * @param {*} eventData 
- * @param {*} mallTransaction 
- * @returns 
- */
-async _prepareForCreate(eventData, mallTransaction) {
-  
-  let storeId = null; 
-  let dummyId = null; // unused.
+   * Common utils for events.create and events.createWithAttachmentss
+   * @param {*} eventData 
+   * @param {*} mallTransaction 
+   * @returns 
+   */
+  async _prepareForStore(eventData, mallTransaction) {
+    
+    let storeId = null; 
+    let dummyId = null; // unused.
 
-  // add eventual missing id and get storeId from first streamId then 
-  if (eventData.id == null) {
-    [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[0]);
-    const prefix = (storeId == 'local') ? '' : ':' + storeId + ':';
-    eventData.id = prefix + cuid();
-  } else { // get storeId from event id 
-    [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    // add eventual missing id and get storeId from first streamId then 
+    if (eventData.id == null) {
+      [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[0]);
+      const prefix = (storeId == 'local') ? '' : ':' + storeId + ':';
+      eventData.id = prefix + cuid();
+    } else { // get storeId from event id 
+      [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    }
+
+    // set integrity
+    integrity.events.set(eventData);
+
+    // get an event ready for this store
+    const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
+
+    const store = this.mall._storeForId(storeId);
+    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
+
+    return { store, eventForStore, storeTransaction };
   }
-
-  // set integrity
-  integrity.events.set(eventData);
-
-  // get an event ready for this store
-  const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
-
-  const store = this.mall._storeForId(storeId);
-  const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
-
-  return { store, eventForStore, storeTransaction };
-}
 }
 
 module.exports = StoreUserEvents;
 
+/**
+ * Add attachment response to eventData
+ */
+function _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, attachmentsItems) {
+  const eventDataWithNewAttachments = _.cloneDeep(eventDataWithoutNewAttachments);
+  eventDataWithNewAttachments.attachments = eventDataWithNewAttachments.attachments || [];
+  for (let i = 0; i < attachmentsResponse.length; i++) {
+    eventDataWithNewAttachments.attachments.push({
+      id: attachmentsResponse[i].id, // ids comes from storage
+      fileName: attachmentsItems[i].fileName,
+      type: attachmentsItems[i].type,
+      size: attachmentsItems[i].size,
+      integrity: attachmentsItems[i].integrity,
+    });
+  }
+  return eventDataWithNewAttachments;
+}
+
+function prepareParamsForStore(params) {
+  const options = {
+    sort: { time: params.sortAscending ? 1 : -1 },
+    skip: params.skip,
+    limit: params.limit
+  };
+
+  const query = [];
+
+
+  // trashed
+  switch (params.state) {
+    case 'trashed':
+      query.push({type: 'equal', content: {field: 'trashed', value: true}});
+      break;
+    case 'all':
+      break;
+    default:
+      query.push({type: 'equal', content:{ field: 'trashed', value: false}});
+  }
+
+  // if getOne
+  if (params.id != null) {
+    query.push({type: 'equal', content:{ field: 'id', value: params.id}});
+  }
+
+  if (params.deletedSince != null) {
+    query.push({type: 'greater', content:{ field: 'deleted', value: params.deletedSince}});
+    options.sort = { deleted: -1 };
+  } else {
+    // all deletions (tests only)
+    if (!params.includeDeletions) {
+      query.push({type: 'equal', content:{field: 'deleted', value: null}}); // <<== actual default value
+    }  
+  }
+
+  // mondified since
+  if (params.modifiedSince != null) {
+    query.push({type: 'greater', content:{ field: 'modified', value: params.modifiedSince}});
+  }
+
+  // types
+  if (params.types && params.types.length > 0) {
+    query.push({type: 'typesList', content: params.types});
+  }
+  
+   // history
+   if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
+    query.push({type: 'equal', content: {field: 'headId', value: params.headId}});
+    options.sort.modified = 1; // also sort by modified time when history is requested
+  } else if (! params.includeHistory) { // no history;
+    query.push({type: 'equal', content: {field: 'headId', value: null}});
+  }
+  
+  // if streams are defined
+  if (params.streams != null && params.streams.length != 0) {
+    query.push({type: 'streamsQuery', content: params.streams});
+  }
+
+
+  // -------------- time selection -------------- //
+  if (params.toTime != null) {
+    query.push({type: 'lowerOrEqual', content: { field: 'time', value: params.toTime }});
+  }
+
+
+  // running
+  if (params.running) {
+    query.push({type: 'equal', content: {field: 'endTime', value: null}});
+  } else if (params.fromTime != null) {
+    const now = Date.now() / 1000 - DELTA_TO_CONSIDER_IS_NOW;
+    if (params.fromTime <= now && ( params.toTime == null || params.toTime >= now)) { // timeFrame includes now
+      query.push({type: 'greaterOrEqualOrNull', content: { field: 'endTime', value: params.fromTime }});
+     
+    } else {
+      query.push({type: 'greaterOrEqual', content: {field: 'endTime', value: params.fromTime}});
+    }
+  }
+
+  const res = {
+    options,
+    query
+  }
+
+  return res;
+}
