@@ -22,6 +22,9 @@ When it work it might be integrated as an option.
     https://github.com/JoshuaWise/better-sqlite3/blob/master/docs/unsafe.md
   - This is usefull when performing updateMany loop (read + write)
   - some refs: https://github.com/JoshuaWise/better-sqlite3/issues/203
+
+
+- CloseDb and delete files and userDelete
 # License
 Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
 Unauthorized copying of this file, via any medium is strictly prohibited

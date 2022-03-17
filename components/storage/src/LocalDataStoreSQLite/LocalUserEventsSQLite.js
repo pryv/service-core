@@ -95,7 +95,7 @@ class LocalUserEvents extends DataStore.UserEvents {
 
 
   async _deleteUser(userId: string): Promise<void> {
-    return await this.delete(userId, {query: [{type: 'equal', content: {field: 'time', value: 0}}]});
+    return await this.delete(userId, {query: []});
   }
 
   async _storageUsedForUser(userId: string) { 

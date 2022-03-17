@@ -248,7 +248,7 @@ const converters = {
     if (list.length == 0) return null;
     const lt = list.map((type) => {
       const typeCorced = events.coerceSelectValueForCollumn('type', type);
-      return `type = '${typeCorced}'`
+      return `type = ${typeCorced}`
     });
     return '('+ lt.join(' OR ') + ')';
   },
@@ -288,6 +288,10 @@ function prepareQuery(params = {}, isDelete = false) {
 
   if (params.options?.limit) {
     queryString += ' LIMIT ' + params.options.limit;
+  }
+
+  if (params.options?.skip) {
+    queryString += ' OFFSET ' + params.options.skip;
   }
   return queryString;
 }
