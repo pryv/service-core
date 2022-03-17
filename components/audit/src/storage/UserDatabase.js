@@ -46,6 +46,7 @@ class UserDatabase {
     const db = new sqlite3(params.dbPath, DB_OPTIONS);
     db.pragma('journal_mode = WAL');
     db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
+    db.unsafeMode(true);
     this.create = {};
     this.getAll = {};
     this.get = {};
@@ -94,11 +95,16 @@ class UserDatabase {
     const queryString = `UPDATE events SET ${Object.keys(eventForDb).map(field => `${field} = @${field}`).join(', ')} WHERE eventid = @eventid`;
     eventForDb.eventid = eventId;
     const update = this.db.prepare(queryString);
-    const res = update.run(eventForDb);
-    this.logger.debug('UPDATE events changes:' + res.changes + ' eventId:' + eventId + ' event:' + JSON.stringify(eventForDb));
-    if (res.changes !== 1) {
-      throw new Error('Event not found');
-    }
+
+    await this.concurentSafeWriteStatement(() => {
+      const res = update.run(eventForDb);
+      this.logger.debug('UPDATE events changes:' + res.changes + ' eventId:' + eventId + ' event:' + JSON.stringify(eventForDb));
+      if (res.changes !== 1) {
+        throw new Error('Event not found');
+      }
+    }, 10000); 
+
+    
     const resultEvent = eventSchemas.eventFromDB(eventForDb);
     return resultEvent;
   }
@@ -254,7 +260,7 @@ const converters = {
 }
 
 
-function prepareQuery(params = {}) {
+function prepareQuery(params = {}, isDelete = false) {
   const ands = [];
 
   for (const item of params.query) {
@@ -269,6 +275,17 @@ function prepareQuery(params = {}) {
     queryString += ' WHERE ' + ands.join(' AND ') ;
   }
   
+  if (! isDelete) {
+    if (params.options?.sort) {
+      const sorts = [];
+      for (const [field, order] of Object.entries(params.options.sort)) {
+        const orderStr = order > 0 ? 'ASC' : 'DESC';
+        sorts.push(`${field} ${orderStr}`);
+      }
+      queryString += ' ORDER BY ' + sorts.join(', ');
+    }
+  }
+
   if (params.options?.limit) {
     queryString += ' LIMIT ' + params.options.limit;
   }

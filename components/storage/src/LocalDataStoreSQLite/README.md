@@ -18,6 +18,10 @@ When it work it might be integrated as an option.
 
 - Remove DB logic from 'audit' and package it
 
+- Check if it's OK to use: unsafeMode on DB
+    https://github.com/JoshuaWise/better-sqlite3/blob/master/docs/unsafe.md
+  - This is usefull when performing updateMany loop (read + write)
+  - some refs: https://github.com/JoshuaWise/better-sqlite3/issues/203
 # License
 Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
 Unauthorized copying of this file, via any medium is strictly prohibited

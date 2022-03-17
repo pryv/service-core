@@ -55,15 +55,24 @@ class LocalUserEvents extends DataStore.UserEvents {
     }
   }
 
-  async createWithAttachments(userId: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction): Promise<void> {
+
+  async attachmentsLoad(userId: string, eventData, isExistingEvent, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) {
     const attachmentsResponse = [];
-    
     for (const attachment of attachmentsItems) {
-      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, partialEventData.id);
+      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, eventData.id);
       attachmentsResponse.push({id: fileId});
     }
-    const eventData = await finalizeEventCallBack(attachmentsResponse);
-    return await this.create(userId, eventData, transaction);
+    return attachmentsResponse;
+  }
+
+  async attachmentDelete(uid: string, eventData, attachmentId: string, transaction?: Transaction) { 
+    for (const attachment of eventData.attachments) {
+      if (attachment.id === attachmentId) {
+        await this.eventsFileStorage.removeAttachedFile(uid, eventData.id, attachmentId);
+        return true;
+      }
+    }
+    return false;
   }
 
   async getStreamed(userId, params) {
@@ -78,20 +87,12 @@ class LocalUserEvents extends DataStore.UserEvents {
 
   async delete(userId, params, transaction) {
     const db = await this.storage.forUser(userId);
+
+    // here we should delete attachments linked to deleted events.
+
     return db.deleteEvents(params);
   }
 
-  // ----------------- attachments ----------------- //
-  async attachmentAdd(userId: string, partialEventData: {}, attachmentsItems: Array<AttachmentItem>, finalizeEventCallBack: Promise<{}>, transaction?: Transaction) {
-    const attachmentsResponse = [];
-    
-    for (const attachment of attachmentsItems) {
-      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, partialEventData.id);
-      attachmentsResponse.push({id: fileId});
-    }
-    const eventData = await finalizeEventCallBack(attachmentsResponse);
-    return await this.update(userId, eventData, {}, transaction);
-  }
 
   async _deleteUser(userId: string): Promise<void> {
     return await this.delete(userId, {query: [{type: 'equal', content: {field: 'time', value: 0}}]});
