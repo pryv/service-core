@@ -44,8 +44,7 @@ const dbSchema = {
  */
 function eventToDB(sourceEvent, defaulTime) {
   const event = {};
-  defaulTime = setTimeIfNot(defaulTime, now());
-  event.eventid = sourceEvent.id || cuid();
+  event.eventid = sourceEvent.id;
 
   if (sourceEvent.streamIds == null) {
     event.streamIds = ALL_EVENTS_TAG;
@@ -54,7 +53,7 @@ function eventToDB(sourceEvent, defaulTime) {
     event.streamIds = sourceEvent.streamIds.join(' ') + ' ' + ALL_EVENTS_TAG;
   }
 
-  event.time = setTimeIfNot(sourceEvent.time, defaulTime);
+  event.time = nullIfUndefined(sourceEvent.time);
 
   event.endTime = nullIfUndefined(sourceEvent.endTime);
   event.deleted = nullIfUndefined(sourceEvent.deleted);
@@ -66,14 +65,19 @@ function eventToDB(sourceEvent, defaulTime) {
   event.content = nullOrJSON(sourceEvent.content);
   
   event.description = nullIfUndefined(sourceEvent.description);
-  event.created = setTimeIfNot(sourceEvent.created, defaulTime);
+  event.created = nullIfUndefined(sourceEvent.created);
   event.clientData = nullOrJSON(sourceEvent.clientData);
   event.attachments = nullOrJSON(sourceEvent.attachments);
-  event.trashed = (sourceEvent.trashed) ? 1 : 0;
+  if (sourceEvent.deleted && null || sourceEvent.trashed != null) {
+    event.trashed = (sourceEvent.trashed) ? 1 : 0;
+  } else {
+    event.trashed = null;
+  }
+  
 
   event.createdBy =  nullIfUndefined(sourceEvent.createdBy);
-  event.modifiedBy = sourceEvent.modifiedBy || sourceEvent.createdBy;
-  event.modified = setTimeIfNot(sourceEvent.modified, defaulTime);;
+  event.modifiedBy = nullIfUndefined(sourceEvent.modifiedBy);
+  event.modified = nullIfUndefined(sourceEvent.modified);
   return event;
 };
 
@@ -146,16 +150,4 @@ module.exports = {
   eventFromDB: eventFromDB,
   dbSchema: dbSchema,
   coerceSelectValueForCollumn
-}
-
-
-function setTimeIfNot(time, defaultNow) {
-  if (typeof time === 'undefined' ||time === null) {
-    return defaultNow;
-  }
-  return time;
-}
-
-function now() {
-  return Date.now() / 1000;
 }

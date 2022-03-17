@@ -114,14 +114,14 @@ class UserDatabase {
    * Use only during tests or migration
    * Not safe within a multi-process environement
    */
-  createEventSync(event, defaultTime) {
-    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
+  createEventSync(event) {
+    const eventForDb = eventSchemas.eventToDB(event);
     this.create.events.run(eventForDb);
     this.logger.debug('(sync) CREATE event:' + JSON.stringify(eventForDb));
   }  
 
-  async createEvent(event, defaultTime) {
-    const eventForDb = eventSchemas.eventToDB(event, defaultTime);
+  async createEvent(event) {
+    const eventForDb = eventSchemas.eventToDB(event);
     await this.concurentSafeWriteStatement(() => {
       this.create.events.run(eventForDb);
       this.logger.debug('(async) CREATE event:' + JSON.stringify(eventForDb));

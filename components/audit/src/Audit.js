@@ -20,6 +20,7 @@ const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
 const { AuditAccessIds } = require('./MethodContextUtils');
 const util = require('util');
+const cuid = require('cuid');
 
 /**
  * EventEmitter interface is just for tests syncing for now
@@ -136,10 +137,15 @@ module.exports = Audit;
 function buildDefaultEvent(context) {
   const time = Date.now() / 1000;
   const event = {
+    id: cuid(),
     createdBy: 'system',
+    modifiedBy: 'system',
     streamIds: [CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id, CONSTANTS.ACTION_STREAM_ID_PREFIX + context.methodId],
     time: time,
     endTime: time,
+    created: time,
+    modified: time,
+    trashed: false,
     content: {
       source: context.source,
       action: context.methodId,
@@ -155,7 +161,7 @@ function buildDefaultEvent(context) {
 function log(context, userId, validity, id) {
   const methodId = context.methodId;
   if ( 
-    context.access?.id == null || 
+    context.access?.id == null ||
     methodId == null ||
     userId == null
   ) {
