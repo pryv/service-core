@@ -13,10 +13,13 @@ const cuid = require('cuid');
 const versioning = require('../../src/storage/versioning');
 const UserDatabase = require('../../src/storage/UserDatabase');
 const os = require('os');
+const { getLogger } = require('@pryv/boiler');
 
 describe('Audit Storage Migration', () => {
+  let logger;
   before(async () => {
     await initTests();
+    logger = getLogger('sqlite-sttorage-migration-test');
   });
 
   it('[MFFR]  Migrate v0 to v1', async function () {
@@ -26,11 +29,11 @@ describe('Audit Storage Migration', () => {
     const v1dbPath = path.join(os.tmpdir(), userid + '-v1.sqlite');
     await copyFile(srcPath, v0dbPath);
 
-    const v1user = new UserDatabase(userid, {dbPath: v1dbPath});
+    const v1user = new UserDatabase(logger, {dbPath: v1dbPath});
 
-    const logger = { info: () => {}, warn: () => {}, error: () => {}};
     const resMigrate = await versioning.migrate0to1(v0dbPath, v1user, logger);
     $$(resMigrate);
+    throw new Error('bob');
   });
   
 });
