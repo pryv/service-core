@@ -5,10 +5,7 @@
  * Proprietary and confidential
  */
 
-function checkAndUpgrade(db) {
-  
-}
 
 module.exports = {
-
+  migrate0to1: require('./migrate0to1'),
 }

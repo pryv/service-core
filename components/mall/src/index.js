@@ -12,7 +12,7 @@
  * Pack configured datastores into one
  */
 
-const { getConfig, getLogger } = require('@pryv/boiler');
+const { getConfig, getLogger } = require('@pryv/boiler');
 const Mall = require('./Mall');
 
 import typeof DataStore from 'pryv-datastore';

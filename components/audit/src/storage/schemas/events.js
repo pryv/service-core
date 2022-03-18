@@ -9,14 +9,6 @@ const cuid = require('cuid');
 const _ = require('lodash');
 const ALL_EVENTS_TAG = '..';
 
-// new schema for events
-// - renamed duration to endTime
-// - added deleted
-// - added attachments
-// changed most of the fields to be nullable
-// - added headId
-
-
 const dbSchema = { 
   eventid : {type: 'TEXT UNIQUE', index: true, coerce: 'txt'},
   headId : {type: 'TEXT DEFAULT NULL', coerce: 'txt'},

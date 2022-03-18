@@ -6,14 +6,18 @@
  */
 const path = require('path');
 const mkdirp = require('mkdirp').sync;
-const unlinkSync = require('fs').unlinkSync;
+const unlinkFilePromise = require('fs/promises').unlink;
+const accessFilePromise = require('fs/promises').access;
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
 
+const versionning = require('./versioning');
+
 const CACHE_SIZE = 500;
 
+const VERSION = '1.0.0';
 class Storage { 
   initialized = false;
   userDBsCache = null;
@@ -69,9 +73,9 @@ class Storage {
     const userDb = await this.forUser(userid);
     await userDb.close();
     this.userDBsCache.del(userid);
-    const dbPath = await this._dbPathForUserid(this.id, userid);
+    const dbPath = await this._dbPathForUserid(userid, VERSION);
     try {
-      unlinkSync(dbPath);
+      await unlinkFilePromise(dbPath);
     } catch (err) {
       this.logger.debug('deleteUser: Error' + err);
     }
@@ -84,7 +88,24 @@ class Storage {
 
   async _open(userid) {
     this.logger.debug('open: ' + userid);
-    const db = new UserDatabase(this.logger, {dbPath: await this._dbPathForUserid(userid)});
+
+    const params = {
+      dbPath: await this._dbPathForUserid(userid, VERSION),
+      version: VERSION,
+    }
+
+    const db = new UserDatabase(this.logger, params);
+    await db.init();
+
+    // check if a migration from a non upgradeable schema (copy file to file) is needed
+    const v0dbPath = await this._dbPathForUserid(userid, '');
+    let v0fileExist = false;
+    try { await accessFilePromise(v0dbPath); fileExist = true; } catch (err) { };
+
+    if (v0fileExist) {
+      await versionning.migrate0to1(v0dbPath, db, this.logger);
+    }
+    
     this.userDBsCache.set(userid, db);
     return db;
   }
@@ -93,9 +114,9 @@ class Storage {
    /**
    * @param {string} uid -- user id (cuid format)
    */
-  async _dbPathForUserid(userid) {
+  async _dbPathForUserid(userid, versionString) {
     const userPath = await UserLocalDirectory.ensureUserDirectory(userid);
-    return path.join(userPath, this.id + '.sqlite');
+    return path.join(userPath, this.id + versionString + '.sqlite');
   }
 
 }
