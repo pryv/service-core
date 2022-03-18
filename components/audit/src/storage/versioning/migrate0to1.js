@@ -25,7 +25,9 @@ const unlinkFilePromise = require('fs/promises').unlink;
 async function migrate0to1(v0dbPath, v1user, logger) {
   const v0db = new sqlite3(v0dbPath);
   const v0EventsIterator = v0db.prepare('SELECT * FROM events').iterate;
-
+  const res = {
+    count : 0,
+  }
   v1user.db.exec('BEGIN');
   for (let eventData of v0EventsIterator.iterate()) {
     if (eventData.duration) { // NOT null, 0, undefined
@@ -36,12 +38,14 @@ async function migrate0to1(v0dbPath, v1user, logger) {
     }
     delete eventData.duration;
     $$(eventData);
+    res.count++;
     v1user.createEventSync(eventData);
   }
   v1user.db.exec('COMMIT');
 
   v0db.close();
   await unlinkFilePromise(v0dbPath);
+  return res;
 }
 
 module.exports = migrate0to1;

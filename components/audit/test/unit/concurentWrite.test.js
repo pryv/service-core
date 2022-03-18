@@ -37,7 +37,7 @@ describe('Audit Storage concurent Writes', () => {
     
   it('[69AH] should retry when SQLITE_BUSY', async () => {
     let callCount = 0;
-    // function that throws at first call only 
+    // function that throws at 20 firsts calls 
     function statement() {
       callCount++;
       if (callCount > 20) return true;
@@ -50,7 +50,7 @@ describe('Audit Storage concurent Writes', () => {
 
   it('[9H7P] should fail when max retries is reached when SQLITE_BUSY', async () => {
     let callCount = 0;
-    // function that throws at first call only 
+    // function that throws at 20 firsts calls 
     function statement() {
       callCount++;
       if (callCount > 20) return true;
@@ -60,7 +60,7 @@ describe('Audit Storage concurent Writes', () => {
       await userStorage.concurentSafeWriteStatement(statement, 5);
       assert.isTrue(false, 'should not be reached');
     } catch (err) {
-      assert.equal(err.message, 'Failed write action on Audit after 5 rertries');
+      assert.equal(err.message, 'Failed write action on Audit after 5 retries');
     }
     
   });

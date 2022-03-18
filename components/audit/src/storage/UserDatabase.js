@@ -45,30 +45,12 @@ class UserDatabase {
   constructor(logger, params) {
     this.logger = logger.getLogger('user-database');
     this.db = new sqlite3(params.dbPath, DB_OPTIONS);
-    this.version = params.version;
   } 
 
   async init() {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
     this.db.unsafeMode(true);
-
-    // ---- check version 
-    this.db.prepare('CREATE TABLE IF NOT EXISTS infos ( key TEXT UNIQUE, value TEXT DEFAULT NULL);').run();
-    const row = this.db.prepare('SELECT value FROM infos WHERE KEY = ?').get('version');
-    let version = row?.value;
-    if (version == null) {
-      // check if brand new DB or already initalized one.
-      const eventsTableName = this.db.prepare('SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'events\';').get();
-      if (eventsTableName?.name != null) {
-        throw new Error('Inconsistent SQLITE database version.');
-      }
-      this.db.prepare('INSERT OR REPLACE INTO infos (key, value) VALUES (@key, @value)').run({key: 'version', value: this.version});
-    }
-    if (version != null && version !== this.version) {
-      throw new Error(`Inconsistent SQLITE database version. got: ${version} supported: ${this.version}`);
-    }
-    this.logger.debug('Database version: ' + version);
 
     // here we might want to skip DB initialization if version is not null
    
@@ -232,7 +214,7 @@ class UserDatabase {
         this.logger.debug('SQLITE_BUSY, retrying in ' + waitTime + 'ms');
       }
     }
-    throw new Error('Failed write action on Audit after ' + retries + ' rertries');
+    throw new Error('Failed write action on Audit after ' + retries + ' retries');
   }
 }
 
