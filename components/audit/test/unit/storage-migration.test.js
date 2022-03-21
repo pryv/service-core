@@ -30,10 +30,10 @@ describe('Audit Storage Migration', () => {
     await copyFile(srcPath, v0dbPath);
 
     const v1user = new UserDatabase(logger, {dbPath: v1dbPath});
+    await v1user.init();
 
     const resMigrate = await versioning.migrate0to1(v0dbPath, v1user, logger);
-    $$(resMigrate);
-    throw new Error('bob');
+    assert.equal(resMigrate.count, 298);
   });
   
 });

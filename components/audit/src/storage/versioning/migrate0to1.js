@@ -23,22 +23,30 @@ const sqlite3 = require('better-sqlite3');
 const unlinkFilePromise = require('fs/promises').unlink;
 
 async function migrate0to1(v0dbPath, v1user, logger) {
-  $$(v0dbPath);
   const v0db = new sqlite3(v0dbPath);
-  const v0EventsIterator = v0db.prepare('SELECT * FROM events').iterate;
+  const v0EventsIterator = v0db.prepare('SELECT * FROM events').iterate();
   const res = {
     count : 0,
   }
   v1user.db.exec('BEGIN');
-  for (let eventData of v0EventsIterator.iterate()) {
+  for (let eventData of v0EventsIterator) {
+    eventData.id = eventData.eventid;
+    delete eventData.eventid;
+
     if (eventData.duration) { // NOT null, 0, undefined
       eventData.endTime = eventData.time + eventData.duration; 
     } else { 
       eventData.endTime = eventData.time;
-    
+    }
+   
+    if (eventData.streamIds != null) {
+      eventData.streamIds = eventData.streamIds.split(' ');
+    } 
+
+    if (eventData.content != null) {
+      eventData.content = JSON.parse(eventData.content);
     }
     delete eventData.duration;
-    $$(eventData);
     res.count++;
     v1user.createEventSync(eventData);
   }
