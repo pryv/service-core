@@ -86,7 +86,7 @@
     "sinon": "^5",
     "slug": "^0.9.1",
     "superagent": "^3.8",
-    "tchannel": "^3.9.12",
+    "tchannel": "^4.0.1",
     "unicode": "^12.1.0",
     "unix-timestamp": "^0.2.0",
     "xmlhttprequest-ssl": "^1.6.2",
