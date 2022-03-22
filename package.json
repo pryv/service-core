@@ -18,7 +18,7 @@
   "scripts": {
     "api": "cd dist/components/api-server && NODE_ENV=development bin/server",
     "build-dev": "scripts/prepare_dist && node_modules/.bin/babel ./components --out-dir=dist/components --copy-files --source-maps both",
-    "c2w": "rm -rf dist && rm -rf components/**/node_modules && npm run setup && npm run release && npm run watch",
+    "c2w": "rm -rf dist && rm -rf components/**/node_modules && npm install && npm run release && npm run watch",
     "cover": "node_modules/.bin/nyc --reporter=html --report-dir=./coverage npm run test",
     "database": "scripts/start-database.sh",
     "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'components/**/*.js' -t html",
