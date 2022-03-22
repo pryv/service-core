@@ -13,8 +13,6 @@
   },
   "dependencies": {
     "better-sqlite3": "^7.1.1",
-    "cuid": "^2.1.8",
-    "lru-cache": "^6.0.0",
     "mkdirp": "^1.0.4",
     "winston": "^3.3.3",
     "winston-syslog": "^2.4.4"

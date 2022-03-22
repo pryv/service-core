@@ -14,8 +14,5 @@
     "test-detailed": "npm run _test --reporter=spec",
     "test-profile": "npm run _test --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt"
   },
-  "dependencies": {
-    "cuid": "^1.2.5",
-    "mongodb": "3.x"
-  }
+  "dependencies": {}
 }

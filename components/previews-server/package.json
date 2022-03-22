@@ -15,7 +15,7 @@
     "test-profile": "npm run _test --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt"
   },
   "dependencies": {
-    "fs-xattr": "^0.3.0",
+    "fs-xattr": "^0.4.0",
     "gm": "^1.20.0"
   }
 }

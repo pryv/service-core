@@ -342,7 +342,7 @@ describe('auth', function() {
           checkNoUnwantedCookie(res);
           should.exist(res.body.preferredLanguage);
           assert.strictEqual(res.body.preferredLanguage, user.language);
-          
+
           should.not.exist(res.body._private);
 
           done();
@@ -414,7 +414,7 @@ describe('auth', function() {
             },
             function givehalfSecondChance(stepDone) {
               setTimeout(stepDone, 500);
-            },  
+            },
             function verifyHiddenPasswordInLogs(stepDone) {
               fs.readFile(logFilePath, 'utf8', function(err, data) {
                 if (err) {
@@ -559,10 +559,6 @@ describe('auth', function() {
   describe('SSO support', function() {
     // WARNING: exceptionally, tests in here are interdependent and their sequence matters
 
-    const cookie = require('cookie');
-    const persistentReq = request.agent();
-    let ssoInfo;
-    let cookieOptions;
     const persistentReq2 = request.agent();
 
     before(function (done) {
@@ -582,6 +578,6 @@ describe('auth', function() {
           done();
         });
     });
-    
+
   });
 });
