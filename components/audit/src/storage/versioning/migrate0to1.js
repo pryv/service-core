@@ -109,6 +109,7 @@ async function checkAllUsers(storage) {
     } catch (err) {
       logger.error('ERROR during Migration V0 to V1: ' + err.message + ' >> For User: ' + userId + '>>> Check Dbs in: ' + userDir);
       logger.error(err);
+      await unlinkFilePromise(v1dbPath);
       process.exit(1);
     }
   }
