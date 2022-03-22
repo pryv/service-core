@@ -1,6 +1,6 @@
 # High Frequency Series Server
 
-Manages access to the InfluxDB that underlies the high frequency series. 
+Manages access to the InfluxDB that underlies the high frequency series.
 
 
 ## Usage
@@ -19,7 +19,7 @@ Make sure to check the root README first.
 
 ### Tests
 
-- `yarn run test`
+- `npm test`
 
 
 ## Troubleshooting
@@ -52,6 +52,7 @@ you can try to delete your local Influx data before running the tests again:
 cd ~/.influxdb
 rm -r data
 ```
+
 
 
 # License

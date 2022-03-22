@@ -1,6 +1,6 @@
 name: Pryv service-core CI
 
-on: 
+on:
   pull_request:
     branches:
       - '*'
@@ -12,7 +12,7 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [16.4.1]
@@ -20,13 +20,13 @@ jobs:
     steps:
     - name: Download master branch
       uses: actions/checkout@v2
-    
+
     - name: Install Node.js with version ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    
-    # there is one private package (lib-release) used as npm package, so we need 
+
+    # there is one private package (lib-release) used as npm package, so we need
     # to authenticate
     - name: Login to github
       uses: webfactory/ssh-agent@v0.4.1
@@ -35,15 +35,15 @@ jobs:
 
     - name: Install & run nats-server, mongodb, influxdb
       run: sh build/build-dev
-      
-    - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install
+
+    - name: Unicode npm package blacklist ips that request download too many times so it is installed before npm install
       run: sudo apt-get install unicode-data
-      
-    - name: yarn setup
-      run: yarn setup
-      
-    - name: yarn release
-      run: yarn release
-        
-    - name: yarn test
-      run: IS_CI=true yarn test
+
+    - name: npm run setup
+      run: npm run setup
+
+    - name: npm run release
+      run: npm run release
+
+    - name: npm test
+      run: IS_CI=true npm test

@@ -43,10 +43,11 @@ GraphicsMagick (Linux: `apt-get install graphicsmagick`, OSX (Homebrew): `brew i
 
 ### Tests
 
-- `yarn run test` (or `yarn test`) for quiet output
-- `yarn run test-detailed` for detailed test specs and debug log output
-- `yarn run test-profile` for profiling the tested server instance and opening the processed output with `tick-processor`
-- `yarn run test-debug` is similar as `yarn run test-detailed` but in debug mode; it will wait for debuggers to be attached on both ports 5858 (the test process) and 5959 (the tested server process)
+- `npm run test` (or `npm test`) for quiet output
+- `npm run test-detailed` for detailed test specs and debug log output
+- `npm run test-profile` for profiling the tested server instance and opening the processed output with `tick-processor`
+- `npm run test-debug` is similar as `npm run test-detailed` but in debug mode; it will wait for debuggers to be attached on both ports 5858 (the test process) and 5959 (the tested server process)
+
 
 
 

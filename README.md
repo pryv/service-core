@@ -7,9 +7,8 @@ Pryv core server app components, ie. what runs on each server node and handles u
 
 ## Install
 
-_Prerequisites:_ 
-- Node v12
-- Yarn v1
+_Prerequisites:_
+- Node v16
 - Mongo DB v3.6 (needs at least 4GB of free disk space for the initial database)
 - InfluxDB v1.2
 - nats-server
@@ -19,7 +18,7 @@ _Prerequisites:_
 For node, you may use [nvm](https://github.com/nvm-sh/nvm) or [nodenv](https://github.com/nodenv/nodenv) to manage multiple nodeJS versions.
 
 ###### On a mac OS X system
-You should be able to install these prerequisites by first installing homebrew and then running these commands: 
+You should be able to install these prerequisites by first installing homebrew and then running these commands:
 
 ~~~bash
 $ brew install nats-server node-build influxdb nodenv/nvm
@@ -28,9 +27,9 @@ $ nodenv install 8.8.0
 $ brew install graphicsmagick
 ~~~
 
-You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities.
+You will need to install 'node-gyp' globally as well: `npm install -g node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities.
 
-###### On Ubuntu 18.04: 
+###### On Ubuntu 18.04:
 ```
 sudo apt-get install build-essential influxdb graphicsmagick
 
@@ -40,22 +39,22 @@ sudo apt-get install build-essential influxdb graphicsmagick
 # Start nats-server in the background
 nats-server/nats-server-v2.3.4-linux-amd64/nats-server &
 
-# Start Influxdb 
+# Start Influxdb
 sudo service influxd start
 (you can check the status with sudo service influxd status)
 
-# Installs MongoDB in the parent folder and run yarn install
+# Installs MongoDB in the parent folder and run npm install
 ./scripts/setup-dev-env.bash
 
 # Start Mongodb in the background
-yarn database
+npm run database
 
 # For local development (Optional)
 npm install -g nodemon
 
 ```
 
-Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opts because they don't compile.
+Then just `npm run setup`. **Warning** don't use `npm install`; now using --no opts because they don't compile.
 
 ## Top Level Directories
 
@@ -64,68 +63,68 @@ Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opt
     ├── Jenkinsfile          Used by Jenkins to identify and run the build
     ├── README.md           This README
     ├── build               Contains files needed for Docker release build
-    ├── components          Source code for all components 
+    ├── components          Source code for all components
     ├── custom-extensions   Custom auth steps, during tests mainly.
     ├── decls               Flow-Type annotations, managed by us
-    ├── dist                Once you run 'yarn release', this is created
-    ├── docs                Documentation in Markdown format 
+    ├── dist                Once you run 'npm run release', this is created
+    ├── docs                Documentation in Markdown format
     ├── flow-typed           Flow-Type annotations, managed by flow-typed
-    ├── node_modules        Package installation, `yarn install`
-    ├── package.json        Yarn package file
+    ├── node_modules        Package installation, `npm install`
+    ├── package.json        NPM package file
+    ├── package-lock.json   Lockfile for NPM, locks down dependencies versions.
     ├── proxy               Proxy configuration
     ├── scripts             Scripts used to manage the repository
-    ├── test                Top-Level Tests for Integration tests.
-    └── yarn.lock           Lockfile for Yarn, locks down dependencies versions.
+    └── test                Top-Level Tests for Integration tests.
 
 ## How to?
 
 | Task                              | Command                        |
 | --------------------------------- | ------------------------------ |
-| Setup                             | `yarn install`                 |
-| Create Distribution for release  | `yarn release`                 |
-| Create Dev. Distribution (with source Maps) | `yarn build-dev`               |
-| Recompile During Development      | `yarn watch`                   |
-| Run Tests                         | `yarn test`                    |
-| Produce coverage html | `yarn cover` |
-| Run Integration Tests             | `yarn test-root`               |
-| Run API server                    | `yarn api`                     |
-| Run Preview server                | `yarn previews`                |
-| Run Webhooks service              | `yarn webhooks`                |
-| Run Database                      | `yarn database`                |
+| Setup                             | `npm install`                 |
+| Create Distribution for release  | `npm run release`                 |
+| Create Dev. Distribution (with source Maps) | `npm run build-dev`               |
+| Recompile During Development      | `npm run watch`                   |
+| Run Tests                         | `npm test`                    |
+| Produce coverage html | `npm run cover` |
+| Run Integration Tests             | `npm run test-root`               |
+| Run API server                    | `npm run api`                     |
+| Run Preview server                | `npm run previews`                |
+| Run Webhooks service              | `npm run webhooks`                |
+| Run Database                      | `npm run database`                |
 | DB migration process | `cd dist/components/api-server/ ; ./bin/migrate` |
 | Get a list of available processes | `cat Procfile`                  |
 | Run flow checker                   | `watch -c flow --color=always`  |
 
-**NOTE** that all binaries like `flow` must be accessed by prepending `yarn {flow}`.
+**NOTE** Binaries installed locally, like `flow`, should be run with `npx` (e.g. `npx flow`).
 
 ## Setup
 
 ### Flowtype transpilation
 
-**First execution**: Run at least once `yarn release` or `yarn build-dev` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS.
+**First execution**: Run at least once `npm run release` or `npm run build-dev` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS.
 
-During development, use `yarn watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
+During development, use `npm run watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
 
 ### MongoDB
 
-`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder and runs `yarn install`.
+`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder and runs `npm install`.
 
 ## Test Running
 
-_Prerequisite:_ MongoDB must be running on the default port; you can use `yarn database`.
+_Prerequisite:_ MongoDB must be running on the default port; you can use `npm run database`.
 
-`yarn test` runs tests on each component. See individual components for things like detailed output and other options.
-`yarn test-root` runs root tests combining multiple components (e.g., High-Frequency series).
+`npm test` runs tests on each component. See individual components for things like detailed output and other options.
+`npm run test-root` runs root tests combining multiple components (e.g., High-Frequency series).
 
-If you want to run tests for a specific component, you can run them against the transpiled files by going into `dist/components/${COMPONENT_NAME}` then running `yarn test` there.
+If you want to run tests for a specific component, you can run them against the transpiled files by going into `dist/components/${COMPONENT_NAME}` then running `npm test` there.
 
-If you want to run tests directly against the source files in `components/`, you will need to start with a command like this: 
+If you want to run tests directly against the source files in `components/`, you will need to start with a command like this:
 
 ```shell
 $ NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**/*test.js' --exit --grep="whatever"
 ```
 
-This is something that should probably be a shell alias in your environment. I use 
+This is something that should probably be a shell alias in your environment. I use
 
 ```shell
 $ alias pm="NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**/*test.js' --exit"
@@ -134,7 +133,7 @@ $ alias pm="NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**
 #### Control Output during tests
 
 - Show debug information with `DEBUG="*"` env var.
-- Display spawn instances of server with `LOGS=<level>` env var. `info` , `warn`, `error` 
+- Display spawn instances of server with `LOGS=<level>` env var. `info` , `warn`, `error`
 
 
 
@@ -146,15 +145,15 @@ $ alias pm="NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**
 
 #### Debug
 
-Launch `yarn watch`
+Launch `npm run watch`
 
 Open terminal in VsCode (Terminal => New terminal)
 
 `cd dist/component/api-server`
 
-Add your breakpoints 
+Add your breakpoints
 
-`yarn test-debug`
+`npm run test-debug`
 
 ### Debug tests by hand
 
@@ -166,12 +165,12 @@ Add your breakpoints
 Components supporting configuration load their settings from (last takes precedence):
 
 1. Default values, as defined in the [base configuration](https://github.com/pryv/service-core/blob/master/components/utils/src/config.js#L20) or the component's own
-2. A JSON file specified by setting `config`, defaulting to `config/{env}.json` (`env` can be `production`, `development` or `test`); typically used for per-environment settings. This variant is deprecated and will be faded out. 
-3. An additional "overrides" JSON file specified by setting 'configOverrides'; typically used for confidential settings (e.g. keys, secrets). This variant is deprecated and will be faded out. 
-4. Environment variables; default naming scheme: `PRYV_SETTING_KEY_PATH` (for example, `PRYV_DATABASE_HOST` for `database`→`host`). This variant is deprecated and will be faded out. 
-5. Command-line options as `--key=value`; default naming scheme: `setting:key:path` (for example, `database:host` for `database`→`host`). This variant is deprecated and will be faded out. 
+2. A JSON file specified by setting `config`, defaulting to `config/{env}.json` (`env` can be `production`, `development` or `test`); typically used for per-environment settings. This variant is deprecated and will be faded out.
+3. An additional "overrides" JSON file specified by setting 'configOverrides'; typically used for confidential settings (e.g. keys, secrets). This variant is deprecated and will be faded out.
+4. Environment variables; default naming scheme: `PRYV_SETTING_KEY_PATH` (for example, `PRYV_DATABASE_HOST` for `database`→`host`). This variant is deprecated and will be faded out.
+5. Command-line options as `--key=value`; default naming scheme: `setting:key:path` (for example, `database:host` for `database`→`host`). This variant is deprecated and will be faded out.
 
-To specify a configuration file, please use `--config` with a relative or absolute path. This will be the way to configure Pryv.io for the near future. 
+To specify a configuration file, please use `--config` with a relative or absolute path. This will be the way to configure Pryv.io for the near future.
 
 Those components also accept the following command line options:
 
@@ -204,19 +203,19 @@ It is possible to extend the API and previews servers with your own code, via th
     - `user` (object): the user object (properties include `id`)
     - `accessToken` (string): as read in the `Authorization` header or `auth` parameter
     - `callerId` (string): optional additional id passed after `accessToken` in auth after a separating space (auth format is thus `<access-token>[ <caller-id>]`)
-    - `access` (object): the access object (see [API doc](https://api.pryv.com/reference/#access) for structure) 
+    - `access` (object): the access object (see [API doc](https://api.pryv.com/reference/#access) for structure)
 
 ## Test IDs tagging
 
-To tag test cases with IDs run: `yarn tag-tests`. Please use check in [test-results](https://github.com/pryv/test-results-pryv.io) for possible duplicates.
+To tag test cases with IDs run: `npm run tag-tests`. Please use check in [test-results](https://github.com/pryv/test-results-pryv.io) for possible duplicates.
 
 ## Test Results
 
 Test results are kept in the [test-results-pryv.io](https://github.com/pryv/test-results-pryv.io) repository.
 
-- Checkout the repository locally: `yarn init-test-results-repo`
-- Run the test suite, printing the results in `test_results/service-core/${TAG_VERSION}/${TIMESTAMP}-service-core.json` using: `yarn output-test-results`
-- Upload the results: `yarn upload-test-results`
+- Checkout the repository locally: `npm run init-test-results-repo`
+- Run the test suite, printing the results in `test_results/service-core/${TAG_VERSION}/${TIMESTAMP}-service-core.json` using: `npm run output-test-results`
+- Upload the results: `npm run upload-test-results`
 
 ## Troubleshooting
 
@@ -224,33 +223,33 @@ Test results are kept in the [test-results-pryv.io](https://github.com/pryv/test
 
 If you're running into a lot of test failures because mongoDB doesn't like you today, it's maybe because your database is empty so try to run the storage tests first:
 
-    $ cd dist/components/storage/ && yarn test
+    $ cd dist/components/storage/ && npm test
 
-If you are getting multiple seamingly unrelated errors following a branch switch, rebuild the `dist/` folder using `rm -rf dist/ && yarn release`.
+If you are getting multiple seamingly unrelated errors following a branch switch, rebuild the `dist/` folder using `rm -rf dist/ && npm run release`.
 
 ### Cannot find module components
 
 When running tests in single components:
-- `Error: Cannot find module 'components/...'`: Ensure that symlink `node_modules/components` pointing to `../components` exists. (for `dist/`, `yarn release` takes care of it).
+- `Error: Cannot find module 'components/...'`: Ensure that symlink `node_modules/components` pointing to `../components` exists. (for `dist/`, `npm run release` takes care of it).
 
 ### Unicode
 
 If you're blocking because 'unicode.org' doesn't like you today, here's what you do:
 
-    $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt yarn install
+    $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt npm install
 
 ### Docker installation on Linux
 
-If you are trying to run `docker SOME_COMMAND` and get the following error:  
+If you are trying to run `docker SOME_COMMAND` and get the following error:
 
 ```log
 docker: Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post http://%2Fvar%2Frun%2Fdocker.sock/v1.26/containers/create: dial unix /var/run/docker.sock: connect: permission denied.
 See 'docker run --help'.
 ```
 
-You should add the current user to the `docker` group: `sudo usermod -a -G docker $USER`  
+You should add the current user to the `docker` group: `sudo usermod -a -G docker $USER`
 
-After running this command, in your shell, log out of your account and log back in, reboot if needed.  
+After running this command, in your shell, log out of your account and log back in, reboot if needed.
 Run `docker run hello-world` to check if it works.
 
 [reference](https://techoverflow.net/2017/03/01/solving-docker-permission-denied-while-trying-to-connect-to-the-docker-daemon-socket/)
@@ -265,6 +264,7 @@ influxd
 ```
 
 Or increase the number of authorized files using: `ulimit -n 1024` (or more if needed)
+
 
 # License
 Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved

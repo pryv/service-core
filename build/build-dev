@@ -16,14 +16,14 @@ sudo apt-get install graphicsmagick
 
 #======================================================================
 # If the script is run several times, this could fail because of occupied ports
-# but in the isolated environment like docker it is ok, but for local machine 
+# but in the isolated environment like docker it is ok, but for local machine
 # installation could cause confusion
 
-# Start nats-server (the same as `yarn nats`, just in the background)
+# Start nats-server (the same as `npm run nats`, just in the background)
 ./nats-server/nats-server-v2.3.4-linux-amd64/nats-server &
 
 # Start Influx db and verify the status
 sudo service influxdb start
 
 # Start mongodb
-yarn database
+npm run database

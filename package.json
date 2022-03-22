@@ -18,7 +18,8 @@
   "scripts": {
     "api": "cd dist/components/api-server && NODE_ENV=development bin/server",
     "build-dev": "scripts/prepare_dist && node_modules/.bin/babel ./components --out-dir=dist/components --copy-files --source-maps both",
-    "cover": "node_modules/.bin/nyc --reporter=html --report-dir=./coverage yarn run test",
+    "c2w": "rm -rf dist && rm -rf components/**/node_modules && npm run setup && npm run release && npm run watch",
+    "cover": "node_modules/.bin/nyc --reporter=html --report-dir=./coverage npm run test",
     "database": "scripts/start-database.sh",
     "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'components/**/*.js' -t html",
     "influx": "influxd -config /usr/local/etc/influxdb.conf",
@@ -30,15 +31,14 @@
     "output-test-results": "node scripts/test-results/test-results.js",
     "previews": "cd dist/components/previews-server && npm start",
     "release": "scripts/prepare_dist && node_modules/.bin/babel ./components --verbose --out-dir=dist/components --copy-files",
-    "setup": "yarn install --ignore-optionals",
+    "setup": "npm ci",
     "tag-tests": "node scripts/test-ids.js",
-    "test": "node scripts/components-command yarn test",
+    "test": "node scripts/components-command npm test",
     "test-root": "node_modules/.bin/mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
+    "tracing": "open http://localhost:16686/; docker run --rm -p 6831:6831/udp -p 6832:6832/udp -p 16686:16686 jaegertracing/all-in-one:1.7 --log-level=debug;",
     "upload-test-results": "scripts/test-results/upload.sh",
     "watch": "node_modules/.bin/babel --verbose --watch=./components --out-dir=dist/components --copy-files --source-maps both",
-    "webhooks": "cd dist/components/webhooks && bin/server",
-    "c2w": "rm -rf dist && rm -rf components/**/node_modules && yarn setup && yarn release && yarn watch",
-    "tracing": "open http://localhost:16686/; docker run --rm -p 6831:6831/udp -p 6832:6832/udp -p 16686:16686 jaegertracing/all-in-one:1.7 --log-level=debug;"
+    "webhooks": "cd dist/components/webhooks && bin/server"
   },
   "pre-commit": [
     "license"
@@ -130,6 +130,6 @@
   },
   "engines": {
     "node": "16.x",
-    "yarn": "1.x"
+    "yarn": "Yarn is no longer used – just use npm."
   }
 }

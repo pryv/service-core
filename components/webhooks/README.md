@@ -5,8 +5,9 @@
 
 Make sure you run a MongoDB instance.
 
-- Run tests: `yarn test`
-- Run server: `yarn start`
+- Run tests: `npm test`
+- Run server: `npm start`
+
 
 
 

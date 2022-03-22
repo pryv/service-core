@@ -9,12 +9,12 @@
   "main": "src/index.js",
   "scripts": {
     "_test": "NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 --reporter=dot 'test/**/*test.js' --slow 20 --exit --require test/hooks.js",
-    "cover": "../../node_modules/.bin/nyc --reporter=html --report-dir=./coverage yarn run test",
+    "cover": "../../node_modules/.bin/nyc --reporter=html --report-dir=./coverage npm run test",
     "start": "NODE_ENV=development node bin/server",
-    "test": "yarn run _test --logs:console:active=false",
-    "test-debug": "yarn run _test --timeout 3600000 --reporter=spec --inspect-brk=40000",
-    "test-detailed": "yarn run _test --reporter=spec",
-    "test-profile": "yarn run _test --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
+    "test": "npm run _test --logs:console:active=false",
+    "test-debug": "npm run _test --timeout 3600000 --reporter=spec --inspect-brk=40000",
+    "test-detailed": "npm run _test --reporter=spec",
+    "test-profile": "npm run _test --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
     "update-event-types": "scripts/update-event-types.bash"
   },
   "dependencies": {

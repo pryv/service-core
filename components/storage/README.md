@@ -11,7 +11,7 @@ Make sure to check the root README first.
 
 1. Checkout tag that doesn't have your update's changes.
 2. Generate dump
-  1. Go to [dist/components/test-helpers](../test-helpers) and run `yarn dump-test-data ${old-version}`, providing the latest released version. (testData.resetUsers might alter data with `buildCustomAccountProperties()`)
+  1. Go to [dist/components/test-helpers](../test-helpers) and run `npm run dump-test-data ${old-version}`, providing the latest released version. (testData.resetUsers might alter data with `buildCustomAccountProperties()`)
   2. Copy `dist/components/tests-helpers/src/data/dumps/${old-version}/` to `components/tests-helpers/src/data/dumps/${old-version}`
   3. If needed, add old indexes to [components/test-helpers/src/data/structure/${old-version}](../test-helpers/src/structure/).
   4. Stash your changes
@@ -23,10 +23,11 @@ Make sure to check the root README first.
 
 ### Tests
 
-- `yarn run test` (or `yarn test`) for quiet output
-- `yarn run test-detailed` for detailed test specs and debug log output
-- `yarn run test-profile` for profiling the tested server instance and opening the processed output with `tick-processor`
-- `yarn run test-debug` is similar as `yarn run test-detailed` but in debug mode; it will wait for a debugger to be attached on port 5858
+- `npm run test` (or `npm test`) for quiet output
+- `npm run test-detailed` for detailed test specs and debug log output
+- `npm run test-profile` for profiling the tested server instance and opening the processed output with `tick-processor`
+- `npm run test-debug` is similar as `npm run test-detailed` but in debug mode; it will wait for a debugger to be attached on port 5858
+
 
 
 # License
