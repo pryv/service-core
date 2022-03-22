@@ -224,8 +224,6 @@ async function expandAndTransformStreamQuery(streamQuery, expandSet) {
       not.push(...expandedSet);
     }
     if (not.length > 0) {
-      //if (! res.not) res.not = [];
-      //res.not = uniqueStreamIds(_.union(res.not, not));
       if (! res.and) res.and = [];
       res.and.push({not: uniqueStreamIds(not)});
     }

@@ -349,7 +349,7 @@ async function streamQueryAddHiddenStreams(context: MethodContext, params: GetEv
   for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
     if (streamQuery.storeId !== 'local') continue;
     if (streamQuery.and == null) streamQuery.and = [];
-     streamQuery.and.push({not: forbiddenStreamIds});
+    streamQuery.and.push({not: forbiddenStreamIds});
   }
 
   // trashed stream (it's enough to add only root streams, as they will expanded later on)
