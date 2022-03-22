@@ -92,7 +92,8 @@
     "unicode": "^12.1.0",
     "unix-timestamp": "^0.2.0",
     "xmlhttprequest-ssl": "^1.6.2",
-    "yargs": "^16.0.3"
+    "yargs": "^16.0.3",
+    "z-schema": "^5.0.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",

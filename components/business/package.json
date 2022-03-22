@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@pryv/stable-object-representation": "^1.1.4",
-    "mkdirp": "^1.0.4",
-    "z-schema": "^4.2.3"
+    "mkdirp": "^1.0.4"
   }
 }
