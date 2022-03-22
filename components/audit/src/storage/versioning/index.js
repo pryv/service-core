@@ -6,6 +6,15 @@
  */
 
 
+
+const {migrate0to1, checkAllUsers } = require('./migrate0to1');
+
+
+
+
 module.exports = {
-  migrate0to1: require('./migrate0to1'),
+  migrate0to1,
+  checkAllUsers,
 }
+
+

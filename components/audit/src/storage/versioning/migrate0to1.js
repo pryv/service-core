@@ -21,6 +21,13 @@
 
 const sqlite3 = require('better-sqlite3');
 const unlinkFilePromise = require('fs/promises').unlink;
+const path = require('path');
+const fs = require('fs');
+const { getLogger } = require('@pryv/boiler');
+const UserLocalDirectory = require('business').users.UserLocalDirectory;
+const UserDatabase = require('../UserDatabase');
+
+const logger =  getLogger('sqlite-storage-migration:migrate0to1');
 
 async function migrate0to1(v0dbPath, v1user, logger) {
   const v0db = new sqlite3(v0dbPath);
@@ -57,4 +64,59 @@ async function migrate0to1(v0dbPath, v1user, logger) {
   return res;
 }
 
-module.exports = migrate0to1;
+async function checkAllUsers(storage) {
+  const userDir = UserLocalDirectory.getBasePath();
+  const auditDBVersionFile = path.join(userDir, 'audit-db-version-' + storage.getVersion() + '.txt'); 
+  if (fs.existsSync(auditDBVersionFile)) {
+    logger.debug('Audit db version file found, skipping migration for ' + storage.getVersion());
+    return;
+  }
+
+  const counts = {
+    done: 0,
+    skip: 0
+  };
+
+  await UserLocalDirectory.foreachUserDirectory(checkUserDir, userDir, logger);
+  logger.info('Done with migration for ' + storage.getVersion() + ': ' + counts.done + ' done, ' + counts.skip + ' skipped');
+
+  await fs.writeFileSync(auditDBVersionFile, 'DO NOT DELETE THIS FILE - IT IS USED TO DETECT MIGRATION SUCESS');
+
+  async function checkUserDir(userId, userDir) {
+    // check if a migration from a non upgradeable schema (copy file to file) is needed
+    const v0dbPath = await storage._dbPathForUserid(userId, '');
+  
+    if (! fs.existsSync(v0dbPath)) {
+      logger.info('OK for ' + userId);
+      counts.skip++;
+      return; // skip as file exists
+    };
+
+    const v1dbPath = await storage.dbPathForUserid(userId);
+    if (fs.existsSync(v1dbPath)) {
+      logger.error('ERROR: Found V0 and V1 database for: ' + userId + '>>> Manually delete one of the version in: ' + userDir);
+      process.exit(1);
+    };
+
+    const v1user = new UserDatabase(logger, {dbPath: v1dbPath});
+   
+    try {
+      await v1user.init();
+      const resMigrate = await migrate0to1(v0dbPath, v1user, logger);
+      logger.info('Migrated ' + resMigrate.count + ' records for ' + userId);
+      await v1user.close();
+      counts.done++;
+    } catch (err) {
+      logger.error('ERROR during Migration V0 to V1: ' + err.message + ' >> For User: ' + userId + '>>> Check Dbs in: ' + userDir);
+      logger.error(err);
+      process.exit(1);
+    }
+  }
+}
+
+
+
+module.exports = {
+  migrate0to1,
+  checkAllUsers,
+};

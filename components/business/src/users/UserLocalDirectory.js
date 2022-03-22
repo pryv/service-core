@@ -40,7 +40,7 @@ function pathForuserId(userId, extraPath = '') {
   if (basePath == null) {
     throw(new Error('Initialize UserLocalDirectory first'));
   }
-  if (! userId || userId.length < 3) {
+  if (! userId || userId.length < 3) {
     throw(new Error('Invalid or too short userId: ' + userId));
   }
   const dir1 = userId.substr(userId.length - 1, 1); // last character of id
@@ -92,6 +92,12 @@ async function init() {
   logger.debug('User local files: ' + basePath + '  Attachments in: ' + attachmentsBasePath);
 }
 
+function getBasePath () {
+  if (basePath == null) {
+    throw(new Error('Initialize UserLocalDirectory first'));
+  }
+  return basePath;
+}
 
 module.exports = {
   ensureUserDirectory,
@@ -99,4 +105,36 @@ module.exports = {
   pathForAttachment,
   deleteUserDirectory,
   init,
+  getBasePath,
+  foreachUserDirectory,
+}
+
+/**
+ * 
+ * @param {Function} asyncCallBack(uid, path)
+ * @param {string} [userDataPath] -- Optional, user data path
+ * @param {string} [logger] -- Optional, logger
+ */
+async function foreachUserDirectory(asyncCallBack, userDataPath, logger) {
+  logger = logger || getLogger('user-local-directory:foreachUserDirectory');
+  await loop(userDataPath || basePath, '');
+
+  async function loop (loopPath, tail) {
+    const fileNames = fs.readdirSync(loopPath);
+
+    for (const fileName of fileNames) {
+      if (tail.length < 3 && fileName.length !== 1) { logger.warn('Skipping no 1 char' + fileName); continue ; }
+      const myDirPath = path.join(loopPath, fileName);
+      if (! fs.statSync(myDirPath).isDirectory()) { logger.warn('Skipping File' + fileName); continue ; }
+      const myTail = fileName + tail;
+      
+      
+      if (tail.length < 3) {
+        await loop(myDirPath, myTail);
+      } else {
+        if (! fileName.endsWith(tail)) { logger.warn('Skipping not valid userDir' + myDirPath); continue ; }
+        await asyncCallBack(fileName, myDirPath);
+      }
+    }
+  }
 }
