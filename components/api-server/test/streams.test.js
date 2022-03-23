@@ -735,18 +735,22 @@ describe('streams', function () {
             stepDone();
           });
         },
-        function verifyStreamData(stepDone) {
-          storage.findAll(user, null, function (err, streams) {
-            treeUtils.findById(streams, parent.id).children.length
-              .should.eql(testData.streams[2].children.length - 1, 'child streams');
+        async function verifyStreamData() {
+          // parent
+          const parentStream = await mall.streams.get(user.id, {id: parent.id, storeId: 'local', expandChildren: true, includeTrashed: true});
+          const parentChildren = parentStream[0].children;
+          parentChildren.length.should.eql(testData.streams[2].children.length - 1, 'child streams');
+          
+          // deleted stream
+          const deletedStreams = await mall.streams.get(user.id, {includeDeletionsSince: 0, storeId: 'local'});
+          const foundDeletedStream = deletedStreams.filter(s => s.id == id)[0];
+          should.exists(foundDeletedStream, 'cannot find deleted stream');
+          validation.checkObjectEquality(foundDeletedStream, expectedDeletion);
 
-            var deletion = treeUtils.findById(streams, id);
-            should.exist(deletion);
-            validation.checkObjectEquality(deletion, expectedDeletion);
-
-            var childDeletion = treeUtils.findById(streams, childId);
-            should.exist(childDeletion);
-            validation.checkObjectEquality(childDeletion, expectedChildDeletion);
+          // child stream
+          const foundDeletedChild = deletedStreams.filter(s => s.id == childId)[0];
+          should.exists(foundDeletedChild, 'cannot find deleted child stream');
+          validation.checkObjectEquality(foundDeletedChild, expectedChildDeletion);
         }
       ],
       done );
