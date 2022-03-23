@@ -105,8 +105,8 @@ module.exports = async function (api) {
         id: streamId,
         storeId: storeId,
         expandChildren: true,
-        includeDeletionsSince: params.includeDeletionsSince,
-        includeTrashed: params.includeTrashed || params.state === 'all',
+        includeDeletionsSince: null, // deletetions will be addedd later on
+        includeTrashed: params.includeTrashed || params.state === 'all',
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
 
@@ -153,8 +153,8 @@ module.exports = async function (api) {
     }
 
     // remove non visible parentIds from
-    for (const rootStream of streams) { 
-      if ((rootStream.parentId != null) && (! await context.access.canListStream(rootStream.parentId))) {
+    for (const rootStream of streams) {
+      if ((rootStream.parentId != null) && (! await context.access.canListStream(rootStream.parentId))){
         rootStream.parentId = null;
       }
     };
@@ -172,20 +172,32 @@ module.exports = async function (api) {
     next();
   }
 
-  function includeDeletionsIfRequested(context, params, result, next) {
+  async function includeDeletionsIfRequested(context, params, result, next) {
     if (params.includeDeletionsSince == null) { return next(); }
 
-    var options = {
-      sort: { deleted: -1 }
-    };
+   
 
-    userStreamsStorage.findDeletions(context.user, params.includeDeletionsSince, options,
-      function (err, deletions) {
-        if (err) { return next(errors.unexpectedError(err)); }
+    let streamId = params.id || params.parentId || '*';
 
-        result.streamDeletions = deletions;
-        next();
-      });
+    let storeId = params.storeId; // might me null
+    if (storeId == null) {
+      [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    }
+
+    const query = {
+      storeId: storeId,
+      includeDeletionsSince: params.includeDeletionsSince,
+      hideStoreRoots: true
+    }
+
+    try {
+      const deletedStreams = await mall.streams.get(context.user.id, query);
+      result.streamDeletions = deletedStreams;
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
+    return next();
+    
   }
 
   // CREATION

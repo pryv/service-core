@@ -38,6 +38,15 @@ class LocalUserStreams extends DataStore.UserStreams {
   }
 
   async get(uid: string, params: StoreQuery): Promise<Array<Stream>> {
+
+    // deletions handling .. should be refactored
+    if (params.includeDeletionsSince != null) {
+      const options = { sort: { deleted: -1 }};
+      const deletedStreams = await bluebird.fromCallback(cb => this.userStreamsStorage.findDeletions({id: uid}, params.includeDeletionsSince, options, cb));
+      return deletedStreams;
+    };
+
+
     let allStreamsForAccount: Array<Stream> = cache.getStreams(uid, 'local');
     if (allStreamsForAccount == null) { // get from DB
       allStreamsForAccount = await bluebird.fromCallback(cb => this.userStreamsStorage.find({ id: uid }, {}, null, cb));
@@ -58,6 +67,10 @@ class LocalUserStreams extends DataStore.UserStreams {
 
     if (!params.includeTrashed) { // i.e. === 'default' (return non-trashed items)
       streams = treeUtils.filterTree(streams, false /*no orphans*/, stream => !stream.trashed);
+    }
+
+    if (! params.includeDeletionsSince) { // i.e. === 'default' (return non-deleted items)
+      streams = treeUtils.filterTree(streams, false /*no orphans*/, stream => stream.deleted == null);
     }
     return streams;
   }
