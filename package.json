@@ -88,7 +88,7 @@
     "sinon": "^5",
     "slug": "^5.3.0",
     "superagent": "^3.8",
-    "tchannel": "^4.0.1",
+    "tchannel": "https://github.com/pryv/tchannel-node#v4.0.1-patched",
     "unicode": "^12.1.0",
     "unix-timestamp": "^0.2.0",
     "xmlhttprequest-ssl": "^1.6.2",
