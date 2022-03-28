@@ -9,11 +9,5 @@
   "main": "src/index.js",
   "scripts": {
     "test": "../../node_modules/.bin/mocha -R dot 'test/**/*.test.js' --exit"
-  },
-  "dependencies": {
-    "protobufjs": "^6.8.6"
-  },
-  "devDependencies": {
-    "flowgen": "^1.2.1"
   }
 }

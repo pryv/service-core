@@ -1,9 +1,6 @@
-/**
- * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
- */
+# Older migration tests, kept for reference (e.g. when writing new tests)
+
+```js
 /**
  * Tests data migration between versions.
  */
@@ -32,11 +29,6 @@ const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin'
 
 describe('Versions', function () {
   this.timeout(20000);
-
-  
-
-  // older migration tests are skipped; they're kept for reference (e.g. when
-  // writing new tests)
 
   it.skip('must handle data migration from v0.2.0 to v0.3.0 (skipped, obsolete)', function (done) {
     var versions = getVersions('0.2.0', '0.3.0'),
@@ -247,23 +239,23 @@ describe('Versions', function () {
     const indexes = testData.getStructure('1.2.4').indexes;
 
     const user = {id: 'u_0'};
-    const userEvents = storage.user.events; 
+    const userEvents = storage.user.events;
 
     async.series([
-      (cb) => testData.restoreFromDump('1.2.4', mongoFolder, cb), 
+      (cb) => testData.restoreFromDump('1.2.4', mongoFolder, cb),
       (cb) => applyPreviousIndexes('events', indexes.events, cb),
       (cb) => versions.migrateIfNeeded(cb),
       (cb) => userEvents.listIndexes(user, {}, cb), // (a), see below
       (cb) => versions.getCurrent(cb), // (b), see below
     ], function (err, res) {
       assert.isNull(err, 'there was an error');
-      
+
       const events = res[3]; // (a)
       const version = res[4]; // (b)
 
-      const eventEndTimeIndex = 
+      const eventEndTimeIndex =
         _.findIndex(events, (o) => o.key.endTime === 1);
-      
+
       assert.isAtLeast(eventEndTimeIndex, 0);
       assert.strictEqual(version._id, '1.2.5');
       assert.isNotNull(version.migrationCompleted);
@@ -277,10 +269,10 @@ describe('Versions', function () {
     const indexes = testData.getStructure('1.3.37').indexes;
 
     const user = {id: 'u_0'};
-    const userAccesses = storage.user.accesses; 
+    const userAccesses = storage.user.accesses;
 
     async.series([
-      (cb) => testData.restoreFromDump('1.3.37', mongoFolder, cb), 
+      (cb) => testData.restoreFromDump('1.3.37', mongoFolder, cb),
       (cb) => applyPreviousIndexes('accesses', indexes.accesses, cb),
       (cb) => versions.migrateIfNeeded(cb),
       (cb) => userAccesses.listIndexes(user, {}, cb), // (a), see below
@@ -288,12 +280,12 @@ describe('Versions', function () {
       (cb) => userAccesses.findAll(user, {}, cb), // (c), see below
     ], function (err, res) {
       assert.isNull(err, 'there was an error');
-      
+
       const accessIndexes = res[3]; // (a)
       const version = res[4]; // (b)
       const accesses = res[5]; // (c)
 
-      const tokenIndex = 
+      const tokenIndex =
         _.findIndex(accessIndexes, (o) => o.key.token === 1);
       const otherIndex =
         _.findIndex(accessIndexes, (o) => {
@@ -307,10 +299,10 @@ describe('Versions', function () {
 
       const tokenPartialFilter = accessIndexes[tokenIndex].partialFilterExpression;
       const otherPartialFilter = accessIndexes[otherIndex].partialFilterExpression;
-      
+
       assert.isNotNull(tokenPartialFilter.deleted);
       assert.isNotNull(otherPartialFilter.deleted);
-    
+
       assert.strictEqual(version._id, '1.3.40');
       assert.isNotNull(version.migrationCompleted);
 
@@ -387,14 +379,14 @@ describe('Versions', function () {
       const followedSlices = res[16]; // (o)
 
       const version = res[17]; // (p)
-      
+
 
       compareIndexes(oldIndexes.events, eventsIndexes);
       compareIndexes(oldIndexes.streams, streamsIndexes);
       compareIndexes(oldIndexes.accesses, accessesIndexes);
       compareIndexes(oldIndexes.profile, profileIndexes);
       compareIndexes(oldIndexes.followedSlices, followedSlicesIndexes);
-      
+
       compareData(oldEvents, events);
       compareData(oldStreams, streams);
       compareData(oldAccesses, accesses);
@@ -420,11 +412,11 @@ describe('Versions', function () {
           }
         }
       });
-  
+
       if (resourceName == 'streams') {
         items = buildTree(items);
       }
-  
+
       return items;
     }
 
@@ -455,7 +447,7 @@ describe('Versions', function () {
   it.skip('[CRPX] must handle data migration from v1.4.0 to 1.5.0', function (done) {
     const versions = getVersions('1.5.0');
     const newIndexes = testData.getStructure('1.5.0').indexes;
-  
+
     const user = { id: 'u_0' };
     const userEventsStorage = storage.user.events;
     const userStreamsStorage = storage.user.streams;
@@ -473,7 +465,7 @@ describe('Versions', function () {
       const events = res[3]; // (d)
       const streams = res[4]; //(e)
       const version = res[5]; //(f)
-    
+
       assert.strictEqual(version._id, '1.5.0', 'version not upgraded');
       assert.isNotNull(version.migrationCompleted, 'migrationCompleted not set');
       compareIndexes(newIndexes.events, eventsIndexes);
@@ -510,8 +502,8 @@ describe('Versions', function () {
     const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
 
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = SystemStreamsSerializer.getAccountLeavesMap(); 
-    const userAccountStreamIds = Object.keys(userAccountStreams); 
+    const userAccountStreams = SystemStreamsSerializer.getAccountLeavesMap();
+    const userAccountStreamIds = Object.keys(userAccountStreams);
 
     // perform migration
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.5.22', mongoFolder, cb));
@@ -529,7 +521,7 @@ describe('Versions', function () {
           streamIds: {$in: userAccountStreamIds},
           userId: { $eq: u._id }, // we've accessed users through the raw collection
         }, cb));
-      
+
       const events = await eventsCursor.toArray();
       // extra custom account streamIds not present in db dump
       const streamsToIgnore = [ '.insurancenumber', '.phoneNumber']
@@ -579,7 +571,7 @@ describe('Versions', function () {
           const e = events.filter(e => e.streamIds.indexOf(streamId) >= 0);
           return e[0];
         }
-      }); 
+      });
     }
 
     const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
@@ -629,3 +621,4 @@ describe('Versions', function () {
   }
 
 });
+```

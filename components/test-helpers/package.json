@@ -10,6 +10,5 @@
   "scripts": {
     "dump-test-data": "NODE_ENV=development node scripts/dump-test-data",
     "restore-test-data": "node scripts/restore-test-data"
-  },
-  "dependencies": {}
+  }
 }

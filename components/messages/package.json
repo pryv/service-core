@@ -9,8 +9,5 @@
   "main": "src/index.js",
   "scripts": {
     "test": "NODE_ENV=test ../../node_modules/.bin/mocha --reporter=dot test/**/*.test.js --exit"
-  },
-  "dependencies": {
-    "nats": "^2.1.0"
   }
 }

@@ -15,13 +15,5 @@
     "test-debug": "npm run _test -- --timeout 3600000 --reporter=spec --inspect-brk=40000",
     "test-detailed": "npm run _test -- --reporter=spec",
     "test-profile": "npm run _test -- --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt"
-  },
-  "dependencies": {
-    "awaiting": "^3.0",
-    "lib-reporting": "git+ssh://git@github.com/pryv/lib-reporting",
-    "multistream": "^2.1.1",
-    "socket.io": "^3.1.2",
-    "socketio-wildcard": "^2.0.0",
-    "url": "^0.11.0"
   }
 }
