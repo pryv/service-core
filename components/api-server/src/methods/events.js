@@ -919,29 +919,18 @@ module.exports = async function (api)
     if (! isTagsBackwardCompatibilityActive) return next();
     
     const tags: ?Array<string> = context.newEvent.tags;
-    if (tags == null) return next();
-    const streams: Array<Promise> = [];
-    for(const tag: string of tags) {
-      // weirdly context.streamForStreamId does not behave like a Promise, so we execute it in the for loop
-      streams.push(await context.streamForStreamId(TAG_PREFIX + tag, 'local'));
+    if (tags == null || tags.length == 0) return next();
+    const streamsToTest = [{id: TAG_ROOT_STREAMID, name: 'Migrated tags', parentId: null}];
+    for (const tag of tags) { streamsToTest.push({id: TAG_PREFIX + tag, name: tag, parentId: TAG_ROOT_STREAMID}); }
+  
+    const streamIdsCreated = [];
+    for(const streamData of streamsToTest) {
+      const stream = await context.streamForStreamId(streamData.id, 'local');
+      if (stream == null) {
+        await mall.streams.create(context.user.id, streamData);
+        streamIdsCreated.push(streamData.id)
+      }
     }    
-    const streamIdsToCreate: Array<string> = (_.cloneDeep(tags)).map(t => TAG_PREFIX + t);
-    for(const stream: ?Stream of streams) {
-      if (stream != null) streamIdsToCreate.splice(streamIdsToCreate.indexOf(stream.id), 1);
-    }
-    const streamsToCreate: Array<Promise<void>> = [];
-    for(const streamId: string of streamIdsToCreate) {
-      const newStream: Stream = context.initTrackingProperties({
-        id: streamId,
-        name: streamId,
-        parentId: TAG_ROOT_STREAMID,
-      });
-      streamsToCreate.push(bluebird.fromCallback(cb =>  userStreamsStorage.insertOne(context.user, newStream, cb)));
-    }
-    const streamsCreatedResults: Array<{}> = await Promise.allSettled(streamsToCreate);
-    const streamIdsCreated: Array<string> = streamsCreatedResults.map(r => {
-      if (r.status === 'fulfilled') return r.value.id;
-    });
     
     if (streamIdsCreated.length > 0) logger.info('backward compatibility: created streams for tags: ' + streamIdsCreated);
     

@@ -22,7 +22,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getUsersRepository, User } = require('business/src/users');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
-const { getMall } = require('mall');
+const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
 
 // users
@@ -119,6 +119,20 @@ const streams = exports.streams = require('./data/streams');
 
 exports.resetStreams = function (done, user) {
   resetData(storage.user.streams, user || defaultUser, streams, done);
+  /** AT WOrK
+  const myUser = user || defaultUser;
+  async.series([
+    async () => { 
+      const mall = await getMall(); 
+      mall.streams.deleteAll(myUser.id, 'local');
+      for (const stream of streams) {
+        $$(stream);
+        await mall.streams.create(myUser.id, stream);
+      }
+    },
+  ], done)
+  */
+
 };
 
 function resetData (storage, user, items, done) {

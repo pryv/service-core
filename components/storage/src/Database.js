@@ -374,7 +374,7 @@ class Database {
    * @param {Function} callback
    */
   findOne(collectionInfo: CollectionInfo, query: Object, options: FindOptions, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOne(query, options || {}, callback);
@@ -389,7 +389,7 @@ class Database {
    * @param {Function} callback
    */
   insertOne (collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback, options: Object = {}) {
-    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, item);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertOne(item, options, (err, res) => {
@@ -700,7 +700,7 @@ function getTotalSizeFromStats(stats) {
 
 function tellMeIfStackDoesNotContains(needles, info) {
   const e = new Error();
-  const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 ).slice(1, 25);
+  const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 ).slice(1, 100);
   for (const needle of needles) {
     if (stack.some(l => l.indexOf(needle) >= 0)) {
       return true;

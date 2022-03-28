@@ -28,7 +28,7 @@ var deps = module.exports = {
       eventFiles: new storage.user.EventFiles(
         config.get('eventFiles'), getLogger('eventFiles')),
       followedSlices: new storage.user.FollowedSlices(database),
-      streams: new storage.user.Streams(database),
+      streams: new storage.user.Streams(database), // TODO: reomove when mall is fully implemented for streams
       profile: new storage.user.Profile(database),
       webhooks: new storage.user.Webhooks(database),
     }

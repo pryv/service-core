@@ -25,6 +25,13 @@ const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
 const { getMall } = require('mall');
 let mall;
+
+async function initMall() {
+  if (mall == null) {
+    mall = await getMall();
+  }
+}
+
 class Context {
   databaseConn: storage.Database; 
   
@@ -43,7 +50,7 @@ class Context {
     });
     await userIndex.init();
     await userIndex.deleteAll();
-    mall = await getMall();
+    await initMall();
 
     // await Promise.all(collections);
     // console.log(await bluebird.fromCallback(cb =>
@@ -78,8 +85,6 @@ class UserContext {
     const conn = this.context.databaseConn;
     return {
       sessions: new Sessions(conn),
-      
-      streams: new storage.user.Streams(conn),
       accesses: new storage.user.Accesses(conn),
       webhooks: new storage.user.Webhooks(conn),
     };
@@ -203,7 +208,8 @@ class Fixture {
   // Creates a Pryv user. If a block is given (`cb`), it is called after
   // the user is really created. 
   // 
-  user(name: string, attrs: {}={}, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
+  async user(name: string, attrs: {}={}, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
+    await initMall();
     return bluebird.try(() => {
       const u = new FixtureUser(
         this.context.forUser(name),
@@ -304,7 +310,6 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     const user = null; // NOTE not needed for access to users collection.
     const username = this.context.userName; 
     const collections = [
-      db.streams, 
       db.accesses, 
       db.webhooks,
     ];
@@ -371,13 +376,15 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
     return this.childs.create(e);
   }
   
+  /**
+   * @returns {Promise<mixed>}
+   */
   create() {
     const db = this.db; 
     const user = this.context.user; 
     const attributes = this.attrs; 
     
-    return bluebird.fromCallback((cb) => 
-      db.streams.insertOne(user, attributes, cb)); 
+    return mall.streams.create(user.id, attributes);
   }
 
   fakeAttributes() {

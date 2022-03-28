@@ -237,34 +237,34 @@ module.exports = async function (api) {
     next();
   }
 
-  function createStream(context, params, result, next) {
-    userStreamsStorage.insertOne(context.user, params, function (err, newStream) {
-      if (err != null) {
-        // Duplicate errors
-        if (err.isDuplicate) {
-          if (err.isDuplicateIndex('streamId')) {
-            return next(errors.itemAlreadyExists(
-              'stream', { id: params.id }, err));
-          }
-          if (err.isDuplicateIndex('name')) {
-            return next(errors.itemAlreadyExists(
-              'sibling stream', { name: params.name }, err));
-          }
-        }
-        // Unknown parent stream error
-        else if (params.parentId != null) {
-          return next(errors.unknownReferencedResource(
-            'parent stream', 'parentId', params.parentId, err
-          ));
-        }
-        // Any other error
-        return next(errors.unexpectedError(err));
-      }
-
+  async function createStream(context, params, result, next) {
+    try {
+      const newStream = await mall.streams.create(context.user.id, params);
       result.stream = newStream;
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
       next();
-    });
+    } catch (err) {
+      $$({err});
+      // Duplicate errors
+      if (err.isDuplicate) {
+        if (err.isDuplicateIndex('streamId')) {
+          return next(errors.itemAlreadyExists(
+            'stream', { id: params.id }, err));
+        }
+        if (err.isDuplicateIndex('name')) {
+          return next(errors.itemAlreadyExists(
+            'sibling stream', { name: params.name }, err));
+        }
+      }
+      // Unknown parent stream error
+      else if (params.parentId != null) {
+        return next(errors.unknownReferencedResource(
+          'parent stream', 'parentId', params.parentId, err
+        ));
+      }
+      // Any other error
+      return next(errors.unexpectedError(err));
+    }
   }
 
   // UPDATE
@@ -409,7 +409,6 @@ module.exports = async function (api) {
     userStreamsStorage.updateOne(context.user, { id: params.id }, updatedData,
       function (err, updatedStream) {
         if (err) { return next(errors.unexpectedError(err)); }
-
         result.stream = updatedStream;
         pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
         next();
