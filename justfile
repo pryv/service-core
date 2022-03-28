@@ -52,20 +52,20 @@ start-mongo:
     # TODO: rename/cleanup that script
     scripts/start-database.sh
 
-# Run the given component binary for dev (expects `dist/{component}/bin/{bin}`)
-run component bin="server":
+# Start the given server component for dev (expects `dist/{component}/bin/server`)
+start component:
     cd dist/components/{{component}} && \
-    NODE_ENV=development bin/{{bin}}
+    NODE_ENV=development bin/server
 
-# Run the given component’s `bin/server`, automatically restarting when file changes are detected
-nodemon component:
+# Start the given server component for dev, automatically restarting on file changes (requires nodemon)
+start-mon component:
     cd dist/components/{{component}} && \
     NODE_ENV=development nodemon bin/server
 
-# Run the given component’s `start` script
-start component:
+# Run the given component binary for dev (expects `dist/{component}/bin/{bin}`)
+run component bin:
     cd dist/components/{{component}} && \
-    npm start
+    NODE_ENV=development bin/{{bin}}
 
 # –––––––––––––----------------------------------------------------------------
 # Test & related

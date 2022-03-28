@@ -8,7 +8,6 @@
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
   "scripts": {
     "_test": "NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 --reporter=dot 'test/**/*.js' --slow 20 --exit",
-    "start": "NODE_ENV=development node src/server",
     "test": "npm run _test -- --logs:console:active=false",
     "test-debug": "npm run _test -- --timeout 3600000 --reporter=spec --debug-brk",
     "test-detailed": "npm run _test -- --reporter=spec",
