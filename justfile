@@ -1,11 +1,13 @@
-# let recipes run node bin scripts
+# add node bin script path for recipes
 export PATH := "./node_modules/.bin:" + env_var('PATH')
-
-repo_dir := justfile_directory()
 
 # Default: display available recipes
 _help:
     @just --list
+
+# –––––––––––––----------------------------------------------------------------
+# Setup
+# –––––––––––––----------------------------------------------------------------
 
 # Install node modules afresh
 install *params: clean
@@ -17,6 +19,7 @@ clean:
     rm -rf node_modules
     rm -rf components/**/node_modules
 
+# Install node modules strictly as specified (typically for CI)
 install-stable:
     npm ci
 
@@ -35,9 +38,14 @@ compile-release: _prepare-dist
 _prepare-dist:
     scripts/prepare_dist
 
+# –––––––––––––----------------------------------------------------------------
+# Run
+# –––––––––––––----------------------------------------------------------------
+
 # Run all dependency services (e.g. nats server, Mongo, Influx…)
 start-deps:
-    concurrently --names "nats,mongo,influx" nats-server "echo 'TODO: Mongo'" influxd
+    concurrently --names "nats,mongo,influx" \
+        nats-server "echo 'TODO: Mongo is run separately for now'" influxd
 
 # Run MongoDB
 start-mongo:
@@ -49,20 +57,19 @@ run component bin="server":
     cd dist/components/{{component}} && \
     NODE_ENV=development bin/{{bin}}
 
+# Run the given component’s `bin/server`, automatically restarting when file changes are detected
+nodemon component:
+    cd dist/components/{{component}} && \
+    NODE_ENV=development nodemon bin/server
+
 # Run the given component’s `start` script
 start component:
     cd dist/components/{{component}} && \
     npm start
 
-# TODO: clarify & possibly remove
-tmp-local:
-    cd dist/components/api-server && \
-    NODE_ENV=development nodemon bin/server
-
-# TODO: clarify & possibly remove
-tmp-metadata:
-    cd dist/components/metadata && \
-    bin/metadata
+# –––––––––––––----------------------------------------------------------------
+# Test & related
+# –––––––––––––----------------------------------------------------------------
 
 # Tag each test with a unique id if missing
 tag-tests:
@@ -72,31 +79,40 @@ tag-tests:
 test *params:
     node scripts/components-command npm test {{params}}
 
-# TODO: clarify & possibly remove: Run integration tests
-test-root:
-    mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js
-
-# BROKEN: Run tests on all components and generate HTML coverage report
+# ⚠️  BROKEN: Run tests on all components and generate HTML coverage report
 test-cover *params:
     nyc --reporter=html --report-dir=./coverage just test {{params}}
 
+# Set up test results report generation
 test-results-init-repo:
     scripts/test-results/init_repo.sh
 
+# Generate test results report
 test-results-generate:
     node scripts/test-results/test-results.js
 
+# Upload test results report
 test-results-upload:
     scripts/test-results/upload.sh
 
-# TODO: clarify & possibly remove
-tracing:
+# Run tracing service (Jaeger)
+trace:
     open http://localhost:16686/
     docker run --rm -p 6831:6831/udp -p 6832:6832/udp -p 16686:16686 jaegertracing/all-in-one:1.7 --log-level=debug
 
+# –––––––––––––----------------------------------------------------------------
+# Misc. utils
+# –––––––––––––----------------------------------------------------------------
+
+# Generate Flow.js coverage report
 flow-cover:
     flow-coverage-report -i 'components/**/*.js' -t html
 
+# Update default event types from online reference
+update-event-types:
+    scripts/update-event-types.bash
+
+# Run source licensing tool (see `licensing` folder for details)
 license:
     source-licenser licensing/config.yml licensing/LICENSE.src ./
 
