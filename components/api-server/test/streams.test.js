@@ -305,7 +305,7 @@ describe('streams', function () {
 
         async.series([
           async function _countInitialChildStreams() {
-            const streams = await mall.streams.get(user.id, {id: initialRootStreamId, storeId: 'local', expandChildren: true});
+            const streams = await mall.streams.get(user.id, {id: initialRootStreamId, storeId: 'local', expandChildren: -1});
             originalCount = streams[0].children.length;
           },
           function _addNewStream(stepDone) {
@@ -326,7 +326,7 @@ describe('streams', function () {
             });
           },
           async function _recountChildStreams() {
-            const streams = await mall.streams.get(user.id, {id: initialRootStreamId, storeId: 'local', expandChildren: true});
+            const streams = await mall.streams.get(user.id, {id: initialRootStreamId, storeId: 'local', expandChildren: -1});
             const count = streams[0].children.length;
             assert.strictEqual(count, originalCount + 1, 'Created a child stream.');
           }
@@ -725,7 +725,7 @@ describe('streams', function () {
         },
         async function verifyStreamData() {
           // parent
-          const parentStream = await mall.streams.get(user.id, {id: parent.id, storeId: 'local', expandChildren: true, includeTrashed: true});
+          const parentStream = await mall.streams.get(user.id, {id: parent.id, storeId: 'local', expandChildren: -1, includeTrashed: true});
           const parentChildren = parentStream[0].children;
           parentChildren.length.should.eql(testData.streams[2].children.length - 1, 'child streams');
           

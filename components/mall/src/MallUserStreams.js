@@ -52,18 +52,22 @@ class MallUserStreams {
    * @param {Object} params
    * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by Mall 
    * @param {identifier} [params.storeId] null, means streamId is a "FullStreamId that includes store informations"
-   * @param {identifier} [params.expandChildren] default false, if true also return childrens
-   * @param {Array<identifier>} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is true, children of excludedIds should be excludded too
+   * @param {integer} [params.expandChildren] default 0, if > 0 also return childrens for n levels, -1 means all levels
+   * @param {Array<identifier>} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is 0, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @param {timestamp} [params.includeDeletionsSince] 
    * @param {boolean} [params.hideStoreRoots] When false, returns the root streams of each store
    * @returns {UserStream|null} - the stream or null if not found:
    */
   async get(uid: string, params: StoreQuery) {
-
+    
     // -------- cleanup params --------- //
-    const streamId: string = params.id || '*'; 
-    const storeId: string = params.storeId;
+    let streamId: string = params.id || '*'; 
+    let storeId: string = params.storeId;
+    if (storeId == null) { [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId); }
+
+    params.expandChildren = params.expandChildren || 0;
+
     const excludedIds: Array<string> = params.excludedIds || [];
     const hideStoreRoots: boolean = params.hideStoreRoots || false;
 

@@ -58,11 +58,12 @@ class LocalUserStreams extends DataStore.UserStreams {
 
     let streams: Array<Stream> = [];
     if (params?.id === '*') {
-      // assert: params.expandChildren == true, see "#*" case
+      // assert: params.expandChildren == -1, see "#*" case
       streams = clone(allStreamsForAccount); // clone to be sure they can be mutated without touching the cache
     } else {
       const stream: Stream = treeUtils.findById(allStreamsForAccount, params.id); // find the stream
-      if (stream != null) streams = [cloneStream(stream, params.expandChildren)]; // clone to be sure they can be mutated without touching the cache
+      const includeChildren = params.expandChildren != 0;
+      if (stream != null) streams = [cloneStream(stream, includeChildren)]; // clone to be sure they can be mutated without touching the cache
     }
 
     if (!params.includeTrashed) { // i.e. === 'default' (return non-trashed items)

@@ -104,7 +104,7 @@ module.exports = async function (api) {
       {
         id: streamId,
         storeId: storeId,
-        expandChildren: true,
+        expandChildren: -1,
         includeDeletionsSince: null, // deletetions will be addedd later on
         includeTrashed: params.includeTrashed || params.state === 'all',
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
@@ -140,7 +140,7 @@ module.exports = async function (api) {
               {
                 id: listable.streamId,
                 storeId: listable.storeId,
-                expandChildren: true,
+                expandChildren: -1,
                 includeDeletionsSince: params.includeDeletionsSince,
                 includeTrashed: params.includeTrashed || params.state === 'all',
                 excludedIds: context.access.getCannotListStreamsStreamIds(listable.storeId),
@@ -331,10 +331,42 @@ module.exports = async function (api) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
-    // check target parent if needed
-    if (params.update.parentId && ! await context.access.canCreateChildOnStream(params.update.parentId)) {
+    // check parent (even if null for root )
+    if (! await context.access.canCreateChildOnStream(params.update.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
+
+    // check target parent if needed
+    if (params.update.parentId) {
+      const targetParentArray = await mall.streams.get(context.user.id, {id: params.update.parentId, includeTrashed: true, expandChildren: 1});
+     
+      if (targetParentArray.length == 0) { // no parent
+        return next(errors.unknownReferencedResource(
+          'parent stream', 'parentId', params.update.parentId
+        ));
+      }
+      const targetParent = targetParentArray[0];
+      if (targetParent.trashed != null) { // trashed parent
+        return next(errors.invalidOperation(
+          'parent stream is trashed', 'parentId', params.update.parentId
+        ));
+      }
+
+      
+
+      if (targetParent.children != null) {
+        for (const child of targetParent.children) {
+          if (child.name === params.update.name) {
+            return next(errors.itemAlreadyExists(
+              'sibling stream', { name: params.update.name }
+            ));
+          }
+        }
+      }
+     
+    }
+
+
 
     context.updateTrackingProperties(params.update);
 
@@ -355,9 +387,7 @@ module.exports = async function (api) {
           }
           // Unknown parent stream error
           else if (params.update.parentId != null) {
-            return next(errors.unknownReferencedResource(
-              'parent stream', 'parentId', params.update.parentId, err
-            ));
+           
           }
           // Any other error
           return next(errors.unexpectedError(err));
@@ -420,7 +450,7 @@ module.exports = async function (api) {
     const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(params.id);
    
     // Load stream and chlidren (context.stream does not have expanded children tree)
-    const streamToDeleteSingleArray = await mall.streams.get(context.user.id, { id: cleanStreamId, includeTrashed: true, expandChildren: true, storeId });
+    const streamToDeleteSingleArray = await mall.streams.get(context.user.id, { id: cleanStreamId, includeTrashed: true, expandChildren: -1, storeId });
     const streamToDelete = streamToDeleteSingleArray[0]; //no need to check existence: done before in verifyStreamExistenceAndPermissions
     const streamAndDescendantIds = treeUtils.collectPluckFromRootItem(streamToDelete, 'id');
 

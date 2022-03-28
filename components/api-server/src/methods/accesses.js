@@ -292,7 +292,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
 
     async function ensureStream (permission) {
       // We ensure stream Exists only if streamid is != '*' and if a defaultName is providedd
-      if (permission.streamId == null || permission.streamId === '*' || permission.defaultName == null) return ;
+      if (permission.streamId == null || permission.streamId === '*' || permission.defaultName == null) return ;
 
 
       const streamsRepository = storageLayer.streams;
