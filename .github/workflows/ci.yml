@@ -36,9 +36,6 @@ jobs:
     - name: Install & run nats-server, mongodb, influxdb
       run: sh build/build-dev
 
-    - name: Unicode npm package blacklist ips that request download too many times so it is installed before npm install
-      run: sudo apt-get install unicode-data
-
     - name: npm run setup
       run: npm run setup
 

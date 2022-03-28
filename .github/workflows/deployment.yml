@@ -38,9 +38,6 @@ jobs:
         username: ${{ secrets.REGISTRY_PRYV_USERNAME }}
         password: ${{ secrets.REGISTRY_PRYV_PASSWORD }}
 
-    - name: Unicode npm package blacklist ips that request download too many times so it is installed before npm install
-      run: sudo apt-get install unicode-data
-
     # needed to run here, as we are fetching deps from private repos, inside docker builder is not authenticated
     - name: npm run setup
       run: npm run setup
