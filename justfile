@@ -25,11 +25,11 @@ install-stable:
 
 # Compile code to dist for dev (with source maps)
 compile-dev: _prepare-dist
-    babel ./components --out-dir=dist/components --copy-files --source-maps both
+    babel ./components --out-dir=dist/components --copy-files --include-dotfiles --source-maps both
 
 # Compile code to dist for dev, then watch and recompile on changes
 compile-watch: _prepare-dist
-    babel ./components --verbose --watch --out-dir=dist/components --copy-files --source-maps both
+    babel ./components --verbose --watch --out-dir=dist/components --copy-files --include-dotfiles --source-maps both
 
 # Compile code to dist for release
 compile-release: _prepare-dist
@@ -45,14 +45,15 @@ _prepare-dist:
 # Run all dependency services (e.g. nats server, Mongo, Influx…)
 start-deps:
     concurrently --names "nats,mongo,influx" \
-        nats-server "echo 'TODO: Mongo is run separately for now'" influxd
+        --prefix-colors "cyan,green,magenta" \
+        nats-server "echo 'TODO: for now Mongo is run separately with \`just start-mongo\`'" influxd
 
 # Run MongoDB
 start-mongo:
     # TODO: rename/cleanup that script
     scripts/start-database.sh
 
-# Start the given server component for dev (expects `dist/{component}/bin/server`)
+# Start the given server component for dev (expects 'dist/{component}/bin/server')
 start component:
     cd dist/components/{{component}} && \
     NODE_ENV=development bin/server
@@ -62,7 +63,7 @@ start-mon component:
     cd dist/components/{{component}} && \
     NODE_ENV=development nodemon bin/server
 
-# Run the given component binary for dev (expects `dist/{component}/bin/{bin}`)
+# Run the given component binary for dev (expects 'dist/{component}/bin/{bin}')
 run component bin:
     cd dist/components/{{component}} && \
     NODE_ENV=development bin/{{bin}}
@@ -73,15 +74,34 @@ run component bin:
 
 # Tag each test with a unique id if missing
 tag-tests:
-    node scripts/tag-tests.js
+    scripts/tag-tests
 
-# Run tests on all components; optional params are passed over to each component's `test` script
-test *params:
-    node scripts/components-command npm test {{params}}
+# Run tests on the given component ('all' for all components) with optional extra parameters
+test component *params:
+    NODE_ENV=test COMPONENT={{component}} scripts/components-run \
+        npx mocha -- {{params}}
 
-# ⚠️  BROKEN: Run tests on all components and generate HTML coverage report
-test-cover *params:
-    nyc --reporter=html --report-dir=./coverage just test {{params}}
+# Run tests with detailed output
+test-detailed component *params:
+    NODE_ENV=test COMPONENT={{component}} scripts/components-run \
+        npx mocha -- --reporter=spec {{params}}
+
+# Run tests with detailed output for debugging
+test-debug component *params:
+    NODE_ENV=test COMPONENT={{component}} scripts/components-run \
+        npx mocha -- --timeout 3600000 --reporter=spec --inspect-brk=40000 {{params}}
+
+# ⚠️  OBSOLETE?: Run tests for profiling
+test-profile component *params:
+    NODE_ENV=test COMPONENT={{component}} scripts/components-run \
+        npx mocha -- --profile=true {{params}} && \
+    tick-processor > profiling-output.txt && \
+    open profiling-output.txt
+
+# ⚠️  BROKEN: Run tests and generate HTML coverage report
+test-cover component *params:
+    NODE_ENV=test COMPONENT={{component}} nyc --reporter=html --report-dir=./coverage \
+        scripts/components-run npx mocha -- {{params}}
 
 # Set up test results report generation
 test-results-init-repo:
@@ -100,6 +120,10 @@ trace:
     open http://localhost:16686/
     docker run --rm -p 6831:6831/udp -p 6832:6832/udp -p 16686:16686 jaegertracing/all-in-one:1.7 --log-level=debug
 
+# Dump/restore MongoDB test data; command must be 'dump' or 'restore'
+test-data command version:
+    NODE_ENV=development node dist/components/test-helpers/scripts/{{command}}-test-data {{version}}
+
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
 # –––––––––––––----------------------------------------------------------------
@@ -112,10 +136,10 @@ flow-cover:
 update-event-types:
     scripts/update-event-types.bash
 
-# Run source licensing tool (see `licensing` folder for details)
+# Run source licensing tool (see 'licensing' folder for details)
 license:
     source-licenser licensing/config.yml licensing/LICENSE.src ./
 
-# Set version on all `package.json` (root’s and components’)
+# Set version on all 'package.json' (root’s and components’)
 version version:
     npm version --no-git-tag-version --workspaces --include-workspace-root {{version}}

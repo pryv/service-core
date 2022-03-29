@@ -15,7 +15,9 @@
       "components/*"
     ]
   },
-  "scripts": {},
+  "scripts": {
+    "test": "echo 'This project doesn’t use npm scripts – enter `just` for the available development commands\n' && exit 1"
+  },
   "pre-commit": [
     "just license"
   ],
@@ -83,8 +85,8 @@
     "@babel/register": "^7.9.0",
     "babel-eslint": "^10.1.0",
     "chai": "^4.3.6",
+    "chalk": "^4.1.2",
     "charlatan": "^1.1.0",
-    "colors": "^1.0.3",
     "concurrently": "^7.0.0",
     "date-utils": "latest",
     "deep-equal": "latest",

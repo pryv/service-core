@@ -7,8 +7,5 @@
   "repository": {},
   "license": "UNLICENSED",
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
-  "main": "src/server.js",
-  "scripts": {
-    "test": "NODE_ENV=test ../../node_modules/.bin/mocha -R dot --timeout 8000 'test/acceptance/store_data.test.js' --exit"
-  }
+  "main": "src/server.js"
 }
