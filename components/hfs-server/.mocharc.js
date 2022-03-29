@@ -14,5 +14,5 @@ module.exports = {
   ui: 'bdd',
   diff: true,
   reporter: 'dot',
-  spec: 'test/acceptance/store_data.test.js'
+  spec: 'test/**/*.test.js'
 };
