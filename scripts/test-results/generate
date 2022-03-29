@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * @license
  * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
@@ -16,7 +18,7 @@ const ROOT_FOLDER = path.join(__dirname, '/../..');
 try {
   fs.statSync(RESULTS_FOLDER);
 } catch (e) {
-  console.log('Results repository folder', RESULTS_FOLDER, 'does not exist, please create it using "npm run init-test-results-repo".'); // eslint-disable-line
+  console.log('Results repository folder', RESULTS_FOLDER, 'does not exist, please create it using "just test-results-init-repo".'); // eslint-disable-line
   process.exit(1);
 }
 

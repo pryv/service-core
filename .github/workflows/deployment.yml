@@ -14,6 +14,9 @@ jobs:
         node-version: [16.4.1]
 
     steps:
+    - name: Install `just`
+      uses: extractions/setup-just@v1
+
     - name: Download master branch
       uses: actions/checkout@v2
       with:
@@ -39,8 +42,8 @@ jobs:
         password: ${{ secrets.REGISTRY_PRYV_PASSWORD }}
 
     # needed to run here, as we are fetching deps from private repos, inside docker builder is not authenticated
-    - name: npm run setup
-      run: npm run setup
+    - name: Install node modules
+      run: just install-stable
 
     - name: Build and deploy
       run: ./build/build_workflow

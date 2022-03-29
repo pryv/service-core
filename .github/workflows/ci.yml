@@ -10,7 +10,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     strategy:
@@ -18,6 +17,9 @@ jobs:
         node-version: [16.4.1]
 
     steps:
+    - name: Install `just`
+      uses: extractions/setup-just@v1
+
     - name: Download master branch
       uses: actions/checkout@v2
 
@@ -36,11 +38,11 @@ jobs:
     - name: Install & run nats-server, mongodb, influxdb
       run: sh build/build-dev
 
-    - name: npm run setup
-      run: npm run setup
+    - name: Install node modules
+      run: just install-stable
 
-    - name: npm run release
-      run: npm run release
+    - name: Compile for release
+      run: just compile-release
 
-    - name: npm test
-      run: IS_CI=true npm test
+    - name: Run all tests
+      run: IS_CI=true just test all

@@ -9,6 +9,10 @@ _help:
 # Setup
 # –––––––––––––----------------------------------------------------------------
 
+# Set up the dev environment on a MacOS or GNU/Linux system
+setup-dev-env:
+    scripts/setup-dev-env
+
 # Install node modules afresh
 install *params: clean
     npm install {{params}}
@@ -36,7 +40,7 @@ compile-release: _prepare-dist
     babel ./components --verbose --out-dir=dist/components --copy-files
 
 _prepare-dist:
-    scripts/prepare_dist
+    scripts/prepare-dist
 
 # –––––––––––––----------------------------------------------------------------
 # Run
@@ -46,12 +50,7 @@ _prepare-dist:
 start-deps:
     concurrently --names "nats,mongo,influx" \
         --prefix-colors "cyan,green,magenta" \
-        nats-server "echo 'TODO: for now Mongo is run separately with \`just start-mongo\`'" influxd
-
-# Run MongoDB
-start-mongo:
-    # TODO: rename/cleanup that script
-    scripts/start-database.sh
+        nats-server scripts/start-mongo influxd
 
 # Start the given server component for dev (expects 'dist/{component}/bin/server')
 start component:
@@ -105,15 +104,15 @@ test-cover component *params:
 
 # Set up test results report generation
 test-results-init-repo:
-    scripts/test-results/init_repo.sh
+    scripts/test-results/init-repo
 
 # Generate test results report
 test-results-generate:
-    node scripts/test-results/test-results.js
+    node scripts/test-results/generate
 
 # Upload test results report
 test-results-upload:
-    scripts/test-results/upload.sh
+    scripts/test-results/upload
 
 # Run tracing service (Jaeger)
 trace:
@@ -134,7 +133,7 @@ flow-cover:
 
 # Update default event types from online reference
 update-event-types:
-    scripts/update-event-types.bash
+    scripts/update-event-types
 
 # Run source licensing tool (see 'licensing' folder for details)
 license:
