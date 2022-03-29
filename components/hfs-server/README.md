@@ -1,30 +1,13 @@
 # High Frequency Series Server
 
-Manages access to the InfluxDB that underlies the high frequency series.
+High frequency series storage on InfluxDB.
+
+**Make sure to read the project's main README first.**
 
 
-## Usage
+## Details specific to this component
 
-### Running the server
-
-```bash
-node src/server
-```
-
-
-## Contribute
-
-Make sure to check the root README first.
-
-
-### Tests
-
-- `npm test`
-
-
-## Troubleshooting
-
-### Test failures
+### Troubleshooting test failures
 
 If some HFS tests are failing, saying that the actual amount of data in Influx is not as expected, e.g. :
 
@@ -52,7 +35,6 @@ you can try to delete your local Influx data before running the tests again:
 cd ~/.influxdb
 rm -r data
 ```
-
 
 
 # License

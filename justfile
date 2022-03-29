@@ -97,7 +97,7 @@ test-profile component *params:
     tick-processor > profiling-output.txt && \
     open profiling-output.txt
 
-# ⚠️  BROKEN: Run tests and generate HTML coverage report
+# Run tests and generate HTML coverage report
 test-cover component *params:
     NODE_ENV=test COMPONENT={{component}} nyc --reporter=html --report-dir=./coverage \
         scripts/components-run npx mocha -- {{params}}

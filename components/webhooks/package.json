@@ -1,9 +1,9 @@
 {
-  "name": "webhooks-service",
-  "version": "1.0.0",
+  "name": "webhooks",
+  "version": "1.7.12",
   "private": true,
-  "description": "Service that receives notifications from NATS and sends them to existing Webhooks",
-  "homepage": "http://pryv.com",
+  "description": "Service that receives notifications from NATS and sends them to existing webhooks",
+  "homepage": "https://pryv.com",
   "license": "UNLICENSED",
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
   "main": "./src/index.js"

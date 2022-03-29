@@ -1,9 +1,9 @@
 {
   "name": "hfs-server",
-  "version": "1.0.0",
+  "version": "1.7.12",
   "private": true,
-  "description": "This package is part of Pryv.io - a Pryv S.A. Software",
-  "homepage": "http://pryv.com",
+  "description": "High frequency series storage on InfluxDB",
+  "homepage": "https://pryv.com",
   "repository": {},
   "license": "UNLICENSED",
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",

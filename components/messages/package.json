@@ -1,8 +1,8 @@
 {
   "name": "messages",
-  "version": "1.0.0",
+  "version": "1.7.12",
   "private": true,
-  "description": "Messages",
+  "description": "Messaging via NATS",
   "homepage": "https://pryv.com",
   "license": "UNLICENSED",
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",

@@ -1,9 +1,9 @@
 {
   "name": "audit",
-  "version": "2.0.0",
+  "version": "1.7.12",
   "private": true,
-  "description": "Audit Logic",
-  "homepage": "http://pryv.com",
+  "description": "Audit logic",
+  "homepage": "https://pryv.com",
   "license": "UNLICENSED",
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
   "main": "src/index.js"

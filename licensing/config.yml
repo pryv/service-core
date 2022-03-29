@@ -10,7 +10,7 @@ templating: ## Add your own values they will be replaced in fileSpecs and sourc
   AUTHOR_NAME: "Pryv S.A."
   AUTHOR_EMAIL: info@pryv.com
   AUTHOR_WEB: https://pryv.com
-  DESCRIPTION: "This package is part of Pryv.io - a Pryv S.A. Software"
+  DESCRIPTION: "This package is part of Pryv.io, a Pryv S.A. software"
   HOMEPAGE: https://pryv.com
   SPDX: UNLICENSED
 
@@ -18,4 +18,3 @@ license:
   year: ## Year value will be computed in the template as "YEARS" if start == end it will be just start otherwise START - END
     start: 2012
     end: CURRENT_YEAR
-  

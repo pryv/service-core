@@ -1,9 +1,9 @@
 {
   "name": "cache",
-  "version": "1.0.0",
+  "version": "1.7.12",
   "private": true,
-  "description": "Cache Logic",
-  "homepage": "http://pryv.com",
+  "description": "Caching logic",
+  "homepage": "https://pryv.com",
   "license": "UNLICENSED",
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
   "main": "src/index.js"
