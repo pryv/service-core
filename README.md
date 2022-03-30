@@ -15,7 +15,7 @@ Prerequisites:
   - MacOS & Linux: already included in `scripts/setup-dev-env`
 - InfluxDB 1.2
   - Linux: `scripts/setup-influx`
-  - MacOS: e.g. `brew install influxdb`
+  - MacOS: e.g. `brew install influxdb@1`
 - nats-server
   - Linux: `scripts/setup-nats-server`
   - MacOS: e.g. `brew install nats-server`
@@ -32,56 +32,80 @@ Then:
 
 ## Dev environment basics
 
-The project is structured as a monorepo with components (a.k.a. workspaces in NPM), each component defining its `package.json`, tests, configs, etc. in `components/<name>`.
+The project is structured as a monorepo with components (a.k.a. workspaces in NPM), each component defining its `package.json`, tests, configs, etc. in `components/<name>/`.
 
-Scripts are run via `just <command> [params]`. Running `just` displays the commands defined in `justfile`, which should cover all usual needs. (Typical usage examples are included throughout this document.)
+Scripts are run with [`just`](https://github.com/casey/just):
+```
+just <command> [params]
+```
+Notes:
+- Running `just` with no argument displays the commands defined in `justfile`, which should cover all usual needs. (Typical usage examples are included throughout this document.)
+- `just` works consistently from anywhere within the project directory.
+- No NPM scripts.
 
-Everything should be accessible from the project root, including running commands on a particular component (typically via `just <command> <component> ...`). We keep things consistent across components, with as much as possible defined at the root level. In particular:
+Everything should be accessible from the project root, including running commands on a particular component (typically via `just <command> <component> ...`). We keep things consistent across components, with as much as possible defined just once at the root level; in particular:
 - All NPM dependencies are kept in the root `package.json`
-- No NPM scripts anything other than basic properties are kept in components' `package.json`
+- Only basic properties are kept in each component's `package.json`
 
 
 ## Flowtype transpilation
 
-Run at least once `just compile-release` or `just compile-dev` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS. The compiled code is in `dist`.
+```
+just compile-(release|dev|watch)
+```
+at least once before running the servers or tests, to transpile the source code from Flowtype to pure JS (the compiled code is in `dist/`).
+- `just compile-release` by default
+- `just compile-dev` to include source maps
+- `just compile-watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
 
-During development, use `just compile-watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
 
+## Running service dependencies
 
-## Service dependencies
-
-The servers and tests depend on NATS server, MongoDB and InfluxDB. `just start-deps` to have them all running at once.
+The servers and the tests depend on NATS server, MongoDB and InfluxDB.
+```
+just start-deps
+```
+gets them all running at once.
 
 
 ## Testing
 
-`just test <component> […params]`:
+```
+just test <component> [...params]
+```
 - `component` is an existing component's name, or `all` to run tests on all components
-- Extra parameters at the end are passed on to [Mocha](https://mochajs.org/)
+- Extra parameters at the end are passed on to [Mocha](https://mochajs.org/) (default settings are defined in `.mocharc.js` files)
 - Replace `test` with `test-detailed`, `test-debug`, `test-cover` for common presets
 
 For example:
-- `just test all` tests all components using default settings
-- `just test-detailed api-server --bail` tests component `api-server` with detailed output, stopping on the first test failure
+- `just test all` to test all components using default settings
+- `just test-detailed api-server --bail` to test component `api-server` with detailed output, stopping on the first test failure
 
 ### Useful Mocha parameters
 
-See [the Mocha docs](https://mochajs.org/#command-line-usage) for the full reference:
 - `--bail` stops on the first test failure
 - `--grep <text>` only runs tests matching the given text (typically used with test ids, see below)
 
-### Control console output during tests
+See [Mocha documentation](https://mochajs.org/#command-line-usage) for the full reference.
 
-By setting env variables:
+### Controlling console output during tests
+
+With env variables:
 - `LOGS=<level>` to show spawned server instances output (level: `info`, `warn`, `error`)
 - `DEBUG="*"` to show debug information
 
 ### Test ids tagging
 
-Every test case is tagged with a unique id for unambiguous reference. `just tag-tests` to tag yet-untagged cases, then please use the check in [test-results](https://github.com/pryv/dev-pryv.io-test-results) for possible duplicates.
+```
+just tag-tests
+```
+to tag yet-untagged test cases with a (hopefully) unique id for unambiguous reference. After tagging new cases, please use the check in [test-results](https://github.com/pryv/dev-pryv.io-test-results) for possible duplicates.
 
-### Test results
+### Generating test results
 
+```
+just test-results-(init-repo|generate|upload)
+```
 Test results are kept in the [dev-pryv.io-test-results](https://github.com/pryv/dev-pryv.io-test-results) repository and published on the dev site.
 - `just test-results-init-repo` to checkout the repository locally
 - `just test-results-generate` to run the test suite and save the results to `test_results/service-core/${TAG_VERSION}/${TIMESTAMP}-service-core.json`
@@ -90,7 +114,7 @@ Test results are kept in the [dev-pryv.io-test-results](https://github.com/pryv/
 
 ## Debugging
 
-Add your breakpoints _in the compiled code_ (i.e. in `dist`), then `just test-debug` to run tests in debug mode.
+Add your breakpoints _in the compiled code_ (i.e. in `dist/`), then `just test-debug` to run tests in debug mode.
 
 For debugging by hand, old-school:
 - Print server 500 errors: uncomment the line containing `uncomment to log 500 errors on test running using InstanceManager` in `…/errorHandling.js`
@@ -102,12 +126,18 @@ Miscellaneous tools:
 
 ## Tracing
 
-`just trace` to start the tracing service (Jaeger).
+```
+just trace
+```
+to start the tracing service (Jaeger).
 
 
 ## Data migration
 
-`just run api-server migrate` triggers data migration. Migrations are defined in the `storage` component.
+```
+just run api-server migrate
+```
+to trigger data migration. Migrations are defined in the `storage` component.
 
 
 ## App Configuration
@@ -130,7 +160,7 @@ Those components also accept the following command line options:
 
 ## Customizing server behaviour
 
-It is possible to extend the API and previews servers with custom code, via the configuration keys defined under `customExtensions`:
+It is possible to extend the API and previews servers with custom code, via the configuration keys defined under `customExtensions/`:
 
 - `defaultFolder`: The folder in which custom extension modules are searched for by default. Unless defined by its specific setting (see other settings in `customExtensions`), each module is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if missing. Defaults to `{app root}/custom-extensions`.
 - `customAuthStepFn`: A Node module identifier (e.g. `/custom/auth/function.js`) implementing a custom auth step (such as authenticating the caller id against an external service). The function is passed the method context, which it can alter, and a callback to be called with either no argument (success) or an error (failure). If this setting is not empty and the specified module cannot be loaded as a function, server startup will fail. Undefined by default.
@@ -159,7 +189,11 @@ It is possible to extend the API and previews servers with custom code, via the 
 
 ## About event types definitions
 
-The default event types definitions (`components/business/src/types/event-types.default.json`) must be kept up-to-date with `just update-event-types`, which fetches the "reference" version published online. (The server also tries to update this asynchronously at startup but fallbacks to the default definitions in the meantime and if the online version is unavailable or corrupted.)
+The default event types definitions (`components/business/src/types/event-types.default.json`) must be kept up-to-date.
+```
+just update-event-types
+```
+to fetch them from the "reference" version published online. (The API server also tries to update this asynchronously at startup but fallbacks to the default definitions in the meantime and if the online version is unavailable or corrupted.)
 
 
 ## Troubleshooting
