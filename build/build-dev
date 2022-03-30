@@ -6,13 +6,16 @@
 ./scripts/setup-nats-server
 
 # Install mongodb
-bash ./scripts/setup-dev-env
+./scripts/setup-dev-env
 
 # Install influxdb
 ./scripts/setup-influx
 
 # Install graphicsmagick for preview functionality
 sudo apt-get install graphicsmagick
+
+# DEBUG, TODO: REMOVE
+find ../.. -print | grep -v 'node_modules' | grep 'mongo'
 
 #======================================================================
 # If the script is run several times, this could fail because of occupied ports
