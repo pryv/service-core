@@ -17,7 +17,7 @@ const errors = require('errors').factory;
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors').ErrorMessages;
 
-const { ApiEndpoint , treeUtils } = require('utils');
+const { ApiEndpoint , treeUtils } = require('utils');
 
 const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/accessesMethods');
@@ -28,7 +28,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const cache = require('cache');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
-const { getMall } = require('mall');
+const { getMall, streamsUtils } = require('mall');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
 
@@ -284,7 +284,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
     for (const permission of params.permissions) {
       try {
         await ensureStream(permission);
-      } catch (e) {
+      } catch (e) {
         return next(e);
       }
     }
@@ -301,7 +301,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
 
       if (existingStream != null) {
         if (! existingStream.trashed) return ; 
-
+        
         // untrash stream
         const update = {trashed: false};
         try { 
@@ -325,7 +325,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
       context.initTrackingProperties(newStream);
       
       try {
-        await bluebird.fromCallback(cb =>  streamsRepository.insertOne(context.user, newStream, cb));
+        await mall.streams.create(context.user.id, newStream);
       } catch (err) {
           // Duplicate errors
           if (err.isDuplicateIndex('id')) {
@@ -626,66 +626,27 @@ module.exports = async function produceAccessesApiMethods(api: API)
       
       async.series(
         [
-          function checkId(stepDone) {
+          async function checkId() {
             // NOT-OPTIMIZED: could return only necessary fields
-            streamsRepository.findOne(
-              context.user,
-              { id: permission.streamId },
-              null,
-              function(err, stream) {
-                if (err != null) 
-                  return stepDone(err);
-
-                permissionStream = stream;
-                if (permissionStream != null) {
-                  permission.name = permissionStream.name;
-                  delete permission.defaultName;
-                }
-
-                stepDone();
-              }
-            );
+            const existingStreamArray = await mall.streams.get(context.user.id, { id: permission.streamId });
+            if (existingStreamArray.length === 1) {
+              permissionStream = existingStreamArray[0];
+              permission.name = permissionStream.name;
+              delete permission.defaultName;
+            }
           },
-          function checkSimilar(stepDone) {
-            if (permissionStream != null) 
-              return stepDone();
+          async function checkSimilar() {
+            if (permissionStream != null) return ;
 
-            let nameIsUnique = false;
-            let curSuffixNum = 0;
+            // new streams are created at "root" level so we check the children's name of root (id)
+            const [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(permission.streamId);
+            const rootStreams = await mall.streams.get(context.user.id, { storeId: storeId, state: 'all', includeTrashed: true });
+            const rootStreamsNames = rootStreams.map(stream => stream.name);
             
-            async.until(
-              () => nameIsUnique,
-              checkName,
-              stepDone
-            );
-
-            // Checks if a stream with a name of `defaultName` combined with 
-            // `curSuffixNum` exists. Sets `nameIsUnique` to true if not. 
-            function checkName(checkDone) {
-              const checkedName = getAlternativeName(
-                permission.defaultName,
-                curSuffixNum
-              );
-              streamsRepository.findOne(
-                context.user,
-                { name: checkedName, parentId: null },
-                null,
-                function(err, stream) {
-                  if (err != null)
-                    return checkDone(err);
-                    
-                  // Is the name still free?
-                  if (stream == null) {
-                    nameIsUnique = true;
-                    permission.defaultName = checkedName;
-                  } else {
-                    curSuffixNum++;
-                    checkError = produceCheckError();
-                  }
-
-                  checkDone();
-                }
-              );
+            const defaultBaseName = permission.defaultName;
+            for (let suffixNum = 1; rootStreamsNames.indexOf(permission.defaultName) !== -1; suffixNum++) {
+              permission.defaultName = `${defaultBaseName} (${suffixNum})`;
+              checkError = produceCheckError();
             }
           },
         ],

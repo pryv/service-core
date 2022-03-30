@@ -755,7 +755,6 @@ describe('accesses (personal)', function () {
               status: 200,
               schema: methodsSchema.checkApp.result
             });
-
             should.exist(res.body.checkedPermissions);
             should.exist(res.body.error);
             res.body.error.id.should.eql(ErrorIds.ItemAlreadyExists);

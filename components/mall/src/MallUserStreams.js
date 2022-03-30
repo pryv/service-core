@@ -163,6 +163,36 @@ class MallUserStreams {
     return res;
   }
 
+  async update(uid: string, streamData: Stream) {
+    const streamForStore = _.cloneDeep(streamData);
+
+    // 1- Check if there is a parent stream 
+    let parentStoreId = 'local';
+    let cleanParentStreamId;
+    if (streamForStore.parentId != null) {
+      [parentStoreId, cleanParentStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.parentId);
+      streamData.parentId = cleanParentStreamId;
+    }
+
+    // 2- Check streamId and store
+    let storeId, cleanStreamId;
+    if (streamForStore.id == null) {
+      storeId = parentStoreId;
+      streamData.id = cuid();
+    } else {
+      [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.id);
+      if (parentStoreId !== storeId) {
+        throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', eventData);
+      }
+      streamData.id = cleanStreamId;
+    }
+
+    // 3 - Insert stream 
+    const store: DataStore = this.mall._storeForId(storeId);
+    const res = await store.streams.update(uid, streamData);
+    return res;
+  }
+
   /**
    * Used by tests
    * Might be replaced by standard delete.
