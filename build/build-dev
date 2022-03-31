@@ -14,9 +14,6 @@
 # Install graphicsmagick for preview functionality
 sudo apt-get install graphicsmagick
 
-# DEBUG, TODO: REMOVE
-find ../.. -print | grep -v 'node_modules' | grep 'mongo'
-
 #======================================================================
 # If the script is run several times, this could fail because of occupied ports
 # but in the isolated environment like docker it is ok, but for local machine

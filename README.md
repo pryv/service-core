@@ -65,7 +65,7 @@ The servers and the tests depend on NATS server, MongoDB and InfluxDB.
 ```
 just start-deps
 ```
-gets them all running at once.
+to get them all running at once.
 
 
 ## Testing

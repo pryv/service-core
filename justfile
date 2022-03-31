@@ -48,7 +48,7 @@ _prepare-dist:
 
 # Run all dependency services (e.g. nats server, Mongo, Influx…)
 start-deps:
-    concurrently --names "nats,mongo,influx" \
+    DEVELOPMENT=true concurrently --names "nats,mongo,influx" \
         --prefix-colors "cyan,green,magenta" \
         nats-server scripts/start-mongo influxd
 

@@ -1,43 +1,38 @@
 #!/bin/bash
+set -e
 
 # Sets up the dev environment on a MacOS or GNU/Linux system
-
-set -e
 
 # working dir fix
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 cd $SCRIPT_FOLDER/.. # root
 
-# setup git pre-commit hook if appropriate
+# setup git pre-commit hook if appropriate ($CI is "true" in GitHub workflows)
 PRE_COMMIT="scripts/pre-commit"
-if [[ -d .git ]]; then
+if [[ -d .git && "$CI" != "true" ]]; then
   cp $PRE_COMMIT .git/hooks/
   echo ""
   echo "Git pre-commit hook setup from '$PRE_COMMIT'"
   echo ""
 fi
 
-## used in Open Pryv
+# run additional Open-Pryv.io setup if appropriate
 SCRIPT_EXTRAS="./scripts/setup-open.bash"
 if [[ -f $SCRIPT_EXTRAS ]]; then
   echo "installing service mail"
   bash $SCRIPT_EXTRAS
 fi
 
-echo ""
-echo "Setup complete!"
-echo ""
+# create base file structure
 
-export DATA_FOLDER=$SCRIPT_FOLDER/../var-pryv
-export LOGS_FOLDER=${DATA_FOLDER}/logs
-export ATTACHMENTS_FOLDER=${DATA_FOLDER}/attachment-files
+VAR_PRYV_FOLDER=$SCRIPT_FOLDER/../var-pryv
+mkdir -p $VAR_PRYV_FOLDER
+export VAR_PRYV_FOLDER="$(unset CDPATH && cd "$VAR_PRYV_FOLDER" && pwd)"
 
-export MONGO_BASE_FOLDER=$DATA_FOLDER
-
-# file structure
-
-mkdir -p $DATA_FOLDER
+export LOGS_FOLDER=$VAR_PRYV_FOLDER/logs
 mkdir -p $LOGS_FOLDER
+
+export ATTACHMENTS_FOLDER=$VAR_PRYV_FOLDER/attachments
 mkdir -p $ATTACHMENTS_FOLDER
 
 # database
@@ -50,3 +45,7 @@ if [[ ${EXIT_CODE} -ne 0 ]]; then
   echo ""
   exit ${EXIT_CODE}
 fi
+
+echo ""
+echo "Setup complete!"
+echo ""
