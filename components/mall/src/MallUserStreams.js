@@ -163,6 +163,15 @@ class MallUserStreams {
     return res;
   }
 
+  /**
+   * Temporary implementation 
+   */
+  async updateTemp(uid: string, streamId, update: {}) {
+    const store: DataStore = this.mall._storeForId('local');
+    const res = await store.streams.updateTemp(uid, streamId, update);
+    return res;
+  }
+
   async update(uid: string, streamData: Stream) {
     const streamForStore = _.cloneDeep(streamData);
 

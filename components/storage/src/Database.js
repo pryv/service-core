@@ -700,7 +700,7 @@ function getTotalSizeFromStats(stats) {
 
 function tellMeIfStackDoesNotContains(needles, info) {
   const e = new Error();
-  const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 ).slice(1, 100);
+  const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 ).filter(l => l.indexOf('node:') < 0).slice(1, 100);
   for (const needle of needles) {
     if (stack.some(l => l.indexOf(needle) >= 0)) {
       return true;

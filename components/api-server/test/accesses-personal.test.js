@@ -27,6 +27,7 @@ const R = require('ramda');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
+const { getMall } = require('mall'); 
 
 describe('accesses (personal)', function () {
 
@@ -35,6 +36,7 @@ describe('accesses (personal)', function () {
   
   let sessionAccessId = null;
   let request = null;
+  let mall = null;
   
   function path(id) {
     return basePath + '/' + id;
@@ -55,6 +57,7 @@ describe('accesses (personal)', function () {
 
   before(async function() {
     await getConfig(); // needed for ApiEndpoint.build();
+    mall = await getMall();
   });
 
   before(function (done) {
@@ -245,8 +248,9 @@ describe('accesses (personal)', function () {
               stepDone();
             });
           },
-          function verifyNewStream (stepDone) {
+          async function verifyNewStream () {
             var query = {id: data.permissions[1].streamId};
+            const streams = await mall.streams.get(user.id, {id: }) 
             streamsStorage.findOne(user, query, null, function (err, stream) {
               should.not.exist(err);
               should.exist(stream);

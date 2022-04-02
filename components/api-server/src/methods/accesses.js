@@ -293,19 +293,16 @@ module.exports = async function produceAccessesApiMethods(api: API)
     async function ensureStream (permission) {
       // We ensure stream Exists only if streamid is != '*' and if a defaultName is providedd
       if (permission.streamId == null || permission.streamId === '*' || permission.defaultName == null) return ;
-
-
-      const streamsRepository = storageLayer.streams;
   
       const existingStream = await context.streamForStreamId(permission.streamId);
 
       if (existingStream != null) {
         if (! existingStream.trashed) return ; 
-        
+
         // untrash stream
         const update = {trashed: false};
         try { 
-          await bluebird.fromCallback(cb =>  streamsRepository.updateOne(context.user, {id: existingStream.id}, update, cb));
+          await mall.streams.updateTemp(context.user.id, existingStream.id, update);
         } catch (err) {
           throw(errors.unexpectedError(err));
         }
@@ -622,7 +619,6 @@ module.exports = async function produceAccessesApiMethods(api: API)
       }
 
       let permissionStream;
-      const streamsRepository = storageLayer.streams;
       
       async.series(
         [
