@@ -24,7 +24,4 @@ Hard coded ids:
 ! WTF -- api.register('auth.usernameCheck' in method / register
 Was implemented in dnsLess=False but seems it was never used
 
-
 !! Check that skipAudit for 'auth.usernameCheck' and 'auth.emailCheck' does not open security issue..
-
-Replace winston-syslog by https://www.npmjs.com/package/glossy

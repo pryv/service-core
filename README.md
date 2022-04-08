@@ -70,6 +70,8 @@ to get them all running at once.
 
 ## Testing
 
+**⚠️ As of 2022-04, `audit` tests related to syslog fail on ARM-64 (M1) Macs.**
+
 ```
 just test <component> [...params]
 ```
