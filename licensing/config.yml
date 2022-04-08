@@ -1,20 +1,52 @@
----
-ignores: # If found in path contained elements will be ignored
-- node_modules
-- ".git"
-- dist/
+files:
+  "**/*.js":
+    header:
+      startBlock: |
+        /**
+         * @license
+      linePrefix: " * "
+      endBlock: " */"
+
+  "**/package.json":
+    json:
+      force:
+        author: "{AUTHOR_NAME} <{AUTHOR_EMAIL}> ({AUTHOR_WEB})"
+        license: "{SPDX}"
+        private: true
+      defaults:
+        homepage: "{HOMEPAGE}"
+        description: "{DESCRIPTION}"
+      sortPackage: true
+
+    siblingLicenseFile:
+      name: "LICENSE"
+
+  "**/README.md":
+    footer:
+      startBlock: "\n\n# License\n\n"
+      linePrefix: ""
+      endBlock: ""
+
+ignore:
+- .git
+- .vscode
+- dist
 - nats-server
+- node_modules
 - var-pryv
 
-templating: ## Add your own values they will be replaced in fileSpecs and source licenseFile
+license: |
+  Copyright (C) {YEARS} {AUTHOR_NAME} {AUTHOR_WEB} - All Rights Reserved
+  Unauthorized copying of this file, via any medium is strictly prohibited
+  Proprietary and confidential
+
+substitutions:
+  YEARS:
+    start: 2012
+    end: CURRENT_YEAR
   AUTHOR_NAME: "Pryv S.A."
   AUTHOR_EMAIL: info@pryv.com
   AUTHOR_WEB: https://pryv.com
   DESCRIPTION: "This package is part of Pryv.io, a Pryv S.A. software"
   HOMEPAGE: https://pryv.com
   SPDX: UNLICENSED
-
-license:
-  year: ## Year value will be computed in the template as "YEARS" if start == end it will be just start otherwise START - END
-    start: 2012
-    end: CURRENT_YEAR
