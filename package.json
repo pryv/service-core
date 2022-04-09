@@ -115,7 +115,7 @@
     "flow-typed": "^3.2.1",
     "inspect": "^0.0.2",
     "mocha": "^8.1.2",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "nock": "13.1.1",
     "nyc": "^15.0.1",
     "parallelshell": "^2.0.0",
