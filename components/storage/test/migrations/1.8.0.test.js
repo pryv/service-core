@@ -8,8 +8,9 @@
  * Tests data migration between versions.
  */
 
-/*global describe, it, _, assert, bluebird */
+/*global describe, it, assert */
 
+const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
@@ -30,7 +31,7 @@ const userIndex = require('business/src/users/UserLocalIndex');
 describe('Migration - 1.8.0',function () {
   this.timeout(20000);
 
-  before(async function() { 
+  before(async function() {
   });
 
   after(async function() {
