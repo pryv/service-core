@@ -140,7 +140,7 @@ update-event-types:
 
 # Run source licensing tool (see 'licensing' folder for details)
 license:
-    source-licenser --config-file licensing/config.yml ./
+    # source-licenser --config-file licensing/config.yml ./
 
 # Set version on all 'package.json' (root’s and components’)
 version version:
