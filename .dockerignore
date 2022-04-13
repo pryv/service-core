@@ -19,7 +19,6 @@ var-pryv
 .flowconfig
 .gitignore
 .mocharc.js
-.yarnclean
 application.log
 #babel.config.json
 README.md

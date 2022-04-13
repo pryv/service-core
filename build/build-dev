@@ -3,27 +3,27 @@
 
 # Install nats-server - the duplicate of ./core/nats-server.sh file that consists of docker
 # run commands
-sh ./scripts/setup-nats-server.sh
+./scripts/setup-nats-server
 
 # Install mongodb
-bash ./scripts/setup-dev-env.bash
+./scripts/setup-dev-env
 
 # Install influxdb
-sh ./scripts/setup-influx.sh
+./scripts/setup-influx
 
 # Install graphicsmagick for preview functionality
 sudo apt-get install graphicsmagick
 
 #======================================================================
 # If the script is run several times, this could fail because of occupied ports
-# but in the isolated environment like docker it is ok, but for local machine 
+# but in the isolated environment like docker it is ok, but for local machine
 # installation could cause confusion
 
-# Start nats-server (the same as `yarn nats`, just in the background)
+# Start nats-server
 ./nats-server/nats-server-v2.3.4-linux-amd64/nats-server &
 
 # Start Influx db and verify the status
 sudo service influxdb start
 
 # Start mongodb
-yarn database
+./scripts/start-mongo

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * @license
  * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
@@ -26,7 +28,7 @@ function readDir(dirName) {
     if (stats.isDirectory()) {
       readDir(subPath);
     }
-    
+
     if (isTestFile(fileName)) {
       addIdToTests(subPath);
     }
@@ -34,7 +36,7 @@ function readDir(dirName) {
 }
 
 function isTestFile(filename) {
-  return filename.endsWith('.test.js'); 
+  return filename.endsWith('.test.js');
 }
 
 function addIdToTests(file) {
@@ -50,7 +52,7 @@ function addIdToTests(file) {
         while (tag === null) {
           tag = genTag();
           if (tags[tag]) tag = null;
-        } 
+        }
         registerTag(tag);
         const tagged = sSplice(line, tag);
         lines[i] = tagged;
@@ -91,11 +93,11 @@ function registerTag(tag) {
 
 function isUntagged(line) {
   if (ignoreLine(line)) {
-    console.log("Ignored test line: " + line); 
+    console.log("Ignored test line: " + line);
     return false;
   }
   const test = line.match(/^it\('\[([A-Z0-9]{4})\](.*)/);
-  if (! test) { 
+  if (! test) {
     console.log('Tagging => ' + line);
     return true;
   }
@@ -105,14 +107,14 @@ function isUntagged(line) {
 
 function genTag() {
   const alphabet = 'ABCDEFGHIJKLMONPQRSTUVWXYZ0123456789';
-  
+
   return '[' + getLetter() + getLetter() + getLetter() + getLetter() + '] ';
-  
+
   function getLetter() {
     return alphabet[randomIntFromInterval(0, alphabet.length - 1)];
   }
 
-  function randomIntFromInterval(min, max) { // min and max included 
+  function randomIntFromInterval(min, max) { // min and max included
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
 }

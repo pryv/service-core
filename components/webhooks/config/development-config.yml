@@ -1,0 +1,9 @@
+---
+serviceInfoUrl: file://test/service-info.json
+logs:
+  console:
+    active: false
+    level: info
+    timestamp: false
+trace:
+  enable: true
