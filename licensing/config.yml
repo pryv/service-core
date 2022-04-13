@@ -26,11 +26,14 @@ files:
       startBlock: "\n\n# License\n\n"
       linePrefix: ""
       endBlock: ""
+      license: "[{SPDX}](LICENSE)"
 
 ignore:
 - .git
 - .vscode
+- coverage
 - dist
+- flow-coverage
 - nats-server
 - node_modules
 - var-pryv
