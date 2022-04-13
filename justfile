@@ -37,10 +37,13 @@ compile-watch: _prepare-dist
 
 # Compile code to dist for release
 compile-release: _prepare-dist
-    babel ./components --verbose --out-dir=dist/components --copy-files
+    babel ./components --verbose --out-dir=dist/components --copy-files --include-dotfiles
 
+# Prepare dist and copy installed packages there
 _prepare-dist:
-    scripts/prepare-dist
+    mkdir -p dist
+    rsync -a --delete node_modules/ dist/node_modules/
+
 
 # –––––––––––––----------------------------------------------------------------
 # Run
