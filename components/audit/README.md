@@ -4,6 +4,13 @@ Pryv.io audit logic.
 
 **Make sure to read the project's main README first.**
 
+
+## About configuration files (`config`)
+
+Theses configurations files are for the test environment only.
+The values exposed there should be reported in api-server config files.
+
+
 ## Temp notes, TODO: cleanup
 
 For tests on Linux .. the command to watch syslog is "sudo tail -f /var/log/syslog"
