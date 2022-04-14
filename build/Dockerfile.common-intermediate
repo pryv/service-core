@@ -9,7 +9,7 @@ COPY . $TARGET_DIR
 WORKDIR $TARGET_DIR
 
 # Perform a release build of the source code. (-> dist)
-RUN yarn release > /dev/null
+RUN just compile-release > /dev/null
 
 # Remove copy as we only need transpiled code from dist/
 RUN rm -rf components && rm -rf node_modules

@@ -8,8 +8,9 @@
  * Tests data migration between versions.
  */
 
-/*global describe, it, _, assert, bluebird */
+/*global describe, it, assert */
 
+const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
@@ -26,7 +27,7 @@ describe('Migration - 1.7.5',function () {
 
   let accessesCollection;
 
-  before(async function() { 
+  before(async function() {
     accessesCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'accesses' }, cb));
   });
 
@@ -47,7 +48,7 @@ describe('Migration - 1.7.5',function () {
     const accessToCheck = previousAccessesWithSystemStreamPermissions[0];
     // perform migration
     await bluebird.fromCallback(cb => newVersion.migrateIfNeeded(cb));
-    
+
     // verify that accesses were migrated
     let isAccessToCheckProcessed = false;
 

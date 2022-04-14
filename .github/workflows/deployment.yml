@@ -1,6 +1,6 @@
 name: Pryv-core-server deployment workflow
 
-on: 
+on:
   push:
     tags:
       - '*'
@@ -8,12 +8,15 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [16.4.1]
 
     steps:
+    - name: Install `just`
+      uses: extractions/setup-just@v1
+
     - name: Download master branch
       uses: actions/checkout@v2
       with:
@@ -23,14 +26,14 @@ jobs:
       uses: webfactory/ssh-agent@v0.4.1
       with:
         ssh-private-key: ${{ secrets.TECH_PRYV_SSH_KEY }}
-          
+
     - name: Install Node.js with version ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
         always-auth: true
         registry-url: https://npm.pkg.github.com
-                
+
     - name: Login to the docker containers registry
       uses: azure/docker-login@v1
       with:
@@ -38,12 +41,9 @@ jobs:
         username: ${{ secrets.REGISTRY_PRYV_USERNAME }}
         password: ${{ secrets.REGISTRY_PRYV_PASSWORD }}
 
-    - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install
-      run: sudo apt-get install unicode-data
-      
     # needed to run here, as we are fetching deps from private repos, inside docker builder is not authenticated
-    - name: yarn setup
-      run: yarn setup
-        
+    - name: Install node modules
+      run: just install-stable
+
     - name: Build and deploy
       run: ./build/build_workflow

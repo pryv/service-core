@@ -248,9 +248,9 @@ describe('accesses (personal)', function () {
               stepDone();
             });
           },
-          async function verifyNewStream () {
+          function verifyNewStream (stepDone) {
             var query = {id: data.permissions[1].streamId};
-            const streams = await mall.streams.get(user.id, {id: }) 
+            //const streams = await mall.streams.get(user.id, {id: }) 
             streamsStorage.findOne(user, query, null, function (err, stream) {
               should.not.exist(err);
               should.exist(stream);

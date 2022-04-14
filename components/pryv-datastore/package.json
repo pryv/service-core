@@ -1,18 +1,10 @@
 {
   "name": "pryv-datastore",
-  "version": "1.0.0",
+  "version": "1.7.12",
   "private": true,
-  "description": "Tools to implement a dynamic store for Pryv.io",
-  "homepage": "http://pryv.com",
+  "description": "Set of tools for implementing a data store for Pryv.io",
+  "homepage": "https://pryv.com",
   "license": "UNLICENSED",
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
-  "main": "src/index.js",
-  "scripts": {
-    "cover": "nyc --reporter=lcov --reporter=text-summary npm run test",
-    "test": "NODE_ENV=test ../../node_modules/.bin/mocha  --reporter=dot test/**/*.test.js --exit"
-  },
-  "dependencies": {
-  },
-  "devDependencies": {
-  }
+  "main": "src/index.js"
 }

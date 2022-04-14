@@ -1,6 +1,9 @@
-# Pryv Data Store 
+# Pryv data store
 
-- Set of tools to implement a data-store for Pryv.io
+Set of tools for implementing a data store for Pryv.io
+
+TODO: This package should be taken out of service-core and published publicly
+
 
 This packages should be taken out of service-core and published publicly
 

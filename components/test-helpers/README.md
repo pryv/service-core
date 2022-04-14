@@ -1,10 +1,16 @@
+# test-helpers
+
 Shared utilities and data for testing.
 
-## Scripts
+**Make sure to read the project's main README first.**
 
-- `yarn dump-test-data {version}`
-- `yarn restore-test-data {version}`
 
+## Details specific to this component
+
+### Scripts (see `storage` README for usage)
+
+- `just test-data dump {version}`
+- `just test-data restore {version}`
 
 
 # License
