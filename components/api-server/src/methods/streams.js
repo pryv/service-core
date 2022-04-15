@@ -226,7 +226,7 @@ module.exports = async function (api) {
 
     if (params.id) {
       if (string.isReservedId(params.id) ||
-        string.isReservedId(params.id = slugify(params.id))) {
+        string.isReservedId(params.id = slugify(params.id, {lower: false}))) {
         return process.nextTick(next.bind(null, errors.invalidItemId(
           'The specified id "' + params.id + '" is not allowed.')));
       }

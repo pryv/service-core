@@ -8,6 +8,7 @@
 
 const async = require('async');
 const slugify = require('slug');
+slugify.extend({'_': '_'});
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 const bluebird = require('bluebird');
@@ -204,7 +205,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
         'to create this new access.'));
     }
     if (params.token != null) {
-      params.token = slugify(params.token);
+      params.token = slugify(params.token, {lower: false});
       if (string.isReservedId(params.token)) {
         return next(errors.invalidItemId('The specified token is not allowed.'));
       }
