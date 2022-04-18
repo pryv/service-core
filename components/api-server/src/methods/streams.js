@@ -10,7 +10,7 @@ var errors = require('errors').factory,
   errorHandling = require('errors').errorHandling,
   methodsSchema = require('../schema/streamsMethods'),
   streamSchema = require('../schema/stream'),
-  slugify = require('slug'),
+  slugify = require('utils').slugify,
   string = require('./helpers/string'),
   utils = require('utils'),
   treeUtils = utils.treeUtils,
@@ -175,7 +175,7 @@ module.exports = async function (api) {
   async function includeDeletionsIfRequested(context, params, result, next) {
     if (params.includeDeletionsSince == null) { return next(); }
 
-   
+
 
     let streamId = params.id || params.parentId || '*';
 
@@ -197,7 +197,7 @@ module.exports = async function (api) {
       return next(errors.unexpectedError(err));
     }
     return next();
-    
+
   }
 
   // CREATION
@@ -226,7 +226,7 @@ module.exports = async function (api) {
 
     if (params.id) {
       if (string.isReservedId(params.id) ||
-        string.isReservedId(params.id = slugify(params.id, {lower: false}))) {
+        string.isReservedId(params.id = slugify(params.id))) {
         return process.nextTick(next.bind(null, errors.invalidItemId(
           'The specified id "' + params.id + '" is not allowed.')));
       }
@@ -285,12 +285,12 @@ module.exports = async function (api) {
    * @param {*} next
    */
   function forbidSystemStreamsActions (context, params, result, next) {
-   
+
     if (params.id != null) {
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         params.id = replaceWithNewPrefix(params.id);
       }
-    
+
       if (SystemStreamsSerializer.isSystemStreamId(params.id)) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
@@ -339,7 +339,7 @@ module.exports = async function (api) {
     // check target parent if needed
     if (params.update.parentId) {
       const targetParentArray = await mall.streams.get(context.user.id, {id: params.update.parentId, includeTrashed: true, expandChildren: 1});
-     
+
       if (targetParentArray.length == 0) { // no parent
         return next(errors.unknownReferencedResource(
           'parent stream', 'parentId', params.update.parentId
@@ -352,7 +352,7 @@ module.exports = async function (api) {
         ));
       }
 
-      
+
 
       if (targetParent.children != null) {
         for (const child of targetParent.children) {
@@ -363,7 +363,7 @@ module.exports = async function (api) {
           }
         }
       }
-     
+
     }
 
 
@@ -387,7 +387,7 @@ module.exports = async function (api) {
           }
           // Unknown parent stream error
           else if (params.update.parentId != null) {
-           
+
           }
           // Any other error
           return next(errors.unexpectedError(err));
@@ -448,18 +448,18 @@ module.exports = async function (api) {
   async function deleteWithData(context, params, result, next) {
     let hasLinkedEvents;
     const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(params.id);
-   
+
     // Load stream and chlidren (context.stream does not have expanded children tree)
     const streamToDeleteSingleArray = await mall.streams.get(context.user.id, { id: cleanStreamId, includeTrashed: true, expandChildren: -1, storeId });
     const streamToDelete = streamToDeleteSingleArray[0]; //no need to check existence: done before in verifyStreamExistenceAndPermissions
     const streamAndDescendantIds = treeUtils.collectPluckFromRootItem(streamToDelete, 'id');
 
-    // keep stream and children to delete in next step 
+    // keep stream and children to delete in next step
     context.streamToDeleteAndDescendantIds = streamAndDescendantIds;
 
     const parentId = streamToDelete.parentId;
     const cleanDescendantIds = streamAndDescendantIds.map((s) => streamsUtils.storeIdAndStreamIdForStreamId(s)[1]);
-    
+
     // check if root stream and linked events exist
     if (params.mergeEventsWithParent === true && parentId == null) {
       return next(errors.invalidOperation(
@@ -467,7 +467,7 @@ module.exports = async function (api) {
         'since there is no parent stream to merge linked events in.',
         { streamId: params.id }));
     }
-   
+
     const events = await mall.events.getWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}], limit: 1 }});
     hasLinkedEvents = !!events.length;
 
@@ -489,13 +489,13 @@ module.exports = async function (api) {
           }
         }
 
-        // add parent stream Id if needed and remove deleted stream ids 
+        // add parent stream Id if needed and remove deleted stream ids
         // the following add "parentId" if not present and remove "streamAndDescendantIds"
         const query = { streams: [{ any: streamAndDescendantIds}] };
         await mall.events.updateMany(context.user.id, query, { addStreams: [parentId], removeStreams: streamAndDescendantIds});
-        
 
-      } else { 
+
+      } else {
         // case  mergeEventsWithParent = false
 
         const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}});
@@ -530,9 +530,9 @@ module.exports = async function (api) {
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     }
     // finally delete stream
-    
+
     await bluebird.fromCallback((cb) => userStreamsStorage.delete(context.user, { id: { $in: context.streamToDeleteAndDescendantIds } }, cb));
-      
+
     result.streamDeletion = { id: params.id };
     pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
     next();

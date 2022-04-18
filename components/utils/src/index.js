@@ -7,14 +7,15 @@
 // @flow
 
 module.exports = {
-  encryption: require('./encryption'),
-  toString: require('./toString'),
-  treeUtils: require('./treeUtils'), 
-  extension: require('./extension'),
+  ApiEndpoint: require('./api-endpoint'),
   debug: require('./debug'),
-  ApiEndpoint: require('./api-endpoint')
+  encryption: require('./encryption'),
+  extension: require('./extension'),
+  slugify: require('./slugify'),
+  toString: require('./toString'),
+  treeUtils: require('./treeUtils')
 };
 
-// Reexport the Logger interface for external declarations. 
+// Reexport the Logger interface for external declarations.
 import type { Extension }  from './extension';
 export type { Extension };

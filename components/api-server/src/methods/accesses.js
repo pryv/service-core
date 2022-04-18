@@ -7,8 +7,7 @@
 // @flow
 
 const async = require('async');
-const slugify = require('slug');
-slugify.extend({'_': '_'});
+const slugify = require('utils').slugify;
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 const bluebird = require('bluebird');
@@ -45,7 +44,7 @@ import type { ApiCallback }  from '../API';
 import type Result  from '../Result';
 
 type Permission = {
-  streamId: string, 
+  streamId: string,
   level: 'manage' | 'contribute' | 'read' | 'create-only' | 'none',
 };
 type Access = {
@@ -64,7 +63,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
   const config = await getConfig();
   const logger = getLogger('methods:accesses');
   const isOpenSource = config.get('openSource:isActive');
-  const dbFindOptions = { projection: 
+  const dbFindOptions = { projection:
     { calls: 0, deleted: 0 } };
   const mall = await getMall();
   const storageLayer = await getStorageLayer();
@@ -86,10 +85,10 @@ module.exports = async function produceAccessesApiMethods(api: API)
     const currentAccess: Access = context.access;
     const accessesRepository = storageLayer.accesses;
     const query = {};
-    
-    if (currentAccess == null) 
+
+    if (currentAccess == null)
       return next(new Error('AF: Access cannot be null at this point.'));
-    
+
     if (! currentAccess.canListAnyAccess()) {
       // app -> only access it created
       query.createdBy = currentAccess.id;
@@ -106,17 +105,17 @@ module.exports = async function produceAccessesApiMethods(api: API)
       for (let i = 0; i < accesses.length; i++) {
         if (accesses[i].permissions != null) { // assert is personal access
           if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
-            accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);  
+            accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);
           }
         }
-        accesses[i].apiEndpoint = ApiEndpoint.build(context.user.username, accesses[i].token); 
+        accesses[i].apiEndpoint = ApiEndpoint.build(context.user.username, accesses[i].token);
       }
 
       result.accesses = accesses;
 
       next();
     } catch (err) {
-      return next(errors.unexpectedError(err)); 
+      return next(errors.unexpectedError(err));
     }
 
     function excludeExpired(params: mixed): boolean {
@@ -167,7 +166,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
     applyAccountStreamsValidation,
     createDataStructureFromPermissions,
     cleanupPermissions,
-    createAccess, 
+    createAccess,
     addIntegrityToContext);
 
   function applyDefaultsForCreation(context, params, result, next) {
@@ -194,18 +193,18 @@ module.exports = async function produceAccessesApiMethods(api: API)
         } catch (err) {
           return next(errors.invalidRequestStructure(err.message, params.permissions));
         }
-      } 
+      }
     }
-    
+
     const access = context.access;
-      
+
     if (! await access.canCreateAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
         'to create this new access.'));
     }
     if (params.token != null) {
-      params.token = slugify(params.token, {lower: false});
+      params.token = slugify(params.token);
       if (string.isReservedId(params.token)) {
         return next(errors.invalidItemId('The specified token is not allowed.'));
       }
@@ -213,33 +212,33 @@ module.exports = async function produceAccessesApiMethods(api: API)
       const accessesRepository = storageLayer.accesses;
       params.token = accessesRepository.generateToken();
     }
-    
-    const expireAfter = params.expireAfter; 
+
+    const expireAfter = params.expireAfter;
     delete params.expireAfter;
-    
+
     if (expireAfter != null) {
-      if (expireAfter >= 0) 
+      if (expireAfter >= 0)
         params.expires = timestamp.now() + expireAfter;
-      else 
+      else
         return next(
           errors.invalidParametersFormat('expireAfter cannot be negative.'));
     }
 
     context.initTrackingProperties(params);
-    
+
     return next();
   }
 
   /**
    * If user is creating an access for system streams, apply some validations
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   function applyAccountStreamsValidation (context, params, result, next) {
     if (params.permissions == null) return next();
-    
+
     for (const permission of params.permissions) {
       if (isStreamBasedPermission(permission)) {
         if (isUnknownSystemStream(permission.streamId)) {
@@ -254,7 +253,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
         }
         // don't allow user to give anything higher than contribute or read access
         // to visible stream
-        if (visibleAccountStreamsIds.includes(permission.streamId) && 
+        if (visibleAccountStreamsIds.includes(permission.streamId) &&
         !context.access.canCreateAccessForAccountStream(permission.level)) {
           return next(errors.invalidOperation(
             ErrorMessages[ErrorIds.TooHighAccessForSystemStreams],
@@ -275,8 +274,8 @@ module.exports = async function produceAccessesApiMethods(api: API)
   }
 
   // Creates default data structure from permissions if needed, for app
-  // authorization. 
-  // 
+  // authorization.
+  //
   async function createDataStructureFromPermissions(context, params, result, next) {
     const access = context.access;
 
@@ -294,15 +293,15 @@ module.exports = async function produceAccessesApiMethods(api: API)
     async function ensureStream (permission) {
       // We ensure stream Exists only if streamid is != '*' and if a defaultName is providedd
       if (permission.streamId == null || permission.streamId === '*' || permission.defaultName == null) return ;
-  
+
       const existingStream = await context.streamForStreamId(permission.streamId);
 
       if (existingStream != null) {
-        if (! existingStream.trashed) return ; 
+        if (! existingStream.trashed) return ;
 
         // untrash stream
         const update = {trashed: false};
-        try { 
+        try {
           await mall.streams.updateTemp(context.user.id, existingStream.id, update);
         } catch (err) {
           throw(errors.unexpectedError(err));
@@ -321,7 +320,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
         parentId: null
       };
       context.initTrackingProperties(newStream);
-      
+
       try {
         await mall.streams.create(context.user.id, newStream);
       } catch (err) {
@@ -357,7 +356,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
 
   function createAccess(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
-    
+
     accessesRepository.insertOne(context.user, params, function (err, newAccess) {
       if (err != null) {
         // Duplicate errors
@@ -365,7 +364,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
           return next(errors.itemAlreadyExists('access', { token: '(hidden)' }));
         }
         if (err.isDuplicateIndex('type') && err.isDuplicateIndex('name') && err.isDuplicateIndex('deviceName')) {
-          return next(errors.itemAlreadyExists('access', { 
+          return next(errors.itemAlreadyExists('access', {
             type: params.type,
             name: params.name,
             deviceName: params.deviceName,
@@ -377,7 +376,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
 
       result.access = newAccess;
       result.access.apiEndpoint = ApiEndpoint.build(context.user.username, result.access.token);
-      
+
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
       next();
     });
@@ -404,7 +403,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
   async function checkAccessForDeletion(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
     const currentAccess = context.access;
-    
+
     if (currentAccess == null)
       return next(new Error('AF: currentAccess cannot be null.'));
 
@@ -423,7 +422,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
 
     if (access == null)
       return next(errors.unknownResource('access', params.id));
-          
+
       if (! await currentAccess.canDeleteAccess(access)) {
         return next(
           errors.forbidden(
@@ -432,7 +431,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
           )
         );
       }
-  
+
       // used in next function
       params.accessToDelete = access;
       next();
@@ -441,7 +440,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
   async function findRelatedAccesses(context, params, result, next) {
     const accessToDelete = params.accessToDelete;
     const accessesRepository = storageLayer.accesses;
-    
+
     // deleting a personal access does not delete the accesses it created.
     if (! accessToDelete.type === 'personal') {
       return next();
@@ -453,7 +452,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
         accessesRepository.find(context.user, { createdBy: params.id}, dbFindOptions, cb);
       });
     } catch (err) {
-      return next(errors.unexpectedError(err)); 
+      return next(errors.unexpectedError(err));
     }
     if (accesses.length === 0) return next();
 
@@ -505,7 +504,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
     checkApp);
 
   function checkApp(context, params, result, next) {
-   
+
     const accessesRepository = storageLayer.accesses;
     const query = {
       type: 'app',
@@ -519,17 +518,17 @@ module.exports = async function produceAccessesApiMethods(api: API)
       if (accessMatches(access, params.requestedPermissions, params.clientData)) {
         result.matchingAccess = access;
         return next();
-      } 
-      
+      }
+
       // No, we don't have a match. Return other information:
 
-      if (access != null) 
+      if (access != null)
         result.mismatchingAccess = access;
-      
+
       checkPermissions(context, params.requestedPermissions, function(
         err, checkedPermissions, checkError
       ) {
-        if (err != null) 
+        if (err != null)
           return next(err);
 
         result.checkedPermissions = checkedPermissions;
@@ -542,16 +541,16 @@ module.exports = async function produceAccessesApiMethods(api: API)
   }
 
   // Returns true if the given access' permissions match the `requestedPermissions`.
-  // 
+  //
   function accessMatches(access: Access, requestedPermissions, clientData): boolean {
     if (access == null ||
         access.type !== 'app' ||
         access.permissions.length !== requestedPermissions.length) {
       return false;
     }
-    
-    // If the access is there but is expired, we consider it a mismatch. 
-    if (isAccessExpired(access)) return false; 
+
+    // If the access is there but is expired, we consider it a mismatch.
+    if (isAccessExpired(access)) return false;
 
     // Compare permissions
     let accessPerm, reqPerm;
@@ -580,27 +579,27 @@ module.exports = async function produceAccessesApiMethods(api: API)
   // Iterates over the given permissions, replacing `defaultName` properties
   // with the actual `name` of existing streams. When defined, the callback's
   // `checkError` param signals issues with the requested permissions.
-  // 
+  //
   function checkPermissions(context, permissions, callback) {
     // modify permissions in-place, assume no side fx
-    const checkedPermissions = permissions; 
+    const checkedPermissions = permissions;
     let checkError = null;
-    
+
     async.forEachSeries(checkedPermissions, checkPermission, function(err) {
       if (err != null) {
         return err instanceof APIError
           ? callback(err)
           : callback(errors.unexpectedError(err));
       }
-      
+
       callback(null, checkedPermissions, checkError);
     });
     return;
-    
+
     // NOT REACHED
 
     function checkPermission(permission, done) {
-     
+
       if (permission.streamId === '*') {
         // cleanup ignored properties just in case
         delete permission.defaultName;
@@ -620,7 +619,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
       }
 
       let permissionStream;
-      
+
       async.series(
         [
           async function checkId() {
@@ -639,7 +638,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
             const [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(permission.streamId);
             const rootStreams = await mall.streams.get(context.user.id, { storeId: storeId, state: 'all', includeTrashed: true });
             const rootStreamsNames = rootStreams.map(stream => stream.name);
-            
+
             const defaultBaseName = permission.defaultName;
             for (let suffixNum = 1; rootStreamsNames.indexOf(permission.defaultName) !== -1; suffixNum++) {
               permission.defaultName = `${defaultBaseName} (${suffixNum})`;
@@ -670,18 +669,18 @@ module.exports = async function produceAccessesApiMethods(api: API)
      * @return {string}
      */
     function getAlternativeName(name, suffixNum) {
-      if (suffixNum === 0) return name; 
-      
+      if (suffixNum === 0) return name;
+
       return `${name} (${suffixNum})`;
     }
   }
 
   // Centralises the check for access expiry; yes, this should be part of some
-  // business model about accesses. There is one more such check in MethodContext, 
+  // business model about accesses. There is one more such check in MethodContext,
   // called `checkAccessValid`.
   //
   function isAccessExpired(access: Access, nowParam?: number): boolean {
-    const now = nowParam || timestamp.now(); 
+    const now = nowParam || timestamp.now();
     return access.expires != null && now > access.expires;
   }
 
@@ -692,7 +691,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
         key: integrity.accesses.key(result.access),
         integrity: result.access.integrity,
       };
-     
+
       if (process.env.NODE_ENV === 'test' && ! isOpenSource && integrity.accesses.isActive) {
         // double check integrity when running tests only
         if (result.access.integrity != integrity.accesses.hash(result.access)) {
