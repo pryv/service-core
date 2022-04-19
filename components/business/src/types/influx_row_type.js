@@ -6,7 +6,6 @@
  */
 // @flow
 
-const R = require('ramda');
 const logger = require('@pryv/boiler').getLogger('influx_row_type');
 
 import type {EventType, PropertyType, Validator, Content}  from './interfaces';
@@ -28,11 +27,11 @@ class InfluxDateType implements PropertyType {
   }
 
   coerce(value: any): any {
-    switch (R.type(value)) {
-      case 'Number': 
-        return this.secondsToNanos(value - this.deltaTo); 
-      case 'String':
-        return this.secondsToNanos(parseFloat(value) - this.deltaTo); 
+    switch (typeof value) {
+      case 'number':
+        return this.secondsToNanos(value - this.deltaTo);
+      case 'string':
+        return this.secondsToNanos(parseFloat(value) - this.deltaTo);
       // FALL THROUGH
     }
 
@@ -41,14 +40,14 @@ class InfluxDateType implements PropertyType {
 }
 
 // Represents the type of a row in influx input data.
-//  
+//
 class InfluxRowType implements EventType {
-  eventType: EventType; 
+  eventType: EventType;
   seriesMeta: SeriesMetadata;
   applyDeltaTimeToSerie: Number;
 
   constructor(eventType: EventType) {
-    this.eventType = eventType; 
+    this.eventType = eventType;
     this.applyDeltaTimeToSerie = 0;
   }
 
@@ -56,23 +55,23 @@ class InfluxRowType implements EventType {
     this.seriesMeta = seriesMeta;
   }
 
-  // Returns the name of the type inside the series. 
-  // 
+  // Returns the name of the type inside the series.
+  //
   elementTypeName() {
-    return this.eventType.typeName(); 
+    return this.eventType.typeName();
   }
-  
-  /** 
+
+  /**
    * Returns true if the columns given can be reconciled with this type.
-   * WARNING If 'timestamp' column is found a column name will be renamed to "deltaTime" 
-   * and next coerce will convert timestamps to deltaTime relatively to the 
+   * WARNING If 'timestamp' column is found a column name will be renamed to "deltaTime"
+   * and next coerce will convert timestamps to deltaTime relatively to the
    * Event time.
    */
   validateColumns(columnNames: Array<string>): boolean {
     const underlyingType = this.eventType;
-    
+
     // ** do we need to transformation timestamp into deltatime
-    // ** look for "timestamp" in the columns and rename it to deltatime.. 
+    // ** look for "timestamp" in the columns and rename it to deltatime..
     // ** advertise type to convert future measures and r
     const timestampColumn = columnNames.indexOf(FIELD_TIMESTAMP);
     if (timestampColumn >= 0) {
@@ -87,90 +86,89 @@ class InfluxRowType implements EventType {
     const allowedFields = new Set(underlyingType.fields());
     allowedFields.add(FIELD_DELTATIME);
     logger.debug('Allowed are ', allowedFields);
-    
+
     // Accumulator for the fields that we've already seen.
-    const seenFields = new Set(); 
+    const seenFields = new Set();
 
     for (const field of columnNames) {
       if (! allowedFields.has(field)) {
         logger.debug(`Field '${field}' is not allowed.`);
-        return false; 
+        return false;
       }
-      
+
       // Fields are only allowed once; otherwise the storage op would be
       // ambiguous.
       if (seenFields.has(field)) {
         logger.debug(`Duplicate field '${field}'.`);
-        return false; 
+        return false;
       }
-      
+
       seenFields.add(field);
     }
-    
-    // Now this looks valid: Only allowed fields and every field just once. 
-    // Let's see if we have all required fields: 
+
+    // Now this looks valid: Only allowed fields and every field just once.
+    // Let's see if we have all required fields:
     const requiredFields = new Set(underlyingType.requiredFields());
     requiredFields.add(FIELD_DELTATIME);
-    
+
     for (const requiredField of requiredFields) {
       if (! seenFields.has(requiredField)) {
         logger.debug(`Field '${requiredField}' is required, but was not present.`);
         return false;
       }
     }
-    
-    return true; 
+
+    return true;
   }
-  
-  /** Returns true if all the rows in the given row array are valid for this 
-   * type. 
+
+  /** Returns true if all the rows in the given row array are valid for this
+   * type.
    */
   validateAllRows(rows: Array<any>, columnNames: Array<string>) {
     for (let row of rows) {
       if (! this.isRowValid(row, columnNames)) {
         logger.debug('Invalid row: ', row, columnNames.length);
-        return false; 
+        return false;
       }
     }
-    
-    return true; 
+
+    return true;
   }
-  
-  /** Returns true if the given row (part of the input from the client) looks 
-   * right. See the code for what rules define right. 
-   * 
-   * Normal order of operations would be: 
-   * 
+
+  /** Returns true if the given row (part of the input from the client) looks
+   * right. See the code for what rules define right.
+   *
+   * Normal order of operations would be:
+   *
    *  1) Check `columnNames` (`{@link validateColumns}`).
-   *  2) For each row: 
+   *  2) For each row:
    *    2.1) `isRowValid`?
-   *    2.2) For each cell: 
+   *    2.2) For each cell:
    *      2.2.1) `coerce` into target type
    *      2.2.2) `isCellValid`?
-   * 
-   * @param row {any} Rows parsed from client input, could be any type. 
-   * @param columnNames {Array<string>} A list of column names the client 
+   *
+   * @param row {any} Rows parsed from client input, could be any type.
+   * @param columnNames {Array<string>} A list of column names the client
    *  provided. Check these first using `validateColumns`.
    */
   isRowValid(row: any, columnNames: Array<string>) {
-    // A valid row is an array of cells. 
-    const outerType = R.type(row);
-    if (outerType !== 'Array') return false;
-    
+    // A valid row is an array of cells.
+    if (!Array.isArray(row)) return false;
+
     // It has the correct length. (Assumes that columnNames is right)
-    if (row.length !== columnNames.length) return false; 
-    
-    // Everything looks good. 
-    return true; 
+    if (row.length !== columnNames.length) return false;
+
+    // Everything looks good.
+    return true;
   }
-  
-  // As part of being an EventType, return the name of this type. 
-  // 
+
+  // As part of being an EventType, return the name of this type.
+  //
   typeName() {
     return 'series:'+this.eventType.typeName();
   }
-  
-  /** Returns the type of a single cell with column name `name`. 
+
+  /** Returns the type of a single cell with column name `name`.
    */
   forField(name: string): PropertyType  {
     if (name === FIELD_DELTATIME) {
@@ -180,35 +178,35 @@ class InfluxRowType implements EventType {
     }
   }
 
-  // What fields may be present? See `requiredFields` for a list of mandatory 
-  // fields. 
-  // 
+  // What fields may be present? See `requiredFields` for a list of mandatory
+  // fields.
+  //
   optionalFields(): Array<string> {
     return this.eventType.optionalFields();
   }
-  
+
   // check if a field is required
   isOptionalField(name: string): Boolean {
     return this.optionalFields().includes(name);
   }
 
-  // What fields MUST be present? 
-  // 
+  // What fields MUST be present?
+  //
   requiredFields(): Array<string> {
     return [FIELD_DELTATIME].concat(
       this.eventType.requiredFields());
   }
   fields(): Array<string> {
     return [FIELD_DELTATIME].concat(
-      this.eventType.fields()); 
+      this.eventType.fields());
   }
 
   isSeries(): true {
-    return true; 
+    return true;
   }
 
   callValidator(
-    validator: Validator,                         
+    validator: Validator,
     content: Content // eslint-disable-line no-unused-vars
   ): Promise<Content> {
     return Promise.reject(

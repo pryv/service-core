@@ -7,7 +7,7 @@
 // @flow
 
 const async = require('async');
-const R = require('ramda');
+const _ = require('lodash');
 const bluebird = require('bluebird');
 const LRU = require('lru-cache');
 const logger = require('@pryv/boiler').getLogger('metadata_cache');
@@ -197,7 +197,7 @@ class MetadataLoader {
     const contextSource: ContextSource = {
       name: 'hf',
       ip: 'TODO'
-    }
+    };
     const customAuthStep = null;
     const methodContext = new MethodContext(
       contextSource,
@@ -224,7 +224,7 @@ class MetadataLoader {
 
           const access = methodContext.access;
           const user = methodContext.user;
-          const event = R.last(results);
+          const event = _.last(results);
 
           // Because we called retrieveExpandedAccess above.
           if (access == null) throw new Error('AF: access != null');
@@ -235,8 +235,8 @@ class MetadataLoader {
 
           const serieMetadata = new SeriesMetadataImpl(access, user, event);
           serieMetadata.init().then(
-            () => { returnValueCallback(null,serieMetadata); },
-            (error) => { returnValueCallback(error,serieMetadata); });
+            () => { returnValueCallback(null,serieMetadata); },
+            (error) => { returnValueCallback(error,serieMetadata); });
         }
       );
     });
