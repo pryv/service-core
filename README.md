@@ -202,11 +202,9 @@ to fetch them from the "reference" version published online. (The API server als
 
 ### Test failures
 
-If you're running into a lot of test failures because MongoDB doesn't like you today, it's maybe because your database is empty so try to run the storage tests first:
+If you're running into a lot of test failures, it may be because your Mongo database is empty, so try to `just test storage` first.
 
-    $ cd dist/components/storage/ && npm test
-
-If you are getting multiple seemingly unrelated errors following a branch switch, rebuild the `dist/` folder using `rm -rf dist/ && just compile-release`.
+If you are getting multiple seemingly unrelated errors following a branch switch, try to `just clean` then `just compile-release`.
 
 ### Docker installation on Linux
 
