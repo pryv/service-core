@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const path = require('path');
-const mkdirp = require('mkdirp').sync;
 const unlinkSync = require('fs').unlinkSync;
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
@@ -15,7 +14,7 @@ const ensureUserDirectory = require('business').users.UserLocalDirectory.ensureU
 
 const CACHE_SIZE = 500;
 
-class Storage { 
+class Storage {
   initialized = false;
   userDBsCache = null;
   options = null;
@@ -23,18 +22,18 @@ class Storage {
   async init() {
     if (this.initialized) {
       throw('Database already initalized');
-    } 
+    }
     this.config = await getConfig();
     logger.debug('Db initalized');
     this.initialized = true;
     return this;
   }
 
-  constructor(options) { 
-    this.options = options || {}; 
+  constructor(options) {
+    this.options = options || {};
     this.userDBsCache = new LRU({
       max: this.options.max || CACHE_SIZE,
-      dispose: function (key, db) { db.close(); }
+      dispose: function (db, key) { db.close(); }
     });
   }
 
@@ -47,8 +46,8 @@ class Storage {
 
   /**
    * get the database relative to a specific user
-   * @param {string} userid 
-   * @returns {UserDatabase} 
+   * @param {string} userid
+   * @returns {UserDatabase}
    */
   async forUser(userid) {
     logger.debug('forUser: ' + userid);
@@ -58,14 +57,14 @@ class Storage {
 
   /**
    * close and delete the database relative to a specific user
-   * @param {string} userid 
-   * @returns {void} 
+   * @param {string} userid
+   * @returns {void}
    */
-   async deleteUser(userid) {
+  async deleteUser(userid) {
     logger.info('deleteUser: ' + userid);
     const userDb = await this.forUser(userid);
     await userDb.close();
-    this.userDBsCache.del(userid);
+    this.userDBsCache.delete(userid);
     const dbPath = await dbPathForUserid(userid);
     try {
       unlinkSync(dbPath);
@@ -76,7 +75,7 @@ class Storage {
 
   close() {
     this.checkInititalized();
-    this.userDBsCache.reset();
+    this.userDBsCache.clear();
   }
 }
 
@@ -88,7 +87,7 @@ async function open(storage, userid) {
 }
 
 
- /**
+/**
  * @param {string} uid -- user id (cuid format)
  */
 async function dbPathForUserid(userid) {

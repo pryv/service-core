@@ -48,7 +48,7 @@
     "jaeger-client": "^3.18.1",
     "lib-reporting": "git+ssh://git@github.com/pryv/lib-reporting",
     "lodash": "^4.17.4",
-    "lru-cache": "^6.0.0",
+    "lru-cache": "^7.8.1",
     "mkdirp": "1.0.4",
     "mongodb": "^3.7.3",
     "morgan": "^1.8.1",
