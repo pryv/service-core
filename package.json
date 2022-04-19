@@ -86,7 +86,6 @@
     "charlatan": "^1.1.0",
     "concurrently": "^7.1.0",
     "date-utils": "latest",
-    "deep-equal": "latest",
     "eslint": "^7.0.0",
     "eslint-plugin-flowtype": "^5.8.0",
     "flow-bin": "^0.176.2",
