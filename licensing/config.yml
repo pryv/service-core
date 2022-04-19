@@ -34,6 +34,7 @@ ignore:
 - coverage
 - dist
 - flow-coverage
+- flow-typed
 - nats-server
 - node_modules
 - var-pryv

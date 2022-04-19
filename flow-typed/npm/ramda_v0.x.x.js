@@ -1,11 +1,5 @@
-/**
- * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
- */
-// flow-typed signature: 8e3262e5316c45c9c02c03f32411feeb
-// flow-typed version: b38de1436c/ramda_v0.x.x/flow_>=v0.104.x
+// flow-typed signature: a589e9751baf940544549fc85115574b
+// flow-typed version: fbf370b0a5/ramda_v0.x.x/flow_>=v0.104.x
 
 /* eslint-disable no-unused-vars, no-redeclare */
 
@@ -668,7 +662,7 @@ declare module ramda {
   // To refine with filter, be sure to import the RefineFilter type, and cast
   // filter to a RefineFilter.
   // ex:
-  // import { type RefineFilter, filter }  from 'ramda'
+  // import { type RefineFilter, filter } from 'ramda'
   // const notNull = (x): bool %checks => x != null
   // const ns: Array<number> = (filter: RefineFilter)(notNull, [1, 2, null])
   declare var filter: RefineFilter & Filter;
@@ -1327,6 +1321,9 @@ declare module ramda {
 
   declare function identical<T>(x: T): (y: T) => boolean;
   declare function identical<T>(x: T, y: T): boolean;
+      
+  declare function includes<V, T: Array<V> | string>(x?: V, y: T): boolean;
+  declare function includes<V, T: Array<V> | string>(x?: V) : (y: T) => boolean;
 
   declare function innerJoin<A, B>(
     pred: (a: A, b: B) => boolean
