@@ -66,7 +66,7 @@
     "socketio-wildcard": "^2.0.0",
     "superagent": "^3.8",
     "tchannel": "https://github.com/pryv/tchannel-node#v4.0.2",
-    "unix-timestamp": "^0.2.0",
+    "unix-timestamp": "^1.0.0",
     "url": "^0.11.0",
     "winston": "^3.7.2",
     "winston-syslog": "^2.4.4",
@@ -93,18 +93,18 @@
     "flow-coverage-report": "^0.8.0",
     "flow-typed": "^3.2.1",
     "flowgen": "^1.18.0",
-    "mocha": "^8.4.0",
-    "moment": "^2.29.2",
+    "mocha": "^9.2.2",
+    "moment": "^2.29.3",
     "mongodb-core": "^3.2.7",
     "nock": "^13.2.4",
     "nyc": "^15.1.0",
     "qs": "^6.3.0",
-    "should": "^11.2.0",
-    "sinon": "^5",
+    "should": "^13.2.3",
+    "sinon": "^13.0.2",
     "socket.io-client": "^3.1.3",
     "source-licenser": "^2.0.3",
-    "supertest": "^3.0.0",
-    "temp": "^0.8.3"
+    "supertest": "^6.2.2",
+    "temp": "^0.9.4"
   },
   "engines": {
     "node": "16.x"
