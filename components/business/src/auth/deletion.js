@@ -11,7 +11,6 @@ const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
 const { getUsersRepository } = require('business/src/users');
-const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const errors = require('errors').factory;
 
 import type { MethodContext } from 'business';
@@ -29,13 +28,11 @@ class Deletion {
   logger: any;
   storageLayer: any;
   config: any;
-  serviceRegisterConn: ServiceRegister;
 
   constructor(logging: any, storageLayer: any, config: any) {
     this.logger = getLogger('business:deletion');
     this.storageLayer = storageLayer;
     this.config = config;
-    this.serviceRegisterConn = getServiceRegisterConn();
   }
 
   
@@ -178,7 +175,6 @@ class Deletion {
     try {
       const dbCollections = [
         this.storageLayer.accesses,
-        this.storageLayer.events,
         this.storageLayer.streams,
         this.storageLayer.followedSlices,
         this.storageLayer.profile,
@@ -214,22 +210,6 @@ class Deletion {
     result.userDeletion = { username: context.user.username };
     next();
   }
-
-  async deleteOnRegister(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    if (this.config.get('openSource:isActive') || this.config.get('dnsLess:isActive')) return next();
-    try {
-      const res = await this.serviceRegisterConn.deleteUser(params.username);
-      this.logger.debug('on register: ' + params.username, res);
-    } catch (e) { // user might have been deleted register we do not FW error just log it
-      this.logger.error(e, e);
-    }
-    next();
-  };
 }
 
 function findNotExistingDir(paths: Array<string>): string {

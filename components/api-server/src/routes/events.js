@@ -129,6 +129,8 @@ module.exports = async function(expressApp: express$Application, app: Applicatio
       const params = req.body;
       if (req.files) {
         params.files = req.files;
+      } else {
+        delete params.files;
       }
       api.call(req.context, params, methodCallback(res, next, 201));
     });

@@ -54,9 +54,8 @@ describe('Migration - 1.7.x',function () {
     const versions1 = getVersions('1.7.1');
     const newIndexes = testData.getStructure('1.7.0').indexes;
     const defaultUser = { id: 'u_0' };
-    const eventsStorage = storage.user.events;
-
-    const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds();
+ 
+    const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds(); 
 
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
 
@@ -104,7 +103,7 @@ describe('Migration - 1.7.x',function () {
 
     }
 
-    const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
+    const migratedIndexes = await bluebird.fromCallback(cb => eventsCollection.listIndexes({}).toArray(cb));
     compareIndexes(newIndexes.events, migratedIndexes);
 
 

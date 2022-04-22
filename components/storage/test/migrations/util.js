@@ -21,9 +21,11 @@ const compareIndexes = exports.compareIndexes = function (expected, actual) {
 
   expected.forEach((expectedItem) => {
     let found = false;
+    const expectedKeys = Object.keys(expectedItem.index);
     actual.forEach((index) => {
-      if (_.isEqual(index.key, expectedItem.index)) {
-        found = true;
+      const actualKeys = Object.keys(index.key);
+      if ((_.difference(expectedKeys, actualKeys).length + _.difference(actualKeys, expectedKeys).length) === 0) {
+        found = true; 
       }
     });
     if (! found) {

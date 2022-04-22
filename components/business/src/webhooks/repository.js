@@ -17,11 +17,9 @@ const { getUsersRepository } = require('business/src/users');
  */
 class Repository {
   storage: WebhooksStorage;
-  userEventsStorage: UserEventsStorage;
 
-  constructor (webhooksStorage: WebhooksStorage, userEventsStorage: UserEventsStorage) {
+  constructor (webhooksStorage: WebhooksStorage) {
     this.storage = webhooksStorage;
-    this.userEventsStorage = userEventsStorage;
   }
 
   /**

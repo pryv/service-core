@@ -101,7 +101,9 @@ describe('events', function () {
         let allEvents;
         let accountStreamsEvents;
         async.series([
-          storage.insertMany.bind(storage, user, additionalEvents),
+          async function createEvents() { 
+            return mall.events.createMany(user.id,  additionalEvents)
+          },
           function getDefault (stepDone) {
             request.get(basePath).end(function (res) {
               response = res;
@@ -1415,13 +1417,14 @@ describe('events', function () {
         });
 
         should(res.body.event.modified).be.approximately(time, 2);
-        var expected = _.clone(original);
+        var expected = _.cloneDeep(original);
         delete expected.modified; 
         expected.modifiedBy = access.id;
         expected.streamId = expected.streamIds[0];
         expected.modified = res.body.event.modified;
         expected.created = res.body.event.created;
-        _.extend(expected.clientData, data.clientData);
+        expected.clientData = _.extend(expected.clientData, data.clientData);
+       
         delete expected.clientData.numberProp;
         integrity.events.set(expected);
         validation.checkObjectEquality(res.body.event, expected);
@@ -1736,9 +1739,16 @@ describe('events', function () {
     it('[73CD] must delete the event when already trashed including all its attachments', function (done) {
       var id = testData.events[0].id,
           deletionTime;
+      let event;
 
       async.series([
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
+          async function getEvent() {
+            event = await mall.events.getOne(user.id, id);
+          },
+          async function trashEvent() {
+            event.trashed = true;
+            await mall.events.update(user.id, event);
+          },
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {
 
@@ -1752,13 +1762,7 @@ describe('events', function () {
             });
           },
           async function verifyEventData() {
-            let events = await mall.events.get(user.id, {state: 'all', includeDeletions: true, includeHistory: true});
-            const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
-            events = separatedEvents.events;
-            const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-            validation.validateAccountEvents(actualAccountStreamsEvents);
-
-            events.length.should.eql(testData.events.length, 'events');
+            let events = await mall.events.get(user.id, {state: 'all', deletedSince: 0});
 
             var deletion = _.find(events, function (event) {
               return event.id === id;

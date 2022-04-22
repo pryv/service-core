@@ -32,6 +32,13 @@ const boiler = require('@pryv/boiler').init({
     file: path.resolve(__dirname, '../../audit/config/default-path.js')
   }, {
     plugin: require('../config/config-validation')
+  }, {
+    plugin: {load: async () => { 
+      // this is not a plugin, but a way to ensure some component are initialized after config
+      // @sgoumaz - should we promote this pattern for all singletons that need to be initialized ?
+      const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+      await SystemStreamsSerializer.init();
+    }}
   }]
 });
 
@@ -45,12 +52,11 @@ const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
 
+
 const { Extension, ExtensionLoader } = require('utils').extension;
 
 const { getAPIVersion } = require('middleware/src/project_version');
 const { tracingMiddleware } = require('tracing');
-
-const platform = require('platform');
 
 logger.debug('Loading app');
 
@@ -105,12 +111,12 @@ class Application {
     this.produceLogSubsystem();
     logger.debug('Init started');
 
-    await UserLocalDirectory.init();
-    await platform.init();
-
+  
     this.config = await getConfig();
     this.isOpenSource = this.config.get('openSource:isActive');
-    this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active')
+    this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active');
+
+    await UserLocalDirectory.init();
     
     if (this.isAuditActive) {
       const audit = require('audit');

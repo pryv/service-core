@@ -7,7 +7,7 @@
 // @flow
 
 const path = require('path');
-const { getConfig, getLogger } = require('@pryv/boiler').init({
+const { getLogger } = require('@pryv/boiler').init({
   appName: 'hfs-server-tests',
   baseConfigDir: path.resolve(__dirname, '../../config'),
   extraConfigs: [{

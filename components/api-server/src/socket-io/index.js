@@ -79,7 +79,6 @@ async function setupSocketIO(
         userName,
         query.auth,
         customAuthStepFn,
-        storageLayer.events,
       );
 
       // Initailizing Context

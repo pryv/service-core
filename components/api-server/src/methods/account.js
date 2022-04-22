@@ -15,13 +15,13 @@ const methodsSchema = require('../schema/accountMethods');
 const { getConfig } = require('@pryv/boiler');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
+const {getPlatform } = require('platform');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),
   ErrorIds = require('errors').ErrorIds,
-  { getServiceRegisterConn } = require('business/src/auth/service_register'),
   { getUsersRepository, UserRepositoryOptions} = require('business/src/users');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
   /**
@@ -33,15 +33,13 @@ module.exports = async function (api) {
   const servicesSettings = config.get('services');
   const storageLayer = await getStorageLayer();
   const passwordResetRequestsStorage = storageLayer.passwordResetRequests;
+  const platform = await getPlatform();
 
   var emailSettings = servicesSettings.email,
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // initialize service-register connection
-  const serviceRegisterConn = getServiceRegisterConn();
   const usersRepository = await getUsersRepository(); 
-
-  const isDnsLess = config.get('dnsLess:isActive');
 
   // RETRIEVAL
 
@@ -65,7 +63,7 @@ module.exports = async function (api) {
     commonFns.basicAccessAuthorizationCheck,  
     commonFns.getParamsValidation(methodsSchema.update.params),
     validateThatAllFieldsAreEditable,
-    notifyServiceRegister,
+    updateDataOnPlatform,
     updateAccount,
     addUserBusinessToContext,
     buildResultData,
@@ -219,30 +217,28 @@ module.exports = async function (api) {
     next();
   }
 
-  async function notifyServiceRegister (context, params, result, next) {
-    // no need to update service register if it is single node setup
-    if (isDnsLess) {
-      return next();
-    }
+  async function updateDataOnPlatform (context, params, result, next) {
+    
     try {
       const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
-
+      
       const operations: Array<{}> = [];
       for (const [key, value] of Object.entries(params.update)) {
+        // get previous value of the field;
+        const previousValue = await usersRepository.getOnePropertyValue(context.user.id, key);
+
         operations.push({
-          update: {
+            action: 'update',
             key,
             value,
+            previousValue,
             isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
           }
-        })
+        );
       }
-      await serviceRegisterConn.updateUserInServiceRegister(
-        context.user.username,
-        operations,
-        true,
-        false,
-      );
+
+      await platform.updateUserAndForward(context.user.username, operations, true, false);
+
     } catch (err) {
       return next(err);
     }

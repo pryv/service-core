@@ -1,9 +1,3 @@
-/**
- * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
- */
 // flow-typed signature: 99be6078a6164f8788a6386b67e56f1a
 // flow-typed version: 2f514ea8dd/cookie-parser_v1.x.x/flow_>=v0.104.x
 
@@ -13,8 +7,8 @@
  * by Vincent Driessen, 2018-12-21
  */
 
-import * as http  from 'http';
-import type { Socket }  from 'net';
+import * as http from 'http';
+import type { Socket } from 'net';
 
 declare module 'cookie-parser' {
   /**

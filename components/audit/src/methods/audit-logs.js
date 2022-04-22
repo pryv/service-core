@@ -12,6 +12,7 @@ const async = require('async');
 const commonFns = require('api-server/src/methods/helpers/commonFunctions');
 const methodsSchema = require('../schema/auditMethods');
 const eventsGetUtils = require('api-server/src/methods/helpers/eventsGetUtils');
+const mallEventsGetUtils = require('mall/src/lib/eventsGetUtils');
 
 import type { GetEventsParams } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { StreamQuery } from 'business/src/events';
@@ -81,7 +82,7 @@ function removeStoreIdFromStreamQuery(context, params, result, next) {
 
 function limitStreamQueryToAccessToken(context, params, result, next) {
   if (context.access.isPersonal()) return next();
-  if (params.arrayOfStreamQueries == null) { params.arrayOfStreamQueries = [{}]; }
+  if (params.arrayOfStreamQueries == null) { params.arrayOfStreamQueries = [{}]; }
 
   // stream corresponding to acces.id exemple: "access-{acces.id}"
   const streamId: string = audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id;
@@ -104,7 +105,8 @@ async function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = await auditStorage.forUser(context.user.id);
     params.streams = params.arrayOfStreamQueries;
-    result.addStream('auditLogs', userStorage.getLogsStream(params, true));
+    const query = mallEventsGetUtils.getQueryFromParamsForAStore(params);
+    result.addStream('auditLogs', userStorage.getLogsStream(query, true));
   } catch (err) {
     return next(err);
   }     

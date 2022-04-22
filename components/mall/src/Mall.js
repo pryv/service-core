@@ -12,11 +12,18 @@
  * Pack configured datastores into one
  */
 
-const { DataStore } = require('pryv-datastore');
+const { DataStore, errors } = require('pryv-datastore');
+const APIError = require('errors/src/APIError');
+
+// patch DataStore errors with legacy error factory
+const errorFactory = require('errors').factory
+errors._setFactory(errorFactory);
+
 
 // -- Core properties
 const MallUserStreams = require('./MallUserStreams');
-const StoreUserEvents = require('./MallUserEvents');
+const MallUserEvents = require('./MallUserEvents');
+const MallTransaction = require('./MallTransaction');
 
 class Mall {
 
@@ -26,7 +33,7 @@ class Mall {
   storesMap: Map<string, DataStore>;
   initialized: boolean;
   _streams: MallUserStreams;
-  _events: StoreUserEvents;
+  _events: MallUserEvents;
 
   constructor() {
     this.storesMap = {};
@@ -35,7 +42,7 @@ class Mall {
   }
 
   get streams(): MallUserStreams { return this._streams; }
-  get events(): StoreUserEvents { return this._events; }
+  get events(): MallUserEvents { return this._events; }
 
   /**
    * register a new DataStore
@@ -58,9 +65,43 @@ class Mall {
 
     // expose streams and events;
     this._streams = new MallUserStreams(this);
-    this._events = new StoreUserEvents(this);
+    this._events = new MallUserEvents(this);
 
     return this;
+  }
+
+  async deleteUser(uid) {
+    for (const store of this.stores) {
+      try {
+        await store.deleteUser(uid);
+      } catch (error) {
+        this.throwAPIError(error, store.id);
+      }
+    }
+  }
+
+  /**
+   * Return the quantity of storage used by the user in bytes
+   */
+  async storageUsedForUser(uid: string) { 
+    let storageUsed = 0;
+    for (const store of this.stores) {
+      try {
+        storageUsed += await store.storageUsedForUser(uid);
+      } catch (error) {
+        this.throwAPIError(error, store.id);
+      }
+    }
+    return storageUsed;
+  }
+
+  /**
+   * 
+   * @param {*} storeId 
+   * @returns 
+   */
+  async newTransaction(): Promise<MallTransaction> {
+    return new MallTransaction(this);
   }
 
   /**
@@ -70,6 +111,25 @@ class Mall {
    */
   _storeForId(storeId: string): DataStore {
     return this.storesMap[storeId];
+  }
+
+  /**
+   * Catches errors from DataStore and makes sure they are forwarded as API errors.
+   * @param {*} error 
+   * @param {*} storeId 
+   */
+  throwAPIError(error, storeId) {
+    if (! error instanceof Error) {
+      error = new Error(error);
+    }
+    if (! error instanceof APIError) {
+      error = errorFactory.unexpectedError(error);
+    }
+    if (storeId != null) {
+      const store = this._storeForId(storeId);
+      error.message = `Data Store Error: ${store.name} [${store.id}] - ${error.message}`;
+    }
+    throw error;
   }
 
 }

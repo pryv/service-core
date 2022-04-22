@@ -15,13 +15,13 @@ const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 exports.createIdIfMissing = function (item) {
-  item.id = item.id || generateId();
+  item.id = item.id || generateId();
   return item;
 };
 
 exports.getRenamePropertyFn = function (oldName, newName) {
-  return function (item) {
-    if (! item || ! item.hasOwnProperty(oldName)) {
+  return function (item) {
+    if (! item || ! item.hasOwnProperty(oldName)) {
       return item;
     }
 

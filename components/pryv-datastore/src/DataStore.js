@@ -9,6 +9,7 @@
 
 const UserEvents = require('./UserEvents');
 const UserStreams = require('./UserStreams');
+const Transaction = require('./Transaction');
 const Defaults = require('./Defaults');
 
 /**
@@ -29,6 +30,7 @@ class DataStore {
   static Defaults = Defaults;
   static UserEvents = UserEvents;
   static UserStreams = UserStreams;
+  static Transaction = Transaction;
 
   _id: string;
   _name: string;
@@ -49,6 +51,20 @@ class DataStore {
    */
   get events(): UserEvents { throw new Error('Not implemented'); }
 
+  /**
+   * @returns a new Transaction
+   */
+  async newTransaction(): Transaction { throw new Error('Not implemented'); }
+
+  /**
+   * Delete all data related to the user
+   */
+  async deleteUser(uid: string): Promise<void> { throw new Error('Not implemented'); }
+  
+  /**
+   * Return the quantity of storage used by the user in bytes
+   */
+   async storageUsedForUser(uid: string): Promise<number> { throw new Error('Not implemented'); }
 }
 
 module.exports = DataStore;

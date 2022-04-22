@@ -9,7 +9,6 @@ const commonFns = require('./../helpers/commonFunctions');
 const errors = require('errors').factory;
 const { ErrorMessages, ErrorIds } = require('errors');
 const methodsSchema = require('api-server/src/schema/authMethods');
-const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
 const { getUsersRepository } = require('business/src/users');
 const { getConfigUnsafe } = require('@pryv/boiler');
@@ -35,7 +34,7 @@ module.exports = async function (api) {
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
-  const serviceRegisterConn: ServiceRegister = getServiceRegisterConn();
+  await registration.init();
   const usersRepository = await getUsersRepository(); 
 
   function skip(context, params, result, next) { next(); }
@@ -51,11 +50,11 @@ module.exports = async function (api) {
     // data validation methods        
     commonFns.getParamsValidation(methodsSchema.register.params),
     registration.prepareUserData,
-    ifDnsLess(skip, registration.validateUserInServiceRegister.bind(registration)),
+    ifDnsLess(skip, registration.createUserStep1_ValidateUserOnPlatform.bind(registration)),
     //user registration methods
     ifDnsLess(skip, registration.deletePartiallySavedUserIfAny.bind(registration)),
     registration.createUser.bind(registration),
-    ifDnsLess(skip, registration.createUserInServiceRegister.bind(registration)),
+    ifDnsLess(skip, registration.createUserStep2_CreateUserOnPlatform.bind(registration)),
     registration.buildResponse.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );
@@ -94,7 +93,7 @@ module.exports = async function (api) {
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
     try {
-      await usersRepository.checkDuplicates({ [field]: params[field]});
+      await usersRepository.checkDuplicates({ [field]: params[field]}, context.username);
     } catch (error) {
       return next(error);
     }
@@ -114,14 +113,7 @@ module.exports = async function (api) {
   async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     try {
-      const response = await serviceRegisterConn.checkUsername(params.username);
-
-      if (response.reserved === true) {
-        return next(errors.itemAlreadyExists('user', { username: params.username }));
-      }else if (response.reserved != null) {
-        result.reserved = false;
-      }
-      
+      result.reserved = await platform.isUsernameReserved(params.username);
     } catch (error) {
       return next(errors.unexpectedError(error));
     }

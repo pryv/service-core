@@ -20,8 +20,6 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const logger = getLogger('users:local-index');
 
 class UserLocalIndex {
-  eventsStorage;
-  collectionInfo;
   initialized;
   db;
 
@@ -38,8 +36,6 @@ class UserLocalIndex {
 
     const storage = require('storage');
     const storageLayer = await storage.getStorageLayer();
-    this.eventsStorage = storageLayer.events;
-    this.collectionInfo = this.eventsStorage.getCollectionInfoWithoutUserId();
     logger.debug('init');
   }
 

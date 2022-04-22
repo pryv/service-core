@@ -89,7 +89,7 @@ class Controller {
   // Returns a Flush operation for the update `update`. Acts as a producer. 
   // 
   flushOp(update: PendingUpdate): Operation {
-    return new Flush(update, this.db, this.logger);
+    return new Flush(update);
   }
 }
 

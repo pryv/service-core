@@ -188,11 +188,9 @@ describe('streams', function () {
           time;
 
       async.series([
-        function countInitialRootStreams(stepDone) {
-          storage.count(user, {parentId: {$type: 10}}, function (err, count) {
-            originalCount = count;
-            stepDone();
-          });
+        async function countInitialRootStreams() {
+          const streams = await mall.streams.get(user.id, {storeId: 'local', hideRootStreams: true});
+          originalCount = streams.length;
         },
         function addNewStream(stepDone) {
           request.post(basePath).send(data).end(function (res) {
@@ -206,29 +204,24 @@ describe('streams', function () {
             stepDone();
           });
         },
-        function verifyStreamData(stepDone) {
-          storage.find(user, {}, null, function (err, streams) {
-            streams.length.should.eql(originalCount + 1, 'streams');
+        async function verifyStreamData() {
+          const streams = await mall.streams.get(user.id, {storeId: 'local', hideRootStreams: true});
+          streams.length.should.eql(originalCount + 1, 'streams');
 
-            var expected = _.clone(data);
-            expected.id = createdStream.id;
-            expected.parentId = null;
-            expected.created = expected.modified = time;
-            expected.createdBy = expected.modifiedBy = accessId;
-            expected.children = [];
-            var actual = _.find(streams, function (stream) {
-              return stream.id === createdStream.id;
-            });
-            validation.checkObjectEquality(actual, expected);
-
-            stepDone();
+          var expected = _.clone(data);
+          expected.id = createdStream.id;
+          expected.parentId = null;
+          expected.created = expected.modified = time;
+          expected.createdBy = expected.modifiedBy = accessId;
+          expected.children = [];
+          var actual = _.find(streams, function (stream) {
+            return stream.id === createdStream.id;
           });
+          validation.checkObjectEquality(actual, expected);
         },
-        function verifyStoredItem(stepDone) {
-          storage.findOne(user, {id: createdStream.id}, null, function (err, stream) {
-            validation.checkStoredItem(stream, 'stream');
-            stepDone();
-          });
+        async function verifyStoredItem() {
+          const stream = await mall.streams.getOne(user.id, createdStream.id);
+          validation.checkStoredItem(stream, 'stream');
         }
       ], done);
     });
@@ -311,13 +304,9 @@ describe('streams', function () {
         let originalCount;
 
         async.series([
-          function _countInitialChildStreams(stepDone) {
-            storage.count(user, {parentId: initialRootStreamId}, function (err, count) {
-              if (err != null) return stepDone(err);
-
-              originalCount = count;
-              stepDone();
-            });
+          async function _countInitialChildStreams() {
+            const streams = await mall.streams.get(user.id, {id: initialRootStreamId, storeId: 'local', expandChildren: -1});
+            originalCount = streams[0].children.length;
           },
           function _addNewStream(stepDone) {
             var data = {
@@ -336,18 +325,10 @@ describe('streams', function () {
               stepDone();
             });
           },
-          function _recountChildStreams(stepDone) {
-            storage.count(user, {parentId: initialRootStreamId}, function (err, count) {
-              if (err != null) return stepDone(err);
-
-              try {
-                assert.strictEqual(count, originalCount + 1,
-                  'Created a child stream.');
-              }
-              catch (err) { return stepDone(err); }
-
-              stepDone();
-            });
+          async function _recountChildStreams() {
+            const streams = await mall.streams.get(user.id, {id: initialRootStreamId, storeId: 'local', expandChildren: -1});
+            const count = streams[0].children.length;
+            assert.strictEqual(count, originalCount + 1, 'Created a child stream.');
           }
         ],
         done);
@@ -562,23 +543,20 @@ describe('streams', function () {
                 stepDone();
               });
         },
-        function verifyStreamsData(stepDone) {
-          storage.find(user, {}, null, function (err, streams) {
-
-            var updated = _.clone(original);
-            updated.parentId = newParent.id;
-            delete updated.modified;
-            delete updated.modifiedBy;
-            var expected = _.clone(newParent);
-            expected.children = _.clone(newParent.children);
-            expected.children.unshift(updated);
-            var actual = _.find(streams, function (stream) {
-              return stream.id === newParent.id;
-            });
-            validation.checkObjectEquality(actual, expected);
-
-            stepDone();
+        async function verifyStreamsData() {
+          const streams = await mall.streams.get(user.id, {storeId: 'local', hideRootStreams: true});
+         
+          var updated = _.clone(original);
+          updated.parentId = newParent.id;
+          delete updated.modified;
+          delete updated.modifiedBy;
+          var expected = _.clone(newParent);
+          expected.children = _.clone(newParent.children);
+          expected.children.unshift(updated);
+          var actual = _.find(streams, function (stream) {
+            return stream.id === newParent.id;
           });
+          validation.checkObjectEquality(actual, expected);
         }
       ], done);
     });
@@ -745,21 +723,22 @@ describe('streams', function () {
             stepDone();
           });
         },
-        function verifyStreamData(stepDone) {
-          storage.findAll(user, null, function (err, streams) {
-            treeUtils.findById(streams, parent.id).children.length
-              .should.eql(testData.streams[2].children.length - 1, 'child streams');
+        async function verifyStreamData() {
+          // parent
+          const parentStream = await mall.streams.get(user.id, {id: parent.id, storeId: 'local', expandChildren: -1, includeTrashed: true});
+          const parentChildren = parentStream[0].children;
+          parentChildren.length.should.eql(testData.streams[2].children.length - 1, 'child streams');
+          
+          // deleted stream
+          const deletedStreams = await mall.streams.get(user.id, {includeDeletionsSince: 0, storeId: 'local'});
+          const foundDeletedStream = deletedStreams.filter(s => s.id == id)[0];
+          should.exists(foundDeletedStream, 'cannot find deleted stream');
+          validation.checkObjectEquality(foundDeletedStream, expectedDeletion);
 
-            var deletion = treeUtils.findById(streams, id);
-            should.exist(deletion);
-            validation.checkObjectEquality(deletion, expectedDeletion);
-
-            var childDeletion = treeUtils.findById(streams, childId);
-            should.exist(childDeletion);
-            validation.checkObjectEquality(childDeletion, expectedChildDeletion);
-
-            stepDone();
-          });
+          // child stream
+          const foundDeletedChild = deletedStreams.filter(s => s.id == childId)[0];
+          should.exists(foundDeletedChild, 'cannot find deleted child stream');
+          validation.checkObjectEquality(foundDeletedChild, expectedChildDeletion);
         }
       ],
       done );

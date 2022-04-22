@@ -18,8 +18,9 @@ import type { Permission } from 'business/src/accesses';
  * - migrate system streamIds in access permissions
  */
 module.exports = async function (context, callback) {
+  await SystemStreamsSerializer.init();
 
-  const { isPrivateSystemStreamId } = SystemStreamsSerializer;
+  const { isPrivateSystemStreamId } = SystemStreamsSerializer;
 
   const logger = getLogger('migration-1.7.5');
   logger.info('V1.7.1 => v1.7.5 Migration started');

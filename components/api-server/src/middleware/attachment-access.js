@@ -48,7 +48,7 @@ module.exports = middlewareFactory;
 // static-serving the file.
 // 
 async function attachmentsAccessMiddleware(req, res, next) {
-  const event = await mall.events.getOne(req.context.user, req.params.id);
+  const event = await mall.events.getOne(req.context.user.id, req.params.id);
 
   if (!event) {
     return next(errors.unknownResource('event', req.params.id));
