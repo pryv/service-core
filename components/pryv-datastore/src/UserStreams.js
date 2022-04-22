@@ -18,8 +18,8 @@ class UserStreams {
    * @param {identifier} uid
    * @param {Object} params
    * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by stores
-   * @param {identifier} [params.expandChildren] 
-   * @param {identifiers} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is >0 or < 0, children of excludedIds should be excludded too
+   * @param {identifier} [params.expandChildren] default false, if true also return childrens
+   * @param {identifiers} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is true, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @param {timestamp} [params.includeDeletionsSince]
    * @returns {UserStream|null} - the stream or null if not found:

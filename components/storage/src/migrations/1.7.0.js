@@ -23,7 +23,6 @@ module.exports = async function (context, callback) {
   const logger = getLogger('migration-1.7.0');
   logger.info('V1.6.21 => v1.7.0 Migration started');
 
-  await SystemStreamsSerializer.init();
   const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
   const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
   const eventsCollection = await bluebird.fromCallback(cb =>
@@ -32,15 +31,14 @@ module.exports = async function (context, callback) {
     context.database.getCollection({ name: 'streams' }, cb));
   const accessesCollection = await bluebird.fromCallback(cb =>
     context.database.getCollection({ name: 'accesses' }, cb));
-
-
+  const userEventsStorage = new (require('../user/Events'))(context.database);
   
   await migrateAccounts(eventsCollection);
   await migrateTags(eventsCollection, streamsCollection);
   await migrateTagsAccesses(accessesCollection);
-  logger.info('Accounts were migrated, now rebuilding the indexes');
-  await rebuildIndexes(context.database, eventsCollection),
 
+  logger.info('Accounts were migrated, now rebuilding the indexes');
+  await rebuildIndexes(context.database, eventsCollection, userEventsStorage.getCollectionInfoWithoutUserId()),
   logger.info('V1.6.21 => v1.7.0 Migration finished');
   callback();
 
@@ -145,11 +143,7 @@ module.exports = async function (context, callback) {
     }
   }
 
-  async function rebuildIndexes(database, eventsCollection): Promise<void> {
-    for (const item of eventsIndexes) {
-      item.options.background = true;
-      await eventsCollection.createIndex(item.index, item.options);
-    }
+  async function rebuildIndexes(database, eventsCollection, collectionInfo): Promise<void> {
     const indexCursor = await eventsCollection.listIndexes();
     while (await indexCursor.hasNext()) {
       const index = await indexCursor.next();
@@ -273,40 +267,3 @@ module.exports = async function (context, callback) {
 
 
 };
-
-
-const eventsIndexes = [
-  {
-    index: { userId: 1 },
-    options: {},
-  },
-  {
-    index: { userId: 1, _id: 1, },
-    options: {},
-  },
-  {
-    index: { userId: 1, streamIds: 1 },
-    options: {},
-  },
-  {
-    index: { userId: 1, time: 1 },
-    options: {},
-  },
-  {
-    index: { userId: 1, streamIds: 1 },
-    options: {},
-  },
-  // no index by content until we have more actual usage feedback
-  {
-    index: { userId: 1, trashed: 1 },
-    options: {},
-  },
-  {
-    index: { userId: 1, modified: 1 },
-    options: {},
-  },
-  {
-    index: { userId: 1, endTime: 1 },
-    options: { partialFilterExpression: { endTime: { $exists: true } } },
-  }
-];

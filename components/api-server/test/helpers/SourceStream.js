@@ -4,9 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const Readable = require('stream').Readable,
-      inherits = require('util').inherits,
-      _ = require('lodash');
+var Readable = require('stream').Readable,
+    inherits = require('util').inherits,
+    R = require('ramda');
 
 module.exports = Source;
 
@@ -18,7 +18,7 @@ module.exports = Source;
  */
 function Source(array) {
   Readable.call(this, {objectMode: true});
-  this.array = _.cloneDeep(array); // shift changes in place
+  this.array = R.clone(array); // shift changes in place
 }
 
 inherits(Source, Readable);

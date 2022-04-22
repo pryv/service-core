@@ -7,9 +7,10 @@
 const bluebird = require('bluebird');
 
 const { getUsersRepository, UserRepositoryOptions, User } = require('business/src/users');
-const { getMall } = require('mall');
 
 class Size {
+
+  userEventsStorage;
   dbDocumentsItems;
   attachedFilesItems;
 
@@ -22,7 +23,8 @@ class Size {
  * @param {Array} attachedFilesItems
  * @constructor
  */
-  constructor(dbDocumentsItems, attachedFilesItems) {
+  constructor(userEventsStorage, dbDocumentsItems, attachedFilesItems) {
+    this.userEventsStorage = userEventsStorage;
     this.dbDocumentsItems = dbDocumentsItems;
     this.attachedFilesItems = attachedFilesItems;
   }
@@ -33,10 +35,8 @@ class Size {
    * @param {Object} user
    */
   async computeForUser(user) {
-    const mall = await getMall();
-    const mallSize = await mall.storageUsedForUser(user.id);
     const storageUsed = {
-      dbDocuments: mallSize + await computeCategory(this.dbDocumentsItems),
+      dbDocuments: await computeCategory(this.dbDocumentsItems),
       attachedFiles: await computeCategory(this.attachedFilesItems),
     }
     let userObject = new User(user);

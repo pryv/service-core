@@ -24,7 +24,6 @@ describe('Audit logs events', () => {
   let streamId;
   before(async function () {
     config = await getConfig();
-    await SystemStreamsSerializer.init();
     if (config.get('openSource:isActive')) this.skip();
 
     mongoFixtures = databaseFixture(await produceMongoConnection());

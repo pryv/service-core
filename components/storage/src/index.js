@@ -10,12 +10,12 @@ const Access = require('./user/Accesses');
 const Stream = require('./user/Streams');
 const Database =  require('./Database');
 const StorageLayer = require('./storage_layer');
-const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
+const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const  { dataBaseTracer } = require('tracing');
 
 let database;
 function _getDatabase(config) {
-  if (! database) {
+  if (! database) { 
     database = new Database(config.get('database')); 
     dataBaseTracer(database);
   }
@@ -64,6 +64,7 @@ module.exports = {
   user: {
     Accesses: Access,
     EventFiles: require('./user/EventFiles'),
+    Events: require('./user/Events'),
     FollowedSlices: require('./user/FollowedSlices'),
     Profile: require('./user/Profile'),
     Streams: Stream,

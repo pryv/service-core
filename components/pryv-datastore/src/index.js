@@ -7,5 +7,5 @@
 
 module.exports = {
   DataStore: require('./DataStore'),
-  errors: require('./errors')
+  errors: require('errors')
 };

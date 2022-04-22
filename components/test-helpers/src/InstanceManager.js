@@ -6,13 +6,14 @@
  */
 var async = require('async'),
     axon = require('axon'),
+    deepEqual = require('deep-equal'),
     EventEmitter = require('events').EventEmitter,
     fs = require('fs'),
     spawn = require('child_process').spawn,
     temp = require('temp'),
     util = require('util');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger } = require('@pryv/boiler');
 
 module.exports = InstanceManager;
 
@@ -69,16 +70,16 @@ function InstanceManager(settings) {
     if (typeof settings.logs === 'undefined') settings.logs = {};
     if (typeof settings.logs.console === 'undefined') settings.logs.console = {};
 
-
+    
     if (process.env.LOGS) {
-      settings.logs.console.active = true;
+      settings.logs.console.active = true; 
       settings.logs.console.level = process.env.LOGS;
     } else {
-      settings.logs.console.active = false;
+      settings.logs.console.active = false; 
     }
 
     logger.debug('ensure started', settings.http);
-    if (util.isDeepStrictEqual(settings, serverSettings)) {
+    if (deepEqual(settings, serverSettings)) {
       if (isRunning()) {
         // nothing to do
         return callback();

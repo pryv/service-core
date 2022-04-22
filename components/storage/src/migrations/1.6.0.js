@@ -18,21 +18,22 @@ const { getUsersRepository, User } = require('business/src/users');
 module.exports = async function (context, callback) {
   console.log('V1.5.22 => v1.6.0 Migration started');
 
+  const UserEventsStorage = new (require('../user/Events'))(context.database);
   // get streams ids from the config that should be retrieved
-  await SystemStreamsSerializer.init();
-  const userEventsCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'users' }, cb));
   const userAccountStreams = SystemStreamsSerializer.getAccountMap();
   const userAccountStreamIds = Object.keys(userAccountStreams);
   let usersRepository = await getUsersRepository(); 
 
+  await migrateAccounts(UserEventsStorage);
   console.log('Accounts were migrated, now creating the indexes');
-  await createIndex(userAccountStreams, userAccountStreamIds, userEventsCollection);
+  await createIndex(userAccountStreams, userAccountStreamIds, UserEventsStorage);
   console.log('V1.5.22 => v1.6.0 Migration finished');
   callback();
 
   async function migrateAccounts () {
-   
-    const cursor = await userEventsCollection.find({});
+    const usersCollection = await bluebird.fromCallback(cb =>
+      context.database.getCollection({ name: 'users' }, cb));
+    const cursor = await usersCollection.find({});
 
     //let requests = [];
     let shouldContinue: boolean;
@@ -69,7 +70,7 @@ module.exports = async function (context, callback) {
     return false;
   }
 
-  async function createIndex (userAccountStreams, userAccountStreamIds, eventsCollection) {
+  async function createIndex (userAccountStreams, userAccountStreamIds, UserEventsStorage) {
     console.log('Building new indexes');
     
     for (let i=0; i<userAccountStreamIds.length; i++) {
@@ -77,7 +78,8 @@ module.exports = async function (context, callback) {
       const streamData = userAccountStreams[streamId];
       const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
       if (streamData.isUnique) {
-        await bluebird.fromCallback(cb => eventsCollection.createIndex({ [streamIdWithoutDot + '__unique']: 1 },
+        await bluebird.fromCallback(cb => UserEventsStorage.database.db.collection('events')
+          .createIndex({ [streamIdWithoutDot + '__unique']: 1 },
             {
               unique: true,
               partialFilterExpression: {

@@ -19,23 +19,19 @@ const { databaseFixture } = require('test-helpers');
 const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
 const { getConfig, getLogger } = require('@pryv/boiler');
 
-const { getMall } = require('mall');
- 
 describe('Metadata Loader', function () {
 
-  let database, config, pryv, mall;
+  let database, config, pryv;
   before(async function () {
     config = await getConfig();
-    await require('business/src/system-streams/serializer').init();
     database = await storage.getDatabase(); 
     pryv = databaseFixture(database);
-    mall = await getMall();
   });
   
 
   let loader; 
   beforeEach(() => {
-    loader = new MetadataLoader(database, mall, getLogger('metadata-test'));
+    loader = new MetadataLoader(database, getLogger('metadata'));
   });
 
   const USER_NAME = 'foo';
@@ -72,7 +68,6 @@ describe('Metadata Cache', function () {
   let config;
   before(async function () {
     config = await getConfig();
-    await require('business/src/system-streams/serializer').init();
   });
   it('[O8AE] returns loaded metadata for N minutes', async () => {
     let n = 0; 
@@ -87,7 +82,6 @@ describe('Metadata Cache', function () {
     
     // FLOW stubbing the value of loader here.
     const cache = new MetadataCache(null, loaderStub, config);
-    await cache.init();
     
     const a = await cache.forSeries('foo', '1234', '5678');
     const b = await cache.forSeries('foo', '1234', '5678');

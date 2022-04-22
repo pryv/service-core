@@ -39,7 +39,7 @@ describe('Audit Storage', () => {
     
     it('[KA8B] should have written the action in the user\'s database', async () => {
       const event = await sendAndWait({});
-      const entries = userStrorage.getLogs({query: [{type: 'equal', content: {field: 'createdBy', value: createdBy}}]});
+      const entries = userStrorage.getLogs({createdBy: createdBy});
       assert.equal(entries.length, 1);
       assert.equal(entries[0].createdBy, createdBy);
       assert.deepEqual(entries[0].content, event.content);

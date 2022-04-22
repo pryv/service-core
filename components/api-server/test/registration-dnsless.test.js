@@ -185,19 +185,12 @@ describe('[BMM2] registration: DNS-less', () => {
       describe('username property', function() {
         let registerData;
         before(async function () {
-          const registerData1ReuseUsername = generateRegisterBody();
-          res = await request.post('/users').send(registerData1ReuseUsername);
-          assert.equal(res.status, 201);
-
-          const registerData1ReuseEmail = generateRegisterBody();
-          res = await request.post('/users').send(registerData1ReuseEmail);
-          assert.equal(res.status, 201);
-
-          // create a user with the same username and email from two other users 
           registerData = generateRegisterBody();
-          registerData.username = registerData1ReuseUsername.username;
-          registerData.email = registerData1ReuseEmail.email;
+          //await mongoFixtures.context.cleanEverything();
+          //await app.database.deleteMany({ name: 'events' });
 
+          res = await request.post('/users').send(registerData);
+          assert.equal(res.status, 201);
           res = await request.post('/users').send(registerData);
         });
         it('[LZ1K] should respond with status 409', function() {

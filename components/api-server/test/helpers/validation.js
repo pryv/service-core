@@ -437,7 +437,7 @@ exports.removeAccountStreams = function (streams) {
 }
 
 exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
-  const {streamsUtils, getMall} = require('mall');
+  const {StreamsUtils, getMall} = require('mall');
   function isShown(storeId) {
     if (storeId === 'local') return false;
     if (storesId == null) return true;
@@ -448,7 +448,7 @@ exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
   const mall = await getMall();
   for (const source of [...mall.stores].reverse()) { // cloning array before reversing it!
     if (isShown(source.id)) {
-      const stream = streamsUtils.storeToStream(source, {
+      const stream = StreamsUtils.storeToStream(source, {
         children: [],
         childrenHidden: true // To be discussed
       });

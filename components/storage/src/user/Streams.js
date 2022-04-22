@@ -124,7 +124,7 @@ Streams.prototype.insertOne = function (user, stream, callback) {
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {
   if (typeof updatedData.parentId != 'undefined') { // clear ALL when a stream is moved
     cache.unsetUserData(user.id);
-  } else { // only stream Structure
+  } else { // only stream Structure
     cache.unsetStreams(user.id, 'local');
   }
   var self = this;

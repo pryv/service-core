@@ -146,16 +146,13 @@ class Database {
 
   // Internal function. 
   // 
-  async getCollection(collectionInfo: CollectionInfo, callback: ?GetCollectionCallback) {
+  async getCollection(collectionInfo: CollectionInfo, callback: GetCollectionCallback) {
     try {    
       // Make sure we have a connect
-      await bluebird.fromCallback(  cb => this.ensureConnect(cb) ); 
-
+      await bluebird.fromCallback( 
+        cb => this.ensureConnect(cb) ); 
       if (this.collectionConnectionsCache[collectionInfo.name]) {
-        if (callback != null) {
-          return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
-        } 
-        return this.collectionConnectionsCache[collectionInfo.name];
+        return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
       }
         
       // Load the collection
@@ -169,16 +166,10 @@ class Database {
       
       this.collectionConnectionsCache[collectionInfo.name] = collection;
       // returning the collection.
-      if (callback != null) {
-        return callback(null, collection);
-      }
-      return collection;
+      return callback(null, collection);
     }
     catch (err) {
-      if (callback != null) {
-        return callback(err);
-      } 
-      throw err;
+      return callback(err);
     }
     
     // Called with `this` set to the Database instance. 
@@ -188,20 +179,17 @@ class Database {
       const collectionName: string = collection.collectionName;
       if (indexes == null) return; 
       if (initializedCollections[collectionName]) return; 
+      
       for (const item of indexes) {
         const options = lodash.merge({}, item.options, {
           background: true
         });
-       
         await collection.createIndex(item.index, options);
       }
 
       initializedCollections[collectionName] = true;
     }
   }
-
-  
-
 
   // Internal function. Does the same job as `getCollection` above, but calls `errCallback`
   // when error would not be null. Otherwise it calls '`callback`, whose code can 
@@ -238,7 +226,7 @@ class Database {
    * @param {Function} callback
    */
   countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+
     if (collectionInfo.useUserId) {
       return this.count(collectionInfo, {}, callback);
     }
@@ -270,7 +258,7 @@ class Database {
     function addUserIdProperty(object) {
       object.userId = collectionInfo.useUserId;
     }
-  }
+}
 
   /**
    * Counts documents matching the given query.
@@ -280,7 +268,6 @@ class Database {
    * @param {Function} callback
    */
   count(collectionInfo: CollectionInfo, query: {}, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.find(query).count(callback);
@@ -300,7 +287,6 @@ class Database {
    * @param {Function} callback
    */
   findCursor(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
@@ -374,10 +360,55 @@ class Database {
    * @param {Function} callback
    */
   findOne(collectionInfo: CollectionInfo, query: Object, options: FindOptions, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOne(query, options || {}, callback);
+    });
+  }
+
+  /**
+   * Aggregates documents based on the given group expression.
+   *
+   * @param {Object} collectionInfo
+   * @param {Object} query Optional; Mongo-style query object
+   * @param {Object} projectExpression Mongo-style `$project` object
+   * @param {Object} groupExpression Mongo-style `$group` object
+   * @param {Object} options Properties:
+   *    * {Object} sort Mongo-style sorting definition
+   *    * {Number} skip Number of records to skip (or `null`)
+   *    * {Number} limit Number of records to return (or `null`)
+   * @param {Function} callback
+   */
+  aggregate(
+    collectionInfo: CollectionInfo, query: Object, 
+    projectExpression: Object, groupExpression: Object,
+    options: Object, callback: DatabaseCallback) 
+  {
+    this.addUserIdIfneed(collectionInfo, query);
+    this.getCollectionSafe(collectionInfo, callback, collection => {
+      var aggregationCmds = [];
+      if (query) {
+        aggregationCmds.push({$match: query});
+      }
+      if (projectExpression) {
+        aggregationCmds.push({$project: projectExpression});
+      }
+      if (groupExpression) {
+        aggregationCmds.push({$group: groupExpression});
+      }
+      if (options.sort) {
+        aggregationCmds.push({$sort: options.sort});
+      }
+      if (options.skip) {
+        aggregationCmds.push({$skip: options.skip});
+      }
+      if (options.limit) {
+        aggregationCmds.push({$limit: options.limit});
+      }
+      collection.aggregate(aggregationCmds, function (err, results) {
+        if (err) { return callback(err); }
+        callback(null, results);
+      });
     });
   }
 
@@ -389,7 +420,6 @@ class Database {
    * @param {Function} callback
    */
   insertOne (collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback, options: Object = {}) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, item);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertOne(item, options, (err, res) => {
@@ -405,7 +435,6 @@ class Database {
    * Inserts an array of items (each item must have a valid id already).
    */
   insertMany (collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback, options: Object = {}) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertMany(items, options, (err, res) => {
@@ -427,7 +456,6 @@ class Database {
    * @param {Function} callback
    */
   updateOne (collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback, options: Object = {}) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, options, (err, res) => {
@@ -449,7 +477,6 @@ class Database {
    * @param {Function} callback
    */
   updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, {}, callback);
@@ -474,7 +501,6 @@ class Database {
    * @param {Function} callback
    */
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js', 'callbackIntegrity'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, { returnDocument: 'after' }, function (err, r) {
@@ -496,7 +522,6 @@ class Database {
    * @param {Function} callback
    */
   upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {upsert: true}, callback);
@@ -511,7 +536,6 @@ class Database {
    * @param {Function} callback
    */
   deleteOne(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteOne(query, {}, callback);
@@ -526,7 +550,6 @@ class Database {
    * @param {Function} callback
    */
   deleteMany(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteMany(query, {}, callback);
@@ -541,7 +564,6 @@ class Database {
    * @param {Function} callback
    */
   totalSize(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     if (collectionInfo.useUserId) {
       return this.countAll(collectionInfo, callback);
     }
@@ -560,7 +582,6 @@ class Database {
    * @param {Function} callback
    */
   dropCollection(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
     if (collectionInfo.useUserId) {
       return this.deleteMany(collectionInfo, {}, callback);
     } else {
@@ -604,7 +625,7 @@ class Database {
   }
 
   static handleDuplicateError(err: MongoDBError) {
-    err.isDuplicate = Database.isDuplicateError(err);
+    err.isDuplicate = this.isDuplicateError(err);
     err.isDuplicateIndex = (key) => {
       if (err != null && err.errmsg != null && err.isDuplicate) {
         // This check depends on the MongoDB storage engine
@@ -696,16 +717,4 @@ function getTotalSizeFromStats(stats) {
   return stats.count * 16 + // ie. record headers
       stats.size +
       stats.totalIndexSize;
-}
-
-function tellMeIfStackDoesNotContains(needles, info) {
-  const e = new Error();
-  const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 ).filter(l => l.indexOf('node:') < 0).slice(1, 100);
-  for (const needle of needles) {
-    if (stack.some(l => l.indexOf(needle) >= 0)) {
-      return true;
-    }
-  }
-  console.log(info, stack);
-  return false;
 }

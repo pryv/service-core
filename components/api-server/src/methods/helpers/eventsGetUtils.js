@@ -16,7 +16,7 @@ const streamsQueryUtils = require('./streamsQueryUtils');
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 const errors = require('errors').factory;
-const { getMall, streamsUtils } = require('mall');
+const { getMall, StreamsUtils } = require('mall');
 const { treeUtils } = require('utils');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
@@ -50,7 +50,7 @@ export type StoreQuery = {
   id: string, 
   storeId: string, 
   includeTrashed: boolean,
-  expandChildren: integer,
+  expandChildren: boolean,
   excludedIds: Array<string>,
   hideStoreRoots?: boolean,
 };
@@ -311,7 +311,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
       id: streamId, 
       storeId: storeId, 
       includeTrashed: params.state === 'all' || params.state === 'trashed',
-      expandChildren: -1,
+      expandChildren: true,
       excludedIds: excludedIds,
       hideStoreRoots: true
     };
@@ -321,7 +321,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
     // collect streamIds 
     const resultWithPrefix: Array<string> = treeUtils.collectPluck(tree, 'id');
     // remove storePrefix 
-    const result: Array<string> = resultWithPrefix.map((fullStreamId: string) => streamsUtils.storeIdAndStreamIdForStreamId(fullStreamId)[1]);
+    const result: Array<string> = resultWithPrefix.map((fullStreamId: string) => StreamsUtils.storeIdAndStreamIdForStreamId(fullStreamId)[1]);
     return result;
   }
 
@@ -362,7 +362,7 @@ async function streamQueryAddHiddenStreams(context: MethodContext, params: GetEv
         {
           id: '*',
           storeId: streamQuery.storeId,
-          expandChildren: 0,
+          expandChildren: false,
           includeTrashed: true,
           excludedIds: [],
         });

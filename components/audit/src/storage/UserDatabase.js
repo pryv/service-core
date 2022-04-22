@@ -145,7 +145,7 @@ class UserDatabase {
   }
 
 
-  close() {
+  close() { 
     this.db.close();
   }
 
@@ -178,48 +178,27 @@ function prepareTermQuery(params = {}) {
   return queryString;
 }
 
-const converters = {
-  equal: (content) => { 
-    if (content.field !== 'createdBy') return null; // (only supported for now)
-    return `${content.field} = '${content.value}'`;
-  },
-  greater: (content) => { 
-    return `${content.field} > ${content.value}`;
-  },
-  greaterOrEqual: (content) => {
-    const realField = content.field === 'endTime' ? 'time' : content.field;
-    return `${realField} >= ${content.value}`;
-  },
-  lowerOrEqual: (content) => { 
-    const realField = content.field === 'endTime' ? 'time' : content.field;
-    return `${realField} <= ${content.value}`;
-  },
-  greaterOrEqualOrNull: (content) => { 
-    const realField = content.field === 'endTime' ? 'time' : content.field;
-    return `(${realField} >= ${content.value} OR ${realField} IS NULL)`;
-  },
-  typesList: (list) => { 
-    if (list.length == 0) return null;
-    const lt = list.map((type) => `type = "${type}"`);
-    return '('+ lt.join(' OR ') + ')';
-  },
-  streamsQuery: (content) => {
-    const str = toSQLiteQuery(content);
-    if (str === null) return null;
-    return 'streamIds MATCH \'' + str + '\'';
-  }
-}
-
-
 function prepareLogQuery(params = {}) {
   const ands = [];
 
+  if (params.type != null) {
+    ands.push('type = ' + params.type);
+  } 
 
-  for (const item of params.query) {
-    const newCondition = converters[item.type](item.content);
-    if (newCondition != null) {
-      ands.push(newCondition);
-    }
+  if (params.fromTime != null) {
+    ands.push('time >= ' + params.fromTime);
+  } 
+  if (params.toTime != null) {
+    ands.push('time <= ' + params.toTime);
+  }
+    
+  if (params.createdBy != null) {
+    ands.push('createdBy = \'' + params.createdBy + '\'');
+  }
+
+  if (params.streams != null) {
+    const str = toSQLiteQuery(params.streams);
+    if (str) ands.push('streamIds MATCH \'' + str + '\'');
   }
   
   let queryString = 'SELECT * FROM events_fts';
@@ -234,9 +213,11 @@ function prepareLogQuery(params = {}) {
     queryString += ' ORDER BY time DESC';
   }
 
-  if (params.options?.limit) {
-    queryString += ' LIMIT ' + params.options.limit;
+  if (params.limit) {
+    queryString += ' LIMIT ' + params.limit;
   }
+
+  //console.log(params, queryString);
   return queryString;
 }
 

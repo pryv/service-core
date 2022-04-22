@@ -35,7 +35,6 @@ const Context = require('./context');
 const Server = require('./server'); 
 
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const opentracing = require('opentracing');
 const initTracer = require('jaeger-client').initTracer;
@@ -53,13 +52,11 @@ async function createContext(
   const influx = new business.series.InfluxConnection({host: host, port: port}); 
   
   const mongo = await storage.getDatabase();
-  
     
   const tracer = produceTracer(config, getLogger('jaeger'));
   const typeRepoUpdateUrl = config.get('service:eventTypes');
     
   const context = new Context(influx, mongo, tracer, typeRepoUpdateUrl, config);
-  await context.init();
   
   if (config.has('metadataUpdater:host')) {
     const mdHost = config.get('metadataUpdater:host'); 
@@ -117,7 +114,6 @@ class Application {
   async init() {
     this.logger = getLogger('application');
     this.config = await getConfig();
-    await SystemStreamsSerializer.init();
     await setCommonMeta.loadSettings();
 
     

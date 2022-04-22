@@ -20,7 +20,7 @@ const { getUsersRepository } = require('business/src/users');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getMall, streamsUtils } = require('mall');
+const { getMall, StreamsUtils } = require('mall');
 
 const cache = require('cache');
 
@@ -86,6 +86,7 @@ class MethodContext {
     username: string,
     auth: ?string,
     customAuthStepFn: ?CustomAuthFunction,
+    eventsStorage: ?StorageLayer,
     headers: Map<string, any>,
     query: ?{},
     tracing: ?Tracing,
@@ -103,6 +104,7 @@ class MethodContext {
     this.headers = headers;
 
     this.methodId = null;
+    SystemStreamsSerializer.getSerializer(); // ensure it's loaded
     if (auth != null) this.parseAuth(auth);
     this.originalQuery = _.cloneDeep(query);
     if (this.originalQuery?.auth) delete this.originalQuery.auth;

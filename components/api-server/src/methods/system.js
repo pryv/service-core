@@ -29,7 +29,6 @@ module.exports = async function (
   const logger = getLogger('system');
   const storageLayer = await getStorageLayer();
   const registration = new Registration(logger, storageLayer, config.get('services'));
-  await registration.init();
   const usersRepository = await getUsersRepository(); 
   const userProfileStorage = storageLayer.profile;
   const userAccessesStorage = storageLayer.accesses;

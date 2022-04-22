@@ -11,85 +11,31 @@
  * Errors factory, provided as a helper for external implementations.
  */
 const errors = module.exports = {
-  unexpectedError,
   invalidRequestStructure,
-  unknownResource,
-  itemAlreadyExists,
-  invalidItemId,
-  unsupportedOperation,
-  _setFactory,
+  unknownResource
 };
 
 /**
  * Match internal APIError ids for consistency.
  */
 const ErrorIds = {
-  UnexpectedError: 'unexpected-error',
   InvalidRequestStructure: 'invalid-request-structure',
-  UnknownResource: 'unknown-resource',
-  ItemAlreadyExists: 'item-already-exists',
-  InvalidItemId: 'invalid-item-id',
-  UnsupportedOperation: 'unsupported-operation',
+  UnknownResource: 'unknown-resource'
 };
 
-function unexpectedError(message: string, data?: Object, innerError?: Error): PryvDataSourceError {
-
-  return createError(ErrorIds.UnexpectedError, message, data, innerError);
-}
-
-
-function invalidRequestStructure(message: string, data?: Object, innerError?: Error): PryvDataSourceError {
-  if (_factory) return _factory.invalidRequestStructure(message, data, innerError);
+function invalidRequestStructure(message: string, data?: Object, innerError?: Error): APIError {
   return createError(ErrorIds.InvalidRequestStructure, message, data, innerError);
 }
 
-function unknownResource(resourceType: ?string, id: ?string, innerError?: Error): PryvDataSourceError {
-  if (_factory) return _factory.unknownResource(resourceType, id, innerError);
+function unknownResource(resourceType: ?string, id: ?string, innerError?: Error): APIError {
   const message = `Unknown ${resourceType || 'resource'} ${id ? `"${id}"` : ''}`;
   return createError(ErrorIds.UnknownResource, message, null, innerError);
 }
 
-function itemAlreadyExists(resourceType: ?string, conflictingKeys: { [string]: string }, innerError?: Error): PryvDataSourceError {
-  if (_factory) return _factory.itemAlreadyExists(resourceType, conflictingKeys, innerError);
-  const message = `${resourceType || 'Resource'} already exists with conflicting keys: ${JSON.stringify(conflictingKeys)}`;
-  return createError(ErrorIds.ItemAlreadyExists, message, {confictingKey : conflictingKeys}, innerError);
-}
-
-function invalidItemId(message: string): PryvDataSourceError {
-  if (_factory) return _factory.invalidItemId(message);
-  return createError(ErrorIds.InvalidItemId, message, data, innerError);
-}
-
-function unsupportedOperation(message: string): PryvDataSourceError {
-  if (_factory) return _factory.unsupportedOperation(message);
-  return createError(ErrorIds.UnsupportedOperation, message, data, innerError);
-}
-
-function createError (id: string, message: string, data?: Object, innerError?: Error): PryvDataSourceError {
-  return new PryvDataSourceError(id, message, data, innerError);
-}
-
-class PryvDataSourceError extends Error {
-  id: string;
-  data: ?Object;
-  innerError: ?Error;
-
-  constructor(id: string, message: string, data?: Object, innerError?: Error) {
-    super(message);
-    this.id = id;
-    this.data = data || null;
-    this.innerError = innerError || null;
-  }
-}
-
-// ---------------- error factory ----------------
-
-let _factory = null;
-
-/**
- * Used to map errors to API errors.
- * @param {*} factory 
- */
-function _setFactory(factory: Object) {
-  _factory = factory;
+function createError (id: string, message: string, data?: Object, innerError?: Error): Error {
+  const err = new Error(message);
+  err.id = id;
+  err.data = data || null;
+  err.innerError = innerError || null;
+  return err;
 }

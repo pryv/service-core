@@ -34,6 +34,7 @@ module.exports = async function(
     deletion.deleteUserFiles.bind(deletion),
     deletion.deleteHFData.bind(deletion),
     deletion.deleteAuditData.bind(deletion),
+    deletion.deleteOnRegister.bind(deletion),
     deletion.deleteUser.bind(deletion)
   );
 };

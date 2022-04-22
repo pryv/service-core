@@ -18,7 +18,6 @@ const bluebird = require('bluebird');
 const getAuth = require('middleware/src/getAuth');
 
 const {getLogger} = require('@pryv/boiler');
-const { getMall } = require('mall');
 
 // constants
 const StandardDimensions = [ 256, 512, 768, 1024 ];
@@ -32,14 +31,14 @@ const StandardDimensionsLength = StandardDimensions.length;
  * @param expressApp
  * @param initContextMiddleware
  * @param loadAccessMiddleware
+ * @param userEventsStorage
  * @param userEventFilesStorage
  * @param logging
  */
-module.exports = async function (
-  expressApp, initContextMiddleware, loadAccessMiddleware,
+module.exports = function (
+  expressApp, initContextMiddleware, loadAccessMiddleware, userEventsStorage,
   userEventFilesStorage, logging) {
 
-  const mall = await getMall();
   // SERVING PREVIEWS
 
   expressApp.all('/*', getAuth);
@@ -55,7 +54,7 @@ module.exports = async function (
 
     try {
       // Check Event
-      const event = await mall.events.getOne(user.id, id);
+      const event = await bluebird.fromCallback((cb) => userEventsStorage.findOne(user, {id: id}, null, cb));
       if (event == null) { 
         return next(errors.unknownResource('event', id));
       }
@@ -92,6 +91,9 @@ module.exports = async function (
       } catch(err) {
         return next(adjustGMResultError(err));
       }
+
+      await bluebird.fromCallback((cb) => userEventsStorage.updateOne(
+        req.context.user, {id: req.params.id},{attachments: event.attachments}, cb));
 
       // Prepare path
       const targetSize = getPreviewSize(originalSize, {

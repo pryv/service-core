@@ -36,6 +36,7 @@ module.exports = function initContext(
       req.params.username,
       authorizationHeader, 
       customAuthStepFn,
+      storageLayer.events,
       req.headers,
       req.query,
       req.tracing,

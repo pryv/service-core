@@ -11,7 +11,7 @@ import type { Stream } from 'business/src/streams';
 import type { SystemStream } from 'business/src/system-streams';
 const { StreamProperties } = require('business/src/streams');
 const treeUtils = require('utils').treeUtils;
-const { getConfig } = require('@pryv/boiler');
+const { getConfigUnsafe } = require('@pryv/boiler');
 const { features } = require('api-server/config/components/systemStreams');
 
 const PRYV_PREFIX = ':_system:';
@@ -80,14 +80,9 @@ class SystemStreamsSerializer {
 
   static options: ?Map<string, string>;
 
-  static async init(): SystemStreamsSerializer {
+  static getSerializer(): SystemStreamsSerializer {
     if (singleton) return singleton;
     singleton = new SystemStreamsSerializer();
-    const config = await getConfig();
-    singleton.systemStreamsSettings = config.get('systemStreams');
-    if (singleton.systemStreamsSettings == null) {
-      throw Error('Invalid system streams settings');
-    }
     initializeSerializer(singleton);
     return singleton;
   }
@@ -96,9 +91,8 @@ class SystemStreamsSerializer {
    * Reloads the serializer based on the config provided as parameter.
    * See "config.default-streams.test.js" (V9QB, 5T5S, ARD9) for usage example
    */
-  static async reloadSerializer(config: null): void {
-    config = config || await getConfig();
-    if (config.get('NODE_ENV') !== 'test') {
+  static reloadSerializer(config: {}): void {
+    if (getConfigUnsafe(true).get('NODE_ENV') !== 'test') {
       console.error('this is meant to be used in test only');
       process.exit(1);
     }
@@ -131,7 +125,10 @@ class SystemStreamsSerializer {
   }
 
   constructor () {
-   
+    this.systemStreamsSettings = getConfigUnsafe(true).get('systemStreams');
+    if (this.systemStreamsSettings == null) {
+      throw Error('Invalid system streams settings');
+    }
   }
 
   /**

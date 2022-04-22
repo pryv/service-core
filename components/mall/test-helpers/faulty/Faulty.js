@@ -29,8 +29,6 @@ class Faulty extends DataStore {
   get streams() { return this._streams; }
   get events() { return this._events; }
 
-  async deleteUser(userId) {}
-  async storageUsedForUser(uid: string) { return 0; }
 }
 
 

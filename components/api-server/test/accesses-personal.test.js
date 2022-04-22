@@ -7,7 +7,7 @@
 // @flow
 
 /*global describe, before, beforeEach, it */
-require('./test-helpers');
+require('./test-helpers'); 
 const helpers = require('./helpers');
 const ErrorIds = require('errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
@@ -23,27 +23,26 @@ const streamsStorage = helpers.dependencies.storage.user.streams;
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
+const R = require('ramda');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
-const { getMall } = require('mall');
 
 describe('accesses (personal)', function () {
 
   const user = Object.assign({}, testData.users[0]);
   const basePath = '/' + user.username + '/accesses';
-
+  
   let sessionAccessId = null;
   let request = null;
-  let mall = null;
-
+  
   function path(id) {
     return basePath + '/' + id;
   }
-
+  
   function req(): typeof helpers.request {
     if (request == null) { throw Error('request was null'); }
-    return request;
+    return request; 
   }
 
   // to verify data change notifications
@@ -56,7 +55,6 @@ describe('accesses (personal)', function () {
 
   before(async function() {
     await getConfig(); // needed for ApiEndpoint.build();
-    mall = await getMall();
   });
 
   before(function (done) {
@@ -127,7 +125,7 @@ describe('accesses (personal)', function () {
         ]
       };
       let originalCount,
-
+      
           createdAccess,
           time;
 
@@ -157,13 +155,13 @@ describe('accesses (personal)', function () {
             accesses.length.should.eql(originalCount + 1, 'accesses');
 
             const expected = {
-              id: createdAccess.id,
-              token: createdAccess.token,
-              type: 'shared',
-              created: time,
-              modified: time,
-              createdBy: sessionAccessId,
-              modifiedBy: sessionAccessId,
+              id: createdAccess.id, 
+              token: createdAccess.token, 
+              type: 'shared', 
+              created: time, 
+              modified: time, 
+              createdBy: sessionAccessId, 
+              modifiedBy: sessionAccessId, 
               name: 'New Access',
               permissions: [
                 {
@@ -187,12 +185,12 @@ describe('accesses (personal)', function () {
     it('[FPUE] must create a new app access with the sent data, creating/restoring requested streams',
       function (done) {
         const data = {
-          id: undefined,
-          token: undefined,
-          created: undefined,
-          createdBy: undefined,
-          modified: undefined,
-          modifiedBy: undefined,
+          id: undefined, 
+          token: undefined, 
+          created: undefined, 
+          createdBy: undefined, 
+          modified: undefined, 
+          modifiedBy: undefined, 
           name: 'my-sweet-app',
           type: 'app',
           deviceName: 'My Sweet Device',
@@ -228,7 +226,7 @@ describe('accesses (personal)', function () {
                 schema: methodsSchema.create.result
               });
 
-              var expected = _.cloneDeep(data);
+              var expected = R.clone(data);
               expected.id = res.body.access.id;
               expected.token = res.body.access.token;
               expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
@@ -249,7 +247,6 @@ describe('accesses (personal)', function () {
           },
           function verifyNewStream (stepDone) {
             var query = {id: data.permissions[1].streamId};
-            //const streams = await mall.streams.get(user.id, {id: })
             streamsStorage.findOne(user, query, null, function (err, stream) {
               should.not.exist(err);
               should.exist(stream);
@@ -295,7 +292,7 @@ describe('accesses (personal)', function () {
     it('[4Y3Y] must ignore erroneous requests to create new streams', function (done) {
       const data = {
         id: undefined,          // declare property for flow
-        token: undefined,       // declare property for flow
+        token: undefined,       // declare property for flow 
         name: 'my-sweet-app-id',
         type: 'app',
         permissions: [
@@ -312,7 +309,7 @@ describe('accesses (personal)', function () {
           schema: methodsSchema.create.result
         });
 
-        var expected = _.cloneDeep(data);
+        var expected = R.clone(data);
         expected.id = res.body.access.id;
         expected.token = res.body.access.token;
         expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
@@ -537,13 +534,13 @@ describe('accesses (personal)', function () {
   });
 
   describe('DELETE /<id>', function () {
-
+  
     beforeEach(resetAccesses);
-
+  
     it('[S8EK] must delete the shared access', (done) => {
       const deletedAccess = testData.accesses[1];
       let deletionTime;
-
+      
       async.series([
         function deleteAccess(stepDone) {
           req().del(path(deletedAccess.id)).end(function (res) {
@@ -574,7 +571,7 @@ describe('accesses (personal)', function () {
       done
       );
     });
-
+  
     it('[5GBI] must delete the personal access', function (done) {
       req().del(path(testData.accesses[0].id)).end(function (res) {
         validation.check(res, {
@@ -585,7 +582,7 @@ describe('accesses (personal)', function () {
         done();
       });
     });
-
+  
     it('[NN11] must return an error if the access does not exist', function (done) {
       req().del(path('unknown-id')).end(function (res) {
         validation.checkError(res, {
@@ -594,7 +591,7 @@ describe('accesses (personal)', function () {
         }, done);
       });
     });
-
+  
   });
 
   describe('POST /check-app', function () {
@@ -609,7 +606,7 @@ describe('accesses (personal)', function () {
         deviceName: 'It\'s a washing machine that sends tender e-mails to your grandmother!',
         requestedPermissions: [
           {
-            name: 'myaccess',
+            name: 'myaccess', 
             streamId: testData.streams[0].id,
             level: 'contribute',
             defaultName: 'A different name'
@@ -629,7 +626,7 @@ describe('accesses (personal)', function () {
 
         should.exist(res.body.checkedPermissions);
 
-        var expected = _.cloneDeep(data.requestedPermissions);
+        var expected = R.clone(data.requestedPermissions);
         expected[0].name = testData.streams[0].name;
         delete expected[0].defaultName;
 
@@ -645,7 +642,7 @@ describe('accesses (personal)', function () {
         deviceName: 'It\'s a matchbox that sings the entire repertoire of Maria Callas!',
         requestedPermissions: [
           {
-            name: 'myaccess',
+            name: 'myaccess', 
             streamId: testData.streams[0].id,
             level: 'manage',
             defaultName: 'A different name'
@@ -665,7 +662,7 @@ describe('accesses (personal)', function () {
 
         should.exist(res.body.checkedPermissions);
 
-        var expected = _.cloneDeep(data.requestedPermissions);
+        var expected = R.clone(data.requestedPermissions);
         expected[0].name = testData.streams[0].name;
         delete expected[0].defaultName;
         delete expected[1].defaultName;
@@ -710,7 +707,7 @@ describe('accesses (personal)', function () {
         deviceName: testData.accesses[4].deviceName,
         requestedPermissions: [
           {
-            name: 'foobar',
+            name: 'foobar', 
             streamId: testData.streams[0].id,
             level: 'manage',
             defaultName: 'This permission differs from the existing access\' permissions'
@@ -725,7 +722,7 @@ describe('accesses (personal)', function () {
 
         should.exist(res.body.checkedPermissions);
 
-        var expected = _.cloneDeep(data.requestedPermissions);
+        var expected = R.clone(data.requestedPermissions);
         expected[0].name = testData.streams[0].name;
         delete expected[0].defaultName;
 
@@ -758,11 +755,12 @@ describe('accesses (personal)', function () {
               status: 200,
               schema: methodsSchema.checkApp.result
             });
+
             should.exist(res.body.checkedPermissions);
             should.exist(res.body.error);
             res.body.error.id.should.eql(ErrorIds.ItemAlreadyExists);
 
-            var expected = _.cloneDeep(data.requestedPermissions);
+            var expected = R.clone(data.requestedPermissions);
             expected[0].defaultName = testData.streams[3].name + ' (1)';
 
             res.body.checkedPermissions.should.eql(expected);
@@ -805,3 +803,4 @@ describe('accesses (personal)', function () {
   }
 
 });
+

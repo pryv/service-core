@@ -41,12 +41,6 @@ describe("[FG5R] Events of system streams", () => {
   let isDnsLess;
   let mall;
 
-  async function getOneEvent(userId, streamId) {
-    const events = await mall.events.get(userId, {streams: [{any: [streamId]}]});
-    if (events != null && events.length > 0) return events[0];
-    return null;
-  }
-
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
       insurancenumber: charlatan.Number.number(4),
@@ -84,7 +78,8 @@ describe("[FG5R] Events of system streams", () => {
       type: 'string/pryv'
     };
 
-    const initialEvent = await getOneEvent(user.attrs.id, streamId);
+    const initialEvent = await bluebird.fromCallback(
+      (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
 
     // create an additional event
     await createAdditionalEvent(streamId);
@@ -226,7 +221,8 @@ describe("[FG5R] Events of system streams", () => {
 
   describe('GET /events/<id>', () => {
     async function findDefaultCoreEvent (streamId) {
-      return await getOneEvent(user.attrs.id, streamId);
+      return await bluebird.fromCallback(
+        (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
     }
     describe('When using a personal access', () => {
       describe('to retrieve a visible system event', () => {
@@ -424,8 +420,6 @@ describe("[FG5R] Events of system streams", () => {
           describe('whose content is unique', () => {
             let allEventsInDb;
             let streamId;
-            let newEventFromDB;
-            let oldEventFromDB;
             before(async function () {
               streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
               await createUser();
@@ -446,9 +440,12 @@ describe("[FG5R] Events of system streams", () => {
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
-              allEventsInDb = await mall.events.get(user.attrs.id, {streams: [{any: [streamId]}], state: 'all', includeDeletions: true, includeHistory: true});
-              newEventFromDB = allEventsInDb.find(event => event.id === res.body.event.id);
-              oldEventFromDB = allEventsInDb.find(event => event.id !== res.body.event.id);
+              allEventsInDb = await bluebird.fromCallback(
+                (cb) => user.db.events.database.find(
+                  { name: 'events' },
+                  { userId: user.attrs.id, streamIds: streamId },
+                  {}, cb)
+              );
             });
             it('[SQZ2] should return 201', () => {
               assert.equal(res.status, 201);
@@ -459,10 +456,10 @@ describe("[FG5R] Events of system streams", () => {
             });
             it('[DA23] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
-              assert.deepEqual(oldEventFromDB.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+              assert.deepEqual(allEventsInDb[0].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
               // check that second event is our new event and that it contains active streamId
-              assert.deepEqual(newEventFromDB.id, res.body.event.id);
-              assert.deepEqual(newEventFromDB.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+              assert.deepEqual(allEventsInDb[1]._id, res.body.event.id);
+              assert.deepEqual(allEventsInDb[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
             });
             it('[D316] should notify register with the new data', function () {
               if (isDnsLess) this.skip();
@@ -691,7 +688,8 @@ describe("[FG5R] Events of system streams", () => {
             content: isFaulty ? { someProp: 123 } : charlatan.Lorem.characters(7),
             type: 'string/pryv'
           };
-          const initialEvent = await getOneEvent(user.attrs.id, streamId);
+          const initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
   
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
@@ -706,8 +704,9 @@ describe("[FG5R] Events of system streams", () => {
               content: charlatan.Lorem.characters(7),
               type: 'string/pryv'
             };
-            const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
-          
+            const initialEvent = await bluebird.fromCallback(
+              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber') }, null, cb));
+  
             res = await request.put(path.join(basePath, initialEvent.id))
               .send(eventData)
               .set('authorization', access.token);
@@ -763,7 +762,9 @@ describe("[FG5R] Events of system streams", () => {
                   content: charlatan.Lorem.characters(7),
                   type: 'string/pryv'
                 };
-                const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
+                const initialEvent = await bluebird.fromCallback(
+                  (cb) => user.db.events.findOne({ id: user.attrs.id },
+                    { streamIds: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber') }, null, cb));
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
                   .set('authorization', access.token);
@@ -785,7 +786,9 @@ describe("[FG5R] Events of system streams", () => {
                   content: charlatan.Lorem.characters(7),
                   type: 'string/pryv'
                 };
-                const initialEvent = await  await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
+                const initialEvent = await bluebird.fromCallback(
+                  (cb) => user.db.events.findOne({ id: user.attrs.id },
+                    { streamIds: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber') }, null, cb));
   
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
@@ -1020,7 +1023,8 @@ describe("[FG5R] Events of system streams", () => {
                       }
                     }
                   });
-                const initialEvent =  await getOneEvent(user.attrs.id, systemStreamId);
+                const initialEvent = await bluebird.fromCallback(
+                  (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: systemStreamId }, null, cb));
     
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
@@ -1067,7 +1071,11 @@ describe("[FG5R] Events of system streams", () => {
                     serviceRegisterRequest = body;
                     return true;
                   }).reply(200, { errors: [] });
-                const initialEvent =  await getOneEvent(user2.attrs.id, streamId);
+                const initialEvent = await bluebird.fromCallback(
+                  (cb) => user2.db.events.findOne(
+                    { id: user2.attrs.id },
+                    { streamIds: streamId }, null, cb)
+                );
     
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
@@ -1094,7 +1102,8 @@ describe("[FG5R] Events of system streams", () => {
             content: charlatan.Lorem.characters(7),
             type: 'password-hash/pryv'
           };
-          const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH);
+          const initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH }, null, cb));
   
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
@@ -1125,8 +1134,9 @@ describe("[FG5R] Events of system streams", () => {
           eventData = {
             content: charlatan.Internet.email(),
           };
-          const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
-         
+          const initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber') }, null, cb));
+
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
             .set('authorization', access.token);
@@ -1158,8 +1168,9 @@ describe("[FG5R] Events of system streams", () => {
             content: charlatan.Lorem.characters(7),
             type: 'string/pryv'
           };
-          const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
-         
+          const initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber') }, null, cb));
+  
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
             .set('authorization', sharedAccess.attrs.token);
@@ -1192,17 +1203,21 @@ describe("[FG5R] Events of system streams", () => {
                   return true;
                 }).times(2).reply(200, { errors: [] });
               await createUser();
-              initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
+              initialEvent = await bluebird.fromCallback(
+                (cb) => user.db.events.database.findOne(
+                  { name: 'events' },
+                  { userId: user.attrs.id, streamIds: systemStreamId },
+                  {}, cb));
               await createAdditionalEvent(systemStreamId);
   
-              res = await request.delete(path.join(basePath, initialEvent.id))
+              res = await request.delete(path.join(basePath, initialEvent._id))
                 .set('authorization', access.token);
             });
             it('[43B1] should return 200', () => { 
               assert.equal(res.status, 200);
             });
             it('[3E12] should return the trashed event', () => {
-              assert.equal(res.body.event.id, initialEvent.id);
+              assert.equal(res.body.event.id, initialEvent._id);
               assert.equal(res.body.event.trashed, true);
             });
             it('[F328] should notify register with the deleted data', function () {
@@ -1228,7 +1243,8 @@ describe("[FG5R] Events of system streams", () => {
                   return true;
                 }).times(1).reply(200, { errors: [] });
               await createUser();
-              initialEvent = await getOneEvent(user.attrs.id, streamId);
+              initialEvent = await bluebird.fromCallback(
+                (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
   
               await createAdditionalEvent(streamId);
   
@@ -1250,7 +1266,8 @@ describe("[FG5R] Events of system streams", () => {
           before(async function () {
             streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
             await createUser();
-            initialEvent = await getOneEvent(user.attrs.id, streamId);
+            initialEvent = await bluebird.fromCallback(
+              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
             res = await request.delete(path.join(basePath, initialEvent.id))
               .set('authorization', access.token);
           });
@@ -1276,7 +1293,8 @@ describe("[FG5R] Events of system streams", () => {
               return true;
             }).times(2).reply(200, { errors: [] });
           await createUser();
-          initialEvent = await getOneEvent(user.attrs.id, streamId);
+          initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
   
           await createAdditionalEvent(streamId);
   
@@ -1306,7 +1324,8 @@ describe("[FG5R] Events of system streams", () => {
             return true;
           }).times(1).reply(200, { errors: [] });
         await createUser();
-        initialEvent = await getOneEvent(user.attrs.id, streamId);
+        initialEvent = await bluebird.fromCallback(
+          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
 
         await createAdditionalEvent(streamId);
         res = await request.delete(path.join(basePath, initialEvent.id))
@@ -1335,7 +1354,8 @@ describe("[FG5R] Events of system streams", () => {
             return true;
           }).times(2).reply(200, { errors: [] });
         await createUser();
-        initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
+        initialEvent = await bluebird.fromCallback(
+          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: systemStreamId }, null, cb));
 
         await createAdditionalEvent(systemStreamId);
         sharedAccess = await user.access({

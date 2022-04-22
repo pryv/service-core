@@ -18,12 +18,6 @@ import type { APIErrorOptions }  from './APIError';
  */
 const factory = module.exports = {};
 
-factory.unsupportedOperation = (message: string) => {
-  return new APIError(ErrorIds.ApiUnavailable, message, {
-    httpStatus: 501
-  });
-};
-
 factory.apiUnavailable = (message: string) => {
   return new APIError(ErrorIds.ApiUnavailable, message, {
     httpStatus: 503

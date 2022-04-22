@@ -6,118 +6,96 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-/**
- * Runs Mocha on each component (same principle as `components-run`)
- * and saves the JSON reports into the `test_results` repo folder (assuming the `init` script ran beforehand).
- */
 const fs = require('fs');
 const path = require('path');
 const childProcess = require('child_process');
 const moment = require('moment');
 const mkdirp = require('mkdirp');
 
-const paths = initPaths();
+const RESULTS_FOLDER = path.join(__dirname, '/../../test_results/service-core/');
+const ROOT_FOLDER = path.join(__dirname, '/../..');
 
-const testResults = [];
+try {
+  fs.statSync(RESULTS_FOLDER);
+} catch (e) {
+  console.log('Results repository folder', RESULTS_FOLDER, 'does not exist, please create it using "just test-results-init-repo".'); // eslint-disable-line
+  process.exit(1);
+}
 
-fs.readdirSync(paths.components).forEach(function (name) {
-  const subPath = path.join(paths.components, name);
-  // skip if not a package
+const VERSION_FOLDER = getReleaseVersion();
+const FULL_VERSION_FOLDER = path.join(RESULTS_FOLDER, VERSION_FOLDER);
+mkdirp.sync(FULL_VERSION_FOLDER);
+
+const time = moment().format('YYYYMMDD-hhmmss');
+const OUTPUT_FILENAME =  time + '-service-core.json';
+const FULL_OUTPUT_FILENAME = path.join(FULL_VERSION_FOLDER, OUTPUT_FILENAME);
+
+const componentsPath = path.resolve(__dirname, '../../dist/components');
+
+const test_results = [];
+
+fs.readdirSync(componentsPath).forEach(function (name) {
+  var subPath = path.join(componentsPath, name);
   if (!fs.existsSync(path.join(subPath, 'package.json'))) {
     return;
   }
-  // skip if no `test` folder
-  if (!fs.existsSync(path.join(subPath, 'test'))) {
-    return;
-  }
 
-  console.log(formatHeading(name));
-
-  const res = childProcess.spawnSync('npx mocha', ['--reporter=json'], {
-    env: process.env,
-    cwd: subPath,
-    shell: true // required to use `npx`
-  });
-
-  const componentResults = parseJSONReport(res.stdout.toString());
+  // contains no test script which produces error - makes output unparsable as JSON
+  if (name === 'test-helpers' || name === 'errors') return;
+  const displayName = pad(name);
+  console.log(displayName); // eslint-disable-line
+  const res = childProcess.spawnSync('npm test', ['--reporter=json'], {
+      env: process.env,
+      cwd: subPath,
+      shell: true, // required to use "npm"
+    });
+  const output = removeStdout(res.stdout.toString());
+  const componentResults = JSON.parse(output);
   componentResults.componentName = name;
-  testResults.push(componentResults);
+  test_results.push(componentResults);
 });
 
-console.log('Writing test output to:', paths.output);
-fs.writeFileSync(paths.output, JSON.stringify(testResults, null, 2));
+console.log('writing test output to:', FULL_OUTPUT_FILENAME); // eslint-disable-line
+fs.writeFileSync(FULL_OUTPUT_FILENAME, JSON.stringify(test_results, null, 2));
 
-paths.updateLatestSymlinks();
+linkToLatestResult();
+linkToLatestVersion();
 
-function initPaths () {
-  const root = path.join(__dirname, '/../..');
-
-  const components = path.resolve(root, 'dist/components');
-  if (!fs.existsSync(components)) {
-    console.error('"dist/components" folder is missing. Compile your code first (e.g. `just compile-dev`)');
-    process.exit(1);
-  }
-
-  const results = path.join(root, 'test_results/service-core/');
-  if (!fs.existsSync(results)) {
-    console.error(`Results repository folder '${results}' is missing. First 'just test-results-init-repo'`);
-    process.exit(1);
-  }
-
-  const versionName = getVersionName();
-  const version = path.join(results, versionName);
-  mkdirp.sync(version);
-
-  const time = moment().format('YYYYMMDD-hhmmss');
-  const outputName = time + '-service-core.json';
-  const output = path.join(version, outputName);
-
-  return {
-    root,
-    components,
-    results,
-    version,
-    output,
-    updateLatestSymlinks: function () {
-      updateLatestSymlink(version, outputName);
-      updateLatestSymlink(results, versionName);
-    }
-  };
-
-  function getVersionName () {
-    const res = childProcess.spawnSync('git', ['describe'], {
-      env: process.env,
-      cwd: root
-    });
-    const gitTagDirty = res.stdout.toString();
-    return gitTagDirty.split('-')[0];
-  }
-
-  function updateLatestSymlink (cwd, newName) {
-    childProcess.spawnSync('rm', ['latest'], { cwd: cwd });
-    childProcess.spawnSync('ln', ['-s', newName, 'latest'], { cwd: cwd });
-  }
-}
-
-function formatHeading (text) {
-  // = total available length - a space - the text
-  const padLength = process.stdout.columns - 1 - text.length;
-  return text + ' ' + '-'.repeat(padLength);
-}
-
-function parseJSONReport (output) {
-  // HACK: guess where the JSON starts...
-  const lines = output.split('\n');
+function removeStdout(output) {
+  let lines = output.split('\n');
   const len = lines.length;
   let start = 0;
-  for (let i = 0; i < len; i++) {
+  for (let i=0; i<len; i++) {
     if (lines[i].startsWith('{')) {
       start = i;
       break;
     }
   }
-  // ...and parse from there
-  const cleanOutput = lines.slice(start).join('\n');
-  return JSON.parse(cleanOutput);
+  return lines.slice(start).join('\n');
+}
+
+function pad(str) {
+  //                total len           - a space - the name
+  const targetLen = process.stdout.columns - 1 - str.length;
+  return str + ' ' + '-'.repeat(targetLen);
+}
+
+function getReleaseVersion() {
+  const res = childProcess.spawnSync('git', ['describe'], {
+    env: process.env,
+    cwd: ROOT_FOLDER,
+  });
+
+  const gitTagDirty = res.stdout.toString();
+  return gitTagDirty.split('-')[0];
+}
+
+function linkToLatestResult() {
+  childProcess.spawnSync('rm', ['latest'], { cwd: FULL_VERSION_FOLDER, });
+  childProcess.spawnSync('ln', ['-s', OUTPUT_FILENAME, 'latest'], { cwd: FULL_VERSION_FOLDER });
+}
+
+function linkToLatestVersion() {
+  childProcess.spawnSync('rm', ['latest'], { cwd: RESULTS_FOLDER });
+  childProcess.spawnSync('ln', ['-s', VERSION_FOLDER, 'latest'], { cwd: RESULTS_FOLDER });
 }

@@ -21,8 +21,6 @@ require('@pryv/boiler').init({
 
 const {getConfig, getLogger} = require('@pryv/boiler');
 
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-
 const assert = require('assert');
 
 const storage = require('storage');
@@ -48,7 +46,6 @@ class Application {
 
   async initSettings() {
     this.settings = await getConfig();
-    await SystemStreamsSerializer.init();
   }
   initLogger() {
     this.logger = getLogger('application');

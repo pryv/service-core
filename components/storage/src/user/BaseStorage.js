@@ -260,7 +260,30 @@ BaseStorage.prototype.findDeletion = function(userOrUserId, query, options, call
   );
 };
 
-BaseStorage.prototype.insertOne = function (userOrUserId, item, callback, options) {
+BaseStorage.prototype.aggregate = function(
+  userOrUserId,
+  query,
+  projectExpression,
+  groupExpression,
+  options,
+  callback
+) {
+  this.database.aggregate(
+    this.getCollectionInfo(userOrUserId),
+    this.applyQueryToDB(query),
+    this.applyQueryToDB(projectExpression),
+    this.applyQueryToDB(groupExpression),
+    this.applyOptionsToDB(options),
+    function(err, dbItems) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemsFromDB(dbItems));
+    }.bind(this)
+  );
+};
+
+BaseStorage.prototype.insertOne = function (userOrUserId, item, callback) {
   const itemToInsert = this.applyItemToDB(this.applyItemDefaults(item));
   this.database.insertOne(
     this.getCollectionInfo(userOrUserId),
@@ -270,11 +293,22 @@ BaseStorage.prototype.insertOne = function (userOrUserId, item, callback, option
         return callback(err);
       }
       callback(null, this.applyItemFromDB(itemToInsert));
-    }.bind(this),
-    options
+    }.bind(this)
   );
 };
 
+
+/**
+ * Minimizes an event's history, used when in 'keep-authors' deletionMode
+ *
+ * @param user {Object} user The user owning the collection
+ * @param headId {string} the id of the event whose history is minimized
+ * @param callback {Function}
+ */
+BaseStorage.prototype.minimizeEventsHistory = function(user, headId, callback) {
+  callback( new Error('Not implemented (user: ' + user + ')') );
+  // implemented for events only
+};
 
 /**
  * Finds and updates atomically a single document matching the given query,
@@ -401,14 +435,13 @@ BaseStorage.prototype.findAll = function(userOrUserId, options, callback) {
 /**
  * Inserts an array of items; each item must have a valid id and data already. For tests only.
  */
-BaseStorage.prototype.insertMany = function(userOrUserId, items, callback, options) {
+BaseStorage.prototype.insertMany = function(userOrUserId, items, callback) {
   // Groumpf... Many tests are relying on this.. 
   const nItems = _.cloneDeep(items);
   this.database.insertMany(
     this.getCollectionInfo(userOrUserId),
     this.applyItemsToDB(nItems),
-    callback,
-    options
+    callback
   );
 };
 

@@ -34,7 +34,8 @@ describe('XXXSystemStreams config', () => {
   };
 
   after(async () => {
-    await SystemStreamsSerializer.reloadSerializer();
+    const config = await getConfig();
+    SystemStreamsSerializer.reloadSerializer(config);
   });
 
   describe('when valid custom systemStreams are provided', () => {
@@ -86,9 +87,8 @@ describe('XXXSystemStreams config', () => {
       store = new nconf.Provider();
       store.use('memory');
       store.set('custom:systemStreams', customStreams);
-      store.set('NODE_ENV', 'test');
       systemStreamsConfig.load(store);
-      await SystemStreamsSerializer.reloadSerializer(store);
+      SystemStreamsSerializer.reloadSerializer(store);
 
       customStreamIds = treeUtils.flattenTree(customStreams.account)
         .concat(treeUtils.flattenTree(customStreams.other))

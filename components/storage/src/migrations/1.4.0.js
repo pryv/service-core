@@ -147,6 +147,18 @@ module.exports = function (context, callback) {
 
         async function migrate() {
           if (counts == 0) { return ; }
+
+          /** Nice aggregate version, but was timeing out on large sets
+          var aggregate = [{'$addFields': {'userId': user._id}}];
+          if (changeIdTo) {
+            var temp = {};
+            temp[changeIdTo] = '$_id';
+            aggregate.push({'$addFields': temp})
+            aggregate.push({'$addFields': {'_id': {$concat: [user._id + '.', '$_id']}}});
+          }
+          const cursor = source.aggregate(aggregate);
+           **/
+
           const cursor = source.find();
           var batch = [];
           while (await cursor.hasNext()) {

@@ -22,18 +22,25 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getUsersRepository, User } = require('business/src/users');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
-const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
 
 // users
 const users = exports.users = require('./data/users');
 const defaultUser = users[0];
 
+const customAccountProperties = buildCustomAccountProperties();
+
+
 exports.resetUsers = async () => {
   logger.debug('resetUsers');
   await getConfig(); // lock up to the time config is ready
-  await SystemStreamsSerializer.init();
-  const customAccountProperties = buildCustomAccountProperties();
+  await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
+    { name: 'events' },
+    {
+      streamIds: {
+        $in: SystemStreamsSerializer.getAccountStreamIds(),
+      }
+    }, cb));
 
   const usersRepository = await getUsersRepository(); 
   await usersRepository.deleteAll();  
@@ -96,15 +103,16 @@ exports.resetEvents = function (done, user) {
     delete eventToWrite.tags;
     return eventToWrite;
   })
-  let mall;
   async.series([
-    async function removeAccountEvents() {
-      mall = await getMall();
-      await mall.events.delete(user.id, {state: 'all', includeDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
-    },
-    async function createEvents() {
-      await mall.events.createMany(user.id,  eventsToWrite)
-    },
+    storage.user.events.removeMany.bind(storage.user.events, 
+      user,
+      { 
+        streamIds: {
+          $nin: allAccountStreamIds
+        }
+      }
+    ),
+    storage.user.events.insertMany.bind(storage.user.events, user, eventsToWrite),
     function removeZerosDuration(done2) {
       events.forEach( e => { if (e.duration === 0) delete e.duration});
       done2();
@@ -119,20 +127,6 @@ const streams = exports.streams = require('./data/streams');
 
 exports.resetStreams = function (done, user) {
   resetData(storage.user.streams, user || defaultUser, streams, done);
-  /** AT WOrK
-  const myUser = user || defaultUser;
-  async.series([
-    async () => { 
-      const mall = await getMall(); 
-      mall.streams.deleteAll(myUser.id, 'local');
-      for (const stream of streams) {
-        $$(stream);
-        await mall.streams.create(myUser.id, stream);
-      }
-    },
-  ], done)
-  */
-
 };
 
 function resetData (storage, user, items, done) {
@@ -206,8 +200,7 @@ function copyAttachmentFn(attachmentInfo, user, eventId) {
     } catch (e) {
       return callback(e);
     }
-    storage.user.eventFiles.saveAttachedFileFromTemp(tmpPath, user.id, eventId, attachmentInfo.id).then(
-      (fileID) => { callback(null, fileID); }, (err) => { callback(err); });
+    storage.user.eventFiles.saveAttachedFile(tmpPath, user, eventId, attachmentInfo.id, callback);
   };
 }
 

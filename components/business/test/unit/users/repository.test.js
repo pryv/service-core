@@ -10,6 +10,7 @@ const assert = chai.assert;
 const charlatan = require('charlatan');
 require('test-helpers/src/api-server-tests-config');
 const helpers = require('api-server/test/helpers');
+const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('api-server/test/test-helpers');
 const { getUsersRepository, User } = require('business/src/users');

@@ -11,9 +11,7 @@ const cuid = require('cuid');
 const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
-
-const { getPlatform } = require('platform');
-
+const { getServiceRegisterConn } = require('./service_register');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
 const ErrorIds = require('errors').ErrorIds;
@@ -30,21 +28,16 @@ import type { ApiCallback } from 'api-server/src/API';
 class Registration {
   logger: any;
   storageLayer: any;
+  serviceRegisterConn: ServiceRegister;
   accountStreamsSettings: any = SystemStreamsSerializer.getAccountMap();
   servicesSettings: any; // settigns to get the email to send user welcome email
-  platform: Platform;
 
   constructor(logging, storageLayer, servicesSettings) {
     this.logger = getLogger('business:registration');
     this.storageLayer = storageLayer;
     this.servicesSettings = servicesSettings;
-  }
 
-  async init() {
-    if (this.platform == null) {
-      this.platform = await getPlatform();
-    }
-    return this;
+    this.serviceRegisterConn = getServiceRegisterConn();
   }
 
   /**
@@ -70,7 +63,7 @@ class Registration {
    * @param {*} result
    * @param {*} next
    */
-  async createUserStep1_ValidateUserOnPlatform(
+  async validateUserInServiceRegister(
     context: MethodContext,
     params: mixed,
     result: Result,
@@ -87,7 +80,7 @@ class Registration {
       }
       
       // do the validation and reservation in service-register
-      await this.platform.createUserStep1_ValidateUser(
+      await this.serviceRegisterConn.validateUser(
         context.newUser.username,
         context.newUser.invitationToken,
         uniqueFields,
@@ -129,6 +122,30 @@ class Registration {
           );
       };
 
+      const existingUsers = await usersRepository.findExistingUniqueFields(context.newUser.getUniqueFields());
+
+      // if any of unique fields were already saved, it means that there was an error
+      // saving in service register (before this step there is a check that unique fields 
+      // don't exist in service register)
+
+      if (existingUsers.length > 0) {
+        // DELETE users with conflicting unique properties
+        let userIds = existingUsers.map(conflictingEvent => conflictingEvent.userId);
+        const distinctUserIds = new Set(userIds);
+
+        for (let userId of distinctUserIds){
+          // assert that unique fields are free to take
+          // so if we get conflicting ones here, we can simply delete them
+          const usersRepository = await getUsersRepository();
+          await usersRepository.deleteOne(userId);
+
+          this.logger.error(
+            `User with id ${
+            userId
+            } was deleted because it was not found on service-register but uniqueness conflicted on service-core`
+          );
+        }
+      }
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
@@ -173,7 +190,7 @@ class Registration {
    * @param {*} result
    * @param {*} next
    */
-  async createUserStep2_CreateUserOnPlatform (
+  async createUserInServiceRegister (
     context: MethodContext,
     params: mixed,
     result: Result,
@@ -196,7 +213,7 @@ class Registration {
       userStreamsIds.forEach(streamId => {
         if (context.newUser[streamId] != null) userData.user[streamId] = context.newUser[streamId];
       });
-      await this.platform.createUserStep2_CreateUser(userData);
+      await this.serviceRegisterConn.createUser(userData);
     } catch (error) {
       return next(errors.unexpectedError(error));
     }

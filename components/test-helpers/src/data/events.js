@@ -47,7 +47,6 @@ const events =  [
     tags: [],
     clientData: {
       stringProp: 'O Brother',
-      otherStringProp: 'Constant sorrow',
       numberProp: 1
     },
     created: timestamp.now('-26h'),

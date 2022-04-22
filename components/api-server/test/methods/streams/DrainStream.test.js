@@ -7,9 +7,9 @@
 /*global describe, it*/
 'use strict';
 
-const DrainStream = require('../../../src/methods/streams/DrainStream'),
-      _ = require('lodash'),
-      should = require('should');
+var DrainStream = require('../../../src/methods/streams/DrainStream'),
+    R = require('ramda'),
+    should = require('should');
 
 describe('DrainStream', function () {
 
@@ -19,7 +19,7 @@ describe('DrainStream', function () {
 
     function expectation (err, array) {
       should.not.exist(err);
-      (_.isEqual(array, input)).should.be.true();
+      (R.equals(array, input)).should.be.true();
       done();
     }
 

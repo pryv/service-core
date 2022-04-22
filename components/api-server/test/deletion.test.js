@@ -24,8 +24,6 @@ const {
   produceMongoConnection,
   produceInfluxConnection,
 } = require('api-server/test/test-helpers');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-      
 
 const { pubsub } = require('messages');
 const bluebird = require('bluebird');
@@ -59,6 +57,7 @@ describe('[PGTD] DELETE /users/:username', () => {
     isOpenSource = config.get('openSource:isActive');
     app = getApplication();
     await app.initiate();
+
     await require('api-server/src/methods/auth/delete')(app.api);
     let axonMsgs = [];
     const axonSocket = {
@@ -201,6 +200,7 @@ describe('[PGTD] DELETE /users/:username', () => {
 
           const dbCollections = [
             app.storageLayer.accesses,
+            app.storageLayer.streams,
             app.storageLayer.followedSlices,
             app.storageLayer.profile,
             app.storageLayer.webhooks,
@@ -221,11 +221,6 @@ describe('[PGTD] DELETE /users/:username', () => {
           const events = await mall.events.get(username1,{});
           assert.empty(events);
 
-          // check streams from mall
-          let streams = await mall.streams.get(username1,{storeId: 'local', includeTrashed: true, hideStoreRoots: true});
-          streams = streams.filter(s => ! SystemStreamsSerializer.isSystemStreamId(s.id));
-
-          assert.empty(streams);
 
           const sessions = await bluebird.fromCallback((cb) =>
             app.storageLayer.sessions.getMatching({ username: username1 }, cb)
@@ -262,6 +257,7 @@ describe('[PGTD] DELETE /users/:username', () => {
 
           const dbCollections = [
             app.storageLayer.accesses,
+            app.storageLayer.streams,
           ];
           if (!isOpenSource) dbCollections.push(app.storageLayer.webhooks);
 
@@ -279,11 +275,6 @@ describe('[PGTD] DELETE /users/:username', () => {
           // check events from mall
           const events = await mall.events.get(username2,{});
           assert.notEmpty(events);
-
-          // check streams from mall
-          let streams = await mall.streams.get(username2,{storeId: 'local', includeTrashed: true, hideStoreRoots: true});
-          streams = streams.filter(s => ! SystemStreamsSerializer.isSystemStreamId(s.id));
-          assert.notEmpty(streams);
 
           const sessions = await bluebird.fromCallback((cb) =>
             app.storageLayer.sessions.getMatching({ username: username2 }, cb)
@@ -403,10 +394,15 @@ async function initiateUserWithData(username: string) {
 
   const filePath = `test-file-${username}`;
   fs.writeFileSync(filePath, 'Just some text');
-  await app.storageLayer.eventFiles.saveAttachedFileFromTemp(
+  await bluebird.fromCallback((cb) =>
+    app.storageLayer.eventFiles.saveAttachedFile(
       path.resolve(filePath),
-      username ,
-      charlatan.Lorem.word());
+      { id: username },
+      charlatan.Lorem.word(),
+      charlatan.Lorem.word(),
+      cb
+    )
+  );
   
   if (! isOpenSource) {
     const usersSeries = await influxRepository.get(

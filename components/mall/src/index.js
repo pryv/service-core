@@ -60,5 +60,5 @@ async function getMall(): Promise<Mall> {
 
 module.exports = {
   getMall : getMall,
-  streamsUtils: require('./lib/streamsUtils')
+  StreamsUtils: require('./lib/StreamsUtils')
 };
