@@ -1,4 +1,4 @@
-name: Pryv-core-server deployment workflow
+name: Service core publish release
 
 on:
   push:
@@ -46,4 +46,4 @@ jobs:
       run: just install-stable
 
     - name: Build and deploy
-      run: ./build/build_workflow
+      run: ./build/build

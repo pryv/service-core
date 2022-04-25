@@ -1,4 +1,4 @@
-name: Pryv service-core CI
+name: Service core CI
 
 on:
   pull_request:
@@ -37,7 +37,7 @@ jobs:
         ssh-private-key: ${{ secrets.TECH_PRYV_SSH_KEY }}
 
     - name: Install & run nats-server, mongodb, influxdb
-      run: sh build/build-dev
+      run: ./scripts/setup-ci
 
     - name: Install node modules
       run: just install-stable
