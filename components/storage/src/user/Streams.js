@@ -101,24 +101,7 @@ Streams.prototype.countAll = function (user, callback) {
 
 Streams.prototype.insertOne = function (user, stream, callback) {
   cache.unsetUserData(user.id);
-  async.series([
-    function checkDeletionWithSameId(stepDone) {
-      if (! stream.id) { return stepDone(); }
-
-      this.findDeletion(user, {id: stream.id}, null, function (err, deletion) {
-        if (err) { return stepDone(err); }
-        if (! deletion) { return stepDone(); }
-        this.removeOne(user, {id: stream.id}, stepDone);
-      }.bind(this));
-    }.bind(this),
-    function checkParent(stepDone) {
-      if (! stream.parentId) { return stepDone(); }
-      checkParentExists.call(this, user, stream.parentId, stepDone);
-    }.bind(this)
-  ], function doInsertOne(err) {
-    if (err) { return callback(err); }
-    Streams.super_.prototype.insertOne.call(this, user, stream, callback);
-  }.bind(this));
+  Streams.super_.prototype.insertOne.call(this, user, stream, callback);
 };
 
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {

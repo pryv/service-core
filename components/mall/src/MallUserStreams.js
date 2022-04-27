@@ -40,7 +40,7 @@ class MallUserStreams {
     if (storeId == null) { [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId); }
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
-    const streams: Array<Stream> = await store.streams.get(uid, { id: streamId, includeTrashed: true, storeId });
+    const streams: Array<Stream> = await store.streams.get(uid, { id: streamId, includeTrashed: true });
     if (streams?.length === 1) return streams[0];
     return null;
   }
@@ -141,7 +141,16 @@ class MallUserStreams {
     let cleanParentStreamId;
     if (streamForStore.parentId != null) {
       [parentStoreId, cleanParentStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.parentId);
-      streamData.parentId = cleanParentStreamId;
+
+      const parentStore: DataStore = this.mall._storeForId(parentStoreId);
+      const parentStreams = await parentStore.streams.get(uid, {id: cleanParentStreamId});
+      if (parentStreams.length === 0) {
+        throw errorFactory.unknownReferencedResource(
+          'parent stream', 'parentId', streamData.parentId
+        );
+      }
+
+      streamForStore.parentId = cleanParentStreamId;
     }
 
     // 2- Check streamId and store
@@ -157,8 +166,20 @@ class MallUserStreams {
       streamData.id = cleanStreamId;
     }
 
-    // 3 - Insert stream 
     const store: DataStore = this.mall._storeForId(storeId);
+
+    // 3- Check if this Id has already been taken
+    const existingStreams = await store.streams.get(uid, {id: cleanStreamId, includeDeletions: true});
+    if (existingStreams.length > 0) {
+      if (existingStreams[0].deleted != null) { // deleted stream - we can fully remove it
+        await store.streams.delete(uid, cleanStreamId);
+      } else {
+        throw errorFactory.itemAlreadyExists('stream', {id: streamData.id});
+      }
+    }
+
+    // 3 - Insert stream 
+   
     const res = await store.streams.create(uid, streamData);
     return res;
   }

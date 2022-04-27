@@ -83,7 +83,7 @@ class StoreUserEvents {
     try {
       const success = await store.events.update(uid, eventForStore, storeTransaction);
       if (! success) {
-        throw errorFactory.invalidItemId('Coulnd not update event with id ' + eventData.id);
+        throw errorFactory.invalidItemId('Could not update event with id ' + eventData.id);
       }
       return eventsUtils.convertEventFromStore(storeId, eventForStore);
     } catch (e) {

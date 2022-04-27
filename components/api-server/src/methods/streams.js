@@ -20,6 +20,7 @@ const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const ErrorIds = require('errors/src/ErrorIds');
+const APIError = require('errors/src/APIError');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
@@ -244,8 +245,13 @@ module.exports = async function (api) {
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
       next();
     } catch (err) {
-      $$({err});
-      // Duplicate errors
+     
+      // Already an API error
+      if (err instanceof APIError) {
+        return next(err);
+      }
+      $$({err}); 
+      // Duplicate errors // remove when Mall will be fully integrated
       if (err.isDuplicate) {
         if (err.isDuplicateIndex('streamId')) {
           return next(errors.itemAlreadyExists(

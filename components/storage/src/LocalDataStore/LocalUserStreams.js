@@ -49,12 +49,11 @@ class LocalUserStreams extends DataStore.UserStreams {
 
     let allStreamsForAccount: Array<Stream> = cache.getStreams(uid, 'local');
     if (allStreamsForAccount == null) { // get from DB
-      allStreamsForAccount = await bluebird.fromCallback(cb => this.userStreamsStorage.find({ id: uid }, {}, null, cb));
+      allStreamsForAccount = await bluebird.fromCallback(cb => this.userStreamsStorage.findIncludingDeletionsAndVersions({ id: uid }, {}, null, cb));
       // add system streams
       allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
       cache.setStreams(uid, 'local', allStreamsForAccount);
     }
-
 
     let streams: Array<Stream> = [];
     if (params?.id === '*') {
@@ -69,8 +68,7 @@ class LocalUserStreams extends DataStore.UserStreams {
     if (!params.includeTrashed) { // i.e. === 'default' (return non-trashed items)
       streams = treeUtils.filterTree(streams, false /*no orphans*/, stream => !stream.trashed);
     }
-
-    if (! params.includeDeletionsSince) { // i.e. === 'default' (return non-deleted items)
+    if (! params.includeDeletions) { // i.e. === 'default' (return non-deleted items)
       streams = treeUtils.filterTree(streams, false /*no orphans*/, stream => stream.deleted == null);
     }
     return streams;
@@ -78,6 +76,10 @@ class LocalUserStreams extends DataStore.UserStreams {
 
   async create(uid: string, streamData: Stream): Promise<Stream> {
     return await bluebird.fromCallback(cb => this.userStreamsStorage.insertOne({ id: uid }, streamData, cb));
+  }
+
+  async delete(uid: string, streamId: string): Promise<void> {
+    return await bluebird.fromCallback(cb => this.userStreamsStorage.removeOne({ id: uid }, {id: streamId}, cb));
   }
 
   async updateTemp(uid: string, streamId, update: {}) {

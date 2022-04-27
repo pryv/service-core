@@ -441,6 +441,7 @@ describe('root', function() {
         .send(calls);
       assert.equal(res.status, 200);
       const results = res.body.results;
+      $$(results);
       assert.exists(results);
       assert.exists(results[0].stream);
       assert.exists(results[1].stream);
