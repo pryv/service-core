@@ -16,6 +16,7 @@ const path = require('path');
 const childProcess = require('child_process');
 const moment = require('moment');
 const mkdirp = require('mkdirp');
+const temp = require('temp').track();
 
 const paths = initPaths();
 
@@ -34,16 +35,19 @@ fs.readdirSync(paths.components).forEach(function (name) {
 
   console.log(formatHeading(name));
 
-  const res = childProcess.spawnSync('npx mocha', ['--reporter=json'], {
+  const componentOutputPath = temp.path();
+  childProcess.spawnSync('npx mocha', [`--reporter=json --reporter-option output="${componentOutputPath}"`], {
     env: process.env,
     cwd: subPath,
     shell: true // required to use `npx`
   });
 
-  const componentResults = parseJSONReport(res.stdout.toString());
+  const componentResults = JSON.parse(fs.readFileSync(componentOutputPath));
   componentResults.componentName = name;
   testResults.push(componentResults);
 });
+
+temp.cleanupSync();
 
 console.log('Writing test output to:', paths.output);
 fs.writeFileSync(paths.output, JSON.stringify(testResults, null, 2));
@@ -104,20 +108,4 @@ function formatHeading (text) {
   // = total available length - a space - the text
   const padLength = process.stdout.columns - 1 - text.length;
   return text + ' ' + '-'.repeat(padLength);
-}
-
-function parseJSONReport (output) {
-  // HACK: guess where the JSON starts...
-  const lines = output.split('\n');
-  const len = lines.length;
-  let start = 0;
-  for (let i = 0; i < len; i++) {
-    if (lines[i].startsWith('{')) {
-      start = i;
-      break;
-    }
-  }
-  // ...and parse from there
-  const cleanOutput = lines.slice(start).join('\n');
-  return JSON.parse(cleanOutput);
 }
