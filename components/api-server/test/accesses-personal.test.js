@@ -19,7 +19,6 @@ const validation = helpers.validation;
 const methodsSchema = require('../src/schema/accessesMethods');
 const should = require('should');
 const storage = helpers.dependencies.storage.user.accesses;
-const streamsStorage = helpers.dependencies.storage.user.streams;
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
@@ -247,25 +246,20 @@ describe('accesses (personal)', function () {
               stepDone();
             });
           },
-          function verifyNewStream (stepDone) {
-            var query = {id: data.permissions[1].streamId};
-            //const streams = await mall.streams.get(user.id, {id: })
-            streamsStorage.findOne(user, query, null, function (err, stream) {
-              should.not.exist(err);
-              should.exist(stream);
-              validation.checkStoredItem(stream, 'stream');
-              stream.name.should.eql(data.permissions[1].defaultName);
-              stepDone();
-            });
+          async function verifyNewStream () {
+            const streams = await mall.streams.get(user.id, {id: data.permissions[1].streamId})
+            should.exist(streams[0]);
+            const stream = streams[0];
+            validation.checkStoredItem(stream, 'stream');
+            stream.name.should.eql(data.permissions[1].defaultName);
+     
           },
-          function verifyRestoredStream(stepDone) {
-            var query = {id: data.permissions[2].streamId};
-            streamsStorage.findOne(user, query, null, function (err, stream) {
-              should.not.exist(err);
-              should.exist(stream);
-              should.not.exist(stream.trashed);
-              stepDone();
-            });
+          async function verifyRestoredStream() {
+            const streams = await mall.streams.get(user.id, {id: data.permissions[2].streamId})
+            should.exist(streams[0]);
+            const stream = streams[0];
+            should.exist(stream);
+            should.not.exist(stream.trashed);
           }
         ], done);
       });

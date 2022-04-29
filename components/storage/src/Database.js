@@ -238,7 +238,7 @@ class Database {
    * @param {Function} callback
    */
   countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     if (collectionInfo.useUserId) {
       return this.count(collectionInfo, {}, callback);
     }
