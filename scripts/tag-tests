@@ -24,10 +24,10 @@ scanDir(componentsPath);
 tagMissing();
 report();
 
-function scanDir (dirName) {
-  fs.readdirSync(dirName, { withFileTypes: true }).forEach(function (file) {
+function scanDir (dirPath) {
+  fs.readdirSync(dirPath, { withFileTypes: true }).forEach(function (file) {
     const fileName = file.name;
-    const subPath = path.resolve(dirName, fileName);
+    const subPath = path.resolve(dirPath, fileName);
     const stats = fs.statSync(subPath);
     if (stats.isDirectory()) {
       scanDir(subPath);
@@ -150,9 +150,9 @@ function report () {
   log();
 
   if (Object.keys(duplicates).length > 0) {
-    console.log('⚠️ duplicates test ids found:');
+    warn('Duplicate test ids found:');
     for (const [testId, refs] of Object.entries(duplicates)) {
-      logListItem(`${testId} in:`, 0);
+      logListItem(`${chalk.red(testId)} in:`, 0);
       for (const ref of refs) {
         logListItem(ref, 1);
       }
