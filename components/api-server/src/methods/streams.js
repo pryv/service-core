@@ -220,6 +220,19 @@ module.exports = async function (api) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
+    // check if parentId is valid
+    if (params.parentId != null) {
+      const parentStream = await mall.streams.get(context.user.id, { id: params.parentId , includeTrashed: true, expandChildren: 1});
+      if (parentStream.length === 0) {
+        return next(errors.unknownReferencedResource('unknown Stream:', 'parentId', params.parentId, null));
+      }
+      if (parentStream.trashed != null) { // trashed parent
+        return next(errors.invalidOperation(
+          'parent stream is trashed', 'parentId', params.update.parentId
+        ));
+      }
+    }
+
     // strip ignored properties
     if (params.hasOwnProperty('children')) {
       delete params.children;
@@ -252,24 +265,7 @@ module.exports = async function (api) {
       }
       $$({err}); 
       // Duplicate errors // remove when Mall will be fully integrated
-      if (err.isDuplicate) {
-        if (err.isDuplicateIndex('streamId')) {
-          return next(errors.itemAlreadyExists(
-            'stream', { id: params.id }, err));
-        }
-        if (err.isDuplicateIndex('name')) {
-          return next(errors.itemAlreadyExists(
-            'sibling stream', { name: params.name }, err));
-        }
-      }
-      // Unknown parent stream error
-      else if (params.parentId != null) {
-        return next(errors.unknownReferencedResource(
-          'parent stream', 'parentId', params.parentId, err
-        ));
-      }
-      // Any other error
-      return next(errors.unexpectedError(err));
+      
     }
   }
 
@@ -379,30 +375,18 @@ module.exports = async function (api) {
     next();
   }
 
-  function updateStream(context, params, result, next) {
-    userStreamsStorage.updateOne(context.user, { id: params.id }, params.update,
-      function (err, updatedStream) {
-        if (err != null) {
-          // Duplicate error
-          if (err.isDuplicate) {
-            if (err.isDuplicateIndex('name')) {
-              return next(errors.itemAlreadyExists(
-                'sibling stream', { name: params.update.name }, err
-              ));
-            }
-          }
-          // Unknown parent stream error
-          else if (params.update.parentId != null) {
-
-          }
-          // Any other error
-          return next(errors.unexpectedError(err));
-        }
-
-        result.stream = updatedStream;
-        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
-        next();
-      });
+  async function updateStream(context, params, result, next) {
+    try {
+      const updatedStream = await mall.streams.updateTemp(context.user.id, params.id, params.update);
+      result.stream = updatedStream;
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
+      return next();
+    } catch (err) {
+      if (err instanceof APIError) {
+        return next(err);
+      }
+      return next(errors.unexpectedError(err));
+    }
   }
 
   // DELETION

@@ -310,7 +310,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
       }
 
       if (! commonFns.isValidStreamIdForCreation(permission.streamId)) {
-        return next(errors.invalidRequestStructure(`Error while creating stream for access. Invalid 'permission' parameter, forbidden chartacter(s) in streamId '${permission.streamId}'. StreamId should be of length 1 to 100 chars, with lowercase letters, numbers or dashes.`, permission));
+         throw errors.invalidRequestStructure(`Error while creating stream for access. Invalid 'permission' parameter, forbidden chartacter(s) in streamId '${permission.streamId}'. StreamId should be of length 1 to 100 chars, with lowercase letters, numbers or dashes.`, permission);
       }
 
       // create new stream
@@ -324,18 +324,10 @@ module.exports = async function produceAccessesApiMethods(api: API)
       try {
         await mall.streams.create(context.user.id, newStream);
       } catch (err) {
-          // Duplicate errors
-          if (err.isDuplicateIndex('id')) {
-            // Stream already exists, log & proceed
-            logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' + err.message);
-          }
-          else if (err.isDuplicateIndex('name')) {
-            // Not OK: stream exists with same unique key but different id
-            throw(errors.itemAlreadyExists('stream', {name: newStream.name}, err));
-          } else {
-            // Any other error
-            throw(errors.unexpectedError(err));
-          }
+        if (err instanceof APIError) {
+          throw err;
+        }
+        throw(errors.unexpectedError(err));
       }
     }
   }

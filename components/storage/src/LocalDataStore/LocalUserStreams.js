@@ -16,13 +16,14 @@ const bluebird = require('bluebird');
 const _ = require('lodash');
 
 const cache = require('cache');
-const { DataStore } = require('pryv-datastore');
+const { DataStore, errors } = require('pryv-datastore');
 const { treeUtils } = require('utils');
 
 const { StreamProperties } = require('business/src/streams');
 const StreamPropsWithoutChildren: Array<string> = StreamProperties.filter(p => p !== 'children');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
+const handleDuplicateError = require('../Database').handleDuplicateError;
 
 import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { Stream } from 'business/src/streams';
@@ -75,7 +76,21 @@ class LocalUserStreams extends DataStore.UserStreams {
   }
 
   async create(uid: string, streamData: Stream): Promise<Stream> {
-    return await bluebird.fromCallback(cb => this.userStreamsStorage.insertOne({ id: uid }, streamData, cb));
+    try {
+      return await bluebird.fromCallback(cb => this.userStreamsStorage.insertOne({ id: uid }, streamData, cb));
+    } catch (err) {
+      handleDuplicateError(err);
+      if (err.isDuplicate) {
+        if (err.isDuplicateIndex('streamId')) {
+          throw errors.itemAlreadyExists('stream', { id: streamData.id }, err);
+        }
+        if (err.isDuplicateIndex('name')) {
+          throw errors.itemAlreadyExists('sibling stream', { name: streamData.name }, err);
+        }
+      }
+      // Any other error
+      throw errors.unexpectedError(err);
+    }
   }
 
   async delete(uid: string, streamId: string): Promise<void> {
@@ -84,7 +99,20 @@ class LocalUserStreams extends DataStore.UserStreams {
 
   async updateTemp(uid: string, streamId, update: {}) {
     //$$({uid, streamId, update});
-    return await bluebird.fromCallback(cb =>  this.userStreamsStorage.updateOne({id: uid}, {id: streamId}, update, cb));
+    try {
+      return await bluebird.fromCallback(cb =>  this.userStreamsStorage.updateOne({id: uid}, {id: streamId}, update, cb));
+    } catch (err) {
+      handleDuplicateError(err);
+      if (err.isDuplicate) {
+        if (err.isDuplicateIndex('name')) {
+          throw errors.itemAlreadyExists(
+            'sibling stream', { name: update.name }, err
+          );
+        }
+      }
+      // Any other error
+      throw errors.unexpectedError(err);
+    }
   }
 
   async update(uid: string, streamData: Stream): Promise<Stream> {
