@@ -140,16 +140,7 @@ class MallUserStreams {
     let parentStoreId = 'local';
     let cleanParentStreamId;
     if (streamForStore.parentId != null) {
-      [parentStoreId, cleanParentStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.parentId);
-
-      const parentStore: DataStore = this.mall._storeForId(parentStoreId);
-      const parentStreams = await parentStore.streams.get(uid, {id: cleanParentStreamId});
-      if (parentStreams.length === 0) {
-        throw errorFactory.unknownReferencedResource(
-          'parent stream', 'parentId', streamData.parentId
-        );
-      }
-
+      [parentStoreId, cleanParentStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.parentId)
       streamForStore.parentId = cleanParentStreamId;
     }
 

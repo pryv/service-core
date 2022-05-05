@@ -389,7 +389,7 @@ class Database {
    * @param {Function} callback
    */
   insertOne (collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback, options: Object = {}) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, item);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertOne(item, options, (err, res) => {
@@ -405,7 +405,7 @@ class Database {
    * Inserts an array of items (each item must have a valid id already).
    */
   insertMany (collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback, options: Object = {}) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertMany(items, options, (err, res) => {
@@ -427,7 +427,7 @@ class Database {
    * @param {Function} callback
    */
   updateOne (collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback, options: Object = {}) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, options, (err, res) => {
@@ -449,7 +449,7 @@ class Database {
    * @param {Function} callback
    */
   updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, {}, callback);
@@ -474,7 +474,7 @@ class Database {
    * @param {Function} callback
    */
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js', 'callbackIntegrity'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserEvents.js', 'callbackIntegrity'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, { returnDocument: 'after' }, function (err, r) {
@@ -707,5 +707,6 @@ function tellMeIfStackDoesNotContains(needles, info) {
     }
   }
   console.log(info, stack);
+  //throw new Error('Beep');
   return false;
 }

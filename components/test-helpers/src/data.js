@@ -118,20 +118,26 @@ exports.resetEvents = function (done, user) {
 const streams = exports.streams = require('./data/streams');
 
 exports.resetStreams = function (done, user) {
-  resetData(storage.user.streams, user || defaultUser, streams, done);
-  /** AT WOrK
   const myUser = user || defaultUser;
+  let mall = null;
+
+  async function addStreams(arrayOfStreams) {
+    for (const stream of arrayOfStreams) {
+      const children = stream?.children || [];
+      const streamData = _.clone(stream);
+      delete streamData.children;
+      await mall.streams.create(myUser.id, streamData);
+      await addStreams(children);
+    }
+  }
+  
   async.series([
     async () => { 
-      const mall = await getMall(); 
-      mall.streams.deleteAll(myUser.id, 'local');
-      for (const stream of streams) {
-        $$(stream);
-        await mall.streams.create(myUser.id, stream);
-      }
+      mall = await getMall(); 
+      await mall.streams.deleteAll(myUser.id, 'local');
+      await addStreams(streams);
     },
   ], done)
-  */
 
 };
 

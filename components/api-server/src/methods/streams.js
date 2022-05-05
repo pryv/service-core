@@ -208,6 +208,7 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyDefaultsForCreation,
     applyPrerequisitesForCreation,
+    checkParentStreamForCreation,
     createStream);
 
   function applyDefaultsForCreation(context, params, result, next) {
@@ -251,6 +252,27 @@ module.exports = async function (api) {
     next();
   }
 
+  /**
+   * check if there is a parent stream and if it exists or is not trashed
+   */
+  async function checkParentStreamForCreation(context, params, result, next) {
+
+    if (params.parentId != null) {
+      const parentStreams = await mall.streams.get(context.user.id, {id: params.parentId, includeTrashed: true});
+      if (parentStreams.length === 0) {
+        return next(errors.unknownReferencedResource(
+          'parent stream', 'parentId', params.parentId
+        ));
+      } else if (parentStreams[0].trashed) {
+        return next(errors.invalidOperation(
+          'parent stream is trashed', 'parentId', params.parentId
+        ));
+      }
+    }
+    return next();
+
+  }
+
   async function createStream(context, params, result, next) {
     try {
       const newStream = await mall.streams.create(context.user.id, params);
@@ -264,8 +286,7 @@ module.exports = async function (api) {
         return next(err);
       }
       $$({err}); 
-      // Duplicate errors // remove when Mall will be fully integrated
-      
+      return next(errors.unexpectedError(err));
     }
   }
 
@@ -422,7 +443,7 @@ module.exports = async function (api) {
     }
   }
 
-  function flagAsTrashed(context, params, result, next) {
+  async function flagAsTrashed(context, params, result, next) {
     var updatedData = { trashed: true };
     context.updateTrackingProperties(updatedData);
 

@@ -120,7 +120,8 @@ class LocalUserStreams extends DataStore.UserStreams {
   }
 
   async deleteAll(uid: string): Promise<void> {
-    return await bluebird.fromCallback(cb => this.userStreamsStorage.removeAll({ id: uid }, cb));
+    await bluebird.fromCallback(cb => this.userStreamsStorage.removeAll({ id: uid }, cb));
+    cache.unsetUserData(uid);
   }
 
 
