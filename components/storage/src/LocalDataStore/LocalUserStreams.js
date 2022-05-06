@@ -119,6 +119,14 @@ class LocalUserStreams extends DataStore.UserStreams {
     return await bluebird.fromCallback(cb => this.userStreamsStorage.updateOne({ id: uid }, {id: streamData.id}, streamData, cb));
   }
 
+  async updateDelete(uid: string, streamId: stringg): Promise<void> {
+    return await bluebird.fromCallback(cb => this.userStreamsStorage.delete({ id: uid }, {id: streamId}, cb));
+  }
+
+  async delete(uid: string, streamId: stringg): Promise<void> {
+    return await bluebird.fromCallback(cb => this.userStreamsStorage.removeOne({ id: uid}, {id: streamId}, cb));
+  }
+
   async deleteAll(uid: string): Promise<void> {
     await bluebird.fromCallback(cb => this.userStreamsStorage.removeAll({ id: uid }, cb));
     cache.unsetUserData(uid);

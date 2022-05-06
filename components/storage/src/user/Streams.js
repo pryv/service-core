@@ -110,33 +110,8 @@ Streams.prototype.updateOne = function (user, query, updatedData, callback) {
   } else { // only stream Structure
     cache.unsetStreams(user.id, 'local');
   }
-  var self = this;
-  if (! updatedData.parentId) {
-    doUpdate();
-  } else {
-    checkParentExists.call(self, user, updatedData.parentId, function (err) {
-      if (err) { return callback(err); }
-      doUpdate();
-    });
-  }
-
-  function doUpdate() {
-    Streams.super_.prototype.updateOne.call(self, user, query, updatedData, callback);
-  }
+  Streams.super_.prototype.updateOne.call(this, user, query, updatedData, callback);
 };
-
-/**
- * @this {Streams}
- */
-function checkParentExists(user, parentId, callback) {
-  this.findOne(user, {id: parentId}, null, function (err, parent) {
-    if (err) { return callback(err); }
-    if (! parent) {
-      return callback(new Error('Unknown parent ' + toString.id(parentId)));
-    }
-    callback();
-  });
-}
 
 /* jshint -W024 */
 /**

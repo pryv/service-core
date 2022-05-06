@@ -474,7 +474,7 @@ class Database {
    * @param {Function} callback
    */
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserEvents.js', 'callbackIntegrity'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js', 'callbackIntegrity'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, { returnDocument: 'after' }, function (err, r) {
@@ -496,7 +496,7 @@ class Database {
    * @param {Function} callback
    */
   upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreamss.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {upsert: true}, callback);
@@ -511,7 +511,7 @@ class Database {
    * @param {Function} callback
    */
   deleteOne(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteOne(query, {}, callback);
@@ -526,7 +526,7 @@ class Database {
    * @param {Function} callback
    */
   deleteMany(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteMany(query, {}, callback);
@@ -541,7 +541,7 @@ class Database {
    * @param {Function} callback
    */
   totalSize(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     if (collectionInfo.useUserId) {
       return this.countAll(collectionInfo, callback);
     }
@@ -560,7 +560,7 @@ class Database {
    * @param {Function} callback
    */
   dropCollection(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-    if (collectionInfo.name == 'events') tellMeIfStackDoesNotContains(['LocalUserEvents.js'], {for: collectionInfo.name});
+    if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['LocalUserStreams.js'], {for: collectionInfo.name});
     if (collectionInfo.useUserId) {
       return this.deleteMany(collectionInfo, {}, callback);
     } else {

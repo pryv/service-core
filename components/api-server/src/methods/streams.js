@@ -27,13 +27,11 @@ const logger = getLogger('methods:streams');
 const { getMall, streamsUtils } = require('mall');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 const { pubsub } = require('messages');
-const { getStorageLayer } = require('storage');
 
 /**
  * Event streams API methods implementation.
  *
  * @param api
- * @param userStreamsStorage
  * @param notifyTests
  * @param logging
  * @param auditSettings
@@ -41,8 +39,6 @@ const { getStorageLayer } = require('storage');
  */
 module.exports = async function (api) {
   const config = await getConfig();
-  const storageLayer = await getStorageLayer();
-  const userStreamsStorage = storageLayer.streams;
   const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
   const mall = await getMall();
@@ -447,13 +443,14 @@ module.exports = async function (api) {
     var updatedData = { trashed: true };
     context.updateTrackingProperties(updatedData);
 
-    userStreamsStorage.updateOne(context.user, { id: params.id }, updatedData,
-      function (err, updatedStream) {
-        if (err) { return next(errors.unexpectedError(err)); }
-        result.stream = updatedStream;
-        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
-        next();
-      });
+    try {
+      const updatedStream = await mall.streams.updateTemp(context.user.id, params.id, updatedData);
+      result.stream = updatedStream;
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
+      return next();
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 
   async function deleteWithData(context, params, result, next) {
@@ -541,9 +538,14 @@ module.exports = async function (api) {
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     }
     // finally delete stream
-
-    await bluebird.fromCallback((cb) => userStreamsStorage.delete(context.user, { id: { $in: context.streamToDeleteAndDescendantIds } }, cb));
-
+    for (const streamIdToDelete of context.streamToDeleteAndDescendantIds) {
+      try {
+        await mall.streams.updateDelete(context.user.id, streamIdToDelete);
+      } catch (err) {
+        logger.error('Failed deleted some streams', err);
+      }
+    }
+    
     result.streamDeletion = { id: params.id };
     pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
     next();

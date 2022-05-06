@@ -214,6 +214,13 @@ class MallUserStreams {
     return res;
   }
 
+  // ---------------------- delete ----------------- //
+  async updateDelete(uid, streamId) {
+    const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    const store: DataStore = this.mall._storeForId(storeId);
+    return await store.streams.updateDelete(uid, cleanStreamId);
+  }
+
   /**
    * Used by tests
    * Might be replaced by standard delete.

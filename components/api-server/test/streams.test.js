@@ -17,7 +17,7 @@ const ErrorIds = require('errors').ErrorIds;
 const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/streamsMethods');
 const should = require('should'); // explicit require to benefit from static function
-const storage = helpers.dependencies.storage.user.streams;
+
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const treeUtils = require('utils').treeUtils;
@@ -30,7 +30,7 @@ const { getMall } = require('mall');
 const chai = require('chai');
 const assert = chai.assert; 
 
-describe('streams', function () {
+describe('[STRE] streams', function () {
 
   var user = Object.assign({}, testData.users[0]),
       initialRootStreamId = testData.streams[0].id,
@@ -703,8 +703,10 @@ describe('streams', function () {
           expectedDeletion,
           expectedChildDeletion;
 
-      async.series([
-        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+      async.series([async function() {
+        await mall.streams.update(user.id, {id: id, trashed: true});
+      },
+        function deleteStream(stepDone) {
           request.del(path(id)).end(function (res) {
             expectedDeletion = {
               id: id,
@@ -748,7 +750,10 @@ describe('streams', function () {
         'missing', function (done) {
       var id = testData.streams[0].id;
       async.series([
-        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+        async function() {
+          await mall.streams.update(user.id, {id: id, trashed: true});
+        },
+        function deleteStream(stepDone) {
           request.del(path(testData.streams[0].id)).end(function (res) {
             validation.checkError(res, {
               status: 400,
@@ -763,7 +768,9 @@ describe('streams', function () {
     it('[RKEU] must reject the deletion of a root stream with mergeEventsWithParent=true', function (done) {
       var id = testData.streams[0].id;
       async.series([
-        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+        async function() {
+          await mall.streams.update(user.id, {id: id, trashed: true});
+        }, function deleteStream(stepDone) {
           request.del(path(testData.streams[0].id)).query({mergeEventsWithParent: true})
             .end(function (res) {
               validation.checkError(res, {
@@ -840,7 +847,9 @@ describe('streams', function () {
               stepDone();
             });
         },
-        (step) => storage.updateOne(user, {id: id}, {trashed: true}, step),
+        async function trashStream() {
+          await mall.streams.update(user.id, {id: id, trashed: true});
+        },
         function deleteStream(stepDone) {
           request.del(path(id))
             .query({mergeEventsWithParent: false})

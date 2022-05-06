@@ -274,7 +274,6 @@ class UsersRepository {
       // Clear data for this user in Platform 
      await this.platform.deleteUser(username, user);
     }
-
     await this.mall.deleteUser(userId);
   }
 
