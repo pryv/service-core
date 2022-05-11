@@ -50,7 +50,7 @@ export type StoreQuery = {
   id: string, 
   storeId: string, 
   includeTrashed: boolean,
-  expandChildren: boolean,
+  expandChildren: integer,
   excludedIds: Array<string>,
   hideStoreRoots?: boolean,
 };
@@ -311,7 +311,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
       id: streamId, 
       storeId: storeId, 
       includeTrashed: params.state === 'all' || params.state === 'trashed',
-      expandChildren: true,
+      expandChildren: -1,
       excludedIds: excludedIds,
       hideStoreRoots: true
     };
@@ -362,7 +362,7 @@ async function streamQueryAddHiddenStreams(context: MethodContext, params: GetEv
         {
           id: '*',
           storeId: streamQuery.storeId,
-          expandChildren: false,
+          expandChildren: 0,
           includeTrashed: true,
           excludedIds: [],
         });

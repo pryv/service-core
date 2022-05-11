@@ -40,10 +40,11 @@ exports.buildTree = function (array, stripParentIds) {
 
     if (clone.hasOwnProperty('parentId') && clone.parentId) {
       // child
-      if (! map[clone.parentId]) {
+      if (! map[clone.parentId]) {
         // missing parent -> ignore
         return;
       }
+      if (map[clone.parentId].children == null) map[clone.parentId].children = [];
       map[clone.parentId].children.push(clone);
     } else {
       // root

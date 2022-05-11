@@ -37,11 +37,13 @@ const userIdForUsername: Map<string, string> = new Map();
 
 function getNameSpace(namespace: string) {
   if (namespace == null) console.log('XXXX', new Error('Null namespace'));
-  return _caches[namespace] || ( _caches[namespace] = new LRU(MAX_PER_CACHE_SIZE) ); // seting maxsize of 2000 to LRU cache
+  return _caches[namespace] || ( _caches[namespace] = new LRU({
+    max: MAX_PER_CACHE_SIZE
+  }));
 }
 
 function set(namespace: string, key: string, value: string) {
-  if (! isActive) return;  
+  if (! isActive) return;
   if (key == null) throw new Error('Null key for' + namespace);
   getNameSpace(namespace).set(key, value);
   debug.set(namespace, key);
@@ -51,7 +53,7 @@ function set(namespace: string, key: string, value: string) {
 function unset(namespace: string, key: string) {
   if (! isActive) return;
   if (key == null) throw new Error('Null key for' + namespace);
-  getNameSpace(namespace).del(key);
+  getNameSpace(namespace).delete(key);
   debug.unset(namespace, key);
 }
 
@@ -96,7 +98,7 @@ function unsetUser(username: string, notifyOtherProcesses: boolean = true) {
   debug.unset('user-id', username);
   const userId = getUserId(username);
   if (userId == null) return;
-  
+
   unsetUserData(userId, false);
   // notify userId delete
   if (notifyOtherProcesses && isSynchroActive) synchro.unsetUser(username);
@@ -131,7 +133,7 @@ function _unsetStreams(userId: string, storeId: string = 'local'): void {
   unset(NS.STREAMS_FOR_USERID + storeId, userId);
 }
 
-function unsetStreams(userId: string, storeId: string = 'local'): void { 
+function unsetStreams(userId: string, storeId: string = 'local'): void {
   unsetUserData(userId);
 }
 
@@ -156,7 +158,7 @@ function getAccessLogicForId(userId: string, accessId: string) {
 function unsetAccessLogic(userId: string, accessLogic: string, notifyOtherProcesses: boolean = true): void {
   if (! isActive) return;
   // notify others to unsed
-  if (notifyOtherProcesses && isSynchroActive) synchro.unsetAccessLogic(userId, accessLogic); 
+  if (notifyOtherProcesses && isSynchroActive) synchro.unsetAccessLogic(userId, accessLogic);
   // perform unset
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return ;

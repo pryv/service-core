@@ -5,8 +5,7 @@
  * Proprietary and confidential
  */
 const path = require('path');
-const mkdirp = require('mkdirp').sync;
-const unlinkFilePromise = require('fs/promises').unlink;
+const unlinkSync = require('fs').unlinkSync;
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
@@ -15,9 +14,8 @@ const UserLocalDirectory = require('business').users.UserLocalDirectory;
 const versionning = require('./versioning');
 
 const CACHE_SIZE = 500;
-
 const VERSION = '1.0.0';
-class Storage { 
+class Storage {
   initialized = false;
   userDBsCache = null;
   options = null;
@@ -26,7 +24,7 @@ class Storage {
   async init() {
     if (this.initialized) {
       throw('Database already initalized');
-    } 
+    }
     this.config = await getConfig();
     await UserLocalDirectory.init();
     await versionning.checkAllUsers(this);
@@ -41,7 +39,7 @@ class Storage {
     this.options = options || {}; 
     this.userDBsCache = new LRU({
       max: this.options.max || CACHE_SIZE,
-      dispose: function (key, db) { db.close(); }
+      dispose: function (db, key) { db.close(); }
     });
   }
 
@@ -58,8 +56,8 @@ class Storage {
 
   /**
    * get the database relative to a specific user
-   * @param {string} userid 
-   * @returns {UserDatabase} 
+   * @param {string} userid
+   * @returns {UserDatabase}
    */
   async forUser(userid) {
     this.logger.debug('forUser: ' + userid);
@@ -69,15 +67,15 @@ class Storage {
 
   /**
    * close and delete the database relative to a specific user
-   * @param {string} userid 
-   * @returns {void} 
+   * @param {string} userid
+   * @returns {void}
    */
-   async deleteUser(userid) {
-    this.logger.info('deleteUser: ' + userid);
+  async deleteUser(userid) {
+    logger.info('deleteUser: ' + userid);
     const userDb = await this.forUser(userid);
     await userDb.close();
-    this.userDBsCache.del(userid);
-    const dbPath = await this.dbPathForUserid(userid);
+    this.userDBsCache.delete(userid);
+    const dbPath = await dbPathForUserid(userid);
     try {
       await unlinkFilePromise(dbPath);
     } catch (err) {
@@ -87,7 +85,7 @@ class Storage {
 
   close() {
     this.checkInititalized();
-    this.userDBsCache.reset();
+    this.userDBsCache.clear();
   }
 
   async _open(userid) {

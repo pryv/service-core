@@ -5,13 +5,11 @@
  * Proprietary and confidential
  */
 module.exports = {
-  diff: true,
-  extension: ['js'],
-  opts: false,
-  package: './package.json',
-  reporter: 'spec',
+  exit: true,
   slow: 75,
   timeout: 2000,
   ui: 'bdd',
-  'watch-files': ['test/**/*.js']
+  diff: true,
+  reporter: 'dot',
+  spec: 'test/**/*.test.js'
 };

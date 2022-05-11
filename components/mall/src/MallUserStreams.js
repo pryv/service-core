@@ -10,6 +10,10 @@
 const { DataStore }  = require('pryv-datastore');
 const streamsUtils = require('./lib/streamsUtils');
 const { treeUtils } = require('utils');
+const cuid = require('cuid');
+const _ = require('lodash');
+
+const errorFactory = require('errors').factory;
 
 import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { Stream } from 'business/src/streams';
@@ -36,7 +40,7 @@ class MallUserStreams {
     if (storeId == null) { [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId); }
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
-    const streams: Array<Stream> = await store.streams.get(uid, { id: streamId, includeTrashed: true, storeId });
+    const streams: Array<Stream> = await store.streams.get(uid, { id: streamId, includeTrashed: true });
     if (streams?.length === 1) return streams[0];
     return null;
   }
@@ -48,18 +52,22 @@ class MallUserStreams {
    * @param {Object} params
    * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by Mall 
    * @param {identifier} [params.storeId] null, means streamId is a "FullStreamId that includes store informations"
-   * @param {identifier} [params.expandChildren] default false, if true also return childrens
-   * @param {Array<identifier>} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is true, children of excludedIds should be excludded too
+   * @param {integer} [params.expandChildren] default 0, if > 0 also return childrens for n levels, -1 means all levels
+   * @param {Array<identifier>} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is 0, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @param {timestamp} [params.includeDeletionsSince] 
    * @param {boolean} [params.hideStoreRoots] When false, returns the root streams of each store
    * @returns {UserStream|null} - the stream or null if not found:
    */
   async get(uid: string, params: StoreQuery) {
-
+    
     // -------- cleanup params --------- //
-    const streamId: string = params.id || '*'; 
-    const storeId: string = params.storeId;
+    let streamId: string = params.id || '*'; 
+    let storeId: string = params.storeId;
+    if (storeId == null) { [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId); }
+
+    params.expandChildren = params.expandChildren || 0;
+
     const excludedIds: Array<string> = params.excludedIds || [];
     const hideStoreRoots: boolean = params.hideStoreRoots || false;
 
@@ -68,7 +76,7 @@ class MallUserStreams {
 
     // *** root query we just expose store handles & local streams
     // might be moved in LocalDataStore ? 
-    if (streamId === '*' && storeId === 'local' && (! hideStoreRoots)) {
+    if (streamId === '*' && storeId === 'local' && (! hideStoreRoots) && (params.includeDeletionsSince == null)) {
       res = getChildlessRootStreamsForOtherStores(this.mall.stores);
     }
     //------ Query Store -------------//
@@ -105,7 +113,6 @@ class MallUserStreams {
         })];
       }
     }
-
     return res;
 
     function getChildlessRootStreamsForOtherStores(stores: Array<DataStore>): Array<Stream> {
@@ -126,6 +133,103 @@ class MallUserStreams {
     }
   }
 
+  async create(uid: string, streamData: Stream) {
+    const streamForStore = _.cloneDeep(streamData);
+
+    // 1- Check if there is a parent stream 
+    let parentStoreId = 'local';
+    let cleanParentStreamId;
+    if (streamForStore.parentId != null) {
+      [parentStoreId, cleanParentStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.parentId)
+      streamForStore.parentId = cleanParentStreamId;
+    }
+
+    // 2- Check streamId and store
+    let storeId, cleanStreamId;
+    if (streamForStore.id == null) {
+      storeId = parentStoreId;
+      streamData.id = cuid();
+    } else {
+      [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.id);
+      if (parentStoreId !== storeId) {
+        throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', eventData);
+      }
+      streamData.id = cleanStreamId;
+    }
+
+    const store: DataStore = this.mall._storeForId(storeId);
+
+    // 3- Check if this Id has already been taken
+    const existingStreams = await store.streams.get(uid, {id: cleanStreamId, includeDeletions: true});
+    if (existingStreams.length > 0) {
+      if (existingStreams[0].deleted != null) { // deleted stream - we can fully remove it
+        await store.streams.delete(uid, cleanStreamId);
+      } else {
+        throw errorFactory.itemAlreadyExists('stream', {id: streamData.id});
+      }
+    }
+
+    // 3 - Insert stream 
+   
+    const res = await store.streams.create(uid, streamData);
+    return res;
+  }
+
+  /**
+   * Temporary implementation 
+   */
+  async updateTemp(uid: string, streamId, update: {}) {
+    const store: DataStore = this.mall._storeForId('local');
+    const res = await store.streams.updateTemp(uid, streamId, update);
+    return res;
+  }
+
+  async update(uid: string, streamData: Stream) {
+    const streamForStore = _.cloneDeep(streamData);
+
+    // 1- Check if there is a parent stream 
+    let parentStoreId = 'local';
+    let cleanParentStreamId;
+    if (streamForStore.parentId != null) {
+      [parentStoreId, cleanParentStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.parentId);
+      streamData.parentId = cleanParentStreamId;
+    }
+
+    // 2- Check streamId and store
+    let storeId, cleanStreamId;
+    if (streamForStore.id == null) {
+      storeId = parentStoreId;
+      streamData.id = cuid();
+    } else {
+      [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.id);
+      if (parentStoreId !== storeId) {
+        throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', eventData);
+      }
+      streamData.id = cleanStreamId;
+    }
+
+    // 3 - Insert stream 
+    const store: DataStore = this.mall._storeForId(storeId);
+    const res = await store.streams.update(uid, streamData);
+    return res;
+  }
+
+  // ---------------------- delete ----------------- //
+  async updateDelete(uid, streamId) {
+    const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    const store: DataStore = this.mall._storeForId(storeId);
+    return await store.streams.updateDelete(uid, cleanStreamId);
+  }
+
+  /**
+   * Used by tests
+   * Might be replaced by standard delete.
+   * @param {*} uid 
+   */
+  async deleteAll(uid: string, storeId: string) {
+    const store: DataStore = this.mall._storeForId(storeId);
+    await store.streams.deleteAll(uid);
+  }
 }
 
 module.exports = MallUserStreams;

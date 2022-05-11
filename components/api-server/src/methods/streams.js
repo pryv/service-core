@@ -10,7 +10,7 @@ var errors = require('errors').factory,
   errorHandling = require('errors').errorHandling,
   methodsSchema = require('../schema/streamsMethods'),
   streamSchema = require('../schema/stream'),
-  slugify = require('slug'),
+  slugify = require('utils').slugify,
   string = require('./helpers/string'),
   utils = require('utils'),
   treeUtils = utils.treeUtils,
@@ -20,19 +20,18 @@ const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const ErrorIds = require('errors/src/ErrorIds');
+const APIError = require('errors/src/APIError');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
 const { getMall, streamsUtils } = require('mall');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 const { pubsub } = require('messages');
-const { getStorageLayer } = require('storage');
 
 /**
  * Event streams API methods implementation.
  *
  * @param api
- * @param userStreamsStorage
  * @param notifyTests
  * @param logging
  * @param auditSettings
@@ -40,8 +39,6 @@ const { getStorageLayer } = require('storage');
  */
 module.exports = async function (api) {
   const config = await getConfig();
-  const storageLayer = await getStorageLayer();
-  const userStreamsStorage = storageLayer.streams;
   const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
   const mall = await getMall();
@@ -104,9 +101,9 @@ module.exports = async function (api) {
       {
         id: streamId,
         storeId: storeId,
-        expandChildren: true,
-        includeDeletionsSince: params.includeDeletionsSince,
-        includeTrashed: params.includeTrashed || params.state === 'all',
+        expandChildren: -1,
+        includeDeletionsSince: null, // deletetions will be addedd later on
+        includeTrashed: params.includeTrashed || params.state === 'all',
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
 
@@ -140,7 +137,7 @@ module.exports = async function (api) {
               {
                 id: listable.streamId,
                 storeId: listable.storeId,
-                expandChildren: true,
+                expandChildren: -1,
                 includeDeletionsSince: params.includeDeletionsSince,
                 includeTrashed: params.includeTrashed || params.state === 'all',
                 excludedIds: context.access.getCannotListStreamsStreamIds(listable.storeId),
@@ -153,8 +150,8 @@ module.exports = async function (api) {
     }
 
     // remove non visible parentIds from
-    for (const rootStream of streams) { 
-      if ((rootStream.parentId != null) && (! await context.access.canListStream(rootStream.parentId))) {
+    for (const rootStream of streams) {
+      if ((rootStream.parentId != null) && (! await context.access.canListStream(rootStream.parentId))){
         rootStream.parentId = null;
       }
     };
@@ -172,20 +169,32 @@ module.exports = async function (api) {
     next();
   }
 
-  function includeDeletionsIfRequested(context, params, result, next) {
+  async function includeDeletionsIfRequested(context, params, result, next) {
     if (params.includeDeletionsSince == null) { return next(); }
 
-    var options = {
-      sort: { deleted: -1 }
-    };
 
-    userStreamsStorage.findDeletions(context.user, params.includeDeletionsSince, options,
-      function (err, deletions) {
-        if (err) { return next(errors.unexpectedError(err)); }
 
-        result.streamDeletions = deletions;
-        next();
-      });
+    let streamId = params.id || params.parentId || '*';
+
+    let storeId = params.storeId; // might me null
+    if (storeId == null) {
+      [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    }
+
+    const query = {
+      storeId: storeId,
+      includeDeletionsSince: params.includeDeletionsSince,
+      hideStoreRoots: true
+    }
+
+    try {
+      const deletedStreams = await mall.streams.get(context.user.id, query);
+      result.streamDeletions = deletedStreams;
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
+    return next();
+
   }
 
   // CREATION
@@ -195,6 +204,7 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyDefaultsForCreation,
     applyPrerequisitesForCreation,
+    checkParentStreamForCreation,
     createStream);
 
   function applyDefaultsForCreation(context, params, result, next) {
@@ -205,6 +215,19 @@ module.exports = async function (api) {
   async function applyPrerequisitesForCreation(context, params, result, next) {
     if (! await context.access.canCreateChildOnStream(params.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
+    }
+
+    // check if parentId is valid
+    if (params.parentId != null) {
+      const parentStream = await mall.streams.get(context.user.id, { id: params.parentId , includeTrashed: true, expandChildren: 1});
+      if (parentStream.length === 0) {
+        return next(errors.unknownReferencedResource('unknown Stream:', 'parentId', params.parentId, null));
+      }
+      if (parentStream.trashed != null) { // trashed parent
+        return next(errors.invalidOperation(
+          'parent stream is trashed', 'parentId', params.update.parentId
+        ));
+      }
     }
 
     // strip ignored properties
@@ -225,34 +248,42 @@ module.exports = async function (api) {
     next();
   }
 
-  function createStream(context, params, result, next) {
-    userStreamsStorage.insertOne(context.user, params, function (err, newStream) {
-      if (err != null) {
-        // Duplicate errors
-        if (err.isDuplicate) {
-          if (err.isDuplicateIndex('streamId')) {
-            return next(errors.itemAlreadyExists(
-              'stream', { id: params.id }, err));
-          }
-          if (err.isDuplicateIndex('name')) {
-            return next(errors.itemAlreadyExists(
-              'sibling stream', { name: params.name }, err));
-          }
-        }
-        // Unknown parent stream error
-        else if (params.parentId != null) {
-          return next(errors.unknownReferencedResource(
-            'parent stream', 'parentId', params.parentId, err
-          ));
-        }
-        // Any other error
-        return next(errors.unexpectedError(err));
-      }
+  /**
+   * check if there is a parent stream and if it exists or is not trashed
+   */
+  async function checkParentStreamForCreation(context, params, result, next) {
 
+    if (params.parentId != null) {
+      const parentStreams = await mall.streams.get(context.user.id, {id: params.parentId, includeTrashed: true});
+      if (parentStreams.length === 0) {
+        return next(errors.unknownReferencedResource(
+          'parent stream', 'parentId', params.parentId
+        ));
+      } else if (parentStreams[0].trashed) {
+        return next(errors.invalidOperation(
+          'parent stream is trashed', 'parentId', params.parentId
+        ));
+      }
+    }
+    return next();
+
+  }
+
+  async function createStream(context, params, result, next) {
+    try {
+      const newStream = await mall.streams.create(context.user.id, params);
       result.stream = newStream;
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
       next();
-    });
+    } catch (err) {
+     
+      // Already an API error
+      if (err instanceof APIError) {
+        return next(err);
+      }
+      $$({err}); 
+      return next(errors.unexpectedError(err));
+    }
   }
 
   // UPDATE
@@ -273,12 +304,12 @@ module.exports = async function (api) {
    * @param {*} next
    */
   function forbidSystemStreamsActions (context, params, result, next) {
-   
+
     if (params.id != null) {
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         params.id = replaceWithNewPrefix(params.id);
       }
-    
+
       if (SystemStreamsSerializer.isSystemStreamId(params.id)) {
         return next(errors.invalidOperation(
           ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification])
@@ -319,42 +350,60 @@ module.exports = async function (api) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
-    // check target parent if needed
-    if (params.update.parentId && ! await context.access.canCreateChildOnStream(params.update.parentId)) {
+    // check parent (even if null for root )
+    if (! await context.access.canCreateChildOnStream(params.update.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
+
+    // check target parent if needed
+    if (params.update.parentId) {
+      const targetParentArray = await mall.streams.get(context.user.id, {id: params.update.parentId, includeTrashed: true, expandChildren: 1});
+
+      if (targetParentArray.length == 0) { // no parent
+        return next(errors.unknownReferencedResource(
+          'parent stream', 'parentId', params.update.parentId
+        ));
+      }
+      const targetParent = targetParentArray[0];
+      if (targetParent.trashed != null) { // trashed parent
+        return next(errors.invalidOperation(
+          'parent stream is trashed', 'parentId', params.update.parentId
+        ));
+      }
+
+
+
+      if (targetParent.children != null) {
+        for (const child of targetParent.children) {
+          if (child.name === params.update.name) {
+            return next(errors.itemAlreadyExists(
+              'sibling stream', { name: params.update.name }
+            ));
+          }
+        }
+      }
+
+    }
+
+
 
     context.updateTrackingProperties(params.update);
 
     next();
   }
 
-  function updateStream(context, params, result, next) {
-    userStreamsStorage.updateOne(context.user, { id: params.id }, params.update,
-      function (err, updatedStream) {
-        if (err != null) {
-          // Duplicate error
-          if (err.isDuplicate) {
-            if (err.isDuplicateIndex('name')) {
-              return next(errors.itemAlreadyExists(
-                'sibling stream', { name: params.update.name }, err
-              ));
-            }
-          }
-          // Unknown parent stream error
-          else if (params.update.parentId != null) {
-            return next(errors.unknownReferencedResource(
-              'parent stream', 'parentId', params.update.parentId, err
-            ));
-          }
-          // Any other error
-          return next(errors.unexpectedError(err));
-        }
-
-        result.stream = updatedStream;
-        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
-        next();
-      });
+  async function updateStream(context, params, result, next) {
+    try {
+      const updatedStream = await mall.streams.updateTemp(context.user.id, params.id, params.update);
+      result.stream = updatedStream;
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
+      return next();
+    } catch (err) {
+      if (err instanceof APIError) {
+        return next(err);
+      }
+      return next(errors.unexpectedError(err));
+    }
   }
 
   // DELETION
@@ -390,35 +439,35 @@ module.exports = async function (api) {
     }
   }
 
-  function flagAsTrashed(context, params, result, next) {
+  async function flagAsTrashed(context, params, result, next) {
     var updatedData = { trashed: true };
     context.updateTrackingProperties(updatedData);
 
-    userStreamsStorage.updateOne(context.user, { id: params.id }, updatedData,
-      function (err, updatedStream) {
-        if (err) { return next(errors.unexpectedError(err)); }
-
-        result.stream = updatedStream;
-        pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
-        next();
-      });
+    try {
+      const updatedStream = await mall.streams.updateTemp(context.user.id, params.id, updatedData);
+      result.stream = updatedStream;
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
+      return next();
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 
   async function deleteWithData(context, params, result, next) {
     let hasLinkedEvents;
     const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(params.id);
-   
+
     // Load stream and chlidren (context.stream does not have expanded children tree)
-    const streamToDeleteSingleArray = await mall.streams.get(context.user.id, { id: cleanStreamId, includeTrashed: true, expandChildren: true, storeId });
+    const streamToDeleteSingleArray = await mall.streams.get(context.user.id, { id: cleanStreamId, includeTrashed: true, expandChildren: -1, storeId });
     const streamToDelete = streamToDeleteSingleArray[0]; //no need to check existence: done before in verifyStreamExistenceAndPermissions
     const streamAndDescendantIds = treeUtils.collectPluckFromRootItem(streamToDelete, 'id');
 
-    // keep stream and children to delete in next step 
+    // keep stream and children to delete in next step
     context.streamToDeleteAndDescendantIds = streamAndDescendantIds;
 
     const parentId = streamToDelete.parentId;
     const cleanDescendantIds = streamAndDescendantIds.map((s) => streamsUtils.storeIdAndStreamIdForStreamId(s)[1]);
-    
+
     // check if root stream and linked events exist
     if (params.mergeEventsWithParent === true && parentId == null) {
       return next(errors.invalidOperation(
@@ -426,7 +475,7 @@ module.exports = async function (api) {
         'since there is no parent stream to merge linked events in.',
         { streamId: params.id }));
     }
-   
+
     const events = await mall.events.getWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}], limit: 1 }});
     hasLinkedEvents = !!events.length;
 
@@ -448,13 +497,13 @@ module.exports = async function (api) {
           }
         }
 
-        // add parent stream Id if needed and remove deleted stream ids 
+        // add parent stream Id if needed and remove deleted stream ids
         // the following add "parentId" if not present and remove "streamAndDescendantIds"
         const query = { streams: [{ any: streamAndDescendantIds}] };
         await mall.events.updateMany(context.user.id, query, { addStreams: [parentId], removeStreams: streamAndDescendantIds});
-        
 
-      } else { 
+
+      } else {
         // case  mergeEventsWithParent = false
 
         const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}});
@@ -489,9 +538,14 @@ module.exports = async function (api) {
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     }
     // finally delete stream
+    for (const streamIdToDelete of context.streamToDeleteAndDescendantIds) {
+      try {
+        await mall.streams.updateDelete(context.user.id, streamIdToDelete);
+      } catch (err) {
+        logger.error('Failed deleted some streams', err);
+      }
+    }
     
-    await bluebird.fromCallback((cb) => userStreamsStorage.delete(context.user, { id: { $in: context.streamToDeleteAndDescendantIds } }, cb));
-      
     result.streamDeletion = { id: params.id };
     pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
     next();
