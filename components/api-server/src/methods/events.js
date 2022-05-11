@@ -37,7 +37,6 @@ const { getAPIVersion } = require('middleware/src/project_version');
 const {TypeRepository, isSeriesType} = require('business').types;
 
 const { getLogger, getConfig } = require('@pryv/boiler');
-const { getStorageLayer } = require('storage');
 const { getPlatform } = require('platform');
 
 const { pubsub } = require('messages');
@@ -68,8 +67,6 @@ const typeRepo = new TypeRepository();
 module.exports = async function (api) 
 {
   const config = await getConfig();
-  const storageLayer = await getStorageLayer();
-  const userStreamsStorage = storageLayer.streams;
   const authSettings = config.get('auth');
   const eventTypesUrl = config.get('service:eventTypes');
   const auditSettings = config.get('versioning');
