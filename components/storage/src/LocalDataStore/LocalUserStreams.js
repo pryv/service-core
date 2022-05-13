@@ -31,10 +31,12 @@ import type { Stream } from 'business/src/streams';
 let visibleStreamsTree = [];
 class LocalUserStreams extends DataStore.UserStreams {
   userStreamsStorage: any;
+  streamsCollection: any;
 
-  constructor(userStreamsStorage: any) {
+  constructor(streamsCollection: any, userStreamsStorage: any) {
     super();
     this.userStreamsStorage = userStreamsStorage;
+    this.streamsCollection = streamsCollection;
     loadVisibleStreamsTree();
   }
 
@@ -98,7 +100,6 @@ class LocalUserStreams extends DataStore.UserStreams {
   }
 
   async updateTemp(uid: string, streamId, update: {}) {
-    //$$({uid, streamId, update});
     try {
       return await bluebird.fromCallback(cb =>  this.userStreamsStorage.updateOne({id: uid}, {id: streamId}, update, cb));
     } catch (err) {

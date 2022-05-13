@@ -43,12 +43,12 @@ class LocalDataStore extends DataStore {
   async init(): Promise<DataStore> {
     await SystemStreamsSerializer.init();
     // get config and load approriated data store components;
-    const userStreamsStorage = (await storage.getStorageLayer()).streams;
-    this._streams = new LocalUserStreams(userStreamsStorage);
+    
     
     const database = await storage.getDatabase();
     const eventsCollection = await database.getCollection({ name: 'events' });
 
+    // ---- events ---- //
     const eventFilesStorage = (await storage.getStorageLayer()).eventFiles;
 
     for (const item of eventsIndexes) {
@@ -57,6 +57,17 @@ class LocalDataStore extends DataStore {
     }
 
     this._events = new LocalUserEvents(eventsCollection, eventFilesStorage);
+
+    // ---- streams --- //
+
+    const streamsCollection = await database.getCollection({ name: 'streams' });
+    for (const item of streamIndexes) {
+      item.options.background = true;
+      await streamsCollection.createIndex(item.index, item.options);
+    }
+
+    const userStreamsStorage = (await storage.getStorageLayer()).streams;
+    this._streams = new LocalUserStreams(streamsCollection, userStreamsStorage);
 
     return this;
   }
@@ -117,3 +128,27 @@ const eventsIndexes = [
 ];
 
 
+const streamIndexes = [
+  {
+    index: { userId: 1 },
+    options: {},
+  },
+  {
+    index: {userId: 1, streamId: 1},
+    options: {unique: true}
+  },
+ {
+    index: {userId: 1, name: 1},
+    options: {}
+  },
+  {
+    index: { userId: 1, name: 1, parentId: 1 },
+    options: { unique: true, partialFilterExpression: {
+      deleted: { $type: 'null'}
+    } }
+  },
+  {
+    index: {userId: 1, trashed: 1},
+    options: {}
+  }
+];
