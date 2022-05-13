@@ -45,6 +45,18 @@ class MallUserStreams {
     return null;
   }
 
+  async getDeletions(uid: String, deletionsSince: timestamp, storeIds: Array<string>) {
+    if (deletionsSince == null) deletionsSince = Number.MIN_SAFE_INTEGER;
+    storeIds = storeIds || ['local'];
+    const result = [];
+    for (const storeId of storeIds) {
+      const store: DataStore = this.mall._storeForId(storeId);
+      const deletedStreams: Array<Stream> = await store.streams.getDeletions(uid, deletionsSince);
+      result.push(...deletedStreams);
+    }
+    return result;
+  }
+
   /**
    * Get the stream that will be set as root for all Stream Structure of this Data Store.
    * @see https://api.pryv.com/reference/#get-streams
@@ -55,7 +67,6 @@ class MallUserStreams {
    * @param {integer} [params.expandChildren] default 0, if > 0 also return childrens for n levels, -1 means all levels
    * @param {Array<identifier>} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is 0, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
-   * @param {timestamp} [params.includeDeletionsSince] 
    * @param {boolean} [params.hideStoreRoots] When false, returns the root streams of each store
    * @returns {UserStream|null} - the stream or null if not found:
    */
@@ -76,7 +87,7 @@ class MallUserStreams {
 
     // *** root query we just expose store handles & local streams
     // might be moved in LocalDataStore ? 
-    if (streamId === '*' && storeId === 'local' && (! hideStoreRoots) && (params.includeDeletionsSince == null)) {
+    if (streamId === '*' && storeId === 'local' && (! hideStoreRoots)) {
       res = getChildlessRootStreamsForOtherStores(this.mall.stores);
     }
     //------ Query Store -------------//
@@ -85,7 +96,6 @@ class MallUserStreams {
 
     const myParams: StoreQuery = {
       id: streamId,
-      includeDeletionsSince: params.includeDeletionsSince,
       includeTrashed: params.includeTrashed,
       expandChildren: params.expandChildren,
       excludedIds: store.streams.hasFeatureGetParamsExcludedIds ? excludedIds : [],

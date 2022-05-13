@@ -40,15 +40,13 @@ class LocalUserStreams extends DataStore.UserStreams {
     loadVisibleStreamsTree();
   }
 
+  async getDeletions(uid: string, deletionsSince: timestamp) {
+    const options = { sort: { deleted: -1 }};
+    const deletedStreams = await bluebird.fromCallback(cb => this.userStreamsStorage.findDeletions({id: uid}, deletionsSince, options, cb));
+    return deletedStreams;
+  }
+
   async get(uid: string, params: StoreQuery): Promise<Array<Stream>> {
-
-    // deletions handling .. should be refactored
-    if (params.includeDeletionsSince != null) {
-      const options = { sort: { deleted: -1 }};
-      const deletedStreams = await bluebird.fromCallback(cb => this.userStreamsStorage.findDeletions({id: uid}, params.includeDeletionsSince, options, cb));
-      return deletedStreams;
-    };
-
 
     let allStreamsForAccount: Array<Stream> = cache.getStreams(uid, 'local');
     if (allStreamsForAccount == null) { // get from DB

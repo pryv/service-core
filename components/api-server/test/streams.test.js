@@ -732,7 +732,7 @@ describe('[STRE] streams', function () {
           parentChildren.length.should.eql(testData.streams[2].children.length - 1, 'child streams');
           
           // deleted stream
-          const deletedStreams = await mall.streams.get(user.id, {includeDeletionsSince: 0, storeId: 'local'});
+          const deletedStreams = await mall.streams.getDeletions(user.id, 0, ['local']);
           const foundDeletedStream = deletedStreams.filter(s => s.id == id)[0];
           should.exists(foundDeletedStream, 'cannot find deleted stream');
           validation.checkObjectEquality(foundDeletedStream, expectedDeletion);

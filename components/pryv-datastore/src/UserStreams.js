@@ -21,11 +21,16 @@ class UserStreams {
    * @param {identifier} [params.expandChildren] 
    * @param {identifiers} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is >0 or < 0, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
-   * @param {timestamp} [params.includeDeletionsSince]
    * @returns {UserStream|null} - the stream or null if not found:
    */
   async get(uid: string, params): Promise<Array<Stream>> { throw new Error('Not implemented'); }
 
+  /**
+   * Get a list of deleted Ids since
+   * @param {identifier} uid 
+   * @param {timestamp} deletionSince 
+   */
+  async getDeletions(uid: string, deletionsSince: timestamp) { throw new Error('Not implemented');  }
 
   /**
    * @see https://api.pryv.com/reference/#create-stream

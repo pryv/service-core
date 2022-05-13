@@ -102,7 +102,6 @@ module.exports = async function (api) {
         id: streamId,
         storeId: storeId,
         expandChildren: -1,
-        includeDeletionsSince: null, // deletetions will be addedd later on
         includeTrashed: params.includeTrashed || params.state === 'all',
         excludedIds: context.access.getCannotListStreamsStreamIds(storeId),
       });
@@ -138,8 +137,7 @@ module.exports = async function (api) {
                 id: listable.streamId,
                 storeId: listable.storeId,
                 expandChildren: -1,
-                includeDeletionsSince: params.includeDeletionsSince,
-                includeTrashed: params.includeTrashed || params.state === 'all',
+                includeTrashed: params.includeTrashed || params.state === 'all',
                 excludedIds: context.access.getCannotListStreamsStreamIds(listable.storeId),
               });
             filteredStreams.push(...listableStreamAndChilds);
@@ -171,9 +169,6 @@ module.exports = async function (api) {
 
   async function includeDeletionsIfRequested(context, params, result, next) {
     if (params.includeDeletionsSince == null) { return next(); }
-
-
-
     let streamId = params.id || params.parentId || '*';
 
     let storeId = params.storeId; // might me null
@@ -181,20 +176,13 @@ module.exports = async function (api) {
       [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
     }
 
-    const query = {
-      storeId: storeId,
-      includeDeletionsSince: params.includeDeletionsSince,
-      hideStoreRoots: true
-    }
-
     try {
-      const deletedStreams = await mall.streams.get(context.user.id, query);
+      const deletedStreams = await mall.streams.getDeletions(context.user.id, params.includeDeletionsSince, [storeId]);
       result.streamDeletions = deletedStreams;
     } catch (err) {
       return next(errors.unexpectedError(err));
     }
     return next();
-
   }
 
   // CREATION
