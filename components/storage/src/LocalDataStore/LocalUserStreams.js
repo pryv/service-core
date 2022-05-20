@@ -75,10 +75,17 @@ class LocalUserStreams extends DataStore.UserStreams {
     return streams;
   }
 
+  async createDeleted(uid: string, streamData: Stream): Promise<Stream> {
+    streamData.userId = uid;
+    streamData.streamId = streamData.id;
+    delete streamData.id;
+    return await this.streamsCollection.replaceOne({userId: uid, streamId: streamData.streamId}, streamData, {upsert: true}); // replace of create deleted streams
+  }
+
   async create(uid: string, streamData: Stream): Promise<Stream> {
-    try {
+    //try {
       return await bluebird.fromCallback(cb => this.userStreamsStorage.insertOne({ id: uid }, streamData, cb));
-    } catch (err) {
+    /* } catch (err) {
       handleDuplicateError(err);
       if (err.isDuplicate) {
         if (err.isDuplicateIndex('streamId')) {
@@ -90,7 +97,7 @@ class LocalUserStreams extends DataStore.UserStreams {
       }
       // Any other error
       throw errors.unexpectedError(err);
-    }
+    }*/
   }
 
   async delete(uid: string, streamId: string): Promise<void> {
@@ -98,8 +105,9 @@ class LocalUserStreams extends DataStore.UserStreams {
   }
 
   async updateTemp(uid: string, streamId, update: {}) {
-    try {
+    //try {
       return await bluebird.fromCallback(cb =>  this.userStreamsStorage.updateOne({id: uid}, {id: streamId}, update, cb));
+      /** 
     } catch (err) {
       handleDuplicateError(err);
       if (err.isDuplicate) {
@@ -111,7 +119,7 @@ class LocalUserStreams extends DataStore.UserStreams {
       }
       // Any other error
       throw errors.unexpectedError(err);
-    }
+    }*/
   }
 
   async update(uid: string, streamData: Stream): Promise<Stream> {

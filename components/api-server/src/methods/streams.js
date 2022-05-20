@@ -382,7 +382,9 @@ module.exports = async function (api) {
 
   async function updateStream(context, params, result, next) {
     try {
-      const updatedStream = await mall.streams.updateTemp(context.user.id, params.id, params.update);
+      const updateData = _.cloneDeep(params.update);
+      updateData.id = params.id;
+      const updatedStream = await mall.streams.update(context.user.id, updateData);
       result.stream = updatedStream;
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
       return next();
@@ -430,9 +432,9 @@ module.exports = async function (api) {
   async function flagAsTrashed(context, params, result, next) {
     var updatedData = { trashed: true };
     context.updateTrackingProperties(updatedData);
-
+    updatedData.id = params.id;
     try {
-      const updatedStream = await mall.streams.updateTemp(context.user.id, params.id, updatedData);
+      const updatedStream = await mall.streams.update(context.user.id, updatedData);
       result.stream = updatedStream;
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
       return next();

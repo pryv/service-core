@@ -27,11 +27,9 @@ function Streams(database) {
 
   _.extend(this.converters, {
     itemDefaults: [
-      converters.createIdIfMissing,
     ],
     itemToDB: [
-      converters.deletionToDB,
-      converters.stateToDB
+      //converters.deletionToDB,
     ],
     itemsToDB: [
       treeUtils.flattenTree,

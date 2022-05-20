@@ -300,9 +300,9 @@ module.exports = async function produceAccessesApiMethods(api: API)
         if (! existingStream.trashed) return ;
 
         // untrash stream
-        const update = {trashed: false};
+        const update = {id: existingStream.id, trashed: false};
         try {
-          await mall.streams.updateTemp(context.user.id, existingStream.id, update);
+          await mall.streams.update(context.user.id, update);
         } catch (err) {
           throw(errors.unexpectedError(err));
         }

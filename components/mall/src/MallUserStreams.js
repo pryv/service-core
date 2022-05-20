@@ -143,8 +143,39 @@ class MallUserStreams {
     }
   }
 
+  /**
+   * As some stores might not keep "deletion" records 
+   * A "local" cache of deleted streams could be implemented 
+   * This is mostly used by tests fixtures for now
+   */
+  async createDeleted(uid: string, streamData: Stream) {
+    const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.id);
+    if (streamData.deleted == null) throw errorFactory.invalidRequestStructure('Missing deleted timestamp for deleted stream', streamData);
+    const streamForStore = {
+      id: cleanStreamId,
+      deleted: streamData.deleted
+    }
+    const store: DataStore = this.mall._storeForId(storeId);
+    const res = await store.streams.createDeleted(uid, streamData);
+    return res;
+  }
+
   async create(uid: string, streamData: Stream) {
+    if (streamData.deleted != null) { 
+      return await this.createDeleted(uid, streamData);
+    }
+
     const streamForStore = _.cloneDeep(streamData);
+
+    // 0- Prepare default values
+    if (streamForStore.trashed !== true) {
+      delete streamForStore.trashed;
+    }
+    if (streamForStore.deleted === undefined) { 
+      streamForStore.deleted = null;
+    }
+
+    
 
     // 1- Check if there is a parent stream 
     let parentStoreId = 'local';
@@ -158,13 +189,13 @@ class MallUserStreams {
     let storeId, cleanStreamId;
     if (streamForStore.id == null) {
       storeId = parentStoreId;
-      streamData.id = cuid();
+      streamForStore.id = cuid();
     } else {
       [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.id);
       if (parentStoreId !== storeId) {
         throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', eventData);
       }
-      streamData.id = cleanStreamId;
+      streamForStore.id = cleanStreamId;
     }
 
     const store: DataStore = this.mall._storeForId(storeId);
@@ -179,9 +210,14 @@ class MallUserStreams {
       }
     }
 
+    // 4- Check if a sibbling stream with the same name exists
+    const siblingNames = await this.getNamesOfChildren(uid, streamData.parentId, []);
+    if (siblingNames.includes(streamForStore.name)) {
+      throw errorFactory.itemAlreadyExists('stream', {name: streamData.name});
+    }
+
     // 3 - Insert stream 
-   
-    const res = await store.streams.create(uid, streamData);
+    const res = await store.streams.create(uid, streamForStore);
     return res;
   }
 
@@ -202,25 +238,31 @@ class MallUserStreams {
     let cleanParentStreamId;
     if (streamForStore.parentId != null) {
       [parentStoreId, cleanParentStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.parentId);
-      streamData.parentId = cleanParentStreamId;
+      streamForStore.parentId = cleanParentStreamId;
     }
 
     // 2- Check streamId and store
     let storeId, cleanStreamId;
     if (streamForStore.id == null) {
       storeId = parentStoreId;
-      streamData.id = cuid();
+      streamForStore.id = cuid();
     } else {
       [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.id);
       if (parentStoreId !== storeId) {
         throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', eventData);
       }
-      streamData.id = cleanStreamId;
+      streamForStore.id = cleanStreamId;
+    }
+
+    // 4- Check if a sibbling stream with the same name exists
+    const siblingNames = await this.getNamesOfChildren(uid, streamData.parentId, [streamData.id]);
+    if (siblingNames.includes(streamForStore.name)) {
+      throw errorFactory.itemAlreadyExists('stream', {name: streamData.name});
     }
 
     // 3 - Insert stream 
     const store: DataStore = this.mall._storeForId(storeId);
-    const res = await store.streams.update(uid, streamData);
+    const res = await store.streams.update(uid, streamForStore);
     return res;
   }
 
@@ -239,6 +281,24 @@ class MallUserStreams {
   async deleteAll(uid: string, storeId: string) {
     const store: DataStore = this.mall._storeForId(storeId);
     await store.streams.deleteAll(uid);
+  }
+
+  // -------------------- utils ------------------- //
+
+  /**
+   * @private
+   * get name of children stream
+   */
+  async getNamesOfChildren(uid: string, streamId: string, exludedIds: Array<string>) {
+    const streams = await this.get(uid, {id: streamId, expandChildren : 1, includeTrashed: true});
+    let streamsToCheck = [];
+    if (streamId == null) { // root
+      streamsToCheck = streams;
+    } else if (streams.length > 0) {
+      streamsToCheck = streams[0].children || [];
+    }
+    const names = streamsToCheck.filter((s) => ! exludedIds.includes(s.id)).map((s) => s.name);
+    return names;
   }
 }
 
