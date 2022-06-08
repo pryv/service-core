@@ -59,12 +59,12 @@ class DataStore {
   /**
    * Delete all data related to the user
    */
-  async deleteUser(uid: string): Promise<void> { throw new Error('Not implemented'); }
-  
+  async deleteUser(userId: string): Promise<void> { throw new Error('Not implemented'); }
+
   /**
    * Return the quantity of storage used by the user in bytes
    */
-   async storageUsedForUser(uid: string): Promise<number> { throw new Error('Not implemented'); }
+   async storageUsedForUser(userId: string): Promise<number> { throw new Error('Not implemented'); }
 }
 
 module.exports = DataStore;

@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 /**
- * Audit Data Store. 
+ * Audit Data Store.
  * Send predicatable static data
  */
 
@@ -41,7 +41,7 @@ class AuditDataStore extends DataStore {
 
   async deleteUser(userId) { }
 
-  async storageUsedForUser(uid: string) { return 0; } // ToDo return size of DB
+  async storageUsedForUser(userId: string) { return 0; } // ToDo return size of DB
 }
 
 

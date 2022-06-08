@@ -11,12 +11,12 @@ var path = require('path');
 class SyslogTransform {
   key;
   constructor(key) {  this.key = key; }
-  transform(userid, event) { throw('Transform must be implemented'); }
+  transform(userId, event) { throw('Transform must be implemented'); }
 }
 
 /**
  * Plugin
- * Use external javascript code 
+ * Use external javascript code
  */
 class Plugin extends SyslogTransform {
   plugin;
@@ -29,18 +29,18 @@ class Plugin extends SyslogTransform {
   }
 
   /**
-   * @param {string} userid 
-   * @param {PryvEvent} event 
+   * @param {string} userId
+   * @param {PryvEvent} event
    * @returns {LogItem|null} {level: .. , message: ... }  or null to skip
    */
-  transform(userid, event) {
+  transform(userId, event) {
     logger.debug('Using plugin ' + this.key);
-    return this.plugin(userid, event);
+    return this.plugin(userId, event);
   }
 }
 
 /**
- * Templating 
+ * Templating
  * Transform an event into a syslog message plus level
  */
 class Template extends SyslogTransform {
@@ -54,35 +54,35 @@ class Template extends SyslogTransform {
     logger.debug('Loaded template for [' + key + ']: ' + format.template);
   }
   /**
-   * @returns {LogItem|null} 
+   * @returns {LogItem|null}
    */
-  transform(userid, event) {
+  transform(userId, event) {
     logger.debug('Using template ' + this.key);
-    return { 
+    return {
       level: this.level,
-      message: transformFromTemplate(this.template, userid, event)
+      message: transformFromTemplate(this.template, userId, event)
     }
   }
-  
+
 }
 
 /**
  * @typedef LogItem
  * @property {string} level - one of: notice, warning, error, critical, alert, emerg
- * @property {string} message 
+ * @property {string} message
  */
 
 /**
  * Get the Syslog string correspondig to this event
- * @param {string} userid 
- * @param {PryvEvent} event 
+ * @param {string} userId
+ * @param {PryvEvent} event
  * @returns {LogItem|null}
  */
-function logForEvent(userid, event) {
+function logForEvent(userId, event) {
   if (event.type in templates) {
-    return templates[event.type].transform(userid, event);
+    return templates[event.type].transform(userId, event);
   }
-  return templates['log/default'].transform(userid, event);
+  return templates['log/default'].transform(userId, event);
 }
 
 const templates = {};
@@ -105,17 +105,17 @@ module.exports = {
 };
 
 
-// ---- utils 
+// ---- utils
 
 /**
  * Get a syslog line from a tenplate + event + userid
  * @param {string} template - of the form "{userid} {content.message}"
- * @param {string} userid  - the userid 
- * @param {PryvEvent} event 
+ * @param {string} userId  - the userid
+ * @param {PryvEvent} event
  */
-function transformFromTemplate(template, userid, event) {
+function transformFromTemplate(template, userId, event) {
   logger.debug('transformFromTemplate', template);
-  const result = template.replace('{userid}', userid);
+  const result = template.replace('{userid}', userId);
   return result.replace(/{([^}]*)}/g, function (match, key) {
     let res = getKey(key, event) || match;
     if (typeof res === 'object') {
@@ -127,8 +127,8 @@ function transformFromTemplate(template, userid, event) {
 
 /**
  * getKey('foo.bar', {foo: { bar: "I want this"}}); //=> "I want this"
- * @param {string} key 
- * @param {*} obj 
+ * @param {string} key
+ * @param {*} obj
  */
 function getKey(key, obj) {
   return key.split('.').reduce(function(a,b){

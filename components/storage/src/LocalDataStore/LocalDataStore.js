@@ -8,14 +8,14 @@
 // @flow
 
 /**
- * Local Data Store. 
+ * Local Data Store.
  */
 const bluebird = require('bluebird');
 
 const storage = require('../index');
 const {DataStore}  = require('pryv-datastore');
 
-const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront 
+const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
 
 const LocalUserStreams = require('./LocalUserStreams');
 const LocalUserEvents = require('./LocalUserEvents');
@@ -24,15 +24,15 @@ const LocalTransaction = require('./LocalTransaction');
 const STORE_ID = 'local';
 const STORE_NAME = 'Local Store';
 class LocalDataStore extends DataStore {
-  
+
   _id: string = 'local';
   _name: string = 'Local Store';
   _streams: DataStore.UserStreams;
   _events: DataStore.UserEvents;
   settings: any;
 
-  constructor() {  
-    super(); 
+  constructor() {
+    super();
     this.settings = {
       attachments: {
         setFileReadToken: true // method/events js will add a readFileToken
@@ -43,8 +43,8 @@ class LocalDataStore extends DataStore {
   async init(): Promise<DataStore> {
     await SystemStreamsSerializer.init();
     // get config and load approriated data store components;
-    
-    
+
+
     const database = await storage.getDatabase();
     const eventsCollection = await database.getCollection({ name: 'events' });
 
@@ -81,16 +81,16 @@ class LocalDataStore extends DataStore {
     return transaction;
   }
 
-  async deleteUser(uid: string): Promise<void> {
-    await this._streams._deleteUser(uid);
-    await this._events._deleteUser(uid);
+  async deleteUser(userId: string): Promise<void> {
+    await this._streams._deleteUser(userId);
+    await this._events._deleteUser(userId);
   }
 
-  async storageUsedForUser(uid: string) { 
-    const streamsSize = await this._streams._storageUsedForUser(uid);
-    const eventsSize = await this._events._storageUsedForUser(uid); 
+  async storageUsedForUser(userId: string) {
+    const streamsSize = await this._streams._storageUsedForUser(userId);
+    const eventsSize = await this._events._storageUsedForUser(userId);
     return streamsSize + eventsSize;
-  } 
+  }
 }
 
 module.exports = LocalDataStore;

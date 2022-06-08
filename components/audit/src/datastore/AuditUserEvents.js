@@ -10,8 +10,8 @@ const audit = require('audit');
 const { DataStore }  = require('pryv-datastore');
 
 class AuditUserEvents extends DataStore.UserEvents {
-  async getStreamed(uid, params) {
-    const userStorage = await audit.storage.forUser(uid);
+  async getStreamed(userId, params) {
+    const userStorage = await audit.storage.forUser(userId);
     return userStorage.getLogsStream(params);
   }
 }

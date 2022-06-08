@@ -6,7 +6,7 @@
  */
 
 /**
- * Faulty Data Store. 
+ * Faulty Data Store.
  * Always fail
  */
 
@@ -16,7 +16,7 @@ const {DataStore}  = require('pryv-datastore');
 class Faulty extends DataStore {
   _streams;
   _events;
-  
+
   constructor() {  super(); }
 
   async init(config) {
@@ -30,18 +30,18 @@ class Faulty extends DataStore {
   get events() { return this._events; }
 
   async deleteUser(userId) {}
-  async storageUsedForUser(uid: string) { return 0; }
+  async storageUsedForUser(userId: string) { return 0; }
 }
 
 
 class FaultyUserStreams extends DataStore.UserStreams {
-  async get(uid, params) {
+  async get(userId, params) {
     throw new Error('Faulty');
   }
 }
 
 class FaultyUserEvents extends DataStore.UserEvents {
-  async get(uid, params) {
+  async get(userId, params) {
     throw new Error('Faulty');
   }
 }

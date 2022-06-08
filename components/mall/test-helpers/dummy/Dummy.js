@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 /**
- * Dummy Data Store. 
+ * Dummy Data Store.
  * Send predicatable static data
  */
 
@@ -28,15 +28,15 @@ class Dummy extends DataStore {
   get events() { return this._events; }
 
   async deleteUser(userId) {}
-  async storageUsedForUser(uid: string) { return 0;}
+  async storageUsedForUser(userId: string) { return 0;}
 }
 
 
 class DummyUserStreams extends DataStore.UserStreams {
-  async get(uid, params) {
+  async get(userId, params) {
     let streams = [{
       id: 'myself',
-      name: uid,
+      name: userId,
       children: [
         {
           id: 'mariana',
@@ -50,7 +50,7 @@ class DummyUserStreams extends DataStore.UserStreams {
 
 
     DataStore.Defaults.applyOnStreams(streams);
-    
+
     function findStream(streamId, arrayOfStreams) {
       for (let stream of arrayOfStreams) {
         if (stream.id === streamId) return stream;
@@ -66,13 +66,13 @@ class DummyUserStreams extends DataStore.UserStreams {
       streams = findStream(params.id, streams);
     }
 
-    
+
     return streams;
   }
 }
 
 class DummyUserEvents extends DataStore.UserEvents {
-  async get(uid, params) {
+  async get(userId, params) {
     const events = [{
       id: 'dummyevent0',
       type: 'note/txt',

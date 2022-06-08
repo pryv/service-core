@@ -9,19 +9,19 @@ const audit = require('audit');
 const { DataStore }  = require('pryv-datastore');
 
 /**
- * 
+ *
  * Stream structure
  * accesses:
  *    access-{accessid}
- * 
+ *
  * actions:
  *    action-{actionId}
- * 
+ *
  */
 
  class AuditUserStreams extends DataStore.UserStreams {
 
-  async get(uid, params) {
+  async get(userId, params) {
 
     // -- List root streams (accesses & actions)
     if (params.id === '*') {
@@ -42,7 +42,7 @@ const { DataStore }  = require('pryv-datastore');
 
     // list accesses
     if (params.id === 'accesses') {
-      const userStorage = await audit.storage.forUser(uid);
+      const userStorage = await audit.storage.forUser(userId);
       const accesses = userStorage.getAllAccesses();
       if (accesses == null) return [];
       const res = accesses.map((access) => { return {
@@ -61,7 +61,7 @@ const { DataStore }  = require('pryv-datastore');
 
      // list actions
      if (params.id === 'actions') {
-      const userStorage = await audit.storage.forUser(uid);
+      const userStorage = await audit.storage.forUser(userId);
       const actions = userStorage.getAllActions();
       if (actions == null) return [];
       const res = actions.map((action) => { return {
@@ -93,7 +93,7 @@ const { DataStore }  = require('pryv-datastore');
         children: [],
         trashed: false,
       }];
-    } 
+    }
 
     return [];
   }

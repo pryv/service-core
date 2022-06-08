@@ -70,10 +70,10 @@ class Mall {
     return this;
   }
 
-  async deleteUser(uid) {
+  async deleteUser(userId) {
     for (const store of this.stores) {
       try {
-        await store.deleteUser(uid);
+        await store.deleteUser(userId);
       } catch (error) {
         this.throwAPIError(error, store.id);
       }
@@ -83,11 +83,11 @@ class Mall {
   /**
    * Return the quantity of storage used by the user in bytes
    */
-  async storageUsedForUser(uid: string) { 
+  async storageUsedForUser(userId: string) {
     let storageUsed = 0;
     for (const store of this.stores) {
       try {
-        storageUsed += await store.storageUsedForUser(uid);
+        storageUsed += await store.storageUsedForUser(userId);
       } catch (error) {
         this.throwAPIError(error, store.id);
       }
@@ -96,9 +96,9 @@ class Mall {
   }
 
   /**
-   * 
-   * @param {*} storeId 
-   * @returns 
+   *
+   * @param {*} storeId
+   * @returns
    */
   async newTransaction(): Promise<MallTransaction> {
     return new MallTransaction(this);
@@ -115,8 +115,8 @@ class Mall {
 
   /**
    * Catches errors from DataStore and makes sure they are forwarded as API errors.
-   * @param {*} error 
-   * @param {*} storeId 
+   * @param {*} error
+   * @param {*} storeId
    */
   throwAPIError(error, storeId) {
     if (! error instanceof Error) {

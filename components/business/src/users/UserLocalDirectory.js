@@ -17,13 +17,13 @@ const mkdirp = require('mkdirp');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('user-local-directory');
 
-let basePath; 
+let basePath;
 let attachmentsBasePath;
 
 /**
  * Return and **creates** the desired user path
- * @param {string} uid -- user id (cuid format)
- * @param {string} [extraPath] -- Optional, extra path 
+ * @param {string} userId -- user id (cuid format)
+ * @param {string} [extraPath] -- Optional, extra path
  */
 async function ensureUserDirectory(userId, extraPath = '') {
   const resultPath = pathForuserId(userId, extraPath)
@@ -33,8 +33,8 @@ async function ensureUserDirectory(userId, extraPath = '') {
 
 /**
  * Return the local storage for this user. (does not create it)
- * @param {string} uid -- user id (cuid format)
- * @param {string} [extraPath] -- Optional, extra path 
+ * @param {string} userId -- user id (cuid format)
+ * @param {string} [extraPath] -- Optional, extra path
  */
 function pathForuserId(userId, extraPath = '') {
   if (basePath == null) {
@@ -44,18 +44,18 @@ function pathForuserId(userId, extraPath = '') {
     throw(new Error('Invalid or too short userId: ' + userId));
   }
   const dir1 = userId.substr(userId.length - 1, 1); // last character of id
-  const dir2 = userId.substr(userId.length - 2, 1); 
-  const dir3 = userId.substr(userId.length - 3, 1); 
+  const dir2 = userId.substr(userId.length - 2, 1);
+  const dir3 = userId.substr(userId.length - 3, 1);
   const resultPath = path.join(basePath, dir1, dir2, dir3, userId, extraPath);
   return resultPath;
 }
 
 /**
  * Return the full file path for this attachment
- * @param {string} userId 
+ * @param {string} userId
  * @param {string} eventId
  * @param {string} fileId
- * @param {boolean} [ensureDirs] - default: false creates needed directories if set 
+ * @param {boolean} [ensureDirs] - default: false creates needed directories if set
  */
 function pathForAttachment(userId, eventId, fileId, ensureDirs = false) {
   if (attachmentsBasePath == null) {
@@ -66,7 +66,7 @@ function pathForAttachment(userId, eventId, fileId, ensureDirs = false) {
 
 /**
  * Delete user data folder
- * 
+ *
  * @param {*} userId -- user id
  */
 async function deleteUserDirectory(userId) {

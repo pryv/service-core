@@ -41,7 +41,7 @@ class LocalUserEvents extends DataStore.UserEvents {
 
       const query = {userId: userId, _id: update._id};
       const options = {transactionSession: transaction?.transactionSession };
-      
+
       const res = await this.eventsCollection.replaceOne(query, update, options);
       const res2 = await this.eventsCollection.findOne({userId: userId, _id: update._id});
       return (res.modifiedCount === 1); // true if an event was updated
@@ -77,10 +77,10 @@ class LocalUserEvents extends DataStore.UserEvents {
     return attachmentsResponse;
   }
 
-  async attachmentDelete(uid: string, eventData, attachmentId: string, transaction?: Transaction) { 
+  async attachmentDelete(userId: string, eventData, attachmentId: string, transaction?: Transaction) {
     for (const attachment of eventData.attachments) {
       if (attachment.id === attachmentId) {
-        await this.eventsFileStorage.removeAttachedFile(uid, eventData.id, attachmentId);
+        await this.eventsFileStorage.removeAttachedFile(userId, eventData.id, attachmentId);
         return true;
       }
     }
@@ -109,7 +109,7 @@ class LocalUserEvents extends DataStore.UserEvents {
           if (! await cursor.hasNext()) { readableUnderPressure.push(null); break; } // stop
           const value = await cursor.next();
           push = readableUnderPressure.push(cleanResult({value})); // if null reader is "full"
-        } 
+        }
       } catch (err) {
         readableUnderPressure.emit('error', err);
       }
@@ -136,7 +136,7 @@ class LocalUserEvents extends DataStore.UserEvents {
     for (const eventWithAttachment of eventsWithAttachments) {
       await this.eventsFileStorage.removeAllForEvent(userId, eventWithAttachment._id);
     }
-    
+
     return await this.eventsCollection.deleteMany(query, options);
   }
 
@@ -145,7 +145,7 @@ class LocalUserEvents extends DataStore.UserEvents {
     return await this.eventsCollection.deleteMany(query, {});
   }
 
-  async _storageUsedForUser(userId: string) { 
+  async _storageUsedForUser(userId: string) {
     return await (await this.eventsCollection.find({userId})).count();
   }
 }
@@ -155,9 +155,9 @@ module.exports = LocalUserEvents;
 //--------------- helpers ------------//
 
 /**
- * change _id to id and remove userId from result 
- * @param {any}  
- * @returns 
+ * change _id to id and remove userId from result
+ * @param {any}
+ * @returns
  */
 function cleanResult(result) {
   if (result?.value == null) return result;
@@ -172,23 +172,23 @@ function cleanResult(result) {
 
 
 const converters = {
-  equal: (content) => { 
+  equal: (content) => {
     const realfield = (content.field === 'id') ? '_id' : content.field;
     return {[realfield]: {$eq : content.value}}
   },
-  greater: (content) => { 
+  greater: (content) => {
     return {[content.field]: {$gt :content.value}}
   },
-  greaterOrEqual: (content) => { 
+  greaterOrEqual: (content) => {
     return {[content.field]: {$gte :content.value}}
   },
-  lowerOrEqual: (content) => { 
+  lowerOrEqual: (content) => {
     return {[content.field]: {$lte :content.value}}
   },
-  greaterOrEqualOrNull: (content) => { 
+  greaterOrEqualOrNull: (content) => {
     return { $or: [{ [content.field]: { $gte: content.value } }, { [content.field]: null }] }
   },
-  typesList: (list) => { 
+  typesList: (list) => {
     if (list.length == 0) return null;
     return {type: {$in: list.map(getTypeQueryValue)}}
   },
@@ -199,9 +199,9 @@ const converters = {
 
 
 /**
- * transform params to mongoQuery 
- * @param {*} requestedType 
- * @returns 
+ * transform params to mongoQuery
+ * @param {*} requestedType
+ * @returns
  */
 function paramsToMongoquery(params) {
   const options = {
@@ -210,8 +210,8 @@ function paramsToMongoquery(params) {
     sort: params.options.sort,
   }
   const query = {$and: []};
-  
-  
+
+
   for (const item of params.query) {
     const newCondition = converters[item.type](item.content);
     if (newCondition != null) {
@@ -234,4 +234,3 @@ function getTypeQueryValue(requestedType) {
     new RegExp('^' + requestedType.substr(0, wildcardIndex + 1)) :
     requestedType;
 }
-
