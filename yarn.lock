@@ -1213,9 +1213,9 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
-"@pryv/boiler@https://github.com/pryv/lib-node-boiler.git#1.0.5":
+"@pryv/boiler@https://github.com/pryv/pryv-boiler.git#1.0.5":
   version "1.0.5"
-  resolved "https://github.com/pryv/lib-node-boiler.git#895f64392c0d82b24f45cff58806c790bfdf1966"
+  resolved "https://github.com/pryv/pryv-boiler.git#895f64392c0d82b24f45cff58806c790bfdf1966"
   dependencies:
     "@airbrake/node" "^1.4.2"
     debug "^4.3.1"
@@ -5329,10 +5329,10 @@ napi-build-utils@^1.0.1:
   resolved "https://registry.yarnpkg.com/napi-build-utils/-/napi-build-utils-1.0.2.tgz#b1fddc0b2c46e380a0b7a76f984dd47c41a13806"
   integrity sha512-ONmRUqK7zj7DWX0D9ADe03wbwOBZxNAfF20PlGfCWQcD3+/MakShIHrMqx9YwPTfxDdF1zLeL+RGZiR9kGMLdg==
 
-nats@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/nats/-/nats-2.1.0.tgz#1ff960710e257d0fa7855ad86562248659d644e4"
-  integrity sha512-4SuNeQEwl3CwgnW7GyiQG82CWRrTPvPrtUp7Wi2hsmLI8PunIvitiMjwHXRMSFdMN7Cy97lguLRuORZcocVk0Q==
+nats@^2.7.1:
+  version "2.7.1"
+  resolved "https://registry.yarnpkg.com/nats/-/nats-2.7.1.tgz#d390a48df1a348a335143abc09afad03b2eb9687"
+  integrity sha512-aH0OXxasfLCTG+LQCFRaWoL1kqejCQg7B+t4z++JgLPgfdpQMET1Rqo95I06DEQyIJGTTgYpxkI/zC0ul8V3pw==
   dependencies:
     nkeys.js "^1.0.0-9"
 

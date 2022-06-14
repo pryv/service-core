@@ -30,9 +30,9 @@ describe('backward-compatibility', () => {
     before(async () => {
       config = await getConfig();
       tagPrefix = config.get('backward')
-    
+
       mongoFixtures = databaseFixture(await produceMongoConnection());
-  
+
       username = cuid();
       token = cuid();
       const user = await mongoFixtures.user(username);
@@ -44,10 +44,10 @@ describe('backward-compatibility', () => {
       await user.access({ token, type: 'personal' });
       await user.session(token);
 
-      server = await context.spawn({ 
+      server = await context.spawn({
         backwardCompatibility: { systemStreams: { prefix: { isActive: true } } },
         dnsLess: { isActive: true }, // so updating account streams does not notify register
-        versioning: { 
+        versioning: {
           deletionMode: 'keep-everything',
           forceKeepHistory: true,
         },
@@ -178,7 +178,7 @@ describe('backward-compatibility', () => {
     const DOT = '.';
     const PRYV_PREFIX = ':_system:';
     const CUSTOMER_PREFIX = ':system:';
-  
+
     let config;
     let mongoFixtures;
     let server;
@@ -187,9 +187,9 @@ describe('backward-compatibility', () => {
     let systemEventId;
     before(async () => {
       config = await getConfig();
-    
+
       mongoFixtures = databaseFixture(await produceMongoConnection());
-  
+
       username = cuid();
       token = cuid();
       const user = await mongoFixtures.user(username);
@@ -211,21 +211,21 @@ describe('backward-compatibility', () => {
         }],
       });
       const accessId = access.attrs.id;
-  
+
       await user.access({ token, type: 'personal' });
       await user.session(token);
-  
-      server = await context.spawn({ 
+
+      server = await context.spawn({
         backwardCompatibility: { systemStreams: { prefix: { isActive: true } } },
         dnsLess: { isActive: true }, // so updating account streams does not notify register
-        versioning: { 
+        versioning: {
           deletionMode: 'keep-everything',
           forceKeepHistory: true,
         },
       });
-  
+
       await del(`/${username}/accesses/${accessId}`);
-  
+
       const res = await get(`/${username}/events`);
       const systemEvent = res.body.events.find(e => e.streamIds.includes('.language'));
       systemEventId = systemEvent.id;
@@ -238,13 +238,13 @@ describe('backward-compatibility', () => {
         content: charlatan.Lorem.characters(2),
       });
     });
-  
+
     after(async () => {
       await server.stop();
       await mongoFixtures.clean();
       config.injectTestConfig({});
     });
-  
+
     function checkOldPrefixes(streamIds) {
       for (const streamId of streamIds) {
         checkOldPrefix(streamId);
@@ -257,7 +257,7 @@ describe('backward-compatibility', () => {
      */
     function checkOldPrefix(streamId) {
       if (streamId.startsWith(DOT)) {
-        
+
         const streamIdWithoutPrefix = removeDot(streamId);
         let customStreamIdVariant, privateStreamIdVariant
         try { customStreamIdVariant = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamIdWithoutPrefix); } catch (e) {}
@@ -300,7 +300,7 @@ describe('backward-compatibility', () => {
     }
 
     describe(' Account streams reserved words', () => {
-      it('[4L48] Can create an "account" stream, and add event to it', async () => { 
+      it('[4L48] Can create an "account" stream, and add event to it', async () => {
         const batchOps = [
           {
             method: 'streams.create',
@@ -334,7 +334,7 @@ describe('backward-compatibility', () => {
         assert.equal(results[2]?.events?.[0]?.streamId, 'account', 'event should have been returned in account stream');
       });
     });
-  
+
     describe('events', () => {
       it('[Q40I] must return old prefixes in events.get', async () => {
         const res = await get(`/${username}/events`);
@@ -379,13 +379,22 @@ describe('backward-compatibility', () => {
         checkOldPrefixes(res.body.event.streamIds);
       });
     });
+
     describe('streams', () => {
       it('[WY07] must return old prefixes in streams.get', async () => {
         const res = await get(`/${username}/streams/`);
         assert.isNotEmpty(res.body.streams);
+
         for (const stream of res.body.streams) {
+          checkStream(stream);
+        }
+
+        function checkStream (stream) {
           checkOldPrefix(stream.id);
           if (stream.parentId != null) checkOldPrefix(stream.parentId);
+          for (const child of stream.children) {
+            checkStream(child);
+          }
         }
       });
       it('[YJS6] must accept old prefixes in streams.get', async () => {
@@ -418,6 +427,7 @@ describe('backward-compatibility', () => {
         assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
       });
     });
+
     describe('accesses', () => {
       it('[UDJF] must return old prefixes in accesses.get', async () => {
         const res = await get(`/${username}/accesses/`, {
@@ -440,7 +450,6 @@ describe('backward-compatibility', () => {
             checkOldPrefix(permission.streamId);
           }
         }
-        
       });
       it('[DWWD] must accept old prefixes in accesses.create', async () => {
         const res = await post(`/${username}/accesses/`, {
@@ -457,9 +466,9 @@ describe('backward-compatibility', () => {
         assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
       });
     });
-  
+
     describe('when disabling backward compatibility using the header param to use new prefixes', () => {
-  
+
       before(async () => {
         const res = await get(`/${username}/events`);
         const systemEvent = res.body.events.find(e => e.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')));
@@ -473,7 +482,7 @@ describe('backward-compatibility', () => {
           content: charlatan.Lorem.characters(2),
         });
       })
-  
+
       async function post(path, payload, query) {
         return await server.request()
           .post(path)
@@ -504,7 +513,7 @@ describe('backward-compatibility', () => {
           .set('Authorization', token)
           .query(query);
       }
-  
+
       function checkNewPrefixes(streamIds) {
         for (const streamId of streamIds) {
           checkNewPrefix(streamId);
@@ -513,12 +522,12 @@ describe('backward-compatibility', () => {
       function checkNewPrefix(streamId) {
         assert.isFalse(streamId.startsWith(DOT), `streamId "${streamId}" starts with "${DOT}"`);
         if (! SystemStreamsSerializer.isSystemStreamId(streamId)) return;
-        if (SystemStreamsSerializer.isPrivateSystemStreamId(streamId)) 
+        if (SystemStreamsSerializer.isPrivateSystemStreamId(streamId))
           assert.isTrue(streamId.startsWith(PRYV_PREFIX), `streamId "${streamId}" does not start with "${PRYV_PREFIX}"`);
         if (SystemStreamsSerializer.isCustomerSystemStreamId(streamId))
           assert.isTrue(streamId.startsWith(CUSTOMER_PREFIX), `streamId "${streamId}" does not start with "${CUSTOMER_PREFIX}"`);
       }
-  
+
       describe('events', () => {
         it('[CZN1] must return new prefixes in events.get', async () => {
           const res = await get(`/${username}/events`);
@@ -624,7 +633,7 @@ describe('backward-compatibility', () => {
               checkNewPrefix(permission.streamId);
             }
           }
-          
+
         });
         it('[GFRT] must accept new prefixes in accesses.create', async () => {
           const res = await post(`/${username}/accesses/`, {
@@ -644,5 +653,5 @@ describe('backward-compatibility', () => {
     })
   });
 
-  
+
 });
