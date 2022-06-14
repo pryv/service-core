@@ -192,7 +192,6 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyDefaultsForCreation,
     applyPrerequisitesForCreation,
-    checkParentStreamForCreation,
     createStream);
 
   function applyDefaultsForCreation(context, params, result, next) {
@@ -211,9 +210,9 @@ module.exports = async function (api) {
       if (parentStream.length === 0) {
         return next(errors.unknownReferencedResource('unknown Stream:', 'parentId', params.parentId, null));
       }
-      if (parentStream.trashed != null) { // trashed parent
+      if (parentStream[0].trashed != null) { // trashed parent
         return next(errors.invalidOperation(
-          'parent stream is trashed', 'parentId', params.update.parentId
+          'parent stream is trashed', 'parentId', params.parentId
         ));
       }
     }
@@ -234,27 +233,6 @@ module.exports = async function (api) {
     context.initTrackingProperties(params);
 
     next();
-  }
-
-  /**
-   * check if there is a parent stream and if it exists or is not trashed
-   */
-  async function checkParentStreamForCreation(context, params, result, next) {
-
-    if (params.parentId != null) {
-      const parentStreams = await mall.streams.get(context.user.id, {id: params.parentId, includeTrashed: true});
-      if (parentStreams.length === 0) {
-        return next(errors.unknownReferencedResource(
-          'parent stream', 'parentId', params.parentId
-        ));
-      } else if (parentStreams[0].trashed) {
-        return next(errors.invalidOperation(
-          'parent stream is trashed', 'parentId', params.parentId
-        ));
-      }
-    }
-    return next();
-
   }
 
   async function createStream(context, params, result, next) {
