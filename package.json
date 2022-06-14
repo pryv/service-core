@@ -52,7 +52,7 @@
   },
   "dependencies": {
     "@pryv/boiler": "https://github.com/pryv/pryv-boiler.git#1.0.5",
-    "async": "^2.5.0",
+    "async": "^2.6.4",
     "awaiting": "^3.0.0",
     "axon": "2.0.x",
     "bcrypt": "^5.0.0",
