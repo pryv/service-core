@@ -39,9 +39,9 @@ function Events (database) {
       addIntegrity,
     ],
     itemsToDB: [
-      function (items) { 
-        if (items == null) return null;  
-        const res = items.map(e => addIntegrity(converters.stateToDB(converters.deletionToDB(durationToEndTime(e))))); 
+      function (items) {
+        if (items == null) return null;
+        const res = items.map(e => addIntegrity(converters.stateToDB(converters.deletionToDB(durationToEndTime(e)))));
         return res;
       }
     ],
@@ -55,9 +55,9 @@ function Events (database) {
       converters.deletionFromDB,
     ],
     itemsFromDB: [
-      function (items) { 
-        if (items == null) return null;  
-        const res = items.map(e => converters.deletionFromDB(endTimeToDuration(e))); 
+      function (items) {
+        if (items == null) return null;
+        const res = items.map(e => converters.deletionFromDB(endTimeToDuration(e)));
         return res;
       }
     ],
@@ -80,7 +80,7 @@ function durationToEndTime (eventData) {
     //console.log('endTime should no be defined ', {id: eventData.id, endTime: eventData.endTime, duration: eventData.duration});
     return eventData;
   }
-  if (eventData.duration === null) { // exactly null 
+  if (eventData.duration === null) { // exactly null
     eventData.endTime = null;
   } else if (eventData.duration === undefined) { // (no undefined)
     // event.time is not defined for deleted events
@@ -139,11 +139,11 @@ function getDbIndexes () {
       options: {},
     },
     {
-      index: { tags: 1 },
+      index: { type: 1 },
       options: {},
     },
     {
-      index: {integrityBatchCode: 1},
+      index: { integrityBatchCode: 1 },
       options: {},
     },
     // no index by content until we have more actual usage feedback
@@ -185,9 +185,9 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
   if (integrity.events.isActive) {
     cb = function callbackIntegrity(err, eventData) {
       if (err || (eventData?.id == null)) return callback(err, eventData);
-  
+
       const integrityCheck = eventData.integrity;
-      try { 
+      try {
         integrity.events.set(eventData, true);
       } catch (errIntegrity) {
         return callback(errIntegrity, eventData);
@@ -196,7 +196,7 @@ Events.prototype.updateOne = function (userOrUserId, query, update, callback) {
       if (integrityCheck != eventData.integrity) {
         // could be optimized by using "updateOne" instead of findOne and update
         return Events.super_.prototype.findOneAndUpdate.call(that, userOrUserId, {_id: eventData.id}, {integrity: eventData.integrity}, callback);
-      } 
+      }
       callback(err, eventData);
     }
   }
@@ -407,10 +407,10 @@ Events.prototype.delete = function (userOrUserId, query, deletionMode, callback)
 /**
  * - Allways unset 'integrity' of updated events by modifiying update query
  * - If integrity is active for event returns a callBack to be exectued at after the update
- * @param {Events} eventStore 
- * @param {User | userId} userOrUserId 
+ * @param {Events} eventStore
+ * @param {User | userId} userOrUserId
  * @param {Object} upddate -- the update query to be modified
- * @param {*} callback 
+ * @param {*} callback
  * @returns either the original callback or a process to reset events' integrity
  */
 function getResetIntegrity(eventStore, userOrUserId, update, callback) {
@@ -423,7 +423,7 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
 
   // add a random "code" to the original update find out which events have been modified
   const integrityBatchCode = Math.random();
-  // hard coded cases when syntax changes .. to be evaluated 
+  // hard coded cases when syntax changes .. to be evaluated
   if(update['streamIds.$'] != null || update.$pull != null) {
     update.integrityBatchCode = integrityBatchCode;
   } else {
@@ -437,7 +437,7 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
     const initialModifiedCount = res.modifiedCount;
 
     // will be called for each updated item
-    // we should remove the "integrityBatchCode" that helped finding them out 
+    // we should remove the "integrityBatchCode" that helped finding them out
     // and add the integrity value
     function updateIfNeeded(event) {
       delete event.integrityBatchCode; // remove integrity batch code for computation
@@ -454,12 +454,12 @@ function getResetIntegrity(eventStore, userOrUserId, update, callback) {
       if (err2) return callback(err2);
       if (res2.count != initialModifiedCount) { // updated documents counts does not match
         logger.error('Issue when adding integrity to updated events for ' + JSON.stringify(userOrUserId) + ' counts does not match');
-        // eventually throw an error here.. But this will not help the API client .. 
+        // eventually throw an error here.. But this will not help the API client ..
         // to be discussed !
       }
       return callback(err2, res2);
     }
-    
+
     eventStore.findAndUpdateIfNeeded(userOrUserId, {integrityBatchCode: integrityBatchCode}, {}, updateIfNeeded, doneCallBack);
   }
 }
