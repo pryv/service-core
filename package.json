@@ -61,7 +61,7 @@
     "cls-hooked": "^4.2.2",
     "cookie-parser": "^1.4.3",
     "cron": "^1.2.1",
-    "cross-fetch": "^3.0.6",
+    "cross-fetch": "^3.1.5",
     "express": "^4",
     "flow-bin": "^0.113.0",
     "heap": "^0.2.6",
