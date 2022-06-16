@@ -20,6 +20,7 @@ describe('config: serviceInfo', () => {
   before(async () => {
     config = await getConfig();
     isOpenSource = config.get('openSource:isActive');
+    config.injectTestConfig({dnsLess: {isActive: true}});
   });
 
 

@@ -214,7 +214,7 @@ class UsersRepository {
         const operations = this.uniqueFields.map(key => { 
           return {action: 'create', key: key, value: user[key], isUnique: true};
         }); 
-        await this.platform.updateUser(user.username, operations, true, true);
+        await this.platform.updateUserAndForward(user.username, operations, true, true);
         
         await this.mall.events.createMany(user.id, events, mallTransaction);
       }

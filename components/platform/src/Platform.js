@@ -23,12 +23,12 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
  */
 class Platform {
   #initialized;
-  db;
-  serviceRegisterConn;
+  #db;
+  #serviceRegisterConn;
 
   constructor() {
     this.#initialized = false;
-    this.db = new PlatformWideDB();
+    this.#db = new PlatformWideDB();
   }
 
   async init() {
@@ -39,16 +39,17 @@ class Platform {
     this.initialized = true;
     const config = await getConfig();
     const isDnsLess = config.get('dnsLess:isActive');
-    await this.db.init();
+    await this.#db.init();
     if (! isDnsLess) {
-      this.serviceRegisterConn = await getServiceRegisterConn();
+      this.#serviceRegisterConn = await getServiceRegisterConn();
     }
 
     return this;
   }
 
+  // for tests only - called by repository 
   async deleteAll() {
-    this.db.reset();
+    this.#db.reset();
   }
 
   /**
@@ -59,31 +60,38 @@ class Platform {
    */
   async getUserUniqueField(field, value) {
     const key = 'user-unique/' + field + '/' + value;
-    return this.db.getOne(key);
+    $$('Forward this request to register');
+    return this.#db.getOne(key);
   }
 
   /**
+   * @private as long as we don't use a distributed db. 
    * Set a unique key for this value. 
+   * @see updateUserAndForward to change a unique field
    * @param {string} field example 'email'
    * @param {string} value example 'bob@bob.com'
    * @param {string} username 
    */
-  async setUserUniqueField(username, field, value) {
+  async #setUserUniqueField(username, field, value) {
     const key = 'user-unique/' + field + '/' + value;
-    this.db.set(key, username);
+    this.#db.set(key, username);
   }
 
   /**
+   * @private as long as we don't use a distributed db. 
+   * @see updateUserAndForward to delete a unique field
    * Delete a unique key for this user. 
    * @param {string} field example 'email'
    * @param {string} value example 'bob@bob.com'
    */
-   async deleteUserUniqueField(field, value) {
+   async #deleteUserUniqueField(field, value) {
     const key = 'user-unique/' + field + '/' + value;
-    this.db.delete(key);
+    this.#db.delete(key);
   }
 
   /**
+   * @private as long as we don't use a distributed db. 
+   * @see updateUserAndForward to delete an indexed field
    * Set a user indexed field. 
    * Mock etcd implementation of prefixes 
    * @param {*} username 
@@ -91,32 +99,34 @@ class Platform {
    * @param {*} isActive 
    * @param {*} isCreation 
    */
-  async setUserIndexedField(username, field, value) {
+  async #setUserIndexedField(username, field, value) {
     const key = 'user-indexed/' + field + '/' + username;
-    this.db.set(key, value);
+    this.#db.set(key, value);
   }
 
-  async deleteUserIndexedField(username, field) {
+  async #deleteUserIndexedField(username, field) {
     const key = 'user-indexed/' + field + '/' + username;
-    this.db.delete(key);
+    this.#db.delete(key);
   }
 
   async updateUserAndForward(username, operations, isActive, isCreation) {
-    await this.updateUser(username, operations, isActive, isCreation);
-    if (this.serviceRegisterConn != null) {
+    await this.#updateUser(username, operations, isActive, isCreation);
+    if (this.#serviceRegisterConn != null) {
       const ops2 = operations.map(op => {
         const action = op.action == 'delete' ? 'delete' : 'update';
         return {[action]: {key: op.key, value: op.value, isUnique: op.isUnique}};
       });
-      await this.serviceRegisterConn.updateUserInServiceRegister(username, ops2, isActive, isCreation);
+      await this.#serviceRegisterConn.updateUserInServiceRegister(username, ops2, isActive, isCreation);
     }
   }
 
   /**
+   * @private as long as we don't use a distributed db. 
+   * @see updateUserAndForward to update an user
    * Replace updateUserInServiceRegister()
    * @param {*} key 
    */
-  async updateUser(username, operations, isActive, isCreation) {
+  async #updateUser(username, operations, isActive, isCreation) {
     // otherwise deletion
     for (const op of operations) {
       switch (op.action) {
@@ -126,9 +136,9 @@ class Platform {
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
             }
-            await this.setUserUniqueField(username, op.key, op.value);
+            await this.#setUserUniqueField(username, op.key, op.value);
           } else { // is Indexed
-            await this.setUserIndexedField(username, op.key, op.value);
+            await this.#setUserIndexedField(username, op.key, op.value);
           }
           break;
 
@@ -137,17 +147,17 @@ class Platform {
             const existingUsernameValue = await this.getUserUniqueField(op.key, op.previousValue);
             if (existingUsernameValue !== null && existingUsernameValue === username) {
               // only delete eventual existing value if it is the same user
-              await this.deleteUserUniqueField(op.key, op.previousValue);
+              await this.#deleteUserUniqueField(op.key, op.previousValue);
             }
           
             const potentialCollisionUsername = await this.getUserUniqueField(op.key, op.value);
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
             }
-            await this.setUserUniqueField(username, op.key, op.value);
+            await this.#setUserUniqueField(username, op.key, op.value);
           } else { // is Indexed
-            await this.deleteUserUniqueField(op.key, op.previousValue);
-            await this.setUserIndexedField(username, op.key, op.value);
+            await this.#deleteUserUniqueField(op.key, op.previousValue);
+            await this.#setUserIndexedField(username, op.key, op.value);
           }
           break;
 
@@ -158,10 +168,10 @@ class Platform {
               throw (errors.forbidden('unique field ' + op.key + ' with value ' + op.value + ' is associated to another user'));
             }
             if (existingValue != null) {
-              await this.deleteUserUniqueField(op.key, op.value);
+              await this.#deleteUserUniqueField(op.key, op.value);
             }
           } else { // is Indexed
-            await this.deleteUserIndexedField(username, op.key);
+            await this.#deleteUserIndexedField(username, op.key);
           }
           break;
 
@@ -191,12 +201,12 @@ class Platform {
       operations.push({action: 'delete', key: field, isUnique: false});
     }
 
-    await this.updateUser(username, operations, false, false);
+    await this.#updateUser(username, operations, false, false);
 
     // forward to register
-    if (this.serviceRegisterConn) {
+    if (this.#serviceRegisterConn) {
       try {
-        const res = await this.serviceRegisterConn.deleteUser(username);
+        const res = await this.#serviceRegisterConn.deleteUser(username);
         logger.debug('on register: ' + username, res);
       } catch (e) { // user might have been deleted register we do not FW error just log it
         logger.error(e);
@@ -211,7 +221,7 @@ class Platform {
    * Check if username is available (FW to service register)
    */
   async isUsernameReserved(username) {
-    if (this.serviceRegisterConn) {
+    if (this.#serviceRegisterConn) {
       const response = await serviceRegisterConn.checkUsername(username);
       if (response.reserved === true) {
         return true;
@@ -224,14 +234,14 @@ class Platform {
    * Validate user and pre-register it (FW to service register)
    */
   async createUserStep1_ValidateUser(username, invitationToken, uniqueFields, hostname) {
-    await this.serviceRegisterConn.validateUser(username, invitationToken, uniqueFields, hostname);
+    await this.#serviceRegisterConn.validateUser(username, invitationToken, uniqueFields, hostname);
   }
 
   /**
    * Validate user and pre-register it (FW to service register)
    */
    async createUserStep2_CreateUser(userData) {
-    await this.serviceRegisterConn.createUser(userData);
+    await this.#serviceRegisterConn.createUser(userData);
   }
 
 
