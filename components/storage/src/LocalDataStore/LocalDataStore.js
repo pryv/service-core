@@ -112,6 +112,10 @@ const eventsIndexes = [
     index: { userId: 1, streamIds: 1 },
     options: {},
   },
+  {
+    index: { userId: 1, type: 1 },
+    options: {},
+  },
   // no index by content until we have more actual usage feedback
   {
     index: { userId: 1, trashed: 1 },

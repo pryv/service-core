@@ -68,6 +68,7 @@ function changePrefixIdForStreams(streams: Array<Stream>, toOldPrefix: boolean =
   for (const stream of streams) {
     stream.id = changeFunction(stream.id);
     if (stream.parentId != null) stream.parentId = changeFunction(stream.parentId);
+    if (stream.children?.length > 0) changePrefixIdForStreams(stream.children, toOldPrefix);
   }
   return streams;
 }
