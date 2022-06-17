@@ -109,8 +109,9 @@ class Platform {
     this.#db.delete(key);
   }
 
-  async updateUserAndForward(username, operations, isActive, isCreation) {
+  async updateUserAndForward(username, operations, isActive, isCreation, skipFowardToRegister = false) {
     await this.#updateUser(username, operations, isActive, isCreation);
+    if (skipFowardToRegister) return; // in fixture tests
     if (this.#serviceRegisterConn != null) {
       const ops2 = operations.map(op => {
         const action = op.action == 'delete' ? 'delete' : 'update';

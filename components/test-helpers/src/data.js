@@ -40,7 +40,7 @@ exports.resetUsers = async () => {
 
   for (const user of users) {
     const userObj: User = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
-    await usersRepository.insertOne(userObj);
+    await usersRepository.insertOne(userObj, false, true);
   }
 };
 
