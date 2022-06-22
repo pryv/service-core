@@ -177,7 +177,7 @@ class UsersRepository {
     return true;
   }
 
-  async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
+  async insertOne(user: User, withSession: ?boolean = false, skipFowardToRegister: ?boolean = false): Promise<User> {
     await this.checkDuplicates(user, user.username);
 
     const mallTransaction = await this.mall.newTransaction();
@@ -214,7 +214,7 @@ class UsersRepository {
         const operations = this.uniqueFields.map(key => { 
           return {action: 'create', key: key, value: user[key], isUnique: true};
         }); 
-        await this.platform.updateUserAndForward(user.username, operations, true, true);
+        await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
         
         await this.mall.events.createMany(user.id, events, mallTransaction);
       }
