@@ -330,6 +330,9 @@ describe('[PGTD] DELETE /users/:username', () => {
       nock(regUrl).post('/users', () => {return true;}).times(2)
         .reply(201, {username: usernamex});
 
+      nock(regUrl).put('/users', () => {return true;}).times(2)
+        .reply(200, {ok: true});
+
       await createUser();
       await deleteUser();
       await createUser();
