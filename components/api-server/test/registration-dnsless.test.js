@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+const nock = require('nock');
 const assert = require('chai').assert;
 const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
@@ -28,6 +29,7 @@ describe('[BMM2] registration: DNS-less', () => {
   let request;
   let res;
   before(async function () {
+    nock.cleanAll();
     config = await getConfig();
     config.injectTestConfig({
       dnsLess: {isActive: true},
@@ -72,6 +74,7 @@ describe('[BMM2] registration: DNS-less', () => {
       let registerData;
       before(async function() {
         registerData = generateRegisterBody();
+        nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
         res = await request.post('/users').send(registerData);
       });
       it('[KB3T] should respond with status 201', function() {
@@ -186,10 +189,12 @@ describe('[BMM2] registration: DNS-less', () => {
         let registerData;
         before(async function () {
           const registerData1ReuseUsername = generateRegisterBody();
+          nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
           res = await request.post('/users').send(registerData1ReuseUsername);
           assert.equal(res.status, 201);
 
           const registerData1ReuseEmail = generateRegisterBody();
+          nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
           res = await request.post('/users').send(registerData1ReuseEmail);
           assert.equal(res.status, 201);
 
@@ -197,7 +202,7 @@ describe('[BMM2] registration: DNS-less', () => {
           registerData = generateRegisterBody();
           registerData.username = registerData1ReuseUsername.username;
           registerData.email = registerData1ReuseEmail.email;
-
+          nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
           res = await request.post('/users').send(registerData);
         });
         it('[LZ1K] should respond with status 409', function() {

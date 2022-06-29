@@ -194,7 +194,7 @@ class ServiceRegister {
       }else{
         // do not log validation errors
         this.logger.error(err, err);
-        if (false && process.env.NODE_ENV === 'test') { // <=== To be reviewed is this sustainable ? 
+        if (false && process.env.NODE_ENV === 'test') { // <=== To be removed -- this is not sustainable 
           $$(err.message);
         } else {
           throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));

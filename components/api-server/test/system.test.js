@@ -19,6 +19,7 @@ const assert = require('chai').assert;
 const bluebird = require('bluebird');
 const os = require('os');
 const fs = require('fs');
+const nock = require('nock');
 
 const helpers = require('./helpers');
 const ErrorIds = require('errors').ErrorIds;
@@ -37,13 +38,14 @@ const { getConfig } = require('@pryv/boiler');
 
 require('date-utils');
 
-
 describe('system route', function () {
   let mongoFixtures,
     username, 
-    server;
+    server, 
+    config;
 
   before(async function() {
+    config = await getConfig();
     mongoFixtures = databaseFixture(await produceMongoConnection());
     username = 'system-test';
     server = await context.spawn();
@@ -68,7 +70,6 @@ describe('system route', function () {
     let username, mfaPath, profilePath, res, profileRes, token, restOfProfile;
     
     before(async () => {
-      config = await getConfig();
       username = charlatan.Lorem.characters(10);
       token = cuid();
       mfaPath = `/system/users/${username}/mfa`;
@@ -108,7 +109,7 @@ describe('system route', function () {
 });
 
 describe('system (ex-register)', function () {
-  let mongoFixtures;
+  let mongoFixtures, config;
   
   this.timeout(5000);
   function basePath() {
@@ -116,6 +117,7 @@ describe('system (ex-register)', function () {
   }
 
   before(async function () {
+    config = await getConfig();
     mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.context.cleanEverything();
   });
@@ -169,10 +171,11 @@ describe('system (ex-register)', function () {
         let originalCount;
             
         // setup mail server mock
+        //nock.cleanAll();
         helpers.instanceTestSetup.set(settings, {
           context: settings.services.email,
           execute: function () {
-            require('nock')(this.context.url)
+            nock(this.context.url)
               .post('')
               .reply(200, function (uri, body) {
                 body.message.global_merge_vars[0].content.should.be.equal('mr-dupotager');
@@ -233,10 +236,11 @@ describe('system (ex-register)', function () {
     
     function testWelcomeMailNotSent (settings, callback) {
       // setup mail server mock
+      //nock.cleanAll();
       helpers.instanceTestSetup.set(settings, {
         context: settings.services.email,
         execute: function () {
-          require('nock')(this.context.url).post(this.context.sendMessagePath)
+          nock(this.context.url).post(this.context.sendMessagePath)
             .reply(200, function () {
               this.context.testNotifier.emit('mail-sent2');
             }.bind(this));
@@ -279,7 +283,7 @@ describe('system (ex-register)', function () {
           helpers.instanceTestSetup.set(settings, {
             context: settings.services.email,
             execute: function () {
-              require('nock')(this.context.url).persist()
+              nock(this.context.url).persist()
                 .post(this.context.sendMessagePath)
                 .reply(200);
             }

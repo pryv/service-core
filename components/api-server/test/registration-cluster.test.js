@@ -119,13 +119,14 @@ describe('registration: cluster', function() {
   }
 
   describe('POST /users (create user)', function() {
+
     describe('[WAUW] when a user with the same username (not email) already exists in core but not in register', () => {
       let oldEmail, firstUser, secondUser, firstValidationRequest, firstRegistrationRequest;
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
         serviceRegisterRequestsPUT = [];
-
+        nock.cleanAll();
         nock(regUrl)
           .post('/users/validate', (body) => {
             serviceRegisterRequests.push(body);
@@ -142,7 +143,7 @@ describe('registration: cluster', function() {
           .reply(200, {
             username: 'anyusername'
           });
-          nock(regUrl)
+        nock(regUrl)
           .put('/users', (body) => {
             serviceRegisterRequestsPUT.push(body);
             return true;
@@ -196,7 +197,6 @@ describe('registration: cluster', function() {
         assert.deepEqual(secondRegistrationSent, secondRegistrationRequest, ' second registration request is invalid');
         
         const users = [firstUser, secondUser];
-        $$({serviceRegisterRequestsPUT, users})
         assert.equal(serviceRegisterRequestsPUT.length, users.length, 'should have recieved 2 PUT requests');
         for (let i = 0; i < serviceRegisterRequestsPUT.length ; i++) {
           const putRequest = serviceRegisterRequestsPUT[i];
@@ -247,7 +247,14 @@ describe('registration: cluster', function() {
           .reply(200, {
             username: 'anyusername'
           });
-
+        nock(regUrl)
+          .put('/users', (body) => {
+            return true;
+          })
+          .times(2)
+          .reply(200, {
+            ok: true
+          });
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = buildValidationRequest(userData)
         firstRegistrationRequest = buildRegistrationRequest(userData);
@@ -442,6 +449,13 @@ describe('registration: cluster', function() {
             .reply(200, {
               username: userData.username
             });
+          nock(regUrl)
+            .put('/users', (body) => {
+              return true;
+            })
+            .reply(201, {
+              ok: true
+            });
           res = await request.post(methodPath).send(userData);
         });
         it('[CMOV] should respond with status 201', () => {
@@ -474,6 +488,13 @@ describe('registration: cluster', function() {
             })
             .reply(200, {
               username: userData.username,
+            });
+          nock(regUrl)
+            .put('/users', (body) => {
+              return true;
+            })
+            .reply(201, {
+              ok: true,
             });
           res = await request.post(methodPath).send(userData);
         });
@@ -510,6 +531,13 @@ describe('registration: cluster', function() {
             })
             .reply(200, {
               username: userData.username,
+            });
+          nock(regUrl)
+            .put('/users', (body) => {
+              return true;
+            })
+            .reply(200, {
+              ok: true,
             });
           res = await request.post(methodPath).send(userData);
         });
