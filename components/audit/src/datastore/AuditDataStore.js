@@ -4,47 +4,29 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+const ds = require('pryv-datastore');
+const auditUserEvents = require('./AuditUserEvents');
+const auditUserStreams = require('./AuditUserStreams');
+
 /**
- * Audit Data Store.
- * Send predicatable static data
+ * Audit data store.
  */
+module.exports = ds.createDataStore({
+  id: '_audit',
+  name: 'Audit store',
 
-
-const { DataStore }  = require('pryv-datastore');
-
-const AuditUserEvents = require('./AuditUserEvents');
-const AuditUserStreams = require('./AuditUserStreams');
-
-const audit = require('audit');
-
-const STORE_ID = '_audit';
-const STORE_NAME = 'Audit Store';
-
-class AuditDataStore extends DataStore {
-  _streams;
-  _events;
-
-  get id() { return STORE_ID; }
-  get name() { return STORE_NAME; }
-
-  constructor() {  super(); }
-
-  async init() {
-    // get config and load approriated data sources componenst;
-    this._streams = new AuditUserStreams();
-    this._events = new AuditUserEvents();
+  async init () {
     return this;
+  },
+
+  get streams () { return auditUserStreams; },
+  get events () { return auditUserEvents; },
+
+  async deleteUser (userId) {}, // eslint-disable-line no-unused-vars
+
+  async storageUsedForUser (userId) { // eslint-disable-line no-unused-vars
+    // TODO: return size of DB
+    return 0;
   }
-
-  get streams() { return this._streams; }
-  get events() { return this._events; }
-
-  async deleteUser(userId) { }
-
-  async storageUsedForUser(userId: string) { return 0; } // ToDo return size of DB
-}
-
-
-
-
-module.exports = AuditDataStore;
+});

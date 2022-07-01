@@ -10,7 +10,7 @@ reporting:
   licenseName: 'REPLACE ME'
   templateVersion: '1.0.0'
 
-http: 
+http:
   ip: '127.0.0.1'
   port: 3000
 
@@ -26,14 +26,14 @@ database:
 userFiles:
   path: 'REPLACE ME'
 
-eventFiles: 
+eventFiles:
   attachmentsDirPath: 'REPLACE ME'
   previewsDirPath: 'REPLACE ME'
 
 auth:
   filesReadTokenSecret: 'REPLACE ME'
 
-customExtensions: 
+customExtensions:
   defaultFolder: 'REPLACE ME'
   customAuthStepFn: ''
 
@@ -43,8 +43,8 @@ axonMessaging:
   port: 4000
   pubConnectInsteadOfBind: false
 
-updates: 
-  ignoreProtectedFields: false 
+updates:
+  ignoreProtectedFields: false
 
 influxdb:
   host: 127.0.0.1
@@ -55,7 +55,7 @@ webhooks:
   maxRetries: 5
   runsSize: 20
 
-versioning: 
+versioning:
   forceKeepHistory: false
   deletionMode: 'keep-nothing'
 
@@ -85,8 +85,8 @@ custom:
       name: Email
       isRequiredInValidation: true
 
-stores:
-  loadExternal: []
+dataStores:
+  external: []
 
 caching:
   isActive: true

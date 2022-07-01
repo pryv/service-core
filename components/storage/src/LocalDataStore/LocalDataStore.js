@@ -10,45 +10,35 @@
 /**
  * Local Data Store.
  */
-const bluebird = require('bluebird');
 
+const ds  = require('pryv-datastore');
 const storage = require('../index');
-const {DataStore}  = require('pryv-datastore');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
 
-const LocalUserStreams = require('./LocalUserStreams');
-const LocalUserEvents = require('./LocalUserEvents');
+const userStreams = require('./LocalUserStreams');
+const userEvents = require('./LocalUserEvents');
 const LocalTransaction = require('./LocalTransaction');
 
-const STORE_ID = 'local';
-const STORE_NAME = 'Local Store';
-class LocalDataStore extends DataStore {
+module.exports = (ds.createDataStore({
+  id: 'local',
+  name: 'Local store',
 
-  _id: string = 'local';
-  _name: string = 'Local Store';
-  _streams: DataStore.UserStreams;
-  _events: DataStore.UserEvents;
-  settings: any;
-
-  constructor() {
-    super();
-    this.settings = {
-      attachments: {
-        setFileReadToken: true // method/events js will add a readFileToken
-      }
+  settings: {
+    attachments: {
+      setFileReadToken: true // methods/events will add a readFileToken
     }
-  }
+  },
 
-  async init(): Promise<DataStore> {
+  async init (config): Promise<DataStore> {
     await SystemStreamsSerializer.init();
-    // get config and load approriated data store components;
-
 
     const database = await storage.getDatabase();
+
+    // init events
+
     const eventsCollection = await database.getCollection({ name: 'events' });
 
-    // ---- events ---- //
     const eventFilesStorage = (await storage.getStorageLayer()).eventFiles;
 
     for (const item of eventsIndexes) {
@@ -56,9 +46,9 @@ class LocalDataStore extends DataStore {
       await eventsCollection.createIndex(item.index, item.options);
     }
 
-    this._events = new LocalUserEvents(eventsCollection, eventFilesStorage);
+    userEvents.init(eventsCollection, eventFilesStorage);
 
-    // ---- streams --- //
+    // init streams
 
     const streamsCollection = await database.getCollection({ name: 'streams' });
     for (const item of streamIndexes) {
@@ -67,33 +57,32 @@ class LocalDataStore extends DataStore {
     }
 
     const userStreamsStorage = (await storage.getStorageLayer()).streams;
-    this._streams = new LocalUserStreams(streamsCollection, userStreamsStorage);
+
+    userStreams.init(streamsCollection, userStreamsStorage);
 
     return this;
-  }
+  },
 
-  get streams() { return this._streams; }
-  get events() { return this._events; }
+  get streams () { return userStreams; },
+  get events () { return userEvents; },
 
-  async newTransaction(): Promise<DataStore.Transaction> {
+  async newTransaction (): Promise<DataStore.Transaction> {
     const transaction = new LocalTransaction();
     await transaction.init();
     return transaction;
-  }
+  },
 
-  async deleteUser(userId: string): Promise<void> {
-    await this._streams._deleteUser(userId);
-    await this._events._deleteUser(userId);
-  }
+  async deleteUser (userId: string): Promise<void> {
+    await userStreams._deleteUser(userId);
+    await userEvents._deleteUser(userId);
+  },
 
-  async storageUsedForUser(userId: string) {
-    const streamsSize = await this._streams._storageUsedForUser(userId);
-    const eventsSize = await this._events._storageUsedForUser(userId);
+  async storageUsedForUser (userId: string) {
+    const streamsSize = await userStreams._storageUsedForUser(userId);
+    const eventsSize = await userEvents._storageUsedForUser(userId);
     return streamsSize + eventsSize;
   }
-}
-
-module.exports = LocalDataStore;
+}): any);
 
 const eventsIndexes = [
   {
@@ -131,7 +120,6 @@ const eventsIndexes = [
   }
 ];
 
-
 const streamIndexes = [
   {
     index: { userId: 1 },
@@ -141,7 +129,7 @@ const streamIndexes = [
     index: {userId: 1, streamId: 1},
     options: {unique: true}
   },
- {
+  {
     index: {userId: 1, name: 1},
     options: {}
   },

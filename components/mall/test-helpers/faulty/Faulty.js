@@ -5,45 +5,42 @@
  * Proprietary and confidential
  */
 
+const ds = require('pryv-datastore');
+
+const faultyStreams = createUserStreams();
+const faultyEvents = createUserEvents();
+
 /**
- * Faulty Data Store.
- * Always fail
+ * Faulty data store that always fails.
  */
+module.exports = ds.createDataStore({
+  id: 'faulty',
+  name: 'Faulty store',
 
-
-const {DataStore}  = require('pryv-datastore');
-
-class Faulty extends DataStore {
-  _streams;
-  _events;
-
-  constructor() {  super(); }
-
-  async init(config) {
-    // get config and load approriated data store components;
-    this._streams = new FaultyUserStreams();
-    this._events = new FaultyUserEvents();
+  async init () {
     return this;
-  }
+  },
 
-  get streams() { return this._streams; }
-  get events() { return this._events; }
+  get streams () { return faultyStreams; },
+  get events () { return faultyEvents; },
 
-  async deleteUser(userId) {}
-  async storageUsedForUser(userId: string) { return 0; }
+  async deleteUser (userId) {}, // eslint-disable-line no-unused-vars
+
+  async storageUsedForUser (userId) { return 0; } // eslint-disable-line no-unused-vars
+});
+
+function createUserStreams () {
+  return ds.createUserStreams({
+    async get (userId, params) { // eslint-disable-line no-unused-vars
+      throw new Error('Faulty');
+    }
+  });
 }
 
-
-class FaultyUserStreams extends DataStore.UserStreams {
-  async get(userId, params) {
-    throw new Error('Faulty');
-  }
+function createUserEvents () {
+  return ds.createUserEvents({
+    async get (userId, params) { // eslint-disable-line no-unused-vars
+      throw new Error('Faulty');
+    }
+  });
 }
-
-class FaultyUserEvents extends DataStore.UserEvents {
-  async get(userId, params) {
-    throw new Error('Faulty');
-  }
-}
-
-module.exports = Faulty;

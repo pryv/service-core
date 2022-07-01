@@ -72,8 +72,8 @@ backwardCompatibility:
   systemStreams:
     prefix:
       isActive: false
-stores:
-  loadExternal:
+dataStores:
+  external:
     - id: dummy
       name: Dummy Store
       path: ../../mall/test-helpers/dummy # should be fully qualified path for external store
@@ -84,4 +84,3 @@ stores:
       config: null
 trace:
   enable: true
-    

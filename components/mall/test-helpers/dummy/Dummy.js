@@ -4,84 +4,86 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+const ds = require('pryv-datastore');
+
+const dummyStreams = createUserStreams();
+const dummyEvents = createUserEvents();
+
 /**
- * Dummy Data Store.
- * Send predicatable static data
+ * Dummy data store serving predictable static data.
  */
+module.exports = ds.createDataStore({
+  id: 'dummy',
+  name: 'Dummy store',
 
-const { DataStore } = require('pryv-datastore');
-
-class Dummy extends DataStore {
-  _streams;
-  _events;
-
-  constructor() {  super(); }
-
-  async init(config) {
-    // get config and load approriated data store components;
-    this._streams = new DummyUserStreams();
-    this._events = new DummyUserEvents();
+  async init () {
     return this;
-  }
+  },
 
-  get streams() { return this._streams; }
-  get events() { return this._events; }
+  get streams () { return dummyStreams; },
+  get events () { return dummyEvents; },
 
-  async deleteUser(userId) {}
-  async storageUsedForUser(userId: string) { return 0;}
-}
+  async deleteUser (userId) {}, // eslint-disable-line no-unused-vars
 
+  async storageUsedForUser (userId) { return 0; } // eslint-disable-line no-unused-vars
+});
 
-class DummyUserStreams extends DataStore.UserStreams {
-  async get(userId, params) {
-    let streams = [{
-      id: 'myself',
-      name: userId,
-      children: [
-        {
-          id: 'mariana',
-          name: 'Mariana'
-        },{
-          id: 'antonia',
-          name: 'Antonia'
-        }
-      ]
-    }];
+function createUserStreams () {
+  return ds.createUserStreams({
+    async get (userId, params) {
+      let streams = [{
+        id: 'myself',
+        name: userId,
+        children: [
+          {
+            id: 'mariana',
+            name: 'Mariana'
+          },
+          {
+            id: 'antonia',
+            name: 'Antonia'
+          }
+        ]
+      }];
+      ds.defaults.applyOnStreams(streams);
 
+      if (params.id && params.id !== '*') {
+        // filter tree
+        streams = findStream(params.id, streams);
+      }
 
-    DataStore.Defaults.applyOnStreams(streams);
+      return streams;
+    }
+  });
 
-    function findStream(streamId, arrayOfStreams) {
-      for (let stream of arrayOfStreams) {
-        if (stream.id === streamId) return stream;
-        if (stream.children) {
-          const found = findStream(streamId, stream.children);
-          if (found) return found;
+  function findStream (streamId, streams) {
+    for (const stream of streams) {
+      if (stream.id === streamId) {
+        return stream;
+      }
+      if (stream.children) {
+        const found = findStream(streamId, stream.children);
+        if (found) {
+          return found;
         }
       }
-      return [];
     }
-
-    if (params.id && params.id !== '*') { // filter tree
-      streams = findStream(params.id, streams);
-    }
-
-
-    return streams;
+    return [];
   }
 }
 
-class DummyUserEvents extends DataStore.UserEvents {
-  async get(userId, params) {
-    const events = [{
-      id: 'dummyevent0',
-      type: 'note/txt',
-      content: 'hello',
-      time: Date.now() / 1000,
-    }];
-    DataStore.Defaults.applyOnEvents(events);
-    return events;
-  }
+function createUserEvents () {
+  return ds.createUserEvents({
+    async get (userId, params) { // eslint-disable-line no-unused-vars
+      const events = [{
+        id: 'dummyevent0',
+        type: 'note/txt',
+        content: 'hello',
+        time: Date.now() / 1000
+      }];
+      ds.defaults.applyOnEvents(events);
+      return events;
+    }
+  });
 }
-
-module.exports = Dummy;

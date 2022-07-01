@@ -5,7 +5,8 @@
  * Proprietary and confidential
  */
 
+/* global describe */
 
-describe('Dummy', function() {
-  
+describe('Dummy', function () {
+
 });

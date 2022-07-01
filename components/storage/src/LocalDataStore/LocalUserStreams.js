@@ -7,16 +7,11 @@
 
 // @flow
 
-/**
- * Local Data Store.
- * Streams implementation
- */
-
 const bluebird = require('bluebird');
 const _ = require('lodash');
 
 const cache = require('cache');
-const { DataStore, errors } = require('pryv-datastore');
+const ds = require('pryv-datastore');
 const { treeUtils } = require('utils');
 
 const { StreamProperties } = require('business/src/streams');
@@ -29,25 +24,27 @@ import type { StoreQuery } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { Stream } from 'business/src/streams';
 
 let visibleStreamsTree = [];
-class LocalUserStreams extends DataStore.UserStreams {
-  userStreamsStorage: any;
-  streamsCollection: any;
 
-  constructor(streamsCollection: any, userStreamsStorage: any) {
-    super();
+/**
+ * Local data store: streams implementation.
+ */
+module.exports = (ds.createUserStreams({
+  userStreamsStorage: null,
+  streamsCollection: null,
+
+  init (streamsCollection: any, userStreamsStorage: any) {
     this.userStreamsStorage = userStreamsStorage;
     this.streamsCollection = streamsCollection;
     loadVisibleStreamsTree();
-  }
+  },
 
-  async getDeletions(userId: string, deletionsSince: timestamp) {
+  async getDeletions (userId: string, deletionsSince: timestamp) {
     const options = { sort: { deleted: -1 }};
     const deletedStreams = await bluebird.fromCallback(cb => this.userStreamsStorage.findDeletions({id: userId}, deletionsSince, options, cb));
     return deletedStreams;
-  }
+  },
 
-  async get(userId: string, params: StoreQuery): Promise<Array<Stream>> {
-
+  async get (userId: string, params: StoreQuery): Promise<Array<Stream>> {
     let allStreamsForAccount: Array<Stream> = cache.getStreams(userId, 'local');
     if (allStreamsForAccount == null) { // get from DB
       allStreamsForAccount = await bluebird.fromCallback(cb => this.userStreamsStorage.findIncludingDeletionsAndVersions({ id: userId }, {}, null, cb));
@@ -73,18 +70,18 @@ class LocalUserStreams extends DataStore.UserStreams {
       streams = treeUtils.filterTree(streams, false /*no orphans*/, stream => stream.deleted == null);
     }
     return streams;
-  }
+  },
 
-  async createDeleted(userId: string, streamData: Stream): Promise<Stream> {
+  async createDeleted (userId: string, streamData: Stream): Promise<Stream> {
     streamData.userId = userId;
     streamData.streamId = streamData.id;
     delete streamData.id;
     return await this.streamsCollection.replaceOne({userId: userId, streamId: streamData.streamId}, streamData, {upsert: true}); // replace of create deleted streams
-  }
+  },
 
-  async create(userId: string, streamData: Stream): Promise<Stream> {
+  async create (userId: string, streamData: Stream): Promise<Stream> {
     //try {
-      return await bluebird.fromCallback(cb => this.userStreamsStorage.insertOne({ id: userId }, streamData, cb));
+    return await bluebird.fromCallback(cb => this.userStreamsStorage.insertOne({ id: userId }, streamData, cb));
     /* } catch (err) {
       handleDuplicateError(err);
       if (err.isDuplicate) {
@@ -98,11 +95,11 @@ class LocalUserStreams extends DataStore.UserStreams {
       // Any other error
       throw errors.unexpectedError(err);
     }*/
-  }
+  },
 
-  async delete(userId: string, streamId: string): Promise<void> {
+  async delete (userId: string, streamId: string): Promise<void> {
     return await bluebird.fromCallback(cb => this.userStreamsStorage.removeOne({ id: userId }, {id: streamId}, cb));
-  }
+  },
 
   async updateTemp(userId: string, streamId, update: {}) {
     //try {
@@ -120,36 +117,33 @@ class LocalUserStreams extends DataStore.UserStreams {
       // Any other error
       throw errors.unexpectedError(err);
     }*/
-  }
+  },
 
-  async update(userId: string, streamData: Stream): Promise<Stream> {
+  async update (userId: string, streamData: Stream): Promise<Stream> {
     return await bluebird.fromCallback(cb => this.userStreamsStorage.updateOne({ id: userId }, {id: streamData.id}, streamData, cb));
-  }
+  },
 
-  async updateDelete(userId: string, streamId: stringg): Promise<void> {
+  async updateDelete (userId: string, streamId: stringg): Promise<void> {
     return await bluebird.fromCallback(cb => this.userStreamsStorage.delete({ id: userId }, {id: streamId}, cb));
-  }
+  },
 
-  async delete(userId: string, streamId: stringg): Promise<void> {
+  async delete (userId: string, streamId: stringg): Promise<void> {
     return await bluebird.fromCallback(cb => this.userStreamsStorage.removeOne({ id: userId}, {id: streamId}, cb));
-  }
+  },
 
-  async deleteAll(userId: string): Promise<void> {
+  async deleteAll (userId: string): Promise<void> {
     await bluebird.fromCallback(cb => this.userStreamsStorage.removeAll({ id: userId }, cb));
     cache.unsetUserData(userId);
-  }
-
+  },
 
   async _deleteUser(userId: string): Promise<void> {
     return await bluebird.fromCallback(cb => this.userStreamsStorage.removeMany(userId, {}, cb));
-  }
+  },
 
   async _storageUsedForUser(userId: string) {
     return await bluebird.fromCallback(cb => this.userStreamsStorage.getTotalSize(userId, cb));
   }
-}
-
-module.exports = LocalUserStreams;
+}): any);
 
 function clone(obj: any): any {
   // Clone streams -- BAd BaD -- To be optimized
@@ -171,7 +165,7 @@ function cloneStream(storeStream: Stream, includeChildren: boolean): Stream {
 function loadVisibleStreamsTree() {
   try {
     visibleStreamsTree = SystemStreamsSerializer.getReadable();
-    DataStore.Defaults.applyOnStreams(visibleStreamsTree);
+    ds.defaults.applyOnStreams(visibleStreamsTree);
   } catch (err) {
     console.log('This should be fixed!! It happens when the system streams are not yet loaded during some test suites.. ', err);
   }

@@ -7,24 +7,24 @@
 
 // @flow
 
-const { DataStore } = require('pryv-datastore');
+const { defaults: dataStoreDefaults } = require('pryv-datastore');
 const LOCAL_STORE = 'local';
 import type { Stream } from 'business/src/streams';
 
 /**
- * Create a Stream object from a DataStore 
- * @param {DataStore} store 
- * @param {Object} extraProperties 
+ * Create a Stream object from a DataStore
+ * @param {DataStore} store
+ * @param {Object} extraProperties
  */
 function storeToStream(store: DataStore, extraProperties: mixed): Stream {
   return Object.assign({
     id: ':' + store.id + ':',
     name: store.name,
-    parentId: null,  
-    created: DataStore.Defaults.UNKNOWN_DATE + 1,
-    modified: DataStore.Defaults.UNKNOWN_DATE,
-    createdBy: DataStore.Defaults.BY_SYSTEM,
-    modifiedBy: DataStore.Defaults.BY_SYSTEM,
+    parentId: null,
+    created: dataStoreDefaults.UnknownDate + 1,
+    modified: dataStoreDefaults.UnknownDate,
+    createdBy: dataStoreDefaults.SystemAccessId,
+    modifiedBy: dataStoreDefaults.SystemAccessId,
   }, extraProperties);
 }
 
@@ -52,7 +52,7 @@ function storeIdAndStreamIdForStreamId(fullStreamId: string): [ string, string ]
 
 /**
  * Get full streamId from store + cleanstreanId
- * @returns {string} 
+ * @returns {string}
  */
 function streamIdForStoreId(streamId: string, storeId: string): string {
   if (storeId === LOCAL_STORE) return streamId;
@@ -66,8 +66,8 @@ function streamIdForStoreId(streamId: string, storeId: string): string {
 /**
  * Add storeId to streamIds to parentIds of a tree
  * Add storeId to "null" parentId
- * @param {identifier} storeId 
- * @param {Array<Streams>} streams 
+ * @param {identifier} storeId
+ * @param {Array<Streams>} streams
  */
 function addStoreIdPrefixToStreams(storeId: string, streams: Array<Stream>): void {
   for (const stream: Stream of streams) {

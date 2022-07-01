@@ -5,12 +5,19 @@
  * Proprietary and confidential
  */
 
-// @flow
+const errors = require('./errors');
 
 /**
- * Per-user streams data (tree structure)
+ * @typedef {import('./index')} index
+ * @typedef {import('./DataStore')} DataStore
  */
-class UserStreams {
+
+/**
+ * Prototype object for per-user streams data.
+ * {@link DataStore#streams} must return an implementation that inherits from this via {@link index#createUserStreams}.
+ */
+const UserStreams = module.exports = {
+  /* eslint-disable no-unused-vars */
 
   /**
    * Get the stream that will be set as root for all Stream Structure of this Data Store.
@@ -23,14 +30,14 @@ class UserStreams {
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @returns {UserStream|null} - the stream or null if not found:
    */
-  async get(userId: string, params): Promise<Array<Stream>> { throw new Error('Not implemented'); }
+  async get (userId, params) { throw errors.unsupportedOperation('streams.get'); },
 
   /**
    * Get a list of deleted Ids since
    * @param {identifier} userId
    * @param {timestamp} deletionSince
    */
-  async getDeletions(userId: string, deletionsSince: timestamp) { throw new Error('Not implemented');  }
+  async getDeletions (userId, deletionsSince) { throw errors.unsupportedOperation('streams.getDeletions'); },
 
   /**
    * @see https://api.pryv.com/reference/#create-stream
@@ -40,7 +47,7 @@ class UserStreams {
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Stream} - The created Stream
    */
-  async create(userId: string, params): Promise<void> { throw new Error('Not implemented'); }
+  async create (userId, params) { throw errors.unsupportedOperation('streams.create'); },
 
   /**
    * @see https://api.pryv.com/reference/#update-stream
@@ -49,7 +56,7 @@ class UserStreams {
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream} - The update Stream
    */
-  async update(userId: string, streamId: string, params): Promise<void> { throw new Error('Not implemented'); }
+  async update (userId, streamId, params) { throw errors.unsupportedOperation('streams.update'); },
 
   /**
    * @see https://api.pryv.com/reference/#delete-stream
@@ -58,8 +65,10 @@ class UserStreams {
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream|StreamDeletionItem} - The trashed Stream
    */
-  async delete(userId: string, streamId: string, params): Promise<void> { throw new Error('Not implemented'); }
+  async delete (userId, streamId, params) { throw errors.unsupportedOperation('streams.delete'); }
+};
 
+// limit tampering on existing properties
+for (const propName of Object.getOwnPropertyNames(UserStreams)) {
+  Object.defineProperty(UserStreams, propName, { configurable: false });
 }
-
-module.exports = UserStreams;

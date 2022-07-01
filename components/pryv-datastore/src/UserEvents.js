@@ -5,15 +5,34 @@
  * Proprietary and confidential
  */
 
-// @flow
-
 const errors = require('./errors');
-const Transaction = require('./Transaction');
 
 /**
- * Per-user events data
+ * @typedef {import('./index')} index
+ * @typedef {import('./DataStore')} DataStore
  */
-class UserEvents {
+
+/**
+ * Object to pass when creating events with attachments or adding attachments to events
+ * @typedef {Object} AttachmentItem
+ * @property {size} [number] - The size of the attachment
+ * @property {string} filename fileName
+ * @property {ReadableStream} attachmentData
+ * @property {integrity} [integrity] - The integrity checksum of the attachment
+ */
+
+/**
+ * Informations sent by the store after saving attachment
+ * @typedef {Object} AttachmentResponseItem
+ * @param {string} id - mandatory id of the attachement - unique - per event
+ */
+
+/**
+ * Prototype object for per-user events data.
+ * {@link DataStore#events} must return an implementation that inherits from this via {@link index#createUserEvents}.
+ */
+const UserEvents = module.exports = {
+  /* eslint-disable no-unused-vars */
 
   /**
    * Get the events for this user.
@@ -25,7 +44,7 @@ class UserEvents {
    * @returns {Array<Event>}
    * @see https://api.pryv.com/reference/#get-events
    */
-  async get(userId: string, params): Promise<Array<Event>> { throw(errors.unsupportedOperation('events.get')); }
+  async get (userId, params) { throw errors.unsupportedOperation('events.get'); },
 
   /**
    * Get the events as a stream for this user.
@@ -34,7 +53,7 @@ class UserEvents {
    * @returns {ReadableStream}
    * @see https://api.pryv.com/reference/#get-events
    */
-  async getStreamed(userId: string, params): Promise<ReadableStream> { throw(errors.unsupportedOperation('events.getStreamed')); }
+  async getStreamed (userId, params) { throw errors.unsupportedOperation('events.getStreamed'); },
 
   /**
    * @see https://api.pryv.com/reference/#create-event
@@ -45,23 +64,7 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {Event} - The created event
    */
-  async create(userId: string, eventData: {}, transaction?: Transaction): Promise<void>  { throw(errors.unsupportedOperation('events.create')); }
-
-
-  /**
-   * Object to pass when creating events with attachments or adding attachments to events
-   * @typedef {Object} AttachmentItem
-   * @property {size} [number] - The size of the attachment
-   * @property {string} filename fileName
-   * @property {ReadableStream} attachmentData
-   * @property {integrity} [integrity] - The integrity checksum of the attachment
-   */
-
-  /**
-   * Informations sent by the store after saving attachment
-   * @typedef {Object} AttachmentResponseItem
-   * @param {string} id - mandatory id of the attachement - unique - per event
-   */
+  async create (userId, eventData) { throw errors.unsupportedOperation('events.create'); },
 
   /**
    * @param {identifier} userId
@@ -73,7 +76,7 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {AttachmentResponseItem} - The ids and other information related to the attachments
    */
-  async attachmentsLoad(userId: string, partialEventData, isExistingEvent, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) { throw(errors.unsupportedOperation('events.attachmentsLoad')); }
+  async attachmentsLoad (userId, partialEventData, isExistingEvent, attachmentsItems) { throw errors.unsupportedOperation('events.attachmentsLoad'); },
 
   /**
    * @param {identifier} userId
@@ -83,7 +86,7 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
    * @returns {AttachmentResponseItem} - The ids and other information related to the attachments
    */
-  async attachmentDelete(userId: string, eventData, attachmentId: string, transaction?: Transaction) { throw(errors.unsupportedOperation('events.attachmentDelete')); }
+  async attachmentDelete (userId, eventData, attachmentId) { throw errors.unsupportedOperation('events.attachmentDelete'); },
 
   /**
    * Fully replace an event with new Data
@@ -92,8 +95,7 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {boolean} - true if an event was updated
    */
-  async update(userId: string, eventData: any): Promise<void> { throw(errors.unsupportedOperation('events.replace')); }
-
+  async update (userId, eventData) { throw errors.unsupportedOperation('events.replace'); },
 
   /**
    * @see https://api.pryv.com/reference/#delete-event
@@ -102,16 +104,10 @@ class UserEvents {
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Event|EventDeletionItem} - The trashed Event
    */
-  async delete(userId: string, eventId: string, params): Promise<void> { throw(errors.unsupportedOperation('events.delete')); }
+  async delete (userId, eventId, params) { throw errors.unsupportedOperation('events.delete'); }
+};
 
-  /**
-   * Attachments methods
-   */
-
-  /**
-   * Series methods? do we have specific methods for series ... ?
-   */
-
+// limit tampering on existing properties
+for (const propName of Object.getOwnPropertyNames(UserEvents)) {
+  Object.defineProperty(UserEvents, propName, { configurable: false });
 }
-
-module.exports = UserEvents;
