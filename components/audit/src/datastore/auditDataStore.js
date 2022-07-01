@@ -6,8 +6,8 @@
  */
 
 const ds = require('pryv-datastore');
-const auditUserEvents = require('./AuditUserEvents');
-const auditUserStreams = require('./AuditUserStreams');
+const auditUserEvents = require('./auditUserEvents');
+const auditUserStreams = require('./auditUserStreams');
 
 /**
  * Audit data store.

@@ -46,11 +46,11 @@ async function getMall(): Promise<Mall> {
 
   // Load built-in stores
 
-  const localStore: DataStore = require('storage/src/LocalDataStore');
+  const localStore: DataStore = require('storage/src/localDataStore');
   mall.addStore(localStore);
 
   if (!config.get('openSource:isActive') && config.get('audit:active')) {
-    const auditDataStore = require('audit/src/datastore/AuditDataStore');
+    const auditDataStore = require('audit/src/datastore/auditDataStore');
     mall.addStore(auditDataStore);
   }
   await mall.init();

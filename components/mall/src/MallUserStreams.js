@@ -86,7 +86,7 @@ class MallUserStreams {
     let res: Array<Stream> = [];
 
     // *** root query we just expose store handles & local streams
-    // might be moved in LocalDataStore ?
+    // might be moved in localDataStore ?
     if (streamId === '*' && storeId === 'local' && (! hideStoreRoots)) {
       res = getChildlessRootStreamsForOtherStores(this.mall.stores);
     }
