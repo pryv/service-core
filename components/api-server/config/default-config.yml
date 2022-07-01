@@ -84,9 +84,7 @@ custom:
       type: email/string
       name: Email
       isRequiredInValidation: true
-
-dataStores:
-  external: []
+  dataStores: []
 
 caching:
   isActive: true

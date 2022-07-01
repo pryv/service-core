@@ -32,9 +32,9 @@ async function getMall(): Promise<Mall> {
   mall = new Mall();
 
   // load external stores from config (Imported After to avoid cycles);
-  const externalStoresSettings: Array<{}> = config.get('dataStores:external');
-  if (externalStoresSettings) {
-    for (const storeDef of externalStoresSettings) {
+  const customStoresDef: Array<{}> = config.get('custom:dataStores');
+  if (customStoresDef) {
+    for (const storeDef of customStoresDef) {
       logger.info(`Loading store "${storeDef.name}" with id "${storeDef.id}" from ${storeDef.path}`);
       const newStore: DataStore = require(storeDef.path);
       newStore.id = storeDef.id;
