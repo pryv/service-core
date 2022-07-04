@@ -4,19 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var errors = require('errors').factory,
-  async = require('async'),
-  commonFns = require('./helpers/commonFunctions'),
-  errorHandling = require('errors').errorHandling,
-  methodsSchema = require('../schema/streamsMethods'),
-  streamSchema = require('../schema/stream'),
-  slugify = require('utils').slugify,
-  string = require('./helpers/string'),
-  utils = require('utils'),
-  treeUtils = utils.treeUtils,
-  _ = require('lodash');
+const errors = require('errors').factory;
+const commonFns = require('./helpers/commonFunctions');
+const methodsSchema = require('../schema/streamsMethods');
+const streamSchema = require('../schema/stream');
+const slugify = require('utils').slugify;
+const string = require('./helpers/string');
+const utils = require('utils');
+const treeUtils = utils.treeUtils;
+const _ = require('lodash');
 
-const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const ErrorIds = require('errors/src/ErrorIds');
@@ -152,7 +149,7 @@ module.exports = async function (api) {
       if ((rootStream.parentId != null) && (! await context.access.canListStream(rootStream.parentId))){
         rootStream.parentId = null;
       }
-    };
+    }
 
     // if request was made on parentId .. return only the children
     if (params.parentId && streams.length === 1) {
@@ -206,11 +203,11 @@ module.exports = async function (api) {
 
     // check if parentId is valid
     if (params.parentId != null) {
-      const parentStream = await mall.streams.get(context.user.id, { id: params.parentId , includeTrashed: true, expandChildren: 1});
-      if (parentStream.length === 0) {
+      const parentResults = await mall.streams.get(context.user.id, { id: params.parentId , includeTrashed: true, expandChildren: 1});
+      if (parentResults.length === 0) {
         return next(errors.unknownReferencedResource('unknown Stream:', 'parentId', params.parentId, null));
       }
-      if (parentStream[0].trashed != null) { // trashed parent
+      if (parentResults[0].trashed != null) { // trashed parent
         return next(errors.invalidOperation(
           'parent stream is trashed', 'parentId', params.parentId
         ));
@@ -218,7 +215,7 @@ module.exports = async function (api) {
     }
 
     // strip ignored properties
-    if (params.hasOwnProperty('children')) {
+    if (Object.hasOwnProperty.call(params, 'children')) {
       delete params.children;
     }
 
@@ -242,12 +239,12 @@ module.exports = async function (api) {
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
       next();
     } catch (err) {
-     
+
       // Already an API error
       if (err instanceof APIError) {
         return next(err);
       }
-      $$({err}); 
+      $$({err});
       return next(errors.unexpectedError(err));
     }
   }
@@ -458,7 +455,7 @@ module.exports = async function (api) {
       if (params.mergeEventsWithParent) { // -- Case 1 -- Merge events with parent
         if (auditSettings.forceKeepHistory) { // generateLogIfNecessary
           const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}});
-          for await (event of eventsStream) {
+          for await (const event of eventsStream) {
             const eventToVersion = _.extend(event, { headId: event.id });
             delete eventToVersion.id;
             await mall.events.create(context.user.id, eventToVersion);
@@ -475,16 +472,14 @@ module.exports = async function (api) {
         // case  mergeEventsWithParent = false
 
         const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{any: cleanDescendantIds}]}});
-        for await (event of eventsStream) {
+        for await (const event of eventsStream) {
 
           if (auditSettings.deletionMode === 'keep-everything') {
-            const res = await mall.events.updateDeleteByMode(context.user.id,  'keep-everything', {id: event.id, state: 'all'});
-
+            await mall.events.updateDeleteByMode(context.user.id,  'keep-everything', {id: event.id, state: 'all'});
           // history is untouched
           } else if (auditSettings.deletionMode === 'keep-authors') { // update event history
             await mall.events.updateMinimizeEventHistory(context.user.id, event.id);
-            const res = await mall.events.updateDeleteByMode(context.user.id,  'keep-authors', {id: event.id, state: 'all'});
-
+            await mall.events.updateDeleteByMode(context.user.id,  'keep-authors', {id: event.id, state: 'all'});
           } else { // default: deletionMode='keep-nothing'
             const remaningStreamsIds = _.difference(event.streamIds, streamAndDescendantIds);
             if (remaningStreamsIds.length > 0) {
@@ -497,7 +492,7 @@ module.exports = async function (api) {
               // remove the event's history
               await mall.events.delete(context.user.id, { headId: event.id, state: 'all' });
               // remove the event itself (update)
-              const res = await mall.events.updateDeleteByMode(context.user.id,  'keep-nothing', {id: event.id, state: 'all'});
+              await mall.events.updateDeleteByMode(context.user.id,  'keep-nothing', {id: event.id, state: 'all'});
             }
           }
         }
@@ -513,7 +508,7 @@ module.exports = async function (api) {
         logger.error('Failed deleted some streams', err);
       }
     }
-    
+
     result.streamDeletion = { id: params.id };
     pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
     next();
@@ -521,13 +516,3 @@ module.exports = async function (api) {
 
 
 };
-
-/**
- * Returns if an array has all elements contained in another.
- *
- * @param {Array} a Contains element to check if they exists in b
- * @param {Array} b
- */
-function arrayAIsIncludedInB (a, b) {
-  return a.every(i => b.includes(i));
-}
