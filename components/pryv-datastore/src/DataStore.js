@@ -63,7 +63,7 @@ const DataStore = module.exports = {
    * @param {string} userId
    * @returns {number}
    */
-  async storageUsedForUser (userId) { throw new Error('Not implemented'); } // eslint-disable-line no-unused-vars
+  async getUserStorageSize (userId) { throw new Error('Not implemented'); } // eslint-disable-line no-unused-vars
 };
 
 // limit tampering on existing properties

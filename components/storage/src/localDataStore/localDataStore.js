@@ -77,9 +77,9 @@ module.exports = (ds.createDataStore({
     await userEvents._deleteUser(userId);
   },
 
-  async storageUsedForUser (userId: string) {
-    const streamsSize = await userStreams._storageUsedForUser(userId);
-    const eventsSize = await userEvents._storageUsedForUser(userId);
+  async getUserStorageSize (userId: string) {
+    const streamsSize = await userStreams._getUserStorageSize(userId);
+    const eventsSize = await userEvents._getUserStorageSize(userId);
     return streamsSize + eventsSize;
   }
 }): any);

@@ -140,7 +140,8 @@ module.exports = (ds.createUserEvents({
     return await this.eventsCollection.deleteMany(query, {});
   },
 
-  async _storageUsedForUser(userId: string) {
+  async _getUserStorageSize(userId: string) {
+    // TODO: fix this total HACK
     return await (await this.eventsCollection.find({userId})).count();
   }
 }): any);

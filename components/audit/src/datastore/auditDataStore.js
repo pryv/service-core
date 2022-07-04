@@ -25,7 +25,7 @@ module.exports = ds.createDataStore({
 
   async deleteUser (userId) {}, // eslint-disable-line no-unused-vars
 
-  async storageUsedForUser (userId) { // eslint-disable-line no-unused-vars
+  async getUserStorageSize (userId) { // eslint-disable-line no-unused-vars
     // TODO: return size of DB
     return 0;
   }
