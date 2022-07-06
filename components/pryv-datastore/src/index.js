@@ -39,24 +39,6 @@ module.exports = {
     return Object.assign(Object.create(UserEvents), implementation);
   },
 
-  /**
-   * The object used as prototype for data stores.
-   * Exposed for documentation purposes.
-   */
-  DataStore,
-
-  /**
-   * The object used as prototype for user streams data.
-   * Exposed for documentation purposes.
-   */
-  UserStreams,
-
-  /**
-   * The object used as prototype for user events data.
-   * Exposed for documentation purposes.
-   */
-  UserEvents,
-
   defaults,
 
   errors
