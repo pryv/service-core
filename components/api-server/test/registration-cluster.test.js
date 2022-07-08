@@ -153,6 +153,10 @@ describe('registration: cluster', function() {
           .reply(200, {
             ok: true
           });
+        nock(regUrl)
+          .delete('/users/' + userData.username + '?onlyReg=true', () => { return true; })
+          .times(1)
+          .reply(200, { deleted: true });
         // first request
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = _.merge(buildValidationRequest(userData), { uniqueFields: { email: userData.email } });
@@ -283,6 +287,11 @@ describe('registration: cluster', function() {
           .reply(200, {
             ok: true
           });
+        nock(regUrl)
+          .delete('/users/' + userData.username + '?onlyReg=true', () => { return true; })
+          .times(1)
+          .reply(200, { deleted: true });
+
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = buildValidationRequest(userData)
         firstRegistrationRequest = buildRegistrationRequest(userData);

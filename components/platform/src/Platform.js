@@ -48,22 +48,27 @@ class Platform {
     return this;
   }
 
+  /** 
+   * during tests forward to register might be activated and deactivated
+   */ 
+  #shouldForwardToRegister() {
+    return this.#serviceRegisterConn != null && process.NODE_ENV != 'test' && ! this.#config.get('tests_skip_forward_to_register');
+  }
+
   // for tests only - called by repository 
   async deleteAll() {
     this.#db.reset();
   }
 
   /**
-   * Get if value exists for this unique key
+   * Get if value exists for this unique key (only test on local db)
+   * Should be exclusively used as a private method.. but is actually also needed by service_register in dnsLess mode
    * @param {string} field example 'email'
    * @param {string} value example 'bob@bob.com'
    * @returns {Promise<string | null>} the value if exists, null otherwise, example 'bob' 
    */
-  async getUserUniqueField(field, value) {
+  async getLocalUsersUniqueField(field, value) {
     const key = 'user-unique/' + field + '/' + value;
-    if (this.#serviceRegisterConn != null && ! this.#config.get('tests_skip_forward_to_register')) {
-      $$('Forward this request to register');
-    }
     return this.#db.getOne(key);
   }
 
@@ -116,21 +121,21 @@ class Platform {
     // ** 1st check on local index before forwarding to register 
     // This should be removed when platformWideDB will be implemented 
     // This code is redundant with some check that will be performed by #updateUser after updating register 
-    const uniquenessErrors = {};
+    const localUniquenessErrors = {};
     for (const op of operations) { 
       if (op.action != 'delete' && op.isUnique) {
-        const value = await this.getUserUniqueField(op.key, op.value);
-        if (value != null) uniquenessErrors[op.key] = op.value;
+        const value = await this.getLocalUsersUniqueField(op.key, op.value);
+        if (value != null) localUniquenessErrors[op.key] = op.value;
       }
     }
     
-    if (Object.keys(uniquenessErrors).length > 0) {
-      throw (errors.itemAlreadyExists("user", uniquenessErrors));
+    if (Object.keys(localUniquenessErrors).length > 0) {
+      throw (errors.itemAlreadyExists("user", localUniquenessErrors));
     }
 
 
     // ** Execute request on register
-    if (!skipFowardToRegister && this.#serviceRegisterConn != null && ! this.#config.get('tests_skip_forward_to_register')) {
+    if (!skipFowardToRegister && this.#shouldForwardToRegister()) {
       const ops2 = operations.map(op => {
         const action = op.action == 'delete' ? 'delete' : 'update';
         return {[action]: {key: op.key, value: op.value, isUnique: op.isUnique}};
@@ -155,7 +160,7 @@ class Platform {
       switch (op.action) {
         case 'create':
           if (op.isUnique) {
-            const potentialCollisionUsername = await this.getUserUniqueField(op.key, op.value);
+            const potentialCollisionUsername = await this.getLocalUsersUniqueField(op.key, op.value);
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
             }
@@ -167,13 +172,13 @@ class Platform {
 
         case 'update':
           if (op.isUnique) {
-            const existingUsernameValue = await this.getUserUniqueField(op.key, op.previousValue);
+            const existingUsernameValue = await this.getLocalUsersUniqueField(op.key, op.previousValue);
             if (existingUsernameValue !== null && existingUsernameValue === username) {
               // only delete eventual existing value if it is the same user
               await this.#deleteUserUniqueField(op.key, op.previousValue);
             }
           
-            const potentialCollisionUsername = await this.getUserUniqueField(op.key, op.value);
+            const potentialCollisionUsername = await this.getLocalUsersUniqueField(op.key, op.value);
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
             }
@@ -186,7 +191,7 @@ class Platform {
 
         case 'delete':
           if (op.isUnique) {
-            const existingValue = await this.getUserUniqueField(op.key, op.value);
+            const existingValue = await this.getLocalUsersUniqueField(op.key, op.value);
             if (existingValue !== null && existingValue !== username) {
               throw (errors.forbidden('unique field ' + op.key + ' with value ' + op.value + ' is associated to another user'));
             }
@@ -209,8 +214,9 @@ class Platform {
    * Fully delete a user
    * @param {string} username
    * @param {[User]} User -- // for some tests User might be null
+   * @param {boolean} skipFowardToRegister -- for fixtures
    */
-  async deleteUser(username, user) {
+  async deleteUser(username, user, skipFowardToRegister = false) {
     // unique fields
     const operations = [];
     if (user != null) { // cannot delete unique keys if user is null! (as the current value is needed)
@@ -227,13 +233,9 @@ class Platform {
     await this.#updateUser(username, operations, false, false);
 
     // forward to register
-    if (this.#serviceRegisterConn) {
-      try {
-        const res = await this.#serviceRegisterConn.deleteUser(username);
-        logger.debug('on register: ' + username, res);
-      } catch (e) { // user might have been deleted register we do not FW error just log it
-        logger.error(e);
-      }
+    if (!skipFowardToRegister && this.#shouldForwardToRegister()) {
+      const res = await this.#serviceRegisterConn.deleteUser(username);
+      logger.debug('delete on register: ' + username, res);
     }
 
   }

@@ -193,7 +193,7 @@ class ServiceRegister {
         this.logger.error('No data was updated');
       } else {
         // do not log validation errors
-        this.logger.error(err, err) {
+        this.logger.error(err, err);
         throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
       }
     }

@@ -68,7 +68,7 @@ module.exports = async function (api) {
   api.register('auth.usernameCheck',
     setAuditAccessId(AuditAccessIds.PUBLIC),
     commonFns.getParamsValidation(methodsSchema.usernameCheck.params),
-    ifDnsLess(checkUniqueField, checkUsername)
+    ifDnsLess(checkLocalUsersUniqueField, checkUsername)
   );
 
 
@@ -79,7 +79,7 @@ module.exports = async function (api) {
   api.register('auth.emailCheck',
     setAuditAccessId(AuditAccessIds.PUBLIC),
     commonFns.getParamsValidation(methodsSchema.emailCheck.params),
-    checkUniqueField
+    checkLocalUsersUniqueField
   );
 
   /**
@@ -90,7 +90,7 @@ module.exports = async function (api) {
    * @param {*} result 
    * @param {*} next 
    */
-  async function checkUniqueField(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function checkLocalUsersUniqueField(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
@@ -102,7 +102,7 @@ module.exports = async function (api) {
     }
 
     // other unique fields
-    const value = await platform.getUserUniqueField(field, params[field]); 
+    const value = await platform.getLocalUsersUniqueField(field, params[field]); 
     if (value != null) {
       return next(errors.itemAlreadyExists("user", {[field]: params[field]}));
     }

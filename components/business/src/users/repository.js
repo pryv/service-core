@@ -276,7 +276,7 @@ class UsersRepository {
 
   }
 
-  async deleteOne(userId: string, username: ?string): Promise<number> {
+  async deleteOne(userId: string, username: ?string, skipFowardToRegister: ?boolean): Promise<number> {
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
 
     const user = await this.getUserById(userId);
@@ -290,7 +290,7 @@ class UsersRepository {
     if (username != null) { // can happen during tests
       cache.unsetUser(username); 
       // Clear data for this user in Platform 
-     await this.platform.deleteUser(username, user);
+     await this.platform.deleteUser(username, user, skipFowardToRegister);
     }
     await this.mall.deleteUser(userId);
   }

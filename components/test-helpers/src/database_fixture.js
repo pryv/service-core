@@ -322,7 +322,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
 
 
     const usersRepository = await getUsersRepository();
-    await usersRepository.deleteOne(this.context.user.id);
+    await usersRepository.deleteOne(this.context.user.id, username, true);
 
     const removeSessions = bluebird.fromCallback((cb) =>
       db.sessions.removeForUser(username, cb));

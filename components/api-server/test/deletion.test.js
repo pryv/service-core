@@ -151,22 +151,23 @@ describe('[PGTD] DELETE /users/:username', () => {
     ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR', '7WMG', 'UWYY', 'U004'],
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B', 'L2Q1', 'CQ50']
   ];
-  for (let i = 0; i < settingsToTest.length; i++) {
-    // skip tests that are not in scope
-
-    describe(`dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
+  [0,1,2].forEach(function (i) {
+    describe(`[DOA${i}] dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
-        if (isOpenSource !== settingsToTest[i][1]) this.skip();
+       
         config.injectTestConfig({
-          dnsLess: {isActive: settingsToTest[i][0]}
+          dnsLess: {isActive: settingsToTest[i][0]},
+          isOpenSource: {isActive: settingsToTest[i][1]},
+          tests_skip_forward_to_register: settingsToTest[i][0],
         });
+        if (isOpenSource && settingsToTest[i][1]) this.skip();
       });
 
       after(async function() {
         config.injectTestConfig({ });
       });
 
-      describe('[D7HZ] when given existing username', function() {
+      describe(`[D7H${i}] when given existing username`, function() {
         let deletedOnRegister = false;
         let userToDelete;
         let natsDelivered = [];
@@ -318,7 +319,7 @@ describe('[PGTD] DELETE /users/:username', () => {
         });
       });
     });
-  }
+  });
 
   describe('User - Create - Delete - Create - Login', function () {
     const usernamex = charlatan.Internet.userName().replace('_', '-') + 'x';
