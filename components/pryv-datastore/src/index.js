@@ -11,6 +11,9 @@ const UserEvents = require('./UserEvents');
 const defaults = require('./Defaults');
 const errors = require('./errors');
 
+/**
+ * @exports datastore
+ */
 module.exports = {
   /**
    * Create a new data store object with the given implementation.

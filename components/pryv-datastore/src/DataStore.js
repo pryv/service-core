@@ -6,14 +6,17 @@
  */
 
 /**
- * @typedef {import('./index')} index
- * @typedef {import('./UserStreams')} UserStreams
- * @typedef {import('./UserEvents')} UserEvents
+ * @typedef {string} identifier - A string uniquely identifying an object (user, event, stream, etc.)
+ */
+
+/**
+ * @typedef {number} timestamp - A positive floating-point number representing the number of seconds since a reference time (Unix epoch time).
  */
 
 /**
  * Data store prototype object.
- * All data store implementations inherit from this via {@link index#createDataStore}.
+ * All data store implementations inherit from this via {@link datastore#createDataStore}.
+ * @exports DataStore
  */
 const DataStore = module.exports = {
   /**
@@ -30,7 +33,7 @@ const DataStore = module.exports = {
 
   /**
    * The data store's configuration settings (loaded from platform settings at creation).
-   * @type {Object}
+   * @type {object}
    */
   settings: {},
 
@@ -54,13 +57,13 @@ const DataStore = module.exports = {
 
   /**
    * Delete all data related to the user.
-   * @param {string} userId
+   * @param {identifier} userId
    */
   async deleteUser (userId) { throw new Error('Not implemented'); }, // eslint-disable-line no-unused-vars
 
   /**
    * Return the total amount of storage used by the given user, in bytes.
-   * @param {string} userId
+   * @param {identifier} userId
    * @returns {number}
    */
   async getUserStorageSize (userId) { throw new Error('Not implemented'); } // eslint-disable-line no-unused-vars

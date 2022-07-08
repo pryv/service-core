@@ -7,8 +7,9 @@
 
 /**
  * Data store constants and helper methods.
+ * @exports defaults
  */
-const Defaults = module.exports = {
+const defaults = module.exports = {
   /**
    * Timestamp representing an unknown creation/modification time.
    * @type {number}
@@ -35,7 +36,7 @@ const Defaults = module.exports = {
   applyOnStream,
   applyOnStreams
 };
-Object.freeze(Defaults);
+Object.freeze(defaults);
 
 /**
  * Adds missing mandatory properties to the given event.
@@ -43,10 +44,10 @@ Object.freeze(Defaults);
  * @param {Object} event
  */
 function applyOnEvent (event) {
-  if (typeof event.created === 'undefined') { event.created = Defaults.UnknownDate; }
-  if (typeof event.modified === 'undefined') { event.modified = Defaults.UnknownDate; }
-  if (typeof event.createdBy === 'undefined') { event.createdBy = Defaults.UnknownAccessId; }
-  if (typeof event.modifiedBy === 'undefined') { event.modifiedBy = Defaults.UnknownAccessId; }
+  if (typeof event.created === 'undefined') { event.created = defaults.UnknownDate; }
+  if (typeof event.modified === 'undefined') { event.modified = defaults.UnknownDate; }
+  if (typeof event.createdBy === 'undefined') { event.createdBy = defaults.UnknownAccessId; }
+  if (typeof event.modifiedBy === 'undefined') { event.modifiedBy = defaults.UnknownAccessId; }
 }
 /**
  * Adds missing mandatory properties to the given events.
@@ -61,13 +62,13 @@ function applyOnEvents (events) {
  * Adds missing mandatory properties to the given stream and its children (if present).
  * **Note**: mutates the stream object.
  * @param {Object} stream
- * @param {[string]} parentId  - for parentId of the stream
+ * @param {string} [parentId]  - for parentId of the stream
  */
 function applyOnStream (stream, parentId = null) {
-  if (typeof stream.created === 'undefined') { stream.created = Defaults.UnknownDate; }
-  if (typeof stream.modified === 'undefined') { stream.modified = Defaults.UnknownDate; }
-  if (typeof stream.createdBy === 'undefined') { stream.createdBy = Defaults.UnknownAccessId; }
-  if (typeof stream.modifiedBy === 'undefined') { stream.modifiedBy = Defaults.UnknownAccessId; }
+  if (typeof stream.created === 'undefined') { stream.created = defaults.UnknownDate; }
+  if (typeof stream.modified === 'undefined') { stream.modified = defaults.UnknownDate; }
+  if (typeof stream.createdBy === 'undefined') { stream.createdBy = defaults.UnknownAccessId; }
+  if (typeof stream.modifiedBy === 'undefined') { stream.modifiedBy = defaults.UnknownAccessId; }
   if (stream.children == null) { stream.children = []; }
   if (stream.children.length > 0) { applyOnStreams(stream.children, stream.id); }
   stream.parentId = parentId;
@@ -77,7 +78,7 @@ function applyOnStream (stream, parentId = null) {
  * Adds missing mandatory properties to the given streams and their children (if present).
  * **Note**: mutates the stream objects.
  * @param {Object[]} streams
- * @param {[string]} parentId  - for parentId of the stream
+ * @param {string} [parentId]  - for parentId of the stream
  */
 function applyOnStreams (streams, parentId = null) {
   streams.forEach(stream => applyOnStream(stream, parentId));

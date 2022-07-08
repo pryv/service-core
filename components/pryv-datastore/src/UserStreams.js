@@ -8,13 +8,9 @@
 const errors = require('./errors');
 
 /**
- * @typedef {import('./index')} index
- * @typedef {import('./DataStore')} DataStore
- */
-
-/**
  * Prototype object for per-user streams data.
- * {@link DataStore#streams} must return an implementation that inherits from this via {@link index#createUserStreams}.
+ * {@link DataStore#streams} must return an implementation that inherits from this via {@link datastore#createUserStreams}.
+ * @exports UserStreams
  */
 const UserStreams = module.exports = {
   /* eslint-disable no-unused-vars */
@@ -23,17 +19,17 @@ const UserStreams = module.exports = {
    * Get the stream that will be set as root for all Stream Structure of this Data Store.
    * @see https://api.pryv.com/reference/#get-streams
    * @param {identifier} userId
-   * @param {Object} params
+   * @param {object} params
    * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by stores
    * @param {identifier} [params.expandChildren]
-   * @param {identifiers} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is >0 or < 0, children of excludedIds should be excludded too
+   * @param {identifier[]} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is >0 or < 0, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
-   * @returns {UserStream|null} - the stream or null if not found:
+   * @returns {Stream|null} - the stream or null if not found:
    */
   async get (userId, params) { throw errors.unsupportedOperation('streams.get'); },
 
   /**
-   * Get a list of deleted Ids since
+   * Get a list of deleted ids since
    * @param {identifier} userId
    * @param {timestamp} deletionSince
    */
@@ -61,6 +57,8 @@ const UserStreams = module.exports = {
   /**
    * @see https://api.pryv.com/reference/#delete-stream
    * @param {identifier} userId
+   * @param {identifier} streamId
+   * @param {object} params
    * @throws item-already-exists
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Stream|StreamDeletionItem} - The trashed Stream

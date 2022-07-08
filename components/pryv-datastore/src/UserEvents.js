@@ -8,46 +8,42 @@
 const errors = require('./errors');
 
 /**
- * @typedef {import('./index')} index
- * @typedef {import('./DataStore')} DataStore
- */
-
-/**
  * Object to pass when creating events with attachments or adding attachments to events
- * @typedef {Object} AttachmentItem
- * @property {size} [number] - The size of the attachment
+ * @typedef {object} AttachmentItem
  * @property {string} filename fileName
+ * @property {number} [size] - The size of the attachment
  * @property {ReadableStream} attachmentData
  * @property {integrity} [integrity] - The integrity checksum of the attachment
  */
 
 /**
  * Informations sent by the store after saving attachment
- * @typedef {Object} AttachmentResponseItem
+ * @typedef {object} AttachmentResponseItem
  * @param {string} id - mandatory id of the attachement - unique - per event
  */
 
 /**
  * Prototype object for per-user events data.
- * {@link DataStore#events} must return an implementation that inherits from this via {@link index#createUserEvents}.
+ * {@link DataStore#events} must return an implementation that inherits from this via {@link datastore#createUserEvents}.
+ * @exports UserEvents
  */
 const UserEvents = module.exports = {
   /* eslint-disable no-unused-vars */
 
   /**
-   * Get the events for this user.
+   * Get events for this user.
    * @param {identifier} userId
-   * @param {object} params - event query
-   * @param {boolean} [params.includeDeletions] - default false
-   * @param {timestamp} [params.deletedSince] - default null, override includeDeletions. Only returns deleted events, sorted by deletion date descending
-   * @param {boolean} [params.includeHistory] - default false
-   * @returns {Array<Event>}
+   * @param {object} params - Query parameters
+   * @param {boolean} [params.includeDeletions] - Default: `false`. Include event deletions in the results.
+   * @param {timestamp} [params.deletedSince] - Default: `null`; overrides `includeDeletions`. Only return deleted events, sorted by deletion date descending.
+   * @param {boolean} [params.includeHistory] - Default: `false`. Include change history for events.
+   * @returns {Event[]}
    * @see https://api.pryv.com/reference/#get-events
    */
   async get (userId, params) { throw errors.unsupportedOperation('events.get'); },
 
   /**
-   * Get the events as a stream for this user.
+   * Get events as a stream for this user.
    * @param {identifier} userId
    * @param {object} params - event query
    * @returns {ReadableStream}
@@ -70,7 +66,7 @@ const UserEvents = module.exports = {
    * @param {identifier} userId
    * @param {any} partialEventData - eventData (without the new attachments and integrity property)
    * @param {boolean} isExistingEvent - true if the event already exists
-   * @param {Array<AttachmentItem>} attachmentsItems - Array of attachments informations.
+   * @param {AttachmentItem[]} attachmentsItems - Array of attachments informations.
    * @throws item-already-exists
    * @throws invalid-item-id
    * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
@@ -100,6 +96,8 @@ const UserEvents = module.exports = {
   /**
    * @see https://api.pryv.com/reference/#delete-event
    * @param {identifier} userId
+   * @param {identifier} eventId
+   * @param {object} params
    * @throws item-already-exists
    * @throws resource-is-readonly <=== Thrown because item cannot be updated
    * @returns {Event|EventDeletionItem} - The trashed Event

@@ -10,6 +10,7 @@ const ErrorIds = require('./ErrorIds');
 
 /**
  * Helper "factory" methods for data store errors (see error ids).
+ * @exports errors
  */
 module.exports = {
   /**
