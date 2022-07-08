@@ -38,12 +38,6 @@ module.exports = (ds.createUserStreams({
     loadVisibleStreamsTree();
   },
 
-  async getDeletions (userId: string, deletionsSince: timestamp) {
-    const options = { sort: { deleted: -1 }};
-    const deletedStreams = await bluebird.fromCallback(cb => this.userStreamsStorage.findDeletions({id: userId}, deletionsSince, options, cb));
-    return deletedStreams;
-  },
-
   async get (userId: string, params: StoreQuery): Promise<Array<Stream>> {
     let allStreamsForAccount: Array<Stream> = cache.getStreams(userId, 'local');
     if (allStreamsForAccount == null) { // get from DB
@@ -72,6 +66,12 @@ module.exports = (ds.createUserStreams({
     return streams;
   },
 
+  async getDeletions (userId: string, deletionsSince: timestamp) {
+    const options = { sort: { deleted: -1 }};
+    const deletedStreams = await bluebird.fromCallback(cb => this.userStreamsStorage.findDeletions({id: userId}, deletionsSince, options, cb));
+    return deletedStreams;
+  },
+
   async createDeleted (userId: string, streamData: Stream): Promise<Stream> {
     streamData.userId = userId;
     streamData.streamId = streamData.id;
@@ -97,27 +97,23 @@ module.exports = (ds.createUserStreams({
     }*/
   },
 
-  async delete (userId: string, streamId: string): Promise<void> {
-    return await bluebird.fromCallback(cb => this.userStreamsStorage.removeOne({ id: userId }, {id: streamId}, cb));
-  },
-
   async updateTemp(userId: string, streamId, update: {}) {
     //try {
       return await bluebird.fromCallback(cb =>  this.userStreamsStorage.updateOne({id: userId}, {id: streamId}, update, cb));
       /**
-    } catch (err) {
-      handleDuplicateError(err);
-      if (err.isDuplicate) {
-        if (err.isDuplicateIndex('name')) {
-          throw errors.itemAlreadyExists(
+     } catch (err) {
+       handleDuplicateError(err);
+       if (err.isDuplicate) {
+         if (err.isDuplicateIndex('name')) {
+           throw errors.itemAlreadyExists(
             'sibling stream', { name: update.name }, err
-          );
+            );
+          }
         }
-      }
-      // Any other error
-      throw errors.unexpectedError(err);
-    }*/
-  },
+        // Any other error
+        throw errors.unexpectedError(err);
+      }*/
+    },
 
   async update (userId: string, streamData: Stream): Promise<Stream> {
     return await bluebird.fromCallback(cb => this.userStreamsStorage.updateOne({ id: userId }, {id: streamData.id}, streamData, cb));
@@ -127,8 +123,8 @@ module.exports = (ds.createUserStreams({
     return await bluebird.fromCallback(cb => this.userStreamsStorage.delete({ id: userId }, {id: streamId}, cb));
   },
 
-  async delete (userId: string, streamId: stringg): Promise<void> {
-    return await bluebird.fromCallback(cb => this.userStreamsStorage.removeOne({ id: userId}, {id: streamId}, cb));
+  async delete (userId: string, streamId: string): Promise<void> {
+    return await bluebird.fromCallback(cb => this.userStreamsStorage.removeOne({ id: userId }, {id: streamId}, cb));
   },
 
   async deleteAll (userId: string): Promise<void> {

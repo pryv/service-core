@@ -28,22 +28,31 @@ module.exports = (ds.createUserEvents({
     this.eventsFileStorage = eventsFileStorage;
   },
 
-  async update(userId, eventData, transaction) {
-    try {
-      const update = Object.assign({}, eventData);
-      update._id = update.id;
-      update.userId = userId;
-      delete update.id;
+  async get(userId, params) {
+    const {query, options} = paramsToMongoquery(params);
+    const cursor = this._getCursor(userId, query, options);
+    const res = (await cursor.toArray()).map((value) => cleanResult({value}));
+    return res;
+  },
 
-      const query = {userId: userId, _id: update._id};
-      const options = {transactionSession: transaction?.transactionSession };
-
-      const res = await this.eventsCollection.replaceOne(query, update, options);
-      const res2 = await this.eventsCollection.findOne({userId: userId, _id: update._id});
-      return (res.modifiedCount === 1); // true if an event was updated
-    } catch (err) {
-      throw errors.unexpectedError(err);
-    }
+  async getStreamed(userId, params) {
+    const {query, options} = paramsToMongoquery(params);
+    const cursor = this._getCursor(userId, query, options);
+    // streaming with backpressure - highWaterMark has really some effect
+    const readableUnderPressure = new Readable({objectMode: true, highWaterMark: 4000});
+    readableUnderPressure._read = async () => {
+      try {
+        let push = true;
+        while (push) {
+          if (! await cursor.hasNext()) { readableUnderPressure.push(null); break; } // stop
+          const value = await cursor.next();
+          push = readableUnderPressure.push(cleanResult({value})); // if null reader is "full"
+        }
+      } catch (err) {
+        readableUnderPressure.emit('error', err);
+      }
+    };
+    return readableUnderPressure;
   },
 
   async create(userId, event, transaction) {
@@ -83,40 +92,22 @@ module.exports = (ds.createUserEvents({
     return false;
   },
 
-  _getCursor(userId, query, options) {
-    query.userId = userId;
-    const queryOptions = { projection: options.projection};
-    let cursor = this.eventsCollection.find(query, queryOptions).sort(options.sort);
-    if (options.skip != null) { cursor = cursor.skip(options.skip); }
-    if (options.limit != null) { cursor = cursor.limit(options.limit); }
-    return cursor;
-  },
+  async update(userId, eventData, transaction) {
+    try {
+      const update = Object.assign({}, eventData);
+      update._id = update.id;
+      update.userId = userId;
+      delete update.id;
 
-  async getStreamed(userId, params) {
-    const {query, options} = paramsToMongoquery(params);
-    const cursor = this._getCursor(userId, query, options);
-    // streaming with backpressure - highWaterMark has really some effect
-    const readableUnderPressure = new Readable({objectMode: true, highWaterMark: 4000});
-    readableUnderPressure._read = async () => {
-      try {
-        let push = true;
-        while (push) {
-          if (! await cursor.hasNext()) { readableUnderPressure.push(null); break; } // stop
-          const value = await cursor.next();
-          push = readableUnderPressure.push(cleanResult({value})); // if null reader is "full"
-        }
-      } catch (err) {
-        readableUnderPressure.emit('error', err);
-      }
-    };
-    return readableUnderPressure;
-  },
+      const query = {userId: userId, _id: update._id};
+      const options = {transactionSession: transaction?.transactionSession };
 
-  async get(userId, params) {
-    const {query, options} = paramsToMongoquery(params);
-    const cursor = this._getCursor(userId, query, options);
-    const res = (await cursor.toArray()).map((value) => cleanResult({value}));
-    return res;
+      const res = await this.eventsCollection.replaceOne(query, update, options);
+      const res2 = await this.eventsCollection.findOne({userId: userId, _id: update._id});
+      return (res.modifiedCount === 1); // true if an event was updated
+    } catch (err) {
+      throw errors.unexpectedError(err);
+    }
   },
 
   async delete(userId, params, transaction) {
@@ -133,6 +124,15 @@ module.exports = (ds.createUserEvents({
     }
 
     return await this.eventsCollection.deleteMany(query, options);
+  },
+
+  _getCursor(userId, query, options) {
+    query.userId = userId;
+    const queryOptions = { projection: options.projection};
+    let cursor = this.eventsCollection.find(query, queryOptions).sort(options.sort);
+    if (options.skip != null) { cursor = cursor.skip(options.skip); }
+    if (options.limit != null) { cursor = cursor.limit(options.limit); }
+    return cursor;
   },
 
   async _deleteUser(userId: string): Promise<void> {

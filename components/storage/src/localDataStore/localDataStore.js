@@ -63,8 +63,8 @@ module.exports = (ds.createDataStore({
     return this;
   },
 
-  get streams () { return userStreams; },
-  get events () { return userEvents; },
+  streams: userStreams,
+  events: userEvents,
 
   async newTransaction (): Promise<DataStore.Transaction> {
     const transaction = new LocalTransaction();
