@@ -64,6 +64,7 @@ describe('registration: cluster', function() {
     config.injectTestConfig({
       dnsLess: { isActive: false },
       openSource: { isActive: false },
+      tests_skip_forward_to_register: false
     });
     regUrl = config.get('services:register:url');
 

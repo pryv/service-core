@@ -1,4 +1,5 @@
 ---
+tests_skip_forward_to_register: true
 auth:
   adminAccessKey: some_key_yo
   trustedApps: pryv-test@http://test.pryv.local, pryv-test-no-cors@*, *@https://*.rec.la*

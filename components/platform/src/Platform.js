@@ -25,6 +25,7 @@ class Platform {
   #initialized;
   #db;
   #serviceRegisterConn;
+  #config;
 
   constructor() {
     this.#initialized = false;
@@ -37,10 +38,10 @@ class Platform {
       return this;
     }
     this.initialized = true;
-    const config = await getConfig();
-    const isDnsLess = config.get('dnsLess:isActive');
+    this.#config = await getConfig();
+    const isDnsLess = this.#config.get('dnsLess:isActive');
     await this.#db.init();
-    if (! isDnsLess) {
+    if (! isDnsLess) { 
       this.#serviceRegisterConn = await getServiceRegisterConn();
     }
 
@@ -60,7 +61,9 @@ class Platform {
    */
   async getUserUniqueField(field, value) {
     const key = 'user-unique/' + field + '/' + value;
-    $$('Forward this request to register');
+    if (this.#serviceRegisterConn != null && ! this.#config.get('tests_skip_forward_to_register')) {
+      $$('Forward this request to register');
+    }
     return this.#db.getOne(key);
   }
 
@@ -112,7 +115,7 @@ class Platform {
   async updateUserAndForward(username, operations, isActive, isCreation, skipFowardToRegister = false) {
     await this.#updateUser(username, operations, isActive, isCreation);
     if (skipFowardToRegister) return; // in fixture tests
-    if (this.#serviceRegisterConn != null) {
+    if (this.#serviceRegisterConn != null && ! this.#config.get('tests_skip_forward_to_register')) {
       const ops2 = operations.map(op => {
         const action = op.action == 'delete' ? 'delete' : 'update';
         return {[action]: {key: op.key, value: op.value, isUnique: op.isUnique}};
