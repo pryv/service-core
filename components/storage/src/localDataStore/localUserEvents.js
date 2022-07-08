@@ -7,30 +7,26 @@
 
 // @flow
 
-/**
- * Local Data Store.
- * Events implementation
- */
-
-const bluebird = require('bluebird');
 const _ = require('lodash');
 const Readable = require('stream').Readable;
 
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 
-const {DataStore, errors}  = require('pryv-datastore');
+const ds = require('pryv-datastore');
+const errors = ds.errors;
 const handleDuplicateError = require('../Database').handleDuplicateError;
 
+/**
+ * Local data store: events implementation.
+ */
+module.exports = (ds.createUserEvents({
+  eventsCollection: null,
+  eventsFileStorage: null,
 
-class LocalUserEvents extends DataStore.UserEvents {
-  eventsCollection: any;
-  eventsFileStorage: any;
-
-  constructor(eventsCollection: any, eventsFileStorage: any) {
-    super();
+  init (eventsCollection: any, eventsFileStorage: any) {
     this.eventsCollection = eventsCollection;
     this.eventsFileStorage = eventsFileStorage;
-  }
+  },
 
   async update(userId, eventData, transaction) {
     try {
@@ -48,7 +44,7 @@ class LocalUserEvents extends DataStore.UserEvents {
     } catch (err) {
       throw errors.unexpectedError(err);
     }
-  }
+  },
 
   async create(userId, event, transaction) {
     try {
@@ -66,7 +62,7 @@ class LocalUserEvents extends DataStore.UserEvents {
       }
       throw errors.unexpectedError(err);
     }
-  }
+  },
 
   async attachmentsLoad(userId: string, eventData, isExistingEvent, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) {
     const attachmentsResponse = [];
@@ -75,7 +71,7 @@ class LocalUserEvents extends DataStore.UserEvents {
       attachmentsResponse.push({id: fileId});
     }
     return attachmentsResponse;
-  }
+  },
 
   async attachmentDelete(userId: string, eventData, attachmentId: string, transaction?: Transaction) {
     for (const attachment of eventData.attachments) {
@@ -85,8 +81,7 @@ class LocalUserEvents extends DataStore.UserEvents {
       }
     }
     return false;
-  }
-
+  },
 
   _getCursor(userId, query, options) {
     query.userId = userId;
@@ -95,7 +90,7 @@ class LocalUserEvents extends DataStore.UserEvents {
     if (options.skip != null) { cursor = cursor.skip(options.skip); }
     if (options.limit != null) { cursor = cursor.limit(options.limit); }
     return cursor;
-  }
+  },
 
   async getStreamed(userId, params) {
     const {query, options} = paramsToMongoquery(params);
@@ -115,14 +110,14 @@ class LocalUserEvents extends DataStore.UserEvents {
       }
     };
     return readableUnderPressure;
-  }
+  },
 
   async get(userId, params) {
     const {query, options} = paramsToMongoquery(params);
     const cursor = this._getCursor(userId, query, options);
     const res = (await cursor.toArray()).map((value) => cleanResult({value}));
     return res;
-  }
+  },
 
   async delete(userId, params, transaction) {
     const {query, options} = paramsToMongoquery(params);
@@ -138,19 +133,18 @@ class LocalUserEvents extends DataStore.UserEvents {
     }
 
     return await this.eventsCollection.deleteMany(query, options);
-  }
+  },
 
   async _deleteUser(userId: string): Promise<void> {
     const query = {userId};
     return await this.eventsCollection.deleteMany(query, {});
-  }
+  },
 
-  async _storageUsedForUser(userId: string) {
+  async _getUserStorageSize(userId: string) {
+    // TODO: fix this total HACK
     return await (await this.eventsCollection.find({userId})).count();
   }
-}
-
-module.exports = LocalUserEvents;
+}): any);
 
 //--------------- helpers ------------//
 
@@ -167,9 +161,8 @@ function cleanResult(result) {
     delete value._id;
     delete value.userId;
   }
-  return value
+  return value;
 }
-
 
 const converters = {
   equal: (content) => {
@@ -195,8 +188,7 @@ const converters = {
   streamsQuery: (content) => {
     return streamsQueryUtils.toMongoDBQuery(content)
   }
-}
-
+};
 
 /**
  * transform params to mongoQuery
@@ -208,9 +200,8 @@ function paramsToMongoquery(params) {
     skip: params.options.skip,
     limit: params.options.limit,
     sort: params.options.sort,
-  }
+  };
   const query = {$and: []};
-
 
   for (const item of params.query) {
     const newCondition = converters[item.type](item.content);

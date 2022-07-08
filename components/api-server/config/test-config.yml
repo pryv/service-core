@@ -69,20 +69,18 @@ custom:
       type: email/string
       name: Email
       isRequiredInValidation: true
+  dataStores:
+    - id: dummy
+      name: Dummy Store
+      path: ../../mall/test-helpers/dummyDataStore # should be fully qualified path
+      config: null
+    - id: faulty
+      name: Faulty Store
+      path: ../../mall/test-helpers/faultyDataStore # should be fully qualified path
+      config: null
 backwardCompatibility:
   systemStreams:
     prefix:
       isActive: false
-stores:
-  loadExternal:
-    - id: dummy
-      name: Dummy Store
-      path: ../../mall/test-helpers/dummy # should be fully qualified path for external store
-      config: null
-    - id: faulty
-      name: Faulty Store
-      path: ../../mall/test-helpers/faulty # should be fully qualified path
-      config: null
 trace:
   enable: true
-    

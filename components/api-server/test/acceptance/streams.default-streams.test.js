@@ -19,7 +19,7 @@ const { databaseFixture } = require('test-helpers');
 const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { DataStore } = require('pryv-datastore');
+const { defaults: dataStoreDefaults } = require('pryv-datastore');
 const treeUtils = require('utils/src/treeUtils');
 
 describe("System streams", function () {
@@ -48,7 +48,7 @@ describe("System streams", function () {
 
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
-  
+
     app = getApplication(true);
     await app.initiate();
 
@@ -58,10 +58,10 @@ describe("System streams", function () {
       emit: (...args) => axonMsgs.push(args),
     };
     pubsub.setTestNotifier(axonSocket);
-    
+
     pubsub.status.emit(pubsub.SERVER_READY);
     require("api-server/src/methods/streams")(app.api);
-  
+
     request = supertest(app.expressApp);
   });
 
@@ -113,7 +113,7 @@ describe("System streams", function () {
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
-              { 
+              {
                 name: 'Email',
                 id: SystemStreamsSerializer.addCustomerPrefixToStreamId('email'),
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
@@ -133,20 +133,20 @@ describe("System streams", function () {
                 children: []
               },
 
-            ] 
+            ]
           }
         ];
 
 
         const { DataStore } = require('pryv-datastore')
-        
+
         readableStreams = treeUtils.cloneAndApply(readableStreams, (s) => {
-          s.createdBy = DataStore.Defaults.BY_SYSTEM;
-          s.modifiedBy = DataStore.Defaults.BY_SYSTEM;
+          s.createdBy = dataStoreDefaults.SystemAccessId;
+          s.modifiedBy = dataStoreDefaults.SystemAccessId;
           return s;
         });
 
-        DataStore.Defaults.applyOnStreams(readableStreams);
+        dataStoreDefaults.applyOnStreams(readableStreams);
 
         expectedRes.push(...readableStreams);
 
@@ -211,7 +211,7 @@ describe("System streams", function () {
           res = await request.delete(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
             .set('authorization', access.token);
         });
-        it('[1R35] should return status 400', async () => { 
+        it('[1R35] should return status 400', async () => {
           assert.equal(res.status, 400);
         });
         it('[4939] should return the correct error', async () => {

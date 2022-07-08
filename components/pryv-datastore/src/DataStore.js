@@ -5,66 +5,68 @@
  * Proprietary and confidential
  */
 
-// @flow
-
-const UserEvents = require('./UserEvents');
-const UserStreams = require('./UserStreams');
-const Transaction = require('./Transaction');
-const Defaults = require('./Defaults');
-
 /**
- * Notes:
- * - supports
- *    - attachments
- *    - series
- *
- * - series
+ * @typedef {import('./index')} index
+ * @typedef {import('./UserStreams')} UserStreams
+ * @typedef {import('./UserEvents')} UserEvents
  */
 
 /**
- * @property {UserStreams} streams
- * @property {UserEvents} events
+ * Data store prototype object.
+ * All data store implementations inherit from this via {@link index#createDataStore}.
  */
-class DataStore {
-
-  static Defaults = Defaults;
-  static UserEvents = UserEvents;
-  static UserStreams = UserStreams;
-  static Transaction = Transaction;
-
-  _id: string;
-  _name: string;
-
-  set id(id: string): void { this._id = id; }
-  set name(name: string): void { this._name = name; }
-  get id(): string { return this._id; }
-  get name(): string { return this._name; }
-
-  async init(config: {}): Promise<void> { throw new Error('Not implemented'); }
+const DataStore = module.exports = {
+  /**
+   * The data store's unique identifier (loaded from Pryv.io platform settings at creation).
+   * @type {string}
+   */
+  id: '',
 
   /**
-   * @returns UserStreams
+   * The data store's name (loaded from Pryv.io platform settings at creation).
+   * @type {string}
    */
-  get streams(): UserStreams { throw new Error('Not implemented'); }
-  /**
-   * @returns UserEvents
-   */
-  get events(): UserEvents { throw new Error('Not implemented'); }
+  name: '',
 
   /**
-   * @returns a new Transaction
+   * The data store's configuration settings (loaded from platform settings at creation).
+   * @type {Object}
    */
-  async newTransaction(): Transaction { throw new Error('Not implemented'); }
+  settings: {},
 
   /**
-   * Delete all data related to the user
+   * Initialize the store.
+   * @returns {DataStore} The data store object itself (for method chaining).
    */
-  async deleteUser(userId: string): Promise<void> { throw new Error('Not implemented'); }
+  async init () { throw new Error('Not implemented'); },
 
   /**
-   * Return the quantity of storage used by the user in bytes
+   * The {@link UserStreams} implementation.
+   * @type {UserStreams}
    */
-   async storageUsedForUser(userId: string): Promise<number> { throw new Error('Not implemented'); }
+  streams: null,
+
+  /**
+   * The {@link UserEvents} implementation.
+   * @type {UserEvents}
+   */
+  events: null,
+
+  /**
+   * Delete all data related to the user.
+   * @param {string} userId
+   */
+  async deleteUser (userId) { throw new Error('Not implemented'); }, // eslint-disable-line no-unused-vars
+
+  /**
+   * Return the total amount of storage used by the given user, in bytes.
+   * @param {string} userId
+   * @returns {number}
+   */
+  async getUserStorageSize (userId) { throw new Error('Not implemented'); } // eslint-disable-line no-unused-vars
+};
+
+// limit tampering on existing properties
+for (const propName of Object.getOwnPropertyNames(DataStore)) {
+  Object.defineProperty(DataStore, propName, { configurable: false });
 }
-
-module.exports = DataStore;

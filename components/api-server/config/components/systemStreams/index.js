@@ -23,7 +23,7 @@ const IS_UNIQUE: string = 'isUnique';
 const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
 const REGEX_VALIDATION: string = 'regexValidation';
 
-const { DataStore } = require('pryv-datastore');
+const { defaults: dataStoreDefaults } = require('pryv-datastore');
 
 module.exports.features = {
   IS_SHOWN,
@@ -45,10 +45,10 @@ const DEFAULT_VALUES_FOR_FIELDS: {} = {
   [IS_SHOWN]: true, // if true, will be returned in events.get
   [IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
   [IS_REQUIRED_IN_VALIDATION]: false, // if true, the field will be required in the validation
-  created: DataStore.Defaults.UNKNOWN_DATE,
-  modified: DataStore.Defaults.UNKNOWN_DATE,
-  createdBy: DataStore.Defaults.BY_SYSTEM,
-  modifiedBy: DataStore.Defaults.BY_SYSTEM,
+  created: dataStoreDefaults.UnknownDate,
+  modified: dataStoreDefaults.UnknownDate,
+  createdBy: dataStoreDefaults.SystemAccessId,
+  modifiedBy: dataStoreDefaults.SystemAccessId,
 };
 
 /**

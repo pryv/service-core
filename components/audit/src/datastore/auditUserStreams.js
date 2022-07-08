@@ -5,8 +5,8 @@
  * Proprietary and confidential
  */
 
+const ds = require('pryv-datastore');
 const audit = require('audit');
-const { DataStore }  = require('pryv-datastore');
 
 /**
  *
@@ -19,10 +19,8 @@ const { DataStore }  = require('pryv-datastore');
  *
  */
 
- class AuditUserStreams extends DataStore.UserStreams {
-
-  async get(userId, params) {
-
+module.exports = ds.createUserStreams({
+  async get (userId, params) {
     // -- List root streams (accesses & actions)
     if (params.id === '*') {
       return [{
@@ -30,13 +28,13 @@ const { DataStore }  = require('pryv-datastore');
         name: 'Accesses',
         parentId: null,
         children: [],
-        childrenHidden: true,
+        childrenHidden: true
       }, {
         id: 'actions',
         name: 'Actions',
         parentId: null,
         children: [],
-        childrenHidden: true,
+        childrenHidden: true
       }];
     }
 
@@ -45,36 +43,40 @@ const { DataStore }  = require('pryv-datastore');
       const userStorage = await audit.storage.forUser(userId);
       const accesses = userStorage.getAllAccesses();
       if (accesses == null) return [];
-      const res = accesses.map((access) => { return {
-        id: access.term,
-        name: access.term,
-        children: [],
-        parentId: 'accesses'
-      }});
+      const res = accesses.map((access) => {
+        return {
+          id: access.term,
+          name: access.term,
+          children: [],
+          parentId: 'accesses'
+        };
+      });
       return [{
         id: 'accesses',
         name: 'Accesses',
         parentId: null,
-        children: res,
+        children: res
       }];
     }
 
-     // list actions
-     if (params.id === 'actions') {
+    // list actions
+    if (params.id === 'actions') {
       const userStorage = await audit.storage.forUser(userId);
       const actions = userStorage.getAllActions();
       if (actions == null) return [];
-      const res = actions.map((action) => { return {
-        id: action.term,
-        name: action.term,
-        children: [],
-        parentId: 'actions'
-      }});
+      const res = actions.map((action) => {
+        return {
+          id: action.term,
+          name: action.term,
+          children: [],
+          parentId: 'actions'
+        };
+      });
       return [{
         id: 'actions',
         name: 'Actions',
         parentId: null,
-        children: res,
+        children: res
       }];
     }
 
@@ -91,12 +93,10 @@ const { DataStore }  = require('pryv-datastore');
         name: params.id,
         parentId: parentId,
         children: [],
-        trashed: false,
+        trashed: false
       }];
     }
 
     return [];
   }
-}
-
-module.exports = AuditUserStreams;
+});

@@ -12,13 +12,12 @@
  * Pack configured datastores into one
  */
 
-const { DataStore, errors } = require('pryv-datastore');
+const { DataStore, errors: dataStoreErrors } = require('pryv-datastore');
 const APIError = require('errors/src/APIError');
+const apiErrors = require('errors').factory;
 
-// patch DataStore errors with legacy error factory
-const errorFactory = require('errors').factory
-errors._setFactory(errorFactory);
-
+// HACK: replace data store errors factory methods with API errors factory's
+Object.assign(dataStoreErrors, apiErrors);
 
 // -- Core properties
 const MallUserStreams = require('./MallUserStreams');
@@ -26,7 +25,6 @@ const MallUserEvents = require('./MallUserEvents');
 const MallTransaction = require('./MallTransaction');
 
 class Mall {
-
   _id: string = 'store';
   _name: string = 'Store';
   stores: Array<DataStore>;
@@ -83,11 +81,11 @@ class Mall {
   /**
    * Return the quantity of storage used by the user in bytes
    */
-  async storageUsedForUser(userId: string) {
+  async getUserStorageSize(userId: string) {
     let storageUsed = 0;
     for (const store of this.stores) {
       try {
-        storageUsed += await store.storageUsedForUser(userId);
+        storageUsed += await store.getUserStorageSize(userId);
       } catch (error) {
         this.throwAPIError(error, store.id);
       }
@@ -115,23 +113,22 @@ class Mall {
 
   /**
    * Catches errors from DataStore and makes sure they are forwarded as API errors.
-   * @param {*} error
+   * @param {*} err
    * @param {*} storeId
    */
-  throwAPIError(error, storeId) {
-    if (! error instanceof Error) {
-      error = new Error(error);
+  throwAPIError(err, storeId) {
+    if (!(err instanceof Error)) {
+      err = new Error(err);
     }
-    if (! error instanceof APIError) {
-      error = errorFactory.unexpectedError(error);
+    if (!(err instanceof APIError)) {
+      err = apiErrors.unexpectedError(err);
     }
     if (storeId != null) {
       const store = this._storeForId(storeId);
-      error.message = `Data Store Error: ${store.name} [${store.id}] - ${error.message}`;
+      err.message = `Data Store Error: ${store.name} [${store.id}] - ${err.message}`;
     }
-    throw error;
+    throw err;
   }
-
 }
 
 module.exports = Mall;

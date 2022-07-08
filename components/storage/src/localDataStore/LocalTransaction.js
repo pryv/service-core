@@ -7,8 +7,6 @@
 
 // @flow
 
-const {DataStore, errors}  = require('pryv-datastore');
-
 const { getDatabase } = require('../index');
 
 const defaultOptions = {
@@ -20,14 +18,13 @@ const defaultOptions = {
 /**
  * Per-user events data
  */
-class LocalTransaction extends DataStore.Transaction {
+class LocalTransaction {
   transactionSession: any;
   transactionOptions: any;
 
-  constructor(transactionOptions: any) { 
-    super();
+  constructor(transactionOptions: any) {
     this.transactionOptions = transactionOptions || defaultOptions;
-  };
+  }
 
   async init() {
     const database = await getDatabase();
@@ -35,8 +32,8 @@ class LocalTransaction extends DataStore.Transaction {
   }
 
   /**
-   * 
-   * @param {Function} func 
+   *
+   * @param {Function} func
    */
   async exec(func: Function) {
     await this.transactionSession.withTransaction(func, this.transactionOptions);
@@ -45,7 +42,6 @@ class LocalTransaction extends DataStore.Transaction {
   async commit(): Promise<void> { throw(new Error('not implemented')); }
 
   async rollback(): Promise<void> { throw(new Error('not implemented')); }
-
 }
 
 module.exports = LocalTransaction;
