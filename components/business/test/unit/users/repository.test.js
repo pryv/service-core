@@ -31,13 +31,11 @@ describe('Users repository', () => {
 
   describe('createUser()', () => {
     before(async () => {
-      userId = charlatan.Lorem.characters(10);
       username = charlatan.Lorem.characters(10);
       customRegistrationUniqueField = charlatan.App.name();
       email = charlatan.Internet.email();
       try {
-        await mongoFixtures.user(userId, {
-          username,
+        await mongoFixtures.user(username, {
           email,
           customRegistrationUniqueField: customRegistrationUniqueField
         });

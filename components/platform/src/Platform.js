@@ -144,7 +144,7 @@ class Platform {
     }
 
     // ** execute request locally 
-    await this.#updateUser(username, operations, isActive, isCreation);
+    await this.#updateUser(username, operations);
 
   }
 
@@ -154,7 +154,7 @@ class Platform {
    * Replace updateUserInServiceRegister()
    * @param {*} key 
    */
-  async #updateUser(username, operations, isActive, isCreation) {
+  async #updateUser(username, operations) {
     // otherwise deletion
     for (const op of operations) {
       switch (op.action) {
@@ -230,7 +230,7 @@ class Platform {
       operations.push({action: 'delete', key: field, isUnique: false});
     }
 
-    await this.#updateUser(username, operations, false, false);
+    await this.#updateUser(username, operations);
 
     // forward to register
     if (!skipFowardToRegister && this.#shouldForwardToRegister()) {
