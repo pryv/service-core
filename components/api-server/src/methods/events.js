@@ -346,11 +346,6 @@ module.exports = async function (api)
     }
 
     try{
-      if (context.systemStream.isUnique) { 
-        // <== To be reviewed.. Actually this makes no sense, to avoid rrace conditions we shouldn't check for duplicates but just directly try to update
-        // @sgoumaz - What do you think ?? 
-        await usersRepository.checkDuplicates({[context.accountStreamIdWithoutPrefix]: context.newEvent.content});
-      }
       if (context.systemStream.isIndexed) { // assume can be unique as per test #42A1
         const operations = [{ 
           action: 'create', 
@@ -380,11 +375,6 @@ module.exports = async function (api)
     }
 
     try{
-      if (context.systemStream.isUnique) {
-        // <== To be reviewed.. Actually this makes no sense, to avoid rrace conditions we shouldn't check for duplicates but just directly try to update
-        // @sgoumaz - What do you think ?? 
-        await usersRepository.checkDuplicates({[context.accountStreamIdWithoutPrefix]: context.newEvent.content});
-      }
       if (context.systemStream.isIndexed) { // assume can be unique as per test #42A1
         const operations = [{ 
           action: 'update', 

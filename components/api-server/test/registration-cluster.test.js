@@ -204,6 +204,33 @@ describe('registration: cluster', function() {
           assert.deepEqual( putRequest, {
             username: users[i].username,
             user: {
+              appId: [
+                {
+                  value: 'pryv-test',
+                  isUnique: false,
+                  isActive: true,
+                  creation: true
+                }
+              ],
+              invitationToken: [
+                {
+                  value: 'enjoy',
+                  isUnique: false,
+                  isActive: true,
+                  creation: true
+                }
+              ],
+              referer: [
+                {
+                  value: 'pryv',
+                  isUnique: false,
+                  isActive: true,
+                  creation: true
+                }
+              ],
+              insurancenumber: [
+                { value: users[i].insurancenumber, isUnique: false, isActive: true, creation: true }
+              ],
               email: [
                 {
                   value: users[i].email,

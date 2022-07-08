@@ -191,14 +191,10 @@ class ServiceRegister {
       } if (err.status == 400 && err.response.body?.user === null) {
         // do not throw any error if no data was updated (double click for updating the event)
         this.logger.error('No data was updated');
-      }else{
+      } else {
         // do not log validation errors
-        this.logger.error(err, err);
-        if (false && process.env.NODE_ENV === 'test') { // <=== To be removed -- this is not sustainable 
-          $$(err.message);
-        } else {
-          throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
-        }
+        this.logger.error(err, err) {
+        throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
       }
     }
   }

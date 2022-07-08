@@ -334,6 +334,14 @@ class SystemStreamsSerializer {
     return SystemStreamsSerializer.indexedAccountStreamsIdsWithoutPrefix;
   }
 
+  /**
+  * Return true if fields is indexed
+  */
+  static isUniqueAccountField(field: string): Array<string> {
+    // could be optimized with a map.
+    return SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix().includes(field);
+  }
+
 /**
  * Returns streamIds of fields that are unique. Without prefix
  */

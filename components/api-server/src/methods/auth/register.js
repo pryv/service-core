@@ -10,11 +10,12 @@ const errors = require('errors').factory;
 const { ErrorMessages, ErrorIds } = require('errors');
 const methodsSchema = require('api-server/src/schema/authMethods');
 const Registration = require('business/src/auth/registration');
-const { getUsersRepository } = require('business/src/users');
+const { getPlatform } = require('platform');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
+const userIndex = require('business/src/users/UserLocalIndex');
 
 import type { MethodContext } from 'business';
 import type Result  from '../Result';
@@ -31,11 +32,12 @@ module.exports = async function (api) {
   const storageLayer = await getStorageLayer();
   const servicesSettings = config.get('services')
   const isDnsLess = config.get('dnsLess:isActive');
+  await userIndex.init();
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
   await registration.init();
-  const usersRepository = await getUsersRepository(); 
+  const platform = await getPlatform(); 
 
   function skip(context, params, result, next) { next(); }
   function ifDnsLess(ifTrue, ifFalse) {
@@ -92,10 +94,17 @@ module.exports = async function (api) {
     result.reserved = false;
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
-    try {
-      await usersRepository.checkDuplicates({ [field]: params[field]}, context.username);
-    } catch (error) {
-      return next(error);
+
+    // username
+    if (field == 'username') {
+      if (await userIndex.existsUsername(params[field]))
+      return next(errors.itemAlreadyExists( "user", {'username': params[field]}));
+    }
+
+    // other unique fields
+    const value = await platform.getUserUniqueField(field, params[field]); 
+    if (value != null) {
+      return next(errors.itemAlreadyExists("user", {[field]: params[field]}));
     }
     next();
   }

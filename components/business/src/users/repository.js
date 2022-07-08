@@ -178,7 +178,33 @@ class UsersRepository {
   }
 
   async insertOne(user: User, withSession: ?boolean = false, skipFowardToRegister: ?boolean = false): Promise<User> {
-    await this.checkDuplicates(user, user.username);
+    // Create the User at a Platfrom Level.. 
+    const operations = [];
+    for (const key of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
+      if (user[key] != null) {
+        operations.push({action: 'create', key: key, value: user[key], isUnique: SystemStreamsSerializer.isUniqueAccountField(key)});
+      } 
+    }
+
+    let uniquenessError = null;
+    try {
+      await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
+    } catch (err) {
+      if (err.id == 'item-already-exists') {
+        uniquenessError = err; // keep erro to eventually add username uniqueness error at next step
+      } else {
+        throw err;
+      }
+    }
+
+    // check locally for username // <== maybe this userIndex should be fully moved to platform
+    if (await userIndex.existsUsername(user.username)) {
+      if (uniquenessError == null) uniquenessError = errors.itemAlreadyExists("user",{});
+      uniquenessError.data.username = user.username;
+    } 
+
+    if (uniquenessError != null) throw uniquenessError;
+
 
     const mallTransaction = await this.mall.newTransaction();
     const localTransaction = await mallTransaction.forStoreId('local');
@@ -209,12 +235,6 @@ class UsersRepository {
 
         // add the user to local index
         await userIndex.addUser(user.username, user.id);
-
-        // update unique fields on the platform
-        const operations = this.uniqueFields.map(key => { 
-          return {action: 'create', key: key, value: user[key], isUnique: true};
-        }); 
-        await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
         
         await this.mall.events.createMany(user.id, events, mallTransaction);
       }
@@ -223,8 +243,6 @@ class UsersRepository {
   }
 
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
-   
-    await this.checkDuplicates(update, user.username);
 
     // change password into hash if it exists
     if (update.password != null) {
@@ -290,46 +308,6 @@ class UsersRepository {
   async count(): Promise<number> {
     const users = await userIndex.allUsersMap();
     return Object.keys(users).length;
-  }
-
-  
-
-  /**
-   * Checks for duplicates for unique fields. Throws item already exists error if any.
-   * 
-   * @param {any} fields - user fields to check for duplicates
-   * @param {string} ignoreValue - ignore matching duplicates with this value
-   */
-  async checkDuplicates(fields: any, ignoreValue: string): Promise<void> {
-    const that = this;
-    const uniquenessErrors = await getUniquessErrorFields(fields, ignoreValue);
-    // check locally for username (Maybe moved to platfom after full platform-db implementation)
-    if (fields.username && await userIndex.existsUsername(fields.username)) {
-      uniquenessErrors.username = fields.username;
-    }
-
-    if (Object.keys(uniquenessErrors).length > 0) {
-      throw (
-        errors.itemAlreadyExists(
-          "user",
-          uniquenessErrors,
-        )
-      );
-    }
-    return;
-
-    
-    async function getUniquessErrorFields(fields: any, ignoreValue: string): Promise<any> {
-      const uniquenessErrors = {};
-      for (const key of that.uniqueFields) {
-        const value = await that.platform.getUserUniqueField(key, fields[key]);
-        if (value != null && ignoreValue != value) { // exclude from error values already assigned to him
-          uniquenessErrors[key] = fields[key];
-        }
-      }
-      return uniquenessErrors;
-    }
-
   }
 }
 

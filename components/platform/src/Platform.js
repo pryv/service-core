@@ -113,15 +113,34 @@ class Platform {
   }
 
   async updateUserAndForward(username, operations, isActive, isCreation, skipFowardToRegister = false) {
-    await this.#updateUser(username, operations, isActive, isCreation);
-    if (skipFowardToRegister) return; // in fixture tests
-    if (this.#serviceRegisterConn != null && ! this.#config.get('tests_skip_forward_to_register')) {
+    // ** 1st check on local index before forwarding to register 
+    // This should be removed when platformWideDB will be implemented 
+    // This code is redundant with some check that will be performed by #updateUser after updating register 
+    const uniquenessErrors = {};
+    for (const op of operations) { 
+      if (op.action != 'delete' && op.isUnique) {
+        const value = await this.getUserUniqueField(op.key, op.value);
+        if (value != null) uniquenessErrors[op.key] = op.value;
+      }
+    }
+    
+    if (Object.keys(uniquenessErrors).length > 0) {
+      throw (errors.itemAlreadyExists("user", uniquenessErrors));
+    }
+
+
+    // ** Execute request on register
+    if (!skipFowardToRegister && this.#serviceRegisterConn != null && ! this.#config.get('tests_skip_forward_to_register')) {
       const ops2 = operations.map(op => {
         const action = op.action == 'delete' ? 'delete' : 'update';
         return {[action]: {key: op.key, value: op.value, isUnique: op.isUnique}};
       });
       await this.#serviceRegisterConn.updateUserInServiceRegister(username, ops2, isActive, isCreation);
     }
+
+    // ** execute request locally 
+    await this.#updateUser(username, operations, isActive, isCreation);
+
   }
 
   /**
