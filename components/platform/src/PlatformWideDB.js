@@ -70,6 +70,33 @@ class PlatformWideDB {
     logger.debug('reset');
     this.deleteAll.run();
   }
+
+  // ----- utilities ------- //
+
+  async setUserUniqueField(username, field, value) {
+    const key = 'user-unique/' + field + '/' + value;
+    this.set(key, username);
+  }
+
+  async deleteUserUniqueField(field, value) {
+    const key = 'user-unique/' + field + '/' + value;
+    this.delete(key);
+  }
+
+  async setUserIndexedField(username, field, value) {
+    const key = 'user-indexed/' + field + '/' + username;
+    this.set(key, value);
+  }
+
+  async deleteUserIndexedField(username, field) {
+    const key = 'user-indexed/' + field + '/' + username;
+    this.delete(key);
+  }
+
+  async getUsersUniqueField(field, value) {
+    const key = 'user-unique/' + field + '/' + value;
+    return this.getOne(key);
+  }
 }
 
 module.exports = PlatformWideDB;

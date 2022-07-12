@@ -60,39 +60,10 @@ class Platform {
 
   /**
    * Get if value exists for this unique key (only test on local db)
-   * Should be exclusively used as a private method.. but is actually also needed by service_register in dnsLess mode
-   * @param {string} field example 'email'
-   * @param {string} value example 'bob@bob.com'
-   * @returns {Promise<string | null>} the value if exists, null otherwise, example 'bob' 
+   * Exposes directly a pltaform db method as it's needed by service_register in dnsLess mode
    */
   async getLocalUsersUniqueField(field, value) {
-    const key = 'user-unique/' + field + '/' + value;
-    return this.#db.getOne(key);
-  }
-
-  /**
-   * @private as long as we don't use a distributed db. 
-   * Set a unique key for this value. 
-   * @see updateUserAndForward to change a unique field
-   * @param {string} field example 'email'
-   * @param {string} value example 'bob@bob.com'
-   * @param {string} username 
-   */
-  async #setUserUniqueField(username, field, value) {
-    const key = 'user-unique/' + field + '/' + value;
-    this.#db.set(key, username);
-  }
-
-  /**
-   * @private as long as we don't use a distributed db. 
-   * @see updateUserAndForward to delete a unique field
-   * Delete a unique key for this user. 
-   * @param {string} field example 'email'
-   * @param {string} value example 'bob@bob.com'
-   */
-   async #deleteUserUniqueField(field, value) {
-    const key = 'user-unique/' + field + '/' + value;
-    this.#db.delete(key);
+    return this.#db.getUsersUniqueField(field, value);
   }
 
   /**
@@ -105,15 +76,6 @@ class Platform {
    * @param {*} isActive 
    * @param {*} isCreation 
    */
-  async #setUserIndexedField(username, field, value) {
-    const key = 'user-indexed/' + field + '/' + username;
-    this.#db.set(key, value);
-  }
-
-  async #deleteUserIndexedField(username, field) {
-    const key = 'user-indexed/' + field + '/' + username;
-    this.#db.delete(key);
-  }
 
   async updateUserAndForward(username, operations, isActive, isCreation, skipFowardToRegister = false) {
     // ** 1st check on local index before forwarding to register 
@@ -122,7 +84,7 @@ class Platform {
     const localUniquenessErrors = {};
     for (const op of operations) { 
       if (op.action != 'delete' && op.isUnique) {
-        const value = await this.getLocalUsersUniqueField(op.key, op.value);
+        const value = await this.#db.getUsersUniqueField(op.key, op.value);
         if (value != null) localUniquenessErrors[op.key] = op.value;
       }
     }
@@ -130,7 +92,6 @@ class Platform {
     if (Object.keys(localUniquenessErrors).length > 0) {
       throw (errors.itemAlreadyExists("user", localUniquenessErrors));
     }
-
 
     // ** Execute request on register
     if (!skipFowardToRegister && this.#shouldForwardToRegister()) {
@@ -143,7 +104,6 @@ class Platform {
 
     // ** execute request locally 
     await this.#updateUser(username, operations);
-
   }
 
   /**
@@ -158,46 +118,46 @@ class Platform {
       switch (op.action) {
         case 'create':
           if (op.isUnique) {
-            const potentialCollisionUsername = await this.getLocalUsersUniqueField(op.key, op.value);
+            const potentialCollisionUsername = await this.#db.getUsersUniqueField(op.key, op.value);
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
             }
-            await this.#setUserUniqueField(username, op.key, op.value);
+            await this.#db.setUserUniqueField(username, op.key, op.value);
           } else { // is Indexed
-            await this.#setUserIndexedField(username, op.key, op.value);
+            await this.#db.setUserIndexedField(username, op.key, op.value);
           }
           break;
 
         case 'update':
           if (op.isUnique) {
-            const existingUsernameValue = await this.getLocalUsersUniqueField(op.key, op.previousValue);
+            const existingUsernameValue = await this.#db.getUsersUniqueField(op.key, op.previousValue);
             if (existingUsernameValue !== null && existingUsernameValue === username) {
               // only delete eventual existing value if it is the same user
-              await this.#deleteUserUniqueField(op.key, op.previousValue);
+              await this.#db.deleteUserUniqueField(op.key, op.previousValue);
             }
           
-            const potentialCollisionUsername = await this.getLocalUsersUniqueField(op.key, op.value);
+            const potentialCollisionUsername = await this.#db.getUsersUniqueField(op.key, op.value);
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
             }
-            await this.#setUserUniqueField(username, op.key, op.value);
+            await this.#db.setUserUniqueField(username, op.key, op.value);
           } else { // is Indexed
-            await this.#deleteUserUniqueField(op.key, op.previousValue);
-            await this.#setUserIndexedField(username, op.key, op.value);
+            await this.#db.deleteUserUniqueField(op.key, op.previousValue);
+            await this.#db.setUserIndexedField(username, op.key, op.value);
           }
           break;
 
         case 'delete':
           if (op.isUnique) {
-            const existingValue = await this.getLocalUsersUniqueField(op.key, op.value);
+            const existingValue = await this.#db.getUsersUniqueField(op.key, op.value);
             if (existingValue !== null && existingValue !== username) {
               throw (errors.forbidden('unique field ' + op.key + ' with value ' + op.value + ' is associated to another user'));
             }
             if (existingValue != null) {
-              await this.#deleteUserUniqueField(op.key, op.value);
+              await this.#db.deleteUserUniqueField(op.key, op.value);
             }
           } else { // is Indexed
-            await this.#deleteUserIndexedField(username, op.key);
+            await this.#db.deleteUserIndexedField(username, op.key);
           }
           break;
 
