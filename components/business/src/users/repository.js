@@ -22,6 +22,7 @@ const errors = require('errors').factory;
 const usersIndex = require('./UsersLocalIndex');
 const { getMall } = require('mall');
 const { getPlatform } = require('platform');
+const { ErrorIds } = require('errors');
 
 const cache = require('cache');
 
@@ -190,7 +191,7 @@ class UsersRepository {
     try {
       await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
     } catch (err) {
-      if (err.id == 'item-already-exists') {
+      if (err.id == ErrorIds.itemAlreadyExists) {
         uniquenessError = err; // keep erro to eventually add username uniqueness error at next step
       } else {
         throw err;

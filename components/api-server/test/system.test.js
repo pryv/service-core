@@ -233,7 +233,6 @@ describe('system (ex-register)', function () {
     
     function testWelcomeMailNotSent (settings, callback) {
       // setup mail server mock
-      //nock.cleanAll();
       helpers.instanceTestSetup.set(settings, {
         context: settings.services.email,
         execute: function () {
