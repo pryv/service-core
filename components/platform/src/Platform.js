@@ -60,7 +60,7 @@ class Platform {
 
   /**
    * Get if value exists for this unique key (only test on local db)
-   * Exposes directly a pltaform db method as it's needed by service_register in dnsLess mode
+   * Exposes directly a platform db method as it's needed by service_register in dnsLess mode
    */
   async getLocalUsersUniqueField(field, value) {
     return this.#db.getUsersUniqueField(field, value);
