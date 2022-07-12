@@ -65,24 +65,31 @@ const UserEvents = module.exports = {
   /**
    * @param {identifier} userId
    * @param {any} partialEventData - eventData (without the new attachments and integrity property)
-   * @param {boolean} isExistingEvent - true if the event already exists
    * @param {AttachmentItem[]} attachmentsItems - Array of attachments informations.
-   * @throws item-already-exists
-   * @throws invalid-item-id
-   * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
+   * @throws {PryvDataStoreError} with id `item-already-exists`
+   * @throws {PryvDataStoreError} with id `invalid-item-id`
+   * @throws {PryvDataStoreError} with id `resource-is-readonly` if either storage or parent stream is read-only
    * @returns {AttachmentResponseItem} - The ids and other information related to the attachments
    */
-  async attachmentsLoad (userId, partialEventData, isExistingEvent, attachmentsItems) { throw errors.unsupportedOperation('events.attachmentsLoad'); },
+  async saveAttachedFiles (userId, partialEventData, attachmentsItems) { throw errors.unsupportedOperation('events.saveAttachedFiles'); },
 
   /**
    * @param {identifier} userId
-   * @param {any} eventData - eventData
-   * @param {string} attachmentId - attachmentId
-   * @throws invalid-item-id
-   * @throws resource-is-readonly <=== Thrown either because Storage or Parent stream is readonly
+   * @param {*} eventData
+   * @param {identifier} fileId
+   * @returns {stream.Readable}
+   */
+  async getAttachedFile (userId, eventData, fileId) { throw errors.unsupportedOperation('events.getAttachedFile'); },
+
+  /**
+   * @param {identifier} userId
+   * @param {any} eventData
+   * @param {identifier} fileId
+   * @throws {PryvDataStoreError} with id `invalid-item-id`
+   * @throws {PryvDataStoreError} with id `resource-is-readonly` if either storage or parent stream is read-only
    * @returns {AttachmentResponseItem} - The ids and other information related to the attachments
    */
-  async attachmentDelete (userId, eventData, attachmentId) { throw errors.unsupportedOperation('events.attachmentDelete'); },
+  async deleteAttachedFile (userId, eventData, fileId) { throw errors.unsupportedOperation('events.deleteAttachedFile'); },
 
   /**
    * Fully replace an event with new Data

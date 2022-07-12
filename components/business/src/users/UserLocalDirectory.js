@@ -52,6 +52,7 @@ function pathForuserId(userId, extraPath = '') {
 
 /**
  * Return the full file path for this attachment
+ * TODO: cleanup – currently unused; duplicate of storage/user/EventFiles.getAttachmentPath()
  * @param {string} userId
  * @param {string} eventId
  * @param {string} fileId

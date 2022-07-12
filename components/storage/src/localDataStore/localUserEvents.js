@@ -73,23 +73,21 @@ module.exports = (ds.createUserEvents({
     }
   },
 
-  async attachmentsLoad(userId: string, eventData, isExistingEvent, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) {
+  async saveAttachedFiles(userId: string, eventId, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) {
     const attachmentsResponse = [];
     for (const attachment of attachmentsItems) {
-      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, eventData.id);
+      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, eventId);
       attachmentsResponse.push({id: fileId});
     }
     return attachmentsResponse;
   },
 
-  async attachmentDelete(userId: string, eventData, attachmentId: string, transaction?: Transaction) {
-    for (const attachment of eventData.attachments) {
-      if (attachment.id === attachmentId) {
-        await this.eventsFileStorage.removeAttachedFile(userId, eventData.id, attachmentId);
-        return true;
-      }
-    }
-    return false;
+  async getAttachedFile (userId: string, eventId, fileId: string) {
+    return this.eventsFileStorage.getAttachedFileStream(userId, eventId, fileId);
+  },
+
+  async deleteAttachedFile(userId: string, eventId, fileId: string, transaction?: Transaction) {
+    return await this.eventsFileStorage.removeAttachedFile(userId, eventId, fileId);
   },
 
   async update(userId, eventData, transaction) {

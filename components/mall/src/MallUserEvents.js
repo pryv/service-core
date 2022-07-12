@@ -148,7 +148,7 @@ class StoreUserEvents {
           // remove attachments if needed
           if (update.fieldsToDelete.includes('attachments') && eventData.attachments != null) {
             for (let attachment of eventData.attachments) {
-              await mallEvents.attachmentDelete(userId, eventData, attachment.id, mallTransaction);
+              await mallEvents.deleteAttachedFile(userId, eventData, attachment.id, mallTransaction);
             }
           }
 
@@ -212,30 +212,37 @@ class StoreUserEvents {
     }
   }
 
-  async attachmentsLoad(userId: string, eventDataWithoutAttachments: any, isExistingEvent: boolean, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction) {
+  async saveAttachedFiles(userId: string, eventDataWithoutAttachments: any, isExistingEvent: boolean, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction) {
     const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventDataWithoutAttachments, mallTransaction);
-    return await store.events.attachmentsLoad(userId, eventForStore, isExistingEvent, attachmentsItems, storeTransaction);
+    return await store.events.saveAttachedFiles(userId, eventForStore.id, attachmentsItems, storeTransaction);
   }
 
-  async attachmentDelete(userId: string, eventData: any, attachmentId: string, mallTransaction?: MallTransaction) {
+  async getAttachedFile(userId: string, eventData, fileId: string) {
+    const [storeId, storeEventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    const store: DataStore = this.mall._storeForId(storeId);
+    if (store === null) return null;
+    return await store.events.getAttachedFile(userId, storeEventId, fileId);
+  }
+
+  async deleteAttachedFile(userId: string, eventData: any, fileId: string, mallTransaction?: MallTransaction) {
     const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
-    return await store.events.attachmentDelete(userId, eventForStore, attachmentId, storeTransaction);
+    return await store.events.deleteAttachedFile(userId, eventForStore.id, fileId, storeTransaction);
   }
 
   async createWithAttachments(userId: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
-    const attachmentsResponse = await this.attachmentsLoad(userId, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
+    const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
     const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutAttachments, attachmentsResponse, attachmentsItems);
     return await this.create(userId, eventDataWithNewAttachments, mallTransaction);
   }
 
   async updateWithAttachments(userId: string, eventDataWithoutNewAttachments: any, newAttachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
-    const attachmentsResponse = await this.attachmentsLoad(userId, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
+    const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
     const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, newAttachmentsItems);
     return await this.update(userId, eventDataWithNewAttachments, mallTransaction);
   }
 
   async updateDeleteAttachment(userId: string, eventData: any, attachmentId: string, mallTransaction?: MallTransaction): Promise<void> {
-    await this.attachmentDelete(userId, eventData, attachmentId, mallTransaction);
+    await this.deleteAttachedFile(userId, eventData, attachmentId, mallTransaction);
     const newEventData = _.cloneDeep(eventData);
     newEventData.attachments = newEventData.attachments.filter((attachment) => { return attachment.id !== attachmentId });
     return await this.update(userId, newEventData, mallTransaction);
@@ -372,7 +379,6 @@ class StoreUserEvents {
    * @returns
    */
   async _prepareForStore(eventData, mallTransaction) {
-
     let storeId = null;
     let dummyId = null; // unused.
 
