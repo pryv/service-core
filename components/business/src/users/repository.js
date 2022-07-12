@@ -191,7 +191,7 @@ class UsersRepository {
     try {
       await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
     } catch (err) {
-      if (err.id == ErrorIds.itemAlreadyExists) {
+      if (err.id == ErrorIds.ItemAlreadyExists) {
         uniquenessError = err; // keep erro to eventually add username uniqueness error at next step
       } else {
         throw err;
