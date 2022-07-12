@@ -19,7 +19,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 
 const logger = getLogger('users:local-index');
 
-class UserLocalIndex {
+class UsersLocalIndex {
   initialized;
   db;
 
@@ -148,4 +148,4 @@ class DBIndex {
 }
 
 
-module.exports = new UserLocalIndex();
+module.exports = new UsersLocalIndex();

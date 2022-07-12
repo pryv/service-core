@@ -19,7 +19,7 @@ const storage = require('storage');
 const Webhook = require('business').webhooks.Webhook;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
-const userIndex = require('business/src/users/UserLocalIndex');
+const usersIndex = require('business/src/users/UsersLocalIndex');
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
 const { getMall } = require('mall');
@@ -47,8 +47,8 @@ class Context {
     const collections = collectionNames.map(collectionName => {
       return bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb))
     });
-    await userIndex.init();
-    await userIndex.deleteAll();
+    await usersIndex.init();
+    await usersIndex.deleteAll();
     await initMall();
 
     // await Promise.all(collections);

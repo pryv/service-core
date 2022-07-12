@@ -89,7 +89,7 @@ describe('[ACCO] Account with system streams', function () {
 
   before(async function () {
     config = await getConfig();
-    config.injectTestConfig({tests_skip_forward_to_register: false});
+    config.injectTestConfig({testsSkipForwardToRegister: false});
     isDnsLess = config.get('dnsLess:isActive');
     helpers = require('api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());

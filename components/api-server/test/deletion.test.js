@@ -158,7 +158,7 @@ describe('[PGTD] DELETE /users/:username', () => {
         config.injectTestConfig({
           dnsLess: {isActive: settingsToTest[i][0]},
           isOpenSource: {isActive: settingsToTest[i][1]},
-          tests_skip_forward_to_register: settingsToTest[i][0],
+          testsSkipForwardToRegister: settingsToTest[i][0],
         });
         if (isOpenSource && settingsToTest[i][1]) this.skip();
       });

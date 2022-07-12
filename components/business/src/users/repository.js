@@ -19,7 +19,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
 
-const userIndex = require('./UserLocalIndex');
+const usersIndex = require('./UsersLocalIndex');
 const { getMall } = require('mall');
 const { getPlatform } = require('platform');
 
@@ -48,12 +48,12 @@ class UsersRepository {
     this.storageLayer = await storage.getStorageLayer();
     this.sessionsStorage = this.storageLayer.sessions;
     this.accessStorage = this.storageLayer.accesses;
-    await userIndex.init();
+    await usersIndex.init();
   }
 
   // only for testing
   async getAll(): Promise<Array<User>> {
-    const usersMap = await userIndex.allUsersMap(); 
+    const usersMap = await usersIndex.allUsersMap(); 
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -65,17 +65,17 @@ class UsersRepository {
 
   // only for test data to reset all users Dbs.
   async deleteAll(): Promise<void> {
-    const usersMap = await userIndex.allUsersMap(); 
+    const usersMap = await usersIndex.allUsersMap(); 
     for (const [username, userId] of Object.entries(usersMap)) {
       await this.mall.deleteUser(userId);
     }
-    await userIndex.deleteAll();
+    await usersIndex.deleteAll();
     await this.platform.deleteAll();
   }
 
   
   async getAllUsernames(): Promise<Array<User>> {
-    const usersMap = await userIndex.allUsersMap(); 
+    const usersMap = await usersIndex.allUsersMap(); 
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -85,7 +85,7 @@ class UsersRepository {
   }
 
   async getUserIdForUsername(username: string) {
-    return await userIndex.idForName(username);
+    return await usersIndex.idForName(username);
   }
 
   async getUserById(userId: string): Promise<?User> {
@@ -98,7 +98,7 @@ class UsersRepository {
     ) {
       return null;
     }
-    const username = await userIndex.nameForId(userId);
+    const username = await usersIndex.nameForId(userId);
     const user = new User({ id: userId, username: username, events: userAccountEvents });
     return user;
   }
@@ -197,8 +197,8 @@ class UsersRepository {
       }
     }
 
-    // check locally for username // <== maybe this userIndex should be fully moved to platform
-    if (await userIndex.existsUsername(user.username)) {
+    // check locally for username // <== maybe this usersIndex should be fully moved to platform
+    if (await usersIndex.existsUsername(user.username)) {
       if (uniquenessError == null) uniquenessError = errors.itemAlreadyExists("user",{});
       uniquenessError.data.username = user.username;
     } 
@@ -234,7 +234,7 @@ class UsersRepository {
         const events: Array<Event> = await user.getEvents();
 
         // add the user to local index
-        await userIndex.addUser(user.username, user.id);
+        await usersIndex.addUser(user.username, user.id);
         
         await this.mall.events.createMany(user.id, events, mallTransaction);
       }
@@ -284,8 +284,8 @@ class UsersRepository {
       username = user?.username;
     }
     
-    await userIndex.init();
-    await userIndex.deleteById(userId);
+    await usersIndex.init();
+    await usersIndex.deleteById(userId);
 
     if (username != null) { // can happen during tests
       cache.unsetUser(username); 
@@ -306,7 +306,7 @@ class UsersRepository {
     return isValid;
   }
   async count(): Promise<number> {
-    const users = await userIndex.allUsersMap();
+    const users = await usersIndex.allUsersMap();
     return Object.keys(users).length;
   }
 }

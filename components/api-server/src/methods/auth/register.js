@@ -15,7 +15,7 @@ const { getConfigUnsafe } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
-const userIndex = require('business/src/users/UserLocalIndex');
+const usersIndex = require('business/src/users/UsersLocalIndex');
 
 import type { MethodContext } from 'business';
 import type Result  from '../Result';
@@ -32,7 +32,7 @@ module.exports = async function (api) {
   const storageLayer = await getStorageLayer();
   const servicesSettings = config.get('services')
   const isDnsLess = config.get('dnsLess:isActive');
-  await userIndex.init();
+  await usersIndex.init();
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
@@ -97,7 +97,7 @@ module.exports = async function (api) {
 
     // username
     if (field == 'username') {
-      if (await userIndex.existsUsername(params[field]))
+      if (await usersIndex.existsUsername(params[field]))
       return next(errors.itemAlreadyExists( "user", {'username': params[field]}));
     }
 
