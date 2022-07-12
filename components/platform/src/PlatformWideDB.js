@@ -93,9 +93,18 @@ class PlatformWideDB {
     this.delete(key);
   }
 
+  async getUserIndexedField(username, field) {
+    const key = 'user-indexed/' + field + '/' + username;
+    return this.getOne(key);
+  }
+
   async getUsersUniqueField(field, value) {
     const key = 'user-unique/' + field + '/' + value;
     return this.getOne(key);
+  }
+
+  async close() {
+    this.db.close();
   }
 }
 
