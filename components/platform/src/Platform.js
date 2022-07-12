@@ -5,10 +5,6 @@
  * Proprietary and confidential
  */
 
-
-const mkdirp = require('mkdirp');
-const sqlite3 = require('better-sqlite3');
-
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform');
 
@@ -16,6 +12,8 @@ const errors = require('errors').factory;
 
 const { getServiceRegisterConn } = require('platform/src/service_register');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+
+const PlatformWideDB = require('./PlatformWideDB');
 
 /**
  * @class Platform
@@ -268,71 +266,6 @@ class Platform {
    async createUserStep2_CreateUser(userData) {
     await this.#serviceRegisterConn.createUser(userData);
   }
-
-
-
-}
-
-class PlatformWideDB {
-  db;
-  queryUniqueKey;
-  upsertUniqueKeyValue;
-  deleteAll;
-
-  constructor() { }
-
-  async init() {
-    const config = await getConfig();
-    const basePath = config.get('userFiles:path');
-    mkdirp.sync(basePath);
-
-    const DB_OPTIONS = {};
-    this.db = new sqlite3(basePath + '/platform-wide.db');
-    this.db.pragma('journal_mode = WAL');
-
-    this.db.prepare('CREATE TABLE IF NOT EXISTS uniqueKeys (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
-
-
-    // in the following query see the trick to pass a list of values as parameter
-    this.queryUniqueKey = this.db.prepare('SELECT key, value FROM uniqueKeys WHERE key = ?');
-    this.upsertUniqueKeyValue = this.db.prepare('INSERT OR REPLACE INTO uniqueKeys (key, value) VALUES (@key, @value);');
-    this.deleteUniqueKey = this.db.prepare('DELETE FROM uniqueKeys WHERE key = ?;');
-    this.deleteAll = this.db.prepare('DELETE FROM uniqueKeys;');
-  }
-
-  getOne(key) {
-    const value = this.queryUniqueKey.all(key);
-    const res = (value.length === 0) ? null : value[0].value;
-    logger.debug('db:getOne', key, res);
-    return res;
-  }
-
-  getWithPrefix(prefix) {
-
-    return [];
-  }
-
-  /**
-   * 
-   * @param {string} key
-   * @param {string} value 
-   * @returns 
-   */
-  set(key, value) {
-    logger.debug('db:set', key, value);
-    return this.upsertUniqueKeyValue.run({ key, value });
-  }
-
-  delete(key) {
-    logger.debug('db:delete', key);
-    return this.deleteUniqueKey.run(key);
-  }
-
-  reset() {
-    logger.debug('db:reset');
-    this.deleteAll.run();
-  }
-
 }
 
 
