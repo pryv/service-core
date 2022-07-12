@@ -12,6 +12,7 @@ const faultyEvents = createUserEvents();
 
 /**
  * Faulty data store that always fails.
+ * (Implements no data methods, so all calls will throw "not supported" errors.)
  */
 module.exports = ds.createDataStore({
   id: 'faulty',
@@ -30,17 +31,9 @@ module.exports = ds.createDataStore({
 });
 
 function createUserStreams () {
-  return ds.createUserStreams({
-    async get (userId, params) { // eslint-disable-line no-unused-vars
-      throw new Error('Faulty');
-    }
-  });
+  return ds.createUserStreams({});
 }
 
 function createUserEvents () {
-  return ds.createUserEvents({
-    async get (userId, params) { // eslint-disable-line no-unused-vars
-      throw new Error('Faulty');
-    }
-  });
+  return ds.createUserEvents({});
 }

@@ -40,12 +40,12 @@ const DELETION_MODES_FIELDS = {
     'createdBy', 'modified',
     'modifiedBy', 'integrity'
   ]
-}
+};
 
 /**
  * Handle Store.events.* methods
  */
-class StoreUserEvents {
+class MallUserEvents {
 
   /**
    * @param {Mall} mall
@@ -54,7 +54,153 @@ class StoreUserEvents {
     this.mall = mall;
   }
 
-  // --------------------------- UPDATE ----------------- //
+  // ----------------- GET ----------------- //
+
+  /**
+   * Specific to Mall, allow query of a single event
+   * @param {*} userId
+   * @param {*} fullEventId
+   * @returns
+   */
+  async getOne(userId, fullEventId) {
+    const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
+    const store: DataStore = this.mall._storeForId(storeId);
+    if (store == null) return null;
+    try {
+      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore({ id: eventId, state: 'all', limit: 1, includeDeletions: true });
+      const events: Array<Events> = await store.events.get(userId, paramsForStore);
+      if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
+    } catch (e) {
+      this.mall.throwAPIError(e, storeId);
+    }
+    return null;
+  }
+
+  async get(userId, params) {
+    return await this.getWithParamsByStore(userId, eventsGetUtils.getParamsByStore(params));
+  }
+
+  /**
+   * Specific to Mall, allow query with a prepared query by store
+   */
+  async getWithParamsByStore(userId, paramsByStore) {
+    const res = [];
+    for (let storeId of Object.keys(paramsByStore)) {
+      const store = this.mall._storeForId(storeId);
+      const params = paramsByStore[storeId];
+      try {
+        const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(params);
+        const events = await store.events.get(userId, paramsForStore);
+        for (let event of events) {
+          res.push(eventsUtils.convertEventFromStore(storeId, event));
+        }
+      } catch (e) {
+        this.mall.throwAPIError(e, storeId);
+      }
+    }
+    return res;
+  }
+
+  async getStreamed(userId, params) {
+    return await this.getStreamedWithParamsByStore(userId, eventsGetUtils.getParamsByStore(params));
+  }
+
+  /**
+   * Specific to Mall, allow query with a prepared query by store
+   */
+  async getStreamedWithParamsByStore(userId, paramsByStore) {
+    if (Object.keys(paramsByStore).length != 1) {
+      return new Error('getStreamed only supported for one store at a time');
+    }
+    const storeId = Object.keys(paramsByStore)[0];
+    const store = this.mall._storeForId(storeId);
+    try {
+      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(paramsByStore[storeId]);
+      const eventsStreamFromDB = await store.events.getStreamed(userId, paramsForStore);
+      return eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream(storeId));
+    } catch (e) {
+      this.mall.throwAPIError(e, storeId);
+    }
+  }
+
+  /**
+   * To create a streamed result from multiple stores. 'events.get' pass a callback in order to add the streams
+   * To the result;
+   */
+  async generateStreamsWithParamsByStore(userId, paramsByStore, addEventStreamCB) {
+    for (let storeId of Object.keys(paramsByStore)) {
+      const store = this.mall._storeForId(storeId);
+      const params = paramsByStore[storeId];
+      try {
+        addEventStreamCB(store, await this.getStreamedWithParamsByStore(userId, { [storeId]: params }));
+      } catch (e) {
+        this.mall.throwAPIError(e, storeId);
+      }
+    }
+  }
+
+  // ----------------- CREATE ----------------- //
+
+  /**
+   *
+   * @param {*} userId
+   * @param {*} eventData
+   */
+  async create(userId, eventData, mallTransaction) {
+    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
+    try {
+      const res = await store.events.create(userId, eventForStore, storeTransaction);
+      return eventsUtils.convertEventFromStore(store.id, res);
+    } catch (e) {
+      this.mall.throwAPIError(e, store.id);
+    }
+  }
+
+  async createMany(userId, eventsData, mallTransaction) {
+    for (let eventData of eventsData) {
+      await this.create(userId, eventData, mallTransaction);
+    }
+  }
+
+  // ----------------- ATTACHMENTS ----------------- //
+
+  async saveAttachedFiles(userId: string, eventDataWithoutAttachments: any, isExistingEvent: boolean, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction) {
+    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventDataWithoutAttachments, mallTransaction);
+    return await store.events.saveAttachedFiles(userId, eventForStore.id, attachmentsItems, storeTransaction);
+  }
+
+  async getAttachedFile(userId: string, eventData, fileId: string) {
+    const [storeId, storeEventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    const store: DataStore = this.mall._storeForId(storeId);
+    if (store === null) return null;
+    return await store.events.getAttachedFile(userId, storeEventId, fileId);
+  }
+
+  async deleteAttachedFile(userId: string, eventData: any, fileId: string, mallTransaction?: MallTransaction) {
+    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
+    return await store.events.deleteAttachedFile(userId, eventForStore.id, fileId, storeTransaction);
+  }
+
+  async createWithAttachments(userId: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
+    const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
+    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutAttachments, attachmentsResponse, attachmentsItems);
+    return await this.create(userId, eventDataWithNewAttachments, mallTransaction);
+  }
+
+  async updateWithAttachments(userId: string, eventDataWithoutNewAttachments: any, newAttachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
+    const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
+    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, newAttachmentsItems);
+    return await this.update(userId, eventDataWithNewAttachments, mallTransaction);
+  }
+
+  async updateDeleteAttachment(userId: string, eventData: any, attachmentId: string, mallTransaction?: MallTransaction): Promise<void> {
+    await this.deleteAttachedFile(userId, eventData, attachmentId, mallTransaction);
+    const newEventData = _.cloneDeep(eventData);
+    newEventData.attachments = newEventData.attachments.filter((attachment) => { return attachment.id !== attachmentId; });
+    return await this.update(userId, newEventData, mallTransaction);
+  }
+
+  // ----------------- UPDATE ----------------- //
 
   async update(userId, eventData, mallTransaction) {
     const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
@@ -186,156 +332,9 @@ class StoreUserEvents {
     ];
     const res = await this.updateMany(userId, { headId: eventId, state: 'all', includeDeletions: true }, { fieldsToDelete });
     return res;
-  };
-
-
-  // --------------------------- CREATE ----------------- //
-
-  /**
-   *
-   * @param {*} userId
-   * @param {*} eventData
-   */
-  async create(userId, eventData, mallTransaction) {
-    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
-    try {
-      const res = await store.events.create(userId, eventForStore, storeTransaction);
-      return eventsUtils.convertEventFromStore(store.id, res);
-    } catch (e) {
-      this.mall.throwAPIError(e, store.id);
-    }
   }
 
-  async createMany(userId, eventsData, mallTransaction) {
-    for (let eventData of eventsData) {
-      await this.create(userId, eventData, mallTransaction);
-    }
-  }
-
-  async saveAttachedFiles(userId: string, eventDataWithoutAttachments: any, isExistingEvent: boolean, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction) {
-    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventDataWithoutAttachments, mallTransaction);
-    return await store.events.saveAttachedFiles(userId, eventForStore.id, attachmentsItems, storeTransaction);
-  }
-
-  async getAttachedFile(userId: string, eventData, fileId: string) {
-    const [storeId, storeEventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
-    const store: DataStore = this.mall._storeForId(storeId);
-    if (store === null) return null;
-    return await store.events.getAttachedFile(userId, storeEventId, fileId);
-  }
-
-  async deleteAttachedFile(userId: string, eventData: any, fileId: string, mallTransaction?: MallTransaction) {
-    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
-    return await store.events.deleteAttachedFile(userId, eventForStore.id, fileId, storeTransaction);
-  }
-
-  async createWithAttachments(userId: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
-    const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
-    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutAttachments, attachmentsResponse, attachmentsItems);
-    return await this.create(userId, eventDataWithNewAttachments, mallTransaction);
-  }
-
-  async updateWithAttachments(userId: string, eventDataWithoutNewAttachments: any, newAttachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
-    const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
-    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, newAttachmentsItems);
-    return await this.update(userId, eventDataWithNewAttachments, mallTransaction);
-  }
-
-  async updateDeleteAttachment(userId: string, eventData: any, attachmentId: string, mallTransaction?: MallTransaction): Promise<void> {
-    await this.deleteAttachedFile(userId, eventData, attachmentId, mallTransaction);
-    const newEventData = _.cloneDeep(eventData);
-    newEventData.attachments = newEventData.attachments.filter((attachment) => { return attachment.id !== attachmentId });
-    return await this.update(userId, newEventData, mallTransaction);
-  }
-
-
-  // --------------------------- GET ------------------- //
-
-  /**
-   * Specific to Mall, allow query of a single event
-   * @param {*} userId
-   * @param {*} fullEventId
-   * @returns
-   */
-  async getOne(userId, fullEventId) {
-    const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
-    const store: DataStore = this.mall._storeForId(storeId);
-    if (store == null) return null;
-    try {
-      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore({ id: eventId, state: 'all', limit: 1, includeDeletions: true });
-      const events: Array<Events> = await store.events.get(userId, paramsForStore);
-      if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
-    } catch (e) {
-      this.mall.throwAPIError(e, storeId);
-    }
-    return null;
-  }
-
-  async get(userId, params) {
-    return await this.getWithParamsByStore(userId, eventsGetUtils.getParamsByStore(params));
-  }
-
-  /**
-   * Specific to Mall, allow query with a prepared query by store
-   */
-  async getWithParamsByStore(userId, paramsByStore) {
-    const res = [];
-    for (let storeId of Object.keys(paramsByStore)) {
-      const store = this.mall._storeForId(storeId);
-      const params = paramsByStore[storeId];
-      try {
-        const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(params);
-        const events = await store.events.get(userId, paramsForStore);
-        for (let event of events) {
-          res.push(eventsUtils.convertEventFromStore(storeId, event));
-        }
-      } catch (e) {
-        this.mall.throwAPIError(e, storeId);
-      }
-    }
-    return res;
-  };
-
-  async getStreamed(userId, params) {
-    return await this.getStreamedWithParamsByStore(userId, eventsGetUtils.getParamsByStore(params));
-  }
-
-  /**
-   * Specific to Mall, allow query with a prepared query by store
-   */
-  async getStreamedWithParamsByStore(userId, paramsByStore) {
-    const res = [];
-    if (Object.keys(paramsByStore).length != 1) {
-      return new Error('getStreamed only supported for one store at a time');
-    }
-    const storeId = Object.keys(paramsByStore)[0];
-    const store = this.mall._storeForId(storeId);
-    try {
-      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(paramsByStore[storeId]);
-      const eventsStreamFromDB = await store.events.getStreamed(userId, paramsForStore);
-      return eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream(storeId));
-   } catch (e) {
-      this.mall.throwAPIError(e, storeId);
-    }
-  };
-
-  /**
-   * To create a streamed result from multiple stores. 'events.get' pass a callback in order to add the streams
-   * To the result;
-   */
-  async generateStreamsWithParamsByStore(userId, paramsByStore, addEventStreamCB) {
-    for (let storeId of Object.keys(paramsByStore)) {
-      const store = this.mall._storeForId(storeId);
-      const params = paramsByStore[storeId];
-      try {
-        addEventStreamCB(store, await this.getStreamedWithParamsByStore(userId, { [storeId]: params }));
-      } catch (e) {
-        this.mall.throwAPIError(e, storeId);
-      }
-    }
-  }
-
-  // --------------------------- DELETE / UPDATE ------------------- //
+  // ----------------- DELETE / UPDATE ----------------- //
 
   /**
    * Utility to remove data from event history (versions)
@@ -349,10 +348,11 @@ class StoreUserEvents {
     const fieldsToSet = { deleted: Date.now() / 1000 };
     const fieldsToDelete = DELETION_MODES_FIELDS[deletionMode] || ['integrity'];
 
-    const res = await this.updateMany(userId, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
+    await this.updateMany(userId, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
   }
 
-  // --------------------------- DELETE ----------------------- //
+  // ----------------- DELETE ----------------- //
+
   async delete(userId, query) {
     const paramsByStore = eventsGetUtils.getParamsByStore(query);
     for (let storeId of Object.keys(paramsByStore)) {
@@ -367,10 +367,7 @@ class StoreUserEvents {
     }
   }
 
-  // --------------------------- ATTACHEMENTS ------------------- //
-
-
-  // ------------------- UTILS ---------//
+  // ----------------- UTILS -----------------
 
   /**
    * Common utils for events.create and events.createWithAttachmentss
@@ -404,7 +401,7 @@ class StoreUserEvents {
   }
 }
 
-module.exports = StoreUserEvents;
+module.exports = MallUserEvents;
 
 /**
  * Add attachment response to eventData
