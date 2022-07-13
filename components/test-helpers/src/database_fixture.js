@@ -19,7 +19,7 @@ const storage = require('storage');
 const Webhook = require('business').webhooks.Webhook;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
-const userIndex = require('business/src/users/UserLocalIndex');
+const usersIndex = require('business/src/users/UsersLocalIndex');
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
 const { getMall } = require('mall');
@@ -47,8 +47,8 @@ class Context {
     const collections = collectionNames.map(collectionName => {
       return bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb))
     });
-    await userIndex.init();
-    await userIndex.deleteAll();
+    await usersIndex.init();
+    await usersIndex.deleteAll();
     await initMall();
 
     // await Promise.all(collections);
@@ -300,7 +300,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     const attributes = this.attrs;
     const usersRepository = await getUsersRepository();
     const userObj: User = new User(attributes);
-    await usersRepository.insertOne(userObj);
+    await usersRepository.insertOne(userObj, false, true);
     return this.attrs;
   }
 
@@ -322,7 +322,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
 
 
     const usersRepository = await getUsersRepository();
-    await usersRepository.deleteOne(this.context.user.id);
+    await usersRepository.deleteOne(this.context.user.id, username, true);
 
     const removeSessions = bluebird.fromCallback((cb) =>
       db.sessions.removeForUser(username, cb));

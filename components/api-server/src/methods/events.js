@@ -346,9 +346,6 @@ module.exports = async function (api)
     }
 
     try{
-      if (context.systemStream.isUnique) {
-        await usersRepository.checkDuplicates({[context.accountStreamIdWithoutPrefix]: context.newEvent.content});
-      }
       if (context.systemStream.isIndexed) { // assume can be unique as per test #42A1
         const operations = [{ 
           action: 'create', 
@@ -378,9 +375,6 @@ module.exports = async function (api)
     }
 
     try{
-      if (context.systemStream.isUnique) {
-        await usersRepository.checkDuplicates({[context.accountStreamIdWithoutPrefix]: context.newEvent.content});
-      }
       if (context.systemStream.isIndexed) { // assume can be unique as per test #42A1
         const operations = [{ 
           action: 'update', 

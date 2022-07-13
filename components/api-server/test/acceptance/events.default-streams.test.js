@@ -97,6 +97,7 @@ describe("[FG5R] Events of system streams", () => {
 
   before(async function () {
     config = await getConfig();
+    config.injectTestConfig({testsSkipForwardToRegister: false});
     isDnsLess = config.get('dnsLess:isActive');
     const helpers = require('api-server/test/helpers');
     validation = helpers.validation;
@@ -122,6 +123,7 @@ describe("[FG5R] Events of system streams", () => {
   });
 
   after(async function () {
+    config.injectTestConfig({});
   });
 
   describe('GET /events', () => {

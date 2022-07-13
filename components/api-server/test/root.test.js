@@ -114,7 +114,7 @@ describe('[ROOT] root', function() {
     user2 = await mongoFixtures.user(username2, {
       id: 'u_2',
       password: 't3st-Numb3r',
-      email: '00000@test.com',
+      email: '00001@test.com',
       language: 'en'
     });
     await user2.access({

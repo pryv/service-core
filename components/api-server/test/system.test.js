@@ -37,13 +37,14 @@ const { getConfig } = require('@pryv/boiler');
 
 require('date-utils');
 
-
 describe('system route', function () {
   let mongoFixtures,
     username, 
-    server;
+    server, 
+    config;
 
   before(async function() {
+    config = await getConfig();
     mongoFixtures = databaseFixture(await produceMongoConnection());
     username = 'system-test';
     server = await context.spawn();
@@ -68,7 +69,6 @@ describe('system route', function () {
     let username, mfaPath, profilePath, res, profileRes, token, restOfProfile;
     
     before(async () => {
-      config = await getConfig();
       username = charlatan.Lorem.characters(10);
       token = cuid();
       mfaPath = `/system/users/${username}/mfa`;

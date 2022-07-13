@@ -19,9 +19,10 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
 
-const userIndex = require('./UserLocalIndex');
+const usersIndex = require('./UsersLocalIndex');
 const { getMall } = require('mall');
 const { getPlatform } = require('platform');
+const { ErrorIds } = require('errors');
 
 const cache = require('cache');
 
@@ -48,12 +49,12 @@ class UsersRepository {
     this.storageLayer = await storage.getStorageLayer();
     this.sessionsStorage = this.storageLayer.sessions;
     this.accessStorage = this.storageLayer.accesses;
-    await userIndex.init();
+    await usersIndex.init();
   }
 
   // only for testing
   async getAll(): Promise<Array<User>> {
-    const usersMap = await userIndex.allUsersMap(); 
+    const usersMap = await usersIndex.allUsersMap(); 
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -65,17 +66,17 @@ class UsersRepository {
 
   // only for test data to reset all users Dbs.
   async deleteAll(): Promise<void> {
-    const usersMap = await userIndex.allUsersMap(); 
+    const usersMap = await usersIndex.allUsersMap(); 
     for (const [username, userId] of Object.entries(usersMap)) {
       await this.mall.deleteUser(userId);
     }
-    await userIndex.deleteAll();
+    await usersIndex.deleteAll();
     await this.platform.deleteAll();
   }
 
   
   async getAllUsernames(): Promise<Array<User>> {
-    const usersMap = await userIndex.allUsersMap(); 
+    const usersMap = await usersIndex.allUsersMap(); 
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -85,7 +86,7 @@ class UsersRepository {
   }
 
   async getUserIdForUsername(username: string) {
-    return await userIndex.idForName(username);
+    return await usersIndex.idForName(username);
   }
 
   async getUserById(userId: string): Promise<?User> {
@@ -98,7 +99,7 @@ class UsersRepository {
     ) {
       return null;
     }
-    const username = await userIndex.nameForId(userId);
+    const username = await usersIndex.nameForId(userId);
     const user = new User({ id: userId, username: username, events: userAccountEvents });
     return user;
   }
@@ -177,8 +178,34 @@ class UsersRepository {
     return true;
   }
 
-  async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
-    await this.checkDuplicates(user, user.username);
+  async insertOne(user: User, withSession: ?boolean = false, skipFowardToRegister: ?boolean = false): Promise<User> {
+    // Create the User at a Platfrom Level.. 
+    const operations = [];
+    for (const key of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
+      if (user[key] != null) {
+        operations.push({action: 'create', key: key, value: user[key], isUnique: SystemStreamsSerializer.isUniqueAccountField(key)});
+      } 
+    }
+
+    let uniquenessError = null;
+    try {
+      await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
+    } catch (err) {
+      if (err.id == ErrorIds.ItemAlreadyExists) {
+        uniquenessError = err; // keep erro to eventually add username uniqueness error at next step
+      } else {
+        throw err;
+      }
+    }
+
+    // check locally for username // <== maybe this usersIndex should be fully moved to platform
+    if (await usersIndex.existsUsername(user.username)) {
+      if (uniquenessError == null) uniquenessError = errors.itemAlreadyExists("user",{});
+      uniquenessError.data.username = user.username;
+    } 
+
+    if (uniquenessError != null) throw uniquenessError;
+
 
     const mallTransaction = await this.mall.newTransaction();
     const localTransaction = await mallTransaction.forStoreId('local');
@@ -208,13 +235,7 @@ class UsersRepository {
         const events: Array<Event> = await user.getEvents();
 
         // add the user to local index
-        await userIndex.addUser(user.username, user.id);
-
-        // update unique fields on the platform
-        const operations = this.uniqueFields.map(key => { 
-          return {action: 'create', key: key, value: user[key], isUnique: true};
-        }); 
-        await this.platform.updateUser(user.username, operations, true, true);
+        await usersIndex.addUser(user.username, user.id);
         
         await this.mall.events.createMany(user.id, events, mallTransaction);
       }
@@ -223,8 +244,6 @@ class UsersRepository {
   }
 
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
-   
-    await this.checkDuplicates(update, user.username);
 
     // change password into hash if it exists
     if (update.password != null) {
@@ -258,7 +277,7 @@ class UsersRepository {
 
   }
 
-  async deleteOne(userId: string, username: ?string): Promise<number> {
+  async deleteOne(userId: string, username: ?string, skipFowardToRegister: ?boolean): Promise<number> {
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
 
     const user = await this.getUserById(userId);
@@ -266,13 +285,13 @@ class UsersRepository {
       username = user?.username;
     }
     
-    await userIndex.init();
-    await userIndex.deleteById(userId);
+    await usersIndex.init();
+    await usersIndex.deleteById(userId);
 
     if (username != null) { // can happen during tests
       cache.unsetUser(username); 
       // Clear data for this user in Platform 
-     await this.platform.deleteUser(username, user);
+     await this.platform.deleteUser(username, user, skipFowardToRegister);
     }
     await this.mall.deleteUser(userId);
   }
@@ -288,48 +307,8 @@ class UsersRepository {
     return isValid;
   }
   async count(): Promise<number> {
-    const users = await userIndex.allUsersMap();
+    const users = await usersIndex.allUsersMap();
     return Object.keys(users).length;
-  }
-
-  
-
-  /**
-   * Checks for duplicates for unique fields. Throws item already exists error if any.
-   * 
-   * @param {any} fields - user fields to check for duplicates
-   * @param {string} ignoreValue - ignore matching duplicates with this value
-   */
-  async checkDuplicates(fields: any, ignoreValue: string): Promise<void> {
-    const that = this;
-    const uniquenessErrors = await getUniquessErrorFields(fields, ignoreValue);
-    // check locally for username (Maybe moved to platfom after full platform-db implementation)
-    if (fields.username && await userIndex.existsUsername(fields.username)) {
-      uniquenessErrors.username = fields.username;
-    }
-
-    if (Object.keys(uniquenessErrors).length > 0) {
-      throw (
-        errors.itemAlreadyExists(
-          "user",
-          uniquenessErrors,
-        )
-      );
-    }
-    return;
-
-    
-    async function getUniquessErrorFields(fields: any, ignoreValue: string): Promise<any> {
-      const uniquenessErrors = {};
-      for (const key of that.uniqueFields) {
-        const value = await that.platform.getUserUniqueField(key, fields[key]);
-        if (value != null && ignoreValue != value) { // exclude from error values already assigned to him
-          uniquenessErrors[key] = fields[key];
-        }
-      }
-      return uniquenessErrors;
-    }
-
   }
 }
 

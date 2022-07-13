@@ -25,7 +25,7 @@ const { getVersions } = require('./util');
 
 const { getUsersRepository } = require('business/src/users');
 
-const userIndex = require('business/src/users/UserLocalIndex');
+const usersIndex = require('business/src/users/UsersLocalIndex');
 
 
 describe('Migration - 1.8.0',function () {
@@ -43,8 +43,8 @@ describe('Migration - 1.8.0',function () {
     const accessesStorage = storage.user.accesses;
 
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.7.5', mongoFolder, cb));
-    await userIndex.init();
-    await userIndex.deleteAll();
+    await usersIndex.init();
+    await usersIndex.deleteAll();
 
     const initialUsers = await getInitialUsers();
 
@@ -52,7 +52,7 @@ describe('Migration - 1.8.0',function () {
     await bluebird.fromCallback(cb => newVersion.migrateIfNeeded(cb));
 
     // check that all users are migrated
-    const newUsers = await userIndex.allUsersMap();
+    const newUsers = await usersIndex.allUsersMap();
     for ([username, userId] of Object.entries(initialUsers)) {
       if (newUsers[username]) {
         assert.equal(newUsers[username], userId, `User ${username} migrated but with wrong id`);
