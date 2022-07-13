@@ -66,7 +66,7 @@ ALL_AUTHORIZED_STREAMS.forEach((streamId) => {
     STREAMS[parentId].childrens.push(streamId);
   }
   if (STREAMS[streamId].trashed !== true) {
-    if (streamsUtils.storeIdAndStreamIdForStreamId(streamId)[0] === 'local') {
+    if (streamsUtils.parseStoreIdAndStoreItemId(streamId)[0] === 'local') {
       ALL_ACCESSIBLE_STREAMS_LOCAL.push(streamId);
       if (STREAMS[streamId].parentId == null)
         ALL_ACCESSIBLE_ROOT_STREAMS_LOCAL.push(streamId);

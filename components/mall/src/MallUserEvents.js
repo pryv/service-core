@@ -63,11 +63,11 @@ class MallUserEvents {
    * @returns
    */
   async getOne(userId, fullEventId) {
-    const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(fullEventId);
+    const [storeId, storeEventId] = streamsUtils.parseStoreIdAndStoreItemId(fullEventId);
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     try {
-      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore({ id: eventId, state: 'all', limit: 1, includeDeletions: true });
+      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore({ id: storeEventId, state: 'all', limit: 1, includeDeletions: true });
       const events: Array<Events> = await store.events.get(userId, paramsForStore);
       if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
     } catch (e) {
@@ -170,7 +170,7 @@ class MallUserEvents {
   }
 
   async getAttachedFile(userId: string, eventData, fileId: string) {
-    const [storeId, storeEventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    const [storeId, storeEventId] = streamsUtils.parseStoreIdAndStoreItemId(eventData.id);
     const store: DataStore = this.mall._storeForId(storeId);
     if (store === null) return null;
     return await store.events.getAttachedFile(userId, storeEventId, fileId);
@@ -203,7 +203,7 @@ class MallUserEvents {
   // ----------------- UPDATE ----------------- //
 
   async update(userId, eventData, mallTransaction) {
-    const [storeId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+    const [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(eventData.id);
     const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
 
     // update integrity field and recalculate if needed
@@ -217,9 +217,9 @@ class MallUserEvents {
     if ((eventForStore?.streamIds)) {
       const newStreamIds = [];
       for (const fullStreamId of eventForStore.streamIds) {
-        const [streamStoreId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(fullStreamId);
+        const [streamStoreId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(fullStreamId);
         if (streamStoreId != storeId) { throw errorFactory.invalidRequestStructure('events cannot be moved to a different store', eventData); }
-        newStreamIds.push(streamId);
+        newStreamIds.push(storeStreamId);
       }
       eventForStore.streamIds = newStreamIds;
     }
@@ -377,15 +377,14 @@ class MallUserEvents {
    */
   async _prepareForStore(eventData, mallTransaction) {
     let storeId = null;
-    let dummyId = null; // unused.
 
     // add eventual missing id and get storeId from first streamId then
     if (eventData.id == null) {
-      [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[0]);
+      [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(eventData.streamIds[0]);
       const prefix = (storeId == 'local') ? '' : ':' + storeId + ':';
       eventData.id = prefix + cuid();
     } else { // get storeId from event id
-      [storeId, dummyId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+      [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(eventData.id);
     }
 
     // set integrity

@@ -37,7 +37,10 @@ class MallUserStreams {
    * Helper to get a single stream
    */
   async getOne(userId: string, streamId: string, storeId: string): Promise<?Stream> {
-    if (storeId == null) { [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId); }
+    if (storeId == null) {
+      // TODO: clarify smelly code (replace full stream id with in-store id?)
+      [storeId, streamId] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
+    }
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     const streams: Array<Stream> = await store.streams.get(userId, { id: streamId, includeTrashed: true });
@@ -75,7 +78,10 @@ class MallUserStreams {
     // -------- cleanup params --------- //
     let streamId: string = params.id || '*';
     let storeId: string = params.storeId;
-    if (storeId == null) { [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId); }
+    if (storeId == null) {
+      // TODO: clarify smelly code (replace full stream id with in-store id?)
+      [storeId, streamId] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
+    }
 
     params.expandChildren = params.expandChildren || 0;
 
@@ -100,7 +106,7 @@ class MallUserStreams {
       expandChildren: params.expandChildren,
       excludedIds: store.streams.hasFeatureGetParamsExcludedIds ? excludedIds : [],
       storeId: null, // we'll address this request to the store directly
-    }
+    };
 
     // add it to parameters if feature is supported by store.
     if (store.streams.hasFeatureGetParamsExcludedIds) myParams.excludedIds = excludedIds;
@@ -149,12 +155,8 @@ class MallUserStreams {
    * This is mostly used by tests fixtures for now
    */
   async createDeleted(userId: string, streamData: Stream) {
-    const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.id);
+    const [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(streamData.id);
     if (streamData.deleted == null) throw errorFactory.invalidRequestStructure('Missing deleted timestamp for deleted stream', streamData);
-    const streamForStore = {
-      id: cleanStreamId,
-      deleted: streamData.deleted
-    }
     const store: DataStore = this.mall._storeForId(storeId);
     const res = await store.streams.createDeleted(userId, streamData);
     return res;
@@ -175,36 +177,34 @@ class MallUserStreams {
       streamForStore.deleted = null;
     }
 
-
-
     // 1- Check if there is a parent stream
     let parentStoreId = 'local';
-    let cleanParentStreamId;
+    let parentStoreStreamId;
     if (streamForStore.parentId != null) {
-      [parentStoreId, cleanParentStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.parentId)
-      streamForStore.parentId = cleanParentStreamId;
+      [parentStoreId, parentStoreStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamData.parentId);
+      streamForStore.parentId = parentStoreStreamId;
     }
 
     // 2- Check streamId and store
-    let storeId, cleanStreamId;
+    let storeId, storeStreamId;
     if (streamForStore.id == null) {
       storeId = parentStoreId;
       streamForStore.id = cuid();
     } else {
-      [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.id);
+      [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamData.id);
       if (parentStoreId !== storeId) {
-        throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', eventData);
+        throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', streamData);
       }
-      streamForStore.id = cleanStreamId;
+      streamForStore.id = storeStreamId;
     }
 
     const store: DataStore = this.mall._storeForId(storeId);
 
     // 3- Check if this Id has already been taken
-    const existingStreams = await store.streams.get(userId, {id: cleanStreamId, includeDeletions: true});
+    const existingStreams = await store.streams.get(userId, {id: storeStreamId, includeDeletions: true});
     if (existingStreams.length > 0) {
       if (existingStreams[0].deleted != null) { // deleted stream - we can fully remove it
-        await store.streams.delete(userId, cleanStreamId);
+        await store.streams.delete(userId, storeStreamId);
       } else {
         throw errorFactory.itemAlreadyExists('stream', {id: streamData.id});
       }
@@ -235,23 +235,23 @@ class MallUserStreams {
 
     // 1- Check if there is a parent stream
     let parentStoreId = 'local';
-    let cleanParentStreamId;
+    let parentStoreStreamId;
     if (streamForStore.parentId != null) {
-      [parentStoreId, cleanParentStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.parentId);
-      streamForStore.parentId = cleanParentStreamId;
+      [parentStoreId, parentStoreStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamData.parentId);
+      streamForStore.parentId = parentStoreStreamId;
     }
 
     // 2- Check streamId and store
-    let storeId, cleanStreamId;
+    let storeId, storeStreamId;
     if (streamForStore.id == null) {
       storeId = parentStoreId;
       streamForStore.id = cuid();
     } else {
-      [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamData.id);
+      [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamData.id);
       if (parentStoreId !== storeId) {
-        throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', eventData);
+        throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', streamData);
       }
-      streamForStore.id = cleanStreamId;
+      streamForStore.id = storeStreamId;
     }
 
     // 4- Check if a sibbling stream with the same name exists
@@ -267,10 +267,11 @@ class MallUserStreams {
   }
 
   // ---------------------- delete ----------------- //
+
   async updateDelete(userId, streamId) {
-    const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
+    const [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
     const store: DataStore = this.mall._storeForId(storeId);
-    return await store.streams.updateDelete(userId, cleanStreamId);
+    return await store.streams.updateDelete(userId, storeStreamId);
   }
 
   /**

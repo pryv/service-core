@@ -91,8 +91,10 @@ module.exports = async function (api) {
 
     let storeId = params.storeId; // might me null
     if (storeId == null) {
-      [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
+      // TODO: clarify smelly code (replace full stream id with in-store id?)
+      [storeId, streamId] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
     }
+
 
     let streams = await mall.streams.get(context.user.id,
       {
@@ -170,7 +172,8 @@ module.exports = async function (api) {
 
     let storeId = params.storeId; // might me null
     if (storeId == null) {
-      [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
+      // TODO: clarify smelly code (replace full stream id with in-store id?)
+      [storeId, streamId] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
     }
 
     try {
@@ -420,10 +423,10 @@ module.exports = async function (api) {
 
   async function deleteWithData(context, params, result, next) {
     let hasLinkedEvents;
-    const [storeId, cleanStreamId] = streamsUtils.storeIdAndStreamIdForStreamId(params.id);
+    const [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(params.id);
 
     // Load stream and chlidren (context.stream does not have expanded children tree)
-    const streamToDeleteSingleArray = await mall.streams.get(context.user.id, { id: cleanStreamId, includeTrashed: true, expandChildren: -1, storeId });
+    const streamToDeleteSingleArray = await mall.streams.get(context.user.id, { id: storeStreamId, includeTrashed: true, expandChildren: -1, storeId });
     const streamToDelete = streamToDeleteSingleArray[0]; //no need to check existence: done before in verifyStreamExistenceAndPermissions
     const streamAndDescendantIds = treeUtils.collectPluckFromRootItem(streamToDelete, 'id');
 
@@ -431,7 +434,7 @@ module.exports = async function (api) {
     context.streamToDeleteAndDescendantIds = streamAndDescendantIds;
 
     const parentId = streamToDelete.parentId;
-    const cleanDescendantIds = streamAndDescendantIds.map((s) => streamsUtils.storeIdAndStreamIdForStreamId(s)[1]);
+    const cleanDescendantIds = streamAndDescendantIds.map((s) => streamsUtils.parseStoreIdAndStoreItemId(s)[1]);
 
     // check if root stream and linked events exist
     if (params.mergeEventsWithParent === true && parentId == null) {

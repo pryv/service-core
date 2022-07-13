@@ -29,22 +29,25 @@ function storeToStream(store: DataStore, extraProperties: mixed): Stream {
 }
 
 /**
- * Get the storeId related to this stream, and the streamId without the store reference
- * @returns {object} [storeId: ..., streamIdWithoutStorePrefix]
+ * Extract the store id and the in-store item id (without the store reference) from the given item id.
+ * @returns {string[]} `[storeId, storeItemId]`
  */
-function storeIdAndStreamIdForStreamId(fullStreamId: string): [ string, string ] {
-  const isDashed: number = (fullStreamId.indexOf('#') === 0) ? 1 : 0;
-  if (fullStreamId.indexOf(':') !== (0 + isDashed)) return [LOCAL_STORE, fullStreamId];
-  const semiColonPos: number = fullStreamId.indexOf(':', ( 1 + isDashed) );
-  const storeId: string = fullStreamId.substr(1 + isDashed, (semiColonPos - 1));
+// TODO refactor this into general storage (mall) utils
+//      also: apply consistent semantics everywhere: itemId (full external id), storeItemId (in-store id), etc.
+function parseStoreIdAndStoreItemId(fullItemId: string): [ string, string ] {
+  // TODO: refactor or comment this code to clarify (why '#', etc.)
+  const isDashed: number = (fullItemId.indexOf('#') === 0) ? 1 : 0;
+  if (fullItemId.indexOf(':') !== (0 + isDashed)) return [LOCAL_STORE, fullItemId];
+  const semiColonPos: number = fullItemId.indexOf(':', ( 1 + isDashed) );
+  const storeId: string = fullItemId.substr(1 + isDashed, (semiColonPos - 1));
 
-  if (storeId === 'system' || storeId === '_system') return [ LOCAL_STORE, fullStreamId ];
+  if (storeId === 'system' || storeId === '_system') return [ LOCAL_STORE, fullItemId ];
 
   let streamId: string = '';
-  if (semiColonPos === (fullStreamId.length - 1)) { // if ':store:' or '#:store:'
+  if (semiColonPos === (fullItemId.length - 1)) { // if ':store:' or '#:store:'
     streamId = '*';
   } else {
-    streamId = fullStreamId.substr(semiColonPos + 1);
+    streamId = fullItemId.substr(semiColonPos + 1);
   }
   if (isDashed) return [storeId, '#' + streamId];
   return [ storeId, streamId ];
@@ -72,18 +75,18 @@ function streamIdForStoreId(streamId: string, storeId: string): string {
 function addStoreIdPrefixToStreams(storeId: string, streams: Array<Stream>): void {
   for (const stream: Stream of streams) {
     stream.id = streamIdForStoreId(stream.id, storeId);
-    if (stream.parentId != null) { 
+    if (stream.parentId != null) {
       stream.parentId = streamIdForStoreId(stream.parentId, storeId);
     } else {
       stream.parentId = streamIdForStoreId('*', storeId);
     }
-    if (stream.children != null) addStoreIdPrefixToStreams(storeId, stream.children)
+    if (stream.children != null) addStoreIdPrefixToStreams(storeId, stream.children);
   }
 }
 
 module.exports = {
   storeToStream,
-  storeIdAndStreamIdForStreamId,
+  parseStoreIdAndStoreItemId,
   streamIdForStoreId,
   addStoreIdPrefixToStreams
-}
+};

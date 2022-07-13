@@ -53,9 +53,9 @@ function transformArrayOfStringsToStreamsQuery(arrayOfQueries: Array<any>): Arra
   // group streamIds per "store"
   const map: Map<string, Array<string>> = {};
   for (const streamId: string of streamIds) {
-    const [store: string, cleanStreamId: string] = streamsUtils.storeIdAndStreamIdForStreamId(streamId);
-    if (map[store] == null) map[store] = [];
-    map[store].push(streamId);
+    const [storeId: string, ] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
+    if (map[storeId] == null) map[storeId] = [];
+    map[storeId].push(streamId);
   }
 
   const arrayOfStreamQueries: Array<StreamQuery> = [];
@@ -97,15 +97,15 @@ function validateStreamsQuerySchemaAndSetStore(arrayOfQueries: Array<StreamQuery
 
   /**
    * Get StoreID, add storeId property to query and remove eventual storeId from streamId
-   * @param {string} streamIdWithPrefix - a streamId with its store prefix
+   * @param {string} fullStreamId - a streamId with its store prefix
    * @returns {string} streamId without its prefix
    */
-  function validateAndAttachStore(streamIdWithPrefix: string): string {
+  function validateAndAttachStore(fullStreamId: string): string {
     // queries must be grouped by store
-    const [thisStore: string, streamId: string] = streamsUtils.storeIdAndStreamIdForStreamId(streamIdWithPrefix);
-    if (streamQuery.storeId == null) streamQuery.storeId = thisStore;
-    if (streamQuery.storeId !== thisStore) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' queries must me grouped by store.');
-    return streamId;
+    const [thisStoreId: string, storeStreamId: string] = streamsUtils.parseStoreIdAndStoreItemId(fullStreamId);
+    if (streamQuery.storeId == null) streamQuery.storeId = thisStoreId;
+    if (streamQuery.storeId !== thisStoreId) throw ('Error in \'streams\' parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) + '\' queries must me grouped by store.');
+    return storeStreamId;
   }
 
   if (streamQuery.any == null) {
@@ -171,7 +171,7 @@ function uniqueStreamIds(arrayOfStreamiIs) {
  * @returns
  */
 exports.expandAndTransformStreamQueries = async function expandAndTransformStreamQueries(streamQueries, expandStream) {
-  
+
   async function expandSet(streamIds, storeId, excludedIds = []) {
     const expandedSet = new Set(); // use a Set to avoid duplicate entries;
     for (let streamId of streamIds) {

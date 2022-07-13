@@ -47,8 +47,8 @@ export type GetEventsParams = {
   includeDeletions?: boolean,
 };
 export type StoreQuery = {
-  id: string, 
-  storeId: string, 
+  id: string,
+  storeId: string,
   includeTrashed: boolean,
   expandChildren: integer,
   excludedIds: Array<string>,
@@ -58,41 +58,41 @@ export type StoreQuery = {
 let mall;
 
 /**
- *  # Stream Query Flow 
+ *  # Stream Query Flow
  *  1. coerceStreamParam:
  *    - null `streams` is changed to `[{any: ['*]}]
  *    - transform "stringified" `streams` by parsing JSON object
- * 
+ *
  *  2. transformArrayOfStringsToStreamsQuery:
- *    For backwardCompatibility with older streams parameter ['A', 'B'] 
+ *    For backwardCompatibility with older streams parameter ['A', 'B']
  *    - `streams: ['A', 'B', 'C']` => `streams: [{any: 'A'}, {any: 'B'}, {any: 'C'}]`
- * 
+ *
  *  3. validateStreamsQueriesAndSetStore:
- *    - Check syntax and add storeId 
+ *    - Check syntax and add storeId
  *      `streams: [{any: 'A'}, {any: ':_audit:B'}]` => `streams: [{any: 'A', storeId: 'local'}, {any: 'B', storeId: 'audit'}]`
- * 
+ *
  *  4. streamQueryCheckPermissionsAndReplaceStars:
- *    For `stream.any`ONLY ! (we don't have to check NOT and ALL query as they only reduce scope)  
- *    - check if stream exits and if has "read" access 
+ *    For `stream.any`ONLY ! (we don't have to check NOT and ALL query as they only reduce scope)
+ *    - check if stream exits and if has "read" access
  *    - If "stream.any" contains  "*" it's replaced by all root streams with "read" rights
- *   
+ *
  *  5. streamQueryAddForcedAndForbiddenStreams
  *    - Add to streams query `all` streams declared as "forced"
  *    - Add to streams query `not` streams that must not be exposed permissions => with level = "none"
- *   
+ *
  *  6. streamQueryExpandStreams
  *    - Each "streamId" of the queries is "expanded" (i.e. transformed in an array of streamId that includes the streams and it's chidlren)
- *    - Do not expand streams prefixed with a "#" 
- *       
+ *    - Do not expand streams prefixed with a "#"
+ *
  *    - A callBack `expandStreamInContext`is used to link the expand process and the "store"
  *      This callBack is designed to be optimized on a Per-Store basis The current implementation is generic
  *      - If streamId is prefixed with a "#" just return the streamId without "#"
- *      - It queries the stores with and standard `store.streams.get({id: streamId, exludedIds: [....]})` 
+ *      - It queries the stores with and standard `store.streams.get({id: streamId, exludedIds: [....]})`
  *        and return an array of streams.
- * 
+ *
  *    - streamsQueryUtils.expandAndTransformStreamQueries
  *      Is in charge of handling 'any', 'all' and 'not' "expand" process
- * 
+ *
  *      - "any" is expanded first excluding streamIds in "not"
  *          => The result is kept in `any`
  *      - "all" is expanded in second excluding streamIds in "not"
@@ -100,7 +100,7 @@ let mall;
  *          example: `{all: ['A', 'B']}` => `{and: [{any: [...expand('A')]}, {any: [...expand('B')]}]}`
  *      - "not" is expanded in third and added to `and` -- !! we exclude streamIds that are in 'any' as some authorization might have been given on child now expanded
  *          example: `{all: ['A'], not['B', 'C']}` =>  `{and: [{any: [...expand('A')]}, {not: [...expand('B')...expand('C')]}]}
- * 
+ *
  */
 
 function coerceStreamsParam(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
@@ -147,7 +147,7 @@ function coerceStreamsParam(context: MethodContext, params: GetEventsParams, res
   }
 
   /**
-   * we detect if it's JSON by looking at first char. 
+   * we detect if it's JSON by looking at first char.
    * Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
    * @param {string} input
    */
@@ -212,13 +212,13 @@ function validateStreamsQueriesAndSetStore(context: MethodContext, params: GetEv
   next();
 }
 
-// the two tasks are joined as '*' replaced have their permissions checked 
+// the two tasks are joined as '*' replaced have their permissions checked
 async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
   context.tracing.startSpan('streamQueries');
   const unAuthorizedStreamIds: Array<string> = [];
   const unAccessibleStreamIds: Array<string> = [];
 
-  async function streamExistsAndCanGetEventsOnStream(streamId: string, storeId: string, 
+  async function streamExistsAndCanGetEventsOnStream(streamId: string, storeId: string,
     unAuthorizedStreamIds: Array<string>, unAccessibleStreamIds: Array<string>): Promise<void> {
     // remove eventual '#' in streamQuery
     const cleanStreamId: string = streamId.startsWith('#') ? streamId.substr(1) : streamId;
@@ -234,7 +234,7 @@ async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext
   }
 
   for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
-    // ------------ "*" case 
+    // ------------ "*" case
     if (streamQuery.any && streamQuery.any.includes('*')) {
       if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) continue; // We can keep star
 
@@ -248,7 +248,7 @@ async function streamQueryCheckPermissionsAndReplaceStars(context: MethodContext
       streamQuery.any = canReadStreamIds;
     } else { // ------------ All other cases
       /**
-       * ! we don't have to check for permissions on 'all' or 'not' as long there is at least one 'any' authorized. 
+       * ! we don't have to check for permissions on 'all' or 'not' as long there is at least one 'any' authorized.
        */
       if (streamQuery?.any?.length === 0) {
         return next(errors.invalidRequestStructure('streamQueries must have a valid {any: [...]} component'));
@@ -308,8 +308,8 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
     }
 
     const query: StoreQuery =  {
-      id: streamId, 
-      storeId: storeId, 
+      id: streamId,
+      storeId: storeId,
       includeTrashed: params.state === 'all' || params.state === 'trashed',
       expandChildren: -1,
       excludedIds: excludedIds,
@@ -317,11 +317,11 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
     };
 
     const tree: Array<Stream> = await mall.streams.get(context.user.id, query);
-    
-    // collect streamIds 
+
+    // collect streamIds
     const resultWithPrefix: Array<string> = treeUtils.collectPluck(tree, 'id');
-    // remove storePrefix 
-    const result: Array<string> = resultWithPrefix.map((fullStreamId: string) => streamsUtils.storeIdAndStreamIdForStreamId(fullStreamId)[1]);
+    // remove storePrefix
+    const result: Array<string> = resultWithPrefix.map((fullStreamId: string) => streamsUtils.parseStoreIdAndStoreItemId(fullStreamId)[1]);
     return result;
   }
 
@@ -333,7 +333,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
     return next(e);
   }
 
-  // delete streamQueries with no inclusions 
+  // delete streamQueries with no inclusions
   params.arrayOfStreamQueriesWithStoreId = params.arrayOfStreamQueriesWithStoreId.filter(streamQuery => streamQuery.any != null || streamQuery.and != null);
 
   context.tracing.finishSpan('streamQueries');
@@ -354,10 +354,10 @@ async function streamQueryAddHiddenStreams(context: MethodContext, params: GetEv
 
   // trashed stream (it's enough to add only root streams, as they will expanded later on)
   if (params.state !== 'all' && params.state !== 'trashed') {
-    // if query contains '*' make sure to not include Trashed root streams 
+    // if query contains '*' make sure to not include Trashed root streams
     for (const streamQuery: StreamQueryWithStoreId of params.arrayOfStreamQueriesWithStoreId) {
       if (streamQuery.any == null || ! streamQuery.any.includes('*')) continue;
-      // get trashed root streams from store 
+      // get trashed root streams from store
       const rootStreams = await mall.streams.get(context.user.id,
         {
           id: '*',
@@ -379,7 +379,7 @@ async function streamQueryAddHiddenStreams(context: MethodContext, params: GetEv
  * - Create a copy of the params per query
  * - Add specific stream queries to each of them
  */
-async function findEventsFromStore(filesReadTokenSecret: string, 
+async function findEventsFromStore(filesReadTokenSecret: string,
   isStreamIdPrefixBackwardCompatibilityActive: boolean, isTagsBackwardCompatibilityActive: boolean,
   context: MethodContext, params: GetEventsParams, result: Result, next: ApiCallback) {
   if (params.arrayOfStreamQueriesWithStoreId?.length === 0)  {
@@ -398,7 +398,7 @@ async function findEventsFromStore(filesReadTokenSecret: string,
       paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
       paramsByStoreId[storeId].streams = []; // empty the stream query
     }
-    delete streamQuery.storeId; 
+    delete streamQuery.storeId;
     paramsByStoreId[storeId].streams.push(streamQuery);
   }
   // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
@@ -412,7 +412,7 @@ async function findEventsFromStore(filesReadTokenSecret: string,
     let stream: ReadableStream = eventsStream;
     if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
       stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
-    } 
+    }
     if (isTagsBackwardCompatibilityActive) {
       stream = stream.pipe(new addTagsStream());
     }
