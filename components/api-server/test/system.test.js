@@ -65,10 +65,11 @@ describe('system route', function () {
     res.body.error.id.should.eql('invalid-access-token');
   });
 
-  it('[CHEC] System checks ', async () => { 
+  it('[CHEK] System checks ', async () => { 
     const res = await request.get(url.resolve(server.url(), '/system/checks') )
       .set('authorization', config.get('auth:adminAccessKey'));
     $$(res.body);
+    // Groumpf fixtures are producing unwanted discrepencies
   });
 
   describe('DELETE /mfa', () => {
