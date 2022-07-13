@@ -52,6 +52,7 @@ const ALL_METHODS = [
   'events.delete',
   'events.getAttachment',
   'events.deleteAttachment',
+  'system.checks',
   'system.createUser',
   'system.deactivateMfa',
   'system.getUserInfo',
@@ -63,6 +64,7 @@ const NOT_AUDITED_METHODS = [
   'system.getUserInfo',
   'auth.usernameCheck',
   'auth.emailCheck',
+  'system.checks',
 ];
 
 const AUDITED_METHODS = ALL_METHODS.filter(m => ! NOT_AUDITED_METHODS.includes(m));
@@ -72,6 +74,7 @@ const WITHOUT_USER_METHODS = [
   'auth.register',
   'system.createUser',
   'system.deactivateMfa',
+  'system.checks',
 ];
 
 const WITH_USER_METHODS = AUDITED_METHODS.filter(m => ! WITHOUT_USER_METHODS.includes(m));

@@ -28,6 +28,11 @@ module.exports = async function platformCheckIntegrity(platformWideDB) {
   const users = await usersRepository.getAll();
   const indexedFields = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix();
 
+  const infos = {
+    usersCountOnPlatform: Object.keys(platformEntryByUser).length,
+    usersCountOnRegistry: users.length
+  }
+
   for (let i = 0; i < users.length; i++) {
     const user = users[i];
     const username = user.username;
@@ -40,6 +45,12 @@ module.exports = async function platformCheckIntegrity(platformWideDB) {
         errors.push(`Cannot find username [${username}] data in -platform- while looking for field [${field}]`);
         continue;
       }
+
+      if (platformEntryByUser[username][field] == null) {
+        errors.push(`Cannot find field [${field}] for username [${username}] in -platform- expected value is :  [${value}]`);
+        continue;
+      }
+
       if (platformEntryByUser[username][field].value != value) {
         errors.push(`Expected value [${value}] of field [${field}] for username [${username}] in -platform- found value :  [${platformEntryByUser[username][field].value}]`);
         continue;
@@ -59,5 +70,8 @@ module.exports = async function platformCheckIntegrity(platformWideDB) {
       errors.push(`Cannot find field [${field}] for username [${username}] in -platform-`);
     }
   }
-  return errors;
+  return {
+    title: 'plaformDb vs userReposity', 
+    infos, 
+    errors};
 }

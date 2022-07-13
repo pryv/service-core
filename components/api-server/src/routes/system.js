@@ -64,6 +64,16 @@ module.exports = function system(expressApp: express$Application, app: Applicati
       systemAPI.call(req.context, { username: req.params.username }, methodCallback(res, next, 204));
   });
 
+  // --------------------- health checks ----------------- //
+  expressApp.get(Paths.System + '/checks',
+    setMethodId('system.checks'),
+    function (req: express$Request, res, next) {
+      systemAPI.call(req.context, {}, methodCallback(res, next, 200));
+  }); 
+
+
+
+
   // Checks if `req` contains valid authorization to access the system routes. 
   // 
   function checkAuth(req: express$Request, res, next) {

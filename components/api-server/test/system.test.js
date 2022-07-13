@@ -65,6 +65,12 @@ describe('system route', function () {
     res.body.error.id.should.eql('invalid-access-token');
   });
 
+  it('[CHEC] System checks ', async () => { 
+    const res = await request.get(url.resolve(server.url(), '/system/checks') )
+      .set('authorization', config.get('auth:adminAccessKey'));
+    $$(res.body);
+  });
+
   describe('DELETE /mfa', () => {
     let username, mfaPath, profilePath, res, profileRes, token, restOfProfile;
     

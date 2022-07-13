@@ -13,41 +13,37 @@ const bluebird = require('bluebird');
  * @returns {Array<string>} of error messages if any discrepencies is found
  */
 module.exports = async function checkIntegrity (usersIndex) {
-  const usernamesFromEvents = await getUsersNamesFromEvents();
   const errors = [];
-  
-  // check that all users are migrated
-  const userIndexUsers = await usersIndex.allUsersMap();
-  for ([username, userId] of Object.entries(usernamesFromEvents)) {
-    if (userIndexUsers[username]) {
-      if (userIndexUsers[username] != userId) {
-        errors.push(`UserIds do not match for username [${username}] events: [${userId}] userIndex: [${userIndexUsers}]`);
-      }
-    } else {
-      errors.push(`Username [${username}] with userId: [${userId}] found in -events- but not in -userIndex-`);
-    }
-    delete userIndexUsers[username];
-  }
+  const infos = { }
+  const checkedMap = {};
 
-  for ([username, userId] of Object.entries(userIndexUsers)) {
-    errors.push(`Username [${username}] with userId: [${userId}] found in -userIndex- but not in -events-`);
+
+  for (const collectionName of ['events', 'streams', 'accesses', 'profile', 'webhooks', 'followedSlices']) {
+
+    const userIds = await getAllKnownUserIdsFromDB(collectionName);
+    infos['userIdsCount-' + collectionName] = userIds.length;
+
+    for (const userId of userIds) {
+      if (checkedMap[userId]) continue;
+      const username = usersIndex.nameForId(userId);
+      checkedMap[userId] = true;
+      if (username == null) {
+        errors.push(`Found userId [${userId}] in mongo collection : [${collectionName}] unkown in -userIndex-`);
+        continue;
+      }
+    }
   }
-  return errors;
+  return {
+    title: 'userIndex vs mongoDB',
+    infos,
+    errors};
 }
   
 
-async function getUsersNamesFromEvents() {
+async function getAllKnownUserIdsFromDB(collectionName) {
   const { getDatabase } = require('storage'); // placed here to avoid some circular dependency
-
   const database = await getDatabase();
-  const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
-  const query =  { streamIds: { $in: [':_system:username'] } };
-  const cursor = await eventsCollection.find(query, {projection: {userId: 1, content: 1}});
-
-  const users = {};
-  while (await cursor.hasNext()) {
-    const user = await cursor.next();
-    users[user.content] = user.userId;
-  }
-  return users;
+  const collection = await bluebird.fromCallback(cb => database.getCollection({ name: collectionName }, cb));
+  const userIds = await collection.distinct('userId', {});
+  return userIds;
 }
