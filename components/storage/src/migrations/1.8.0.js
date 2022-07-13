@@ -62,7 +62,7 @@ module.exports = async function (context, callback) {
     const users = await usersRepository.getAll();
     const indexedFields = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix(); 
 
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < users.length; i++) {
       const user = users[i];
       const username = user.username;
       for (const field of indexedFields) {

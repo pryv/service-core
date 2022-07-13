@@ -36,6 +36,8 @@ class PlatformWideDB {
     this.upsertUniqueKeyValue = this.db.prepare('INSERT OR REPLACE INTO uniqueKeys (key, value) VALUES (@key, @value);');
     this.deleteUniqueKey = this.db.prepare('DELETE FROM uniqueKeys WHERE key = ?;');
     this.deleteAll = this.db.prepare('DELETE FROM uniqueKeys;');
+    this.queryAllStartsWith = this.db.prepare('SELECT key, value FROM uniqueKeys WHERE key LIKE (? || \'%\')');
+    this.queryAllWithValue = this.db.prepare('SELECT key, value FROM uniqueKeys WHERE value = ?');
   }
 
   getOne(key) {
@@ -45,9 +47,12 @@ class PlatformWideDB {
     return res;
   }
 
-  getWithPrefix(prefix) {
+  getAllWithPrefix(prefix) {
+    return this.queryAllStartsWith.all(prefix).map(parseEntry);
+  }
 
-    return [];
+  getAllWithValue(value) {
+    return this.queryAllStartsWith.all(value).map(parseEntry);
   }
 
   /**
@@ -105,6 +110,23 @@ class PlatformWideDB {
 
   async close() {
     this.db.close();
+  }
+}
+
+/**
+ * Return an object from an entry in the table
+ * @param {Entry} entry 
+ * @param {string} entry.key 
+ * @param {string} entry.value
+ */
+function parseEntry(entry) {
+  const [type, field, userNameOrValue] = entry.key.split('/');
+  const isUnique = (type == 'user-unique');
+  return {
+    isUnique: isUnique,
+    field: field,
+    username: isUnique ? entry.value : userNameOrValue,
+    value: isUnique ? userNameOrValue : entry.value
   }
 }
 

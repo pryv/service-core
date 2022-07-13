@@ -15,6 +15,8 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 
 const PlatformWideDB = require('./PlatformWideDB');
 
+const platformCheckIntegrity = require('./platformCheckIntegrity');
+
 /**
  * @class Platform
  * @property {Users} users
@@ -44,6 +46,10 @@ class Platform {
     }
 
     return this;
+  }
+
+  async checkIntegrity() {
+    return await platformCheckIntegrity(this.#db);
   }
 
   /** 
@@ -226,6 +232,7 @@ class Platform {
    async createUserStep2_CreateUser(userData) {
     await this.#serviceRegisterConn.createUser(userData);
   }
+
 }
 
 
