@@ -106,7 +106,7 @@ module.exports = async function (api) {
       });
 
     if (streamId !== '*') {
-      const fullStreamId = streamsUtils.streamIdForStoreId(streamId, storeId);
+      const fullStreamId = streamsUtils.getFullItemId(storeId, streamId);
       const inResult = treeUtils.findById(streams, fullStreamId);
       if (!inResult) {
         return next(errors.unknownReferencedResource('unknown Stream:', params.parentId ? 'parentId' : 'id', fullStreamId, null));
@@ -123,7 +123,7 @@ module.exports = async function (api) {
       const listables = context.access.getListableStreamIds();
       const filteredStreams = [];
       for (const listable of listables) {
-        const listableFullStreamId = streamsUtils.streamIdForStoreId(listable.streamId, listable.storeId);
+        const listableFullStreamId = streamsUtils.getFullItemId(listable.storeId, listable.streamId);
         const inResult = treeUtils.findById(streams, listableFullStreamId);
         if (inResult) {
           const copy = _.cloneDeep(inResult);

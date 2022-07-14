@@ -8,7 +8,8 @@
 // @flow
 
 const { defaults: dataStoreDefaults } = require('pryv-datastore');
-const LOCAL_STORE = 'local';
+const LOCAL_STORE_ID = 'local';
+const STORE_ID_MARKER = ':';
 import type { Stream } from 'business/src/streams';
 
 /**
@@ -30,40 +31,36 @@ function storeToStream(store: DataStore, extraProperties: mixed): Stream {
 
 /**
  * Extract the store id and the in-store item id (without the store reference) from the given item id.
+ * For streams, converts the store's root pseudo-stream id (`:store:`) to `*`.
  * @returns {string[]} `[storeId, storeItemId]`
  */
 // TODO refactor this into general storage (mall) utils
 //      also: apply consistent semantics everywhere: itemId (full external id), storeItemId (in-store id), etc.
 function parseStoreIdAndStoreItemId(fullItemId: string): [ string, string ] {
-  // TODO: refactor or comment this code to clarify (why '#', etc.)
-  const isDashed: number = (fullItemId.indexOf('#') === 0) ? 1 : 0;
-  if (fullItemId.indexOf(':') !== (0 + isDashed)) return [LOCAL_STORE, fullItemId];
-  const semiColonPos: number = fullItemId.indexOf(':', ( 1 + isDashed) );
-  const storeId: string = fullItemId.substr(1 + isDashed, (semiColonPos - 1));
+  if (!fullItemId.startsWith(STORE_ID_MARKER)) return [LOCAL_STORE_ID, fullItemId];
 
-  if (storeId === 'system' || storeId === '_system') return [ LOCAL_STORE, fullItemId ];
+  const endMarkerIndex = fullItemId.indexOf(STORE_ID_MARKER, 1);
+  const storeId = fullItemId.substring(1, endMarkerIndex);
 
-  let itemId = '';
-  if (semiColonPos === (fullItemId.length - 1)) { // i.e. if ':store:' or '#:store:'
-    itemId = '*';
+  if (storeId === 'system' || storeId === '_system') return [LOCAL_STORE_ID, fullItemId];
+
+  let storeItemId;
+  if (endMarkerIndex === (fullItemId.length - 1)) { // ':storeId:', i.e. pseudo-stream representing store root
+    storeItemId = '*';
   } else {
-    itemId = fullItemId.substr(semiColonPos + 1);
+    storeItemId = fullItemId.substring(endMarkerIndex + 1);
   }
-  if (isDashed) return [storeId, '#' + itemId];
-  return [ storeId, itemId ];
+  return [storeId, storeItemId];
 }
 
 /**
- * Get full streamId from store + cleanstreanId
+ * Get full item id from the given store id and in-store item id.
+ * For streams, converts the `*` id to the store's root pseudo-stream (`:store:`).
  * @returns {string}
  */
-function streamIdForStoreId(streamId: string, storeId: string): string {
-  if (storeId === LOCAL_STORE) return streamId;
-  const isDashed: boolean = (streamId.indexOf('#') === 0);
-  let sstreamId: string = isDashed ? streamId.substr(1) : streamId;
-  if (sstreamId === '*') sstreamId = '';
-  if (isDashed) return '#:' + storeId + ':' + sstreamId;
-  return ':' + storeId + ':' + sstreamId;
+function getFullItemId(storeId: string, storeStreamId: string): string {
+  if (storeId === LOCAL_STORE_ID) return storeStreamId;
+  return STORE_ID_MARKER + storeId + STORE_ID_MARKER + (storeStreamId === '*' ? '' : storeStreamId);
 }
 
 /**
@@ -74,11 +71,11 @@ function streamIdForStoreId(streamId: string, storeId: string): string {
  */
 function addStoreIdPrefixToStreams(storeId: string, streams: Array<Stream>): void {
   for (const stream: Stream of streams) {
-    stream.id = streamIdForStoreId(stream.id, storeId);
+    stream.id = getFullItemId(storeId, stream.id);
     if (stream.parentId != null) {
-      stream.parentId = streamIdForStoreId(stream.parentId, storeId);
+      stream.parentId = getFullItemId(storeId, stream.parentId);
     } else {
-      stream.parentId = streamIdForStoreId('*', storeId);
+      stream.parentId = getFullItemId(storeId, '*');
     }
     if (stream.children != null) addStoreIdPrefixToStreams(storeId, stream.children);
   }
@@ -87,6 +84,6 @@ function addStoreIdPrefixToStreams(storeId: string, streams: Array<Stream>): voi
 module.exports = {
   storeToStream,
   parseStoreIdAndStoreItemId,
-  streamIdForStoreId,
+  getFullItemId,
   addStoreIdPrefixToStreams
 };

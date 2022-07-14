@@ -381,8 +381,7 @@ class MallUserEvents {
     // add eventual missing id and get storeId from first streamId then
     if (eventData.id == null) {
       [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(eventData.streamIds[0]);
-      const prefix = (storeId == 'local') ? '' : ':' + storeId + ':';
-      eventData.id = prefix + cuid();
+      eventData.id = streamsUtils.getFullItemId(storeId, cuid());
     } else { // get storeId from event id
       [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(eventData.id);
     }

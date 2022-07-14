@@ -82,11 +82,11 @@ let mall;
  *
  *  6. streamQueryExpandStreams
  *    - Each "streamId" of the queries is "expanded" (i.e. transformed in an array of streamId that includes the streams and it's chidlren)
- *    - Do not expand streams prefixed with a "#"
+ *    - Do not expand streams whose id is followed by a `!` (a.k.a. "do not expand" marker)
  *
- *    - A callBack `expandStreamInContext`is used to link the expand process and the "store"
+ *    - A callBack `expandStreamInContext` is used to link the expand process and the "store"
  *      This callBack is designed to be optimized on a Per-Store basis The current implementation is generic
- *      - If streamId is prefixed with a "#" just return the streamId without "#"
+ *      - If streamId is followed by the "do not expand" marker (`!`) just return the bare streamId
  *      - It queries the stores with and standard `store.streams.get({id: streamId, exludedIds: [....]})`
  *        and return an array of streams.
  *
@@ -337,11 +337,14 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
 }
 
 function hasDoNotExpandMarker (streamId) {
-  return streamId.startsWith('#');
+  return streamId.endsWith('!');
 }
 
+/**
+ * Warning: assumes (without checking) that the "do not expand" marker is present!
+ */
 function stripDoNotExpandMarker (streamIdWithDoNotExpandMarker) {
-  return streamIdWithDoNotExpandMarker.substr(1);
+  return streamIdWithDoNotExpandMarker.slice(0, -1);
 }
 
 /**

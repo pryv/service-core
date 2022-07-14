@@ -390,7 +390,7 @@ class AccessLogic {
   async canGetEventsOnStream (streamId, storeId) {
     if (this.isPersonal()) return true;
 
-    const fullStreamId = streamsUtils.streamIdForStoreId(streamId, storeId);
+    const fullStreamId = streamsUtils.getFullItemId(storeId, streamId);
 
     const level = await this._getStreamPermissionLevel(fullStreamId);
     if (level == null || level === 'create-only') return false;
@@ -481,20 +481,20 @@ class AccessLogic {
 
   /**
    * new fashion to retrieve stream permissions
-   * @param {identifier} streamIdFull :{storeId}:{streamId}
+   * @param {identifier} fullStreamId :{storeId}:{streamId}
    * @returns {String}  `null` if no matching permission exists.
    */
-  async _getStreamPermissionLevel (streamIdFull) {
-    if (streamIdFull == null) streamIdFull = '*'; // to be investgated why this happens
+  async _getStreamPermissionLevel (fullStreamId) {
+    if (fullStreamId == null) fullStreamId = '*'; // to be investgated why this happens
 
     if (this.isPersonal()) return 'manage';
-    const cachedLevel = this._streamPermissionLevelCache[streamIdFull];
+    const cachedLevel = this._streamPermissionLevelCache[fullStreamId];
     if (cachedLevel != null) {
       return cachedLevel.level;
     }
 
-    const permissions = await this._getStreamPermissions(streamIdFull);
-    this._streamPermissionLevelCache[streamIdFull] = permissions;
+    const permissions = await this._getStreamPermissions(fullStreamId);
+    this._streamPermissionLevelCache[fullStreamId] = permissions;
 
     return permissions?.level;
   }

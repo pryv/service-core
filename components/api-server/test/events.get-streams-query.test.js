@@ -526,16 +526,16 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[55HB] must return events in A && NOT-EQUAL D)', async function () {
+    it('[55HB] must return events in A && NOT-EQUAL D', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({ streams: JSON.stringify({ any: ['A'], not: ['#D']}) });
-      assert.exists(res.body.events)
+        .query({ streams: JSON.stringify({ any: ['A'], not: ['D!'] }) });
+      assert.exists(res.body.events);
       const events = res.body.events;
       const expectedEvents = ['a', 'b', 'fc', 'c', 'be'];
       assert.equal(events.length, expectedEvents.length);
-      const resIds = events.map((e) => {
+      events.forEach(e => {
         assert.exists(EVENT4ID[e.id]);
         assert.include(expectedEvents, EVENT4ID[e.id]);
       });

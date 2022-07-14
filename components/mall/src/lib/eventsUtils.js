@@ -136,11 +136,9 @@ function removeStoreIds(storeId, eventData) {
 }
 
 function addStoreId(storeId, eventData) {
-  if (storeId === 'local') return eventData;
-  const storePrefix = ':' + storeId + ':';
-  eventData.id = storePrefix + eventData.id;
-  if (eventData.streamIds != null) {
-   eventData.streamIds = eventData.streamIds.map(streamId => storePrefix +streamId);
+  eventData.id = streamsUtils.getFullItemId(storeId, eventData.id);
+  if (eventData.streamIds) {
+    eventData.streamIds = eventData.streamIds.map(streamsUtils.getFullItemId.bind(null, storeId));
   }
   return eventData;
 }
