@@ -36,7 +36,7 @@ module.exports = function (api) {
 }
 
 /**
- * 
+ *
  */
 function anyStarStreamQueryIsNullQUery(context, params, result, next) {
   if (isStar(params.arrayOfStreamQueries)) {
@@ -46,11 +46,11 @@ function anyStarStreamQueryIsNullQUery(context, params, result, next) {
 
   /**
    * arrayOfStreamQueries === [{ any: ['*']}]
-   * @param {*} arrayOfStreamQueries 
+   * @param {*} arrayOfStreamQueries
    */
   function isStar(arrayOfStreamQueries): boolean {
-    return params.arrayOfStreamQueries.length === 1 && 
-    params.arrayOfStreamQueries[0]?.any?.length === 1 && 
+    return params.arrayOfStreamQueries.length === 1 &&
+    params.arrayOfStreamQueries[0]?.any?.length === 1 &&
     params.arrayOfStreamQueries[0]?.any[0] === '*';
   }
 }
@@ -58,7 +58,7 @@ function anyStarStreamQueryIsNullQUery(context, params, result, next) {
 
 /**
  * Remove ':audit:' from stream query;
- * @returns 
+ * @returns
  */
 function removeStoreIdFromStreamQuery(context, params, result, next) {
   if (params.arrayOfStreamQueries == null) return next();
@@ -88,13 +88,13 @@ function limitStreamQueryToAccessToken(context, params, result, next) {
   const streamId: string = audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id;
 
   for (const query: StreamQuery of params.arrayOfStreamQueries) {
-    if (query.any == null) { 
+    if (query.any == null) {
       query.any = [streamId]
     } else {
       if (query.all == null) { query.all = []}
       query.all.push({any: [streamId]});
     }
-    
+
   }
   next();
 }
@@ -105,12 +105,10 @@ async function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = await auditStorage.forUser(context.user.id);
     params.streams = params.arrayOfStreamQueries;
-    const query = mallEventsGetUtils.getQueryFromParamsForAStore(params);
+    const query = mallEventsGetUtils.getStoreQueryFromParams(params);
     result.addStream('auditLogs', userStorage.getLogsStream(query, true));
   } catch (err) {
     return next(err);
-  }     
+  }
   next();
 }
-
-

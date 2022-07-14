@@ -67,7 +67,7 @@ class MallUserEvents {
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     try {
-      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore({ id: storeEventId, state: 'all', limit: 1, includeDeletions: true });
+      const paramsForStore = eventsGetUtils.getStoreQueryFromParams({ id: storeEventId, state: 'all', limit: 1, includeDeletions: true });
       const events: Array<Events> = await store.events.get(userId, paramsForStore);
       if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
     } catch (e) {
@@ -89,7 +89,7 @@ class MallUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(params);
+        const paramsForStore = eventsGetUtils.getStoreQueryFromParams(params);
         const events = await store.events.get(userId, paramsForStore);
         for (let event of events) {
           res.push(eventsUtils.convertEventFromStore(storeId, event));
@@ -115,7 +115,7 @@ class MallUserEvents {
     const storeId = Object.keys(paramsByStore)[0];
     const store = this.mall._storeForId(storeId);
     try {
-      const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(paramsByStore[storeId]);
+      const paramsForStore = eventsGetUtils.getStoreQueryFromParams(paramsByStore[storeId]);
       const eventsStreamFromDB = await store.events.getStreamed(userId, paramsForStore);
       return eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream(storeId));
     } catch (e) {
@@ -359,7 +359,7 @@ class MallUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        const paramsForStore = eventsGetUtils.getQueryFromParamsForAStore(params);
+        const paramsForStore = eventsGetUtils.getStoreQueryFromParams(params);
         await store.events.delete(userId, paramsForStore);
       } catch (e) {
         this.mall.throwAPIError(e, storeId);

@@ -43,14 +43,14 @@ function parseStoreIdAndStoreItemId(fullItemId: string): [ string, string ] {
 
   if (storeId === 'system' || storeId === '_system') return [ LOCAL_STORE, fullItemId ];
 
-  let streamId: string = '';
-  if (semiColonPos === (fullItemId.length - 1)) { // if ':store:' or '#:store:'
-    streamId = '*';
+  let itemId = '';
+  if (semiColonPos === (fullItemId.length - 1)) { // i.e. if ':store:' or '#:store:'
+    itemId = '*';
   } else {
-    streamId = fullItemId.substr(semiColonPos + 1);
+    itemId = fullItemId.substr(semiColonPos + 1);
   }
-  if (isDashed) return [storeId, '#' + streamId];
-  return [ storeId, streamId ];
+  if (isDashed) return [storeId, '#' + itemId];
+  return [ storeId, itemId ];
 }
 
 /**
