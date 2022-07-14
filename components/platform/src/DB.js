@@ -11,11 +11,12 @@ const sqlite3 = require('better-sqlite3');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform:db');
 
-class PlatformWideDB {
+class DB {
   db;
   queryUniqueKey;
   upsertUniqueKeyValue;
   deleteAll;
+  queries;
 
   constructor() { }
 
@@ -30,29 +31,28 @@ class PlatformWideDB {
 
     this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
 
-
-    // in the following query see the trick to pass a list of values as parameter
-    this.queryUniqueKey = this.db.prepare('SELECT key, value FROM uniqueKeys WHERE key = ?');
-    this.upsertUniqueKeyValue = this.db.prepare('INSERT OR REPLACE INTO uniqueKeys (key, value) VALUES (@key, @value);');
-    this.deleteUniqueKey = this.db.prepare('DELETE FROM uniqueKeys WHERE key = ?;');
-    this.deleteAll = this.db.prepare('DELETE FROM uniqueKeys;');
-    this.queryAllStartsWith = this.db.prepare('SELECT key, value FROM uniqueKeys WHERE key LIKE (? || \'%\')');
-    this.queryAllWithValue = this.db.prepare('SELECT key, value FROM uniqueKeys WHERE value = ?');
+    this.queries = {};
+    this.queries.getValueWithKey = this.db.prepare('SELECT key, value FROM keyValue WHERE key = ?');
+    this.queries.upsertUniqueKeyValue = this.db.prepare('INSERT OR REPLACE INTO keyValue (key, value) VALUES (@key, @value);');
+    this.queries.deleteWithKey = this.db.prepare('DELETE FROM keyValue WHERE key = ?;');
+    this.queries.deleteAll = this.db.prepare('DELETE FROM keyValue;');
+    this.queries.getAllWithKeyStartsWith = this.db.prepare('SELECT key, value FROM keyValue WHERE key LIKE (? || \'%\')');
+    this.queries.getAllWithValue = this.db.prepare('SELECT key, value FROM keyValue WHERE value = ?');
   }
 
   getOne(key) {
-    const value = this.queryUniqueKey.all(key);
+    const value = this.queries.getValueWithKey.all(key);
     const res = (value.length === 0) ? null : value[0].value;
     logger.debug('getOne', key, res);
     return res;
   }
 
   getAllWithPrefix(prefix) {
-    return this.queryAllStartsWith.all(prefix).map(parseEntry);
+    return this.queries.getAllWithKeyStartsWith.all(prefix).map(parseEntry);
   }
 
   getAllWithValue(value) {
-    return this.queryAllStartsWith.all(value).map(parseEntry);
+    return this.queries.getAllWithKeyStartsWith.all(value).map(parseEntry);
   }
 
   /**
@@ -63,48 +63,48 @@ class PlatformWideDB {
    */
   set(key, value) {
     logger.debug('set', key, value);
-    return this.upsertUniqueKeyValue.run({ key, value });
+    return this.queries.upsertUniqueKeyValue.run({ key, value });
   }
 
   delete(key) {
     logger.debug('delete', key);
-    return this.deleteUniqueKey.run(key);
+    return this.queries.deleteWithKey.run(key);
   }
 
   reset() {
     logger.debug('reset');
-    this.deleteAll.run();
+    this.queries.deleteAll.run();
   }
 
   // ----- utilities ------- //
 
   async setUserUniqueField(username, field, value) {
-    const key = 'user-unique/' + field + '/' + value;
+    const key = getUserUniqueKey(field, value);
     this.set(key, username);
   }
 
   async deleteUserUniqueField(field, value) {
-    const key = 'user-unique/' + field + '/' + value;
+    const key = getUserUniqueKey(field, value);
     this.delete(key);
   }
 
   async setUserIndexedField(username, field, value) {
-    const key = 'user-indexed/' + field + '/' + username;
+    const key = getUserIndexedKey(username, field);
     this.set(key, value);
   }
 
   async deleteUserIndexedField(username, field) {
-    const key = 'user-indexed/' + field + '/' + username;
+    const key = getUserIndexedKey(username, field);
     this.delete(key);
   }
 
   async getUserIndexedField(username, field) {
-    const key = 'user-indexed/' + field + '/' + username;
+    const key = getUserIndexedKey(username, field);
     return this.getOne(key);
   }
 
   async getUsersUniqueField(field, value) {
-    const key = 'user-unique/' + field + '/' + value;
+    const key = getUserUniqueKey(field, value);
     return this.getOne(key);
   }
 
@@ -130,4 +130,11 @@ function parseEntry(entry) {
   }
 }
 
-module.exports = PlatformWideDB;
+function getUserUniqueKey(field, value) {
+  return 'user-unique/' + field + '/' + value;
+}
+function getUserIndexedKey(username, field) {
+  return 'user-indexed/' + field + '/' + username;
+}
+
+module.exports = DB;

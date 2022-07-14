@@ -15,7 +15,7 @@ const { getLogger } = require('@pryv/boiler');
 const DOT: string = '.';
 import type { Permission } from 'business/src/accesses';
 
-const PlatformWideDB = require('platform/src/PlatformWideDB');
+const PlatformWideDB = require('platform/src/DB');
 
 /**
  * v1.7.5: 

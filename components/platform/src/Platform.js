@@ -13,7 +13,7 @@ const errors = require('errors').factory;
 const { getServiceRegisterConn } = require('platform/src/service_register');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-const PlatformWideDB = require('./PlatformWideDB');
+const DB = require('./DB');
 
 const platformCheckIntegrity = require('./platformCheckIntegrity');
 
@@ -29,7 +29,7 @@ class Platform {
 
   constructor() {
     this.#initialized = false;
-    this.#db = new PlatformWideDB();
+    this.#db = new DB();
   }
 
   async init() {
