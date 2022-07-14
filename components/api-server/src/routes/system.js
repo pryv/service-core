@@ -65,8 +65,8 @@ module.exports = function system(expressApp: express$Application, app: Applicati
   });
 
   // --------------------- health checks ----------------- //
-  expressApp.get(Paths.System + '/checks',
-    setMethodId('system.checks'),
+  expressApp.get(Paths.System + '/check-platform-integrity',
+    setMethodId('system.checkPlatformIntegrity'),
     function (req: express$Request, res, next) {
       systemAPI.call(req.context, {}, methodCallback(res, next, 200));
   }); 

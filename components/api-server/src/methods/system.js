@@ -123,7 +123,7 @@ module.exports = async function (
   }
 
   // --------------------------------------------------------------- checks
-  systemAPI.register('system.checks',
+  systemAPI.register('system.checkPlatformIntegrity',
     async function performSystemsChecks(context, params, result, next) {
       try {
         result.checks = [

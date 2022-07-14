@@ -28,7 +28,7 @@ class PlatformWideDB {
     this.db = new sqlite3(basePath + '/platform-wide.db');
     this.db.pragma('journal_mode = WAL');
 
-    this.db.prepare('CREATE TABLE IF NOT EXISTS uniqueKeys (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
+    this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
 
 
     // in the following query see the trick to pass a list of values as parameter

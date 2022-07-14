@@ -5,21 +5,17 @@
  * Proprietary and confidential
  */
 
-const bluebird = require('bluebird');
-
 /**
  * Check the integrity of the userIndex compared to the username events in SystemStreams
- * @param {*} userIndex 
+ * @param {*} userIndex -
  * @returns {Array<string>} of error messages if any discrepencies is found
  */
 module.exports = async function checkIntegrity (usersIndex) {
   const errors = [];
-  const infos = { }
+  const infos = {};
   const checkedMap = {};
 
-
   for (const collectionName of ['events', 'streams', 'accesses', 'profile', 'webhooks', 'followedSlices']) {
-
     const userIds = await getAllKnownUserIdsFromDB(collectionName);
     infos['userIdsCount-' + collectionName] = userIds.length;
 
@@ -36,14 +32,14 @@ module.exports = async function checkIntegrity (usersIndex) {
   return {
     title: 'userIndex vs mongoDB',
     infos,
-    errors};
-}
-  
+    errors
+  };
+};
 
-async function getAllKnownUserIdsFromDB(collectionName) {
+async function getAllKnownUserIdsFromDB (collectionName) {
   const { getDatabase } = require('storage'); // placed here to avoid some circular dependency
   const database = await getDatabase();
-  const collection = await bluebird.fromCallback(cb => database.getCollection({ name: collectionName }, cb));
+  const collection = await database.getCollection({ name: collectionName });
   const userIds = await collection.distinct('userId', {});
   return userIds;
 }

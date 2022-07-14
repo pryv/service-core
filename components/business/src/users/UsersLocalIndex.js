@@ -17,7 +17,7 @@ const { getLogger, getConfig } = require('@pryv/boiler');
 const cache = require('cache');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-const userLocalIndexCheckIntergrity = require('./userLocalIndexCheckIntergrity');
+const userLocalIndexCheckIntegrity = require('./userLocalIndexCheckIntegrity');
 
 const logger = getLogger('users:local-index');
 
@@ -43,7 +43,7 @@ class UsersLocalIndex {
   }
 
   async checkIntegrity() {
-    return userLocalIndexCheckIntergrity(this);
+    return userLocalIndexCheckIntegrity(this);
   }
 
   async addUser(username, userId) {
