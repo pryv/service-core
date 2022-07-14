@@ -8,7 +8,8 @@
 // @flow
 
 const { DataStore }  = require('pryv-datastore');
-const streamsUtils = require('./lib/streamsUtils');
+const storeDataUtils = require('./helpers/storeDataUtils');
+const streamsUtils = require('./helpers/streamsUtils');
 const { treeUtils } = require('utils');
 const cuid = require('cuid');
 const _ = require('lodash');
@@ -39,7 +40,7 @@ class MallUserStreams {
   async getOne(userId: string, streamId: string, storeId: string): Promise<?Stream> {
     if (storeId == null) {
       // TODO: clarify smelly code (replace full stream id with in-store id?)
-      [storeId, streamId] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
+      [storeId, streamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
     }
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
@@ -80,7 +81,7 @@ class MallUserStreams {
     let storeId: string = params.storeId;
     if (storeId == null) {
       // TODO: clarify smelly code (replace full stream id with in-store id?)
-      [storeId, streamId] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
+      [storeId, streamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
     }
 
     params.expandChildren = params.expandChildren || 0;
@@ -155,7 +156,7 @@ class MallUserStreams {
    * This is mostly used by tests fixtures for now
    */
   async createDeleted(userId: string, streamData: Stream) {
-    const [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(streamData.id);
+    const [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.id);
     if (streamData.deleted == null) throw errorFactory.invalidRequestStructure('Missing deleted timestamp for deleted stream', streamData);
     const store: DataStore = this.mall._storeForId(storeId);
     const res = await store.streams.createDeleted(userId, streamData);
@@ -181,7 +182,7 @@ class MallUserStreams {
     let parentStoreId = 'local';
     let parentStoreStreamId;
     if (streamForStore.parentId != null) {
-      [parentStoreId, parentStoreStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamData.parentId);
+      [parentStoreId, parentStoreStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.parentId);
       streamForStore.parentId = parentStoreStreamId;
     }
 
@@ -191,7 +192,7 @@ class MallUserStreams {
       storeId = parentStoreId;
       streamForStore.id = cuid();
     } else {
-      [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamData.id);
+      [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.id);
       if (parentStoreId !== storeId) {
         throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', streamData);
       }
@@ -237,7 +238,7 @@ class MallUserStreams {
     let parentStoreId = 'local';
     let parentStoreStreamId;
     if (streamForStore.parentId != null) {
-      [parentStoreId, parentStoreStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamData.parentId);
+      [parentStoreId, parentStoreStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.parentId);
       streamForStore.parentId = parentStoreStreamId;
     }
 
@@ -247,7 +248,7 @@ class MallUserStreams {
       storeId = parentStoreId;
       streamForStore.id = cuid();
     } else {
-      [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamData.id);
+      [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.id);
       if (parentStoreId !== storeId) {
         throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', streamData);
       }
@@ -269,7 +270,7 @@ class MallUserStreams {
   // ---------------------- delete ----------------- //
 
   async updateDelete(userId, streamId) {
-    const [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
+    const [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
     const store: DataStore = this.mall._storeForId(storeId);
     return await store.streams.updateDelete(userId, storeStreamId);
   }

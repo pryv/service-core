@@ -9,9 +9,9 @@
 
 const { DataStore } = require('pryv-datastore');
 const _ = require('lodash');
-const streamsUtils = require('./lib/streamsUtils');
-const eventsUtils = require('./lib/eventsUtils');
-const eventsGetUtils = require('./lib/eventsGetUtils');
+const storeDataUtils = require('./helpers/storeDataUtils');
+const eventsUtils = require('./helpers/eventsUtils');
+const eventsQueryUtils = require('./helpers/eventsQueryUtils');
 
 const errorFactory = require('errors').factory;
 const integrity = require('business/src/integrity');
@@ -63,11 +63,11 @@ class MallUserEvents {
    * @returns
    */
   async getOne(userId, fullEventId) {
-    const [storeId, storeEventId] = streamsUtils.parseStoreIdAndStoreItemId(fullEventId);
+    const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
     const store: DataStore = this.mall._storeForId(storeId);
     if (store == null) return null;
     try {
-      const paramsForStore = eventsGetUtils.getStoreQueryFromParams({ id: storeEventId, state: 'all', limit: 1, includeDeletions: true });
+      const paramsForStore = eventsQueryUtils.getStoreQueryFromParams({ id: storeEventId, state: 'all', limit: 1, includeDeletions: true });
       const events: Array<Events> = await store.events.get(userId, paramsForStore);
       if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
     } catch (e) {
@@ -77,7 +77,7 @@ class MallUserEvents {
   }
 
   async get(userId, params) {
-    return await this.getWithParamsByStore(userId, eventsGetUtils.getParamsByStore(params));
+    return await this.getWithParamsByStore(userId, eventsQueryUtils.getParamsByStore(params));
   }
 
   /**
@@ -89,7 +89,7 @@ class MallUserEvents {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        const paramsForStore = eventsGetUtils.getStoreQueryFromParams(params);
+        const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(params);
         const events = await store.events.get(userId, paramsForStore);
         for (let event of events) {
           res.push(eventsUtils.convertEventFromStore(storeId, event));
@@ -102,7 +102,7 @@ class MallUserEvents {
   }
 
   async getStreamed(userId, params) {
-    return await this.getStreamedWithParamsByStore(userId, eventsGetUtils.getParamsByStore(params));
+    return await this.getStreamedWithParamsByStore(userId, eventsQueryUtils.getParamsByStore(params));
   }
 
   /**
@@ -115,7 +115,7 @@ class MallUserEvents {
     const storeId = Object.keys(paramsByStore)[0];
     const store = this.mall._storeForId(storeId);
     try {
-      const paramsForStore = eventsGetUtils.getStoreQueryFromParams(paramsByStore[storeId]);
+      const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(paramsByStore[storeId]);
       const eventsStreamFromDB = await store.events.getStreamed(userId, paramsForStore);
       return eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream(storeId));
     } catch (e) {
@@ -170,7 +170,7 @@ class MallUserEvents {
   }
 
   async getAttachedFile(userId: string, eventData, fileId: string) {
-    const [storeId, storeEventId] = streamsUtils.parseStoreIdAndStoreItemId(eventData.id);
+    const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     const store: DataStore = this.mall._storeForId(storeId);
     if (store === null) return null;
     return await store.events.getAttachedFile(userId, storeEventId, fileId);
@@ -203,7 +203,7 @@ class MallUserEvents {
   // ----------------- UPDATE ----------------- //
 
   async update(userId, eventData, mallTransaction) {
-    const [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(eventData.id);
+    const [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
 
     // update integrity field and recalculate if needed
@@ -217,7 +217,7 @@ class MallUserEvents {
     if ((eventForStore?.streamIds)) {
       const newStreamIds = [];
       for (const fullStreamId of eventForStore.streamIds) {
-        const [streamStoreId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(fullStreamId);
+        const [streamStoreId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(fullStreamId);
         if (streamStoreId != storeId) { throw errorFactory.invalidRequestStructure('events cannot be moved to a different store', eventData); }
         newStreamIds.push(storeStreamId);
       }
@@ -273,7 +273,7 @@ class MallUserEvents {
    * @returns Streams of updated events
    */
   async updateStreamedMany(userId, query, update = {}, mallTransaction): Readable {
-    const paramsByStore = eventsGetUtils.getParamsByStore(query);
+    const paramsByStore = eventsQueryUtils.getParamsByStore(query);
 
     // fetch events to be updated
     const streamedMatchingEvents = await this.getStreamedWithParamsByStore(userId, paramsByStore);
@@ -354,12 +354,12 @@ class MallUserEvents {
   // ----------------- DELETE ----------------- //
 
   async delete(userId, query) {
-    const paramsByStore = eventsGetUtils.getParamsByStore(query);
+    const paramsByStore = eventsQueryUtils.getParamsByStore(query);
     for (let storeId of Object.keys(paramsByStore)) {
       const store = this.mall._storeForId(storeId);
       const params = paramsByStore[storeId];
       try {
-        const paramsForStore = eventsGetUtils.getStoreQueryFromParams(params);
+        const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(params);
         await store.events.delete(userId, paramsForStore);
       } catch (e) {
         this.mall.throwAPIError(e, storeId);
@@ -380,10 +380,10 @@ class MallUserEvents {
 
     // add eventual missing id and get storeId from first streamId then
     if (eventData.id == null) {
-      [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(eventData.streamIds[0]);
-      eventData.id = streamsUtils.getFullItemId(storeId, cuid());
+      [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.streamIds[0]);
+      eventData.id = storeDataUtils.getFullItemId(storeId, cuid());
     } else { // get storeId from event id
-      [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(eventData.id);
+      [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     }
 
     // set integrity

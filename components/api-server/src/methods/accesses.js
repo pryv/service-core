@@ -28,7 +28,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const cache = require('cache');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
-const { getMall, streamsUtils } = require('mall');
+const { getMall, storeDataUtils } = require('mall');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
 
@@ -627,7 +627,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
             if (permissionStream != null) return ;
 
             // new streams are created at "root" level so we check the children's name of root (id)
-            const [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(permission.streamId);
+            const [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(permission.streamId);
             const rootStreams = await mall.streams.get(context.user.id, { storeId: storeId, state: 'all', includeTrashed: true });
             const rootStreamsNames = rootStreams.map(stream => stream.name);
 

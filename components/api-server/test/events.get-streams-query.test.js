@@ -12,7 +12,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
-const { streamsUtils } = require('mall');
+const { storeDataUtils } = require('mall');
 
 /**
  * Structures
@@ -66,7 +66,7 @@ ALL_AUTHORIZED_STREAMS.forEach((streamId) => {
     STREAMS[parentId].childrens.push(streamId);
   }
   if (STREAMS[streamId].trashed !== true) {
-    if (streamsUtils.parseStoreIdAndStoreItemId(streamId)[0] === 'local') {
+    if (storeDataUtils.parseStoreIdAndStoreItemId(streamId)[0] === 'local') {
       ALL_ACCESSIBLE_STREAMS_LOCAL.push(streamId);
       if (STREAMS[streamId].parentId == null)
         ALL_ACCESSIBLE_ROOT_STREAMS_LOCAL.push(streamId);

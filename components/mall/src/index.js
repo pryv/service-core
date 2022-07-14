@@ -60,5 +60,6 @@ async function getMall(): Promise<Mall> {
 
 module.exports = {
   getMall : getMall,
-  streamsUtils: require('./lib/streamsUtils')
+  // TODO: eventually remove this once all the store id logic is safely contained within the mall
+  storeDataUtils: require('./helpers/storeDataUtils')
 };

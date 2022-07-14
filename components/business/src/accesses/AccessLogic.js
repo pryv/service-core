@@ -12,7 +12,7 @@ const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
-const { streamsUtils, getMall } = require('mall');
+const { storeDataUtils, getMall } = require('mall');
 
 let auditIsActive = null;
 function addAuditStreams () {
@@ -122,7 +122,7 @@ class AccessLogic {
   }
 
   _loadStreamPermission (perm) {
-    const [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(perm.streamId);
+    const [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(perm.streamId);
     if (this._streamByStorePermissionsMap[storeId] == null) this._streamByStorePermissionsMap[storeId] = {};
     this._streamByStorePermissionsMap[storeId][storeStreamId] = { streamId: storeStreamId, level: perm.level };
   }
@@ -194,7 +194,7 @@ class AccessLogic {
 
     for (const perm of Object.values(perms)) {
       if (perm.level == null || perm.level === 'none') {
-        res.push(streamsUtils.parseStoreIdAndStoreItemId(perm.streamId)[1]);
+        res.push(storeDataUtils.parseStoreIdAndStoreItemId(perm.streamId)[1]);
       }
     }
     return res;
@@ -214,7 +214,7 @@ class AccessLogic {
 
     for (const perm of Object.values(localPerms)) {
       if (perm.level === 'create-only' || perm.level == null || perm.level === 'none') {
-        res.push(streamsUtils.parseStoreIdAndStoreItemId(perm.streamId)[1]);
+        res.push(storeDataUtils.parseStoreIdAndStoreItemId(perm.streamId)[1]);
       }
     }
     return res;
@@ -238,7 +238,7 @@ class AccessLogic {
   _registerFeaturePermission (perm) {
     this.featurePermissionsMap[perm.feature] = perm;
     if (perm.feature === 'forcedStreams') { // load them by store
-      const [storeId, ] = streamsUtils.parseStoreIdAndStoreItemId(perm.streams);
+      const [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(perm.streams);
       if (this._streamByStoreForced[storeId] == null) this._streamByStoreForced[storeId] = [];
       this._streamByStoreForced[storeId].push(...perm.streams);
     }
@@ -390,7 +390,7 @@ class AccessLogic {
   async canGetEventsOnStream (streamId, storeId) {
     if (this.isPersonal()) return true;
 
-    const fullStreamId = streamsUtils.getFullItemId(storeId, streamId);
+    const fullStreamId = storeDataUtils.getFullItemId(storeId, streamId);
 
     const level = await this._getStreamPermissionLevel(fullStreamId);
     if (level == null || level === 'create-only') return false;
@@ -500,7 +500,7 @@ class AccessLogic {
   }
 
   async _getStreamPermissions (fullStreamId) {
-    const [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(fullStreamId);
+    const [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(fullStreamId);
 
     let currentStream = (storeStreamId !== '*') ? storeStreamId : null;
 

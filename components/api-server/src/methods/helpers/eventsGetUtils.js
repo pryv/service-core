@@ -16,7 +16,7 @@ const streamsQueryUtils = require('./streamsQueryUtils');
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 const errors = require('errors').factory;
-const { getMall, streamsUtils } = require('mall');
+const { getMall, storeDataUtils } = require('mall');
 const { treeUtils } = require('utils');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
@@ -331,7 +331,7 @@ async function streamQueryExpandStreams(context: MethodContext, params: GetEvent
     // collect streamIds
     const resultWithPrefix: Array<string> = treeUtils.collectPluck(tree, 'id');
     // remove storePrefix
-    const result: Array<string> = resultWithPrefix.map((fullStreamId: string) => streamsUtils.parseStoreIdAndStoreItemId(fullStreamId)[1]);
+    const result: Array<string> = resultWithPrefix.map((fullStreamId: string) => storeDataUtils.parseStoreIdAndStoreItemId(fullStreamId)[1]);
     return result;
   }
 }

@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-const streamsUtils = require('./streamsUtils');
+const storeDataUtils = require('./storeDataUtils');
 const _ = require('lodash');
 
 module.exports = {
@@ -43,12 +43,12 @@ const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 function getParamsByStore (params) {
   let singleStoreId, singleStoreEventId, storeHeadId;
   if (params.id) { // a specific event is queried so we have a singleStore query;
-    [singleStoreId, singleStoreEventId] = streamsUtils.parseStoreIdAndStoreItemId(params.id);
+    [singleStoreId, singleStoreEventId] = storeDataUtils.parseStoreIdAndStoreItemId(params.id);
   }
 
   if (params.headId) { // a specific "head" is queried so we have a singleStore query;
     if (params.id) throw new Error('Cannot mix headId and id in query');
-    [singleStoreId, storeHeadId] = streamsUtils.parseStoreIdAndStoreItemId(params.headId);
+    [singleStoreId, storeHeadId] = storeDataUtils.parseStoreIdAndStoreItemId(params.headId);
   }
 
   // repack stream queries by store
@@ -94,7 +94,7 @@ function getStoreStreamQuery (streamQuery, context) {
   for (const operator of ['any', 'not']) { // for each possible segment of query
     if (streamQuery[operator]) {
       for (const streamId of streamQuery[operator]) {
-        const [storeId, storeStreamId] = streamsUtils.parseStoreIdAndStoreItemId(streamId);
+        const [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
         context.storeId ??= storeId;
         if (context.storeId !== storeId) throw new Error('Streams within a query must belong to the same store');
         storeStreamQuery[operator] ??= [];
