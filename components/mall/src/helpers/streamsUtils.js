@@ -12,19 +12,19 @@ import type { Stream } from 'business/src/streams';
 const { getFullItemId } = require('./storeDataUtils');
 
 module.exports = {
-  storeToStream,
+  createStoreRootStream,
   addStoreIdPrefixToStreams
 };
 
 /**
- * Create a Stream object from a DataStore
- * @param {DataStore} store
+ * Create a pseudo-stream representing a data store's root.
+ * @param {{id: string, name: string}} storeInfo - Data store or similar object
  * @param {Object} extraProperties
  */
-function storeToStream(store: DataStore, extraProperties: mixed): Stream {
+function createStoreRootStream(storeInfo, extraProperties): Stream {
   return Object.assign({
-    id: ':' + store.id + ':',
-    name: store.name,
+    id: ':' + storeInfo.id + ':',
+    name: storeInfo.name,
     parentId: null,
     created: dataStoreDefaults.UnknownDate + 1,
     modified: dataStoreDefaults.UnknownDate,

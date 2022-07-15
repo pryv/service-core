@@ -43,15 +43,27 @@ const DELETION_MODES_FIELDS = {
 };
 
 /**
- * Handle Store.events.* methods
+ * Storage for events.
+ * Dispatches requests to each data store's events.
  */
 class MallUserEvents {
+  /**
+   * @type {Map<string, UserEvents>}
+   */
+  eventsStores = new Map();
+  /**
+   * @type {Map<string, Object>}
+   */
+  storeSettings = new Map();
 
   /**
-   * @param {Mall} mall
+   * @param {DataStore[]} stores
    */
-  constructor(mall: Mall) {
-    this.mall = mall;
+  constructor(stores) {
+    for (const store of stores) {
+      this.eventsStores.set(store.id, store.events);
+      this.storeSettings.set(store.id, store.settings);
+    }
   }
 
   // ----------------- GET ----------------- //
@@ -64,14 +76,14 @@ class MallUserEvents {
    */
   async getOne(userId, fullEventId) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
-    const store: DataStore = this.mall._storeForId(storeId);
-    if (store == null) return null;
+    const eventsStore = this.eventsStores.get(storeId);
+    if (!eventsStore) return null;
     try {
       const paramsForStore = eventsQueryUtils.getStoreQueryFromParams({ id: storeEventId, state: 'all', limit: 1, includeDeletions: true });
-      const events: Array<Events> = await store.events.get(userId, paramsForStore);
+      const events: Array<Events> = await eventsStore.get(userId, paramsForStore);
       if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
     } catch (e) {
-      this.mall.throwAPIError(e, storeId);
+      storeDataUtils.throwAPIError(e, storeId);
     }
     return null;
   }
@@ -86,16 +98,16 @@ class MallUserEvents {
   async getWithParamsByStore(userId, paramsByStore) {
     const res = [];
     for (let storeId of Object.keys(paramsByStore)) {
-      const store = this.mall._storeForId(storeId);
+      const eventsStore = this.eventsStores.get(storeId);
       const params = paramsByStore[storeId];
       try {
         const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(params);
-        const events = await store.events.get(userId, paramsForStore);
+        const events = await eventsStore.get(userId, paramsForStore);
         for (let event of events) {
           res.push(eventsUtils.convertEventFromStore(storeId, event));
         }
       } catch (e) {
-        this.mall.throwAPIError(e, storeId);
+        storeDataUtils.throwAPIError(e, storeId);
       }
     }
     return res;
@@ -113,13 +125,13 @@ class MallUserEvents {
       return new Error('getStreamed only supported for one store at a time');
     }
     const storeId = Object.keys(paramsByStore)[0];
-    const store = this.mall._storeForId(storeId);
+    const eventsStore = this.eventsStores.get(storeId);
     try {
       const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(paramsByStore[storeId]);
-      const eventsStreamFromDB = await store.events.getStreamed(userId, paramsForStore);
+      const eventsStreamFromDB = await eventsStore.getStreamed(userId, paramsForStore);
       return eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream(storeId));
     } catch (e) {
-      this.mall.throwAPIError(e, storeId);
+      storeDataUtils.throwAPIError(e, storeId);
     }
   }
 
@@ -127,14 +139,14 @@ class MallUserEvents {
    * To create a streamed result from multiple stores. 'events.get' pass a callback in order to add the streams
    * To the result;
    */
-  async generateStreamsWithParamsByStore(userId, paramsByStore, addEventStreamCB) {
+  async generateStreamsWithParamsByStore(userId, paramsByStore, addEventsStreamCallback) {
     for (let storeId of Object.keys(paramsByStore)) {
-      const store = this.mall._storeForId(storeId);
+      const settings = this.storeSettings.get(storeId);
       const params = paramsByStore[storeId];
       try {
-        addEventStreamCB(store, await this.getStreamedWithParamsByStore(userId, { [storeId]: params }));
+        addEventsStreamCallback(settings, await this.getStreamedWithParamsByStore(userId, { [storeId]: params }));
       } catch (e) {
-        this.mall.throwAPIError(e, storeId);
+        storeDataUtils.throwAPIError(e, storeId);
       }
     }
   }
@@ -147,12 +159,12 @@ class MallUserEvents {
    * @param {*} eventData
    */
   async create(userId, eventData, mallTransaction) {
-    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
+    const { storeId, eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, mallTransaction);
     try {
-      const res = await store.events.create(userId, eventForStore, storeTransaction);
-      return eventsUtils.convertEventFromStore(store.id, res);
+      const res = await eventsStore.create(userId, storeEvent, storeTransaction);
+      return eventsUtils.convertEventFromStore(storeId, res);
     } catch (e) {
-      this.mall.throwAPIError(e, store.id);
+      storeDataUtils.throwAPIError(e, storeId);
     }
   }
 
@@ -165,20 +177,20 @@ class MallUserEvents {
   // ----------------- ATTACHMENTS ----------------- //
 
   async saveAttachedFiles(userId: string, eventDataWithoutAttachments: any, isExistingEvent: boolean, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction) {
-    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventDataWithoutAttachments, mallTransaction);
-    return await store.events.saveAttachedFiles(userId, eventForStore.id, attachmentsItems, storeTransaction);
+    const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventDataWithoutAttachments, mallTransaction);
+    return await eventsStore.saveAttachedFiles(userId, storeEvent.id, attachmentsItems, storeTransaction);
   }
 
   async getAttachedFile(userId: string, eventData, fileId: string) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
-    const store: DataStore = this.mall._storeForId(storeId);
-    if (store === null) return null;
-    return await store.events.getAttachedFile(userId, storeEventId, fileId);
+    const eventsStore = this.eventsStores.get(storeId);
+    if (!eventsStore) return null;
+    return await eventsStore.getAttachedFile(userId, storeEventId, fileId);
   }
 
   async deleteAttachedFile(userId: string, eventData: any, fileId: string, mallTransaction?: MallTransaction) {
-    const {store, eventForStore, storeTransaction} = await this._prepareForStore(eventData, mallTransaction);
-    return await store.events.deleteAttachedFile(userId, eventForStore.id, fileId, storeTransaction);
+    const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, mallTransaction);
+    return await eventsStore.deleteAttachedFile(userId, storeEvent.id, fileId, storeTransaction);
   }
 
   async createWithAttachments(userId: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
@@ -204,36 +216,36 @@ class MallUserEvents {
 
   async update(userId, eventData, mallTransaction) {
     const [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
-    const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
+    const storeEvent = eventsUtils.convertEventToStore(storeId, eventData);
 
     // update integrity field and recalculate if needed
     // integrity caclulation is done on event.id and streamIds that includes the store prefix
-    delete eventForStore.integrity;
+    delete storeEvent.integrity;
     if (integrity.events.isActive) {
-      integrity.events.set(eventForStore);
+      integrity.events.set(storeEvent);
     }
 
     // replace all streamIds by store-less streamIds
-    if ((eventForStore?.streamIds)) {
-      const newStreamIds = [];
-      for (const fullStreamId of eventForStore.streamIds) {
+    if ((storeEvent?.streamIds)) {
+      const storeStreamIds = [];
+      for (const fullStreamId of storeEvent.streamIds) {
         const [streamStoreId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(fullStreamId);
         if (streamStoreId != storeId) { throw errorFactory.invalidRequestStructure('events cannot be moved to a different store', eventData); }
-        newStreamIds.push(storeStreamId);
+        storeStreamIds.push(storeStreamId);
       }
-      eventForStore.streamIds = newStreamIds;
+      storeEvent.streamIds = storeStreamIds;
     }
 
-    const store = this.mall._storeForId(storeId);
-    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
+    const eventsStore = this.eventsStores.get(storeId);
+    const storeTransaction = mallTransaction ? await mallTransaction.getStoreTransaction(storeId) : null;
     try {
-      const success = await store.events.update(userId, eventForStore, storeTransaction);
+      const success = await eventsStore.update(userId, storeEvent, storeTransaction);
       if (! success) {
         throw errorFactory.invalidItemId('Could not update event with id ' + eventData.id);
       }
-      return eventsUtils.convertEventFromStore(storeId, eventForStore);
+      return eventsUtils.convertEventFromStore(storeId, storeEvent);
     } catch (e) {
-      this.mall.throwAPIError(e, storeId);
+      storeDataUtils.throwAPIError(e, storeId);
     }
   }
 
@@ -356,13 +368,13 @@ class MallUserEvents {
   async delete(userId, query) {
     const paramsByStore = eventsQueryUtils.getParamsByStore(query);
     for (let storeId of Object.keys(paramsByStore)) {
-      const store = this.mall._storeForId(storeId);
+      const eventsStore = this.eventsStores.get(storeId);
       const params = paramsByStore[storeId];
       try {
         const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(params);
-        await store.events.delete(userId, paramsForStore);
+        await eventsStore.delete(userId, paramsForStore);
       } catch (e) {
-        this.mall.throwAPIError(e, storeId);
+        storeDataUtils.throwAPIError(e, storeId);
       }
     }
   }
@@ -371,11 +383,12 @@ class MallUserEvents {
 
   /**
    * Common utils for events.create and events.createWithAttachmentss
-   * @param {*} eventData
-   * @param {*} mallTransaction
+   * @param {Object} eventData
+   * @param {MallTransaction} [mallTransaction]
+   * @private
    * @returns
    */
-  async _prepareForStore(eventData, mallTransaction) {
+  async prepareForStore(eventData, mallTransaction) {
     let storeId = null;
 
     // add eventual missing id and get storeId from first streamId then
@@ -389,13 +402,11 @@ class MallUserEvents {
     // set integrity
     integrity.events.set(eventData);
 
-    // get an event ready for this store
-    const eventForStore = eventsUtils.convertEventToStore(storeId, eventData);
+    const storeEvent = eventsUtils.convertEventToStore(storeId, eventData);
+    const eventsStore = this.eventsStores.get(storeId);
+    const storeTransaction = mallTransaction ? await mallTransaction.getStoreTransaction(storeId) : null;
 
-    const store = this.mall._storeForId(storeId);
-    const storeTransaction = (mallTransaction == null) ? null : await mallTransaction.forStoreId(storeId);
-
-    return { store, eventForStore, storeTransaction };
+    return { storeId, eventsStore, storeEvent, storeTransaction };
   }
 }
 

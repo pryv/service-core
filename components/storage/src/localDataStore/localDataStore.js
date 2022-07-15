@@ -30,7 +30,7 @@ module.exports = (ds.createDataStore({
     }
   },
 
-  async init (config): Promise<DataStore> {
+  async init (): Promise<DataStore> {
     await SystemStreamsSerializer.init();
 
     const database = await storage.getDatabase();

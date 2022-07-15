@@ -54,7 +54,7 @@ class UsersRepository {
 
   // only for testing
   async getAll(): Promise<Array<User>> {
-    const usersMap = await usersIndex.allUsersMap(); 
+    const usersMap = await usersIndex.allUsersMap();
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -66,7 +66,7 @@ class UsersRepository {
 
   // only for test data to reset all users Dbs.
   async deleteAll(): Promise<void> {
-    const usersMap = await usersIndex.allUsersMap(); 
+    const usersMap = await usersIndex.allUsersMap();
     for (const [username, userId] of Object.entries(usersMap)) {
       await this.mall.deleteUser(userId);
     }
@@ -74,9 +74,9 @@ class UsersRepository {
     await this.platform.deleteAll();
   }
 
-  
+
   async getAllUsernames(): Promise<Array<User>> {
-    const usersMap = await usersIndex.allUsersMap(); 
+    const usersMap = await usersIndex.allUsersMap();
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -109,7 +109,7 @@ class UsersRepository {
     if (userId) {
       const user = await this.getUserById(userId);
       return user;
-    } 
+    }
     return null;
   }
 
@@ -179,12 +179,12 @@ class UsersRepository {
   }
 
   async insertOne(user: User, withSession: ?boolean = false, skipFowardToRegister: ?boolean = false): Promise<User> {
-    // Create the User at a Platfrom Level.. 
+    // Create the User at a Platfrom Level..
     const operations = [];
     for (const key of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
       if (user[key] != null) {
         operations.push({action: 'create', key: key, value: user[key], isUnique: SystemStreamsSerializer.isUniqueAccountField(key)});
-      } 
+      }
     }
 
     let uniquenessError = null;
@@ -202,13 +202,13 @@ class UsersRepository {
     if (await usersIndex.existsUsername(user.username)) {
       if (uniquenessError == null) uniquenessError = errors.itemAlreadyExists("user",{});
       uniquenessError.data.username = user.username;
-    } 
+    }
 
     if (uniquenessError != null) throw uniquenessError;
 
 
     const mallTransaction = await this.mall.newTransaction();
-    const localTransaction = await mallTransaction.forStoreId('local');
+    const localTransaction = await mallTransaction.getStoreTransaction('local');
 
     await localTransaction.exec(async () => {
         let accessId = UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
@@ -236,7 +236,7 @@ class UsersRepository {
 
         // add the user to local index
         await usersIndex.addUser(user.username, user.id);
-        
+
         await this.mall.events.createMany(user.id, events, mallTransaction);
       }
     );
@@ -252,10 +252,10 @@ class UsersRepository {
       );
     }
     delete update.password;
-    
+
     // Start a transaction session
     const mallTransaction = await this.mall.newTransaction();
-    const localTransaction = await mallTransaction.forStoreId('local');
+    const localTransaction = await mallTransaction.getStoreTransaction('local');
 
     await localTransaction.exec(async () => {
       // update all account streams and don't allow additional properties
@@ -284,13 +284,13 @@ class UsersRepository {
     if (username == null) {
       username = user?.username;
     }
-    
+
     await usersIndex.init();
     await usersIndex.deleteById(userId);
 
     if (username != null) { // can happen during tests
-      cache.unsetUser(username); 
-      // Clear data for this user in Platform 
+      cache.unsetUser(username);
+      // Clear data for this user in Platform
      await this.platform.deleteUser(username, user, skipFowardToRegister);
     }
     await this.mall.deleteUser(userId);
@@ -325,7 +325,7 @@ function getTransactionOptions() {
 
 /**
  * Get user password hash
- * @param string userId 
+ * @param string userId
  */
 async function getUserPasswordHash(userId: string, mall: any): Promise<?string> {
   const userPassEvents = await mall.events.get(userId, {streams: [{any: [SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH]}]});
@@ -335,7 +335,7 @@ async function getUserPasswordHash(userId: string, mall: any): Promise<?string> 
   return null;
 }
 
-  
+
 
 
 let usersRepository = null;

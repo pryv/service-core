@@ -434,7 +434,7 @@ exports.removeAccountStreams = function (streams) {
     }
   }
   return streams;
-}
+};
 
 // TODO: cleanup this mess, we shouldn't have data creation logic in "validation", nor these `require()` mid-file
 exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
@@ -443,9 +443,9 @@ exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
 
   // -- ADD stores
   const mall = await getMall();
-  for (const store of [...mall.stores].reverse()) { // cloning array before reversing it!
+  for (const store of [...mall.stores.values()].reverse()) { // cloning array before reversing it!
     if (isShown(store.id)) {
-      const stream = streamsUtils.storeToStream(store, {
+      const stream = streamsUtils.createStoreRootStream(store, {
         children: [],
         childrenHidden: true // To be discussed
       });

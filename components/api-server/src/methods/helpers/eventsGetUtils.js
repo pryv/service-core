@@ -411,11 +411,11 @@ async function findEventsFromStore(filesReadTokenSecret: string,
   // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
 
   /**
-   * Will be called by "mall" for each source of event that need to be streames to result
-   * @param {Store} store
+   * Will be called by "mall" for each store of events that need to be streamed to result
+   * @param {Object} storeSettings
    * @param {ReadableStream} eventsStream of "Events"
    */
-  function addnewEventStreamFromSource (store, eventsStream: ReadableStream) {
+  function addEventsStreamFromStore (storeSettings, eventsStream) {
     let stream: ReadableStream = eventsStream;
     if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
       stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
@@ -424,13 +424,13 @@ async function findEventsFromStore(filesReadTokenSecret: string,
       stream = stream.pipe(new addTagsStream());
     }
     stream = stream.pipe(new SetSingleStreamIdStream());
-    if (store.settings?.attachments?.setFileReadToken) {
+    if (storeSettings?.attachments?.setFileReadToken) {
       stream = stream.pipe(new SetFileReadTokenStream({ access: context.access, filesReadTokenSecret }));
     }
     result.addToConcatArrayStream('events', stream);
   }
 
-  await mall.events.generateStreamsWithParamsByStore(context.user.id, paramsByStoreId, addnewEventStreamFromSource);
+  await mall.events.generateStreamsWithParamsByStore(context.user.id, paramsByStoreId, addEventsStreamFromStore);
   result.closeConcatArrayStream('events');
 
   return next();
