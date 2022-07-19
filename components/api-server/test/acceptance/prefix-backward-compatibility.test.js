@@ -457,6 +457,9 @@ describe('backward-compatibility', () => {
           permissions: [{
             streamId: '.passwordHash',
             level: 'read',
+          }, {
+            feature: 'selfRevoke',
+            setting: 'forbidden'
           }],
           clientData: {
             something: 'hi'
