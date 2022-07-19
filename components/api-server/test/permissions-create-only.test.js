@@ -38,10 +38,13 @@ describe('permissions create-only level', () => {
       streamCreateOnlyId,
       streamOutId,
       readAccessId,
+      readAccessToken,
       createOnlyToken,
       coWithReadParentToken,
       coWithContributeParentToken,
       masterToken,
+      manageAccessToken,
+      contributeAccessToken,
       createOnlyEventId,
       streamParentIdAndCreateOnlyEventId,
       eventOutId;
@@ -49,10 +52,13 @@ describe('permissions create-only level', () => {
   before(() => {
     username = cuid();
     readAccessId = cuid();
+    readAccessToken = cuid();
     createOnlyToken = cuid();
     coWithReadParentToken = cuid();
     coWithContributeParentToken = cuid();
     masterToken = cuid();
+    manageAccessToken = cuid();
+    contributeAccessToken = cuid();
     streamParentId = cuid();
     streamCreateOnlyId = cuid();
     streamOutId = cuid();
@@ -86,8 +92,9 @@ describe('permissions create-only level', () => {
       name: 'Does not matter either'
     });
     await user.access({
-      type: 'shared',
+      type: 'app',
       id: readAccessId,
+      token: readAccessToken,
       permissions: [
         {
           streamId: streamCreateOnlyId,
@@ -143,6 +150,26 @@ describe('permissions create-only level', () => {
         },
       ]
     });
+    await user.access({
+      type: 'app',
+      token: manageAccessToken,
+      permissions: [
+        {
+          streamId: streamCreateOnlyId,
+          level: 'manage'
+        },
+      ]
+    });
+    await user.access({
+      type: 'app',
+      token: contributeAccessToken,
+      permissions: [
+        {
+          streamId: streamCreateOnlyId,
+          level: 'contribute'
+        },
+      ]
+    });
     await streamParent.event();
     await user.event({
       id: streamParentIdAndCreateOnlyEventId,
@@ -190,7 +217,7 @@ describe('permissions create-only level', () => {
 
         describe('when using an access with a "create-only" permission', function () {
   
-          it('[X4Z1] should allow to create an access with a "create-only" permissions', async function () {
+          it('[X4Z1] a masterToken should allow to create an access with a "create-only" permissions', async function () {
             const res = await server.request()
               .post(basePath)
               .set('Authorization', masterToken)
@@ -206,7 +233,80 @@ describe('permissions create-only level', () => {
             const access = res.body.access;
             assert.exists(access);
           });
-          it('[FEGI] should forbid to create an access with a "read" level permission permission', async function () {
+          
+          it('[ATCO] an appToken with managed rights should allow to create an access with a "create-only" permissions', async function () {
+            const res = await server.request()
+              .post(basePath)
+              .set('Authorization', manageAccessToken)
+              .send({
+                type: 'shared',
+                name: 'whatever2nd',
+                permissions: [{
+                  streamId: streamCreateOnlyId,
+                  level: 'create-only',
+                }]
+              });
+            assert.equal(res.status, 201);
+            const access = res.body.access;
+            assert.exists(access);
+          });
+
+          it('[ATCY] an appToken with managed rights should allow to create an access with a "create-only" permissions and selfRevoke forbidden', async function () {
+            const res = await server.request()
+              .post(basePath)
+              .set('Authorization', manageAccessToken)
+              .send({
+                type: 'shared',
+                name: 'whatever2nd2nd',
+                permissions: [{
+                  streamId: streamCreateOnlyId,
+                  level: 'create-only',
+                },{
+                  feature: 'selfRevoke',
+                  setting: 'forbidden'
+                }]
+              });
+            assert.equal(res.status, 201);
+            const access = res.body.access;
+            assert.exists(access);
+          });
+
+          it('[ATCR] an appToken with read rights should be forbidden to create an access with a "create-only" permissions', async function () {
+            const res = await server.request()
+              .post(basePath)
+              .set('Authorization', readAccessToken)
+              .send({
+                type: 'shared',
+                name: 'whatever3rd',
+                permissions: [{
+                  streamId: streamCreateOnlyId,
+                  level: 'create-only',
+                }]
+              });
+            assert.equal(res.status, 403);
+            const error = res.body.error;
+            assert.exists(error);
+          });
+
+          it('[ATCC] an appToken with contribute rights should be allowed to create an access with a "create-only" permissions', async function () {
+            const res = await server.request()
+              .post(basePath)
+              .set('Authorization', contributeAccessToken)
+              .send({
+                type: 'shared',
+                name: 'whatever4th',
+                permissions: [{
+                  streamId: streamCreateOnlyId,
+                  level: 'create-only',
+                }]
+              });
+            assert.equal(res.status, 201);
+            const access = res.body.access;
+            assert.exists(access);
+          });
+
+
+          it('[FEGI] a createOnlyToken should forbid to create an access with a "read" level permission permission', async function () {
             const res = await server
               .request()
               .post(basePath)
