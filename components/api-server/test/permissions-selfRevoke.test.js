@@ -35,17 +35,35 @@ describe('permissions selfRevoke', function () {
   describe('POST /accesses', function ( ) {
     let username,
         personalToken,
+        appToken,
+        streamId,
         basePathAccess;
     
     beforeEach(async function () {
       username = cuid();
       personalToken = cuid();
+      appToken = cuid();
+      streamId = cuid();
       basePathAccess = `/${username}/accesses/`;
       const user = await mongoFixtures.user(username, {});
       await user.access({
         type: 'personal',
         token: personalToken});
       await user.session(personalToken);
+      await user.stream({
+        id: streamId,
+        name: 'Does not matter either'
+      });
+      await user.access({
+        type: 'app',
+        token: appToken,
+        permissions: [
+          {
+            streamId: streamId,
+            level: 'manage'
+          },
+        ]
+      });
     });
 
     afterEach(() => {
@@ -105,6 +123,26 @@ describe('permissions selfRevoke', function () {
       assert.equal(res.status, 400);
       assert.exists(res.body.error);
       assert.equal(res.body.error.id, 'invalid-parameters-format');
+    });
+
+    it('[UZR] an appToken with managed rights should allow to create an access with selfRevoke forbidden', async function () {
+      const res = await server.request()
+        .post(basePathAccess)
+        .set('Authorization', appToken)
+        .send({
+          type: 'shared',
+          name: 'whatever',
+          permissions: [{
+            streamId: streamId,
+            level: 'manage',
+          },{
+            feature: 'selfRevoke',
+            setting: 'forbidden'
+          }]
+        });
+      assert.equal(res.status, 201);
+      const access = res.body.access;
+      assert.exists(access);
     });
 
   });
