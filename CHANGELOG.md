@@ -1,5 +1,9 @@
 ## 1.7
 
+### 1.7.14
+- Fix crash caused by permissions selfRevoke used in combinaison with BACKWARD_COMPATIBILITY_SYSTEM_STREAMS_PREFIX set to true.
+- Fix issue with `accesses.create` theand selfRevoke permissions that was only possible with a personalToken.
+
 ### 1.7.13
 
 - Fix another issue when BACKWARD_COMPATIBILITY_SYSTEM_STREAMS_PREFIX is set to "true" - children streams' ids were not following the correct format

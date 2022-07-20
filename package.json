@@ -1,6 +1,6 @@
 {
   "name": "pryv-service-core",
-  "version": "1.7.12",
+  "version": "1.7.14",
   "private": true,
   "description": "Pryv core server app components",
   "homepage": "https://pryv.com",
