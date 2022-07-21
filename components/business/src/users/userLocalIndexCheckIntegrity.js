@@ -24,7 +24,7 @@ module.exports = async function checkIntegrity (usersIndex) {
       const username = usersIndex.nameForId(userId);
       checkedMap[userId] = true;
       if (username == null) {
-        errors.push(`Found userId [${userId}] in mongo collection : [${collectionName}] unkown in -userIndex-`);
+        errors.push(`Found userId "${userId}" in mongo collection : "${collectionName}" unkown in the user index db`);
         continue;
       }
     }
