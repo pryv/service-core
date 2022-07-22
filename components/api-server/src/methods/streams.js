@@ -247,7 +247,6 @@ module.exports = async function (api) {
       if (err instanceof APIError) {
         return next(err);
       }
-      $$({err});
       return next(errors.unexpectedError(err));
     }
   }

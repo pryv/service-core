@@ -18,6 +18,11 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
+const usersIndex = require('business/src/users/UsersLocalIndex');
+
+const { platform } = require('platform');
+
+
 /**
  * @param systemAPI
  * @param api The user-facing API, used to compute usage stats per method
@@ -33,6 +38,9 @@ module.exports = async function (
   const usersRepository = await getUsersRepository(); 
   const userProfileStorage = storageLayer.profile;
   const userAccessesStorage = storageLayer.accesses;
+
+  await platform.init();
+  await usersIndex.init();
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
@@ -113,6 +121,21 @@ module.exports = async function (
       next();
     });
   }
+
+  // --------------------------------------------------------------- checks
+  systemAPI.register('system.checkPlatformIntegrity',
+    async function performSystemsChecks(context, params, result, next) {
+      try {
+        result.checks = [
+          await platform.checkIntegrity(),
+          await usersIndex.checkIntegrity()
+        ];
+        return next();
+      } catch (err) {
+        return next(err);
+      }
+    }
+  );
 
   // --------------------------------------------------------------- deactivateMfa
   systemAPI.register('system.deactivateMfa',

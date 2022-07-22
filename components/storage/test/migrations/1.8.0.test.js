@@ -27,51 +27,70 @@ const { getUsersRepository } = require('business/src/users');
 
 const usersIndex = require('business/src/users/UsersLocalIndex');
 
+const { platform } = require('platform');
 
-describe('Migration - 1.8.0',function () {
+
+describe('Migration - 1.8.0', function () {
   this.timeout(20000);
+  let initialEventsUsers;
 
-  before(async function() {
-  });
-
-  after(async function() {
-    // erase alls
-  });
-
-  it('[WBIK] must handle data migration from 1.7.5 to 1.8.0', async function () {
+  before(async function () {
     const newVersion = getVersions('1.8.0');
-    const accessesStorage = storage.user.accesses;
-
+    await SystemStreamsSerializer.init();
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.7.5', mongoFolder, cb));
+  
+    // collect users from events
+    initialEventsUsers = await getInitialEventsUsers();
+
+    // --- user Index
     await usersIndex.init();
     await usersIndex.deleteAll();
 
-    const initialUsers = await getInitialUsers();
+    // --- erase platform wide db
+    await platform.init();
+    await platform.deleteAll();
 
-     // perform migration
+    // perform migration
     await bluebird.fromCallback(cb => newVersion.migrateIfNeeded(cb));
+  });
 
+  after(async function () {
+
+  });
+
+
+  it('[WBIK] must handle userIndex/events  migration from 1.7.5 to 1.8.0', async function () {
     // check that all users are migrated
     const newUsers = await usersIndex.allUsersMap();
-    for ([username, userId] of Object.entries(initialUsers)) {
+    for ([username, userId] of Object.entries(initialEventsUsers)) {
       if (newUsers[username]) {
         assert.equal(newUsers[username], userId, `User ${username} migrated but with wrong id`);
       } else {
         assert.fail(`User ${userId} not migrated`);
       }
-      delete initialUsers[username];
+      delete initialEventsUsers[username];
     }
-    assert.equal(Object.keys(initialUsers).length, 0, 'Not all users migrated');
-
+    assert.isEmpty(Object.keys(initialEventsUsers), 'Not all users migrated');
   });
 
+  it('[PH6C] must handle userIndex/repository migration from 1.7.5 to 1.8.0', async function () {
+    const { errors } = await usersIndex.checkIntegrity();
+    assert.isEmpty(errors, 'Found error(s) in the userIndex vs events check');
+  });
+
+
+  it('[URHS] must handle platfrom migration from 1.7.5 to 1.8.0', async function () {
+    const { errors } = await platform.checkIntegrity();
+    assert.isEmpty(errors, 'Found error(s) in the platform vs Users check');
+  });
 });
 
-async function getInitialUsers() {
-  const usersRepository = await getUsersRepository();
+
+
+async function getInitialEventsUsers() {
   const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
-  const query =  { streamIds: { $in: [':_system:username'] } };
-  const cursor = await eventsCollection.find(query, {projection: {userId: 1, content: 1}});
+  const query = { streamIds: { $in: [':_system:username'] } };
+  const cursor = await eventsCollection.find(query, { projection: { userId: 1, content: 1 } });
 
   const users = {};
   while (await cursor.hasNext()) {

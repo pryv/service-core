@@ -52,6 +52,7 @@ const ALL_METHODS = [
   'events.delete',
   'events.getAttachment',
   'events.deleteAttachment',
+  'system.checkPlatformIntegrity',
   'system.createUser',
   'system.deactivateMfa',
   'system.getUserInfo',
@@ -63,6 +64,7 @@ const NOT_AUDITED_METHODS = [
   'system.getUserInfo',
   'auth.usernameCheck',
   'auth.emailCheck',
+  'system.checkPlatformIntegrity',
 ];
 
 const AUDITED_METHODS = ALL_METHODS.filter(m => ! NOT_AUDITED_METHODS.includes(m));

@@ -65,6 +65,13 @@ describe('system route', function () {
     res.body.error.id.should.eql('invalid-access-token');
   });
 
+  it('[CHEK] System check Platform integrity ', async () => { 
+    const res = await request.get(url.resolve(server.url(), '/system/check-platform-integrity'))
+      .set('authorization', config.get('auth:adminAccessKey'));
+    $$(res.body);
+    // Groumpf fixtures are producing unwanted discrepencies
+  });
+
   describe('DELETE /mfa', () => {
     let username, mfaPath, profilePath, res, profileRes, token, restOfProfile;
     
