@@ -12,7 +12,7 @@ const async = require('async');
 const commonFns = require('api-server/src/methods/helpers/commonFunctions');
 const methodsSchema = require('../schema/auditMethods');
 const eventsGetUtils = require('api-server/src/methods/helpers/eventsGetUtils');
-const mallEventsGetUtils = require('mall/src/lib/eventsGetUtils');
+const { getStoreQueryFromParams } = require('mall/src/helpers/eventsQueryUtils');
 
 import type { GetEventsParams } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { StreamQuery } from 'business/src/events';
@@ -105,7 +105,7 @@ async function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = await auditStorage.forUser(context.user.id);
     params.streams = params.arrayOfStreamQueries;
-    const query = mallEventsGetUtils.getStoreQueryFromParams(params);
+    const query = getStoreQueryFromParams(params);
     result.addStream('auditLogs', userStorage.getLogsStream(query, true));
   } catch (err) {
     return next(err);

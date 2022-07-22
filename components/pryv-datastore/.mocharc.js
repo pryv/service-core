@@ -14,6 +14,6 @@
   ui: 'bdd',
   diff: true,
   reporter: 'dot',
-  require: 'test/helpers.js',
+  //require: 'test/helpers.js',
   spec: 'test/**/*.test.js'
 };
