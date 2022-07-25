@@ -19,12 +19,20 @@ const MulterDiskStorage = integrity.attachments.isActive ? integrity.attachments
 
 // ---------------------------------------------------------------- multer setup
 
+// fix for multer 1.4.5-lts.1 having an unwanted change of encoding for filenames
+// might be removed when https://github.com/expressjs/multer/pull/1102
+
+function fileFilterFixFilenameEnconding (req, file, cb) {
+  file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+  cb(null, true);
+}
+
 // Parse multipart file data into request.files: 
 const storage = MulterDiskStorage({
   filename: null, // default filename, random
   destination: null, // operating system's default directory for temporary files is used.
 }); 
-const uploadMiddlewareFactory = multer({storage: storage});
+const uploadMiddlewareFactory = multer({storage: storage, fileFilter: fileFilterFixFilenameEnconding});
 
 // --------------------------------------------------------------------- exports
 module.exports = {
