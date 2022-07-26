@@ -47,8 +47,8 @@ class Context {
     const collections = collectionNames.map(collectionName => {
       return bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb))
     });
-    await usersIndex.init();
-    await usersIndex.deleteAll();
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
     await initMall();
 
     // await Promise.all(collections);

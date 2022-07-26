@@ -7,13 +7,23 @@
 var fs = require('fs');
 const { getConfig } = require('@pryv/boiler');
 
+let usersIndex, platform;
+
+async function initIndexPlatform() {
+  if (usersIndex != null) return;
+  usersIndex = require('business/src/users/UsersLocalIndex');
+  platform = require('platform').platform;
+  await platform.init();
+  await usersIndex.init();
+}
+
 exports.mochaHooks = {
   async beforeAll () {
     const config = await getConfig();
 
     const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-    // create preview directories that would notmally be created in normal setup
+    // create preview directories that would normally be created in normal setup
     const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
     const previewsDirPath = config.get('eventFiles:previewsDirPath');
 
@@ -24,4 +34,25 @@ exports.mochaHooks = {
       fs.mkdirSync(previewsDirPath, { recursive: true });
     }
   },
+  async beforeEach () {
+    checkIndexAndPlatformIntegrity('BEFORE ' + this.currentTest.title);
+  },
+  async afterEach () {
+    checkIndexAndPlatformIntegrity('AFTER ' + this.currentTest.title);
+  }
 };
+
+async function checkIndexAndPlatformIntegrity(title) {
+  console.log('************** ' + title );
+  await initIndexPlatform();
+  const checks = [
+    await platform.checkIntegrity(),
+    await usersIndex.checkIntegrity()
+  ];
+  for (const check of checks) {
+    if (check.errors.length > 0) {
+      $$({title, checks});
+      throw new Error(`${title} => Check should be empty`);
+    }
+  }
+}

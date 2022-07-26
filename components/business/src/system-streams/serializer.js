@@ -7,8 +7,8 @@
 // @flow
 const _ = require('lodash');
 
-import type { Stream } from 'business/src/streams';
-import type { SystemStream } from 'business/src/system-streams';
+import type { Stream } from 'business/src/streams';
+import type { SystemStream } from 'business/src/system-streams';
 const { StreamProperties } = require('business/src/streams');
 const treeUtils = require('utils').treeUtils;
 const { getConfig } = require('@pryv/boiler');
@@ -302,6 +302,13 @@ class SystemStreamsSerializer {
    */
   static isSystemStreamId(streamId: string): boolean {
     return SystemStreamsSerializer.getAllMap()[streamId] != null;
+  }
+
+  /**
+   * Returns null or default value
+   */
+   static getAccountFieldDefaultValue(fieldId: string): boolean {
+    return SystemStreamsSerializer.getAllMap()[PRYV_PREFIX + fieldId]?.default;
   }
 
   /**

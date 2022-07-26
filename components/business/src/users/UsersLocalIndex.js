@@ -76,6 +76,7 @@ class UsersLocalIndex {
   }
 
   async allUsersMap() {
+    logger.debug('allUsersMap');
     return this.db.allUsersMap();
   }
 

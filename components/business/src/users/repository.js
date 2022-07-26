@@ -14,7 +14,7 @@ const User = require('./User');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
 import type { Event } from 'business/src/events';
 import type { Access } from 'business/src/accesses';
-import type { SystemStream } from 'business/src/system-streams';
+import type { SystemStream } from 'business/src/system-streams';
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
@@ -93,13 +93,17 @@ class UsersRepository {
     const userAccountStreamsIds =  Object.keys(SystemStreamsSerializer.getAccountMap());
     const query = {state: 'all', streams: [{any: userAccountStreamsIds, and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}]};
     const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
+    const username = await usersIndex.nameForId(userId);
     // convert events to the account info structure
     if (
       userAccountEvents.length == 0
     ) {
       return null;
     }
-    const username = await usersIndex.nameForId(userId);
+    
+    if (username == null) {
+      throw new Error('Inconsistency between userEvents and usersIndex, found null username for userId: "' + userId + '" with ' + userAccountEvents.length + ' user account events');
+    }
     const user = new User({ id: userId, username: username, events: userAccountEvents });
     return user;
   }

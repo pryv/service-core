@@ -142,6 +142,7 @@ describe('Audit logs events', () => {
     it('[0BK7] must not return null values or trashed=false', async () => {
       const res = await get('/events', { streams: [':_audit:action-events.get']}, personalToken);
       const events = res.body.events;
+      assert.isNotNull(events[0]);
       const event = events[0];
       for (const [key, val] of Object.entries(event)) {
         assert.isNotNull(val, `"null" property ${key} of event is present.`);

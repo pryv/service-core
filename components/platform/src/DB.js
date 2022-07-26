@@ -13,9 +13,6 @@ const logger = getLogger('platform:db');
 
 class DB {
   db;
-  queryUniqueKey;
-  upsertUniqueKeyValue;
-  deleteAll;
   queries;
 
   constructor() { }
@@ -48,10 +45,12 @@ class DB {
   }
 
   getAllWithPrefix(prefix) {
+    logger.debug('getAllWithPrefix', prefix);
     return this.queries.getAllWithKeyStartsWith.all(prefix).map(parseEntry);
   }
 
   getAllWithValue(value) {
+    logger.debug('getAllWithValue', value);
     return this.queries.getAllWithKeyStartsWith.all(value).map(parseEntry);
   }
 
@@ -71,8 +70,8 @@ class DB {
     return this.queries.deleteWithKey.run(key);
   }
 
-  reset() {
-    logger.debug('reset');
+  deleteAll() {
+    logger.debug('deleteAll');
     this.queries.deleteAll.run();
   }
 

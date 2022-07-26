@@ -61,7 +61,7 @@ class Platform {
 
   // for tests only - called by repository 
   async deleteAll() {
-    this.#db.reset();
+    this.#db.deleteAll();
   }
 
   /**
@@ -119,6 +119,7 @@ class Platform {
    * @param {*} key 
    */
   async #updateUser(username, operations) {
+    $$({username, operations});
     // otherwise deletion
     for (const op of operations) {
       switch (op.action) {
@@ -148,7 +149,6 @@ class Platform {
             }
             await this.#db.setUserUniqueField(username, op.key, op.value);
           } else { // is Indexed
-            await this.#db.deleteUserUniqueField(op.key, op.previousValue);
             await this.#db.setUserIndexedField(username, op.key, op.value);
           }
           break;
