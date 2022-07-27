@@ -28,8 +28,8 @@ describe('permissions create-only level', () => {
     const config = await getConfig();
     isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
   });
-  after(() => {
-    mongoFixtures.clean();
+  after(async () => {
+    await mongoFixtures.clean();
   });
 
   let user,

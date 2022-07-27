@@ -48,8 +48,8 @@ describe('permissions selfRevoke', function () {
       await user.session(personalToken);
     });
 
-    afterEach(() => {
-      mongoFixtures.clean();
+    afterEach(async () => {
+      await mongoFixtures.clean();
     });
 
     it('[JYL5] must list accesses with forbidden selfRevoke by GET /accesses', async () => {
@@ -149,8 +149,8 @@ describe('permissions selfRevoke', function () {
         access.id = (await user.access(data)).attrs.id;
       }
     });
-    afterEach(() => {
-      mongoFixtures.clean();
+    afterEach(async () => {
+      await mongoFixtures.clean();
     });
 
     for (let i = 0; i < accessKeys.length; i++) {

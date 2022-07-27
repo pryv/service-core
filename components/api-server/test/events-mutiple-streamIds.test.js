@@ -690,8 +690,8 @@ describe('events.streamIds', function () {
         streamIds: [streamA_AId, streamA_A_AId]
       });
     });
-    afterEach(() => {
-      mongoFixtures.clean();
+    afterEach(async () => {
+      await mongoFixtures.clean();
     });
 
     /**

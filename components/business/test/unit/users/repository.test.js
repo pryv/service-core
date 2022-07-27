@@ -19,10 +19,10 @@ describe('Users repository', () => {
   let mongoFixtures;
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    mongoFixtures.clean();
+    await mongoFixtures.clean();
   });
-  after(() => {
-    mongoFixtures.clean();
+  after(async () => {
+    await mongoFixtures.clean();
   });
   let userId;
   let username;

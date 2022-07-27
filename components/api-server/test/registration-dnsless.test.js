@@ -22,6 +22,8 @@ const ErrorIds = require('errors/src/ErrorIds');
 const { ApiEndpoint } = require('utils');
 const systemStreamsConfig = require('api-server/config/components/systemStreams');
 
+const cuid = require('cuid');
+
 describe('[BMM2] registration: DNS-less', () => {
   let config;
   let mongoFixtures;
@@ -342,7 +344,7 @@ describe('[BMM2] registration: DNS-less', () => {
   });
   describe('GET /reg/:username/check', function() {
 
-    const existingUsername = 'existing-username';
+    const existingUsername = 'exist-' + cuid();
     before(async function () {
       await mongoFixtures.user(existingUsername);
     });

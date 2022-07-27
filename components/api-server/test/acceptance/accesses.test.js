@@ -297,8 +297,8 @@ describe('accesses', () => {
       });
       expiredSharedAccess = expiredSharedAccess.attrs;
     });
-    after(() => {
-      mongoFixtures.clean();
+    after(async () => {
+      await mongoFixtures.clean();
     });
   
     let server;

@@ -20,8 +20,8 @@ describe('Access permissions - Tags', function () {
   before(async function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   });
-  after(() => {
-    mongoFixtures.clean();
+  after(async () => {
+    await mongoFixtures.clean();
   });
 
   let server;

@@ -49,8 +49,8 @@ describe('system route', function () {
     username = 'system-test';
     server = await context.spawn();
   });
-  after(() => {
-    mongoFixtures.clean();
+  after(async () => {
+    await mongoFixtures.clean();
     server.stop();
   });
 
