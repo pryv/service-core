@@ -689,7 +689,7 @@ describe("[FG5R] Events of system streams", () => {
         let serviceRegisterRequest;
         async function editEvent (streamId, isFaulty = false) {
           eventData = {
-            streamIds: [streamId],
+            streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
             content: isFaulty ? { someProp: 123 } : charlatan.Lorem.characters(7),
             type: 'string/pryv'
           };

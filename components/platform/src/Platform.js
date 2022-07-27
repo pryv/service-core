@@ -109,7 +109,7 @@ class Platform {
     }
 
     // ** execute request locally 
-    await this.#updateUser(username, operations);
+    await this.#updateUser(username, operations, isActive);
   }
 
   /**
@@ -118,8 +118,7 @@ class Platform {
    * Replace updateUserInServiceRegister()
    * @param {*} key 
    */
-  async #updateUser(username, operations) {
-    $$({username, operations});
+  async #updateUser(username, operations, isActive) {
     // otherwise deletion
     for (const op of operations) {
       switch (op.action) {
@@ -136,6 +135,7 @@ class Platform {
           break;
 
         case 'update':
+          if (! isActive) break;
           if (op.isUnique) {
             const existingUsernameValue = await this.#db.getUsersUniqueField(op.key, op.previousValue);
             if (existingUsernameValue !== null && existingUsernameValue === username) {

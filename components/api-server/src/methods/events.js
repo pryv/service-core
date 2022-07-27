@@ -385,8 +385,8 @@ module.exports = async function (api)
         }];
 
         await platform.updateUserAndForward(context.user.username, operations,
-          context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
-          context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
+          context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // Active if set or previous valu was active.. BUT I don't this it's OK.... 
+          context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),   // How can we set a stream inActive then
           false);
       }
 

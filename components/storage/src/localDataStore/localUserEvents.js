@@ -135,7 +135,8 @@ module.exports = (ds.createUserEvents({
 
   async _deleteUser(userId: string): Promise<void> {
     const query = {userId};
-    return await this.eventsCollection.deleteMany(query, {});
+    const res = await this.eventsCollection.deleteMany(query, {});
+    return res;
   },
 
   async _getUserStorageSize(userId: string) {
