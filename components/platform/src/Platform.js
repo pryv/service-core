@@ -73,20 +73,12 @@ class Platform {
   }
 
   /**
-   * @private as long as we don't use a distributed db. 
-   * @see updateUserAndForward to delete an indexed field
-   * Set a user indexed field. 
-   * Mock etcd implementation of prefixes 
-   * @param {*} username 
-   * @param {*} operations 
-   * @param {*} isActive 
-   * @param {*} isCreation 
+   * Use cases
+   * a) When performing updateUserAndForward pre check if there are some uniqueness errors.
+   * b) When creating a user, if a uniqueness error is username has been detected, we want to 
+   *    complete the error message with other eventual conflicts
    */
-
-  async updateUserAndForward(username, operations, isActive, isCreation, skipFowardToRegister = false) {
-    // ** 1st check on local index before forwarding to register 
-    // This should be removed when platformWideDB will be implemented 
-    // This code is redundant with some check that will be performed by #updateUser after updating register 
+  async checkUpdateOperationUniqueness(username, operations) {
     const localUniquenessErrors = {};
     for (const op of operations) { 
       if (op.action != 'delete' && op.isUnique) {
@@ -94,7 +86,23 @@ class Platform {
         if (value != null) localUniquenessErrors[op.key] = op.value;
       }
     }
+    return localUniquenessErrors;
+  }
+
+  /**
+   * @param {*} username 
+   * @param {*} operations 
+   * @param {*} isActive 
+   * @param {*} isCreation 
+   * @param {boolean} skipFowardToRegister - for tests only 
+   */
+  async updateUserAndForward(username, operations, isActive, isCreation, skipFowardToRegister = false) {
+    //$$({task: 'updateUserAndForward', username, operations, isActive});
+    // ** 1st check on local index before forwarding to register 
+    // This should be removed when platformWideDB will be implemented 
+    // This code is redundant with some check that will be performed by #updateUser after updating register 
     
+    const localUniquenessErrors = await this.checkUpdateOperationUniqueness(username, operations);
     if (Object.keys(localUniquenessErrors).length > 0) {
       throw (errors.itemAlreadyExists("user", localUniquenessErrors));
     }

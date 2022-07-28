@@ -194,24 +194,18 @@ class UsersRepository {
       }
     }
 
-    let uniquenessError = null;
-    try {
-      await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
-    } catch (err) {
-      if (err.id == ErrorIds.ItemAlreadyExists) {
-        uniquenessError = err; // keep erro to eventually add username uniqueness error at next step
-      } else {
-        throw err;
-      }
-    }
-
+   
     // check locally for username // <== maybe this usersIndex should be fully moved to platform
     if (await usersIndex.existsUsername(user.username)) {
-      if (uniquenessError == null) uniquenessError = errors.itemAlreadyExists("user",{});
+      // gather eventual other uniqueness conflicts
+      const eventualPlatformUniquenessErrors = await this.platform.checkUpdateOperationUniqueness(user.username, operations);
+      const uniquenessError = errors.itemAlreadyExists("user",eventualPlatformUniquenessErrors);
       uniquenessError.data.username = user.username;
+      throw uniquenessError;
     }
 
-    if (uniquenessError != null) throw uniquenessError;
+    // could throw uniqueness errors
+    await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
 
 
     const mallTransaction = await this.mall.newTransaction();

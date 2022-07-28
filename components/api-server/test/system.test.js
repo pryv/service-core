@@ -68,8 +68,16 @@ describe('system route', function () {
   it('[CHEK] System check Platform integrity ', async () => { 
     const res = await request.get(url.resolve(server.url(), '/system/check-platform-integrity'))
       .set('authorization', config.get('auth:adminAccessKey'));
-    $$(res.body);
-    // Groumpf fixtures are producing unwanted discrepencies
+    should.exists(res.body.checks);
+    const checkLength = 2;
+    should.equal(res.body.checks.length, checkLength);
+    for (let i = 0; i < checkLength; i++) {
+      const check = res.body.checks[i];
+      should.exist(check.title);
+      should.exist(check.infos);
+      should.exist(check.errors);
+      should.equal(check.errors.length, 0);
+    }
   });
 
   describe('DELETE /mfa', () => {
