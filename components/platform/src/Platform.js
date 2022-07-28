@@ -135,7 +135,7 @@ class Platform {
           break;
 
         case 'update':
-          if (! isActive) break;
+          if (! isActive) break; // only change value of (active setting) -- figure out what it means ;)
           if (op.isUnique) {
             const existingUsernameValue = await this.#db.getUsersUniqueField(op.key, op.previousValue);
             if (existingUsernameValue !== null && existingUsernameValue === username) {

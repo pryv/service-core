@@ -8,7 +8,6 @@
 
 require('./test-helpers');
 const httpServer = require('./support/httpServer');
-const awaiting = require('awaiting');
 const assert = require('chai').assert;
 const hostname = require('os').hostname;
 const cuid = require('cuid');
@@ -57,12 +56,17 @@ describe('service-reporting', () => {
   });
 
   describe('POST report on service-reporting (started)', () => {
+    let reportRecieved = false;
     before(async () => {
       infoHttpServer = new httpServer('/service/info', 200);
       reportHttpServer = new httpServer('/reports', 200);
+
+      reportHttpServer.on('report_received', function () {
+        reportRecieved = true;
+      });
+
       await infoHttpServer.listen(INFO_HTTP_SERVER_PORT);
       await reportHttpServer.listen(REPORT_HTTP_SERVER_PORT);
-
       server = await context.spawn(customSettings);
     });
 
@@ -72,7 +76,8 @@ describe('service-reporting', () => {
     });
 
     it('[G1UG] must start and successfully send a report when service-reporting is listening', async () => {
-      await awaiting.event(reportHttpServer, 'report_received');
+      await new Promise(r => setTimeout(r, 1000));
+      assert.isTrue(reportRecieved, 'Should have revceif report received event from server');
       await assertServerStarted();
       const lastReport = reportHttpServer.getLastReport();
       const reportingSettings = customSettings.reporting;
