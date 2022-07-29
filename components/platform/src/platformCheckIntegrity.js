@@ -52,11 +52,7 @@ module.exports = async function platformCheckIntegrity (platformWideDB) {
         errors.push(`Cannot find username "${username}" data in platform db while looking for field "${field}" expected value:  "${valueRepo}"`);
         continue;
       } else if (platformEntryByUser[username][field] == null) {
-        if (valueRepo === SystemStreamsSerializer.getAccountFieldDefaultValue(field)) {
-          //console.log(`Fix this! Default values should also be set in platform  "${field}" for username "${username}" in the platform db expected value is :  "${valueRepo}"`)
-        } else {
-          errors.push(`Cannot find field "${field}" for username "${username}" in the platform db expected value is :  "${valueRepo}"`);
-        }
+        errors.push(`Cannot find field "${field}" for username "${username}" in the platform db expected value is :  "${valueRepo}"`);
       } else if (platformEntryByUser[username][field].value !== valueRepo) {
         errors.push(`Expected value "${valueRepo}" of field "${field}" for username "${username}" in the platform db but found value :  "${platformEntryByUser[username][field].value}"`);
       } else if (platformEntryByUser[username][field].isUnique !== isUnique) {

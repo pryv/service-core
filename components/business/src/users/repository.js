@@ -189,9 +189,11 @@ class UsersRepository {
     // Create the User at a Platfrom Level..
     const operations = [];
     for (const key of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
-      if (user[key] != null) {
-        operations.push({action: 'create', key: key, value: user[key], isUnique: SystemStreamsSerializer.isUniqueAccountField(key)});
-      }
+      // use default value is null;
+      const value = (user[key] != null) ? user[key] : SystemStreamsSerializer.getAccountFieldDefaultValue(key);
+      if (value != null) {
+        operations.push({action: 'create', key: key, value: value, isUnique: SystemStreamsSerializer.isUniqueAccountField(key)});
+      } 
     }
 
    

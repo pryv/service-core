@@ -224,6 +224,14 @@ describe('registration: cluster', function() {
                   creation: true
                 }
               ],
+              language: [
+                {
+                  creation: true,
+                  isActive: true,
+                  isUnique: false,
+                  value: 'en',
+                }
+              ],
               referer: [
                 {
                   value: 'pryv',
