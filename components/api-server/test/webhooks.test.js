@@ -61,6 +61,7 @@ describe('webhooks', () => {
   describe('GET /', () => {
 
     before(() => {
+      username = cuid();
       return mongoFixtures.user(username, {}, (user) => {
         user.access({
           type: 'personal', token: personalAccessToken,
@@ -167,9 +168,6 @@ describe('webhooks', () => {
         });
       });
     });
-  
-
-
   });
 
   describe('GET /:webhookId', () => {
@@ -190,6 +188,7 @@ describe('webhooks', () => {
     });
 
     before(() => {
+      username = cuid();
       return mongoFixtures.user(username, {}, async (user) => {
         user.access({
           type: 'personal', token: personalAccessToken,
@@ -504,6 +503,7 @@ describe('webhooks', () => {
     });
 
     before(() => {
+      username = cuid();
       return mongoFixtures.user(username, {}, async (user) => {
         user.access({
           type: 'personal', token: personalAccessToken,
@@ -715,6 +715,7 @@ describe('webhooks', () => {
     });
 
     before(() => {
+      username = cuid();
       return mongoFixtures.user(username, {}, async (user) => {
         user.access({
           type: 'personal', token: personalAccessToken,
@@ -905,6 +906,7 @@ describe('webhooks', () => {
     });
 
     before(() => {
+      username = cuid();
       return mongoFixtures.user(username, {}, async (user) => {
         user.access({
           type: 'personal', token: personalAccessToken,

@@ -280,7 +280,6 @@ class UsersRepository {
 
   async deleteOne(userId: string, username: ?string, skipFowardToRegister: ?boolean): Promise<number> {
     const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
-
     const user = await this.getUserById(userId);
     if (username == null) {
       username = user?.username;
