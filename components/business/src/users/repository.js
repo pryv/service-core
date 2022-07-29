@@ -192,7 +192,13 @@ class UsersRepository {
       // use default value is null;
       const value = (user[key] != null) ? user[key] : SystemStreamsSerializer.getAccountFieldDefaultValue(key);
       if (value != null) {
-        operations.push({action: 'create', key: key, value: value, isUnique: SystemStreamsSerializer.isUniqueAccountField(key)});
+        operations.push({
+          action: 'create', 
+          key: key, 
+          value: value, 
+          isUnique: SystemStreamsSerializer.isUniqueAccountField(key),
+          isActive: true
+        });
       } 
     }
 
@@ -201,13 +207,13 @@ class UsersRepository {
     if (await usersIndex.existsUsername(user.username)) {
       // gather eventual other uniqueness conflicts
       const eventualPlatformUniquenessErrors = await this.platform.checkUpdateOperationUniqueness(user.username, operations);
-      const uniquenessError = errors.itemAlreadyExists("user",eventualPlatformUniquenessErrors);
+      const uniquenessError = errors.itemAlreadyExists('user', eventualPlatformUniquenessErrors);
       uniquenessError.data.username = user.username;
       throw uniquenessError;
     }
 
     // could throw uniqueness errors
-    await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
+    await this.platform.updateUserAndForward(user.username, operations, skipFowardToRegister);
 
 
     const mallTransaction = await this.mall.newTransaction();

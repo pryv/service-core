@@ -96,8 +96,7 @@ class Platform {
    * @param {*} isCreation 
    * @param {boolean} skipFowardToRegister - for tests only 
    */
-  async updateUserAndForward(username, operations, isActive, isCreation, skipFowardToRegister = false) {
-    //$$({task: 'updateUserAndForward', username, operations, isActive});
+  async updateUserAndForward(username, operations, skipFowardToRegister = false) {
     // ** 1st check on local index before forwarding to register 
     // This should be removed when platformWideDB will be implemented 
     // This code is redundant with some check that will be performed by #updateUser after updating register 
@@ -111,13 +110,13 @@ class Platform {
     if (!skipFowardToRegister && this.#shouldForwardToRegister()) {
       const ops2 = operations.map(op => {
         const action = op.action == 'delete' ? 'delete' : 'update';
-        return {[action]: {key: op.key, value: op.value, isUnique: op.isUnique}};
+        const isCreation = op.action == 'create';
+        return {[action]: {key: op.key, value: op.value, isUnique: op.isUnique, isCreation, isActive: op.isActive}};
       });
-      await this.#serviceRegisterConn.updateUserInServiceRegister(username, ops2, isActive, isCreation);
+      await this.#serviceRegisterConn.updateUserInServiceRegister(username, ops2);
     }
-
     // ** execute request locally 
-    await this.#updateUser(username, operations, isActive);
+    await this.#updateUser(username, operations);
   }
 
   /**
@@ -126,12 +125,13 @@ class Platform {
    * Replace updateUserInServiceRegister()
    * @param {*} key 
    */
-  async #updateUser(username, operations, isActive) {
+  async #updateUser(username, operations) {
     // otherwise deletion
     for (const op of operations) {
       switch (op.action) {
         case 'create':
           if (op.isUnique) {
+            if (! op.isActive) break; // only change value of (active setting)
             const potentialCollisionUsername = await this.#db.getUsersUniqueField(op.key, op.value);
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
@@ -143,7 +143,7 @@ class Platform {
           break;
 
         case 'update':
-          if (! isActive) break; // only change value of (active setting) -- figure out what it means ;)
+          if (! op.isActive) break; // only change value of (active setting) -- figure out what it means ;)
           if (op.isUnique) {
             const existingUsernameValue = await this.#db.getUsersUniqueField(op.key, op.previousValue);
             if (existingUsernameValue !== null && existingUsernameValue === username) {

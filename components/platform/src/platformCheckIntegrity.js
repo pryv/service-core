@@ -70,7 +70,7 @@ module.exports = async function platformCheckIntegrity (platformWideDB) {
   for (const username of Object.keys(platformEntryByUser)) {
     const userFromRepository = await usersRepository.getUserByUsername(username);
     if (userFromRepository == null) {
-      errors.push(`Found data for user with username "${username}" in the platform db but not in the Repository (System Streams)`);
+      errors.push(`Found data for user with username "${username}" in the platform db but cannot find this user in the Repository (System Streams)`);
     }
     for (const field of Object.keys(platformEntryByUser[username])) {
       errors.push(`Found field "${field}" with value: "${platformEntryByUser[username][field].value}" for username "${username}" in the platform db but not in the Repository (System Streams)`);

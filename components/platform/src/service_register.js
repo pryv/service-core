@@ -20,6 +20,8 @@ type Operation = {
     key: AccountProperty,
     value: Value,
     isUnique: ?boolean,
+    isActive: ?boolean,
+    isCreation: ?boolean,
   },
 };
 
@@ -134,8 +136,6 @@ class ServiceRegister {
   async updateUserInServiceRegister (
     username: string,
     operations: Array<Operation>,
-    isActive: boolean,
-    isCreation: boolean
   ): Promise<void> {
     const url = buildUrl('/users', this.settings.url);
     this.logger.info(`PUT ${url} for username:${username}`);
@@ -155,8 +155,8 @@ class ServiceRegister {
           {
             value: operation.update.value,
             isUnique: operation.update.isUnique,
-            isActive,
-            creation: isCreation,
+            isActive: operation.update.isActive || false,
+            creation: operation.update.isCreation,
           }
         ];
         updateParams[operation[operationType].key] = operation[operationType].value;

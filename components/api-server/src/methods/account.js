@@ -233,11 +233,12 @@ module.exports = async function (api) {
             value,
             previousValue,
             isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
+            isActive: true
           }
         );
       }
 
-      await platform.updateUserAndForward(context.user.username, operations, true, false);
+      await platform.updateUserAndForward(context.user.username, operations);
 
     } catch (err) {
       return next(err);

@@ -347,17 +347,16 @@ module.exports = async function (api)
 
     try{
       if (context.systemStream.isIndexed) { // assume can be unique as per test #42A1
+        const isActive = context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE);
         const operations = [{
           action: 'create',
           key: context.accountStreamIdWithoutPrefix,
           value: context.newEvent.content,
           isUnique: context.systemStream.isUnique,
+          isActive: isActive,
         }];
 
-        await platform.updateUserAndForward(context.user.username, operations,
-          context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
-          context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
-          true);
+        await platform.updateUserAndForward(context.user.username, operations);
       }
 
     } catch (err) {
@@ -382,12 +381,10 @@ module.exports = async function (api)
           value: context.newEvent.content,
           previousValue: context.oldEvent.content,
           isUnique: context.systemStream.isUnique,
+          isActive: context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE)
         }];
 
-        await platform.updateUserAndForward(context.user.username, operations,
-          context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // Active if set or previous valu was active.. BUT I don't this it's OK.... 
-          context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),   // How can we set a stream inActive then
-          false);
+        await platform.updateUserAndForward(context.user.username, operations);
       }
 
     } catch (err) {
@@ -674,7 +671,6 @@ module.exports = async function (api)
   }
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-
     const files = sanitizeRequestFiles(params.files);
     delete params.files;
     if (files != null && files.length > 0) {
