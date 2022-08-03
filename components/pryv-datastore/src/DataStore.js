@@ -56,7 +56,25 @@ const DataStore = module.exports = {
   events: null,
 
   /**
-   * Delete all data related to the user.
+   * TODO: implement
+   * Set store-specific key-value data (e.g. credentials or settings) for the given user.
+   * This is called for both creating and updating the data.
+   * @param {identifier} userId
+   * @param {object} data
+   */
+  async setUserData (userId, data) { throw new Error('Not implemented'); }, // eslint-disable-line no-unused-vars
+
+  /**
+   * TODO: implement
+   * Get store-specific key-value data for the given user.
+   * This should never return secrets such as passwords, tokens etc. which should be write-only via {@link #setUserData}.
+   * @param {identifier} userId
+   * @returns {object}
+   */
+  async getUserData (userId) { throw new Error('Not implemented'); }, // eslint-disable-line no-unused-vars
+
+  /**
+   * Called when the given user is deleted from Pryv.io, to let the store delete the related data if appropriate.
    * @param {identifier} userId
    */
   async deleteUser (userId) { throw new Error('Not implemented'); }, // eslint-disable-line no-unused-vars

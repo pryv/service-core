@@ -21,7 +21,7 @@ const UserStreams = module.exports = {
    * @param {identifier} userId
    * @param {object} params
    * @param {identifier} [params.id] null, means root streamId. Notice parentId is not implemented by stores
-   * @param {identifier} [params.expandChildren]
+   * @param {number} [params.expandChildren=false] ← TODO check if correct
    * @param {identifier[]} [params.excludeIds] list of streamIds to exclude from query. if expandChildren is >0 or < 0, children of excludedIds should be excludded too
    * @param {boolean} [params.includeTrashed] (equivalent to state = 'all')
    * @returns {Stream|null} - the stream or null if not found:

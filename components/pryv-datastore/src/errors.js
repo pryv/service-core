@@ -9,6 +9,14 @@ const PryvDataStoreError = require('./PryvDataStoreError');
 const ErrorIds = require('./ErrorIds');
 
 /**
+ * @typedef PryvDataStoreError
+ * @property {id}
+ * @property {message}
+ * @property {data}
+ * @property {innerError}
+ */
+
+/**
  * Helper "factory" methods for data store errors (see error ids).
  * @exports errors
  */
