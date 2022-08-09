@@ -345,9 +345,8 @@ class AccessLogic {
         const myLevel = myTagPermission?.level;
         if (!myLevel || isLowerLevel(myLevel, perm.level)) return false;
       } else if (perm.feature != null) {
-        const myFeaturePermission = this.featurePermissionsMap[perm.feature];
-        const myValue = myFeaturePermission?.level;
-        if (!myValue || myValue != perm.feature) return false;
+        const allow = this._canCreateAccessWithFeaturePermission(perm);
+        if (! allow) return false;
       }
     }
     // can only manage shared accesses with permissions
@@ -533,6 +532,20 @@ class AccessLogic {
     } else {
       const permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
       return (permission != null) ? permission.level : null;
+    }
+  }
+
+  /**
+   * return true is this access can create an access with this feature
+   */
+  _canCreateAccessWithFeaturePermission(featurePermission) {
+    if (featurePermission.feature == 'selfRevoke') {
+      // true if this acces canSelfRevoke or if requested setting is identical to this access
+      return this._canSelfRevoke() || featurePermission.setting == this.featurePermissionsMap.selfRevoke.setting;
+    }
+    if (featurePermission.feature == 'selfAudit') {
+      // true if this acces has no setting for selfAudit or if requested setting is identical to this access
+      return this.featurePermissionsMap.selfAudit == null || featurePermission.setting == this.featurePermissionsMap.selfAudit.setting;
     }
   }
 
