@@ -1,8 +1,18 @@
 ## 1.7
 
+### 1.7.14
+- Fix crash caused by permissions selfRevoke used in combinaison with BACKWARD_COMPATIBILITY_SYSTEM_STREAMS_PREFIX set to true.
+- Fix issue with `accesses.create` theand selfRevoke permissions that was only possible with a personalToken.
+
+### 1.7.13
+
+- Fix another issue when BACKWARD_COMPATIBILITY_SYSTEM_STREAMS_PREFIX is set to "true" - children streams' ids were not following the correct format
+- Fix a performance issue when querying events by type
+- Fix an issue which caused the service not to restart properly in some situations
+
 ### 1.7.12
 
-- Fix issue when BACKWARD_COMPATIBILITY_SYSTEM_STREAMS_PREFIX is set to "true" - "account" streamId was handled as ".account" 
+- Fix issue when BACKWARD_COMPATIBILITY_SYSTEM_STREAMS_PREFIX is set to "true" - "account" streamId was handled as ".account"
 
 ### 1.7.10
 
@@ -222,7 +232,7 @@ system streams:
  Refactor: How service-info is used in core
   - service-info can be loaded from file for dev
   - eventTypes are loaded from service-info
-  - crash if no service-info 
+  - crash if no service-info
 
 ### 1.4.31
  - Feature: create-only level for permissions
@@ -324,28 +334,28 @@ New feature:
 
 ## 1.3.X
 
-- High Frequency events allow storing data at high frequency and high data 
-  density. Create them by using types that start with 'series:X', where X 
-  is a normal Pryv type. The API also supports inputting data into multiple 
+- High Frequency events allow storing data at high frequency and high data
+  density. Create them by using types that start with 'series:X', where X
+  is a normal Pryv type. The API also supports inputting data into multiple
   series at once, this is called a 'seriesBatch' (POST /series/batch).
-  
-- The api is internally using multiple processes to offload request handling 
+
+- The api is internally using multiple processes to offload request handling
   and json serialisation. This should allow much higher request rates, but your
-  mileage may vary. Storage IOPS matter. 
+  mileage may vary. Storage IOPS matter.
 
 - Some invalid requests that used to return a HTTP status code of 401
   (Unauthorized) now return a 403 (Forbidden). Only the requests that are
-  missing some form of authentication will return a 401 code. 
+  missing some form of authentication will return a 401 code.
 
 - `updates.ignoreProtectedFields` is now off by default. This means that updates
-  that address protected fields will result in an error being returned. 
+  that address protected fields will result in an error being returned.
 
-- Accesses can now be set to expire via the `expireAfter` attribute. Expiry for 
-  accesses gives you an easy way of limiting the damage that can be done using 
-  a stolen access. 
+- Accesses can now be set to expire via the `expireAfter` attribute. Expiry for
+  accesses gives you an easy way of limiting the damage that can be done using
+  a stolen access.
 
-- We've rehauled the 'delete-user' command of the Pryv.IO cli admin tool. It 
-  now operates more explicitly and allows automation. 
+- We've rehauled the 'delete-user' command of the Pryv.IO cli admin tool. It
+  now operates more explicitly and allows automation.
 
 - Improvements related to mongoDB:
   - We now use j:true as write concern, which requests acknowledgement that
@@ -355,13 +365,13 @@ New feature:
     POST 'system/pool/create-user' and GET 'system/pool/size'.
   - Make nightly tasks manually triggereable by sysadmins.
 
-- Critical Security Fixes: 
+- Critical Security Fixes:
 
-  - 2018022101, 2018022102: Fixes to DNS server closing minor vulnerabilities: 
-      DNS could be - under certain circumstances - used to exploit other systems. 
+  - 2018022101, 2018022102: Fixes to DNS server closing minor vulnerabilities:
+      DNS could be - under certain circumstances - used to exploit other systems.
 
-  - 2018091401: Fixes to the password reset mechanism; a bug would allow an 
-      attacker to change passwords under certain circumstances. 
+  - 2018091401: Fixes to the password reset mechanism; a bug would allow an
+      attacker to change passwords under certain circumstances.
 
   - 2018102401: Details will be disclosed after Dec/18
 
@@ -381,7 +391,7 @@ New feature:
 
 - Fix login with Firefox (and other browsers using Referer but no Origin)
 
-- Security fix 2018020801: 'accesses.update' was missing an authorisation check. 
+- Security fix 2018020801: 'accesses.update' was missing an authorisation check.
 
 - Update of the API version in API responses
 
@@ -395,22 +405,22 @@ New feature:
 
 - Add configuration option to ignore updates of read-only fields
 
-- Updates to latest nodejs version as a reaction to advisory 
+- Updates to latest nodejs version as a reaction to advisory
   https://nodejs.org/en/blog/vulnerability/oct-2017-dos/
 
 - Security fixes to various parts of Pryv: Now doesn't log passwords or password
-  hashes as part of normal operation. 
+  hashes as part of normal operation.
 
-- Please see Migration Guide for implications on your infrastructure. 
+- Please see Migration Guide for implications on your infrastructure.
 
-- Tags have a maximum length of 500 characters. An error is returned from the 
-  API when this limit is exceeded. 
+- Tags have a maximum length of 500 characters. An error is returned from the
+  API when this limit is exceeded.
 
-- When two users would log in at almost the same time, we had a insert/update 
-  data race. This should be fixed now. 
+- When two users would log in at almost the same time, we had a insert/update
+  data race. This should be fixed now.
 
 - Instead of blacklisting the fields that the user cannot update, we now
-  whitelist those that he can. 
+  whitelist those that he can.
 
 ## v0.8.x
 
@@ -424,8 +434,8 @@ Changes:
 
 New features:
 
-- Event and stream deletions are now kept for sync purposes; they're accessible 
-  via parameter `includeDeletions` (`events.get`) or `includeDeletionsSince` 
+- Event and stream deletions are now kept for sync purposes; they're accessible
+  via parameter `includeDeletions` (`events.get`) or `includeDeletionsSince`
   (`streams.get`). Deletions are cleaned up after some time (currently a year).
 
 
@@ -434,66 +444,66 @@ New features:
 Major changes here towards more standardization and flexibility:
 
 - All JSON responses (both in HTTP and Socket.IO) are now structured as follows:
-    - `{ "{resource}": {...} }` if a single resource item is expected; for 
+    - `{ "{resource}": {...} }` if a single resource item is expected; for
       example: `{ "event": {...} }`, `{ "error": {...} }`
-    - `{ "{resources}": [ {...}, ... ] }` if an indeterminate number of items 
+    - `{ "{resources}": [ {...}, ... ] }` if an indeterminate number of items
       is expected; for example: `{ "events": [ {...}, ... ] }`
-    
-- All responses to resource creation and update calls now include the full 
-  object instead of respectively its id and nothing; for example: `{ "stream": 
+
+- All responses to resource creation and update calls now include the full
+  object instead of respectively its id and nothing; for example: `{ "stream":
   {...} }`
-  
-- All JSON responses now include `meta.apiVersion` and `meta.serverTime` 
-  properties mirroring the original `API-Version` and `Server-Time` HTTP 
+
+- All JSON responses now include `meta.apiVersion` and `meta.serverTime`
+  properties mirroring the original `API-Version` and `Server-Time` HTTP
   headers; HTTP header `API-Version` remains
-  
-- Deleting a resource now returns code 204 if the item was permanently deleted; 
-  it still returns a 200 when trashed (now including the trashed item in the 
+
+- Deleting a resource now returns code 204 if the item was permanently deleted;
+  it still returns a 200 when trashed (now including the trashed item in the
   response)
-  
-- Method ids for deletion/trashing are now `{resource}.delete` instead of 
+
+- Method ids for deletion/trashing are now `{resource}.delete` instead of
   `{resource}.del`
-- The `attachments` property of events is now an array (instead of an object), 
-  with each attachment now identified by a new `id` property (instead of 
+- The `attachments` property of events is now an array (instead of an object),
+  with each attachment now identified by a new `id` property (instead of
   `fileName`)
 
-- As a security measure, reading attached files now either requires auth via 
-  the `Authorization` HTTP header or a new `readToken` query string parameter 
-  (`auth` isn't allowed anymore in this case); the token to use is specific to 
-  each file and access, and is defined in the `readToken` property of each 
+- As a security measure, reading attached files now either requires auth via
+  the `Authorization` HTTP header or a new `readToken` query string parameter
+  (`auth` isn't allowed anymore in this case); the token to use is specific to
+  each file and access, and is defined in the `readToken` property of each
   event attachment
-  
-- Event batch creation method has been replaced with generic batch method 
+
+- Event batch creation method has been replaced with generic batch method
   (`callBatch`, HTTP: `POST /`)
-  
-- Bookmarks have been renamed to "followed slices", corresponding method ids to 
+
+- Bookmarks have been renamed to "followed slices", corresponding method ids to
   `followedSlices.*` and HTTP routes to `/followed-slices`
-  
-- Getting events: setting the `tags` parameter now returns events with *any* of 
+
+- Getting events: setting the `tags` parameter now returns events with *any* of
   the specified tags, instead of *all* of them
-  
+
 - Error ids:
-  - `unknown-*` errors replaced with either `unknown-resource` or 
+  - `unknown-*` errors replaced with either `unknown-resource` or
     `unknown-referenced-resource`
   - `item-*-already-exists` replaced with `item-already-exists`
   - `missing-parameter` replaced with `invalid-parameters-format`
 
-- Other improvements and fixes (data validation performance, minor bugs on auth 
+- Other improvements and fixes (data validation performance, minor bugs on auth
   for trusted apps)
 
 New features:
 
 - Getting events: filter for specific event types with the `types` parameter
 
-- Accesses can now define tag permissions in `permissions` (in addition to the 
+- Accesses can now define tag permissions in `permissions` (in addition to the
   existing stream permissions)
-  
-  - If only tag permissions are set, all streams are considered readable, and 
+
+  - If only tag permissions are set, all streams are considered readable, and
     vice-versa
-  - When stream and tag permissions conflict, the highest permission level is 
+  - When stream and tag permissions conflict, the highest permission level is
     considered
-  
-- Full support for managing account information, including password change and 
+
+- Full support for managing account information, including password change and
   reset
 
 
@@ -501,37 +511,37 @@ New features:
 
 Changes to HTTP paths and auth for trusted apps:
 
-- Get streams: removed `trashed` option for `state` as it was more trouble than 
+- Get streams: removed `trashed` option for `state` as it was more trouble than
   anything useful
-  
+
 - Accesses now includes property `id` (exposed for referencing)
     - Create access response now includes both `id` and `token` properties
     - For existing accesses, `id` and `token` are equal
-  
+
 - Events, streams and accesses now includes change tracking properties:
     - `created` and `modified` (timestamp)
     - `createdBy` and `modifiedBy` (access id or `"system"`)
-  
-- Socket.IO method calls now directly use method ids (e.g. `events.create`  and 
-  pass method params, instead of using `command` and passing an object with 
+
+- Socket.IO method calls now directly use method ids (e.g. `events.create`  and
+  pass method params, instead of using `command` and passing an object with
   method id and params
-  
-- For trusted apps only: removed the distinction between "admin" methods and 
+
+- For trusted apps only: removed the distinction between "admin" methods and
   others; (**breaking changes**)
 
-  - `/admin/login`, `/admin/logout` and `/admin/who-am-i` moved to 
+  - `/admin/login`, `/admin/logout` and `/admin/who-am-i` moved to
     `/auth/login`, `/auth/logout` and `/auth/who-am-i` respectively
   - `sessionID` renamed to `token` in login response and SSO cookie data
-  - *Personal* accesses are now automatically created on login; they can't be 
+  - *Personal* accesses are now automatically created on login; they can't be
     created explicitly anymore
   - `/admin/user-info` moved to `/user-info`
   - `/admin/accesses` merged into `/accesses`
   - `/admin/bookmarks` moved to `/bookmarks`
   - `/admin/profile` merged into `/profile`
-  
-- Configuration: renamed `clients` section to `auth` and added SSO and session 
+
+- Configuration: renamed `clients` section to `auth` and added SSO and session
   settings
-  
+
 - Updated Node.js version to 0.10.23
 
 - Removed dependency on ZeroMQ (replaced by pure Node.js lib)
@@ -545,9 +555,9 @@ updated ASAP.
 - Simplified the API by removing channels and renamed folders into "streams";
   adjusted the structure of accesses, streams and events accordingly; more
   details:
-  
+
   - As a consequence, every event now belongs to a stream
-  - Data migration: former channels will be converted into root-level streams, 
+  - Data migration: former channels will be converted into root-level streams,
     and former folders into sub-streams of those
 
 - Events structure:
@@ -562,7 +572,7 @@ updated ASAP.
 
 - Removed "get running periods" (i.e. `GET /events/running`, see above)
 
-- Removed `hidden` property of streams (ex-folders), which was mostly unused 
+- Removed `hidden` property of streams (ex-folders), which was mostly unused
   and out of place
 
 

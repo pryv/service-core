@@ -68,6 +68,7 @@ function changePrefixIdForStreams(streams: Array<Stream>, toOldPrefix: boolean =
   for (const stream of streams) {
     stream.id = changeFunction(stream.id);
     if (stream.parentId != null) stream.parentId = changeFunction(stream.parentId);
+    if (stream.children?.length > 0) changePrefixIdForStreams(stream.children, toOldPrefix);
   }
   return streams;
 }
@@ -127,7 +128,9 @@ function changeStreamIdsInPermissions(permissions: Array<Permission>, toOldPrefi
   const oldStylePermissions: Array<Permission> = [];
 
   for (const permission of permissions) {
-    permission.streamId = changeFunction(permission.streamId);
+    if (permission.streamId != null) { // do not change "feature" permissions
+      permission.streamId = changeFunction(permission.streamId);
+    }
     oldStylePermissions.push(permission);
   }
   return oldStylePermissions;
