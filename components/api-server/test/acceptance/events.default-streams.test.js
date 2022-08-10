@@ -5,8 +5,6 @@
  * Proprietary and confidential
  */
 const cuid = require('cuid');
-const _ = require('lodash');
-const bluebird = require('bluebird');
 const nock = require('nock');
 const path = require('path');
 const assert = require('chai').assert;
@@ -64,7 +62,7 @@ describe("[FG5R] Events of system streams", () => {
 
   /**
    * Create additional event
-   * @param string streamId 
+   * @param string streamId
    */
   async function createAdditionalEvent (streamId) {
     eventDataForadditionalEvent = {
@@ -102,7 +100,7 @@ describe("[FG5R] Events of system streams", () => {
     const helpers = require('api-server/test/helpers');
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
-  
+
     app = getApplication(true);
     await app.initiate();
 
@@ -113,7 +111,7 @@ describe("[FG5R] Events of system streams", () => {
       emit: (...args) => axonMsgs.push(args),
     };
     pubsub.setTestNotifier(axonSocket);
-    
+
     pubsub.status.emit(pubsub.SERVER_READY);
     await require("api-server/src/methods/events")(app.api);
 
@@ -162,7 +160,7 @@ describe("[FG5R] Events of system streams", () => {
         // lets separate core events from all other events and validate them separatelly
         separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
       });
-      
+
       it('[DRFH] should return visible system events only', () => {
         const accountStreams = Object.keys(SystemStreamsSerializer.getReadableAccountMapForTests());
         assert.equal(separatedEvents.accountStreamsEvents.length, accountStreams.length);
@@ -175,7 +173,7 @@ describe("[FG5R] Events of system streams", () => {
         });
       });
     });
-    
+
     describe('When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
       let sharedAccess;
       let systemStreamId;
@@ -194,7 +192,7 @@ describe("[FG5R] Events of system streams", () => {
             level: 'read'
           }]
         });
-        
+
       });
 
       it('[GF3A] should return only the account event for which a permission was explicitely provided', async () => {
@@ -258,13 +256,13 @@ describe("[FG5R] Events of system streams", () => {
         it('[Y2OA] should return 403', () => {
           assert.equal(res.status, 403);
         });
-  
+
         it('[DHZE] should return the right error message', () => {
           assert.equal(res.body.error.id, ErrorIds.Forbidden);
         });
       });
     });
-    
+
     describe('When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
       let defaultEvent;
       let systemStreamId ;
@@ -283,7 +281,7 @@ describe("[FG5R] Events of system streams", () => {
             level: 'read'
           }]
         });
-        
+
         defaultEvent = await findDefaultCoreEvent(systemStreamId);
         res = await request.get(path.join(basePath, defaultEvent.id))
           .set('authorization', sharedAccess.attrs.token);
@@ -301,7 +299,7 @@ describe("[FG5R] Events of system streams", () => {
   describe('POST /events', () => {
     let eventData;
     describe('When using a personal access', () => {
-      
+
       describe('to create an editable system event', () => {
         describe('which is non indexed and non unique', () => {
           before(async function () {
@@ -311,7 +309,7 @@ describe("[FG5R] Events of system streams", () => {
               content: charlatan.Lorem.characters(7),
               type: 'string/pryv'
             };
-  
+
             res = await request.post(basePath)
               .send(eventData)
               .set('authorization', access.token);
@@ -327,7 +325,7 @@ describe("[FG5R] Events of system streams", () => {
           it('[A9DC] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
             assert.equal(res.body.event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
 
-            const allEvents = await mall.events.get(user.attrs.id, 
+            const allEvents = await mall.events.get(user.attrs.id,
               {streams: [{any: [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]}]});
 
             assert.equal(allEvents.length, 2);
@@ -339,17 +337,17 @@ describe("[FG5R] Events of system streams", () => {
           });
         });
         describe('which is indexed', function () {
-          
+
           describe('when the new value is valid', () => {
             before(async function () {
-            
+
               await createUser();
               eventData = {
                 streamIds: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')],
                 content: charlatan.Lorem.characters(7),
                 type: 'string/pryv'
               };
-  
+
               nock.cleanAll();
               scope = nock(config.get('services:register:url'))
               scope.put('/users',
@@ -357,12 +355,12 @@ describe("[FG5R] Events of system streams", () => {
                   serviceRegisterRequest = body;
                   return true;
                 }).reply(200, { errors: [] });
-  
+
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
             });
-  
+
             it('[8C80] should return 201', () => {
               assert.equal(res.status, 201);
             });
@@ -372,7 +370,7 @@ describe("[FG5R] Events of system streams", () => {
               assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addPrivatePrefixToStreamId('language'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[467D] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
-              const allEvents = await mall.events.get(user.attrs.id, 
+              const allEvents = await mall.events.get(user.attrs.id,
                 {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]}]});
 
               assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
@@ -383,7 +381,7 @@ describe("[FG5R] Events of system streams", () => {
             it('[199D] should notify register with the new data', function () {
               if (isDnsLess) this.skip();
               assert.equal(scope.isDone(), true);
-  
+
               assert.deepEqual(serviceRegisterRequest, {
                 username: user.attrs.username,
                 user: {
@@ -399,24 +397,24 @@ describe("[FG5R] Events of system streams", () => {
             });
           });
 
-          
+
 
           describe('when the new value is invalid', () => {
 
             before(async function () {
-            
+
               await createUser();
               eventData = {
                 streamIds: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')],
                 content: [charlatan.Lorem.characters(7)],
                 type: 'string/pryv'
               };
-  
+
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
             });
-  
+
             it('[PQHR] should return 400', () => {
               assert.equal(res.status, 400);
             });
@@ -436,7 +434,7 @@ describe("[FG5R] Events of system streams", () => {
                 content: charlatan.Lorem.characters(7),
                 type: 'string/pryv'
               };
-  
+
               nock.cleanAll();
               scope = nock(config.get('services:register:url'))
               scope.put('/users',
@@ -444,7 +442,7 @@ describe("[FG5R] Events of system streams", () => {
                 serviceRegisterRequest = body;
                 return true;
               }).reply(200, { errors: [] });
-  
+
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
@@ -457,7 +455,7 @@ describe("[FG5R] Events of system streams", () => {
             });
             it('[YS79] should return the created event', () => {
               assert.equal(res.body.event.content, eventData.content);
-              assert.equal(res.body.event.type, eventData.type);    
+              assert.equal(res.body.event.type, eventData.type);
             });
             it('[DA23] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
@@ -469,7 +467,7 @@ describe("[FG5R] Events of system streams", () => {
             it('[D316] should notify register with the new data', function () {
               if (isDnsLess) this.skip();
               assert.equal(scope.isDone(), true);
-              
+
               assert.deepEqual(serviceRegisterRequest, {
                 username: user.attrs.username,
                 user: {
@@ -493,7 +491,7 @@ describe("[FG5R] Events of system streams", () => {
                 content: charlatan.Lorem.characters(7),
                 type: 'string/pryv'
               };
-  
+
               nock.cleanAll();
               nock(config.get('services:register:url')).put('/users')
                 .reply(409, {
@@ -504,12 +502,12 @@ describe("[FG5R] Events of system streams", () => {
                     }
                   }
                 });
-  
+
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
             });
-            
+
             it('[89BC] should return 409', () => {
               assert.equal(res.status, 409);
             });
@@ -531,14 +529,14 @@ describe("[FG5R] Events of system streams", () => {
                 content: email,
                 type: 'string/pryv'
               };
-  
+
               nock.cleanAll();
               nock(config.get('services:register:url')).put('/users',
                 (body) => {
                   serviceRegisterRequest = body;
                   return true;
                 }).times(2).reply(200, { errors: [] });
-  
+
                 await request.post(basePath)
                   .send(eventData)
                   .set('authorization', access.token);
@@ -546,7 +544,7 @@ describe("[FG5R] Events of system streams", () => {
                   .send(eventData)
                   .set('authorization', access.token);
             });
-  
+
             it('[2021] should return a 409 error', () => {
               assert.equal(res.status, 409);
             });
@@ -555,7 +553,7 @@ describe("[FG5R] Events of system streams", () => {
               assert.deepEqual(res.body.error.data, { email: email });
             });
           });
-          
+
         });
       });
 
@@ -567,7 +565,7 @@ describe("[FG5R] Events of system streams", () => {
             content: charlatan.Lorem.characters(7),
             type: 'password-hash/string'
           };
-  
+
           res = await request.post(basePath)
             .send(eventData)
             .set('authorization', access.token);
@@ -608,7 +606,7 @@ describe("[FG5R] Events of system streams", () => {
             serviceRegisterRequest = body;
             return true;
           }).reply(200, { errors: [] });
-        
+
         eventData = {
           streamIds: [systemStreamId],
           content: charlatan.Lorem.characters(7),
@@ -683,24 +681,24 @@ describe("[FG5R] Events of system streams", () => {
   describe('PUT /events/<id>', () => {
 
     describe('when using a personal access', () => {
-      
+
       describe('to update an editable system event', () => {
         let scope;
         let serviceRegisterRequest;
         async function editEvent (streamId, isFaulty = false) {
           eventData = {
-            streamIds: [streamId],
+            streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
             content: isFaulty ? { someProp: 123 } : charlatan.Lorem.characters(7),
             type: 'string/pryv'
           };
           const initialEvent = await getOneEvent(user.attrs.id, streamId);
-  
+
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
             .set('authorization', access.token);
           return res;
         }
-  
+
         describe('which is non indexed and non unique', () => {
           before(async function () {
             await createUser();
@@ -709,7 +707,7 @@ describe("[FG5R] Events of system streams", () => {
               type: 'string/pryv'
             };
             const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
-          
+
             res = await request.put(path.join(basePath, initialEvent.id))
               .send(eventData)
               .set('authorization', access.token);
@@ -788,7 +786,7 @@ describe("[FG5R] Events of system streams", () => {
                   type: 'string/pryv'
                 };
                 const initialEvent = await  await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
-  
+
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
                   .set('authorization', access.token);
@@ -829,7 +827,7 @@ describe("[FG5R] Events of system streams", () => {
                 });
                 it('[E43M] should notify register with the updated data', () => {
                   assert.equal(scope.isDone(), true);
-                  
+
                   assert.deepEqual(serviceRegisterRequest, {
                     username: user.attrs.username,
                     user: {
@@ -972,7 +970,7 @@ describe("[FG5R] Events of system streams", () => {
                   }).times(2).reply(200, { errors: [] });
                 res = await createAdditionalEventAndupdateMainOne(streamId);
               });
-    
+
               it('[HJWE] should return 200', () => {
                 assert.equal(res.status, 200);
               });
@@ -1001,7 +999,7 @@ describe("[FG5R] Events of system streams", () => {
                   if (isDnsLess) this.skip();
                 const streamId = 'email';
                 systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-    
+
                 await createUser();
                 eventData = {
                   streamIds: [systemStreamId],
@@ -1023,7 +1021,7 @@ describe("[FG5R] Events of system streams", () => {
                     }
                   });
                 const initialEvent =  await getOneEvent(user.attrs.id, systemStreamId);
-    
+
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
                   .set('authorization', access.token);
@@ -1036,7 +1034,7 @@ describe("[FG5R] Events of system streams", () => {
               it('[5A04] should notify register with the updated data', function () {
                 if (isDnsLess) this.skip();
                 assert.equal(scope.isDone(), true);
-    
+
                 assert.deepEqual(serviceRegisterRequest, {
                   username: user.attrs.username,
                   user: {
@@ -1050,7 +1048,7 @@ describe("[FG5R] Events of system streams", () => {
                   fieldsToDelete: {}
                 });
               });
-              
+
             });
             describe('with a field that is not unique in mongodb', () => {
               before(async function () {
@@ -1070,7 +1068,7 @@ describe("[FG5R] Events of system streams", () => {
                     return true;
                   }).reply(200, { errors: [] });
                 const initialEvent =  await getOneEvent(user2.attrs.id, streamId);
-    
+
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
                   .set('authorization', access.token);
@@ -1086,7 +1084,7 @@ describe("[FG5R] Events of system streams", () => {
             });
           });
         });
-  
+
       });
 
       describe('to update a non editable system event', () => {
@@ -1097,7 +1095,7 @@ describe("[FG5R] Events of system streams", () => {
             type: 'password-hash/pryv'
           };
           const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH);
-  
+
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
             .set('authorization', access.token);
@@ -1128,7 +1126,7 @@ describe("[FG5R] Events of system streams", () => {
             content: charlatan.Internet.email(),
           };
           const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
-         
+
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
             .set('authorization', access.token);
@@ -1161,7 +1159,7 @@ describe("[FG5R] Events of system streams", () => {
             type: 'string/pryv'
           };
           const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
-         
+
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
             .set('authorization', sharedAccess.attrs.token);
@@ -1180,7 +1178,7 @@ describe("[FG5R] Events of system streams", () => {
     describe('When using a personal access', () => {
       describe('to delete an editable streams event', () => {
         describe('that has no ‘active’ streamId', () => {
-          describe('which is unique', () => { 
+          describe('which is unique', () => {
             let streamId = 'email';
             let systemStreamId;
             let initialEvent;
@@ -1196,11 +1194,11 @@ describe("[FG5R] Events of system streams", () => {
               await createUser();
               initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
               await createAdditionalEvent(systemStreamId);
-  
+
               res = await request.delete(path.join(basePath, initialEvent.id))
                 .set('authorization', access.token);
             });
-            it('[43B1] should return 200', () => { 
+            it('[43B1] should return 200', () => {
               assert.equal(res.status, 200);
             });
             it('[3E12] should return the trashed event', () => {
@@ -1208,7 +1206,7 @@ describe("[FG5R] Events of system streams", () => {
               assert.equal(res.body.event.trashed, true);
             });
             it('[F328] should notify register with the deleted data', function () {
-              if (isDnsLess) this.skip(); 
+              if (isDnsLess) this.skip();
               assert.equal(scope.isDone(), true);
               assert.deepEqual(serviceRegisterRequest, {
                 username: user.attrs.username,
@@ -1217,7 +1215,7 @@ describe("[FG5R] Events of system streams", () => {
               });
             });
           });
-          describe('which is indexed', () => { 
+          describe('which is indexed', () => {
             let streamId;
             let initialEvent;
             before(async function () {
@@ -1231,16 +1229,16 @@ describe("[FG5R] Events of system streams", () => {
                 }).times(1).reply(200, { errors: [] });
               await createUser();
               initialEvent = await getOneEvent(user.attrs.id, streamId);
-  
+
               await createAdditionalEvent(streamId);
-  
+
               res = await request.delete(path.join(basePath, initialEvent.id))
                 .set('authorization', access.token);
             });
-            it('[1B70] should return 200', () => { 
+            it('[1B70] should return 200', () => {
               assert.equal(res.status, 200);
             });
-            it('[CBB9] should return the trashed event', () => { 
+            it('[CBB9] should return the trashed event', () => {
               assert.equal(res.body.event.id, initialEvent.id);
               assert.equal(res.body.event.trashed, true);
             });
@@ -1256,10 +1254,10 @@ describe("[FG5R] Events of system streams", () => {
             res = await request.delete(path.join(basePath, initialEvent.id))
               .set('authorization', access.token);
           });
-          it('[10EC] should return 400', () => { 
+          it('[10EC] should return 400', () => {
             assert.equal(res.status, 400);
           });
-          it('[D4CA] should return the correct error', () => { 
+          it('[D4CA] should return the correct error', () => {
             assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
             assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
           });
@@ -1279,13 +1277,13 @@ describe("[FG5R] Events of system streams", () => {
             }).times(2).reply(200, { errors: [] });
           await createUser();
           initialEvent = await getOneEvent(user.attrs.id, streamId);
-  
+
           await createAdditionalEvent(streamId);
-  
+
           res = await request.delete(path.join(basePath, initialEvent.id))
             .set('authorization', access.token);
         });
-        it('[8EDB] should return a 400', () => { 
+        it('[8EDB] should return a 400', () => {
           assert.equal(res.status, 400);
         });
         it('[A727] should return the correct error', () => {
@@ -1359,6 +1357,6 @@ describe("[FG5R] Events of system streams", () => {
         assert.equal(res.body.error.id, ErrorIds.Forbidden);
       });
     });
-    
+
   });
 });

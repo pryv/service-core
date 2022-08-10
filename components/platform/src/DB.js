@@ -13,9 +13,6 @@ const logger = getLogger('platform:db');
 
 class DB {
   db;
-  queryUniqueKey;
-  upsertUniqueKeyValue;
-  deleteAll;
   queries;
 
   constructor() { }
@@ -25,7 +22,6 @@ class DB {
     const basePath = config.get('userFiles:path');
     mkdirp.sync(basePath);
 
-    const DB_OPTIONS = {};
     this.db = new sqlite3(basePath + '/platform-wide.db');
     this.db.pragma('journal_mode = WAL');
 
@@ -48,18 +44,20 @@ class DB {
   }
 
   getAllWithPrefix(prefix) {
+    logger.debug('getAllWithPrefix', prefix);
     return this.queries.getAllWithKeyStartsWith.all(prefix).map(parseEntry);
   }
 
   getAllWithValue(value) {
+    logger.debug('getAllWithValue', value);
     return this.queries.getAllWithKeyStartsWith.all(value).map(parseEntry);
   }
 
   /**
-   * 
+   *
    * @param {string} key
-   * @param {string} value 
-   * @returns 
+   * @param {string} value
+   * @returns
    */
   set(key, value) {
     logger.debug('set', key, value);
@@ -71,8 +69,8 @@ class DB {
     return this.queries.deleteWithKey.run(key);
   }
 
-  reset() {
-    logger.debug('reset');
+  deleteAll() {
+    logger.debug('deleteAll');
     this.queries.deleteAll.run();
   }
 
@@ -115,8 +113,8 @@ class DB {
 
 /**
  * Return an object from an entry in the table
- * @param {Entry} entry 
- * @param {string} entry.key 
+ * @param {Entry} entry
+ * @param {string} entry.key
  * @param {string} entry.value
  */
 function parseEntry(entry) {
@@ -127,7 +125,7 @@ function parseEntry(entry) {
     field: field,
     username: isUnique ? entry.value : userNameOrValue,
     value: isUnique ? userNameOrValue : entry.value
-  }
+  };
 }
 
 function getUserUniqueKey(field, value) {

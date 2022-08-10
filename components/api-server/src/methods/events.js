@@ -5,30 +5,23 @@
  * Proprietary and confidential
  */
 
-const cuid = require('cuid');
 const utils = require('utils');
 const errors = require('errors').factory;
 const async = require('async');
-const bluebird = require('bluebird');
 const fs = require('fs');
 const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/eventsMethods');
 const eventSchema = require('../schema/event');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
-const SetSingleStreamIdStream = require('./streams/SetSingleStreamIdStream');
-const addTagsStream = require('./streams/AddTagsStream');
 
-const { getMall, streamsUtils } = require('mall');
+const { getMall } = require('mall');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const Registration = require('business/src/auth/registration');
 const { getUsersRepository } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const APIError = require('errors/src/APIError');
 const assert = require('assert');
-const MultiStream = require('multistream');
 
 const eventsGetUtils = require('./helpers/eventsGetUtils');
 
@@ -71,7 +64,7 @@ module.exports = async function (api)
   const eventTypesUrl = config.get('service:eventTypes');
   const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
-  const openSourceSettings = config.get('openSource')
+  const openSourceSettings = config.get('openSource');
   const usersRepository = await getUsersRepository();
   const mall = await getMall();
   const platform = await getPlatform();
@@ -129,7 +122,7 @@ module.exports = async function (api)
     for (const query: StreamQuery of params.arrayOfStreamQueriesWithStoreId) {
       if (query.storeId === 'local') {
         if (query.and == null) query.and = [];
-        query.and.push({any: params.tags.map(t => TAG_PREFIX + t)})
+        query.and.push({any: params.tags.map(t => TAG_PREFIX + t)});
       }
     }
 
@@ -281,14 +274,14 @@ module.exports = async function (api)
     const isDelete: boolean = (context.oldEvent != null) && (context.newEvent == null);
 
     if (isUpdate) {
-      context.oldAccountStreamIds = _.intersection(allAccountStreamsIds, context.oldEvent.streamIds) // rename to oldEvent/newEvent
-      context.accountStreamIds = _.intersection(allAccountStreamsIds, context.newEvent.streamIds)
+      context.oldAccountStreamIds = _.intersection(allAccountStreamsIds, context.oldEvent.streamIds); // rename to oldEvent/newEvent
+      context.accountStreamIds = _.intersection(allAccountStreamsIds, context.newEvent.streamIds);
       context.doesEventBelongToAccountStream = context.oldAccountStreamIds.length > 0;
     } else if (isDelete) {
-      context.oldAccountStreamIds = _.intersection(allAccountStreamsIds, context.oldEvent.streamIds)
+      context.oldAccountStreamIds = _.intersection(allAccountStreamsIds, context.oldEvent.streamIds);
       context.doesEventBelongToAccountStream = context.oldAccountStreamIds.length > 0;
     } else {
-      context.accountStreamIds = _.intersection(allAccountStreamsIds, context.newEvent.streamIds)
+      context.accountStreamIds = _.intersection(allAccountStreamsIds, context.newEvent.streamIds);
       context.doesEventBelongToAccountStream = context.accountStreamIds.length > 0;
     }
     next();
@@ -347,17 +340,16 @@ module.exports = async function (api)
 
     try{
       if (context.systemStream.isIndexed) { // assume can be unique as per test #42A1
+        const isActive = context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE);
         const operations = [{
           action: 'create',
           key: context.accountStreamIdWithoutPrefix,
           value: context.newEvent.content,
           isUnique: context.systemStream.isUnique,
+          isActive: isActive,
         }];
 
-        await platform.updateUserAndForward(context.user.username, operations,
-          context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
-          context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
-          true);
+        await platform.updateUserAndForward(context.user.username, operations);
       }
 
     } catch (err) {
@@ -382,12 +374,10 @@ module.exports = async function (api)
           value: context.newEvent.content,
           previousValue: context.oldEvent.content,
           isUnique: context.systemStream.isUnique,
+          isActive: context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE)
         }];
 
-        await platform.updateUserAndForward(context.user.username, operations,
-          context.newEvent.streamIds.includes(STREAM_ID_ACTIVE) || // WTF
-          context.oldEvent.streamIds.includes(STREAM_ID_ACTIVE),
-          false);
+        await platform.updateUserAndForward(context.user.username, operations);
       }
 
     } catch (err) {
@@ -454,7 +444,7 @@ module.exports = async function (api)
   }
 
   function backwardCompatibilityOnResult(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (result.event != null) _applyBackwardCompatibilityOnEvent(result.event, context)
+    if (result.event != null) _applyBackwardCompatibilityOnEvent(result.event, context);
     next();
   }
 
@@ -674,7 +664,6 @@ module.exports = async function (api)
   }
 
   async function updateEvent(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-
     const files = sanitizeRequestFiles(params.files);
     delete params.files;
     if (files != null && files.length > 0) {
@@ -734,10 +723,9 @@ module.exports = async function (api)
 
     const filter = function(eventData) {
       return eventData.id != result.event.id;
-    }
+    };
 
-    const updatedEvents = await mall.events.updateMany(context.user.id, query, { filter: filter, removeStreams: [STREAM_ID_ACTIVE]});
-
+    await mall.events.updateMany(context.user.id, query, { filter: filter, removeStreams: [STREAM_ID_ACTIVE]});
 
     next();
   }
@@ -752,7 +740,7 @@ module.exports = async function (api)
       // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId: string = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
       const subject: string = isDelete ? pubsub.SERIES_DELETE_EVENTID_USERNAME : pubsub.SERIES_UPDATE_EVENTID_USERNAME;
-      const payload = { username: context.user.username, event: updatedEventId }
+      const payload = { username: context.user.username, event: updatedEventId };
       pubsub.series.emit(subject, payload)
     }
 
@@ -814,14 +802,14 @@ module.exports = async function (api)
       }
       const streamIdsNotFoundList: Array<string> = [];
       const streamIdsTrashed: Array<string> = [];
-      for (streamId of event.streamIds) {
+      for (const streamId of event.streamIds) {
         const stream = await context.streamForStreamId(streamId, 'local');
         if (! stream) {
           streamIdsNotFoundList.push(streamId);
         } else if (stream.trashed) {
           streamIdsTrashed.push(streamId);
         }
-      };
+      }
 
       if (streamIdsNotFoundList.length > 0 ) {
         return next(errors.unknownReferencedResource(
@@ -919,7 +907,7 @@ module.exports = async function (api)
       const stream = await context.streamForStreamId(streamData.id, 'local');
       if (stream == null) {
         await mall.streams.create(context.user.id, streamData);
-        streamIdsCreated.push(streamData.id)
+        streamIdsCreated.push(streamData.id);
       }
     }
 
@@ -1038,7 +1026,7 @@ module.exports = async function (api)
         key: streamIdWithoutPrefix,
         value: content,
         isUnique: true
-      }]
+      }];
 
       await platform.updateUserAndForward(username, operations);
 

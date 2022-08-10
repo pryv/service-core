@@ -20,7 +20,8 @@ const { pubsub } = require('messages');
 const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers');
 const ErrorIds = require('errors/src/ErrorIds');
 const { ApiEndpoint } = require('utils');
-const systemStreamsConfig = require('api-server/config/components/systemStreams');
+
+const cuid = require('cuid');
 
 describe('[BMM2] registration: DNS-less', () => {
   let config;
@@ -55,7 +56,7 @@ describe('[BMM2] registration: DNS-less', () => {
     };
     pubsub.setTestNotifier(axonSocket);
     await require("api-server/src/methods/events")(app.api);
-    
+
     request = supertest(app.expressApp);
   });
   describe('POST /users', () => {
@@ -69,7 +70,7 @@ describe('[BMM2] registration: DNS-less', () => {
         phoneNumber: charlatan.Number.number(3),
       };
     }
-    
+
     describe('when given valid input', function() {
       let registerData;
       before(async function() {
@@ -82,7 +83,7 @@ describe('[BMM2] registration: DNS-less', () => {
       });
       it('[VDA8] should respond with a username and apiEndpoint in the request body', async () => {
         assert.equal(res.body.username, registerData.username);
-        const usersRepository = await getUsersRepository(); 
+        const usersRepository = await getUsersRepository();
         const user = await usersRepository.getUserByUsername(registerData.username);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
@@ -105,20 +106,20 @@ describe('[BMM2] registration: DNS-less', () => {
       describe(
         'when given an invalid username parameter',
         testInvalidParameterValidation(
-          'username', 
+          'username',
           {
             minLength: USERNAME_MIN_LENGTH,
             maxLength: USERNAME_MAX_LENGTH,
             lettersAndDashesOnly: true,
             type: 'string',
-          }, 
+          },
           ['G81N','JQ7V','EIKE','XTD0','TSC6','TL2W','MST7','WG46','M6CD','3Q1H'],
         )
       );
       describe(
         'when given an invalid password parameter',
         testInvalidParameterValidation(
-          'password', 
+          'password',
           {
             minLength: 4,
             maxLength: 100,
@@ -140,7 +141,7 @@ describe('[BMM2] registration: DNS-less', () => {
       describe(
         'when given an invalid appId parameter',
         testInvalidParameterValidation(
-          'appId', 
+          'appId',
           {
             minLength: 6,
             maxLength: 99,
@@ -152,7 +153,7 @@ describe('[BMM2] registration: DNS-less', () => {
       describe(
         'when given an invalid invitationToken parameter',
         testInvalidParameterValidation(
-          'invitationToken', 
+          'invitationToken',
           {
             type: 'string',
           },
@@ -162,7 +163,7 @@ describe('[BMM2] registration: DNS-less', () => {
       describe(
         'when given an invalid referer parameter',
         testInvalidParameterValidation(
-          'referer', 
+          'referer',
           {
             maxLength: 99,
             type: 'string',
@@ -174,7 +175,7 @@ describe('[BMM2] registration: DNS-less', () => {
       describe(
         'when given an invalid language parameter',
         testInvalidParameterValidation(
-          'language', 
+          'language',
           {
             minLength: 1,
             maxLength: 5,
@@ -198,7 +199,7 @@ describe('[BMM2] registration: DNS-less', () => {
           res = await request.post('/users').send(registerData1ReuseEmail);
           assert.equal(res.status, 201);
 
-          // create a user with the same username and email from two other users 
+          // create a user with the same username and email from two other users
           registerData = generateRegisterBody();
           registerData.username = registerData1ReuseUsername.username;
           registerData.email = registerData1ReuseEmail.email;
@@ -211,7 +212,7 @@ describe('[BMM2] registration: DNS-less', () => {
         it('[M2HD] should respond with the correct error message', function() {
           assert.exists(res.error);
           assert.exists(res.error.text);
-          
+
           // changed to new error format to match the cluster
           const error = JSON.parse(res.error.text);
           assert.deepEqual(error.error.data, { username: registerData.username, email: registerData.email });
@@ -342,7 +343,7 @@ describe('[BMM2] registration: DNS-less', () => {
   });
   describe('GET /reg/:username/check', function() {
 
-    const existingUsername = 'existing-username';
+    const existingUsername = 'exist-' + cuid();
     before(async function () {
       await mongoFixtures.user(existingUsername);
     });

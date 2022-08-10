@@ -7,14 +7,12 @@
 // @flow
 
 const bluebird = require('bluebird');
-const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
 const User = require('./User');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
 import type { Event } from 'business/src/events';
 import type { Access } from 'business/src/accesses';
-import type { SystemStream } from 'business/src/system-streams';
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
@@ -22,7 +20,6 @@ const errors = require('errors').factory;
 const usersIndex = require('./UsersLocalIndex');
 const { getMall } = require('mall');
 const { getPlatform } = require('platform');
-const { ErrorIds } = require('errors');
 
 const cache = require('cache');
 
@@ -59,6 +56,9 @@ class UsersRepository {
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
       const user = await this.getUserById(userId);
+      if (user == null) {
+        throw new Error(`Repository inconsistency, userIndex list user id: "${userId}" username: "${username}" but cann get it with getUserById(userId)`);
+      }
       users.push(user);
     }
     return users;
@@ -67,7 +67,7 @@ class UsersRepository {
   // only for test data to reset all users Dbs.
   async deleteAll(): Promise<void> {
     const usersMap = await usersIndex.allUsersMap();
-    for (const [username, userId] of Object.entries(usersMap)) {
+    for (const [, userId] of Object.entries(usersMap)) {
       await this.mall.deleteUser(userId);
     }
     await usersIndex.deleteAll();
@@ -93,13 +93,17 @@ class UsersRepository {
     const userAccountStreamsIds =  Object.keys(SystemStreamsSerializer.getAccountMap());
     const query = {state: 'all', streams: [{any: userAccountStreamsIds, and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}]};
     const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
+    const username = await usersIndex.nameForId(userId);
     // convert events to the account info structure
     if (
       userAccountEvents.length == 0
     ) {
       return null;
     }
-    const username = await usersIndex.nameForId(userId);
+
+    if (username == null) {
+      throw new Error('Inconsistency between userEvents and usersIndex, found null username for userId: "' + userId + '" with ' + userAccountEvents.length + ' user account events');
+    }
     const user = new User({ id: userId, username: username, events: userAccountEvents });
     return user;
   }
@@ -115,8 +119,8 @@ class UsersRepository {
 
   async getStorageUsedByUserId(userId: string): Promise<?any>  {
     return {
-      dbDocuments: await this.getOnePropertyValue(userId, 'dbDocuments') || 0,
-      attachedFiles: await this.getOnePropertyValue(userId, 'attachedFiles') || 0
+      dbDocuments: await this.getOnePropertyValue(userId, 'dbDocuments') || 0,
+      attachedFiles: await this.getOnePropertyValue(userId, 'attachedFiles') || 0
     };
   }
 
@@ -125,7 +129,7 @@ class UsersRepository {
     const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
     if (! userAccountEvents || ! userAccountEvents[0]) return null;
     return userAccountEvents[0].content;
-  };
+  }
 
   async createSessionForUser(
     username: string,
@@ -169,11 +173,7 @@ class UsersRepository {
 
   validateAllStorageObjectsInitialized(): boolean {
     if (this.accessStorage == null || this.sessionsStorage == null) {
-      throw (
-        new Error(
-          "Please initialize the user repository with all dependencies.",
-        )
-      );
+      throw new Error('Please initialize the user repository with all dependencies.');
     }
     return true;
   }
@@ -182,64 +182,65 @@ class UsersRepository {
     // Create the User at a Platfrom Level..
     const operations = [];
     for (const key of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
-      if (user[key] != null) {
-        operations.push({action: 'create', key: key, value: user[key], isUnique: SystemStreamsSerializer.isUniqueAccountField(key)});
+      // use default value is null;
+      const value = (user[key] != null) ? user[key] : SystemStreamsSerializer.getAccountFieldDefaultValue(key);
+      if (value != null) {
+        operations.push({
+          action: 'create',
+          key: key,
+          value: value,
+          isUnique: SystemStreamsSerializer.isUniqueAccountField(key),
+          isActive: true
+        });
       }
     }
 
-    let uniquenessError = null;
-    try {
-      await this.platform.updateUserAndForward(user.username, operations, true, true, skipFowardToRegister);
-    } catch (err) {
-      if (err.id == ErrorIds.ItemAlreadyExists) {
-        uniquenessError = err; // keep erro to eventually add username uniqueness error at next step
-      } else {
-        throw err;
-      }
-    }
 
     // check locally for username // <== maybe this usersIndex should be fully moved to platform
     if (await usersIndex.existsUsername(user.username)) {
-      if (uniquenessError == null) uniquenessError = errors.itemAlreadyExists("user",{});
+      // gather eventual other uniqueness conflicts
+      const eventualPlatformUniquenessErrors = await this.platform.checkUpdateOperationUniqueness(user.username, operations);
+      const uniquenessError = errors.itemAlreadyExists('user', eventualPlatformUniquenessErrors);
       uniquenessError.data.username = user.username;
+      throw uniquenessError;
     }
 
-    if (uniquenessError != null) throw uniquenessError;
+    // could throw uniqueness errors
+    await this.platform.updateUserAndForward(user.username, operations, skipFowardToRegister);
 
 
     const mallTransaction = await this.mall.newTransaction();
     const localTransaction = await mallTransaction.getStoreTransaction('local');
 
     await localTransaction.exec(async () => {
-        let accessId = UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
-        if (
-          withSession && this.validateAllStorageObjectsInitialized() &&
-          user.appId != null
-        ) {
-          const token: string = await this.createSessionForUser(
-            user.username,
-            user.appId,
-            localTransaction.transactionSession,
-          );
-          const access = await this.createPersonalAccessForUser(
-            user.id,
-            token,
-            user.appId,
-            localTransaction.transactionSession,
-          );
-          accessId = access?.id;
-          user.token = access.token;
-        }
-        user.accessId = accessId;
-
-        const events: Array<Event> = await user.getEvents();
-
-        // add the user to local index
-        await usersIndex.addUser(user.username, user.id);
-
-        await this.mall.events.createMany(user.id, events, mallTransaction);
+      let accessId = UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
+      if (
+        withSession && this.validateAllStorageObjectsInitialized() &&
+        user.appId != null
+      ) {
+        const token: string = await this.createSessionForUser(
+          user.username,
+          user.appId,
+          localTransaction.transactionSession,
+        );
+        const access = await this.createPersonalAccessForUser(
+          user.id,
+          token,
+          user.appId,
+          localTransaction.transactionSession,
+        );
+        accessId = access?.id;
+        user.token = access.token;
       }
-    );
+      user.accessId = accessId;
+
+      const events: Array<Event> = await user.getEvents();
+
+      // add the user to local index
+      await usersIndex.addUser(user.username, user.id);
+
+      await this.mall.events.createMany(user.id, events, mallTransaction);
+    });
     return user;
   }
 
@@ -278,8 +279,6 @@ class UsersRepository {
   }
 
   async deleteOne(userId: string, username: ?string, skipFowardToRegister: ?boolean): Promise<number> {
-    const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
-
     const user = await this.getUserById(userId);
     if (username == null) {
       username = user?.username;
@@ -291,7 +290,7 @@ class UsersRepository {
     if (username != null) { // can happen during tests
       cache.unsetUser(username);
       // Clear data for this user in Platform
-     await this.platform.deleteUser(username, user, skipFowardToRegister);
+      await this.platform.deleteUser(username, user, skipFowardToRegister);
     }
     await this.mall.deleteUser(userId);
   }
@@ -313,17 +312,6 @@ class UsersRepository {
 }
 
 /**
-   * Get object with transaction options
-   */
-function getTransactionOptions() {
-  return {
-    readPreference: 'primary',
-    readConcern: { level: 'local' },
-    writeConcern: { w: 'majority' },
-  };
-}
-
-/**
  * Get user password hash
  * @param string userId
  */
@@ -334,9 +322,6 @@ async function getUserPasswordHash(userId: string, mall: any): Promise<?string> 
   }
   return null;
 }
-
-
-
 
 let usersRepository = null;
 let usersRepositoryInitializing = false;
