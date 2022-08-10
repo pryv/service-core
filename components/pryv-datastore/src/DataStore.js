@@ -5,66 +5,89 @@
  * Proprietary and confidential
  */
 
-// @flow
-
-const UserEvents = require('./UserEvents');
-const UserStreams = require('./UserStreams');
-const Transaction = require('./Transaction');
-const Defaults = require('./Defaults');
-
 /**
- * Notes:
- * - supports
- *    - attachments
- *    - series
- *
- * - series
+ * @typedef {string} identifier - A string uniquely identifying an object (user, event, stream, etc.)
  */
 
 /**
- * @property {UserStreams} streams
- * @property {UserEvents} events
+ * @typedef {number} timestamp - A positive floating-point number representing the number of seconds since a reference time (Unix epoch time).
  */
-class DataStore {
 
-  static Defaults = Defaults;
-  static UserEvents = UserEvents;
-  static UserStreams = UserStreams;
-  static Transaction = Transaction;
-
-  _id: string;
-  _name: string;
-
-  set id(id: string): void { this._id = id; }
-  set name(name: string): void { this._name = name; }
-  get id(): string { return this._id; }
-  get name(): string { return this._name; }
-
-  async init(config: {}): Promise<void> { throw new Error('Not implemented'); }
+/**
+ * Data store prototype object.
+ * All data store implementations inherit from this via {@link datastore#createDataStore}.
+ * @exports DataStore
+ */
+const DataStore = module.exports = {
+  /**
+   * The data store's unique identifier (loaded from Pryv.io platform settings at creation).
+   * @type {string}
+   */
+  id: '',
 
   /**
-   * @returns UserStreams
+   * The data store's name (loaded from Pryv.io platform settings at creation).
+   * @type {string}
    */
-  get streams(): UserStreams { throw new Error('Not implemented'); }
-  /**
-   * @returns UserEvents
-   */
-  get events(): UserEvents { throw new Error('Not implemented'); }
+  name: '',
 
   /**
-   * @returns a new Transaction
+   * The data store's configuration settings (loaded from platform settings at creation).
+   * @type {object}
    */
-  async newTransaction(): Transaction { throw new Error('Not implemented'); }
+  settings: {},
 
   /**
-   * Delete all data related to the user
+   * Initialize the store.
+   * @returns {DataStore} The data store object itself (for method chaining).
    */
-  async deleteUser(uid: string): Promise<void> { throw new Error('Not implemented'); }
-  
+  async init () { throw new Error('Not implemented'); },
+
   /**
-   * Return the quantity of storage used by the user in bytes
+   * The {@link UserStreams} implementation.
+   * @type {UserStreams}
    */
-   async storageUsedForUser(uid: string): Promise<number> { throw new Error('Not implemented'); }
+  streams: null,
+
+  /**
+   * The {@link UserEvents} implementation.
+   * @type {UserEvents}
+   */
+  events: null,
+
+  /**
+   * TODO: implement
+   * Set store-specific key-value data (e.g. credentials or settings) for the given user.
+   * This is called for both creating and updating the data.
+   * @param {identifier} userId
+   * @param {object} data
+   */
+  async setUserData (userId, data) { throw new Error('Not implemented'); }, // eslint-disable-line no-unused-vars
+
+  /**
+   * TODO: implement
+   * Get store-specific key-value data for the given user.
+   * This should never return secrets such as passwords, tokens etc. which should be write-only via {@link #setUserData}.
+   * @param {identifier} userId
+   * @returns {object}
+   */
+  async getUserData (userId) { throw new Error('Not implemented'); }, // eslint-disable-line no-unused-vars
+
+  /**
+   * Called when the given user is deleted from Pryv.io, to let the store delete the related data if appropriate.
+   * @param {identifier} userId
+   */
+  async deleteUser (userId) { throw new Error('Not implemented'); }, // eslint-disable-line no-unused-vars
+
+  /**
+   * Return the total amount of storage used by the given user, in bytes.
+   * @param {identifier} userId
+   * @returns {number}
+   */
+  async getUserStorageSize (userId) { throw new Error('Not implemented'); } // eslint-disable-line no-unused-vars
+};
+
+// limit tampering on existing properties
+for (const propName of Object.getOwnPropertyNames(DataStore)) {
+  Object.defineProperty(DataStore, propName, { configurable: false });
 }
-
-module.exports = DataStore;

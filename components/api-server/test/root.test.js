@@ -29,7 +29,7 @@ const { integrity } = require('business');
 
 let isAuditActive = false;
 
-describe('root', function() {
+describe('[ROOT] root', function() {
   let user, user2;
 
   before(async () => {
@@ -52,6 +52,7 @@ describe('root', function() {
       sharedAccessToken, sharedAccess,
       stream, streamId, 
       stream2, streamId2,
+      stream3, streamId3,
       username2, appAccess2Token;
   before(() => {
     username = cuid();
@@ -62,6 +63,7 @@ describe('root', function() {
     appAccess2Token = cuid();
     streamId = cuid();
     streamId2 = cuid();
+    streamId3 = cuid();
     username2 = '00000';
   });
 
@@ -84,6 +86,7 @@ describe('root', function() {
     await stream.event();
     stream = stream.attrs;
     stream2 = await user.stream({ id: streamId2 });
+    stream3 = await user.stream({ id: streamId3 });
     await stream2.event();
     stream2 = stream.attrs;
     await user.access({
@@ -111,7 +114,7 @@ describe('root', function() {
     user2 = await mongoFixtures.user(username2, {
       id: 'u_2',
       password: 't3st-Numb3r',
-      email: '00000@test.com',
+      email: '00001@test.com',
       language: 'en'
     });
     await user2.access({
@@ -189,7 +192,7 @@ describe('root', function() {
       validation.checkMeta(res.body);
     });
 
-    it('[P06Y] should properly translate the Host header\'s username (i.e. subdomain)', async function() {
+    it('[P06Y] should properly translate the Host header\'s username (i.e. subdomain)', async function() {
       const res = await server.request()
         .get('/events')
         .set('Authorization', appAccessToken1)
@@ -233,7 +236,7 @@ describe('root', function() {
 
     it('[VJTP] should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields', async function() {
       const res = await server.request()
-        .post('/' + username + '/streams/' + streamId)
+        .post('/' + username + '/streams/' + streamId3)
         .type('form')
         .query({ mergeEventsWithParent: false })
         .send({ _auth: appAccessToken1 })

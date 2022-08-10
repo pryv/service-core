@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/* global describe, it, before, after */
 // @flow
 
 const nock = require('nock');
@@ -60,10 +61,11 @@ describe('registration: cluster', function() {
     await mongoFixtures.context.cleanEverything();
   });
   before(async function () {
-    
+
     config.injectTestConfig({
       dnsLess: { isActive: false },
       openSource: { isActive: false },
+      testsSkipForwardToRegister: false
     });
     regUrl = config.get('services:register:url');
 
@@ -74,7 +76,7 @@ describe('registration: cluster', function() {
 
     request = supertest(app.expressApp);
 
-    usersRepository = await getUsersRepository(); 
+    usersRepository = await getUsersRepository();
   });
   after(async function () {
     config.injectTestConfig({});
@@ -119,12 +121,14 @@ describe('registration: cluster', function() {
   }
 
   describe('POST /users (create user)', function() {
-    describe('when a user with the same username (not email) already exists in core but not in register', () => {
+
+    describe('[WAUW] when a user with the same username (not email) already exists in core but not in register', () => {
       let oldEmail, firstUser, secondUser, firstValidationRequest, firstRegistrationRequest;
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
-
+        serviceRegisterRequestsPUT = [];
+        nock.cleanAll();
         nock(regUrl)
           .post('/users/validate', (body) => {
             serviceRegisterRequests.push(body);
@@ -141,6 +145,19 @@ describe('registration: cluster', function() {
           .reply(200, {
             username: 'anyusername'
           });
+        nock(regUrl)
+          .put('/users', (body) => {
+            serviceRegisterRequestsPUT.push(body);
+            return true;
+          })
+          .times(2)
+          .reply(200, {
+            ok: true
+          });
+        nock(regUrl)
+          .delete('/users/' + userData.username + '?onlyReg=true', () => { return true; })
+          .times(1)
+          .reply(200, { deleted: true });
         // first request
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = _.merge(buildValidationRequest(userData), { uniqueFields: { email: userData.email } });
@@ -153,13 +170,14 @@ describe('registration: cluster', function() {
         res = await request.post(methodPath).send(userData);
         secondUser = await usersRepository.getUserByUsername(userData.username);
       });
+
       it('[QV8Z] should respond with status 201', () => {
         assert.equal(res.status, 201);
       });
       it('[TCOM] should respond with the username and apiEndpoint', async () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
-        const usersRepository = await getUsersRepository(); 
+        const usersRepository = await getUsersRepository();
         const user = await usersRepository.getUserByUsername(userData.username);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
@@ -183,6 +201,62 @@ describe('registration: cluster', function() {
         secondRegistrationSent = stripRegistrationRequest(secondRegistrationSent);
         const secondRegistrationRequest = buildRegistrationRequest(userData);
         assert.deepEqual(secondRegistrationSent, secondRegistrationRequest, ' second registration request is invalid');
+
+        const users = [firstUser, secondUser];
+        assert.equal(serviceRegisterRequestsPUT.length, users.length, 'should have recieved 2 PUT requests');
+        for (let i = 0; i < serviceRegisterRequestsPUT.length ; i++) {
+          const putRequest = serviceRegisterRequestsPUT[i];
+          assert.deepEqual( putRequest, {
+            username: users[i].username,
+            user: {
+              appId: [
+                {
+                  value: 'pryv-test',
+                  isUnique: false,
+                  isActive: true,
+                  creation: true
+                }
+              ],
+              invitationToken: [
+                {
+                  value: 'enjoy',
+                  isUnique: false,
+                  isActive: true,
+                  creation: true
+                }
+              ],
+              language: [
+                {
+                  creation: true,
+                  isActive: true,
+                  isUnique: false,
+                  value: 'en',
+                }
+              ],
+              referer: [
+                {
+                  value: 'pryv',
+                  isUnique: false,
+                  isActive: true,
+                  creation: true
+                }
+              ],
+              insurancenumber: [
+                { value: users[i].insurancenumber, isUnique: false, isActive: true, creation: true }
+              ],
+              email: [
+                {
+                  value: users[i].email,
+                  isUnique: true,
+                  isActive: true,
+                  creation: true
+                }
+              ]
+            },
+            fieldsToDelete: {}
+          })
+        }
+
       });
       it('[A2EM] should replace first user events in the storage', () => {
         const firstEmail = firstUser.events.filter(e => e.type === 'email/string')[0].content;
@@ -214,6 +288,18 @@ describe('registration: cluster', function() {
           .reply(200, {
             username: 'anyusername'
           });
+        nock(regUrl)
+          .put('/users', (body) => {
+            return true;
+          })
+          .times(2)
+          .reply(200, {
+            ok: true
+          });
+        nock(regUrl)
+          .delete('/users/' + userData.username + '?onlyReg=true', () => { return true; })
+          .times(1)
+          .reply(200, { deleted: true });
 
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = buildValidationRequest(userData)
@@ -230,7 +316,7 @@ describe('registration: cluster', function() {
       it('[ZHYX] should send the right data to register', () => {
         // validate validation request - first and third requests
         // should be validation and they shuold be equal
-        //(remove core because validation and registration was done 
+        //(remove core because validation and registration was done
         // by different processes - port is different)
         let validationSent2 = Object.assign({}, serviceRegisterRequests[0]);
         delete validationSent2.core;
@@ -262,11 +348,11 @@ describe('registration: cluster', function() {
               data: { username: 'wactiv' }
             }
           });
-  
+
         res = await request.post(methodPath).send(userData);
       });
       it('[NUC9] should respond with status 409', () => {
-        assert.equal(res.status, 409);  
+        assert.equal(res.status, 409);
       });
       it('[X1IA] should respond with the correct error', () => {
         const error = res.body.error;
@@ -295,7 +381,7 @@ describe('registration: cluster', function() {
               data: { email: 'wactiv@pryv.io' }
             }
           });
-  
+
         res = await request.post(methodPath).send(userData);
       });
       it('[SJXN] should respond with status 409', () => {
@@ -319,7 +405,7 @@ describe('registration: cluster', function() {
           email: 'wactiv@pryv.io'
         });
         serviceRegisterRequests = [];
-  
+
         nock(regUrl)
           .post('/users/validate', (body) => {
             serviceRegisterRequests.push(body);
@@ -334,7 +420,7 @@ describe('registration: cluster', function() {
               }
             }
           });
-  
+
         res = await request.post(methodPath).send(userData);
       });
       it('[LUC6] should respond with status 409', () => {
@@ -357,7 +443,7 @@ describe('registration: cluster', function() {
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
-  
+
         nock(regUrl)
           .post('/users/validate', (body) => {
             serviceRegisterRequests.push(body);
@@ -371,7 +457,7 @@ describe('registration: cluster', function() {
               }
             }
           });
-  
+
         res = await request.post(methodPath).send(userData);
       });
       it('[I0HG] should respond with status 409', () => {
@@ -409,6 +495,13 @@ describe('registration: cluster', function() {
             .reply(200, {
               username: userData.username
             });
+          nock(regUrl)
+            .put('/users', (body) => {
+              return true;
+            })
+            .reply(201, {
+              ok: true
+            });
           res = await request.post(methodPath).send(userData);
         });
         it('[CMOV] should respond with status 201', () => {
@@ -442,6 +535,13 @@ describe('registration: cluster', function() {
             .reply(200, {
               username: userData.username,
             });
+          nock(regUrl)
+            .put('/users', (body) => {
+              return true;
+            })
+            .reply(201, {
+              ok: true,
+            });
           res = await request.post(methodPath).send(userData);
         });
         it('[LOIB] should respond with status 201', () => {
@@ -455,7 +555,7 @@ describe('registration: cluster', function() {
           //assert.deepEqual(registrationSent, buildRegistrationRequest(userData, false));
         });
       });
-    
+
     });
 
     describe('when invitationTokens are defined', () => {
@@ -477,6 +577,13 @@ describe('registration: cluster', function() {
             })
             .reply(200, {
               username: userData.username,
+            });
+          nock(regUrl)
+            .put('/users', (body) => {
+              return true;
+            })
+            .reply(200, {
+              ok: true,
             });
           res = await request.post(methodPath).send(userData);
         });
@@ -594,9 +701,7 @@ describe('registration: cluster', function() {
     });
 
   });
-  
 
-  
+
+
 });
-
-

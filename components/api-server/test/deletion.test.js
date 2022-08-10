@@ -6,7 +6,7 @@
  */
 
 // @flow
-const nock = require('nock'); 
+const nock = require('nock');
 const cuid = require('cuid');
 const fs = require('fs');
 const path = require('path');
@@ -25,7 +25,6 @@ const {
   produceInfluxConnection,
 } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-      
 
 const { pubsub } = require('messages');
 const bluebird = require('bluebird');
@@ -39,7 +38,6 @@ let authKey;
 let username1; // fixtures reuse the username for userId
 let user1;
 let username2;
-let user2;
 let request;
 let res;
 let mongoFixtures;
@@ -80,7 +78,7 @@ describe('[PGTD] DELETE /users/:username', () => {
     influx = produceInfluxConnection(app.config);
     influxRepository = new InfluxRepository(influx);
 
-    usersRepository = await getUsersRepository(); 
+    usersRepository = await getUsersRepository();
 
     await bluebird.fromCallback((cb) =>
       app.storageLayer.eventFiles.removeAll(cb)
@@ -93,6 +91,7 @@ describe('[PGTD] DELETE /users/:username', () => {
 
     mall = await getMall();
   });
+
   after(async function() {
     config.injectTestConfig({});
     await mongoFixtures.context.cleanEverything();
@@ -103,7 +102,8 @@ describe('[PGTD] DELETE /users/:username', () => {
 
   describe('[USAD] depending on "user-account:delete"  config parameter', function() {
     let personalAccessToken;
-    beforeEach(async function () { 
+
+    beforeEach(async function () {
       personalAccessToken = cuid();
       user1 = await initiateUserWithData(username1);
       await user1.access({
@@ -112,25 +112,25 @@ describe('[PGTD] DELETE /users/:username', () => {
       await user1.session(personalAccessToken);
     });
 
-    it('[8UT7] Should accept when "personalToken" is active and a valid personal token is provided',async function () { 
+    it('[8UT7] Should accept when "personalToken" is active and a valid personal token is provided',async function () {
       config.injectTestConfig({'user-account': {delete: ['personalToken']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', personalAccessToken);
       assert.equal(res.status, 200);
     });
 
-    it('[IJ5F] Should reject when "personalToken" is active and an invalid token is provided',async function () { 
+    it('[IJ5F] Should reject when "personalToken" is active and an invalid token is provided',async function () {
       config.injectTestConfig({'user-account': {delete: ['personalToken']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', 'bogus');
       assert.equal(res.status, 403); // not 404 as when option is not activated
     });
 
-    it('[NZ6G] Should reject when only "personalToken" is active and a valid admin token is provided',async function () { 
+    it('[NZ6G] Should reject when only "personalToken" is active and a valid admin token is provided',async function () {
       config.injectTestConfig({'user-account': {delete: ['personalToken']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
       assert.equal(res.status, 403); // not 404 as when option is not activated
     });
 
-    it('[UK8H] Should accept when "personalToken" and "adminToken" are active and a valid admin token is provided',async function () { 
+    it('[UK8H] Should accept when "personalToken" and "adminToken" are active and a valid admin token is provided',async function () {
       config.injectTestConfig({'user-account': {delete: ['personalToken', 'adminToken']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
       assert.equal(res.status, 200);
@@ -140,47 +140,48 @@ describe('[PGTD] DELETE /users/:username', () => {
 
   // ---------------- loop loop -------------- //
 
-  
- 
   // [isDnsLess, isOpenSource]
-  const settingsToTest = [[true, false], [false, false], [true, true]];
+  const settingsToTest = [
+    [true, false],
+    [false, false],
+    [true, true]
+  ];
   const testIDs = [
     ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T', '75IW', 'MPXH', '635G'],
     ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR', '7WMG', 'UWYY', 'U004'],
-    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B', 'L2Q1', 'CQ50']];
-  for (let i = 0; i < settingsToTest.length; i++) {
-    
-    // skip tests that are not in scope
-    
-    describe(`dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
+    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J', 'YD0B', 'L2Q1', 'CQ50']
+  ];
+  [0,1,2].forEach(function (i) {
+    describe(`[DOA${i}] dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
-        if (isOpenSource !== settingsToTest[i][1]) this.skip();
+       
         config.injectTestConfig({
-          dnsLess: {isActive: settingsToTest[i][0]}
+          dnsLess: {isActive: settingsToTest[i][0]},
+          isOpenSource: {isActive: settingsToTest[i][1]},
+          testsSkipForwardToRegister: settingsToTest[i][0],
         });
+        if (isOpenSource && settingsToTest[i][1]) this.skip();
       });
 
       after(async function() {
         config.injectTestConfig({ });
       });
 
-  
-      describe('[D7HZ] when given existing username', function() {
+      describe(`[D7H${i}] when given existing username`, function() {
         let deletedOnRegister = false;
         let userToDelete;
         let natsDelivered = [];
         before(async function() {
-
           userToDelete = await initiateUserWithData(username1);
           await initiateUserWithData(username2);
           if (! settingsToTest[i][0]) { // ! isDnsLess
             nock(regUrl)
-            .delete('/users/' + username1 + '?onlyReg=true', () => {
-              deletedOnRegister = true;
-              return true;
-            })
-            .times(1)
-            .reply(200, { deleted: true });
+              .delete('/users/' + username1 + '?onlyReg=true', () => {
+                deletedOnRegister = true;
+                return true;
+              })
+              .times(1)
+              .reply(200, { deleted: true });
           }
           pubsub.setTestNatsDeliverHook(function(scopeName, eventName, payload) {
             natsDelivered.push({scopeName, eventName, payload});
@@ -255,7 +256,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert.equal(natsDelivered[0].scopeName, 'cache.' + MESSAGES.UNSET_USER);
           assert.equal(natsDelivered[0].eventName, MESSAGES.UNSET_USER);
           assert.equal(natsDelivered[0].payload.username, userToDelete.attrs.id);
-        })
+        });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
           const user = await usersRepository.getUserById(username2);
           assert.exists(user);
@@ -318,22 +319,40 @@ describe('[PGTD] DELETE /users/:username', () => {
         });
       });
     });
-  }
-  
-  describe('User - Create - Delete - Create - Login', function () { 
+  });
+
+  describe('User - Create - Delete - Create - Login', function () {
     const usernamex = charlatan.Internet.userName().replace('_', '-') + 'x';
 
-    
     it('[JBZM] should be able to recreate this user, and login', async function() {
       nock(regUrl).post('/users/validate', () => {return true;}).times(2)
-      .reply(200, { errors: [] });
+        .reply(200, { errors: [] });
 
       nock(regUrl).post('/users', () => {return true;}).times(2)
-      .reply(200, {username: usernamex});
+        .reply(201, {username: usernamex});
+
+      nock(regUrl).put('/users', () => {return true;}).times(2)
+        .reply(200, {ok: true});
+
+      await createUser();
+      await deleteUser();
+      await createUser();
+
+      res = await request.post('/' + usernamex + '/auth/login')
+        .set('Origin', 'http://test.pryv.local')
+        .send({
+          appId: 'pryv-test',
+          username: usernamex,
+          password: 'blupblipblop'
+        });
+      assert.equal(res.status, 200, 'should login');
+      assert.isString(res.body.apiEndpoint, 'should receive an api Endpoint');
+      assert.isString(res.body.token, 'should receive a token');
+
+      await deleteUser();
 
       async function createUser() {
-        const password = 'blupblipblop';
-        res = await request.post(`/users`)
+        res = await request.post('/users')
           .send({
             appId: 'pryv-test',
             username: usernamex,
@@ -358,30 +377,13 @@ describe('[PGTD] DELETE /users/:username', () => {
         assert.isArray(res.body.results, 'should receive an array of results');
         assert.isObject(res.body.results[0].stream, 'should receive an stream');
         assert.isObject(res.body.results[1].event, 'should receive an event');
-      };
-      
+      }
+
       async function deleteUser() {
         res = await request.delete(`/users/${usernamex}`).set('Authorization', authKey);
         assert.equal(res.status, 200, 'should delete the user');
         assert.equal(res.body.userDeletion?.username, usernamex, 'should receive the deleted username');
       }
-
-      await createUser();
-      await deleteUser();
-      await createUser();
-      
-      res = await request.post('/' + usernamex + '/auth/login')
-      .set('Origin', 'http://test.pryv.local')
-      .send({
-        appId: 'pryv-test',
-        username: usernamex,
-        password: 'blupblipblop'
-      });
-      assert.equal(res.status, 200, 'should login');
-      assert.isString(res.body.apiEndpoint, 'should receive an api Endpoint');
-      assert.isString(res.body.token, 'should receive a token');
-
-      await deleteUser();
     });
   });
 
@@ -403,11 +405,9 @@ async function initiateUserWithData(username: string) {
 
   const filePath = `test-file-${username}`;
   fs.writeFileSync(filePath, 'Just some text');
-  await app.storageLayer.eventFiles.saveAttachedFileFromTemp(
-      path.resolve(filePath),
-      username ,
-      charlatan.Lorem.word());
-  
+  await app.storageLayer.eventFiles.saveAttachedFileFromTemp(path.resolve(filePath),
+    username, charlatan.Lorem.word());
+
   if (! isOpenSource) {
     const usersSeries = await influxRepository.get(
       `user.${username}`,

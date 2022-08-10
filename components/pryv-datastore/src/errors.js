@@ -5,91 +5,81 @@
  * Proprietary and confidential
  */
 
-// @flow
+const PryvDataStoreError = require('./PryvDataStoreError');
+const ErrorIds = require('./ErrorIds');
 
 /**
- * Errors factory, provided as a helper for external implementations.
+ * @typedef PryvDataStoreError
+ * @property {id}
+ * @property {message}
+ * @property {data}
+ * @property {innerError}
  */
-const errors = module.exports = {
-  unexpectedError,
-  invalidRequestStructure,
-  unknownResource,
-  itemAlreadyExists,
-  invalidItemId,
-  unsupportedOperation,
-  _setFactory,
-};
 
 /**
- * Match internal APIError ids for consistency.
+ * Helper "factory" methods for data store errors (see error ids).
+ * @exports errors
  */
-const ErrorIds = {
-  UnexpectedError: 'unexpected-error',
-  InvalidRequestStructure: 'invalid-request-structure',
-  UnknownResource: 'unknown-resource',
-  ItemAlreadyExists: 'item-already-exists',
-  InvalidItemId: 'invalid-item-id',
-  UnsupportedOperation: 'unsupported-operation',
-};
+module.exports = {
+  /**
+   * @param {string} message
+   * @param {*} data
+   * @param {Error} innerError
+   * @returns {PryvDataStoreError}
+   */
+  unexpectedError (message, data, innerError) {
+    return new PryvDataStoreError(ErrorIds.UnexpectedError, message, data, innerError);
+  },
 
-function unexpectedError(message: string, data?: Object, innerError?: Error): PryvDataSourceError {
+  /**
+   * @param {string} message
+   * @param {*} data
+   * @param {Error} innerError
+   * @returns {PryvDataStoreError}
+   */
+  invalidRequestStructure (message, data, innerError) {
+    return new PryvDataStoreError(ErrorIds.InvalidRequestStructure, message, data, innerError);
+  },
 
-  return createError(ErrorIds.UnexpectedError, message, data, innerError);
-}
+  /**
+   * @param {string} resourceType
+   * @param {string} id
+   * @param {Error} innerError
+   * @returns {PryvDataStoreError}
+   */
+  unknownResource (resourceType, id, innerError) {
+    const message = `Unknown ${resourceType || 'resource'} ${id ? `"${id}"` : ''}`;
+    return new PryvDataStoreError(ErrorIds.UnknownResource, message, null, innerError);
+  },
 
+  /**
+   * @param {string} resourceType
+   * @param {string[]} conflictingKeys
+   * @param {Error} innerError
+   * @returns {PryvDataStoreError}
+   */
+  itemAlreadyExists (resourceType, conflictingKeys, innerError) {
+    const message = `${resourceType || 'Resource'} already exists with conflicting key(s): ${JSON.stringify(conflictingKeys)}`;
+    return new PryvDataStoreError(ErrorIds.ItemAlreadyExists, message, { conflictingKeys }, innerError);
+  },
 
-function invalidRequestStructure(message: string, data?: Object, innerError?: Error): PryvDataSourceError {
-  if (_factory) return _factory.invalidRequestStructure(message, data, innerError);
-  return createError(ErrorIds.InvalidRequestStructure, message, data, innerError);
-}
+  /**
+   * @param {string} message
+   * @param {*} data
+   * @param {Error} innerError
+   * @returns {PryvDataStoreError}
+   */
+  invalidItemId (message, data, innerError) {
+    return new PryvDataStoreError(ErrorIds.InvalidItemId, message, data, innerError);
+  },
 
-function unknownResource(resourceType: ?string, id: ?string, innerError?: Error): PryvDataSourceError {
-  if (_factory) return _factory.unknownResource(resourceType, id, innerError);
-  const message = `Unknown ${resourceType || 'resource'} ${id ? `"${id}"` : ''}`;
-  return createError(ErrorIds.UnknownResource, message, null, innerError);
-}
-
-function itemAlreadyExists(resourceType: ?string, conflictingKeys: { [string]: string }, innerError?: Error): PryvDataSourceError {
-  if (_factory) return _factory.itemAlreadyExists(resourceType, conflictingKeys, innerError);
-  const message = `${resourceType || 'Resource'} already exists with conflicting keys: ${JSON.stringify(conflictingKeys)}`;
-  return createError(ErrorIds.ItemAlreadyExists, message, {confictingKey : conflictingKeys}, innerError);
-}
-
-function invalidItemId(message: string): PryvDataSourceError {
-  if (_factory) return _factory.invalidItemId(message);
-  return createError(ErrorIds.InvalidItemId, message, data, innerError);
-}
-
-function unsupportedOperation(message: string): PryvDataSourceError {
-  if (_factory) return _factory.unsupportedOperation(message);
-  return createError(ErrorIds.UnsupportedOperation, message, data, innerError);
-}
-
-function createError (id: string, message: string, data?: Object, innerError?: Error): PryvDataSourceError {
-  return new PryvDataSourceError(id, message, data, innerError);
-}
-
-class PryvDataSourceError extends Error {
-  id: string;
-  data: ?Object;
-  innerError: ?Error;
-
-  constructor(id: string, message: string, data?: Object, innerError?: Error) {
-    super(message);
-    this.id = id;
-    this.data = data || null;
-    this.innerError = innerError || null;
+  /**
+   * @param {string} message
+   * @param {*} data
+   * @param {Error} innerError
+   * @returns {PryvDataStoreError}
+   */
+  unsupportedOperation (message, data, innerError) {
+    return new PryvDataStoreError(ErrorIds.UnsupportedOperation, message, data, innerError);
   }
-}
-
-// ---------------- error factory ----------------
-
-let _factory = null;
-
-/**
- * Used to map errors to API errors.
- * @param {*} factory 
- */
-function _setFactory(factory: Object) {
-  _factory = factory;
-}
+};

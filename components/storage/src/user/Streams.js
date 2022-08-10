@@ -27,11 +27,9 @@ function Streams(database) {
 
   _.extend(this.converters, {
     itemDefaults: [
-      converters.createIdIfMissing,
     ],
     itemToDB: [
-      converters.deletionToDB,
-      converters.stateToDB
+      //converters.deletionToDB,
     ],
     itemsToDB: [
       treeUtils.flattenTree,
@@ -101,24 +99,7 @@ Streams.prototype.countAll = function (user, callback) {
 
 Streams.prototype.insertOne = function (user, stream, callback) {
   cache.unsetUserData(user.id);
-  async.series([
-    function checkDeletionWithSameId(stepDone) {
-      if (! stream.id) { return stepDone(); }
-
-      this.findDeletion(user, {id: stream.id}, null, function (err, deletion) {
-        if (err) { return stepDone(err); }
-        if (! deletion) { return stepDone(); }
-        this.removeOne(user, {id: stream.id}, stepDone);
-      }.bind(this));
-    }.bind(this),
-    function checkParent(stepDone) {
-      if (! stream.parentId) { return stepDone(); }
-      checkParentExists.call(this, user, stream.parentId, stepDone);
-    }.bind(this)
-  ], function doInsertOne(err) {
-    if (err) { return callback(err); }
-    Streams.super_.prototype.insertOne.call(this, user, stream, callback);
-  }.bind(this));
+  Streams.super_.prototype.insertOne.call(this, user, stream, callback);
 };
 
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {
@@ -127,33 +108,8 @@ Streams.prototype.updateOne = function (user, query, updatedData, callback) {
   } else { // only stream Structure
     cache.unsetStreams(user.id, 'local');
   }
-  var self = this;
-  if (! updatedData.parentId) {
-    doUpdate();
-  } else {
-    checkParentExists.call(self, user, updatedData.parentId, function (err) {
-      if (err) { return callback(err); }
-      doUpdate();
-    });
-  }
-
-  function doUpdate() {
-    Streams.super_.prototype.updateOne.call(self, user, query, updatedData, callback);
-  }
+  Streams.super_.prototype.updateOne.call(this, user, query, updatedData, callback);
 };
-
-/**
- * @this {Streams}
- */
-function checkParentExists(user, parentId, callback) {
-  this.findOne(user, {id: parentId}, null, function (err, parent) {
-    if (err) { return callback(err); }
-    if (! parent) {
-      return callback(new Error('Unknown parent ' + toString.id(parentId)));
-    }
-    callback();
-  });
-}
 
 /* jshint -W024 */
 /**

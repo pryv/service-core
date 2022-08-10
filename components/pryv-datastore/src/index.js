@@ -5,7 +5,44 @@
  * Proprietary and confidential
  */
 
+const DataStore = require('./DataStore');
+const UserStreams = require('./UserStreams');
+const UserEvents = require('./UserEvents');
+const defaults = require('./Defaults');
+const errors = require('./errors');
+
+/**
+ * @exports datastore
+ */
 module.exports = {
-  DataStore: require('./DataStore'),
-  errors: require('./errors')
+  /**
+   * Create a new data store object with the given implementation.
+   * @param {Object} implementation An object implementing {@link DataStore} methods
+   * @returns {DataStore}
+   */
+  createDataStore (implementation) {
+    return Object.assign(Object.create(DataStore), implementation);
+  },
+
+  /**
+   * Create a new user streams object with the given implementation.
+   * @param {Object} implementation An object implementing {@link UserStreams} methods
+   * @returns {UserStreams}
+   */
+  createUserStreams (implementation) {
+    return Object.assign(Object.create(UserStreams), implementation);
+  },
+
+  /**
+   * Create a new user events object with the given implementation.
+   * @param {Object} implementation An object implementing {@link UserEvents} methods
+   * @returns {UserEvents}
+   */
+  createUserEvents (implementation) {
+    return Object.assign(Object.create(UserEvents), implementation);
+  },
+
+  defaults,
+
+  errors
 };

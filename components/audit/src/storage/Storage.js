@@ -46,26 +46,26 @@ class Storage {
 
   /**
    * get the database relative to a specific user
-   * @param {string} userid
+   * @param {string} userId
    * @returns {UserDatabase}
    */
-  async forUser(userid) {
-    logger.debug('forUser: ' + userid);
+  async forUser(userId) {
+    logger.debug('forUser: ' + userId);
     this.checkInititalized();
-    return this.userDBsCache.get(userid) || await open(this, userid);
+    return this.userDBsCache.get(userId) || await open(this, userId);
   }
 
   /**
    * close and delete the database relative to a specific user
-   * @param {string} userid
+   * @param {string} userId
    * @returns {void}
    */
-  async deleteUser(userid) {
-    logger.info('deleteUser: ' + userid);
-    const userDb = await this.forUser(userid);
+  async deleteUser(userId) {
+    logger.info('deleteUser: ' + userId);
+    const userDb = await this.forUser(userId);
     await userDb.close();
-    this.userDBsCache.delete(userid);
-    const dbPath = await dbPathForUserid(userid);
+    this.userDBsCache.delete(userId);
+    const dbPath = await dbPathForUserid(userId);
     try {
       unlinkSync(dbPath);
     } catch (err) {
@@ -79,19 +79,19 @@ class Storage {
   }
 }
 
-async function open(storage, userid) {
-  logger.debug('open: ' + userid);
-  const db = new UserDatabase({dbPath: await dbPathForUserid(userid)});
-  storage.userDBsCache.set(userid, db);
+async function open(storage, userId) {
+  logger.debug('open: ' + userId);
+  const db = new UserDatabase({dbPath: await dbPathForUserid(userId)});
+  storage.userDBsCache.set(userId, db);
   return db;
 }
 
 
 /**
- * @param {string} uid -- user id (cuid format)
+ * @param {string} userId -- user id (cuid format)
  */
-async function dbPathForUserid(userid) {
-  const userPath = await ensureUserDirectory(userid);
+async function dbPathForUserid(userId) {
+  const userPath = await ensureUserDirectory(userId);
   return path.join(userPath, 'audit.sqlite');
 }
 

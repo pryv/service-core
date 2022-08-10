@@ -121,14 +121,14 @@ function checkAccessIntegrity(access) {
 exports.checkError = function (response, expected, done) {
   response.statusCode.should.eql(expected.status);
   checkJSON(response, schemas.errorResult);
-  
+
   const error = response.body.error;
   assert.equal(error.id, expected.id);
 
   if (expected.data != null) {
     assert.deepEqual(error.data, expected.data);
   }
-  
+
   if (done) done();
 };
 
@@ -162,7 +162,7 @@ exports.checkStoredItem = function (item, schemaName) {
 
 function checkMeta(parentObject) {
   expect(parentObject.meta).to.exist;
-  
+
   const meta = parentObject.meta;
 
   assert.match(meta.apiVersion, /^\d+\.\d+\.\d+/);
@@ -178,9 +178,9 @@ exports.checkErrorInvalidParams = function (res, done) {
   expect(res.statusCode).to.equal(400);
 
   checkJSON(res, schemas.errorResult);
-  const body = res.body; 
-  const error = body.error; 
-  
+  const body = res.body;
+  const error = body.error;
+
   expect(error).to.exist;
   expect(error.id).to.equal(ErrorIds.InvalidParametersFormat);
   expect(res.body.error.data).to.exist; // expect validation errors
@@ -263,7 +263,7 @@ function checkObjectEquality(actual, expected, verifiedProps = []) {
   if (expected.children != null) {
     expect(actual.children).to.exist;
     assert.strictEqual(actual.children.length, expected.children.length);
-    
+
     for (var i = 0, n = expected.children.length; i < n; i++) {
       const subApprox = checkObjectEquality(actual.children[i], expected.children[i]);
       isApprox = isApprox || subApprox ;
@@ -275,17 +275,17 @@ function checkObjectEquality(actual, expected, verifiedProps = []) {
   if (expected.attachments != null) {
     expect(actual.attachments).to.exist;
 
-    assert.strictEqual(actual.attachments.length, expected.attachments.length, 
+    assert.strictEqual(actual.attachments.length, expected.attachments.length,
       `Must have ${expected.attachments.length} attachments.`);
-    
-    const expectMap = new Map(); 
+
+    const expectMap = new Map();
     for (let ex of expected.attachments)
       expectMap.set(ex.id, ex);
-    
+
     for (let act of actual.attachments) {
       const ex = expectMap.get(act.id);
       assert.isNotNull(ex);
-      
+
       checkObjectEquality(act, ex);
     }
   }
@@ -361,7 +361,7 @@ exports.sanitizeEvent = function (event) {
       delete att.readToken;
     });
   }
-  
+
   return event;
 };
 
@@ -434,33 +434,36 @@ exports.removeAccountStreams = function (streams) {
     }
   }
   return streams;
-}
+};
 
+// TODO: cleanup this mess, we shouldn't have data creation logic in "validation", nor these `require()` mid-file
 exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
-  const {streamsUtils, getMall} = require('mall');
-  function isShown(storeId) {
-    if (storeId === 'local') return false;
-    if (storesId == null) return true;
-    return storesId.includes(storeId);
-  }
+  const { getMall } = require('mall');
+  const streamsUtils = require('mall/src/helpers/streamsUtils');
 
   // -- ADD stores
   const mall = await getMall();
-  for (const source of [...mall.stores].reverse()) { // cloning array before reversing it!
-    if (isShown(source.id)) {
-      const stream = streamsUtils.storeToStream(source, {
+  for (const store of [...mall.stores.values()].reverse()) { // cloning array before reversing it!
+    if (isShown(store.id)) {
+      const stream = streamsUtils.createStoreRootStream(store, {
         children: [],
         childrenHidden: true // To be discussed
       });
       if (atTheEnd) {
-        streams.push(stream)
+        streams.push(stream);
       } else {
         streams.unshift(stream);
       }
     }
-  };
+  }
   return streams;
-}
+
+  function isShown (storeId) {
+    if (storeId === 'local') return false;
+    if (storesId == null) return true;
+    return storesId.includes(storeId);
+  }
+};
 
 /*
  * Strips off item from tracking properties

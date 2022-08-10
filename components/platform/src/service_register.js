@@ -20,12 +20,14 @@ type Operation = {
     key: AccountProperty,
     value: Value,
     isUnique: ?boolean,
+    isActive: ?boolean,
+    isCreation: ?boolean,
   },
 };
 
 const { getLogger, getConfig, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
-  settings: null; 
+  settings: null;
   logger: {};
 
   constructor() {
@@ -35,7 +37,7 @@ class ServiceRegister {
 
   async init() {
     if (this.settings == null) {
-      this.settings = (await getConfig()).get('services:register')
+      this.settings = (await getConfig()).get('services:register');
       this.logger.debug('created with setttings:', this.settings);
     }
     return this;
@@ -54,7 +56,7 @@ class ServiceRegister {
       await superagent
         .post(url)
         .set('Authorization', this.settings.key)
-        .send({ 
+        .send({
           username: username,
           invitationToken: invitationToken,
           uniqueFields: uniqueFields,
@@ -104,7 +106,7 @@ class ServiceRegister {
       const res = await superagent
         .post(url)
         .set('Authorization', this.settings.key)
-        .send(user);     
+        .send(user);
       return res.body;
     } catch (err) {
       this.logger.error(err, err);
@@ -119,7 +121,7 @@ class ServiceRegister {
     try {
       const res = await superagent
         .delete(url)
-        .set('Authorization', this.settings.key);     
+        .set('Authorization', this.settings.key);
       return res.body;
     } catch (err) {
       this.logger.error(err, err);
@@ -134,8 +136,6 @@ class ServiceRegister {
   async updateUserInServiceRegister (
     username: string,
     operations: Array<Operation>,
-    isActive: boolean,
-    isCreation: boolean
   ): Promise<void> {
     const url = buildUrl('/users', this.settings.url);
     this.logger.info(`PUT ${url} for username:${username}`);
@@ -155,8 +155,8 @@ class ServiceRegister {
           {
             value: operation.update.value,
             isUnique: operation.update.isUnique,
-            isActive,
-            creation: isCreation,
+            isActive: operation.update.isActive || false,
+            creation: operation.update.isCreation,
           }
         ];
         updateParams[operation[operationType].key] = operation[operationType].value;
@@ -173,7 +173,7 @@ class ServiceRegister {
       username,
       user: fieldsForUpdate,
       fieldsToDelete,
-    }
+    };
 
     try {
       const res = await superagent.put(url)
@@ -191,7 +191,7 @@ class ServiceRegister {
       } if (err.status == 400 && err.response.body?.user === null) {
         // do not throw any error if no data was updated (double click for updating the event)
         this.logger.error('No data was updated');
-      }else{
+      } else {
         // do not log validation errors
         this.logger.error(err, err);
         throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
@@ -211,38 +211,38 @@ let serviceRegisterConn = null;
 async function getServiceRegisterConn() {
   if (! serviceRegisterConn) {
     serviceRegisterConn = new ServiceRegister();
-    serviceRegisterConn.init();
+    await serviceRegisterConn.init();
   }
   return serviceRegisterConn;
 }
 
- /**
-   * Temporary solution to patch a nasty bug, where "random" emails are exposed during account creations 
-   * @param {object} foundDuplicates the duplicates to check
-   * @param {string} username 
-   * @param {object} params 
-   */
-  function safetyCleanDuplicate(foundDuplicates, username, params: {}): {} {
-    if (foundDuplicates == null) return foundDuplicates;
-    const res: {} = {};
-    const newParams: {} = Object.assign({}, params);
-    if (username != null) newParams.username = username; 
-    for (const key of Object.keys(foundDuplicates)) {
-      if (foundDuplicates[key] === newParams[key]) {
-        res[key] = foundDuplicates[key] ;
-      } else {
-        notify(key + ' "' + foundDuplicates[key] + '" <> "' + newParams[key] + '"');
-      }
-    }
-    return res;
-
-    function notify(key) {
-      const logger = getLogger('service-register'); 
-      const error = new Error('Found unmatching duplicate key: ' + key);
-      logger.error('To be investigated >> ', error);
-      notifyAirbrake(error);
+/**
+ * Temporary solution to patch a nasty bug, where "random" emails are exposed during account creations
+ * @param {object} foundDuplicates the duplicates to check
+ * @param {string} username
+ * @param {object} params
+ */
+function safetyCleanDuplicate(foundDuplicates, username, params: {}): {} {
+  if (foundDuplicates == null) return foundDuplicates;
+  const res: {} = {};
+  const newParams: {} = Object.assign({}, params);
+  if (username != null) newParams.username = username;
+  for (const key of Object.keys(foundDuplicates)) {
+    if (foundDuplicates[key] === newParams[key]) {
+      res[key] = foundDuplicates[key] ;
+    } else {
+      notify(key + ' "' + foundDuplicates[key] + '" <> "' + newParams[key] + '"');
     }
   }
+  return res;
+
+  function notify(key) {
+    const logger = getLogger('service-register');
+    const error = new Error('Found unmatching duplicate key: ' + key);
+    logger.error('To be investigated >> ', error);
+    notifyAirbrake(error);
+  }
+}
 
 module.exports = {
   getServiceRegisterConn,

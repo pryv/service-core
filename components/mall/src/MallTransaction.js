@@ -5,27 +5,31 @@
  * Proprietary and confidential
  */
 
-const { DataStore }  = require('pryv-datastore');
-
+// TODO: move this inside mall once the latter is a proper singleton object
 class MallTransaction {
-  mall: Mall;
-  transactionsByStoreId: Map<string, DataStore.Transaction>;
-  
+  /**
+   * @type {Mall}
+   */
+  mall;
+  /**
+   * @type {Map<string, DataStore.Transaction>}
+   */
+  storeTransactions;
+
   constructor(mall) {
     this.mall = mall;
-    this.transactionsByStoreId = new Map();
+    this.storeTransactions = new Map();
   }
 
-  async forStoreId(storeId): DataStore.Transaction {
-    if (this.transactionsByStoreId.has(storeId)) {
-      return this.transactionsByStoreId.get(storeId);
-    } 
-    const store = this.mall._storeForId(storeId);
+  async getStoreTransaction(storeId) {
+    if (this.storeTransactions.has(storeId)) {
+      return this.storeTransactions.get(storeId);
+    }
+    const store = this.mall.stores.get(storeId);
     const transaction = await store.newTransaction();
-    this.transactionsByStoreId.set(store.id, transaction);
+    this.storeTransactions.set(store.id, transaction);
     return transaction;
   }
-
 }
 
 module.exports = MallTransaction;

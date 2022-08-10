@@ -4,11 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-'use strict'; 
+'use strict';
 // @flow
 
 // A middleware that allows checking uploads and that will at the same time
-// allow uploads for the route. 
+// allow uploads for the route.
 
 const filesUploadSupport = require('middleware').filesUploadSupport;
 const multer = require('multer');
@@ -19,33 +19,40 @@ const MulterDiskStorage = integrity.attachments.isActive ? integrity.attachments
 
 // ---------------------------------------------------------------- multer setup
 
-// Parse multipart file data into request.files: 
+// Parse multipart file data into request.files:
 const storage = MulterDiskStorage({
   filename: null, // default filename, random
   destination: null, // operating system's default directory for temporary files is used.
-}); 
-const uploadMiddlewareFactory = multer({storage: storage});
+});
+const uploadMiddlewareFactory = multer({
+  storage: storage,
+  // fix for multer 1.4.5-lts.1 having an unwanted change of encoding for filenames
+  // might be removed when https://github.com/expressjs/multer/pull/1102
+  fileFilter: (req, file, cb) => {
+    file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    cb(null, true);
+  }
+});
 
 // --------------------------------------------------------------------- exports
 module.exports = {
-  filesUploadSupport: filesUploadSupport, 
+  filesUploadSupport: filesUploadSupport,
   hasFileUpload: hasFileUpload,
 };
 
 
 
-/** Declares that a route has file uploads. 
- * 
+/** Declares that a route has file uploads.
+ *
  * Enables file uploads on a route. file uploads are checked in their global
- * form (MUST have only a JSON body). 
- */ 
+ * form (MUST have only a JSON body).
+ */
 function hasFileUpload(req: express$Request, res: express$Response, next: express$NextFunction) {
-  const uploadMiddleware = uploadMiddlewareFactory.any(); 
-  
+  const uploadMiddleware = uploadMiddlewareFactory.any();
+
   uploadMiddleware(req, res, (err) => {
     if (err) return next(err);
-    
+
     filesUploadSupport(req, res, next);
   });
 }
-

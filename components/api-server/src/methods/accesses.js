@@ -28,7 +28,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const cache = require('cache');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
-const { getMall, streamsUtils } = require('mall');
+const { getMall, storeDataUtils } = require('mall');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
 
@@ -300,9 +300,9 @@ module.exports = async function produceAccessesApiMethods(api: API)
         if (! existingStream.trashed) return ;
 
         // untrash stream
-        const update = {trashed: false};
+        const update = {id: existingStream.id, trashed: false};
         try {
-          await mall.streams.updateTemp(context.user.id, existingStream.id, update);
+          await mall.streams.update(context.user.id, update);
         } catch (err) {
           throw(errors.unexpectedError(err));
         }
@@ -310,7 +310,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
       }
 
       if (! commonFns.isValidStreamIdForCreation(permission.streamId)) {
-        return next(errors.invalidRequestStructure(`Error while creating stream for access. Invalid 'permission' parameter, forbidden chartacter(s) in streamId '${permission.streamId}'. StreamId should be of length 1 to 100 chars, with lowercase letters, numbers or dashes.`, permission));
+         throw errors.invalidRequestStructure(`Error while creating stream for access. Invalid 'permission' parameter, forbidden chartacter(s) in streamId '${permission.streamId}'. StreamId should be of length 1 to 100 chars, with lowercase letters, numbers or dashes.`, permission);
       }
 
       // create new stream
@@ -324,18 +324,10 @@ module.exports = async function produceAccessesApiMethods(api: API)
       try {
         await mall.streams.create(context.user.id, newStream);
       } catch (err) {
-          // Duplicate errors
-          if (err.isDuplicateIndex('id')) {
-            // Stream already exists, log & proceed
-            logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' + err.message);
-          }
-          else if (err.isDuplicateIndex('name')) {
-            // Not OK: stream exists with same unique key but different id
-            throw(errors.itemAlreadyExists('stream', {name: newStream.name}, err));
-          } else {
-            // Any other error
-            throw(errors.unexpectedError(err));
-          }
+        if (err instanceof APIError) {
+          throw err;
+        }
+        throw(errors.unexpectedError(err));
       }
     }
   }
@@ -635,7 +627,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
             if (permissionStream != null) return ;
 
             // new streams are created at "root" level so we check the children's name of root (id)
-            const [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(permission.streamId);
+            const [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(permission.streamId);
             const rootStreams = await mall.streams.get(context.user.id, { storeId: storeId, state: 'all', includeTrashed: true });
             const rootStreamsNames = rootStreams.map(stream => stream.name);
 

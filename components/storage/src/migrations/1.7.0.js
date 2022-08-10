@@ -7,6 +7,7 @@
 const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { UsersRepository, getUsersRepository, User } = require('business/src/users');
+const { getMall } = require('mall');
 
 const { getLogger } = require('@pryv/boiler');
 const { TAG_ROOT_STREAMID, TAG_PREFIX }: { TAG_ROOT_STREAMID: string, TAG_PREFIX: string } = require('api-server/src/methods/helpers/backwardCompatibility');
@@ -165,7 +166,7 @@ module.exports = async function (context, callback) {
   
   async function migrateTags(eventsCollection, streamsCollection): Promise<void> { 
     
-    const storageLayer = await require('storage').getStorageLayer();
+    const mall = await getMall();
     // get all users with tags 
     const usersWithTag = await eventsCollection.distinct('userId', {tags: { $exists: true, $ne: null }});
     for (userId of usersWithTag) {
@@ -173,9 +174,9 @@ module.exports = async function (context, callback) {
 
       async function createStream(id, name, parentId) {
         try { 
-          await bluebird.fromCallback(cb => storageLayer.streams.insertOne({id: userId}, {name: name, id: id, parentId: parentId, modifiedBy: 'migration', createdBy: 'migration', created: now, modified: now}, cb));
+          await mall.streams.create(userId, {name: name, id: id, parentId: parentId, modifiedBy: 'migration', createdBy: 'migration', created: now, modified: now});
         } catch (e) {
-          if (e.code !== 11000) throw(e)// already exists.. oK
+          if (e.id !== 'item-already-exists') throw(e)// already exists.. oK
         }
       }
 

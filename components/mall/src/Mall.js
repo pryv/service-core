@@ -5,133 +5,93 @@
  * Proprietary and confidential
  */
 
-// @flow
+const storeDataUtils = require('./helpers/storeDataUtils');
 
-/**
- * Data Store aggregator.
- * Pack configured datastores into one
- */
-
-const { DataStore, errors } = require('pryv-datastore');
-const APIError = require('errors/src/APIError');
-
-// patch DataStore errors with legacy error factory
-const errorFactory = require('errors').factory
-errors._setFactory(errorFactory);
-
-
-// -- Core properties
 const MallUserStreams = require('./MallUserStreams');
 const MallUserEvents = require('./MallUserEvents');
 const MallTransaction = require('./MallTransaction');
 
+/**
+ * Storage for streams and events.
+ * Under the hood, manages the different data stores (built-in and custom),
+ * dispatching data requests for each one.
+ */
 class Mall {
-
-  _id: string = 'store';
-  _name: string = 'Store';
-  stores: Array<DataStore>;
-  storesMap: Map<string, DataStore>;
+  /**
+   * @type {Map<string, DataStore>}
+   */
+  stores;
   initialized: boolean;
   _streams: MallUserStreams;
   _events: MallUserEvents;
 
   constructor() {
-    this.storesMap = {};
-    this.stores = [];
+    this.stores = new Map();
     this.initialized = false;
   }
 
-  get streams(): MallUserStreams { return this._streams; }
-  get events(): MallUserEvents { return this._events; }
+  get streams() { return this._streams; }
+  get events() { return this._events; }
 
   /**
-   * register a new DataStore
-   * @param
+   * Register a new DataStore
+   * @param {DataStore} store
    */
-  addStore(store: DataStore): void {
+  addStore(store) {
     if (this.initialized) throw(new Error('Sources cannot be added after init()'));
-    this.stores.push(store);
-    this.storesMap[store.id] = store;
+    this.stores.set(store.id, store);
   }
 
-  async init(): Promise<Mall> {
+  /**
+   * @returns {Promise<Mall>}
+   */
+  async init () {
     if (this.initialized) throw(new Error('init() can only be called once.'));
     this.initialized = true;
 
-    // initialize all stores
-    for (const store: DataStore of this.stores) {
+    for (const store of this.stores.values()) {
       await store.init();
     }
 
-    // expose streams and events;
-    this._streams = new MallUserStreams(this);
-    this._events = new MallUserEvents(this);
+    this._streams = new MallUserStreams(this.stores.values());
+    this._events = new MallUserEvents(this.stores.values());
 
     return this;
   }
 
-  async deleteUser(uid) {
-    for (const store of this.stores) {
+  async deleteUser (userId) {
+    for (const store of this.stores.values()) {
       try {
-        await store.deleteUser(uid);
+        await store.deleteUser(userId);
       } catch (error) {
-        this.throwAPIError(error, store.id);
+        storeDataUtils.throwAPIError(error, store.id);
       }
     }
   }
 
   /**
-   * Return the quantity of storage used by the user in bytes
+   * Return the quantity of storage used by the user in bytes.
+   * @param {string} userId
    */
-  async storageUsedForUser(uid: string) { 
+  async getUserStorageSize(userId) {
     let storageUsed = 0;
-    for (const store of this.stores) {
+    for (const store of this.stores.values()) {
       try {
-        storageUsed += await store.storageUsedForUser(uid);
+        storageUsed += await store.getUserStorageSize(userId);
       } catch (error) {
-        this.throwAPIError(error, store.id);
+        storeDataUtils.throwAPIError(error, store.id);
       }
     }
     return storageUsed;
   }
 
   /**
-   * 
-   * @param {*} storeId 
-   * @returns 
+   * @param {string} storeId
+   * @returns {Promise<MallTransaction>}
    */
-  async newTransaction(): Promise<MallTransaction> {
+  async newTransaction() {
     return new MallTransaction(this);
   }
-
-  /**
-   * @private
-   * @param {identifier} storeId
-   * @returns
-   */
-  _storeForId(storeId: string): DataStore {
-    return this.storesMap[storeId];
-  }
-
-  /**
-   * Catches errors from DataStore and makes sure they are forwarded as API errors.
-   * @param {*} error 
-   * @param {*} storeId 
-   */
-  throwAPIError(error, storeId) {
-    if (! error instanceof Error) {
-      error = new Error(error);
-    }
-    if (! error instanceof APIError) {
-      error = errorFactory.unexpectedError(error);
-    }
-    if (storeId != null) {
-      const store = this._storeForId(storeId);
-      error.message = `Data Store Error: ${store.name} [${store.id}] - ${error.message}`;
-    }
-    throw error;
-  }
-
 }
 
 module.exports = Mall;

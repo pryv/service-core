@@ -12,7 +12,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
-const { streamsUtils } = require('mall');
+const { storeDataUtils } = require('mall');
 
 /**
  * Structures
@@ -66,7 +66,7 @@ ALL_AUTHORIZED_STREAMS.forEach((streamId) => {
     STREAMS[parentId].childrens.push(streamId);
   }
   if (STREAMS[streamId].trashed !== true) {
-    if (streamsUtils.storeIdAndStreamIdForStreamId(streamId)[0] === 'local') {
+    if (storeDataUtils.parseStoreIdAndStoreItemId(streamId)[0] === 'local') {
       ALL_ACCESSIBLE_STREAMS_LOCAL.push(streamId);
       if (STREAMS[streamId].parentId == null)
         ALL_ACCESSIBLE_ROOT_STREAMS_LOCAL.push(streamId);
@@ -526,16 +526,16 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[55HB] must return events in A && NOT-EQUAL D)', async function () {
+    it('[55HB] must return events in A && NOT-EQUAL D', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({ streams: JSON.stringify({ any: ['A'], not: ['#D']}) });
-      assert.exists(res.body.events)
+        .query({ streams: JSON.stringify({ any: ['A'], not: ['D!'] }) });
+      assert.exists(res.body.events);
       const events = res.body.events;
       const expectedEvents = ['a', 'b', 'fc', 'c', 'be'];
       assert.equal(events.length, expectedEvents.length);
-      const resIds = events.map((e) => {
+      events.forEach(e => {
         assert.exists(EVENT4ID[e.id]);
         assert.include(expectedEvents, EVENT4ID[e.id]);
       });
