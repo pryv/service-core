@@ -4,14 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const _ = require('lodash');
+// @flow
+
 const commonFns = require('./../helpers/commonFunctions');
 const errors = require('errors').factory;
-const { ErrorMessages, ErrorIds } = require('errors');
 const methodsSchema = require('api-server/src/schema/authMethods');
 const Registration = require('business/src/auth/registration');
 const { getPlatform } = require('platform');
-const { getConfigUnsafe } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
@@ -30,26 +29,26 @@ module.exports = async function (api) {
   const config = await getConfig();
   const logging = await getLogger('register');
   const storageLayer = await getStorageLayer();
-  const servicesSettings = config.get('services')
+  const servicesSettings = config.get('services');
   const isDnsLess = config.get('dnsLess:isActive');
   await usersIndex.init();
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
   await registration.init();
-  const platform = await getPlatform(); 
+  const platform = await getPlatform();
 
   function skip(context, params, result, next) { next(); }
   function ifDnsLess(ifTrue, ifFalse) {
     if (isDnsLess) {
       return ifTrue || skip;
-    } 
+    }
     return ifFalse || skip;
   }
 
   api.register('auth.register',
     setAuditAccessId(AuditAccessIds.PUBLIC),
-    // data validation methods        
+    // data validation methods
     commonFns.getParamsValidation(methodsSchema.register.params),
     registration.prepareUserData,
     ifDnsLess(skip, registration.createUserStep1_ValidateUserOnPlatform.bind(registration)),
@@ -60,10 +59,10 @@ module.exports = async function (api) {
     registration.buildResponse.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );
-  
+
   // Username check
   /**
-   * Seem to be use only in dnsLess..  
+   * Seem to be use only in dnsLess..
    */
   api.register('auth.usernameCheck',
     setAuditAccessId(AuditAccessIds.PUBLIC),
@@ -71,10 +70,8 @@ module.exports = async function (api) {
     ifDnsLess(checkLocalUsersUniqueField, checkUsername)
   );
 
-
-  //
   /**
-   * DNSLess Only
+   * ⚠️ DNS-less only
    */
   api.register('auth.emailCheck',
     setAuditAccessId(AuditAccessIds.PUBLIC),
@@ -84,11 +81,11 @@ module.exports = async function (api) {
 
   /**
    * Check in service-register if user id is reserved
-   * !ONLY DnsLess = true
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * ⚠️ DNS-less only
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   async function checkLocalUsersUniqueField(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
@@ -97,27 +94,26 @@ module.exports = async function (api) {
 
     // username
     if (field == 'username') {
-      if (await usersIndex.existsUsername(params[field]))
-      return next(errors.itemAlreadyExists( "user", {'username': params[field]}));
+      if (await usersIndex.usernameExists(params[field])) {
+        return next(errors.itemAlreadyExists( 'user', {'username': params[field]}));
+      }
     }
 
     // other unique fields
-    const value = await platform.getLocalUsersUniqueField(field, params[field]); 
+    const value = await platform.getLocalUsersUniqueField(field, params[field]);
     if (value != null) {
-      return next(errors.itemAlreadyExists("user", {[field]: params[field]}));
+      return next(errors.itemAlreadyExists('user', {[field]: params[field]}));
     }
     next();
   }
 
-
-
   /**
-   * Check in service-register if user id is reserved
-   * !ONLY DnsLess = false
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * Check with register service whether username is reserved
+   * ⚠️ to be used only if dnsLess is NOT active.
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
@@ -128,5 +124,4 @@ module.exports = async function (api) {
     }
     next();
   }
-
 };

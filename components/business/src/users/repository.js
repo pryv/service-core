@@ -51,7 +51,7 @@ class UsersRepository {
 
   // only for testing
   async getAll(): Promise<Array<User>> {
-    const usersMap = await usersIndex.allUsersMap();
+    const usersMap = await usersIndex.getAllByUsername();
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -66,7 +66,7 @@ class UsersRepository {
 
   // only for test data to reset all users Dbs.
   async deleteAll(): Promise<void> {
-    const usersMap = await usersIndex.allUsersMap();
+    const usersMap = await usersIndex.getAllByUsername();
     for (const [, userId] of Object.entries(usersMap)) {
       await this.mall.deleteUser(userId);
     }
@@ -74,9 +74,8 @@ class UsersRepository {
     await this.platform.deleteAll();
   }
 
-
   async getAllUsernames(): Promise<Array<User>> {
-    const usersMap = await usersIndex.allUsersMap();
+    const usersMap = await usersIndex.getAllByUsername();
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -86,14 +85,14 @@ class UsersRepository {
   }
 
   async getUserIdForUsername(username: string) {
-    return await usersIndex.idForName(username);
+    return await usersIndex.getUserId(username);
   }
 
   async getUserById(userId: string): Promise<?User> {
     const userAccountStreamsIds =  Object.keys(SystemStreamsSerializer.getAccountMap());
     const query = {state: 'all', streams: [{any: userAccountStreamsIds, and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}]};
     const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
-    const username = await usersIndex.nameForId(userId);
+    const username = await usersIndex.getUsername(userId);
     // convert events to the account info structure
     if (
       userAccountEvents.length == 0
@@ -195,9 +194,8 @@ class UsersRepository {
       }
     }
 
-
     // check locally for username // <== maybe this usersIndex should be fully moved to platform
-    if (await usersIndex.existsUsername(user.username)) {
+    if (await usersIndex.usernameExists(user.username)) {
       // gather eventual other uniqueness conflicts
       const eventualPlatformUniquenessErrors = await this.platform.checkUpdateOperationUniqueness(user.username, operations);
       const uniquenessError = errors.itemAlreadyExists('user', eventualPlatformUniquenessErrors);
@@ -207,7 +205,6 @@ class UsersRepository {
 
     // could throw uniqueness errors
     await this.platform.updateUserAndForward(user.username, operations, skipFowardToRegister);
-
 
     const mallTransaction = await this.mall.newTransaction();
     const localTransaction = await mallTransaction.getStoreTransaction('local');
@@ -245,7 +242,6 @@ class UsersRepository {
   }
 
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
-
     // change password into hash if it exists
     if (update.password != null) {
       update.passwordHash = await bluebird.fromCallback(
@@ -275,7 +271,6 @@ class UsersRepository {
         await this.mall.events.updateMany(user.id, query, {fieldsToSet: updateFields}, mallTransaction);
       }
     });
-
   }
 
   async deleteOne(userId: string, username: ?string, skipFowardToRegister: ?boolean): Promise<number> {
@@ -306,7 +301,7 @@ class UsersRepository {
     return isValid;
   }
   async count(): Promise<number> {
-    const users = await usersIndex.allUsersMap();
+    const users = await usersIndex.getAllByUsername();
     return Object.keys(users).length;
   }
 }

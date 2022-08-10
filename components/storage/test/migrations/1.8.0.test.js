@@ -8,7 +8,7 @@
  * Tests data migration between versions.
  */
 
-/*global describe, it, assert */
+/* global describe, it, before, after, assert */
 
 const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');
@@ -23,12 +23,9 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 
 const { getVersions } = require('./util');
 
-const { getUsersRepository } = require('business/src/users');
-
 const usersIndex = require('business/src/users/UsersLocalIndex');
 
 const { platform } = require('platform');
-
 
 describe('Migration - 1.8.0', function () {
   this.timeout(20000);
@@ -38,7 +35,7 @@ describe('Migration - 1.8.0', function () {
     const newVersion = getVersions('1.8.0');
     await SystemStreamsSerializer.init();
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.7.5', mongoFolder, cb));
-  
+
     // collect users from events
     initialEventsUsers = await getInitialEventsUsers();
 
@@ -58,11 +55,10 @@ describe('Migration - 1.8.0', function () {
 
   });
 
-
   it('[WBIK] must handle userIndex/events  migration from 1.7.5 to 1.8.0', async function () {
     // check that all users are migrated
-    const newUsers = await usersIndex.allUsersMap();
-    for ([username, userId] of Object.entries(initialEventsUsers)) {
+    const newUsers = await usersIndex.getAllByUsername();
+    for (const [username, userId] of Object.entries(initialEventsUsers)) {
       if (newUsers[username]) {
         assert.equal(newUsers[username], userId, `User ${username} migrated but with wrong id`);
       } else {
@@ -78,16 +74,13 @@ describe('Migration - 1.8.0', function () {
     assert.isEmpty(errors, 'Found error(s) in the userIndex vs events check');
   });
 
-
   it('[URHS] must handle platfrom migration from 1.7.5 to 1.8.0', async function () {
     const { errors } = await platform.checkIntegrity();
     assert.isEmpty(errors, 'Found error(s) in the platform vs Users check');
   });
 });
 
-
-
-async function getInitialEventsUsers() {
+async function getInitialEventsUsers () {
   const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
   const query = { streamIds: { $in: [':_system:username'] } };
   const cursor = await eventsCollection.find(query, { projection: { userId: 1, content: 1 } });

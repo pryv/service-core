@@ -14,8 +14,6 @@ const sqlite3 = require('better-sqlite3');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const cache = require('cache');
 
-const userLocalIndexCheckIntegrity = require('./userLocalIndexCheckIntegrity');
-
 const logger = getLogger('users:local-index');
 
 class UsersLocalIndex {
@@ -36,8 +34,34 @@ class UsersLocalIndex {
     logger.debug('init');
   }
 
+  /**
+   * Check the integrity of the userIndex compared to the username events in SystemStreams
+   * @returns {Object} With `errors` an array of error messages if discrepencies are found
+   */
   async checkIntegrity() {
-    return userLocalIndexCheckIntegrity(this);
+    const errors = [];
+    const infos = {};
+    const checkedMap = {};
+
+    for (const collectionName of ['events', 'streams', 'accesses', 'profile', 'webhooks', 'followedSlices']) {
+      const userIds = await getAllKnownUserIdsFromDB(collectionName);
+      infos['userIdsCount-' + collectionName] = userIds.length;
+
+      for (const userId of userIds) {
+        if (checkedMap[userId]) continue;
+        const username = this.getUsername(userId);
+        checkedMap[userId] = true;
+        if (username == null) {
+          errors.push(`User id "${userId}" in mongo collection "${collectionName}" is unknown in the user index DB`);
+          continue;
+        }
+      }
+    }
+    return {
+      title: 'Users local index vs MongoDB',
+      infos,
+      errors
+    };
   }
 
   async addUser(username, userId) {
@@ -45,13 +69,13 @@ class UsersLocalIndex {
     logger.debug('addUser', username, userId);
   }
 
-  async existsUsername(username) {
-    const res = (await this.idForName(username) != null);
-    logger.debug('existsUsername', username, res);
+  async usernameExists(username) {
+    const res = (await this.getUserId(username) != null);
+    logger.debug('usernameExists', username, res);
     return res;
   }
 
-  async idForName(username) {
+  async getUserId(username) {
     let userId = cache.getUserId(username);
     if (userId == null) {
       userId = this.db.getIdForName(username);
@@ -63,18 +87,20 @@ class UsersLocalIndex {
     return userId;
   }
 
-  async nameForId(userId) {
+  async getUsername(userId) {
     const res = this.db.getNameForId(userId);
     logger.debug('nameForId', userId, res);
     return res;
   }
 
-  async allUsersMap() {
-    logger.debug('allUsersMap');
-    return this.db.allUsersMap();
+  async getAllByUsername() {
+    logger.debug('getAllByUsername');
+    return this.db.getAllByUsername();
   }
 
-  // reset everything -- used by tests only
+  /**
+   * Reset everything – used by tests only
+   */
   async deleteAll() {
     logger.debug('deleteAll');
     cache.clear();
@@ -87,14 +113,22 @@ class UsersLocalIndex {
   }
 }
 
+async function getAllKnownUserIdsFromDB (collectionName) {
+  const { getDatabase } = require('storage'); // placed here to avoid some circular dependency
+  const database = await getDatabase();
+  const collection = await database.getCollection({ name: collectionName });
+  const userIds = await collection.distinct('userId', {});
+  return userIds;
+}
+
 class DBIndex {
   db;
-  queryId4Name;
-  queryName4Id;
-  queryAll;
-  insertId4Name;
-  deleteAllStmt;
-  deleteWithId;
+  queryGetIdForName;
+  queryGetNameForId;
+  queryGetAll;
+  queryInsert;
+  queryDeleteAll;
+  queryDeleteById;
 
   constructor() { }
 
@@ -109,44 +143,41 @@ class DBIndex {
     this.db.prepare('CREATE TABLE IF NOT EXISTS id4name (username TEXT PRIMARY KEY, userId TEXT NOT NULL);').run();
     this.db.prepare('CREATE INDEX IF NOT EXISTS id4name_id ON id4name(userId);').run();
 
-    this.queryId4Name = this.db.prepare('SELECT userId FROM id4name WHERE username = ?');
-    this.queryName4Id = this.db.prepare('SELECT username FROM id4name WHERE userId = ?');
-    this.insertId4Name = this.db.prepare('INSERT INTO id4name (username, userId) VALUES (@username, @userId)');
-    this.queryAll = this.db.prepare('SELECT username, userId FROM id4name');
-
-    this.deleteWithId = this.db.prepare('DELETE FROM id4name WHERE userId = @userId');
-
-    this.deleteAllStmt = this.db.prepare('DELETE FROM id4name');
+    this.queryGetIdForName = this.db.prepare('SELECT userId FROM id4name WHERE username = ?');
+    this.queryGetNameForId = this.db.prepare('SELECT username FROM id4name WHERE userId = ?');
+    this.queryInsert = this.db.prepare('INSERT INTO id4name (username, userId) VALUES (@username, @userId)');
+    this.queryGetAll = this.db.prepare('SELECT username, userId FROM id4name');
+    this.queryDeleteById = this.db.prepare('DELETE FROM id4name WHERE userId = @userId');
+    this.queryDeleteAll = this.db.prepare('DELETE FROM id4name');
   }
 
   getIdForName(username) {
-    return this.queryId4Name.get(username)?.userId;
+    return this.queryGetIdForName.get(username)?.userId;
   }
 
   getNameForId(userId) {
-    return this.queryName4Id.get(userId)?.username;
+    return this.queryGetNameForId.get(userId)?.username;
   }
 
   addUser(username, userId) {
-    return this.insertId4Name.run({username, userId});
+    return this.queryInsert.run({username, userId});
   }
 
   deleteById(userId) {
-    return this.deleteWithId.run({userId});
+    return this.queryDeleteById.run({userId});
   }
 
-  allUsersMap() {
+  getAllByUsername() {
     const users = {};
-    for (const user of this.queryAll.iterate()) {
+    for (const user of this.queryGetAll.iterate()) {
       users[user.username] = user.userId;
     }
     return users;
   }
 
   deleteAll() {
-    return this.deleteAllStmt.run();
+    return this.queryDeleteAll.run();
   }
 }
-
 
 module.exports = new UsersLocalIndex();
