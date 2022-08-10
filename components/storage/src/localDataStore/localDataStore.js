@@ -16,8 +16,8 @@ const storage = require('../index');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
 
-const userStreams = require('./LocalUserStreams');
-const userEvents = require('./LocalUserEvents');
+const userStreams = require('./localUserStreams');
+const userEvents = require('./localUserEvents');
 const LocalTransaction = require('./LocalTransaction');
 
 module.exports = (ds.createDataStore({
