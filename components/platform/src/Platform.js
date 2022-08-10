@@ -41,7 +41,7 @@ class Platform {
     this.#config = await getConfig();
     const isDnsLess = this.#config.get('dnsLess:isActive');
     await this.#db.init();
-    if (! isDnsLess) { 
+    if (! isDnsLess) {
       this.#serviceRegisterConn = await getServiceRegisterConn();
     }
 
@@ -52,14 +52,14 @@ class Platform {
     return await platformCheckIntegrity(this.#db);
   }
 
-  /** 
+  /**
    * during tests forward to register might be activated and deactivated
-   */ 
+   */
   #shouldForwardToRegister() {
     return this.#serviceRegisterConn != null && process.NODE_ENV != 'test' && ! this.#config.get('testsSkipForwardToRegister');
   }
 
-  // for tests only - called by repository 
+  // for tests only - called by repository
   async deleteAll() {
     this.#db.deleteAll();
   }
@@ -75,12 +75,12 @@ class Platform {
   /**
    * Use cases
    * a) When performing updateUserAndForward pre check if there are some uniqueness errors.
-   * b) When creating a user, if a uniqueness error is username has been detected, we want to 
+   * b) When creating a user, if a uniqueness error is username has been detected, we want to
    *    complete the error message with other eventual conflicts
    */
   async checkUpdateOperationUniqueness(username, operations) {
     const localUniquenessErrors = {};
-    for (const op of operations) { 
+    for (const op of operations) {
       if (op.action != 'delete' && op.isUnique) {
         const value = await this.#db.getUsersUniqueField(op.key, op.value);
         if (value != null) localUniquenessErrors[op.key] = op.value;
@@ -90,20 +90,20 @@ class Platform {
   }
 
   /**
-   * @param {*} username 
-   * @param {*} operations 
-   * @param {*} isActive 
-   * @param {*} isCreation 
-   * @param {boolean} skipFowardToRegister - for tests only 
+   * @param {*} username
+   * @param {*} operations
+   * @param {*} isActive
+   * @param {*} isCreation
+   * @param {boolean} skipFowardToRegister - for tests only
    */
   async updateUserAndForward(username, operations, skipFowardToRegister = false) {
-    // ** 1st check on local index before forwarding to register 
-    // This should be removed when platformWideDB will be implemented 
-    // This code is redundant with some check that will be performed by #updateUser after updating register 
-    
+    // ** 1st check on local index before forwarding to register
+    // This should be removed when platformWideDB will be implemented
+    // This code is redundant with some check that will be performed by #updateUser after updating register
+
     const localUniquenessErrors = await this.checkUpdateOperationUniqueness(username, operations);
     if (Object.keys(localUniquenessErrors).length > 0) {
-      throw (errors.itemAlreadyExists("user", localUniquenessErrors));
+      throw (errors.itemAlreadyExists('user', localUniquenessErrors));
     }
 
     // ** Execute request on register
@@ -115,15 +115,15 @@ class Platform {
       });
       await this.#serviceRegisterConn.updateUserInServiceRegister(username, ops2);
     }
-    // ** execute request locally 
+    // ** execute request locally
     await this.#updateUser(username, operations);
   }
 
   /**
-   * @private as long as we don't use a distributed db. 
+   * @private as long as we don't use a distributed db.
    * @see updateUserAndForward to update an user
    * Replace updateUserInServiceRegister()
-   * @param {*} key 
+   * @param {*} key
    */
   async #updateUser(username, operations) {
     // otherwise deletion
@@ -150,7 +150,7 @@ class Platform {
               // only delete eventual existing value if it is the same user
               await this.#db.deleteUserUniqueField(op.key, op.previousValue);
             }
-          
+
             const potentialCollisionUsername = await this.#db.getUsersUniqueField(op.key, op.value);
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
@@ -177,7 +177,6 @@ class Platform {
 
         default:
           throw new Error('Unknown action');
-          break;
       }
     }
   }
@@ -196,7 +195,7 @@ class Platform {
         operations.push({action: 'delete', key: field, value: user[field], isUnique: true});
       }
     }
-    
+
     // indexed fields
     for (const field of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
       operations.push({action: 'delete', key: field, isUnique: false});
@@ -219,10 +218,10 @@ class Platform {
    */
   async isUsernameReserved(username) {
     if (this.#serviceRegisterConn) {
-      const response = await serviceRegisterConn.checkUsername(username);
+      const response = await this.#serviceRegisterConn.checkUsername(username);
       if (response.reserved === true) {
         return true;
-      } 
+      }
       return false;
     }
   }

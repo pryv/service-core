@@ -126,6 +126,14 @@ trace:
 test-data command version:
     NODE_ENV=development node dist/components/test-helpers/scripts/{{command}}-test-data {{version}}
 
+# Cleanup users data and MongoDB data in `var-pryv/`
+clean-data:
+    yes | rm -rf ./var-pryv/users/*
+    killall mongod
+    sleep 2
+    yes | rm -rf ./var-pryv/mongodb-data/*
+    ./scripts/start-mongo
+
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
 # –––––––––––––----------------------------------------------------------------
@@ -145,11 +153,3 @@ license:
 # Set version on all 'package.json' (root’s and components’)
 version version:
     npm version --no-git-tag-version --workspaces --include-workspace-root {{version}}
-
-# Cleanup var-pryv data and reset mongoddb data
-clean-data:
-    yes | rm -rf ./var-pryv/users/*
-    killall mongod 
-    sleep 2
-    yes | rm -rf ./var-pryv/mongodb-data/* 
-    ./scripts/start-mongo

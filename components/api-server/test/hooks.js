@@ -4,13 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var fs = require('fs');
+const fs = require('fs');
 const { getConfig } = require('@pryv/boiler');
 const util = require('util');
 
 let usersIndex, platform;
 
-async function initIndexPlatform() {
+async function initIndexPlatform () {
   if (usersIndex != null) return;
   usersIndex = require('business/src/users/UsersLocalIndex');
   platform = require('platform').platform;

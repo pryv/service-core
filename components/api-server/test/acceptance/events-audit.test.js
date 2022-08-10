@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, it*/
+/* global describe, before, it */
 
 const { getConfig } = require('@pryv/boiler');
 const { databaseFixture } = require('test-helpers');
@@ -66,7 +66,7 @@ describe('Audit logs events', () => {
     });
     await user.session(personalToken);
 
-    server = await context.spawn({ 
+    server = await context.spawn({
       dnsLess: { isActive: true }, // so updating account streams does not notify register
       audit: {
         active: true,

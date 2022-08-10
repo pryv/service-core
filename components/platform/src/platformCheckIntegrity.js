@@ -43,7 +43,7 @@ module.exports = async function platformCheckIntegrity (platformWideDB) {
 
     for (const field of indexedFields) {
       const valueRepo = userRepo[field];
-      
+
       if (valueRepo == null) continue; // we do not expect to find null values in repo
 
       const isUnique = SystemStreamsSerializer.isUniqueAccountField(field);
@@ -61,7 +61,7 @@ module.exports = async function platformCheckIntegrity (platformWideDB) {
       }
       // all tests passed delete entry from platformEntryByUser
       delete platformEntryByUser[username][field];
-      // if user in platformEntryByUser is empty delete it 
+      // if user in platformEntryByUser is empty delete it
       if (Object.keys(platformEntryByUser[username]).length === 0) delete platformEntryByUser[username];
     }
   }
@@ -77,7 +77,7 @@ module.exports = async function platformCheckIntegrity (platformWideDB) {
     }
   }
   return {
-    title: 'plaformDb vs userReposity',
+    title: 'Platform DB vs users repository',
     infos,
     errors
   };

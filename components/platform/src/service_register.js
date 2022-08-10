@@ -27,7 +27,7 @@ type Operation = {
 
 const { getLogger, getConfig, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
-  settings: null; 
+  settings: null;
   logger: {};
 
   constructor() {
@@ -37,7 +37,7 @@ class ServiceRegister {
 
   async init() {
     if (this.settings == null) {
-      this.settings = (await getConfig()).get('services:register')
+      this.settings = (await getConfig()).get('services:register');
       this.logger.debug('created with setttings:', this.settings);
     }
     return this;
@@ -56,7 +56,7 @@ class ServiceRegister {
       await superagent
         .post(url)
         .set('Authorization', this.settings.key)
-        .send({ 
+        .send({
           username: username,
           invitationToken: invitationToken,
           uniqueFields: uniqueFields,
@@ -106,7 +106,7 @@ class ServiceRegister {
       const res = await superagent
         .post(url)
         .set('Authorization', this.settings.key)
-        .send(user);     
+        .send(user);
       return res.body;
     } catch (err) {
       this.logger.error(err, err);
@@ -121,7 +121,7 @@ class ServiceRegister {
     try {
       const res = await superagent
         .delete(url)
-        .set('Authorization', this.settings.key);     
+        .set('Authorization', this.settings.key);
       return res.body;
     } catch (err) {
       this.logger.error(err, err);
@@ -173,7 +173,7 @@ class ServiceRegister {
       username,
       user: fieldsForUpdate,
       fieldsToDelete,
-    }
+    };
 
     try {
       const res = await superagent.put(url)
@@ -216,33 +216,33 @@ async function getServiceRegisterConn() {
   return serviceRegisterConn;
 }
 
- /**
-   * Temporary solution to patch a nasty bug, where "random" emails are exposed during account creations 
-   * @param {object} foundDuplicates the duplicates to check
-   * @param {string} username 
-   * @param {object} params 
-   */
-  function safetyCleanDuplicate(foundDuplicates, username, params: {}): {} {
-    if (foundDuplicates == null) return foundDuplicates;
-    const res: {} = {};
-    const newParams: {} = Object.assign({}, params);
-    if (username != null) newParams.username = username; 
-    for (const key of Object.keys(foundDuplicates)) {
-      if (foundDuplicates[key] === newParams[key]) {
-        res[key] = foundDuplicates[key] ;
-      } else {
-        notify(key + ' "' + foundDuplicates[key] + '" <> "' + newParams[key] + '"');
-      }
-    }
-    return res;
-
-    function notify(key) {
-      const logger = getLogger('service-register'); 
-      const error = new Error('Found unmatching duplicate key: ' + key);
-      logger.error('To be investigated >> ', error);
-      notifyAirbrake(error);
+/**
+ * Temporary solution to patch a nasty bug, where "random" emails are exposed during account creations
+ * @param {object} foundDuplicates the duplicates to check
+ * @param {string} username
+ * @param {object} params
+ */
+function safetyCleanDuplicate(foundDuplicates, username, params: {}): {} {
+  if (foundDuplicates == null) return foundDuplicates;
+  const res: {} = {};
+  const newParams: {} = Object.assign({}, params);
+  if (username != null) newParams.username = username;
+  for (const key of Object.keys(foundDuplicates)) {
+    if (foundDuplicates[key] === newParams[key]) {
+      res[key] = foundDuplicates[key] ;
+    } else {
+      notify(key + ' "' + foundDuplicates[key] + '" <> "' + newParams[key] + '"');
     }
   }
+  return res;
+
+  function notify(key) {
+    const logger = getLogger('service-register');
+    const error = new Error('Found unmatching duplicate key: ' + key);
+    logger.error('To be investigated >> ', error);
+    notifyAirbrake(error);
+  }
+}
 
 module.exports = {
   getServiceRegisterConn,

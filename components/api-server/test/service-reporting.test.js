@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, beforeEach, afterEach, it */
+/* global describe, it, before, after */
 
 require('./test-helpers');
 const httpServer = require('./support/httpServer');
@@ -41,7 +41,7 @@ describe('service-reporting', () => {
   before(async function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     if ((await getConfig()).get('openSource:isActive')) this.skip();
-    
+
   });
   after(async () => {
     await mongoFixtures.clean();

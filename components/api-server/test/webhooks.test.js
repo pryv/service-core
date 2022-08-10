@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, it, before, after */
+/* global describe, it, before, after */
 
 const cuid = require('cuid');
 const bluebird = require('bluebird');
@@ -34,7 +34,7 @@ describe('webhooks', () => {
     await mongoFixtures.clean();
   });
 
-  let username, personalAccessToken, 
+  let username, personalAccessToken,
       appAccessToken1, appAccessToken2,
       appAccessId1, appAccessId2,
       sharedAccessToken,
@@ -75,7 +75,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken2,
         });
         user.access({
-          type: 'shared', token: sharedAccessToken, 
+          type: 'shared', token: sharedAccessToken,
         });
 
         user.session(personalAccessToken);
@@ -83,13 +83,13 @@ describe('webhooks', () => {
         user.webhook({}, appAccessId2);
       });
     });
-    
+
     after(async () => {
       await mongoFixtures.clean();
     });
 
     describe('when using an app token', () => {
-      
+
       let webhooks, response;
       before(async () => {
         const res = await server.request()
@@ -116,7 +116,7 @@ describe('webhooks', () => {
         });
       });
     });
-    
+
     describe('when using a personal token', () => {
 
       let webhooks, response;
@@ -137,14 +137,14 @@ describe('webhooks', () => {
 
       it('[4YFQ] should fetch all webhooks for the user', () => {
         let found1 = false;
-        let found2 = false; 
+        let found2 = false;
         webhooks.forEach(w => {
           if (w.accessId === appAccessId1) {
             found1 = true;
-          } 
+          }
           if (w.accessId === appAccessId2) {
             found2 = true;
-          } 
+          }
         });
         assert.isTrue(found1, 'did not find webhook1');
         assert.isTrue(found2, 'did not find webhook2');
@@ -270,7 +270,7 @@ describe('webhooks', () => {
           validation.checkErrorUnknown(response);
         });
       });
-    
+
     });
 
     describe('when using a personal token', () => {
@@ -288,7 +288,7 @@ describe('webhooks', () => {
           status: 200,
         });
       });
-    });    
+    });
 
     describe('when using a shared token', () => {
 
@@ -461,7 +461,7 @@ describe('webhooks', () => {
       });
     });
 
-    describe('when using a personal token', () => {     
+    describe('when using a personal token', () => {
 
       describe('when providing a valid webhook', () => {
         let response;
@@ -479,7 +479,7 @@ describe('webhooks', () => {
       });
     });
 
-    
+
 
   });
 
@@ -948,7 +948,7 @@ describe('webhooks', () => {
       describe('when the webhook exists', () => {
 
         describe('when the URL is valid', () => {
-          
+
           let response;
           before(async () => {
             response = await server.request()
@@ -986,7 +986,7 @@ describe('webhooks', () => {
             });
           });
         });
-        
+
       });
 
       describe('when the webhook does not exist', () => {

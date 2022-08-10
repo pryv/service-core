@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, beforeEach, after, afterEach, it */
+/* global describe, before, beforeEach, after, afterEach, it */
 
 require('./test-helpers');
 
@@ -36,7 +36,7 @@ describe('permissions selfRevoke', function () {
     let username,
         personalToken,
         basePathAccess;
-    
+
     beforeEach(async function () {
       username = cuid();
       personalToken = cuid();
@@ -64,7 +64,7 @@ describe('permissions selfRevoke', function () {
           setting: 'forbidden'
         }]
       });
-      
+
       assert.equal(res.status, 201);
       assert.exists(res.body.access);
 
@@ -140,7 +140,7 @@ describe('permissions selfRevoke', function () {
             level: 'contribute'
           }]
         };
-        if (! access.selfRevoke) { 
+        if (! access.selfRevoke) {
           data.permissions.push({
             feature: 'selfRevoke',
             setting: 'forbidden'
@@ -167,6 +167,6 @@ describe('permissions selfRevoke', function () {
         }
       });
     }
-    
+
   });
 });

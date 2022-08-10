@@ -62,7 +62,7 @@ module.exports = (ds.createUserEvents({
       toInsert.userId = userId;
       toInsert._id = event.id;
       delete toInsert.id;
-      const res =  await this.eventsCollection.insertOne(toInsert, options);
+      await this.eventsCollection.insertOne(toInsert, options);
       return event;
     } catch (err) {
       handleDuplicateError(err);
@@ -101,7 +101,7 @@ module.exports = (ds.createUserEvents({
       const options = {transactionSession: transaction?.transactionSession };
 
       const res = await this.eventsCollection.replaceOne(query, update, options);
-      const res2 = await this.eventsCollection.findOne({userId: userId, _id: update._id});
+      await this.eventsCollection.findOne({userId: userId, _id: update._id});
       return (res.modifiedCount === 1); // true if an event was updated
     } catch (err) {
       throw errors.unexpectedError(err);
@@ -166,26 +166,26 @@ function cleanResult(result) {
 const converters = {
   equal: (content) => {
     const realfield = (content.field === 'id') ? '_id' : content.field;
-    return {[realfield]: {$eq : content.value}}
+    return {[realfield]: {$eq : content.value}};
   },
   greater: (content) => {
-    return {[content.field]: {$gt :content.value}}
+    return {[content.field]: {$gt :content.value}};
   },
   greaterOrEqual: (content) => {
-    return {[content.field]: {$gte :content.value}}
+    return {[content.field]: {$gte :content.value}};
   },
   lowerOrEqual: (content) => {
-    return {[content.field]: {$lte :content.value}}
+    return {[content.field]: {$lte :content.value}};
   },
   greaterOrEqualOrNull: (content) => {
     return { $or: [{ [content.field]: { $gte: content.value } }, { [content.field]: null }] }
   },
   typesList: (list) => {
     if (list.length == 0) return null;
-    return {type: {$in: list.map(getTypeQueryValue)}}
+    return {type: {$in: list.map(getTypeQueryValue)}};
   },
   streamsQuery: (content) => {
-    return streamsQueryUtils.toMongoDBQuery(content)
+    return streamsQueryUtils.toMongoDBQuery(content);
   }
 };
 

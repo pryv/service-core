@@ -8,14 +8,11 @@
  * Contains UserName >> UserId Mapping
  */
 
-const cuid = require('cuid');
-const bluebird = require('bluebird');
 const mkdirp = require('mkdirp');
 const sqlite3 = require('better-sqlite3');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const cache = require('cache');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const userLocalIndexCheckIntegrity = require('./userLocalIndexCheckIntegrity');
 
@@ -30,14 +27,11 @@ class UsersLocalIndex {
   }
 
   async init() {
-    if (this.initialized) { return };
+    if (this.initialized) { return; }
     this.initialized = true;
 
     this.db = new DBIndex();
     await this.db.init();
-
-    const storage = require('storage');
-    const storageLayer = await storage.getStorageLayer();
 
     logger.debug('init');
   }
@@ -63,7 +57,7 @@ class UsersLocalIndex {
       userId = this.db.getIdForName(username);
       if (userId != null) {
         cache.setUserId(username, userId);
-      } 
+      }
     }
     logger.debug('idForName', username, userId);
     return userId;
@@ -80,7 +74,7 @@ class UsersLocalIndex {
     return this.db.allUsersMap();
   }
 
-  // reset everything -- used by tests only 
+  // reset everything -- used by tests only
   async deleteAll() {
     logger.debug('deleteAll');
     cache.clear();
@@ -109,10 +103,9 @@ class DBIndex {
     const basePath = config.get('userFiles:path');
     mkdirp.sync(basePath);
 
-    const DB_OPTIONS = {};
     this.db = new sqlite3(basePath + '/user-index.db');
     this.db.pragma('journal_mode = WAL');
-    
+
     this.db.prepare('CREATE TABLE IF NOT EXISTS id4name (username TEXT PRIMARY KEY, userId TEXT NOT NULL);').run();
     this.db.prepare('CREATE INDEX IF NOT EXISTS id4name_id ON id4name(userId);').run();
 

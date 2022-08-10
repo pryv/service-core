@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, it, before, after */
+/* global describe, it, before, after */
 
 const cuid = require('cuid');
 const chai = require('chai');
@@ -171,7 +171,7 @@ describe('permissions create-only level', () => {
       describe('GET /', function () {
 
         describe('when using an access with a "create-only" permissions', function () {
-  
+
           let accesses;
           before(async function () {
             const res = await server.request()
@@ -189,7 +189,7 @@ describe('permissions create-only level', () => {
       describe('POST /', function () {
 
         describe('when using an access with a "create-only" permission', function () {
-  
+
           it('[X4Z1] should allow to create an access with a "create-only" permissions', async function () {
             const res = await server.request()
               .post(basePath)
@@ -279,7 +279,7 @@ describe('permissions create-only level', () => {
           assert.equal(res.status, 410);
         });
       });
-  
+
       describe('DELETE /', function () {
         it('[G6IP] should forbid deleting accesses', async function () {
           const res = await server.request()
@@ -323,10 +323,10 @@ describe('permissions create-only level', () => {
           .get(basePath)
           .set('Authorization', coWithReadParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 1); 
+        assert.equal(events.length, 1);
         for (const event of events) {
           assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
-        }     
+        }
       });
 
       it('[SYRW] should not return events when fetching "create-only" streams that are children of "contribute" streams', async function() {
@@ -335,10 +335,10 @@ describe('permissions create-only level', () => {
           .get(basePath)
           .set('Authorization', coWithContributeParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 1); 
+        assert.equal(events.length, 1);
         for (let event of events) {
           assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
-        }  
+        }
       });
     });
 
@@ -381,7 +381,7 @@ describe('permissions create-only level', () => {
       });
     });
 
-    
+
 
     describe('PUT /', function () {
       it('[V0UO] should forbid updating events for "create-only" streams', async function () {
@@ -398,7 +398,7 @@ describe('permissions create-only level', () => {
       // skipping cases "... streams that are children of "read" streams" & "... streams that are children of "contribute" streams"
       // because they are covered by the GET above
     });
-    
+
     describe('DELETE /', function () {
       it('[5OUT] should forbid deleting events for "create-only" streams', async function () {
         const res = await server
@@ -429,7 +429,7 @@ describe('permissions create-only level', () => {
         eventId = res.body.event.id;
         fileId = res.body.event.fileId;
       });
-      
+
       // cleaning up explicitly as we are not using fixtures
       after(async function () {
         await server.request()
@@ -472,7 +472,7 @@ describe('permissions create-only level', () => {
         });
       });
     });
-    
+
   });
 
   describe('Streams', function() {

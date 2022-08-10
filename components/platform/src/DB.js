@@ -22,7 +22,6 @@ class DB {
     const basePath = config.get('userFiles:path');
     mkdirp.sync(basePath);
 
-    const DB_OPTIONS = {};
     this.db = new sqlite3(basePath + '/platform-wide.db');
     this.db.pragma('journal_mode = WAL');
 
@@ -55,10 +54,10 @@ class DB {
   }
 
   /**
-   * 
+   *
    * @param {string} key
-   * @param {string} value 
-   * @returns 
+   * @param {string} value
+   * @returns
    */
   set(key, value) {
     logger.debug('set', key, value);
@@ -114,8 +113,8 @@ class DB {
 
 /**
  * Return an object from an entry in the table
- * @param {Entry} entry 
- * @param {string} entry.key 
+ * @param {Entry} entry
+ * @param {string} entry.key
  * @param {string} entry.value
  */
 function parseEntry(entry) {
@@ -126,7 +125,7 @@ function parseEntry(entry) {
     field: field,
     username: isUnique ? entry.value : userNameOrValue,
     value: isUnique ? userNameOrValue : entry.value
-  }
+  };
 }
 
 function getUserUniqueKey(field, value) {
