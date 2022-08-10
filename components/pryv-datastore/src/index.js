@@ -8,7 +8,7 @@
 const DataStore = require('./DataStore');
 const UserStreams = require('./UserStreams');
 const UserEvents = require('./UserEvents');
-const defaults = require('./Defaults');
+const defaults = require('./defaults');
 const errors = require('./errors');
 
 /**
