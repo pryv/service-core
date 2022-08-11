@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -8,7 +8,7 @@
 /* global assert, cuid, audit, config, initTests, sinon*/
 
 describe('Audit Storage concurent Writes', () => {
-  let userid = cuid();
+  let userId = cuid();
   let createdBy = cuid();
   let userStorage;
 
@@ -27,17 +27,17 @@ describe('Audit Storage concurent Writes', () => {
           message: 'hello',
         }
       }, event);
-    await audit.eventForUser(userid, e);
+    await audit.eventForUser(userId, e);
     return e;
   }
 
   before(async () => {
-    userStorage = await audit.storage.forUser(userid);
+    userStorage = await audit.storage.forUser(userId);
   });
-    
+
   it('[69AH] should retry when SQLITE_BUSY', async () => {
     let callCount = 0;
-    // function that throws at first call only 
+    // function that throws at first call only
     function statement() {
       callCount++;
       if (callCount > 20) return true;
@@ -50,7 +50,7 @@ describe('Audit Storage concurent Writes', () => {
 
   it('[9H7P] should fail when max retries is reached when SQLITE_BUSY', async () => {
     let callCount = 0;
-    // function that throws at first call only 
+    // function that throws at first call only
     function statement() {
       callCount++;
       if (callCount > 20) return true;
@@ -62,7 +62,7 @@ describe('Audit Storage concurent Writes', () => {
     } catch (err) {
       assert.equal(err.message, 'Failed write action on Audit after 5 rertries');
     }
-    
+
   });
-  
+
 });

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -50,7 +50,6 @@ Versions.prototype.getCurrent = function (callback) {
 Versions.prototype.migrateIfNeeded = function (callback) {
   this.getCurrent(function (err, v) {
     if (err) { return callback(err); }
-
     var currentVNum = v ? v._id : '0.0.0';
     var migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {
       return vNum > currentVNum;

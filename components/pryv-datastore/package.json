@@ -1,0 +1,10 @@
+{
+  "name": "pryv-datastore",
+  "version": "1.7.12",
+  "private": true,
+  "description": "Library and tools for accessing external data stores within Pryv.io",
+  "homepage": "https://pryv.com",
+  "license": "UNLICENSED",
+  "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
+  "main": "src/index.js"
+}

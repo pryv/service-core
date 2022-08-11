@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -120,6 +120,25 @@ module.exports = [
     lastUsed: timestamp.now('-3y1d'),
     calls: {},
     deleted: timestamp.now('-3y1d')
+  },
+  {
+    id: 'a_6',
+    token: 'a_6_token',
+    apiEndpoint: 'https://a_6_token@userzero.pryv.me/',
+    name: 'stream 2.1: manage',
+    type: 'shared',
+    permissions: [
+      {
+        streamId: streams[2].children[1].id,
+        level: 'manage'
+      }
+    ],
+    created: timestamp.now(),
+    createdBy: 'test',
+    modified: timestamp.now(),
+    modifiedBy: 'test',
+    lastUsed: 0,
+    calls: {}
   },
   /*{ // used to generate dump 1.7.1 - to remove when finished
     id: 'a_6',

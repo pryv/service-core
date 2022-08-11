@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -251,12 +251,23 @@ describe('[ACCP] Access permissions', function () {
       });
     });
 
-    it('[O1AZ] must allow creating child streams in \'managed\' streams', function (done) {
+    it('[21AZ] must not allow creating child streams in trashed \'managed\' streams', function (done) {
       var data = {
         name: 'Dzogchen',
         parentId: testData.streams[2].children[0].id
       };
       request.post(basePath, token(1)).send(data).end(function (res) {
+        res.statusCode.should.eql(400);
+        done();
+      });
+    });
+
+    it('[O1AZ] must allow creating child streams in \'managed\' streams', function (done) {
+      var data = {
+        name: 'Dzogchen',
+        parentId: testData.streams[2].children[1].id
+      };
+      request.post(basePath, token(6)).send(data).end(function (res) {
         res.statusCode.should.eql(201);
         done();
       });

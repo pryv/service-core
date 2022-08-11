@@ -1,19 +1,18 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 var async = require('async'),
     axon = require('axon'),
-    deepEqual = require('deep-equal'),
     EventEmitter = require('events').EventEmitter,
     fs = require('fs'),
     spawn = require('child_process').spawn,
     temp = require('temp'),
     util = require('util');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger } = require('@pryv/boiler');
 
 module.exports = InstanceManager;
 
@@ -70,16 +69,16 @@ function InstanceManager(settings) {
     if (typeof settings.logs === 'undefined') settings.logs = {};
     if (typeof settings.logs.console === 'undefined') settings.logs.console = {};
 
-    
+
     if (process.env.LOGS) {
-      settings.logs.console.active = true; 
+      settings.logs.console.active = true;
       settings.logs.console.level = process.env.LOGS;
     } else {
-      settings.logs.console.active = false; 
+      settings.logs.console.active = false;
     }
 
     logger.debug('ensure started', settings.http);
-    if (deepEqual(settings, serverSettings)) {
+    if (util.isDeepStrictEqual(settings, serverSettings)) {
       if (isRunning()) {
         // nothing to do
         return callback();

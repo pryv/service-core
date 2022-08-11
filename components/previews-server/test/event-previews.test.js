@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -22,6 +22,8 @@ const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const superagent = require('superagent');
+const { getMall } = require('mall');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('event previews', function () {
 
@@ -29,6 +31,12 @@ describe('event previews', function () {
   const token = testData.accesses[2].token;
   const basePath = '/' + user.username + '/events';
   let request = null;
+  let mall = null;
+
+  before(async function() { 
+    await SystemStreamsSerializer.init();
+    mall = await getMall();
+  });
 
   function path(id) {
     return basePath + '/' + id;
@@ -164,11 +172,15 @@ describe('event previews', function () {
     });
 
     it('[2MME] must regenerate the cached file if obsolete', function (done) {
-      const event = testData.events[2];
+      const eventId = testData.events[2].id;
+      let event;
       let cachedPath, cachedFileModified, updatedEvent;
       async.series([
+        async function retrieveEvent() {
+          event = await mall.events.getOne(user.id, eventId);
+        },
         async function retrieveInitialPreview() {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
+          const res = await bluebird.fromCallback(cb => request.get(path(eventId), token).end((res) => {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
@@ -176,16 +188,13 @@ describe('event previews', function () {
           const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           cachedFileModified = modified.toString();
         },
-        function updateEvent(stepDone) {
-          const update = {
+        async function updateEvent() {
+          Object.assign(event, {
             description: 'Updated',
             modified: timestamp.now(),
             modifiedBy: testData.accesses[2].id
-          };
-          storage.user.events.updateOne(user, {id: event.id}, update, function (err, updatedEvt) {
-            updatedEvent = updatedEvt;
-            stepDone();
           });
+          updatedEvent = await mall.events.update(user.id, event);
         },
         async function retrieveAgain() {
           const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
@@ -235,10 +244,10 @@ describe('event previews', function () {
       let createdEvent;
       async.series([
         function addCorruptEvent(stepDone) {
-          storage.user.events.insertOne(user, data, function (err, event) {
+          mall.events.create(user.id, data).then((event) => {
             createdEvent = event;
             stepDone();
-          });
+          }, stepDone);
         },
         function getPreview(stepDone) {
           request.get(path(createdEvent.id), token).end(function (res) {

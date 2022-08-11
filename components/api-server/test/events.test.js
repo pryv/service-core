@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -30,6 +30,7 @@ const assert = chai.assert;
 const supertest = require('supertest');
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { integrity } = require('business');
+const { getMall } = require('mall');
 
 require('date-utils');
 
@@ -42,6 +43,12 @@ describe('events', function () {
       request = null,
       access = null,
       filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
+  
+  let mall;
+
+  before(async function() {
+    mall = await getMall();
+  });
 
   function path(id, base) {
     return (base || basePath) + '/' + id;
@@ -94,7 +101,9 @@ describe('events', function () {
         let allEvents;
         let accountStreamsEvents;
         async.series([
-          storage.insertMany.bind(storage, user, additionalEvents),
+          async function createEvents() { 
+            return mall.events.createMany(user.id,  additionalEvents)
+          },
           function getDefault (stepDone) {
             request.get(basePath).end(function (res) {
               response = res;
@@ -707,11 +716,9 @@ describe('events', function () {
       let created;
 
       async.series([
-        function countInitialEvents(stepDone) {
-          storage.countAll(user, function (err, count) {
-            originalCount = count;
-            stepDone();
-          });
+        async function countInitialEvents() {
+          const events = await mall.events.get(user.id, {});
+          originalCount = events.length;
         },
         function addNewEvent(stepDone) {
           request.post(basePath).send(data).end(function (res) {
@@ -738,27 +745,25 @@ describe('events', function () {
             stepDone();
           });
         },
-        function verifyEventData(stepDone) {
-          storage.find(user, {}, null, function (err, events) {
-            events.length.should.eql(originalCount + 1, 'events');
+        async function verifyEventData() {
+          const events = await mall.events.get(user.id, {});
+          
+          events.length.should.eql(originalCount + 1, 'events');
 
-            var expected = _.clone(data);
-            
-            expected.streamId = expected.streamIds[0];
-            expected.id = createdEventId;
-            expected.streamIds = expected.streamIds.concat(['patapoumpoum'].map(t => TAG_PREFIX + t));
-            delete expected.tags; // tags are not stored anymore
-            expected.created = expected.modified = created;
-            expected.createdBy = expected.modifiedBy = access.id;
-            var actual = _.find(events, function (event) {
-              return event.id === createdEventId;
-            });
-            actual.streamId = actual.streamIds[0]; 
-            validation.checkStoredItem(actual, 'event');
-            validation.checkObjectEquality(actual, expected);
-
-            stepDone();
+          var expected = _.clone(data);
+          
+          expected.streamId = expected.streamIds[0];
+          expected.id = createdEventId;
+          expected.streamIds = expected.streamIds.concat(['patapoumpoum'].map(t => TAG_PREFIX + t));
+          delete expected.tags; // tags are not stored anymore
+          expected.created = expected.modified = created;
+          expected.createdBy = expected.modifiedBy = access.id;
+          var actual = _.find(events, function (event) {
+            return event.id === createdEventId;
           });
+          actual.streamId = actual.streamIds[0]; 
+          validation.checkStoredItem(actual, 'event');
+          validation.checkObjectEquality(actual, expected);
         }
       ], done);
     });
@@ -899,15 +904,13 @@ describe('events', function () {
             }, stepDone);
           });
         },
-        function verifyData(stepDone) {
-          storage.findOne(user, {id: testData.events[11].id}, null, function (err, event) {
-            // HERE
-            // as event comes from storage we will not find "tags"
-            const expected = _.cloneDeep(testData.events[11]);
-            delete expected.tags;
-            event.should.eql(expected);
-            stepDone();
-          });
+        async function verifyData() {
+          const event = await mall.events.getOne(user.id, testData.events[11].id);
+          // HERE
+          // as event comes from storage we will not find "tags"
+          const expected = _.cloneDeep(testData.events[11]);
+          delete expected.tags;
+          event.should.eql(expected);
         }
       ], done);
     });
@@ -1384,12 +1387,9 @@ describe('events', function () {
             stepDone();
           });
         },
-        function verifyStoredItem(stepDone) {
-          storage.database.findOne(storage.getCollectionInfo(user), {_id: original.id}, {},
-              function (err, dbEvent) {
-            dbEvent.endTime.should.eql(data.time + data.duration);
-            stepDone();
-          });
+        async function verifyStoredItem() {
+          const dbEvent = await mall.events.getOne(user.id, original.id);
+          dbEvent.duration.should.eql(data.duration);
         }
       ], done);
     });
@@ -1417,13 +1417,14 @@ describe('events', function () {
         });
 
         should(res.body.event.modified).be.approximately(time, 2);
-        var expected = _.clone(original);
+        var expected = _.cloneDeep(original);
         delete expected.modified; 
         expected.modifiedBy = access.id;
         expected.streamId = expected.streamIds[0];
         expected.modified = res.body.event.modified;
         expected.created = res.body.event.created;
-        _.extend(expected.clientData, data.clientData);
+        expected.clientData = _.extend(expected.clientData, data.clientData);
+       
         delete expected.clientData.numberProp;
         integrity.events.set(expected);
         validation.checkObjectEquality(res.body.event, expected);
@@ -1738,9 +1739,16 @@ describe('events', function () {
     it('[73CD] must delete the event when already trashed including all its attachments', function (done) {
       var id = testData.events[0].id,
           deletionTime;
+      let event;
 
       async.series([
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
+          async function getEvent() {
+            event = await mall.events.getOne(user.id, id);
+          },
+          async function trashEvent() {
+            event.trashed = true;
+            await mall.events.update(user.id, event);
+          },
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {
 
@@ -1753,28 +1761,19 @@ describe('events', function () {
               stepDone();
             });
           },
-          function verifyEventData(stepDone) {
-            storage.findAll(user, null, async function (err, events) {
-              const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
-              events = separatedEvents.events;
-              const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-              validation.validateAccountEvents(actualAccountStreamsEvents);
+          async function verifyEventData() {
+            let events = await mall.events.get(user.id, {state: 'all', deletedSince: 0});
 
-              events.length.should.eql(testData.events.length, 'events');
-
-              var deletion = _.find(events, function (event) {
-                return event.id === id;
-              });
-              should.exist(deletion);
-              const expected = { id: id, deleted: deletion.deleted };
-              integrity.events.set(expected);
-              validation.checkObjectEquality(deletion, expected);
-
-              var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
-              fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
-
-              stepDone();
+            var deletion = _.find(events, function (event) {
+              return event.id === id;
             });
+            should.exist(deletion);
+            const expected = { id: id, deleted: deletion.deleted };
+            integrity.events.set(expected);
+            validation.checkObjectEquality(deletion, expected);
+
+            var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
+            fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
           }
         ],
         done

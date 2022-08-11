@@ -1,12 +1,12 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 /*global describe, before, beforeEach, it */
 
-require('./test-helpers'); 
+require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -14,21 +14,23 @@ const commonTests = helpers.commonTests;
 const fs = require('fs');
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
-const eventsStorage = helpers.dependencies.storage.user.events;
 const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/streamsMethods');
 const should = require('should'); // explicit require to benefit from static function
-const storage = helpers.dependencies.storage.user.streams;
+
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const treeUtils = require('utils').treeUtils;
 const _ = require('lodash');
 const charlatan = require('charlatan');
+const bluebird = require('bluebird');
+
+const { getMall } = require('mall');
 
 const chai = require('chai');
-const assert = chai.assert; 
+const assert = chai.assert;
 
-describe('streams', function () {
+describe('[STRE] streams', function () {
 
   var user = Object.assign({}, testData.users[0]),
       initialRootStreamId = testData.streams[0].id,
@@ -37,6 +39,9 @@ describe('streams', function () {
       request = null,
       accessId = null;
 
+  let mall;
+
+  before(async () => { mall = await getMall()});
   function path(id) {
     return basePath + '/' + id;
   }
@@ -78,7 +83,7 @@ describe('streams', function () {
           false, function (s) { return !s.trashed; });
         await validation.addStoreStreams(expected);
         res.body.streams = validation.removeAccountStreams(res.body.streams);
-   
+
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
@@ -112,7 +117,7 @@ describe('streams', function () {
         done();
       });
     });
-    
+
     it('[T8AM] must include stream deletions even when the given time is 0', function (done) {
       var params = {includeDeletionsSince: 0};
       request.get(basePath).query(params).end(function (res) {
@@ -183,11 +188,9 @@ describe('streams', function () {
           time;
 
       async.series([
-        function countInitialRootStreams(stepDone) {
-          storage.count(user, {parentId: {$type: 10}}, function (err, count) {
-            originalCount = count;
-            stepDone();
-          });
+        async function countInitialRootStreams() {
+          const streams = await mall.streams.get(user.id, {storeId: 'local', hideRootStreams: true});
+          originalCount = streams.length;
         },
         function addNewStream(stepDone) {
           request.post(basePath).send(data).end(function (res) {
@@ -201,29 +204,24 @@ describe('streams', function () {
             stepDone();
           });
         },
-        function verifyStreamData(stepDone) {
-          storage.find(user, {}, null, function (err, streams) {
-            streams.length.should.eql(originalCount + 1, 'streams');
+        async function verifyStreamData() {
+          const streams = await mall.streams.get(user.id, {storeId: 'local', hideRootStreams: true});
+          streams.length.should.eql(originalCount + 1, 'streams');
 
-            var expected = _.clone(data);
-            expected.id = createdStream.id;
-            expected.parentId = null;
-            expected.created = expected.modified = time;
-            expected.createdBy = expected.modifiedBy = accessId;
-            expected.children = [];
-            var actual = _.find(streams, function (stream) {
-              return stream.id === createdStream.id;
-            });
-            validation.checkObjectEquality(actual, expected);
-
-            stepDone();
+          var expected = _.clone(data);
+          expected.id = createdStream.id;
+          expected.parentId = null;
+          expected.created = expected.modified = time;
+          expected.createdBy = expected.modifiedBy = accessId;
+          expected.children = [];
+          var actual = _.find(streams, function (stream) {
+            return stream.id === createdStream.id;
           });
+          validation.checkObjectEquality(actual, expected);
         },
-        function verifyStoredItem(stepDone) {
-          storage.findOne(user, {id: createdStream.id}, null, function (err, stream) {
-            validation.checkStoredItem(stream, 'stream');
-            stepDone();
-          });
+        async function verifyStoredItem() {
+          const stream = await mall.streams.getOne(user.id, createdStream.id);
+          validation.checkStoredItem(stream, 'stream');
         }
       ], done);
     });
@@ -260,7 +258,7 @@ describe('streams', function () {
         done();
       });
     });
-    
+
     it('[8WGG] must accept explicit null for optional fields', function (done) {
       const data = {
         id: 'nullable',
@@ -277,7 +275,7 @@ describe('streams', function () {
         }, done);
       });
     });
-    
+
     it('[NR4D] must fail if a sibling stream with the same name already exists', function (done) {
       var data = {name: testData.streams[0].name};
       request.post(basePath).send(data).end(function (res) {
@@ -306,13 +304,9 @@ describe('streams', function () {
         let originalCount;
 
         async.series([
-          function _countInitialChildStreams(stepDone) {
-            storage.count(user, {parentId: initialRootStreamId}, function (err, count) {
-              if (err != null) return stepDone(err);
-
-              originalCount = count;
-              stepDone();
-            });
+          async function _countInitialChildStreams() {
+            const streams = await mall.streams.get(user.id, {id: initialRootStreamId, storeId: 'local', expandChildren: -1});
+            originalCount = streams[0].children.length;
           },
           function _addNewStream(stepDone) {
             var data = {
@@ -331,18 +325,10 @@ describe('streams', function () {
               stepDone();
             });
           },
-          function _recountChildStreams(stepDone) {
-            storage.count(user, {parentId: initialRootStreamId}, function (err, count) {
-              if (err != null) return stepDone(err);
-
-              try {
-                assert.strictEqual(count, originalCount + 1,
-                  'Created a child stream.');
-              }
-              catch (err) { return stepDone(err); }
-
-              stepDone();
-            });
+          async function _recountChildStreams() {
+            const streams = await mall.streams.get(user.id, {id: initialRootStreamId, storeId: 'local', expandChildren: -1});
+            const count = streams[0].children.length;
+            assert.strictEqual(count, originalCount + 1, 'Created a child stream.');
           }
         ],
         done);
@@ -469,7 +455,7 @@ describe('streams', function () {
         done();
       });
     });
-    
+
     it('[5KNJ] must accept explicit null for optional fields', function (done) {
       const data = {
         parentId: null,
@@ -557,23 +543,20 @@ describe('streams', function () {
                 stepDone();
               });
         },
-        function verifyStreamsData(stepDone) {
-          storage.find(user, {}, null, function (err, streams) {
+        async function verifyStreamsData() {
+          const streams = await mall.streams.get(user.id, {storeId: 'local', hideRootStreams: true});
 
-            var updated = _.clone(original);
-            updated.parentId = newParent.id;
-            delete updated.modified;
-            delete updated.modifiedBy;
-            var expected = _.clone(newParent);
-            expected.children = _.clone(newParent.children);
-            expected.children.unshift(updated);
-            var actual = _.find(streams, function (stream) {
-              return stream.id === newParent.id;
-            });
-            validation.checkObjectEquality(actual, expected);
-
-            stepDone();
+          var updated = _.clone(original);
+          updated.parentId = newParent.id;
+          delete updated.modified;
+          delete updated.modifiedBy;
+          var expected = _.clone(newParent);
+          expected.children = _.clone(newParent.children);
+          expected.children.unshift(updated);
+          var actual = _.find(streams, function (stream) {
+            return stream.id === newParent.id;
           });
+          validation.checkObjectEquality(actual, expected);
         }
       ], done);
     });
@@ -601,14 +584,14 @@ describe('streams', function () {
         }, done);
       });
     });
-    
+
     describe('forbidden updates of protected fields', function () {
       const streamId = 'forbidden_stream_update_test';
       const stream = {
         id: streamId,
         name: streamId
       };
-      
+
       beforeEach(function (done) {
         request.post(basePath).send(stream).end(function (res) {
           validation.check(res, {
@@ -617,7 +600,7 @@ describe('streams', function () {
           }, done);
         });
       });
-      
+
       it('[PN1H] must fail and throw a forbidden error in strict mode', function (done) {
         const forbiddenUpdate = {
           id: 'forbidden',
@@ -627,7 +610,7 @@ describe('streams', function () {
           modified: 1,
           modifiedBy: 'alice'
         };
-        
+
         async.series([
           function instanciateServerWithStrictMode(stepDone) {
             setIgnoreProtectedFieldUpdates(false, stepDone);
@@ -642,7 +625,7 @@ describe('streams', function () {
           }
         ], done);
       });
-      
+
       it('[A3WC] must succeed by ignoring protected fields and log a warning in non-strict mode', function (done) {
         const forbiddenUpdate = {
           id: 'forbidden',
@@ -652,7 +635,7 @@ describe('streams', function () {
           modified: 1,
           modifiedBy: 'alice'
         };
-                
+
         async.series([
           function instanciateServerWithNonStrictMode(stepDone) {
             setIgnoreProtectedFieldUpdates(true, stepDone);
@@ -674,13 +657,13 @@ describe('streams', function () {
           }
         ], done);
       });
-      
+
       function setIgnoreProtectedFieldUpdates(activated, stepDone) {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.updates.ignoreProtectedFields = activated;
         server.ensureStarted.call(server, settings, stepDone);
       }
-      
+
     });
 
   });
@@ -721,7 +704,10 @@ describe('streams', function () {
           expectedChildDeletion;
 
       async.series([
-        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+        async function trashStream() {
+          await mall.streams.update(user.id, { id: id, trashed: true });
+        },
+        function deleteStream(stepDone) {
           request.del(path(id)).end(function (res) {
             expectedDeletion = {
               id: id,
@@ -740,31 +726,35 @@ describe('streams', function () {
             stepDone();
           });
         },
-        function verifyStreamData(stepDone) {
-          storage.findAll(user, null, function (err, streams) {
-            treeUtils.findById(streams, parent.id).children.length
-              .should.eql(testData.streams[2].children.length - 1, 'child streams');
+        async function verifyStreamData() {
+          // parent
+          const parentStream = await mall.streams.get(user.id, {id: parent.id, storeId: 'local', expandChildren: -1, includeTrashed: true});
+          const parentChildren = parentStream[0].children;
+          parentChildren.length.should.eql(testData.streams[2].children.length - 1, 'child streams');
 
-            var deletion = treeUtils.findById(streams, id);
-            should.exist(deletion);
-            validation.checkObjectEquality(deletion, expectedDeletion);
+          // deleted stream
+          const deletedStreams = await mall.streams.getDeletions(user.id, 0, ['local']);
+          const foundDeletedStream = deletedStreams.filter(s => s.id == id)[0];
+          should.exists(foundDeletedStream, 'cannot find deleted stream');
+          validation.checkObjectEquality(foundDeletedStream, expectedDeletion);
 
-            var childDeletion = treeUtils.findById(streams, childId);
-            should.exist(childDeletion);
-            validation.checkObjectEquality(childDeletion, expectedChildDeletion);
-
-            stepDone();
-          });
+          // child stream
+          const foundDeletedChild = deletedStreams.filter(s => s.id == childId)[0];
+          should.exists(foundDeletedChild, 'cannot find deleted child stream');
+          validation.checkObjectEquality(foundDeletedChild, expectedChildDeletion);
         }
       ],
-      done );
+      done);
     });
 
     it('[LVTR] must return a correct error if there are linked events and the related parameter is ' +
         'missing', function (done) {
       var id = testData.streams[0].id;
       async.series([
-        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+        async function trashStream() {
+          await mall.streams.update(user.id, {id: id, trashed: true});
+        },
+        function deleteStream(stepDone) {
           request.del(path(testData.streams[0].id)).end(function (res) {
             validation.checkError(res, {
               status: 400,
@@ -775,11 +765,13 @@ describe('streams', function () {
       ],
       done );
     });
-    
+
     it('[RKEU] must reject the deletion of a root stream with mergeEventsWithParent=true', function (done) {
       var id = testData.streams[0].id;
       async.series([
-        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+        async function trashStream() {
+          await mall.streams.update(user.id, {id: id, trashed: true});
+        }, function deleteStream(stepDone) {
           request.del(path(testData.streams[0].id)).query({mergeEventsWithParent: true})
             .end(function (res) {
               validation.checkError(res, {
@@ -823,17 +815,14 @@ describe('streams', function () {
           eventsNotifCount.should.eql(1, 'events notifications');
           stepDone();
         },
-        function verifyLinkedEvents(stepDone) {
-          eventsStorage.find(user, {streamIds: parentStream.id}, null, function (err, linkedEvents) {
-            _.map(linkedEvents, 'id').should.eql([
-              testData.events[4].id,
-              testData.events[3].id,
-              testData.events[2].id,
-              testData.events[1].id
-            ]);
-
-            stepDone();
-          });
+        async function verifyLinkedEvents() {
+          const linkedEvents = await mall.events.get(user.id, {streams: [{any: [parentStream.id]}]});
+          _.map(linkedEvents, 'id').should.eql([
+            testData.events[4].id,
+            testData.events[3].id,
+            testData.events[2].id,
+            testData.events[1].id
+          ]);
         }
       ],
       done );
@@ -841,13 +830,13 @@ describe('streams', function () {
 
     it('[KLD8] must delete the linked events when mergeEventsWithParent is false', function (done) {
       const id = testData.streams[8].id;
-      const deletedEvents = testData.events.filter(function (e) { 
+      const deletedEvents = testData.events.filter(function (e) {
         if (e.streamIds == null) return false;
-        return e.streamIds[0] === id; 
+        return e.streamIds[0] === id;
       });
       const deletedEventWithAtt = deletedEvents[0];
       let deletionTime;
-      
+
       async.series([
         function addEventAttachment(stepDone) {
           request.post('/' + user.username + '/events/' + deletedEventWithAtt.id)
@@ -859,7 +848,9 @@ describe('streams', function () {
               stepDone();
             });
         },
-        (step) => storage.updateOne(user, {id: id}, {trashed: true}, step),
+        async function trashStream() {
+          await mall.streams.update(user.id, {id: id, trashed: true});
+        },
         function deleteStream(stepDone) {
           request.del(path(id))
             .query({mergeEventsWithParent: false})
@@ -876,8 +867,8 @@ describe('streams', function () {
               stepDone();
             });
         },
-        function verifyLinkedEvents(stepDone) {
-          eventsStorage.findAll(user, null, async function (err, events) {
+        async function verifyLinkedEvents() {
+          let events = await mall.events.get(user.id, {includeDeletions: true, state: 'all', includeHistory: true});
 
             // lets separate system events from all other events and validate them separately
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
@@ -891,39 +882,40 @@ describe('streams', function () {
             deletedEvents.forEach(function (e) {
               const actual = _.find(events, {id: e.id});
               assert.approximately(
-                actual.deleted, deletionTime, 2, 
+                actual.deleted, deletionTime, 2,
                 'Deletion time must be correct.');
               assert.equal(actual.id, e.id);
             });
 
             var dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
 
-            // some time after returning to the client. Let's hang around and try 
-            // this several times. 
-            assertEventuallyTrue(
-              () => ! fs.existsSync(dirPath), 
-              5, // second(s) 
-              'Event directory must be deleted' + dirPath, 
-              stepDone
-            );
-          });
+            // some time after returning to the client. Let's hang around and try
+            // this several times.
+            await bluebird.fromCallback(cb => {
+              assertEventuallyTrue(
+                () => ! fs.existsSync(dirPath),
+                5, // second(s)
+                'Event directory must be deleted' + dirPath,
+                cb
+              );
+            });
         }
       ], done);
-      
+
       function assertEventuallyTrue(property, maxWaitSeconds, msg, cb) {
         const deadline = new Date().getTime() + maxWaitSeconds;
         const checker = () => {
           if (new Date().getTime() > deadline) {
             return cb(new chai.AssertionError('Timeout: '+msg));
           }
-          
-          const result = property(); 
+
+          const result = property();
           if (result) return cb();
 
           // assert: result is false, try again in a bit.
           setImmediate(checker);
         };
-        
+
         // Launch first check
         setImmediate(checker);
       }

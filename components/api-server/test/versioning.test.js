@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -23,9 +23,15 @@ const charlatan = require('charlatan');
 const SystemStreamSerializer = require('business/src/system-streams/serializer');
 const { integrity } = require('business');
 const assert = require('chai').assert;
+const { getMall } = require('mall');
+
 require('date-utils');
 
 describe('Versioning', function () {
+  let mall = null;
+  before(async () => {
+    mall = await getMall();
+  });
 
   const user = Object.assign({}, testData.users[0]);
   let request = null;
@@ -126,28 +132,11 @@ describe('Versioning', function () {
                 stepDone();
               });
             },
-            function findDeletionInStorage(stepDone) {
-              storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
-                function (err, event) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  should.exist(event);
-                  event.id.should.eql(trashedEventWithHistory.id);
-                  should.exist(event.deleted);
-                  stepDone();
-                });
-            },
-            function checkThatHistoryIsDeleted(stepDone) {
-
-              storage.findHistory(user, trashedEventWithHistory.id, null,
-                function (err, events) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  (events.length).should.be.eql(0);
-                  stepDone();
-                });
+            async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
+              const events = await mall.events.get(user.id, {id: trashedEventWithHistory.id, state: 'all', includeDeletions: true, includeHistory: true})
+              events.length.should.be.eql(1); // only the event itself not the history 
+              events[0].id.should.eql(trashedEventWithHistory.id);
+              should.exist(events[0].deleted);
             }
           ], done);
         });
@@ -168,39 +157,35 @@ describe('Versioning', function () {
                 stepDone();
               });
             },
-            function verifyDeletedHeadInStorage(stepDone) {
-              storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
-                function (err, event) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  should.exist(event);
-                  (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
-                  event.id.should.eql(trashedEventWithHistory.id);
-                  should.exist(event.deleted);
-                  should.exist(event.modified);
-                  should.exist(event.modifiedBy);
-                  if (integrity.events.isActive) should.exist(event.integrity);
-                  stepDone();
-                });
-            },
-            function verifyDeletedHistoryInStorage(stepDone) {
-              storage.findHistory(user, trashedEventWithHistory.id, null,
-                function (err, events) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  (events.length).should.be.eql(2);
-                  events.forEach(function (event) {
-                    (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
-                    should.exist(event.id);
-                    should.exist(event.headId);
-                    should.exist(event.modified);
-                    should.exist(event.modifiedBy);
-                    if (integrity.events.isActive) should.exist(event.integrity);
-                  });
-                  stepDone();
-                });
+            async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
+              const events = await mall.events.get(user.id,{id: trashedEventWithHistory.id, state: 'all', includeDeletions: true});
+              const eventHistory = await mall.events.get(user.id,{headId: trashedEventWithHistory.id, state: 'all', includeDeletions: true})
+              events.push(...eventHistory);
+
+              events.length.should.be.eql(3); 
+
+              // deleted event
+              const deletedEvents = events.filter(e => e.deleted);
+              deletedEvents.length.should.be.eql(1);
+              const deletedEvent = deletedEvents[0];
+              (Object.keys(deletedEvent).length).should.eql(integrity.events.isActive ? 5 : 4);
+              deletedEvent.id.should.eql(trashedEventWithHistory.id);
+              should.exist(deletedEvent.deleted);
+              should.exist(deletedEvent.modified);
+              should.exist(deletedEvent.modifiedBy);
+              if (integrity.events.isActive) should.exist(deletedEvent.integrity);
+              
+              // history 
+              const history = events.filter(e => e.headId);
+              history.length.should.be.eql(2);
+              history.forEach(function (event) {
+                (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
+                should.exist(event.id);
+                should.exist(event.headId);
+                should.exist(event.modified);
+                should.exist(event.modifiedBy);
+                if (integrity.events.isActive) should.exist(event.integrity);
+              });
             }
           ], done);
         });
@@ -222,48 +207,38 @@ describe('Versioning', function () {
                 stepDone();
               });
             },
-            function verifyDeletedHeadInStory(stepDone) {
-              storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
-                function (err, event) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  should.exist(event);
-                  const expected = _.cloneDeep(trashedEventWithHistory);
-                  delete expected.streamId;
-                  // this comes from the storage .. no need to test tags 
-                  delete expected.tags;
-                  expected.deleted = event.deleted;
-                  integrity.events.set(expected);
-                  event.should.eql(expected);
-                  stepDone();
-                });
+            async function verifyDeletedHeadInStory() {
+              const  event = await mall.events.getOne(user.id, trashedEventWithHistory.id);
+              should.exist(event);
+              const expected = _.cloneDeep(trashedEventWithHistory);
+              delete expected.streamId;
+              // this comes from the storage .. no need to test tags 
+              delete expected.tags;
+              expected.deleted = event.deleted;
+              integrity.events.set(expected);
+              event.should.eql(expected);
+         
             },
-            function checkThatHistoryIsUnchanged(stepDone) {
-              storage.findHistory(user, trashedEventWithHistory.id, null,
-                function (err, events) {
-                  if (err) {
-                    return stepDone(err);
-                  }
-                  // TODO clean this test
-                  const checked = {first: false, second: false};
-                  (events.length).should.eql(2);
-                  events.forEach(function (event) {
-                    if (event.id === testData.events[20].id) {
-                      const expected = _.cloneDeep(testData.events[20]);
-                      delete expected.tags;// this comes from the storage .. no need to test tags 
-                      event.should.eql(expected);
-                      checked.first = true;
-                    } else if (event.id === testData.events[21].id) {
-                      const expected = _.cloneDeep(testData.events[21]);
-                      delete expected.tags;// this comes from the storage .. no need to test tags 
-                      event.should.eql(expected);
-                      checked.second = true;
-                    }
-                  });
-                  checked.should.eql({first: true, second: true});
-                  stepDone();
-                });
+            async function checkThatHistoryIsUnchanged() {
+              let eventHistory = await mall.events.get(user.id, {headId: trashedEventWithHistory.id, state: 'all', includeDeletions: true});
+    
+              // TODO clean this test
+              const checked = {first: false, second: false};
+              (eventHistory.length).should.eql(2);
+              eventHistory.forEach(function (event) {
+                if (event.id === testData.events[20].id) {
+                  const expected = _.cloneDeep(testData.events[20]);
+                  delete expected.tags;// this comes from the storage .. no need to test tags 
+                  event.should.eql(expected);
+                  checked.first = true;
+                } else if (event.id === testData.events[21].id) {
+                  const expected = _.cloneDeep(testData.events[21]);
+                  delete expected.tags;// this comes from the storage .. no need to test tags 
+                  event.should.eql(expected);
+                  checked.second = true;
+                }
+              });
+              checked.should.eql({first: true, second: true});
             }
           ], done);
         });
@@ -518,27 +493,16 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        function findDeletionInStorage(stepDone) {
-          storage.findDeletion(user, {id: eventOnChildStream.id}, null,
-            function (err, event) {
-              if (err) {
-                return stepDone(err);
-              }
-              should.exist(event);
-              event.id.should.eql(eventOnChildStream.id);
-              should.exist(event.deleted);
-              stepDone();
-            });
+        async function findDeletionInStorage() {
+          const  event = await mall.events.getOne(user.id, eventOnChildStream.id);
+          should.exist(event);
+          event.id.should.eql(eventOnChildStream.id);
+          should.exist(event.deleted);
         },
-        function checkThatHistoryIsDeleted(stepDone) {
-          storage.findHistory(user, eventOnChildStream.id, null,
-            function (err, events) {
-              if (err) {
-                return stepDone(err);
-              }
-              (events.length).should.be.eql(0);
-              stepDone();
-            });
+        async function checkThatHistoryIsDeleted() {
+          let events = await mall.events.get(user.id, {id: eventOnChildStream.id, state: 'all', includeHistory: true});
+          events = events.filter(e => e.headId); // only the history
+          events.length.should.be.eql(0);
         }
       ], done);
     });
@@ -562,39 +526,29 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        function verifyDeletedHeadInStorage(stepDone) {
-          storage.findDeletion(user, {id: eventOnChildStream.id}, null,
-            function (err, event) {
-              if (err) {
-                return stepDone(err);
-              }
-              should.exist(event);
-              (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
-              event.id.should.eql(eventOnChildStream.id);
-              should.exist(event.deleted);
-              should.exist(event.modified);
-              should.exist(event.modifiedBy);
-              if (integrity.events.isActive) should.exist(event.integrity);
-              stepDone();
-            });
+        async function verifyDeletedHeadInStorage() {
+          const event = await mall.events.getOne(user.id, eventOnChildStream.id);
+
+          should.exist(event);
+          (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
+          event.id.should.eql(eventOnChildStream.id);
+          should.exist(event.deleted);
+          should.exist(event.modified);
+          should.exist(event.modifiedBy);
+          if (integrity.events.isActive) should.exist(event.integrity);
         },
-        function verifyDeletedHistoryInStorage(stepDone) {
-          storage.findHistory(user, eventOnChildStream.id, null,
-            function (err, events) {
-              if (err) {
-                return stepDone(err);
-              }
-              (events.length).should.be.eql(1);
-              events.forEach(function (event) {
-                (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
-                should.exist(event.id);
-                should.exist(event.headId);
-                should.exist(event.modified);
-                should.exist(event.modifiedBy);
-                if (integrity.events.isActive) should.exist(event.integrity);
-              });
-              stepDone();
-            });
+        async function verifyDeletedHistoryInStorage() {
+          let events = await mall.events.get(user.id, {headId: eventOnChildStream.id, state: 'all'});
+    
+          events.length.should.be.eql(1);
+          events.forEach(function (event) {
+            (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
+            should.exist(event.id);
+            should.exist(event.headId);
+            should.exist(event.modified);
+            should.exist(event.modifiedBy);
+            if (integrity.events.isActive) should.exist(event.integrity);
+          });
         }
       ], done);
     });
@@ -618,44 +572,33 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        function verifyDeletedHeadInStory(stepDone) {
-          storage.findDeletion(user, {id: eventOnChildStream.id}, null,
-            function (err, event) {
-              if (err) {
-                return stepDone(err);
-              }
-              should.exist(event);
-              const expected = _.cloneDeep(eventOnChildStream);
-              delete expected.streamId;
-              expected.deleted = event.deleted;
-              // we can remove tags as it comes from the db  
-              delete expected.tags;
-              integrity.events.set(expected);
-              event.should.eql(expected);
-              stepDone();
-            });
+        async function verifyDeletedHeadInStory() {
+          const event = await mall.events.getOne(user.id, eventOnChildStream.id);
+
+          should.exist(event);
+          const expected = _.cloneDeep(eventOnChildStream);
+          delete expected.streamId;
+          expected.deleted = event.deleted;
+          // we can remove tags as it comes from the db  
+          delete expected.tags;
+          integrity.events.set(expected);
+          event.should.eql(expected);
         },
-        function checkThatHistoryIsUnchanged(stepDone) {
-          storage.findHistory(user, eventOnChildStream.id, null,
-            function (err, events) {
-              if (err) {
-                return stepDone(err);
-              }
-              let checked = false;
-              (events.length).should.eql(1);
-              events.forEach(function (event) {
-                event.headId.should.eql(eventOnChildStream.id);
-                if (event.id === testData.events[26].id) {
-                   // we can remove tags as it comes from the db  
-                   const expected = _.cloneDeep(testData.events[26])
-                  delete expected.tags;
-                  event.should.eql(expected);
-                  checked = true;
-                }
-              });
-              checked.should.eql(true);
-              stepDone();
-            });
+        async function checkThatHistoryIsUnchanged() {
+          let events = await mall.events.get(user.id, {headId: eventOnChildStream.id, state: 'all', includeDeletions: true});
+        
+          let checked = false;
+          (events.length).should.eql(1);
+          events.forEach(function (event) {
+            event.headId.should.eql(eventOnChildStream.id);
+            if (event.id === testData.events[26].id) {
+                // we can remove tags as it comes from the db  
+                const expected = _.cloneDeep(testData.events[26])
+              delete expected.tags;
+              event.should.eql(expected);
+              checked = true;
+            }
+          });
         }
       ], done);
     });

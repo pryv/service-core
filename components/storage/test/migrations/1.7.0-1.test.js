@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -8,8 +8,9 @@
  * Tests data migration between versions.
  */
 
-/*global describe, it, _, assert, bluebird */
+/*global describe, it, assert */
 
+const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
@@ -34,7 +35,7 @@ describe('Migration - 1.7.x',function () {
   let accessesCollection;
   let webhooksCollection;
 
-  before(async function() { 
+  before(async function() {
     eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
     usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
     streamsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'streams' }, cb));
@@ -53,7 +54,6 @@ describe('Migration - 1.7.x',function () {
     const versions1 = getVersions('1.7.1');
     const newIndexes = testData.getStructure('1.7.0').indexes;
     const defaultUser = { id: 'u_0' };
-    const eventsStorage = storage.user.events;
  
     const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds(); 
 
@@ -67,13 +67,13 @@ describe('Migration - 1.7.x',function () {
     const previousEventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
     const previousAccessesWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
 
-    // deleted 
-    const collectionsWithDelete = [eventsCollection, accessesCollection, streamsCollection, webhooksCollection]; 
+    // deleted
+    const collectionsWithDelete = [eventsCollection, accessesCollection, streamsCollection, webhooksCollection];
     const previousItemsWithDelete = {};
     for (const collection of collectionsWithDelete) {
       previousItemsWithDelete[collection.namespace] = await (await collection.find({ 'deleted': { $type: 'date'} })).toArray();
     }
-   
+
 
     // perform migration
     await bluebird.fromCallback(cb => versions0.migrateIfNeeded(cb));
@@ -86,7 +86,7 @@ describe('Migration - 1.7.x',function () {
           //streamIds: {$in: userAccountStreamIds},
           userId: { $eq: user._id },
         }, cb));
-      
+
       const events = await eventsCursor.toArray();
 
       const uniqueProperties = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
@@ -100,14 +100,14 @@ describe('Migration - 1.7.x',function () {
           assert.notExists(event[uniqueProp + UNIQUE_SUFFIX], `unique property `)
         }
       }
-      
+
     }
 
-    const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
+    const migratedIndexes = await bluebird.fromCallback(cb => eventsCollection.listIndexes({}).toArray(cb));
     compareIndexes(newIndexes.events, migratedIndexes);
 
 
-    // ----------------- tag migrations 
+    // ----------------- tag migrations
     const eventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
     assert.equal(eventsWithTags.length, 0);
     for (event of previousEventsWithTags) {
@@ -140,7 +140,7 @@ describe('Migration - 1.7.x',function () {
     }
 
 
-    // -----------------  deleted  migrations 
+    // -----------------  deleted  migrations
 
     for (const collection of collectionsWithDelete) {
       const newItems = await (await collection.find({ 'deleted': { $type: 'date'} })).toArray();

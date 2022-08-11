@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -20,7 +20,7 @@ const { getUsersRepository } = require('business/src/users');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getMall, StreamsUtils } = require('mall');
+const { getMall, streamsUtils } = require('mall');
 
 const cache = require('cache');
 
@@ -86,7 +86,6 @@ class MethodContext {
     username: string,
     auth: ?string,
     customAuthStepFn: ?CustomAuthFunction,
-    eventsStorage: ?StorageLayer,
     headers: Map<string, any>,
     query: ?{},
     tracing: ?Tracing,
@@ -104,7 +103,6 @@ class MethodContext {
     this.headers = headers;
 
     this.methodId = null;
-    SystemStreamsSerializer.getSerializer(); // ensure it's loaded
     if (auth != null) this.parseAuth(auth);
     this.originalQuery = _.cloneDeep(query);
     if (this.originalQuery?.auth) delete this.originalQuery.auth;

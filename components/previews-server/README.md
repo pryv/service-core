@@ -1,15 +1,11 @@
 # Pryv previews server
 
-Node.js / Express server supporting client apps with event previews (which are outside the scope of the main Pryv API).
+Express server supporting client apps with event previews (which are outside the scope of the main Pryv API).
+
+**Make sure to read the project's main README first.**
 
 
-## Usage
-
-### Running the server
-
-```bash
-node src/server [options]
-```
+## Details specific to this component
 
 ### API
 
@@ -31,26 +27,6 @@ Notes:
 - Generated previews are cached (by default for a week); cached files are tracked via [extended file attributes](http://en.wikipedia.org/wiki/Extended_file_attributes) `event.modified` (to invalidate the cached version when the event is modified) and `last-accessed` (to remove cached files that aren't being used)
 
 
-## Contribute
-
-Make sure to check the root README first.
-
-
-### Prerequisites
-
-GraphicsMagick (Linux: `apt-get install graphicsmagick`, OSX (Homebrew): `brew install graphicsmagick`)
-
-
-### Tests
-
-- `yarn run test` (or `yarn test`) for quiet output
-- `yarn run test-detailed` for detailed test specs and debug log output
-- `yarn run test-profile` for profiling the tested server instance and opening the processed output with `tick-processor`
-- `yarn run test-debug` is similar as `yarn run test-detailed` but in debug mode; it will wait for debuggers to be attached on both ports 5858 (the test process) and 5959 (the tested server process)
-
-
-
 # License
-Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
-Unauthorized copying of this file, via any medium is strictly prohibited
-Proprietary and confidential
+
+[UNLICENSED](LICENSE)

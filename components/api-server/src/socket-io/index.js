@@ -1,13 +1,13 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 // @flow
 
 /**
- * Note: Debug tests with: DEBUG=engine,socket.io* yarn test --grep="Socket"
+ * Note: Debug tests with: DEBUG=engine,socket.io* npm test --grep="Socket"
  */
 
 const socketIO = require('socket.io')({
@@ -33,11 +33,11 @@ import type { CustomAuthFunction } from 'business';
 import type API  from '../API';
 import type { SocketIO$Handshake }  from './Manager';
 
-// Initializes the SocketIO subsystem. 
+// Initializes the SocketIO subsystem.
 //
 async function setupSocketIO(
-  server: net$Server, 
-  api: API, 
+  server: net$Server,
+  api: API,
   customAuthStepFn: ?CustomAuthFunction,
 ) {
   const config = await getConfig();
@@ -50,18 +50,18 @@ async function setupSocketIO(
     path: Paths.SocketIO
   });
 
-  // Manages socket.io connections and delivers method calls to the api. 
+  // Manages socket.io connections and delivers method calls to the api.
   const manager: Manager = new Manager(logger, io, api, storageLayer, customAuthStepFn, isOpenSource);
-  
+
   // dynamicNamspaces allow to "auto" create namespaces
   // when connected pass the socket to Manager
   const dynamicNamespace = io.of(/^\/.+$/).on('connect', async (socket) => {
     const nameSpaceContext = await manager.ensureInitNamespace(socket.nsp.name);
     nameSpaceContext.onConnect(socket);
   });
-  
-  // add a middelware for authentication 
-  // add middelware for authentication 
+
+  // add a middelware for authentication
+  // add middelware for authentication
   dynamicNamespace.use(async (socket, next) => {
     try {
       const nsName = socket.nsp.name;
@@ -73,13 +73,12 @@ async function setupSocketIO(
         name: 'socket.io',
         ip:  socket.handshake.headers['x-forwarded-for'] || socket.request.connection.remoteAddress
       }
-      
+
       const context = new MethodContext(
         contextSource,
         userName,
         query.auth,
         customAuthStepFn,
-        storageLayer.events,
       );
 
       // Initailizing Context
@@ -100,4 +99,4 @@ async function setupSocketIO(
   dynamicNamespace.use(require('socketio-wildcard')());
 
 }
-module.exports = setupSocketIO; 
+module.exports = setupSocketIO;

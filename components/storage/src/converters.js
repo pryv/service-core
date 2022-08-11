@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -15,13 +15,13 @@ const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 exports.createIdIfMissing = function (item) {
-  item.id = item.id || generateId();
+  item.id = item.id || generateId();
   return item;
 };
 
 exports.getRenamePropertyFn = function (oldName, newName) {
-  return function (item) {
-    if (! item || ! item.hasOwnProperty(oldName)) {
+  return function (item) {
+    if (! item || ! item.hasOwnProperty(oldName)) {
       return item;
     }
 

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -17,6 +17,12 @@ import type { APIErrorOptions }  from './APIError';
  * Helper "factory" methods for API errors (see error ids).
  */
 const factory = module.exports = {};
+
+factory.unsupportedOperation = (message: string) => {
+  return new APIError(ErrorIds.ApiUnavailable, message, {
+    httpStatus: 501
+  });
+};
 
 factory.apiUnavailable = (message: string) => {
   return new APIError(ErrorIds.ApiUnavailable, message, {

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -18,6 +18,7 @@ const bluebird = require('bluebird');
 const getAuth = require('middleware/src/getAuth');
 
 const {getLogger} = require('@pryv/boiler');
+const { getMall } = require('mall');
 
 // constants
 const StandardDimensions = [ 256, 512, 768, 1024 ];
@@ -31,14 +32,14 @@ const StandardDimensionsLength = StandardDimensions.length;
  * @param expressApp
  * @param initContextMiddleware
  * @param loadAccessMiddleware
- * @param userEventsStorage
  * @param userEventFilesStorage
  * @param logging
  */
-module.exports = function (
-  expressApp, initContextMiddleware, loadAccessMiddleware, userEventsStorage,
+module.exports = async function (
+  expressApp, initContextMiddleware, loadAccessMiddleware,
   userEventFilesStorage, logging) {
 
+  const mall = await getMall();
   // SERVING PREVIEWS
 
   expressApp.all('/*', getAuth);
@@ -54,7 +55,7 @@ module.exports = function (
 
     try {
       // Check Event
-      const event = await bluebird.fromCallback((cb) => userEventsStorage.findOne(user, {id: id}, null, cb));
+      const event = await mall.events.getOne(user.id, id);
       if (event == null) { 
         return next(errors.unknownResource('event', id));
       }
@@ -91,9 +92,6 @@ module.exports = function (
       } catch(err) {
         return next(adjustGMResultError(err));
       }
-
-      await bluebird.fromCallback((cb) => userEventsStorage.updateOne(
-        req.context.user, {id: req.params.id},{attachments: event.attachments}, cb));
 
       // Prepare path
       const targetSize = getPreviewSize(originalSize, {

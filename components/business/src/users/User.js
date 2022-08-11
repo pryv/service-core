@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -48,6 +48,7 @@ class User {
     passwordHash?: string,
     referer?: string,
   }) {
+    this.username = params.username;
     buildAccountFields(this);
     loadAccountData(this, params);
 
@@ -97,7 +98,9 @@ class User {
    * Get account with id property added to it
    */
   getAccountWithId () {
-    return _.pick(this, this.accountFields.concat('id').filter(x => x !== 'dbDocuments' && x != 'attachedFiles'));
+    const res = _.pick(this, this.accountFields.concat('id').filter(x => x !== 'dbDocuments' && x != 'attachedFiles'));
+    res.username = this.username;
+    return res;
   }
 
   /**

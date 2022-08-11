@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -11,7 +11,9 @@ const cuid = require('cuid');
 const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
-const { getServiceRegisterConn } = require('./service_register');
+
+const { getPlatform } = require('platform');
+
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
 const ErrorIds = require('errors').ErrorIds;
@@ -28,16 +30,21 @@ import type { ApiCallback } from 'api-server/src/API';
 class Registration {
   logger: any;
   storageLayer: any;
-  serviceRegisterConn: ServiceRegister;
   accountStreamsSettings: any = SystemStreamsSerializer.getAccountMap();
   servicesSettings: any; // settigns to get the email to send user welcome email
+  platform: Platform;
 
   constructor(logging, storageLayer, servicesSettings) {
     this.logger = getLogger('business:registration');
     this.storageLayer = storageLayer;
     this.servicesSettings = servicesSettings;
+  }
 
-    this.serviceRegisterConn = getServiceRegisterConn();
+  async init() {
+    if (this.platform == null) {
+      this.platform = await getPlatform();
+    }
+    return this;
   }
 
   /**
@@ -63,14 +70,14 @@ class Registration {
    * @param {*} result
    * @param {*} next
    */
-  async validateUserInServiceRegister(
+  async createUserStep1_ValidateUserOnPlatform(
     context: MethodContext,
     params: mixed,
     result: Result,
     next: ApiCallback
   ) {
     try {
-      const uniqueFields = {};
+      const uniqueFields = {username: context.newUser.username};
       for (const [streamIdWithPrefix, streamSettings] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
         if (streamSettings?.isUnique) {
@@ -80,7 +87,7 @@ class Registration {
       }
       
       // do the validation and reservation in service-register
-      await this.serviceRegisterConn.validateUser(
+      await this.platform.createUserStep1_ValidateUser(
         context.newUser.username,
         context.newUser.invitationToken,
         uniqueFields,
@@ -109,30 +116,19 @@ class Registration {
       // assert that we have obtained a lock on register, so any conflicting fields here 
       // would be failed registration attempts that partially saved user data.
       const usersRepository = await getUsersRepository();
-      const existingUsers = await usersRepository.findExistingUniqueFields(context.newUser.getUniqueFields());
 
-      // if any of unique fields were already saved, it means that there was an error
-      // saving in service register (before this step there is a check that unique fields 
-      // don't exist in service register)
+      const matchingUserId = await usersRepository.getUserIdForUsername(context.newUser.username);
 
-      if (existingUsers.length > 0) {
-        // DELETE users with conflicting unique properties
-        let userIds = existingUsers.map(conflictingEvent => conflictingEvent.userId);
-        const distinctUserIds = new Set(userIds);
-
-        for (let userId of distinctUserIds){
-          // assert that unique fields are free to take
-          // so if we get conflicting ones here, we can simply delete them
-          const usersRepository = await getUsersRepository();
-          await usersRepository.deleteOne(userId);
+      if (matchingUserId != null) {
+        await usersRepository.deleteOne(matchingUserId);
 
           this.logger.error(
             `User with id ${
-            userId
+              matchingUserId
             } was deleted because it was not found on service-register but uniqueness conflicted on service-core`
           );
-        }
-      }
+      };
+
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
@@ -177,7 +173,7 @@ class Registration {
    * @param {*} result
    * @param {*} next
    */
-  async createUserInServiceRegister (
+  async createUserStep2_CreateUserOnPlatform (
     context: MethodContext,
     params: mixed,
     result: Result,
@@ -194,13 +190,13 @@ class Registration {
           id: context.newUser.id
         },
         host: { name: context.host },
-        unique: SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()
+        unique: ['username', ...SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()],
+        user: {username: context.newUser.username}
       };
       userStreamsIds.forEach(streamId => {
         if (context.newUser[streamId] != null) userData.user[streamId] = context.newUser[streamId];
       });
-
-      await this.serviceRegisterConn.createUser(userData);
+      await this.platform.createUserStep2_CreateUser(userData);
     } catch (error) {
       return next(errors.unexpectedError(error));
     }

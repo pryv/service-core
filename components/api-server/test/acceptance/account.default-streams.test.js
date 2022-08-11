@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -24,7 +24,9 @@ const { produceMongoConnection } = require('api-server/test/test-helpers');
 const helpers = require('api-server/test/helpers');
 const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
 
-describe('Account with system streams', function () {
+const { getMall } = require('mall');
+
+describe('[ACCO] Account with system streams', function () {
   let helpers;
   let app;
   let request;
@@ -36,6 +38,7 @@ describe('Account with system streams', function () {
   let serviceRegisterRequest;
   let config;
   let isDnsLess;
+  let mall;
 
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
@@ -56,28 +59,18 @@ describe('Account with system streams', function () {
 
   async function getActiveEvent(streamId, isPrivate = true) {
     const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-    return await bluebird.fromCallback(
-      (cb) => user.db.events.findOne({ id: user.attrs.id },
-        {
-          streamIds: {
-            $all: [
-              SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
-              streamIdWithPrefix
-            ]
-          }
-        }, null, cb));
+    const streamQuery = [{ any: [streamIdWithPrefix], and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}];
+    const res = await mall.events.get(user.attrs.id, {streams: streamQuery });
+    if(res.length === 0) return null;
+    return res[0];
   }
 
   async function getNotActiveEvent (streamId, isPrivate = true) {
     const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-    return await bluebird.fromCallback(
-      (cb) => user.db.events.findOne({ id: user.attrs.id },
-        {
-          $and: [
-            { streamIds: streamIdWithPrefix },
-            { streamIds: { $ne: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
-          ]
-        }, null, cb));
+    const streamQuery = [{ any: [streamIdWithPrefix], and: [{not: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}];
+    const res = await mall.events.get(user.attrs.id, {streams: streamQuery });
+    if(res.length === 0) return null;
+    return res[0];
   }
   /**
    * Create additional event
@@ -96,6 +89,7 @@ describe('Account with system streams', function () {
 
   before(async function () {
     config = await getConfig();
+    config.injectTestConfig({testsSkipForwardToRegister: false});
     isDnsLess = config.get('dnsLess:isActive');
     helpers = require('api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -111,6 +105,7 @@ describe('Account with system streams', function () {
     await require("api-server/src/methods/account")(app.api);
     await require("api-server/src/methods/events")(app.api);
     request = supertest(app.expressApp);
+    mall = await getMall();
   });
 
   after(async function () {
@@ -135,7 +130,7 @@ describe('Account with system streams', function () {
         const editableStreamsIds = ['email', 'phoneNumber', 'insurancenumber']
           .map(SystemStreamsSerializer.addCustomerPrefixToStreamId)
           .concat([SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]);
-        const visibleStreamsIds = ['username', 'language', 'dbDocuments', 'attachedFiles']
+        const visibleStreamsIds = ['language', 'dbDocuments', 'attachedFiles']
           .map(SystemStreamsSerializer.addPrivatePrefixToStreamId)
           .concat(['email', 'phoneNumber', 'insurancenumber'].map(SystemStreamsSerializer.addCustomerPrefixToStreamId));
 
@@ -143,13 +138,11 @@ describe('Account with system streams', function () {
           await createAdditionalEvent(editableStreamsId);
         }
 
-        allVisibleAccountEvents = await bluebird.fromCallback(
-          (cb) => user.db.events.find({ id: user.attrs.id },
-            {
-              $and: [
-                { streamIds: { $in: visibleStreamsIds } },
-                { streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE }]
-            }, null, cb));
+        allVisibleAccountEvents = await mall.events.get(user.attrs.id, 
+          {streams: [
+            {any: visibleStreamsIds}, 
+            {and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}
+          ]});
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
       });
@@ -157,8 +150,6 @@ describe('Account with system streams', function () {
         assert.equal(res.status, 200);
       });
       it('[JUHR] should return account information in the structure that is defined in system streams and only active values', async () => {
-        const usernameAccountEvent = allVisibleAccountEvents.find(event => event.streamIds.includes(
-          SystemStreamsSerializer.addPrivatePrefixToStreamId('username')));
         const emailAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('email')));
         const languageAccountEvent = allVisibleAccountEvents.find(event =>
@@ -172,7 +163,6 @@ describe('Account with system streams', function () {
         const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
 
-        assert.equal(res.body.account.username, usernameAccountEvent.content);
         assert.equal(res.body.account.email, emailAccountEvent.content);
         assert.equal(res.body.account.language, languageAccountEvent.content);
         assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
@@ -213,12 +203,8 @@ describe('Account with system streams', function () {
         await createUser();
         basePath += '/change-password'
         // remove passwordHash event from the database
-        await bluebird.fromCallback(
-          (cb) => user.db.events.removeOne({ id: user.attrs.id },
-            {
-              streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')
-            }, cb));
-        
+        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
+       
         // make sure the event was deleted
         let password = await getActiveEvent('passwordHash');
         assert.isNull(password);
@@ -250,11 +236,7 @@ describe('Account with system streams', function () {
         await createUser();
         basePath += '/reset-password'
         // remove passwordHash event from the database
-        await bluebird.fromCallback(
-          (cb) => user.db.events.removeOne({ id: user.attrs.id },
-            {
-              streamIds: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')
-            }, cb));
+        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
 
         // make sure the event was deleted
         let password = await getActiveEvent('passwordHash');

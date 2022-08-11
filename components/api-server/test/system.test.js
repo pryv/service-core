@@ -1,13 +1,13 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 
-/*global describe, before, beforeEach, after, it */
+/* global describe, before, beforeEach, after, it */
 
-require('./test-helpers'); 
+require('./test-helpers');
 
 const async = require('async');
 const should = require('should');
@@ -15,7 +15,7 @@ const request = require('superagent');
 const timestamp = require('unix-timestamp');
 const url = require('url');
 const _ = require('lodash');
-const assert = require('chai').assert; 
+const assert = require('chai').assert;
 const bluebird = require('bluebird');
 const os = require('os');
 const fs = require('fs');
@@ -26,7 +26,6 @@ const server = helpers.dependencies.instanceManager;
 const methodsSchema = require('../src/schema/systemMethods');
 const validation = helpers.validation;
 const encryption = require('utils').encryption;
-const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
 const { getUsersRepository } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
@@ -37,19 +36,20 @@ const { getConfig } = require('@pryv/boiler');
 
 require('date-utils');
 
-
 describe('system route', function () {
   let mongoFixtures,
-    username, 
-    server;
+    username,
+    server,
+    config;
 
   before(async function() {
+    config = await getConfig();
     mongoFixtures = databaseFixture(await produceMongoConnection());
     username = 'system-test';
     server = await context.spawn();
   });
-  after(() => {
-    mongoFixtures.clean();
+  after(async () => {
+    await mongoFixtures.clean();
     server.stop();
   });
 
@@ -57,18 +57,32 @@ describe('system route', function () {
     await mongoFixtures.user(username, {});
   });
 
-  it('[JT1A] should parse correctly usernames starting with "system"', async () => { 
+  it('[JT1A] should parse correctly usernames starting with "system"', async () => {
     const res = await server.request().get('/' + username + '/events')
       .set('authorization', 'dummy');
     should.exist(res.body.error);
     res.body.error.id.should.eql('invalid-access-token');
   });
 
+  it('[CHEK] System check Platform integrity ', async () => { 
+    const res = await request.get(url.resolve(server.url(), '/system/check-platform-integrity'))
+      .set('authorization', config.get('auth:adminAccessKey'));
+    should.exists(res.body.checks);
+    const checkLength = 2;
+    should.equal(res.body.checks.length, checkLength);
+    for (let i = 0; i < checkLength; i++) {
+      const check = res.body.checks[i];
+      should.exist(check.title);
+      should.exist(check.infos);
+      should.exist(check.errors);
+      should.equal(check.errors.length, 0);
+    }
+  });
+
   describe('DELETE /mfa', () => {
     let username, mfaPath, profilePath, res, profileRes, token, restOfProfile;
-    
+
     before(async () => {
-      config = await getConfig();
       username = charlatan.Lorem.characters(10);
       token = cuid();
       mfaPath = `/system/users/${username}/mfa`;
@@ -83,7 +97,7 @@ describe('system route', function () {
       const res = await server.request()
         .put(profilePath)
         .set('authorization', token)
-        .send({ 
+        .send({
           mfa: { content: { phone: '123' }, recoveryCodes: ['1', '2', '3']},
           restOfProfile,
         });
@@ -109,7 +123,7 @@ describe('system route', function () {
 
 describe('system (ex-register)', function () {
   let mongoFixtures;
-  
+
   this.timeout(5000);
   function basePath() {
     return url.resolve(server.url, '/system');
@@ -133,7 +147,7 @@ describe('system (ex-register)', function () {
   // NOTE: because we mock the email sending service for user creation and to
   // keep test code simple, test order is important. The first test configures
   // the mock service in order to test email sending, the second one
-  // reconfigures it so that it just replies OK for subsequent tests.   
+  // reconfigures it so that it just replies OK for subsequent tests.
   describe('POST /create-user', function () {
 
     function path() {
@@ -165,9 +179,9 @@ describe('system (ex-register)', function () {
         };
 
         let mailSent = false;
-        
+
         let originalCount;
-            
+
         // setup mail server mock
         helpers.instanceTestSetup.set(settings, {
           context: settings.services.email,
@@ -187,7 +201,7 @@ describe('system (ex-register)', function () {
         });
         await (new Promise(server.ensureStarted.bind(server, settings)));
 
-        const usersRepository = await getUsersRepository(); 
+        const usersRepository = await getUsersRepository();
         const originalUsers = await usersRepository.getAll();
 
         originalCount = originalUsers.length;
@@ -212,10 +226,12 @@ describe('system (ex-register)', function () {
         validation.checkStoredItem(actual.getAccountWithId(), 'user');
         // password hash is not retrieved with getAll
         delete expected.passwordHash;
-        actual.getReadableAccount().should.eql(expected);
+        const account = actual.getReadableAccount();
+        account.username = newUserData.username;
+        account.should.eql(expected);
       });
     });
-    
+
     it('[0G7C] must not send a welcome email if mailing is deactivated', function (done) {
       let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = false;
@@ -228,7 +244,7 @@ describe('system (ex-register)', function () {
       };
       testWelcomeMailNotSent(settings, done);
     });
-    
+
     function testWelcomeMailNotSent (settings, callback) {
       // setup mail server mock
       helpers.instanceTestSetup.set(settings, {
@@ -240,7 +256,7 @@ describe('system (ex-register)', function () {
             }.bind(this));
         }
       });
-      
+
       // fetch notification from server process
       server.once('mail-sent2', function () {
         return callback('Welcome email should not be sent!');
@@ -265,14 +281,14 @@ describe('system (ex-register)', function () {
     describe('when it just replies OK', function() {
       before(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
-      it('[9K71] must run the process but not save anything for test username "recla"', 
+      it('[9K71] must run the process but not save anything for test username "recla"',
         async function () {
           var originalCount,
               createdUserId,
               settings = _.cloneDeep(helpers.dependencies.settings);
-    
+
           should(process.env.NODE_ENV).be.eql('test');
-    
+
           // setup mail server mock, persisting over the next tests
           helpers.instanceTestSetup.set(settings, {
             context: settings.services.email,
@@ -285,7 +301,7 @@ describe('system (ex-register)', function () {
 
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
-          const usersRepository = await getUsersRepository(); 
+          const usersRepository = await getUsersRepository();
           originalUsers = await usersRepository.getAll();
           originalCount = originalUsers.length;
 
@@ -309,7 +325,7 @@ describe('system (ex-register)', function () {
           users.length.should.eql(originalCount, 'users');
           should.not.exist(_.find(users, { id: createdUserId }));
         });
-    
+
       it('[ZG1L] must support the old "/register" path for backwards-compatibility', function (done) {
         let newUserDataExpected = Object.assign({}, newUserData);
         request.post(url.resolve(server.url, '/register/create-user'))
@@ -321,7 +337,7 @@ describe('system (ex-register)', function () {
             }, done);
           });
       });
-    
+
       it('[VGF5] must return a correct 400 error if the sent data is badly formatted', function (done) {
         post({ badProperty: 'bad value' }, function (err, res) {
           validation.checkErrorInvalidParams(res, done);
@@ -341,7 +357,7 @@ describe('system (ex-register)', function () {
           validation.checkErrorInvalidParams(res, done);
         });
       });
-    
+
       it('[RD10] must return a correct 400 error if a user with the same user name already exists',
         async function () {
           var data = {
@@ -380,7 +396,7 @@ describe('system (ex-register)', function () {
           assert.deepEqual(err.response.body.error.data, { email: data.email });
         }
       });
-    
+
       it('[Y5JB] must return a correct 404 error when authentication is invalid', function (done) {
         let newUserDataExpected = Object.assign({}, newUserData);
         request
@@ -393,7 +409,7 @@ describe('system (ex-register)', function () {
             }, done);
           });
       });
-    
+
       it('[GF3L] must return a correct error if the content type is wrong', function (done) {
         request.post(path())
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
@@ -407,9 +423,9 @@ describe('system (ex-register)', function () {
       });
     });
     describe('when we log into a temporary log file', function () {
-    
+
       let logFilePath = '';
-    
+
       beforeEach(function (done) {
         async.series([
           ensureLogFileIsEmpty,
@@ -417,7 +433,7 @@ describe('system (ex-register)', function () {
           instanciateServerWithLogs
         ], done);
       });
-    
+
       function ensureLogFileIsEmpty(stepDone) {
         if ( logFilePath.length <= 0 ) return stepDone();
         fs.truncate(logFilePath, function (err) {
@@ -427,12 +443,12 @@ describe('system (ex-register)', function () {
           stepDone(err);
         });
       }
-    
+
       function generateLogFile(stepDone) {
         logFilePath = os.tmpdir() + '/password-logs.log';
         stepDone();
       }
-    
+
       function instanciateServerWithLogs(stepDone) {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.logs = {
@@ -447,9 +463,9 @@ describe('system (ex-register)', function () {
         };
         server.ensureStarted.call(server, settings, stepDone);
       }
-    
+
       after(server.ensureStarted.bind(server,helpers.dependencies.settings));
-    
+
       // cf. GH issue #64
       it('[Y69B] must replace the passwordHash in the logs by (hidden) when the authentication is invalid', function (done) {
         let newUserDataExpected = Object.assign({}, newUserData);
@@ -466,7 +482,7 @@ describe('system (ex-register)', function () {
           verifyHiddenPasswordHashInLogs
         ], done);
       });
-    
+
       // cf. GH issue #64 too
       it('[MEJ9] must replace the passwordHash in the logs by (hidden) when the payload is invalid (here parameters)', function (done) {
         let newUserDataExpected = Object.assign({}, newUserData);
@@ -482,14 +498,14 @@ describe('system (ex-register)', function () {
           verifyHiddenPasswordHashInLogs
         ], done);
       });
-    
+
       it('[CO6H] must not mention the passwordHash in the logs when none is provided', function (done) {
         let newUserDataExpected = Object.assign({}, newUserData);
         async.series([
           function failCreateUser(stepDone) {
             let dataWithNoPasswordHash = _.cloneDeep(newUserDataExpected);
             delete dataWithNoPasswordHash.passwordHash;
-    
+
             post(dataWithNoPasswordHash, function (err, res) {
               validation.checkError(res, {
                 status: 400,
@@ -500,7 +516,7 @@ describe('system (ex-register)', function () {
           verifyNoPasswordHashFieldInLogs
         ], done);
       });
-    
+
       function verifyHiddenPasswordHashInLogs (callback) {
         let newUserDataExpected = Object.assign({}, newUserData);
         fs.readFile(logFilePath, 'utf8', function (err, data) {
@@ -513,7 +529,7 @@ describe('system (ex-register)', function () {
           callback();
         });
       }
-    
+
       function verifyNoPasswordHashFieldInLogs(callback) {
         fs.readFile(logFilePath, 'utf8', function (err, data) {
           if (err) {
@@ -523,7 +539,7 @@ describe('system (ex-register)', function () {
           callback();
         });
       }
-    
+
     });
 
   });
@@ -573,26 +589,26 @@ describe('system (ex-register)', function () {
             .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
             .end(function (err, res) {
               const info = res.body.userInfo;
-              
+
               assert.approximately(info.lastAccess, expectedTime, 2);
-              
+
               info.callsTotal
-                .should.eql(originalInfo.callsTotal + 2, 
+                .should.eql(originalInfo.callsTotal + 2,
                   'calls total');
               info.callsDetail['events:get']
-                .should.eql(originalInfo.callsDetail['events:get'] + 2, 
+                .should.eql(originalInfo.callsDetail['events:get'] + 2,
                   'calls detail');
-                
+
               const accessKey1 = testData.accesses[4].name; // app access
               const accessKey2 = 'shared';                  // shared access
-              
+
               info.callsPerAccess[accessKey1]
-                .should.eql(originalInfo.callsPerAccess[accessKey1] + 1, 
+                .should.eql(originalInfo.callsPerAccess[accessKey1] + 1,
                   'calls per access (personal)');
               info.callsPerAccess[accessKey2]
                 .should.eql(originalInfo.callsPerAccess[accessKey2] + 1,
                   'calls per access (shared)');
-                
+
               stepDone();
             });
         }

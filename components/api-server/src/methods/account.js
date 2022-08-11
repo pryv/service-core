@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -14,17 +14,16 @@ const methodsSchema = require('../schema/accountMethods');
 
 const { getConfig } = require('@pryv/boiler');
 const { pubsub } = require('messages');
-const { getStorageLayer } = require('storage');
+const { getStorageLayer } = require('storage');
+const {getPlatform } = require('platform');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
-const Registration = require('business/src/auth/registration'),
-  ErrorMessages = require('errors/src/ErrorMessages'),
-  ErrorIds = require('errors').ErrorIds,
-  { getServiceRegisterConn } = require('business/src/auth/service_register'),
-  { getUsersRepository, UserRepositoryOptions} = require('business/src/users');
+const ErrorMessages = require('errors/src/ErrorMessages');
+const ErrorIds = require('errors').ErrorIds;
+const { getUsersRepository, UserRepositoryOptions} = require('business/src/users');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-  /**
+/**
  * @param api
  */
 module.exports = async function (api) {
@@ -33,15 +32,13 @@ module.exports = async function (api) {
   const servicesSettings = config.get('services');
   const storageLayer = await getStorageLayer();
   const passwordResetRequestsStorage = storageLayer.passwordResetRequests;
+  const platform = await getPlatform();
 
-  var emailSettings = servicesSettings.email,
-    requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
+  const emailSettings = servicesSettings.email;
+  const requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // initialize service-register connection
-  const serviceRegisterConn = getServiceRegisterConn();
-  const usersRepository = await getUsersRepository(); 
-
-  const isDnsLess = config.get('dnsLess:isActive');
+  const usersRepository = await getUsersRepository();
 
   // RETRIEVAL
 
@@ -57,15 +54,15 @@ module.exports = async function (api) {
         return next(errors.unexpectedError(err));
       }
     });
-  
+
 
   // UPDATE
 
   api.register('account.update',
-    commonFns.basicAccessAuthorizationCheck,  
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.update.params),
     validateThatAllFieldsAreEditable,
-    notifyServiceRegister,
+    updateDataOnPlatform,
     updateAccount,
     addUserBusinessToContext,
     buildResultData,
@@ -73,11 +70,11 @@ module.exports = async function (api) {
 
   /**
    * Validate if given parameters are allowed for the edit
-   * 
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   *
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   function validateThatAllFieldsAreEditable (context, params, result, next) {
     const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
@@ -90,7 +87,7 @@ module.exports = async function (api) {
           { field: streamId }
         ));
       }
-    })
+    });
     next();
   }
   // CHANGE PASSWORD
@@ -128,7 +125,7 @@ module.exports = async function (api) {
     sendPasswordResetMail,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_REQUEST));
 
-  
+
 
   function generatePasswordResetRequest(context, params, result, next) {
     const username = context.user.username;
@@ -219,30 +216,28 @@ module.exports = async function (api) {
     next();
   }
 
-  async function notifyServiceRegister (context, params, result, next) {
-    // no need to update service register if it is single node setup
-    if (isDnsLess) {
-      return next();
-    }
+  async function updateDataOnPlatform (context, params, result, next) {
+
     try {
       const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
 
       const operations: Array<{}> = [];
       for (const [key, value] of Object.entries(params.update)) {
+        // get previous value of the field;
+        const previousValue = await usersRepository.getOnePropertyValue(context.user.id, key);
+
         operations.push({
-          update: {
-            key,
-            value,
-            isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
-          }
-        })
+          action: 'update',
+          key,
+          value,
+          previousValue,
+          isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
+          isActive: true
+        });
       }
-      await serviceRegisterConn.updateUserInServiceRegister(
-        context.user.username,
-        operations,
-        true,
-        false,
-      );
+
+      await platform.updateUserAndForward(context.user.username, operations);
+
     } catch (err) {
       return next(err);
     }
@@ -251,7 +246,7 @@ module.exports = async function (api) {
 
   async function updateAccount(context, params, result, next) {
     try {
-      const accessId = (context.access?.id) ? context.access.id : UserRepositoryOptions.SYSTEM_USER_ACCESS_ID
+      const accessId = (context.access?.id) ? context.access.id : UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
       await usersRepository.updateOne(
         context.user,
         params.update,
@@ -273,10 +268,10 @@ module.exports = async function (api) {
 
   /**
    * Build response body for the account update
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   async function buildResultData (context, params, result, next) {
     Object.keys(params.update).forEach(key => {

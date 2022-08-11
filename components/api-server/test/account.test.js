@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -203,6 +203,23 @@ describe('account', function () {
   }
 
   describe('storage space monitoring', function () {
+    before(function (done) {
+      async.series([
+        testData.resetUsers,
+        testData.resetAccesses,
+        testData.resetEvents,
+        testData.resetProfile,
+        testData.resetFollowedSlices,
+        
+        testData.resetStreams,
+        testData.resetAttachments,
+        server.ensureStarted.bind(server, helpers.dependencies.settings),
+        function (stepDone) {
+          request = helpers.request(server.url);
+          request.login(user, stepDone);
+        }
+      ], done);
+    });
     before(getFilesystemBlockSize);
 
     // when checking files storage size we allow a small 1k error margin to account for folder sizes

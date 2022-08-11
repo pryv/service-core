@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -100,6 +100,13 @@ BaseStorage.prototype.count = function(userOrUserId, query, callback) {
 BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
   query.deleted = null;
   query.headId = null;
+  this.findIncludingDeletionsAndVersions(userOrUserId, query, options, callback);
+};
+
+/**
+ * Used by "mall" only 
+ */
+BaseStorage.prototype.findIncludingDeletionsAndVersions = function(userOrUserId, query, options, callback) {
   this.database.find(
     this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
@@ -188,21 +195,6 @@ BaseStorage.prototype.findStreamed = function(user, query, options, callback) {
   // Implemented for Events only.
 };
 
-
-/**
- * Retrieves the history for a certain event
- *
- * @param user {Object} user The user owning the collection
- * @param headId {string} the id of the event whose history is queried
- * @param options {Object}
- * @param callback {Function}
- * @returns {Error}
- */
-BaseStorage.prototype.findHistory = function(user, headId, options, callback) {
-  callback( new Error('Not implemented (user: ' + user + ')') );
-  // Implemented for Events only
-};
-
 BaseStorage.prototype.findDeletions = function(
   userOrUserId,
   deletedSince,
@@ -268,30 +260,7 @@ BaseStorage.prototype.findDeletion = function(userOrUserId, query, options, call
   );
 };
 
-BaseStorage.prototype.aggregate = function(
-  userOrUserId,
-  query,
-  projectExpression,
-  groupExpression,
-  options,
-  callback
-) {
-  this.database.aggregate(
-    this.getCollectionInfo(userOrUserId),
-    this.applyQueryToDB(query),
-    this.applyQueryToDB(projectExpression),
-    this.applyQueryToDB(groupExpression),
-    this.applyOptionsToDB(options),
-    function(err, dbItems) {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, this.applyItemsFromDB(dbItems));
-    }.bind(this)
-  );
-};
-
-BaseStorage.prototype.insertOne = function (userOrUserId, item, callback) {
+BaseStorage.prototype.insertOne = function (userOrUserId, item, callback, options) {
   const itemToInsert = this.applyItemToDB(this.applyItemDefaults(item));
   this.database.insertOne(
     this.getCollectionInfo(userOrUserId),
@@ -301,22 +270,11 @@ BaseStorage.prototype.insertOne = function (userOrUserId, item, callback) {
         return callback(err);
       }
       callback(null, this.applyItemFromDB(itemToInsert));
-    }.bind(this)
+    }.bind(this),
+    options
   );
 };
 
-
-/**
- * Minimizes an event's history, used when in 'keep-authors' deletionMode
- *
- * @param user {Object} user The user owning the collection
- * @param headId {string} the id of the event whose history is minimized
- * @param callback {Function}
- */
-BaseStorage.prototype.minimizeEventsHistory = function(user, headId, callback) {
-  callback( new Error('Not implemented (user: ' + user + ')') );
-  // implemented for events only
-};
 
 /**
  * Finds and updates atomically a single document matching the given query,
@@ -443,13 +401,14 @@ BaseStorage.prototype.findAll = function(userOrUserId, options, callback) {
 /**
  * Inserts an array of items; each item must have a valid id and data already. For tests only.
  */
-BaseStorage.prototype.insertMany = function(userOrUserId, items, callback) {
+BaseStorage.prototype.insertMany = function(userOrUserId, items, callback, options) {
   // Groumpf... Many tests are relying on this.. 
   const nItems = _.cloneDeep(items);
   this.database.insertMany(
     this.getCollectionInfo(userOrUserId),
     this.applyItemsToDB(nItems),
-    callback
+    callback,
+    options
   );
 };
 

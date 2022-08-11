@@ -1,91 +1,97 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 
-// @flow
+const storeDataUtils = require('./helpers/storeDataUtils');
+
+const MallUserStreams = require('./MallUserStreams');
+const MallUserEvents = require('./MallUserEvents');
+const MallTransaction = require('./MallTransaction');
 
 /**
- * Data Store aggregator. 
- * Pack configured datastores into one
+ * Storage for streams and events.
+ * Under the hood, manages the different data stores (built-in and custom),
+ * dispatching data requests for each one.
  */
-
-const errors = require('errors').factory;
-
-const { DataStore } = require('../interfaces/DataStore');
-
-// --- Override Error handling 
-
-DataStore.throwInvalidRequestStructure = function(message, data) {
-  throw(errors.invalidRequestStructure(message, data, innerError));
-}
-
-DataStore.throwUnkownRessource = function(resourceType, id, innerError) {
-  throw(errors.unknownResource(resourceType, id, innerError));
-}
-
-
-// -- Core properties
-const MallUserStreams = require('./MallUserStreams');
-const StoreUserEvents = require('./MallUserEvents');
-
-class Mall extends DataStore {
-
-  _id: string = 'store';
-  _name: string = 'Store';
-  stores: Array<DataStore>;
-  storesMap: Map<string, DataStore>;
+class Mall {
+  /**
+   * @type {Map<string, DataStore>}
+   */
+  stores;
   initialized: boolean;
   _streams: MallUserStreams;
-  _events: StoreUserEvents;
+  _events: MallUserEvents;
 
   constructor() {
-    super();
-    this.storesMap = {};
-    this.stores = [];
+    this.stores = new Map();
     this.initialized = false;
   }
 
-  get streams(): MallUserStreams { return this._streams; }
-  get events(): StoreUserEvents { return this._events; }
+  get streams() { return this._streams; }
+  get events() { return this._events; }
 
   /**
-   * register a new DataStore
-   * @param 
+   * Register a new DataStore
+   * @param {DataStore} store
    */
-  addStore(store: DataStore): void {
+  addStore(store) {
     if (this.initialized) throw(new Error('Sources cannot be added after init()'));
-    this.stores.push(store);
-    this.storesMap[store.id] = store;
+    this.stores.set(store.id, store);
   }
 
-  async init(): Promise<Mall> {
+  /**
+   * @returns {Promise<Mall>}
+   */
+  async init () {
     if (this.initialized) throw(new Error('init() can only be called once.'));
     this.initialized = true;
 
-    // initialize all stores
-    for (const store: DataStore of this.stores) {
+    for (const store of this.stores.values()) {
       await store.init();
     }
 
-    // expose streams and events;
-    this._streams = new MallUserStreams(this);
-    this._events = new StoreUserEvents(this);
-    
+    this._streams = new MallUserStreams(this.stores.values());
+    this._events = new MallUserEvents(this.stores.values());
+
     return this;
   }
 
-  /**
-   * @private
-   * @param {identifier} storeId 
-   * @returns 
-   */
-  _storeForId(storeId: string): DataStore {
-    return this.storesMap[storeId];
+  async deleteUser (userId) {
+    for (const store of this.stores.values()) {
+      try {
+        await store.deleteUser(userId);
+      } catch (error) {
+        storeDataUtils.throwAPIError(error, store.id);
+      }
+    }
   }
 
+  /**
+   * Return the quantity of storage used by the user in bytes.
+   * @param {string} userId
+   */
+  async getUserStorageSize(userId) {
+    let storageUsed = 0;
+    for (const store of this.stores.values()) {
+      try {
+        storageUsed += await store.getUserStorageSize(userId);
+      } catch (error) {
+        storeDataUtils.throwAPIError(error, store.id);
+      }
+    }
+    return storageUsed;
+  }
+
+  /**
+   * @param {string} storeId
+   * @returns {Promise<MallTransaction>}
+   */
+  async newTransaction() {
+    return new MallTransaction(this);
+  }
 }
 
 module.exports = Mall;

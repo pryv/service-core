@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -12,6 +12,7 @@ const async = require('async');
 const commonFns = require('api-server/src/methods/helpers/commonFunctions');
 const methodsSchema = require('../schema/auditMethods');
 const eventsGetUtils = require('api-server/src/methods/helpers/eventsGetUtils');
+const { getStoreQueryFromParams } = require('mall/src/helpers/eventsQueryUtils');
 
 import type { GetEventsParams } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { StreamQuery } from 'business/src/events';
@@ -35,7 +36,7 @@ module.exports = function (api) {
 }
 
 /**
- * 
+ *
  */
 function anyStarStreamQueryIsNullQUery(context, params, result, next) {
   if (isStar(params.arrayOfStreamQueries)) {
@@ -45,11 +46,11 @@ function anyStarStreamQueryIsNullQUery(context, params, result, next) {
 
   /**
    * arrayOfStreamQueries === [{ any: ['*']}]
-   * @param {*} arrayOfStreamQueries 
+   * @param {*} arrayOfStreamQueries
    */
   function isStar(arrayOfStreamQueries): boolean {
-    return params.arrayOfStreamQueries.length === 1 && 
-    params.arrayOfStreamQueries[0]?.any?.length === 1 && 
+    return params.arrayOfStreamQueries.length === 1 &&
+    params.arrayOfStreamQueries[0]?.any?.length === 1 &&
     params.arrayOfStreamQueries[0]?.any[0] === '*';
   }
 }
@@ -57,7 +58,7 @@ function anyStarStreamQueryIsNullQUery(context, params, result, next) {
 
 /**
  * Remove ':audit:' from stream query;
- * @returns 
+ * @returns
  */
 function removeStoreIdFromStreamQuery(context, params, result, next) {
   if (params.arrayOfStreamQueries == null) return next();
@@ -81,19 +82,19 @@ function removeStoreIdFromStreamQuery(context, params, result, next) {
 
 function limitStreamQueryToAccessToken(context, params, result, next) {
   if (context.access.isPersonal()) return next();
-  if (params.arrayOfStreamQueries == null) { params.arrayOfStreamQueries = [{}]; }
+  if (params.arrayOfStreamQueries == null) { params.arrayOfStreamQueries = [{}]; }
 
   // stream corresponding to acces.id exemple: "access-{acces.id}"
   const streamId: string = audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id;
 
   for (const query: StreamQuery of params.arrayOfStreamQueries) {
-    if (query.any == null) { 
+    if (query.any == null) {
       query.any = [streamId]
     } else {
       if (query.all == null) { query.all = []}
       query.all.push({any: [streamId]});
     }
-    
+
   }
   next();
 }
@@ -104,11 +105,10 @@ async function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = await auditStorage.forUser(context.user.id);
     params.streams = params.arrayOfStreamQueries;
-    result.addStream('auditLogs', userStorage.getLogsStream(params, true));
+    const query = getStoreQueryFromParams(params);
+    result.addStream('auditLogs', userStorage.getLogsStream(query, true));
   } catch (err) {
     return next(err);
-  }     
+  }
   next();
 }
-
-

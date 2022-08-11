@@ -1,0 +1,10 @@
+{
+  "name": "platform",
+  "version": "1.7.12",
+  "private": true,
+  "description": "This package is part of Pryv.io, a Pryv S.A. software",
+  "homepage": "https://pryv.com",
+  "license": "UNLICENSED",
+  "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
+  "main": "src/index.js"
+}

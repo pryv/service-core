@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -48,12 +48,12 @@ class Syslog { 
 
   /**
    * send an new event for syslog
-   * @param {string} userid 
-   * @param {PryvEvent} event 
+   * @param {string} userId
+   * @param {PryvEvent} event
    */
-  eventForUser(userid, event) {
-    logger.debug('eventForUser', userid);
-    const logItem = templates.logForEvent(userid, event);
+  eventForUser(userId, event) {
+    logger.debug('eventForUser', userId);
+    const logItem = templates.logForEvent(userId, event);
     if (logItem != null) {
       this.syslogger.log(logItem)
     }
@@ -64,7 +64,7 @@ module.exports = Syslog;
 
 /**
  * Generate syslog Format for Winston
- * @param {Object} options 
+ * @param {Object} options
  * @param {boolean} options.color - set to true to have colors
  * @param {boolean} options.time - set to true to for timestamp
  * @param {boolean} options.align - set to true to allign logs items

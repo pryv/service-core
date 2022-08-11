@@ -1,16 +1,19 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 var async = require('async'),
-    generateId = require('cuid'),
+    cuid = require('cuid'),
     fs = require('fs'),
     mkdirp = require('mkdirp'),
     path = require('path'),
     rimraf = require('rimraf'),
     toString = require('utils').toString;
+
+const bluebird = require('bluebird');
+const { pipeline } = require('stream/promises');
 
 module.exports = EventFiles;
 /**
@@ -19,7 +22,7 @@ module.exports = EventFiles;
  */
 function EventFiles(settings, logger) {
   this.settings = settings;
-  this.logger = logger; 
+  this.logger = logger;
 }
 
 /**
@@ -55,7 +58,7 @@ async function* recursiveReadDirAsync(dir) {
       } catch(err){
         this.logger.error('Data corrupted; expected ' + toString.path(filePath) + ' to exist');
         yield 0;
-      }      
+      }
     }
   }
 }
@@ -77,62 +80,40 @@ function getSizeRecursive(filePath, callback) {
 }
 
 /**
- * Generates a new id for the given file.
- *
- * @param {String} filePath
- * @returns {String}
- */
-EventFiles.prototype.generateFileId = function (filePath) {
-  filePath;
-  
-  // for now we just generate a random id (in the future we could do a SHA digest)
-  return generateId();
-};
-
-/**
  * @param tempPath The current, temporary path of the file to save (the file will actually be moved
  *                 from that path)
  */
-EventFiles.prototype.saveAttachedFile = function (tempPath, user, eventId, fileId, callback) {
-  if (typeof(fileId) === 'function') {
-    // no fileId provided
-    callback = fileId;
-    fileId = this.generateFileId(tempPath);
-  }
-  var dirPath = this.getAttachmentPath(user.id, eventId);
-  mkdirp(dirPath).then(function (res, err) {
-    if (err) { return callback(err); }
-
-    var readStream = fs.createReadStream(tempPath);
-    var writeStream = fs.createWriteStream(path.join(dirPath, fileId));
-
-    readStream.on('error', callback);
-    writeStream.on('error', callback);
-    writeStream.on('close', function () {
-      fs.unlink(tempPath, function (err) {
-        if (err) { return callback(err); }
-        callback(null, fileId);
-      });
-    });
-
-    readStream.pipe(writeStream);
-  });
+EventFiles.prototype.saveAttachedFileFromTemp = async function (tempPath, userId, eventId, fileId) {
+  const readStream = fs.createReadStream(tempPath);
+  fileId = await this.saveAttachedFileFromStream(readStream, userId, eventId, fileId);
+  await fs.promises.unlink(tempPath);
+  return fileId;
 };
 
-EventFiles.prototype.removeAttachedFile = function (user, eventId, fileId, callback) {
-  var filePath = this.getAttachmentPath(user.id, eventId, fileId);
-  fs.unlink(filePath, function (err) {
-    if (err) { return callback(err); }
-    this.cleanupStructure(path.dirname(filePath), callback);
-  }.bind(this));
+EventFiles.prototype.saveAttachedFileFromStream = async function (readableStream, userId, eventId, fileId) {
+  fileId = fileId || cuid();
+  const dirPath = this.getAttachmentPath(userId, eventId);
+  await mkdirp(dirPath);
+  const writeStream = fs.createWriteStream(path.join(dirPath, fileId));
+  await pipeline(readableStream, writeStream);
+  return fileId;
 };
 
-EventFiles.prototype.removeAllForEvent = function (user, eventId, callback) {
-  var dirPath = this.getAttachmentPath(user.id, eventId);
-  rimraf(dirPath, function (err) {
-    if (err) { return callback(err); }
-    this.cleanupStructure(path.dirname(dirPath), callback);
-  }.bind(this));
+EventFiles.prototype.getAttachedFileStream = function (userId, eventId, fileId) {
+  const filePath = this.getAttachmentPath(userId, eventId, fileId);
+  return fs.createReadStream(filePath);
+};
+
+EventFiles.prototype.removeAttachedFile = async function (userId, eventId, fileId) {
+  var filePath = this.getAttachmentPath(userId, eventId, fileId);
+  await fs.promises.unlink(filePath);
+  await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(filePath), cb));
+};
+
+EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
+  var dirPath = this.getAttachmentPath(userId, eventId);
+  await bluebird.fromCallback((cb) => rimraf(dirPath, cb));
+  await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(dirPath), cb));
 };
 
 EventFiles.prototype.removeAllForUser = function (user, callback) {

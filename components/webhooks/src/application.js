@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -20,6 +20,8 @@ require('@pryv/boiler').init({
 });
 
 const {getConfig, getLogger} = require('@pryv/boiler');
+
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const assert = require('assert');
 
@@ -46,6 +48,7 @@ class Application {
 
   async initSettings() {
     this.settings = await getConfig();
+    await SystemStreamsSerializer.init();
   }
   initLogger() {
     this.logger = getLogger('application');

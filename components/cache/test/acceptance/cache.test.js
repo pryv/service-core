@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -134,7 +134,7 @@ describe('Cache', function() {
   
     const data = `first-with-cache: ${t1}, second-with-cache: ${t2}, no-cache: ${t3}  => `;
     assert.isBelow(t2,t1, 'second-with-cache streams.get should be faster than first-with-cache' + data);
-    assert.isAbove(t3,t2 * 1.5, 'cache streams.get should be at least 40% longer than second-with-cache ' + data);
+    assert.isAbove(t3,t2 * 1.4, 'cache streams.get should be at least 40% longer than second-with-cache ' + data);
   });
 
   it('[XDP6] Cache should reset permissions on stream structure change when moving a stream in and out ', async () => {

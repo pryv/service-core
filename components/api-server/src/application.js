@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -32,6 +32,13 @@ const boiler = require('@pryv/boiler').init({
     file: path.resolve(__dirname, '../../audit/config/default-path.js')
   }, {
     plugin: require('../config/config-validation')
+  }, {
+    plugin: {load: async () => { 
+      // this is not a plugin, but a way to ensure some component are initialized after config
+      // @sgoumaz - should we promote this pattern for all singletons that need to be initialized ?
+      const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+      await SystemStreamsSerializer.init();
+    }}
   }]
 });
 
@@ -44,6 +51,7 @@ const errorsMiddlewareMod = require('./middleware/errors');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
 const UserLocalDirectory = require('business').users.UserLocalDirectory;
+
 
 const { Extension, ExtensionLoader } = require('utils').extension;
 
@@ -102,11 +110,13 @@ class Application {
     this.initializing = true;
     this.produceLogSubsystem();
     logger.debug('Init started');
-    await UserLocalDirectory.init();
 
+  
     this.config = await getConfig();
     this.isOpenSource = this.config.get('openSource:isActive');
-    this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active')
+    this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active');
+
+    await UserLocalDirectory.init();
     
     if (this.isAuditActive) {
       const audit = require('audit');
@@ -127,7 +137,7 @@ class Application {
         hostname,
       }
     ))
-    this.initiateRoutes();
+    await this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
     const errorsMiddleware = errorsMiddlewareMod(this.logging);
     this.expressApp.use(errorsMiddleware);
@@ -174,7 +184,7 @@ class Application {
     this.expressApp = await expressAppInit(this.logging);
   }
 
-  initiateRoutes() {
+  async initiateRoutes() {
     
     if (this.config.get('dnsLess:isActive')) {
       require('./routes/register')(this.expressApp, this);
@@ -194,7 +204,7 @@ class Application {
     require('./routes/accesses')(this.expressApp, this);
     require('./routes/account')(this.expressApp, this);
     require('./routes/auth/login')(this.expressApp, this);
-    require('./routes/events')(this.expressApp, this);
+    await require('./routes/events')(this.expressApp, this);
     require('./routes/followed-slices')(this.expressApp, this);
     require('./routes/profile')(this.expressApp, this);
     require('./routes/service')(this.expressApp, this);

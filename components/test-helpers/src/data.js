@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -22,30 +22,25 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getUsersRepository, User } = require('business/src/users');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
+const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
 
 // users
 const users = exports.users = require('./data/users');
 const defaultUser = users[0];
 
-const customAccountProperties = buildCustomAccountProperties();
-
-
 exports.resetUsers = async () => {
   logger.debug('resetUsers');
   await getConfig(); // lock up to the time config is ready
-  await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
-    { name: 'events' },
-    {
-      streamIds: {
-        $in: SystemStreamsSerializer.getAccountStreamIds(),
-      }
-    }, cb));
+  await SystemStreamsSerializer.init();
+  const customAccountProperties = buildCustomAccountProperties();
+
   const usersRepository = await getUsersRepository(); 
-  
+  await usersRepository.deleteAll();  
+
   for (const user of users) {
     const userObj: User = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
-    await usersRepository.insertOne(userObj);
+    await usersRepository.insertOne(userObj, false, true);
   }
 };
 
@@ -101,16 +96,15 @@ exports.resetEvents = function (done, user) {
     delete eventToWrite.tags;
     return eventToWrite;
   })
+  let mall;
   async.series([
-    storage.user.events.removeMany.bind(storage.user.events, 
-      user,
-      { 
-        streamIds: {
-          $nin: allAccountStreamIds
-        }
-      }
-    ),
-    storage.user.events.insertMany.bind(storage.user.events, user, eventsToWrite),
+    async function removeAccountEvents() {
+      mall = await getMall();
+      await mall.events.delete(user.id, {state: 'all', includeDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
+    },
+    async function createEvents() {
+      await mall.events.createMany(user.id,  eventsToWrite)
+    },
     function removeZerosDuration(done2) {
       events.forEach( e => { if (e.duration === 0) delete e.duration});
       done2();
@@ -124,7 +118,27 @@ exports.resetEvents = function (done, user) {
 const streams = exports.streams = require('./data/streams');
 
 exports.resetStreams = function (done, user) {
-  resetData(storage.user.streams, user || defaultUser, streams, done);
+  const myUser = user || defaultUser;
+  let mall = null;
+
+  async function addStreams(arrayOfStreams) {
+    for (const stream of arrayOfStreams) {
+      const children = stream?.children || [];
+      const streamData = _.clone(stream);
+      delete streamData.children;
+      await mall.streams.create(myUser.id, streamData);
+      await addStreams(children);
+    }
+  }
+  
+  async.series([
+    async () => { 
+      mall = await getMall(); 
+      await mall.streams.deleteAll(myUser.id, 'local');
+      await addStreams(streams);
+    },
+  ], done)
+
 };
 
 function resetData (storage, user, items, done) {
@@ -198,7 +212,8 @@ function copyAttachmentFn(attachmentInfo, user, eventId) {
     } catch (e) {
       return callback(e);
     }
-    storage.user.eventFiles.saveAttachedFile(tmpPath, user, eventId, attachmentInfo.id, callback);
+    storage.user.eventFiles.saveAttachedFileFromTemp(tmpPath, user.id, eventId, attachmentInfo.id).then(
+      (fileID) => { callback(null, fileID); }, (err) => { callback(err); });
   };
 }
 

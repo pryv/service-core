@@ -1,12 +1,13 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { UsersRepository, getUsersRepository, User } = require('business/src/users');
+const { getMall } = require('mall');
 
 const { getLogger } = require('@pryv/boiler');
 const { TAG_ROOT_STREAMID, TAG_PREFIX }: { TAG_ROOT_STREAMID: string, TAG_PREFIX: string } = require('api-server/src/methods/helpers/backwardCompatibility');
@@ -23,6 +24,7 @@ module.exports = async function (context, callback) {
   const logger = getLogger('migration-1.7.0');
   logger.info('V1.6.21 => v1.7.0 Migration started');
 
+  await SystemStreamsSerializer.init();
   const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
   const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
   const eventsCollection = await bluebird.fromCallback(cb =>
@@ -31,14 +33,15 @@ module.exports = async function (context, callback) {
     context.database.getCollection({ name: 'streams' }, cb));
   const accessesCollection = await bluebird.fromCallback(cb =>
     context.database.getCollection({ name: 'accesses' }, cb));
-  const userEventsStorage = new (require('../user/Events'))(context.database);
+
+
   
   await migrateAccounts(eventsCollection);
   await migrateTags(eventsCollection, streamsCollection);
   await migrateTagsAccesses(accessesCollection);
-
   logger.info('Accounts were migrated, now rebuilding the indexes');
-  await rebuildIndexes(context.database, eventsCollection, userEventsStorage.getCollectionInfoWithoutUserId()),
+  await rebuildIndexes(context.database, eventsCollection),
+
   logger.info('V1.6.21 => v1.7.0 Migration finished');
   callback();
 
@@ -143,7 +146,11 @@ module.exports = async function (context, callback) {
     }
   }
 
-  async function rebuildIndexes(database, eventsCollection, collectionInfo): Promise<void> {
+  async function rebuildIndexes(database, eventsCollection): Promise<void> {
+    for (const item of eventsIndexes) {
+      item.options.background = true;
+      await eventsCollection.createIndex(item.index, item.options);
+    }
     const indexCursor = await eventsCollection.listIndexes();
     while (await indexCursor.hasNext()) {
       const index = await indexCursor.next();
@@ -159,7 +166,7 @@ module.exports = async function (context, callback) {
   
   async function migrateTags(eventsCollection, streamsCollection): Promise<void> { 
     
-    const storageLayer = await require('storage').getStorageLayer();
+    const mall = await getMall();
     // get all users with tags 
     const usersWithTag = await eventsCollection.distinct('userId', {tags: { $exists: true, $ne: null }});
     for (userId of usersWithTag) {
@@ -167,9 +174,9 @@ module.exports = async function (context, callback) {
 
       async function createStream(id, name, parentId) {
         try { 
-          await bluebird.fromCallback(cb => storageLayer.streams.insertOne({id: userId}, {name: name, id: id, parentId: parentId, modifiedBy: 'migration', createdBy: 'migration', created: now, modified: now}, cb));
+          await mall.streams.create(userId, {name: name, id: id, parentId: parentId, modifiedBy: 'migration', createdBy: 'migration', created: now, modified: now});
         } catch (e) {
-          if (e.code !== 11000) throw(e)// already exists.. oK
+          if (e.id !== 'item-already-exists') throw(e)// already exists.. oK
         }
       }
 
@@ -267,3 +274,40 @@ module.exports = async function (context, callback) {
 
 
 };
+
+
+const eventsIndexes = [
+  {
+    index: { userId: 1 },
+    options: {},
+  },
+  {
+    index: { userId: 1, _id: 1, },
+    options: {},
+  },
+  {
+    index: { userId: 1, streamIds: 1 },
+    options: {},
+  },
+  {
+    index: { userId: 1, time: 1 },
+    options: {},
+  },
+  {
+    index: { userId: 1, streamIds: 1 },
+    options: {},
+  },
+  // no index by content until we have more actual usage feedback
+  {
+    index: { userId: 1, trashed: 1 },
+    options: {},
+  },
+  {
+    index: { userId: 1, modified: 1 },
+    options: {},
+  },
+  {
+    index: { userId: 1, endTime: 1 },
+    options: { partialFilterExpression: { endTime: { $exists: true } } },
+  }
+];
