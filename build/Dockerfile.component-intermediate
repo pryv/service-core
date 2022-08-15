@@ -19,12 +19,12 @@ RUN mkdir -p $LOG_DIR && \
 
 # ============================ start runit ================================
 # Install the script that runs the api service
-RUN mkdir /etc/runit/ && mkdir /etc/service/runit/
+RUN mkdir -p /etc/runit/ && mkdir -p /etc/service/runit/
 RUN cp -r $TARGET_DIR/build/$COMPONENT_NAME/runit/* /etc/runit/
 RUN mv /etc/runit/runit.sh /etc/init.d/
 
 # make a link to /etc/service (will be run with runit).
-RUN ln -s /etc/init.d/runit.sh /etc/service/runit/run 
+RUN ln -s /etc/init.d/runit.sh /etc/service/runit/run
 # ============================ end runit ================================
 
 # Remove cron and sshd entirely, unless we use them
