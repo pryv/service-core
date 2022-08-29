@@ -54,8 +54,8 @@ module.exports = async function (api) {
     ifDnsLess(skip, registration.createUserStep1_ValidateUserOnPlatform.bind(registration)),
     //user registration methods
     ifDnsLess(skip, registration.deletePartiallySavedUserIfAny.bind(registration)),
-    registration.createUser.bind(registration),
     ifDnsLess(skip, registration.createUserStep2_CreateUserOnPlatform.bind(registration)),
+    registration.createUser.bind(registration),
     registration.buildResponse.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );

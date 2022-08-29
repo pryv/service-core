@@ -42,6 +42,10 @@ module.exports = async function (context, callback) {
   logger.info('V1.7.5 => v1.8.0 Migration finished');
   callback();
 
+  async function setAllTrashed() {
+    await eventsCollection.updateMany({trashed: null, deleted: null}, {$set: {trashed: false}});
+  }
+
   async function migrateUserids() {
     const usersIndex = require('business/src/users/UsersLocalIndex');
     await usersIndex.init();

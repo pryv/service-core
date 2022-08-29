@@ -49,11 +49,7 @@ function endTimeFromStoreToDuration (eventData) {
 // state
 
 function stateToStore(eventData) {
-  if (eventData.delete !== undefined) {
-    delete eventData.trashed;
-  } else {
     eventData.trashed = (eventData.trashed === true);
-  }
   return eventData;
 };
 
