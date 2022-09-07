@@ -16,7 +16,7 @@ const itemDeletion = require('../src/schema/itemDeletion');
 
 const http = require('http');
 
-const N_ITEMS = 1000;
+const N_ITEMS = 2000;
 describe('events streaming with ' + N_ITEMS + ' entries', function () {
   this.timeout(60 * 2 * 1000);
   
@@ -51,7 +51,7 @@ describe('events streaming with ' + N_ITEMS + ' entries', function () {
       }]
     });
     // load 10'000 events
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < N_ITEMS; i++) {
       let res = await user.event({
         streamIds: [streamId],
         type: 'count/step',
@@ -68,7 +68,7 @@ describe('events streaming with ' + N_ITEMS + ' entries', function () {
     var options = {
       host: apiServer.host,
       port: apiServer.port,
-      path: '/' + username + '/events?limit=10000&auth=' + appAccessToken,
+      path: '/' + username + '/events?limit=' + N_ITEMS + '&auth=' + appAccessToken,
       method: 'GET'
     };
 
