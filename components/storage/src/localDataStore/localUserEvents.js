@@ -43,7 +43,7 @@ module.exports = (ds.createUserEvents({
     let performingReadRequest = false;
     readableUnderPressure._read = async () => {
       if (performingReadRequest) return; // avoid strating a 2nd read request when already pushing.
-      performingReadRequest = true; 
+      performingReadRequest = true;
       try {
         let push = true;
         while (push) {
@@ -51,7 +51,7 @@ module.exports = (ds.createUserEvents({
           const value = await cursor.next();
           push = readableUnderPressure.push(cleanResult({value})); // if null reader is "full" (handle back pressure)
         }
-        performingReadRequest = false; 
+        performingReadRequest = false;
       } catch (err) {
         readableUnderPressure.emit('error', err);
       }
@@ -182,7 +182,7 @@ const converters = {
     return {[content.field]: {$lte :content.value}};
   },
   greaterOrEqualOrNull: (content) => {
-    return { $or: [{ [content.field]: { $gte: content.value } }, { [content.field]: null }] }
+    return { $or: [{ [content.field]: { $gte: content.value } }, { [content.field]: null }] };
   },
   typesList: (list) => {
     if (list.length == 0) return null;
