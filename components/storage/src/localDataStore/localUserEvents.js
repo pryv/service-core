@@ -38,8 +38,8 @@ module.exports = (ds.createUserEvents({
   async getStreamed(userId, params) {
     const {query, options} = paramsToMongoquery(params);
     const cursor = this._getCursor(userId, query, options);
-    // streaming with backpressure - highWaterMark has really some effect
-    const readableUnderPressure = new Readable({objectMode: true, highWaterMark: 500});
+    // streaming with backpressure - highWaterMark has really some effect "4000" seems to be an optimnal value
+    const readableUnderPressure = new Readable({objectMode: true, highWaterMark: 4000});
     let performingReadRequest = false;
     readableUnderPressure._read = async () => {
       if (performingReadRequest) return; // avoid strating a 2nd read request when already pushing.
