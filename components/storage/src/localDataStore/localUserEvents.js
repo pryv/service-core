@@ -39,15 +39,19 @@ module.exports = (ds.createUserEvents({
     const {query, options} = paramsToMongoquery(params);
     const cursor = this._getCursor(userId, query, options);
     // streaming with backpressure - highWaterMark has really some effect
-    const readableUnderPressure = new Readable({objectMode: true, highWaterMark: 4000});
+    const readableUnderPressure = new Readable({objectMode: true, highWaterMark: 500});
+    let performingReadRequest = false;
     readableUnderPressure._read = async () => {
+      if (performingReadRequest) return; // avoid strating a 2nd read request when already pushing.
+      performingReadRequest = true;
       try {
         let push = true;
         while (push) {
           if (! await cursor.hasNext()) { readableUnderPressure.push(null); break; } // stop
           const value = await cursor.next();
-          push = readableUnderPressure.push(cleanResult({value})); // if null reader is "full"
+          push = readableUnderPressure.push(cleanResult({value})); // if null reader is "full" (handle back pressure)
         }
+        performingReadRequest = false;
       } catch (err) {
         readableUnderPressure.emit('error', err);
       }
@@ -178,7 +182,7 @@ const converters = {
     return {[content.field]: {$lte :content.value}};
   },
   greaterOrEqualOrNull: (content) => {
-    return { $or: [{ [content.field]: { $gte: content.value } }, { [content.field]: null }] }
+    return { $or: [{ [content.field]: { $gte: content.value } }, { [content.field]: null }] };
   },
   typesList: (list) => {
     if (list.length == 0) return null;
