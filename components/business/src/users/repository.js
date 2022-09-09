@@ -30,12 +30,10 @@ class UsersRepository {
   storageLayer: {};
   sessionsStorage: {};
   accessStorage: {};
-  uniqueFields: Array<string>;
   mall: {};
   platform: null;
 
   constructor() {
-    this.uniqueFields = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
   }
 
   async init() {
