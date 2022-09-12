@@ -382,7 +382,20 @@ const events =  [
     modified: 0,
     modifiedBy: 'test'
   },
-
+  {
+    id: getTestEventId(29),
+    deleted: timestamp.now('-5m'),
+    trashed: true,
+    streamId: streams[7].children[0].id,
+    time: timestamp.now(),
+    type: 'activity/pryv',
+    tags: [],
+    description: 'Event deleted and trashed but kept with full content',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-30m'),
+    modifiedBy: 'test'
+  },
 ].map(function (event) {
   if (event.streamId) { 
     event.streamIds = [event.streamId];
