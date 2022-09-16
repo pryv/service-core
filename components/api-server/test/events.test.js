@@ -434,6 +434,22 @@ describe('events', function () {
       });
     });
 
+    it('[C3HU] must return an error if doNotExcludeDeletions is given as parameter', function (done) {
+      var params = {
+        state: 'all',
+        modifiedSince: timestamp.now('-45m'),
+        includeDeletions: true,
+        doNotExcludeDeletions: true
+      };
+
+      request.get(basePath).query(params).end(async function (res) {
+        res.body.should.have.property('error');
+        res.body.error.should.have.property('id', 'invalid-parameters-format');
+        done();
+      });
+    });
+
+
     it('[B766] must include event deletions (since that time) when requested', function (done) {
       var params = {
         state: 'all',
