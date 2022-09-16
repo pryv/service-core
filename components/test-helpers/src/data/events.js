@@ -384,7 +384,7 @@ const events =  [
   },
   {
     id: getTestEventId(29),
-    deleted: timestamp.now('-5m'),
+    deleted: timestamp.now('-4m'),
     trashed: true,
     streamId: streams[7].children[0].id,
     time: timestamp.now(),

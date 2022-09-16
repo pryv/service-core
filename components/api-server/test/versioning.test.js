@@ -133,7 +133,7 @@ describe('Versioning', function () {
               });
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
-              const events = await mall.events.get(user.id, {id: trashedEventWithHistory.id, state: 'all', includeDeletions: true, includeHistory: true})
+              const events = await mall.events.get(user.id, {id: trashedEventWithHistory.id, state: 'all', doNotExcludeDeletions: true, includeHistory: true})
               events.length.should.be.eql(1); // only the event itself not the history 
               events[0].id.should.eql(trashedEventWithHistory.id);
               should.exist(events[0].deleted);
@@ -158,8 +158,8 @@ describe('Versioning', function () {
               });
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
-              const events = await mall.events.get(user.id,{id: trashedEventWithHistory.id, state: 'all', includeDeletions: true});
-              const eventHistory = await mall.events.get(user.id,{headId: trashedEventWithHistory.id, state: 'all', includeDeletions: true})
+              const events = await mall.events.get(user.id,{id: trashedEventWithHistory.id, state: 'all', doNotExcludeDeletions: true});
+              const eventHistory = await mall.events.get(user.id,{headId: trashedEventWithHistory.id, state: 'all', doNotExcludeDeletions: true})
               events.push(...eventHistory);
 
               events.length.should.be.eql(3); 
@@ -220,7 +220,7 @@ describe('Versioning', function () {
          
             },
             async function checkThatHistoryIsUnchanged() {
-              let eventHistory = await mall.events.get(user.id, {headId: trashedEventWithHistory.id, state: 'all', includeDeletions: true});
+              let eventHistory = await mall.events.get(user.id, {headId: trashedEventWithHistory.id, state: 'all', doNotExcludeDeletions: true});
     
               // TODO clean this test
               const checked = {first: false, second: false};
@@ -585,7 +585,7 @@ describe('Versioning', function () {
           event.should.eql(expected);
         },
         async function checkThatHistoryIsUnchanged() {
-          let events = await mall.events.get(user.id, {headId: eventOnChildStream.id, state: 'all', includeDeletions: true});
+          let events = await mall.events.get(user.id, {headId: eventOnChildStream.id, state: 'all', doNotExcludeDeletions: true});
         
           let checked = false;
           (events.length).should.eql(1);

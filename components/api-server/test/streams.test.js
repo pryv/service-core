@@ -868,7 +868,7 @@ describe('[STRE] streams', function () {
             });
         },
         async function verifyLinkedEvents() {
-          let events = await mall.events.get(user.id, {includeDeletions: true, state: 'all', includeHistory: true});
+          let events = await mall.events.get(user.id, {doNotExcludeDeletions: true, state: 'all', includeHistory: true});
 
             // lets separate system events from all other events and validate them separately
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);

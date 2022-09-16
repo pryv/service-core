@@ -445,7 +445,13 @@ describe('events', function () {
       });
       var eventDeletions = events.filter(function (e) {
         return (e.deleted && e.deleted > timestamp.now('-45m'));
+      }).map(function (e) { 
+        if (e.type != null) {
+          return {id: e.id, deleted: e.deleted};
+        } 
+        return e;
       });
+
       events = validation.removeDeletionsAndHistory(events).filter(function (e) {
         return (e.modified >= timestamp.now('-45m'));
       });
