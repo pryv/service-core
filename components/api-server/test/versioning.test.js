@@ -133,8 +133,8 @@ describe('Versioning', function () {
               });
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
-              const events = await mall.events.get(user.id, {id: trashedEventWithHistory.id, state: 'all', doNotExcludeDeletions: true, includeHistory: true})
-              events.length.should.be.eql(1); // only the event itself not the history 
+              const events = await mall.events.get(user.id, {id: trashedEventWithHistory.id, state: 'all', withDeletions: true, includeHistory: true})
+              events.length.should.be.eql(1); // only the event itself not the history
               events[0].id.should.eql(trashedEventWithHistory.id);
               should.exist(events[0].deleted);
             }
@@ -158,11 +158,11 @@ describe('Versioning', function () {
               });
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
-              const events = await mall.events.get(user.id,{id: trashedEventWithHistory.id, state: 'all', doNotExcludeDeletions: true});
-              const eventHistory = await mall.events.get(user.id,{headId: trashedEventWithHistory.id, state: 'all', doNotExcludeDeletions: true})
+              const events = await mall.events.get(user.id,{id: trashedEventWithHistory.id, state: 'all', withDeletions: true});
+              const eventHistory = await mall.events.get(user.id,{headId: trashedEventWithHistory.id, state: 'all', withDeletions: true})
               events.push(...eventHistory);
 
-              events.length.should.be.eql(3); 
+              events.length.should.be.eql(3);
 
               // deleted event
               const deletedEvents = events.filter(e => e.deleted);
@@ -174,8 +174,8 @@ describe('Versioning', function () {
               should.exist(deletedEvent.modified);
               should.exist(deletedEvent.modifiedBy);
               if (integrity.events.isActive) should.exist(deletedEvent.integrity);
-              
-              // history 
+
+              // history
               const history = events.filter(e => e.headId);
               history.length.should.be.eql(2);
               history.forEach(function (event) {
@@ -212,28 +212,28 @@ describe('Versioning', function () {
               should.exist(event);
               const expected = _.cloneDeep(trashedEventWithHistory);
               delete expected.streamId;
-              // this comes from the storage .. no need to test tags 
+              // this comes from the storage .. no need to test tags
               delete expected.tags;
               expected.deleted = event.deleted;
               integrity.events.set(expected);
               event.should.eql(expected);
-         
+
             },
             async function checkThatHistoryIsUnchanged() {
-              let eventHistory = await mall.events.get(user.id, {headId: trashedEventWithHistory.id, state: 'all', doNotExcludeDeletions: true});
-    
+              let eventHistory = await mall.events.get(user.id, {headId: trashedEventWithHistory.id, state: 'all', withDeletions: true});
+
               // TODO clean this test
               const checked = {first: false, second: false};
               (eventHistory.length).should.eql(2);
               eventHistory.forEach(function (event) {
                 if (event.id === testData.events[20].id) {
                   const expected = _.cloneDeep(testData.events[20]);
-                  delete expected.tags;// this comes from the storage .. no need to test tags 
+                  delete expected.tags;// this comes from the storage .. no need to test tags
                   event.should.eql(expected);
                   checked.first = true;
                 } else if (event.id === testData.events[21].id) {
                   const expected = _.cloneDeep(testData.events[21]);
-                  delete expected.tags;// this comes from the storage .. no need to test tags 
+                  delete expected.tags;// this comes from the storage .. no need to test tags
                   event.should.eql(expected);
                   checked.second = true;
                 }
@@ -539,7 +539,7 @@ describe('Versioning', function () {
         },
         async function verifyDeletedHistoryInStorage() {
           let events = await mall.events.get(user.id, {headId: eventOnChildStream.id, state: 'all'});
-    
+
           events.length.should.be.eql(1);
           events.forEach(function (event) {
             (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
@@ -579,20 +579,20 @@ describe('Versioning', function () {
           const expected = _.cloneDeep(eventOnChildStream);
           delete expected.streamId;
           expected.deleted = event.deleted;
-          // we can remove tags as it comes from the db  
+          // we can remove tags as it comes from the db
           delete expected.tags;
           integrity.events.set(expected);
           event.should.eql(expected);
         },
         async function checkThatHistoryIsUnchanged() {
-          let events = await mall.events.get(user.id, {headId: eventOnChildStream.id, state: 'all', doNotExcludeDeletions: true});
-        
+          let events = await mall.events.get(user.id, {headId: eventOnChildStream.id, state: 'all', withDeletions: true});
+
           let checked = false;
           (events.length).should.eql(1);
           events.forEach(function (event) {
             event.headId.should.eql(eventOnChildStream.id);
             if (event.id === testData.events[26].id) {
-                // we can remove tags as it comes from the db  
+                // we can remove tags as it comes from the db
                 const expected = _.cloneDeep(testData.events[26])
               delete expected.tags;
               event.should.eql(expected);

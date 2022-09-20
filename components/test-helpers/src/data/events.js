@@ -9,8 +9,7 @@ const timestamp = require('unix-timestamp');
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { integrity } = require('business');
 
-
-const events =  [
+const events = [
   {
     id: getTestEventId(0),
     streamId: streams[0].children[0].id,
@@ -395,9 +394,9 @@ const events =  [
     createdBy: 'test',
     modified: timestamp.now('-30m'),
     modifiedBy: 'test'
-  },
+  }
 ].map(function (event) {
-  if (event.streamId) { 
+  if (event.streamId) {
     event.streamIds = [event.streamId];
     delete event.streamId;
   }
@@ -417,7 +416,7 @@ module.exports = events;
  * Creates a cuid-like id (required event id format).
  * @param n
  */
-function getTestEventId(n) {
+function getTestEventId (n) {
   n = n + '';
   return 'cthisistesteventno' + (n.length >= 7 ? n : new Array(7 - n.length + 1).join('0') + n);
 }

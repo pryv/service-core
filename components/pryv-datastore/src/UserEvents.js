@@ -35,7 +35,7 @@ const UserEvents = module.exports = {
    * @see [Get events in Pryv.io API reference](https://api.pryv.com/reference/#get-events)
    * @param {identifier} userId
    * @param {object} params - Query parameters
-   * @param {boolean} [params.doNotExcludeDeletions=false] - Include event deletions in the results.
+   * @param {boolean} [params.withDeletions=false] - Include event deletions in the results.
    * @param {timestamp} [params.deletedSince=null] -  Only return deleted events, sorted by deletion date descending.
    * @param {boolean} [params.includeHistory=false] - Include change history for events.
    * @returns {Event[]}

@@ -6,7 +6,7 @@
  */
 /*global describe, before, beforeEach, it */
 
-require('./test-helpers'); 
+require('./test-helpers');
 
 const bluebird = require('bluebird');
 const helpers = require('./helpers');
@@ -43,7 +43,7 @@ describe('events', function () {
       request = null,
       access = null,
       filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
-  
+
   let mall;
 
   before(async function() {
@@ -275,7 +275,7 @@ describe('events', function () {
           }, done);
         });
       });
-    
+
     it('[W5IT] must take into account fromTime and toTime even if set to 0', function (done) {
       const params = {
         fromTime: 0,
@@ -296,12 +296,12 @@ describe('events', function () {
         }, done);
       });
     });
-    
+
     it('[Y6SY] must take into account modifiedSince even if set to 0', function (done) {
       var params = {
         modifiedSince: 0
       };
-      
+
       request.get(basePath).query(params).end(function (res) {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
         res.body.events = separatedEvents.events;
@@ -434,12 +434,12 @@ describe('events', function () {
       });
     });
 
-    it('[C3HU] must return an error if doNotExcludeDeletions is given as parameter', function (done) {
+    it('[C3HU] must return an error if withDeletions is given as parameter', function (done) {
       var params = {
         state: 'all',
         modifiedSince: timestamp.now('-45m'),
         includeDeletions: true,
-        doNotExcludeDeletions: true
+        withDeletions: true
       };
 
       request.get(basePath).query(params).end(async function (res) {
@@ -464,7 +464,7 @@ describe('events', function () {
       }).map(function (e) { 
         if (e.type != null) {
           return {id: e.id, deleted: e.deleted};
-        } 
+        }
         return e;
       });
 
@@ -550,7 +550,7 @@ describe('events', function () {
         res.statusCode.should.eql(200);
         res.body.event.should.have.property('attachments');
         res.body.event.attachments.forEach(attachment => {
-          attachment.should.have.property('readToken');          
+          attachment.should.have.property('readToken');
         });
 
         done();
@@ -769,11 +769,11 @@ describe('events', function () {
         },
         async function verifyEventData() {
           const events = await mall.events.get(user.id, {});
-          
+
           events.length.should.eql(originalCount + 1, 'events');
 
           var expected = _.clone(data);
-          
+
           expected.streamId = expected.streamIds[0];
           expected.id = createdEventId;
           expected.streamIds = expected.streamIds.concat(['patapoumpoum'].map(t => TAG_PREFIX + t));
@@ -783,7 +783,7 @@ describe('events', function () {
           var actual = _.find(events, function (event) {
             return event.id === createdEventId;
           });
-          actual.streamId = actual.streamIds[0]; 
+          actual.streamId = actual.streamIds[0];
           validation.checkStoredItem(actual, 'event');
           validation.checkObjectEquality(actual, expected);
         }
@@ -810,7 +810,7 @@ describe('events', function () {
         done();
       });
     });
-    
+
     it('[6BVW] must accept explicit null for optional fields', function (done) {
       const data = {
         type: 'test/null',
@@ -876,7 +876,7 @@ describe('events', function () {
         validation.checkErrorInvalidParams(res, done);
       });
     });
-    
+
     it('[O7Y2] must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');
       var data = {
@@ -1208,10 +1208,10 @@ describe('events', function () {
         }, done);
       });
     });
-    
+
     it('[R8ER] must return an error if there is more than one non-file content part', function (done) {
       request.post(basePath)
-        .field('event', 
+        .field('event',
           JSON.stringify({ streamIds: [testData.streams[0].id], type: testType }))
         .field('badPart', 'text')
         .end(function (res) {
@@ -1237,7 +1237,7 @@ describe('events', function () {
           .attach('text', testData.attachments.text.path,
               testData.attachments.text.fileName)
           .end(function (res) {
-      
+
             validation.check(res, {
               status: 200,
               schema: methodsSchema.update.result
@@ -1280,7 +1280,7 @@ describe('events', function () {
             expected.modifiedBy = access.id;
             expected = _.defaults(expected, event);
             integrity.events.set(expected);
-            
+
             validation.checkObjectEquality(updatedEvent, expected);
 
             // check attached files
@@ -1303,8 +1303,8 @@ describe('events', function () {
 
         request
           .post(path(event.id))
-          .attach('text', 
-            testData.attachments.text.path, 
+          .attach('text',
+            testData.attachments.text.path,
             testData.attachments.text.fileName)
           .end(function (res) {
             validation.check(res, {
@@ -1323,9 +1323,9 @@ describe('events', function () {
             if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
             expectedAttachments.push(attData);
 
-            const attachments = updatedEvent.attachments; 
+            const attachments = updatedEvent.attachments;
             should(attachments.length).be.eql(expectedAttachments.length);
-            
+
             attachments.should.eql(expectedAttachments);
 
             attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
@@ -1342,7 +1342,7 @@ describe('events', function () {
 
   describe('GET /<id>', () => {
     beforeEach(resetEvents);
-    
+
     it('[8GSS] allows access at level=read', async () => {
       const request = supertest(server.url);
       const access = _.find(testData.accesses, (v) => v.id === 'a_2');
@@ -1440,13 +1440,13 @@ describe('events', function () {
 
         should(res.body.event.modified).be.approximately(time, 2);
         var expected = _.cloneDeep(original);
-        delete expected.modified; 
+        delete expected.modified;
         expected.modifiedBy = access.id;
         expected.streamId = expected.streamIds[0];
         expected.modified = res.body.event.modified;
         expected.created = res.body.event.created;
         expected.clientData = _.extend(expected.clientData, data.clientData);
-       
+
         delete expected.clientData.numberProp;
         integrity.events.set(expected);
         validation.checkObjectEquality(res.body.event, expected);
@@ -1455,7 +1455,7 @@ describe('events', function () {
         done();
       });
     });
-    
+
     it('[FM3G] must accept explicit null for optional fields', function (done) {
       const data = {
         type: 'test/null',
@@ -1522,7 +1522,7 @@ describe('events', function () {
         streamId: testData.streams[0].id
       };
       let eventId;
-      
+
       beforeEach(function (done) {
         request.post(basePath).send(event).end(function (res) {
           validation.check(res, {
@@ -1533,7 +1533,7 @@ describe('events', function () {
           done();
         });
       });
-    
+
       it('[L15U] must prevent update of protected fields and throw a forbidden error in strict mode',
         function (done) {
           const forbiddenUpdate = {
@@ -1544,7 +1544,7 @@ describe('events', function () {
             modified: 1,
             modifiedBy: 'alice'
           };
-            
+
           async.series([
             function instanciateServerWithStrictMode(stepDone) {
               setIgnoreProtectedFieldUpdates(false, stepDone);
@@ -1560,7 +1560,7 @@ describe('events', function () {
             }
           ], done);
         });
-        
+
       it('[6NZ7] must prevent update of protected fields and log a warning in non-strict mode',
         function (done) {
           const forbiddenUpdate = {
@@ -1603,7 +1603,7 @@ describe('events', function () {
 
     it('[CUM3] must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');
-      
+
       request.put(path(testData.events[1].id)).send({tags: [bigTag]})
         .end(function (res) {
           validation.check(res, {
@@ -1700,14 +1700,14 @@ describe('events', function () {
         expected.attachments = expected.attachments.slice();
         // NOTE We cannot be sure that we still are at the exact same second that
         // we were just now when we did the call. So don't use time here, test
-        // for time delta below. 
-        delete expected.modified; 
+        // for time delta below.
+        delete expected.modified;
         expected.modifiedBy = access.id;
         expected.modified = updatedEvent.modified;
         expected.attachments.shift();
         integrity.events.set(expected);
         validation.checkObjectEquality(updatedEvent, expected);
-        
+
         var time = timestamp.now();
         should(updatedEvent.modified).be.approximately(time, 2);
 
