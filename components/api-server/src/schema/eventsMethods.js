@@ -34,8 +34,10 @@ module.exports = {
       'limit': number(),
       'state': string({ enum: ['default', 'trashed', 'all']}),
       'modifiedSince': number(),
-      'includeDeletions': boolean()
-    }, { id: 'events.get' }),
+      'includeDeletions': boolean(),
+      'auth': string(),
+      'running': boolean(),
+    }, { id: 'events.get', additionalProperties: false }),
     result: object({
       'events': array(event(Action.READ)),
       'eventDeletions': array(itemDeletion)

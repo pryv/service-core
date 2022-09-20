@@ -73,7 +73,7 @@ exports.check = function (response, expected, done) {
     response.body.events.forEach(checkEventIntegrity);
   }
   if (response.body.eventDeletions != null) {
-    response.body.eventDeletions.forEach(checkEventIntegrity);
+    response.body.eventDeletions.forEach(checkEventDeletionIntegrity);
   }
 
   if (expected.sanitizeFn) {
@@ -89,6 +89,11 @@ exports.check = function (response, expected, done) {
 
   if (done) { done(); }
 };
+
+function checkEventDeletionIntegrity(e) {
+  //deletion integrity can be null
+  if (e.intergity != null) checkEventIntegrity(e);
+}
 
 function checkEventIntegrity(e) {
   if (! integrity.events.isActive) return;

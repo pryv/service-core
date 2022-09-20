@@ -47,7 +47,8 @@ module.exports = async function(expressApp: express$Application, app: Applicatio
         skip: 'number',
         limit: 'number',
         modifiedSince: 'number',
-        includeDeletions: 'boolean'
+        includeDeletions: 'boolean',
+        running: 'boolean'
       });
       api.call(req.context, params, methodCallback(res, next, 200));
     });

@@ -79,7 +79,7 @@ class MallUserEvents {
     const eventsStore = this.eventsStores.get(storeId);
     if (!eventsStore) return null;
     try {
-      const paramsForStore = eventsQueryUtils.getStoreQueryFromParams({ id: storeEventId, state: 'all', limit: 1, includeDeletions: true });
+      const paramsForStore = eventsQueryUtils.getStoreQueryFromParams({ id: storeEventId, state: 'all', limit: 1, withDeletions: true });
       const events: Array<Events> = await eventsStore.get(userId, paramsForStore);
       if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
     } catch (e) {
@@ -342,7 +342,7 @@ class MallUserEvents {
       'trashed', 'created',
       'createdBy', 'integrity'
     ];
-    const res = await this.updateMany(userId, { headId: eventId, state: 'all', includeDeletions: true }, { fieldsToDelete });
+    const res = await this.updateMany(userId, { headId: eventId, state: 'all', withDeletions: true }, { fieldsToDelete });
     return res;
   }
 
