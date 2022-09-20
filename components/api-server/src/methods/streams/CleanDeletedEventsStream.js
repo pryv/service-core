@@ -11,12 +11,12 @@ module.exports = CleanDeletedEventsStream;
 
 /**
  * Some deleted event might have extra properties depending on delete mode
- * In thi seventuality we keep only the id and deleted property.
- * If we have to modifiy the structure we do remove also the integritity.
+ * In this eventuality we keep only the id and deleted properties.
+ * If we have to modify the structure we also remove the integrity.
  * @constructor
  */
-function CleanDeletedEventsStream() {
-  Transform.call(this, {objectMode: true});
+function CleanDeletedEventsStream () {
+  Transform.call(this, { objectMode: true });
 }
 
 inherits(CleanDeletedEventsStream, Transform);
