@@ -446,7 +446,7 @@ describe("[FG5R] Events of system streams", () => {
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
-              allEventsInDb = await mall.events.get(user.attrs.id, {streams: [{any: [streamId]}], state: 'all', includeDeletions: true, includeHistory: true});
+              allEventsInDb = await mall.events.get(user.attrs.id, {streams: [{any: [streamId]}], state: 'all', withDeletions: true, includeHistory: true});
               newEventFromDB = allEventsInDb.find(event => event.id === res.body.event.id);
               oldEventFromDB = allEventsInDb.find(event => event.id !== res.body.event.id);
             });

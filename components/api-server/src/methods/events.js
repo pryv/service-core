@@ -34,6 +34,8 @@ const { getPlatform } = require('platform');
 
 const { pubsub } = require('messages');
 
+const CleanDeletedEventsStream = require('./streams/CleanDeletedEventsStream');
+
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
 const { convertStreamIdsToOldPrefixOnResult, changeMultipleStreamIdsPrefix, changeStreamIdsPrefixInStreamQuery,
@@ -140,7 +142,8 @@ module.exports = async function (api)
     const localDeletionsStreams = await mall.events.getStreamedWithParamsByStore(context.user.id,
       { local: { skip: params.skip, limit: params.limit, deletedSince: params.modifiedSince}});
 
-    result.addStream('eventDeletions', localDeletionsStreams);
+    // remove properties of events that shouldn't be exposed
+    result.addStream('eventDeletions', localDeletionsStreams.pipe(new CleanDeletedEventsStream()) );
     next();
   }
 
