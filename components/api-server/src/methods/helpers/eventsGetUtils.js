@@ -405,8 +405,7 @@ async function findEventsFromStore(filesReadTokenSecret: string,
       paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
       paramsByStoreId[storeId].streams = []; // empty the stream query
     }
-    delete streamQuery.storeId; 
-    streamQuery.includeDeletions = false; // if deletions have been requested they will be included later in the result
+    delete streamQuery.storeId;
     paramsByStoreId[storeId].streams.push(streamQuery);
   }
   // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}

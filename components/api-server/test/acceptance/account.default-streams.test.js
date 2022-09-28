@@ -140,7 +140,8 @@ describe('[ACCO] Account with system streams', function () {
 
         allVisibleAccountEvents = await mall.events.get(user.attrs.id, 
           {streams: [
-            {any: visibleStreamsIds, and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]},
+            {any: visibleStreamsIds}, 
+            {and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]},
           ]});
 
         // get account info
@@ -202,15 +203,7 @@ describe('[ACCO] Account with system streams', function () {
         await createUser();
         basePath += '/change-password'
         // remove passwordHash event from the database
-        const passwordEvents = await mall.events.get(user.attrs.id, {
-          streams: [{
-            any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]
-          }]
-        });
-        for (const event of passwordEvents) {
-          await mall.events.delete(user.attrs.id, {id: event.id});
-        } // make sure the event was deleted
-
+        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
 
         // make sure the event was deleted
         let password = await getActiveEvent('passwordHash');
@@ -243,14 +236,7 @@ describe('[ACCO] Account with system streams', function () {
         await createUser();
         basePath += '/reset-password'
         // remove passwordHash event from the database
-        const passwordEvents = await mall.events.get(user.attrs.id, {
-          streams: [{
-            any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]
-          }]
-        });
-        for (const event of passwordEvents) {
-          await mall.events.delete(user.attrs.id, {id: event.id});
-        } // make sure the event was deleted
+        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
 
         // make sure the event was deleted
         let password = await getActiveEvent('passwordHash');

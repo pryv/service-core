@@ -15,7 +15,6 @@ const util = require('util');
 
 const { storeDataUtils } = require('mall');
 const { findForbiddenChar } = require('../../schema/streamId');
-const _ = require('lodash');
 
 import type { StreamQuery, StreamQueryWithStoreId } from 'business/src/events';
 
