@@ -147,7 +147,13 @@ class UserDatabase {
     const queryString = prepareEventsDeleteQuery(params);
     this.logger.debug('DELETE events: ' +queryString);
     if (queryString.indexOf('MATCH') > 0) {
-      $$('TODO.. SQLite does not know how to delete with "MATCH" statement', queryString);
+      // SQLite does not know how to delete with "MATCH" statement
+      // going by the doddgy task of getting events that matches the query and deleteing them one by one
+      const selectEventsToBeDeleted = prepareEventsGetQuery(params);
+      const deleteByIdStatement = this.db.prepare('DELETE FROM events WHERE eventid = ?');
+      for (const event of this.db.prepare(selectEventsToBeDeleted).iterate()) {
+        deleteByIdStatement.run(event.eventid);
+      }
       return null;
     }
     const res = this.db.prepare(queryString).run();
