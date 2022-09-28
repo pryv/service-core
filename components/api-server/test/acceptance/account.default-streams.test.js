@@ -17,6 +17,7 @@ const { getApplication } = require('api-server/src/application');
 
 const { pubsub } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const userAccountStorage = require('business/src/users/userAccountStorage');
 const { getConfig } = require('@pryv/boiler');
 
 const { databaseFixture } = require('test-helpers');
@@ -178,8 +179,9 @@ describe('[ACCO] Account with system streams', function () {
     describe('and when valid data is provided', () => {
       let passwordBefore;
       let passwordAfter;
+      let user;
       before(async function () {
-        await createUser();
+        user = await createUser();
         basePath += '/change-password'
         // modify account info
         passwordBefore = await getActiveEvent('passwordHash');
@@ -196,6 +198,10 @@ describe('[ACCO] Account with system streams', function () {
       });
       it('[PWAA] should update event with password hash', async () => {
         assert.notEqual(passwordBefore.content, passwordAfter.content);
+      });
+      it('[ACNE] should find password in password history', async () => {
+        assert.isTrue(await userAccountStorage.passwordHashExistsInHistory(user.attrs.id, passwordBefore.content, 2, 'missing previous password in history'));
+        assert.isTrue(await userAccountStorage.passwordHashExistsInHistory(user.attrs.id, passwordAfter.content, 2, 'missing new password in history'));
       });
     });
     describe('when the password in the database does not exist', () => {

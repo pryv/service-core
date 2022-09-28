@@ -19,6 +19,7 @@ const { getApplication } = require('api-server/src/application');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const { getUsersRepository, User } = require('business/src/users');
+const userAccountStorage = require('business/src/users/userAccountStorage');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 const { ApiEndpoint } = require('utils');
@@ -597,6 +598,10 @@ describe('registration: cluster', function() {
           registrationSent = stripRegistrationRequest(registrationSent);
 
           assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
+        });
+        it('[1BF3] should find password in password history', async () => {
+          const user = await usersRepository.getUserByUsername(userData.username);
+          assert.isTrue(await userAccountStorage.passwordHashExistsInHistory(user.id, user.passwordHash, 1, 'missing password in history'));
         });
       });
       describe('when an invalid one is provided', () => {
