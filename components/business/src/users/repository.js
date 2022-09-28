@@ -1,25 +1,23 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 // @flow
 
 const bluebird = require('bluebird');
-const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
 const User = require('./User');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
 import type { Event } from 'business/src/events';
 import type { Access } from 'business/src/accesses';
-import type { SystemStream } from 'business/src/system-streams';
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
 
-const userIndex = require('./UserLocalIndex');
+const usersIndex = require('./UsersLocalIndex');
 const { getMall } = require('mall');
 const { getPlatform } = require('platform');
 
@@ -32,12 +30,10 @@ class UsersRepository {
   storageLayer: {};
   sessionsStorage: {};
   accessStorage: {};
-  uniqueFields: Array<string>;
   mall: {};
   platform: null;
 
   constructor() {
-    this.uniqueFields = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix();
   }
 
   async init() {
@@ -48,16 +44,19 @@ class UsersRepository {
     this.storageLayer = await storage.getStorageLayer();
     this.sessionsStorage = this.storageLayer.sessions;
     this.accessStorage = this.storageLayer.accesses;
-    await userIndex.init();
+    await usersIndex.init();
   }
 
   // only for testing
   async getAll(): Promise<Array<User>> {
-    const usersMap = await userIndex.allUsersMap(); 
+    const usersMap = await usersIndex.getAllByUsername();
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
       const user = await this.getUserById(userId);
+      if (user == null) {
+        throw new Error(`Repository inconsistency, userIndex list user id: "${userId}" username: "${username}" but cann get it with getUserById(userId)`);
+      }
       users.push(user);
     }
     return users;
@@ -65,17 +64,16 @@ class UsersRepository {
 
   // only for test data to reset all users Dbs.
   async deleteAll(): Promise<void> {
-    const usersMap = await userIndex.allUsersMap(); 
-    for (const [username, userId] of Object.entries(usersMap)) {
+    const usersMap = await usersIndex.getAllByUsername();
+    for (const [, userId] of Object.entries(usersMap)) {
       await this.mall.deleteUser(userId);
     }
-    await userIndex.deleteAll();
+    await usersIndex.deleteAll();
     await this.platform.deleteAll();
   }
 
-  
   async getAllUsernames(): Promise<Array<User>> {
-    const usersMap = await userIndex.allUsersMap(); 
+    const usersMap = await usersIndex.getAllByUsername();
 
     const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -85,20 +83,24 @@ class UsersRepository {
   }
 
   async getUserIdForUsername(username: string) {
-    return await userIndex.idForName(username);
+    return await usersIndex.getUserId(username);
   }
 
   async getUserById(userId: string): Promise<?User> {
     const userAccountStreamsIds =  Object.keys(SystemStreamsSerializer.getAccountMap());
     const query = {state: 'all', streams: [{any: userAccountStreamsIds, and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}]};
     const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
+    const username = await usersIndex.getUsername(userId);
     // convert events to the account info structure
     if (
       userAccountEvents.length == 0
     ) {
       return null;
     }
-    const username = await userIndex.nameForId(userId);
+
+    if (username == null) {
+      throw new Error('Inconsistency between userEvents and usersIndex, found null username for userId: "' + userId + '" with ' + userAccountEvents.length + ' user account events');
+    }
     const user = new User({ id: userId, username: username, events: userAccountEvents });
     return user;
   }
@@ -108,14 +110,14 @@ class UsersRepository {
     if (userId) {
       const user = await this.getUserById(userId);
       return user;
-    } 
+    }
     return null;
   }
 
   async getStorageUsedByUserId(userId: string): Promise<?any>  {
     return {
-      dbDocuments: await this.getOnePropertyValue(userId, 'dbDocuments') || 0,
-      attachedFiles: await this.getOnePropertyValue(userId, 'attachedFiles') || 0
+      dbDocuments: await this.getOnePropertyValue(userId, 'dbDocuments') || 0,
+      attachedFiles: await this.getOnePropertyValue(userId, 'attachedFiles') || 0
     };
   }
 
@@ -124,7 +126,7 @@ class UsersRepository {
     const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
     if (! userAccountEvents || ! userAccountEvents[0]) return null;
     return userAccountEvents[0].content;
-  };
+  }
 
   async createSessionForUser(
     username: string,
@@ -168,64 +170,76 @@ class UsersRepository {
 
   validateAllStorageObjectsInitialized(): boolean {
     if (this.accessStorage == null || this.sessionsStorage == null) {
-      throw (
-        new Error(
-          "Please initialize the user repository with all dependencies.",
-        )
-      );
+      throw new Error('Please initialize the user repository with all dependencies.');
     }
     return true;
   }
 
-  async insertOne(user: User, withSession: ?boolean = false): Promise<User> {
-    await this.checkDuplicates(user, user.username);
+  async insertOne(user: User, withSession: ?boolean = false, skipFowardToRegister: ?boolean = false): Promise<User> {
+    // Create the User at a Platfrom Level..
+    const operations = [];
+    for (const key of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
+      // use default value is null;
+      const value = (user[key] != null) ? user[key] : SystemStreamsSerializer.getAccountFieldDefaultValue(key);
+      if (value != null) {
+        operations.push({
+          action: 'create',
+          key: key,
+          value: value,
+          isUnique: SystemStreamsSerializer.isUniqueAccountField(key),
+          isActive: true
+        });
+      }
+    }
+
+    // check locally for username // <== maybe this usersIndex should be fully moved to platform
+    if (await usersIndex.usernameExists(user.username)) {
+      // gather eventual other uniqueness conflicts
+      const eventualPlatformUniquenessErrors = await this.platform.checkUpdateOperationUniqueness(user.username, operations);
+      const uniquenessError = errors.itemAlreadyExists('user', eventualPlatformUniquenessErrors);
+      uniquenessError.data.username = user.username;
+      throw uniquenessError;
+    }
+
+    // could throw uniqueness errors
+    await this.platform.updateUserAndForward(user.username, operations, skipFowardToRegister);
 
     const mallTransaction = await this.mall.newTransaction();
-    const localTransaction = await mallTransaction.forStoreId('local');
+    const localTransaction = await mallTransaction.getStoreTransaction('local');
 
     await localTransaction.exec(async () => {
-        let accessId = UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
-        if (
-          withSession && this.validateAllStorageObjectsInitialized() &&
-          user.appId != null
-        ) {
-          const token: string = await this.createSessionForUser(
-            user.username,
-            user.appId,
-            localTransaction.transactionSession,
-          );
-          const access = await this.createPersonalAccessForUser(
-            user.id,
-            token,
-            user.appId,
-            localTransaction.transactionSession,
-          );
-          accessId = access?.id;
-          user.token = access.token;
-        }
-        user.accessId = accessId;
-
-        const events: Array<Event> = await user.getEvents();
-
-        // add the user to local index
-        await userIndex.addUser(user.username, user.id);
-
-        // update unique fields on the platform
-        const operations = this.uniqueFields.map(key => { 
-          return {action: 'create', key: key, value: user[key], isUnique: true};
-        }); 
-        await this.platform.updateUser(user.username, operations, true, true);
-        
-        await this.mall.events.createMany(user.id, events, mallTransaction);
+      let accessId = UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
+      if (
+        withSession && this.validateAllStorageObjectsInitialized() &&
+        user.appId != null
+      ) {
+        const token: string = await this.createSessionForUser(
+          user.username,
+          user.appId,
+          localTransaction.transactionSession,
+        );
+        const access = await this.createPersonalAccessForUser(
+          user.id,
+          token,
+          user.appId,
+          localTransaction.transactionSession,
+        );
+        accessId = access?.id;
+        user.token = access.token;
       }
-    );
+      user.accessId = accessId;
+
+      const events: Array<Event> = await user.getEvents();
+
+      // add the user to local index
+      await usersIndex.addUser(user.username, user.id);
+
+      await this.mall.events.createMany(user.id, events, mallTransaction);
+    });
     return user;
   }
 
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
-   
-    await this.checkDuplicates(update, user.username);
-
     // change password into hash if it exists
     if (update.password != null) {
       update.passwordHash = await bluebird.fromCallback(
@@ -233,10 +247,10 @@ class UsersRepository {
       );
     }
     delete update.password;
-    
+
     // Start a transaction session
     const mallTransaction = await this.mall.newTransaction();
-    const localTransaction = await mallTransaction.forStoreId('local');
+    const localTransaction = await mallTransaction.getStoreTransaction('local');
 
     await localTransaction.exec(async () => {
       // update all account streams and don't allow additional properties
@@ -255,24 +269,21 @@ class UsersRepository {
         await this.mall.events.updateMany(user.id, query, {fieldsToSet: updateFields}, mallTransaction);
       }
     });
-
   }
 
-  async deleteOne(userId: string, username: ?string): Promise<number> {
-    const userAccountStreamsIds: Array<string> = SystemStreamsSerializer.getAccountStreamIds();
-
+  async deleteOne(userId: string, username: ?string, skipFowardToRegister: ?boolean): Promise<number> {
     const user = await this.getUserById(userId);
     if (username == null) {
       username = user?.username;
     }
-    
-    await userIndex.init();
-    await userIndex.deleteById(userId);
+
+    await usersIndex.init();
+    await usersIndex.deleteById(userId);
 
     if (username != null) { // can happen during tests
-      cache.unsetUser(username); 
-      // Clear data for this user in Platform 
-     await this.platform.deleteUser(username, user);
+      cache.unsetUser(username);
+      // Clear data for this user in Platform
+      await this.platform.deleteUser(username, user, skipFowardToRegister);
     }
     await this.mall.deleteUser(userId);
   }
@@ -288,65 +299,14 @@ class UsersRepository {
     return isValid;
   }
   async count(): Promise<number> {
-    const users = await userIndex.allUsersMap();
+    const users = await usersIndex.getAllByUsername();
     return Object.keys(users).length;
   }
-
-  
-
-  /**
-   * Checks for duplicates for unique fields. Throws item already exists error if any.
-   * 
-   * @param {any} fields - user fields to check for duplicates
-   * @param {string} ignoreValue - ignore matching duplicates with this value
-   */
-  async checkDuplicates(fields: any, ignoreValue: string): Promise<void> {
-    const that = this;
-    const uniquenessErrors = await getUniquessErrorFields(fields, ignoreValue);
-    // check locally for username (Maybe moved to platfom after full platform-db implementation)
-    if (fields.username && await userIndex.existsUsername(fields.username)) {
-      uniquenessErrors.username = fields.username;
-    }
-
-    if (Object.keys(uniquenessErrors).length > 0) {
-      throw (
-        errors.itemAlreadyExists(
-          "user",
-          uniquenessErrors,
-        )
-      );
-    }
-    return;
-
-    
-    async function getUniquessErrorFields(fields: any, ignoreValue: string): Promise<any> {
-      const uniquenessErrors = {};
-      for (const key of that.uniqueFields) {
-        const value = await that.platform.getUserUniqueField(key, fields[key]);
-        if (value != null && ignoreValue != value) { // exclude from error values already assigned to him
-          uniquenessErrors[key] = fields[key];
-        }
-      }
-      return uniquenessErrors;
-    }
-
-  }
-}
-
-/**
-   * Get object with transaction options
-   */
-function getTransactionOptions() {
-  return {
-    readPreference: 'primary',
-    readConcern: { level: 'local' },
-    writeConcern: { w: 'majority' },
-  };
 }
 
 /**
  * Get user password hash
- * @param string userId 
+ * @param string userId
  */
 async function getUserPasswordHash(userId: string, mall: any): Promise<?string> {
   const userPassEvents = await mall.events.get(userId, {streams: [{any: [SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH]}]});
@@ -355,9 +315,6 @@ async function getUserPasswordHash(userId: string, mall: any): Promise<?string> 
   }
   return null;
 }
-
-  
-
 
 let usersRepository = null;
 let usersRepositoryInitializing = false;

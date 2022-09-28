@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -14,25 +14,29 @@ const bluebird = require('bluebird');
 const { getStorageLayer } = require('storage');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const { getUsersRepository } = require('business/src/users');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+
+const usersIndex = require('business/src/users/UsersLocalIndex');
+
+const { platform } = require('platform');
 
 /**
  * @param systemAPI
  * @param api The user-facing API, used to compute usage stats per method
  */
-module.exports = async function (
-  systemAPI, api
-) {
+module.exports = async function (systemAPI, api) {
   const config = await getConfig();
   const logger = getLogger('system');
   const storageLayer = await getStorageLayer();
   const registration = new Registration(logger, storageLayer, config.get('services'));
   await registration.init();
-  const usersRepository = await getUsersRepository(); 
+  const usersRepository = await getUsersRepository();
   const userProfileStorage = storageLayer.profile;
   const userAccessesStorage = storageLayer.accesses;
+
+  await platform.init();
+  await usersIndex.init();
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
@@ -40,8 +44,8 @@ module.exports = async function (
     commonFns.getParamsValidation(methodsSchema.createUser.params),
     registration.prepareUserData,
     registration.createUser.bind(registration),
-    registration.sendWelcomeMail.bind(registration),
-    );
+    registration.sendWelcomeMail.bind(registration)
+  );
 
   // --------------------------------------------------------------- getUserInfo
   systemAPI.register('system.getUserInfo',
@@ -49,9 +53,10 @@ module.exports = async function (
     commonFns.getParamsValidation(methodsSchema.getUserInfo.params),
     loadUserToMinimalMethodContext,
     getUserInfoInit,
-    getUserInfoSetAccessStats);
+    getUserInfoSetAccessStats
+  );
 
-  async function loadUserToMinimalMethodContext(minimalMethodContext, params, result, next) {
+  async function loadUserToMinimalMethodContext (minimalMethodContext, params, result, next) {
     try {
       const userId = await usersRepository.getUserIdForUsername(params.username);
       if (userId == null) {
@@ -67,7 +72,7 @@ module.exports = async function (
     }
   }
 
-  async function getUserInfoInit(context, params, result, next) {
+  async function getUserInfoInit (context, params, result, next) {
     const newStorageUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
     result.userInfo = {
       username: context.user.username,
@@ -76,7 +81,7 @@ module.exports = async function (
     next();
   }
 
-  function getUserInfoSetAccessStats(context, params, result, next) {
+  function getUserInfoSetAccessStats (context, params, result, next) {
     const info = _.defaults(result.userInfo, {
       lastAccess: 0,
       callsTotal: 0,
@@ -94,8 +99,8 @@ module.exports = async function (
           info.lastAccess = access.lastUsed;
         }
 
-        var accessKey = getAccessStatsKey(access);
-        if (! info.callsPerAccess[accessKey]) {
+        const accessKey = getAccessStatsKey(access);
+        if (!info.callsPerAccess[accessKey]) {
           info.callsPerAccess[accessKey] = 0;
         }
         if (access.calls) {
@@ -107,12 +112,27 @@ module.exports = async function (
         }
       });
       // Since we've merged new keys into _the old userInfo_ on result, we don't
-      // need to return our result here, since we've modified the result in 
-      // place. 
+      // need to return our result here, since we've modified the result in
+      // place.
 
       next();
     });
   }
+
+  // --------------------------------------------------------------- checks
+  systemAPI.register('system.checkPlatformIntegrity',
+    async function performSystemsChecks (context, params, result, next) {
+      try {
+        result.checks = [
+          await platform.checkIntegrity(),
+          await usersIndex.checkIntegrity()
+        ];
+        return next();
+      } catch (err) {
+        return next(err);
+      }
+    }
+  );
 
   // --------------------------------------------------------------- deactivateMfa
   systemAPI.register('system.deactivateMfa',
@@ -122,24 +142,24 @@ module.exports = async function (
     deactivateMfa
   );
 
-  async function deactivateMfa(context, params, result, next) {
+  async function deactivateMfa (context, params, result, next) {
     try {
       await bluebird.fromCallback(cb => userProfileStorage.findOneAndUpdate(
-        context.user, 
-        {}, 
+        context.user,
+        {},
         { $unset: { 'data.mfa': '' } },
         cb));
     } catch (err) {
       return next(err);
     }
     next();
-  };
-
-  function getAPIMethodKeys() {
-    return api.getMethodKeys().map(string.toMongoKey); 
   }
 
-  function getAccessStatsKey(access) {
+  function getAPIMethodKeys () {
+    return api.getMethodKeys().map(string.toMongoKey);
+  }
+
+  function getAccessStatsKey (access) {
     if (access.type === 'shared') {
       // don't leak user private data
       return 'shared';
@@ -147,5 +167,4 @@ module.exports = async function (
       return access.name;
     }
   }
-
 };

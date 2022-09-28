@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -27,11 +27,9 @@ function Streams(database) {
 
   _.extend(this.converters, {
     itemDefaults: [
-      converters.createIdIfMissing,
     ],
     itemToDB: [
-      converters.deletionToDB,
-      converters.stateToDB
+      //converters.deletionToDB,
     ],
     itemsToDB: [
       treeUtils.flattenTree,

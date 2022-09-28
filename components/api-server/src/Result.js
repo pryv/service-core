@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -14,10 +14,13 @@ const async = require('async');
 
 const { Transform, Readable} = require('stream');
 
+const { DummyTracing } = require('tracing');
+
 import type { Webhook } from 'business/webhooks';
 
 type ResultOptions = {
   arrayLimit?: number, 
+  tracing?: object
 }
 type StreamDescriptor = {
   name: string, 
@@ -68,7 +71,8 @@ class Result {
     isStreamResult: boolean, 
     streamsArray: Array<StreamDescriptor>, 
     onEndCallback: ?doneCallBack,
-    streamsConcatArrays: Object
+    streamsConcatArrays: Object,
+    tracing: Object,
   }
   meta: ?Object;
   
@@ -109,20 +113,28 @@ class Result {
       isStreamResult: false, 
       streamsArray: [],  
       onEndCallback: null,
-      streamsConcatArrays: {}
+      streamsConcatArrays: {},
+      tracing: params?.tracing || new DummyTracing(),
+      tracingId: null
     };
+    this._private.tracingId = this._private.tracing.startSpan('apiResult');
     
     if (params && params.arrayLimit != null && params.arrayLimit > 0) {
       this._private.arrayLimit = params.arrayLimit;
     }
   }
 
+  closeTracing() {
+    this._private.tracing.finishSpan(this._private.tracingId);
+  }
+
   // Array concat stream
   addToConcatArrayStream(arrayName: string, stream: stream$Readable) {
     if (! this._private.streamsConcatArrays[arrayName]) {
-      this._private.streamsConcatArrays[arrayName] = new StreamConcatArray();
+      this._private.streamsConcatArrays[arrayName] = new StreamConcatArray(this._private.tracing, this._private.tracingId);
     }
-    this._private.streamsConcatArrays[arrayName].add(stream);    
+    this._private.streamsConcatArrays[arrayName].add(stream);
+    this._private.tracing.startSpan('addToConcatArrayStream:' + arrayName);
   }
 
   // Close
@@ -130,6 +142,7 @@ class Result {
     if (! this._private.streamsConcatArrays[arrayName]) {
       return;
     }
+    this._private.tracing.finishSpan('addToConcatArrayStream:' + arrayName);    
     this.addStream(arrayName, this._private.streamsConcatArrays[arrayName].getStream());
     this._private.streamsConcatArrays[arrayName].close();
   }
@@ -156,15 +169,20 @@ class Result {
   // Sends the content of Result to the HttpResponse stream passed in parameters.
   // 
   writeToHttpResponse(res: express$Response, successCode: number) {
+    
     const onEndCallBack = this._private.onEndCallback;
     if (this.isStreamResult()) {
+      const writeTracingId = this._private.tracing.startSpan('writeToHttpResponse', {}, this._private.tracingId);
       const stream: Readable = this.writeStreams(res, successCode);
-      stream.on('close', function() { 
+      stream.on('close', function() {
         if (onEndCallBack) onEndCallBack();
+        this._private.tracing.finishSpan(writeTracingId);
+        this.closeTracing();
       }.bind(this));
     } else {
+      this.closeTracing();
       this.writeSingle(res, successCode);
-      if (onEndCallBack) onEndCallBack()
+      if (onEndCallBack) onEndCallBack();
     }
   }
   
@@ -185,7 +203,7 @@ class Result {
       const first = streamsArray[0];
       return first.stream
         .pipe(new ArrayStream(first.name, true))
-        .pipe(new ResultStream())
+        .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
         .pipe(res);
     }
 
@@ -196,7 +214,7 @@ class Result {
       streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
     }
 
-    return new MultiStream(streams).pipe(new ResultStream()).pipe(res);
+    return new MultiStream(streams).pipe(new ResultStream(this._private.tracing, this._private.tracingId)).pipe(res);
   }
   
   writeSingle(res: express$Response, successCode: number) {
@@ -210,6 +228,7 @@ class Result {
   // In case the Result contains a streamsArray, it will drain them in arrays.
   // 
   toObject(callback: ToObjectCallback) {
+    this.closeTracing();
     if (this.isStreamResult()) {
       this.toObjectStream(callback);
     } else {
@@ -249,26 +268,32 @@ class Result {
 // Http.response
 class ResultStream extends Transform {
   isStart: boolean;
+  tracing: object;
+  tracingId: string;
   
-  constructor() {
+  constructor(tracing, parentTracingId) {
     super({objectMode: true});
     
     this.isStart = true;
+    this.tracing = tracing;
+    this.tracingId = this.tracing.startSpan('resultStream', {}, parentTracingId);
   }
   
   _transform(data, encoding, callback) {
     if (this.isStart) {
       this.push('{');
       this.isStart = false;
+      this.tracing.logForSpan(this.tracingId, {event: 'start'});
     }
     this.push(data);
+    this.tracing.logForSpan(this.tracingId, {event: 'push'});
     callback();
   }
   
   _flush(callback) {
     const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
     this.push(thing + '}');
-
+    this.tracing.finishSpan('resultStream');
     callback();
   }
 }
@@ -281,14 +306,17 @@ class StreamConcatArray {
   nextFactoryCallBack: Function;
   multistream: MultiStream;
   isClosed: boolean;
+  tracing: ?Object;
+  tracingName: string;
   
-  constructor() {
+  constructor(tracing, parentTracingId) {
     // holds pending stream not yet taken by
     this.streamsToAdd = [];
     this.nextFactoryCallBack = null;
     this.isClosed = false;
+    this.tracing = tracing;
+    this.tracingName = this.tracing.startSpan('streamConcat', {}, parentTracingId);
     const streamConcact = this;
-
     function factory(callback) {
       streamConcact.nextFactoryCallBack = callback;
       streamConcact._next();
@@ -303,11 +331,13 @@ class StreamConcatArray {
     if (! this.nextFactoryCallBack) return;
     if (this.streamsToAdd.length > 0) {
       const nextStream = this.streamsToAdd.shift();
+      this.tracing.logForSpan(this.tracingName, {event: 'shiftStream'});
       this.nextFactoryCallBack(null, nextStream);
       this.nextFactoryCallBack = null;
       return;
     }
     if (this.isClosed) {
+      this.tracing.finishSpan(this.tracingName);
       this.nextFactoryCallBack(null, null);
       this.nextFactoryCallBack = null;
     }
@@ -318,6 +348,7 @@ class StreamConcatArray {
   }
 
   add(readableStream: Readable) {
+    this.tracing.logForSpan(this.tracingName, {event: 'addStream'});
     this.streamsToAdd.push(readableStream);
   }
 

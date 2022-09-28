@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -34,8 +34,10 @@ module.exports = {
       'limit': number(),
       'state': string({ enum: ['default', 'trashed', 'all']}),
       'modifiedSince': number(),
-      'includeDeletions': boolean()
-    }, { id: 'events.get' }),
+      'includeDeletions': boolean(),
+      'auth': string(),
+      'running': boolean(),
+    }, { id: 'events.get', additionalProperties: false }),
     result: object({
       'events': array(event(Action.READ)),
       'eventDeletions': array(itemDeletion)

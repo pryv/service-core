@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -64,7 +64,7 @@ class Audit {
     if (! this.filter.isAudited(methodId)) return;
 
     context.tracing.startSpan('audit.validApiCall');
-
+    
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
     if (context.auditIntegrityPayload != null) {
@@ -72,7 +72,8 @@ class Audit {
     }
     event.type = CONSTANTS.EVENT_TYPE_VALID;
     await this.eventForUser(userId, event, methodId);
-    
+
+    context.tracing.logForSpan('audit.validApiCall', {userId, event, methodId});
     context.tracing.finishSpan('audit.validApiCall');
   }
 

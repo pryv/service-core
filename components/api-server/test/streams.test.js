@@ -1,12 +1,12 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 /*global describe, before, beforeEach, it */
 
-require('./test-helpers'); 
+require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -28,7 +28,7 @@ const bluebird = require('bluebird');
 const { getMall } = require('mall');
 
 const chai = require('chai');
-const assert = chai.assert; 
+const assert = chai.assert;
 
 describe('[STRE] streams', function () {
 
@@ -83,7 +83,7 @@ describe('[STRE] streams', function () {
           false, function (s) { return !s.trashed; });
         await validation.addStoreStreams(expected);
         res.body.streams = validation.removeAccountStreams(res.body.streams);
-   
+
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
@@ -117,7 +117,7 @@ describe('[STRE] streams', function () {
         done();
       });
     });
-    
+
     it('[T8AM] must include stream deletions even when the given time is 0', function (done) {
       var params = {includeDeletionsSince: 0};
       request.get(basePath).query(params).end(function (res) {
@@ -258,7 +258,7 @@ describe('[STRE] streams', function () {
         done();
       });
     });
-    
+
     it('[8WGG] must accept explicit null for optional fields', function (done) {
       const data = {
         id: 'nullable',
@@ -275,7 +275,7 @@ describe('[STRE] streams', function () {
         }, done);
       });
     });
-    
+
     it('[NR4D] must fail if a sibling stream with the same name already exists', function (done) {
       var data = {name: testData.streams[0].name};
       request.post(basePath).send(data).end(function (res) {
@@ -455,7 +455,7 @@ describe('[STRE] streams', function () {
         done();
       });
     });
-    
+
     it('[5KNJ] must accept explicit null for optional fields', function (done) {
       const data = {
         parentId: null,
@@ -545,7 +545,7 @@ describe('[STRE] streams', function () {
         },
         async function verifyStreamsData() {
           const streams = await mall.streams.get(user.id, {storeId: 'local', hideRootStreams: true});
-         
+
           var updated = _.clone(original);
           updated.parentId = newParent.id;
           delete updated.modified;
@@ -584,14 +584,14 @@ describe('[STRE] streams', function () {
         }, done);
       });
     });
-    
+
     describe('forbidden updates of protected fields', function () {
       const streamId = 'forbidden_stream_update_test';
       const stream = {
         id: streamId,
         name: streamId
       };
-      
+
       beforeEach(function (done) {
         request.post(basePath).send(stream).end(function (res) {
           validation.check(res, {
@@ -600,7 +600,7 @@ describe('[STRE] streams', function () {
           }, done);
         });
       });
-      
+
       it('[PN1H] must fail and throw a forbidden error in strict mode', function (done) {
         const forbiddenUpdate = {
           id: 'forbidden',
@@ -610,7 +610,7 @@ describe('[STRE] streams', function () {
           modified: 1,
           modifiedBy: 'alice'
         };
-        
+
         async.series([
           function instanciateServerWithStrictMode(stepDone) {
             setIgnoreProtectedFieldUpdates(false, stepDone);
@@ -625,7 +625,7 @@ describe('[STRE] streams', function () {
           }
         ], done);
       });
-      
+
       it('[A3WC] must succeed by ignoring protected fields and log a warning in non-strict mode', function (done) {
         const forbiddenUpdate = {
           id: 'forbidden',
@@ -635,7 +635,7 @@ describe('[STRE] streams', function () {
           modified: 1,
           modifiedBy: 'alice'
         };
-                
+
         async.series([
           function instanciateServerWithNonStrictMode(stepDone) {
             setIgnoreProtectedFieldUpdates(true, stepDone);
@@ -657,13 +657,13 @@ describe('[STRE] streams', function () {
           }
         ], done);
       });
-      
+
       function setIgnoreProtectedFieldUpdates(activated, stepDone) {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.updates.ignoreProtectedFields = activated;
         server.ensureStarted.call(server, settings, stepDone);
       }
-      
+
     });
 
   });
@@ -703,9 +703,10 @@ describe('[STRE] streams', function () {
           expectedDeletion,
           expectedChildDeletion;
 
-      async.series([async function() {
-        await mall.streams.update(user.id, {id: id, trashed: true});
-      },
+      async.series([
+        async function trashStream() {
+          await mall.streams.update(user.id, { id: id, trashed: true });
+        },
         function deleteStream(stepDone) {
           request.del(path(id)).end(function (res) {
             expectedDeletion = {
@@ -730,9 +731,9 @@ describe('[STRE] streams', function () {
           const parentStream = await mall.streams.get(user.id, {id: parent.id, storeId: 'local', expandChildren: -1, includeTrashed: true});
           const parentChildren = parentStream[0].children;
           parentChildren.length.should.eql(testData.streams[2].children.length - 1, 'child streams');
-          
+
           // deleted stream
-          const deletedStreams = await mall.streams.get(user.id, {includeDeletionsSince: 0, storeId: 'local'});
+          const deletedStreams = await mall.streams.getDeletions(user.id, 0, ['local']);
           const foundDeletedStream = deletedStreams.filter(s => s.id == id)[0];
           should.exists(foundDeletedStream, 'cannot find deleted stream');
           validation.checkObjectEquality(foundDeletedStream, expectedDeletion);
@@ -743,14 +744,14 @@ describe('[STRE] streams', function () {
           validation.checkObjectEquality(foundDeletedChild, expectedChildDeletion);
         }
       ],
-      done );
+      done);
     });
 
     it('[LVTR] must return a correct error if there are linked events and the related parameter is ' +
         'missing', function (done) {
       var id = testData.streams[0].id;
       async.series([
-        async function() {
+        async function trashStream() {
           await mall.streams.update(user.id, {id: id, trashed: true});
         },
         function deleteStream(stepDone) {
@@ -764,11 +765,11 @@ describe('[STRE] streams', function () {
       ],
       done );
     });
-    
+
     it('[RKEU] must reject the deletion of a root stream with mergeEventsWithParent=true', function (done) {
       var id = testData.streams[0].id;
       async.series([
-        async function() {
+        async function trashStream() {
           await mall.streams.update(user.id, {id: id, trashed: true});
         }, function deleteStream(stepDone) {
           request.del(path(testData.streams[0].id)).query({mergeEventsWithParent: true})
@@ -829,13 +830,13 @@ describe('[STRE] streams', function () {
 
     it('[KLD8] must delete the linked events when mergeEventsWithParent is false', function (done) {
       const id = testData.streams[8].id;
-      const deletedEvents = testData.events.filter(function (e) { 
+      const deletedEvents = testData.events.filter(function (e) {
         if (e.streamIds == null) return false;
-        return e.streamIds[0] === id; 
+        return e.streamIds[0] === id;
       });
       const deletedEventWithAtt = deletedEvents[0];
       let deletionTime;
-      
+
       async.series([
         function addEventAttachment(stepDone) {
           request.post('/' + user.username + '/events/' + deletedEventWithAtt.id)
@@ -867,7 +868,7 @@ describe('[STRE] streams', function () {
             });
         },
         async function verifyLinkedEvents() {
-          let events = await mall.events.get(user.id, {includeDeletions: true, state: 'all', includeHistory: true});
+          let events = await mall.events.get(user.id, {withDeletions: true, state: 'all', includeHistory: true});
 
             // lets separate system events from all other events and validate them separately
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
@@ -881,40 +882,40 @@ describe('[STRE] streams', function () {
             deletedEvents.forEach(function (e) {
               const actual = _.find(events, {id: e.id});
               assert.approximately(
-                actual.deleted, deletionTime, 2, 
+                actual.deleted, deletionTime, 2,
                 'Deletion time must be correct.');
               assert.equal(actual.id, e.id);
             });
 
             var dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
 
-            // some time after returning to the client. Let's hang around and try 
-            // this several times. 
+            // some time after returning to the client. Let's hang around and try
+            // this several times.
             await bluebird.fromCallback(cb => {
               assertEventuallyTrue(
-                () => ! fs.existsSync(dirPath), 
-                5, // second(s) 
-                'Event directory must be deleted' + dirPath, 
+                () => ! fs.existsSync(dirPath),
+                5, // second(s)
+                'Event directory must be deleted' + dirPath,
                 cb
               );
             });
         }
       ], done);
-      
+
       function assertEventuallyTrue(property, maxWaitSeconds, msg, cb) {
         const deadline = new Date().getTime() + maxWaitSeconds;
         const checker = () => {
           if (new Date().getTime() > deadline) {
             return cb(new chai.AssertionError('Timeout: '+msg));
           }
-          
-          const result = property(); 
+
+          const result = property();
           if (result) return cb();
 
           // assert: result is false, try again in a bit.
           setImmediate(checker);
         };
-        
+
         // Launch first check
         setImmediate(checker);
       }

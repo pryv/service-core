@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -12,7 +12,7 @@ const async = require('async');
 const commonFns = require('api-server/src/methods/helpers/commonFunctions');
 const methodsSchema = require('../schema/auditMethods');
 const eventsGetUtils = require('api-server/src/methods/helpers/eventsGetUtils');
-const mallEventsGetUtils = require('mall/src/lib/eventsGetUtils');
+const { getStoreQueryFromParams } = require('mall/src/helpers/eventsQueryUtils');
 
 import type { GetEventsParams } from 'api-server/src/methods/helpers/eventsGetUtils';
 import type { StreamQuery } from 'business/src/events';
@@ -20,7 +20,7 @@ import type { StreamQuery } from 'business/src/events';
 const audit = require('audit');
 const auditStorage = audit.storage;
 
-const { ConvertEventFromStoreStream } = require('mall/src/lib/eventsUtils');
+const { ConvertEventFromStoreStream } = require('mall/src/helpers/eventsUtils');
 
 /**
 * @param api
@@ -38,7 +38,7 @@ module.exports = function (api) {
 }
 
 /**
- * 
+ *
  */
 function anyStarStreamQueryIsNullQUery(context, params, result, next) {
   if (isStar(params.arrayOfStreamQueries)) {
@@ -48,11 +48,11 @@ function anyStarStreamQueryIsNullQUery(context, params, result, next) {
 
   /**
    * arrayOfStreamQueries === [{ any: ['*']}]
-   * @param {*} arrayOfStreamQueries 
+   * @param {*} arrayOfStreamQueries
    */
   function isStar(arrayOfStreamQueries): boolean {
-    return params.arrayOfStreamQueries.length === 1 && 
-    params.arrayOfStreamQueries[0]?.any?.length === 1 && 
+    return params.arrayOfStreamQueries.length === 1 &&
+    params.arrayOfStreamQueries[0]?.any?.length === 1 &&
     params.arrayOfStreamQueries[0]?.any[0] === '*';
   }
 }
@@ -60,7 +60,7 @@ function anyStarStreamQueryIsNullQUery(context, params, result, next) {
 
 /**
  * Remove ':audit:' from stream query;
- * @returns 
+ * @returns
  */
 function removeStoreIdFromStreamQuery(context, params, result, next) {
   if (params.arrayOfStreamQueries == null) return next();
@@ -90,13 +90,13 @@ function limitStreamQueryToAccessToken(context, params, result, next) {
   const streamId: string = audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id;
 
   for (const query: StreamQuery of params.arrayOfStreamQueries) {
-    if (query.any == null) { 
+    if (query.any == null) {
       query.any = [streamId]
     } else {
       if (query.all == null) { query.all = []}
       query.all.push({any: [streamId]});
     }
-    
+
   }
   next();
 }
@@ -107,12 +107,10 @@ async function getAuditLogs(context, params, result, next) {
   try {
     const userStorage = await auditStorage.forUser(context.user.id);
     params.streams = params.arrayOfStreamQueries;
-    const query = mallEventsGetUtils.getQueryFromParamsForAStore(params);
+    const query = getStoreQueryFromParams(params);
     result.addStream('auditLogs', userStorage.getEventsStream(query).pipe(new ConvertEventFromStoreStream('_audit')));
   } catch (err) {
     return next(err);
-  }     
+  }
   next();
 }
-
-

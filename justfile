@@ -56,9 +56,9 @@ start-deps:
         nats-server scripts/start-mongo influxd
 
 # Start the given server component for dev (expects 'dist/{component}/bin/server')
-start component:
+start component *params:
     cd dist/components/{{component}} && \
-    NODE_ENV=development bin/server
+    NODE_ENV=development bin/server {{params}}
 
 # Start the given server component for dev, automatically restarting on file changes (requires nodemon)
 start-mon component:
@@ -126,6 +126,14 @@ trace:
 test-data command version:
     NODE_ENV=development node dist/components/test-helpers/scripts/{{command}}-test-data {{version}}
 
+# Cleanup users data and MongoDB data in `var-pryv/`
+clean-data:
+    yes | rm -rf ./var-pryv/users/*
+    killall mongod
+    sleep 2
+    yes | rm -rf ./var-pryv/mongodb-data/*
+    ./scripts/start-mongo
+
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
 # –––––––––––––----------------------------------------------------------------
@@ -140,7 +148,7 @@ update-event-types:
 
 # Run source licensing tool (see 'licensing' folder for details)
 license:
-    # source-licenser --config-file .licenser.yml ./
+    source-licenser --config-file .licenser.yml ./
 
 # Set version on all 'package.json' (root’s and components’)
 version version:

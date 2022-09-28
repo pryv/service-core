@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -22,7 +22,7 @@ module.exports = EventFiles;
  */
 function EventFiles(settings, logger) {
   this.settings = settings;
-  this.logger = logger; 
+  this.logger = logger;
 }
 
 /**
@@ -58,7 +58,7 @@ async function* recursiveReadDirAsync(dir) {
       } catch(err){
         this.logger.error('Data corrupted; expected ' + toString.path(filePath) + ' to exist');
         yield 0;
-      }      
+      }
     }
   }
 }
@@ -92,13 +92,17 @@ EventFiles.prototype.saveAttachedFileFromTemp = async function (tempPath, userId
 
 EventFiles.prototype.saveAttachedFileFromStream = async function (readableStream, userId, eventId, fileId) {
   fileId = fileId || cuid();
-  var dirPath = this.getAttachmentPath(userId, eventId);
+  const dirPath = this.getAttachmentPath(userId, eventId);
   await mkdirp(dirPath);
   const writeStream = fs.createWriteStream(path.join(dirPath, fileId));
   await pipeline(readableStream, writeStream);
   return fileId;
 };
 
+EventFiles.prototype.getAttachedFileStream = function (userId, eventId, fileId) {
+  const filePath = this.getAttachmentPath(userId, eventId, fileId);
+  return fs.createReadStream(filePath);
+};
 
 EventFiles.prototype.removeAttachedFile = async function (userId, eventId, fileId) {
   var filePath = this.getAttachmentPath(userId, eventId, fileId);

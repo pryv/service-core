@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -56,26 +56,26 @@ class Storage {
 
   /**
    * get the database relative to a specific user
-   * @param {string} userid
+   * @param {string} userId
    * @returns {UserDatabase}
    */
-  async forUser(userid) {
-    this.logger.debug('forUser: ' + userid);
+  async forUser(userId) {
+    this.logger.debug('forUser: ' + userId);
     this.checkInititalized();
-    return this.userDBsCache.get(userid) || await this._open(userid);
+    return this.userDBsCache.get(userId) || await open(this, userId, this.logger);
   }
 
   /**
    * close and delete the database relative to a specific user
-   * @param {string} userid
+   * @param {string} userId
    * @returns {void}
    */
-  async deleteUser(userid) {
-    logger.info('deleteUser: ' + userid);
-    const userDb = await this.forUser(userid);
+  async deleteUser(userId) {
+    this.logger.info('deleteUser: ' + userId);
+    const userDb = await this.forUser(userId);
     await userDb.close();
-    this.userDBsCache.delete(userid);
-    const dbPath = await dbPathForUserid(userid);
+    this.userDBsCache.delete(userId);
+    const dbPath = await dbPathForUserid(userId);
     try {
       await unlinkFilePromise(dbPath);
     } catch (err) {
@@ -88,39 +88,26 @@ class Storage {
     this.userDBsCache.clear();
   }
 
-  async _open(userid) {
-    this.logger.debug('open: ' + userid);
+ 
 
-    const params = {
-      dbPath: await this.dbPathForUserid(userid),
-      version: VERSION,
-    }
+}
 
-    const db = new UserDatabase(this.logger, params);
-    await db.init();
+async function open(storage, userId, logger) {
+  logger.debug('open: ' + userId);
+  const db = new UserDatabase(logger, {dbPath: await dbPathForUserid(userId)});
+  await db.init();
+  storage.userDBsCache.set(userId, db);
+  return db;
+}
 
-    this.userDBsCache.set(userid, db);
-    return db;
-  }
-  
-  /**
-   * Internal used for migrations
-   * @param {string} uid -- user id (cuid format)
-   */
-   async dbPathForUserid(userid) {
-    return await this._dbPathForUserid(userid, VERSION);
-  }
-  
-  /**
-   * @private
-   * @param {string} uid -- user id (cuid format)
-   * @param {string} versionString -- version of the database
-   */
-  async _dbPathForUserid(userid, versionString) {
-    const userPath = await UserLocalDirectory.ensureUserDirectory(userid);
-    return path.join(userPath, this.id + versionString + '.sqlite');
-  }
-
+/**
+ * @private
+ * @param {string} uid -- user id (cuid format)
+ * @param {string} versionString -- version of the database
+ */
+async function dbPathForUserid(userid, versionString) {
+  const userPath = await UserLocalDirectory.ensureUserDirectory(userid);
+  return path.join(userPath, this.id + versionString + '.sqlite');
 }
 
 module.exports = Storage;

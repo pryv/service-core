@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -28,7 +28,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const cache = require('cache');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
-const { getMall, streamsUtils } = require('mall');
+const { getMall, storeDataUtils } = require('mall');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
 
@@ -300,9 +300,9 @@ module.exports = async function produceAccessesApiMethods(api: API)
         if (! existingStream.trashed) return ;
 
         // untrash stream
-        const update = {trashed: false};
+        const update = {id: existingStream.id, trashed: false};
         try {
-          await mall.streams.updateTemp(context.user.id, existingStream.id, update);
+          await mall.streams.update(context.user.id, update);
         } catch (err) {
           throw(errors.unexpectedError(err));
         }
@@ -627,7 +627,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
             if (permissionStream != null) return ;
 
             // new streams are created at "root" level so we check the children's name of root (id)
-            const [storeId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(permission.streamId);
+            const [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(permission.streamId);
             const rootStreams = await mall.streams.get(context.user.id, { storeId: storeId, state: 'all', includeTrashed: true });
             const rootStreamsNames = rootStreams.map(stream => stream.name);
 

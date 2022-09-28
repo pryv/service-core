@@ -1,10 +1,10 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, beforeEach, after, afterEach, it */
+/* global describe, before, beforeEach, after, afterEach, it */
 
 require('./test-helpers');
 
@@ -35,21 +35,39 @@ describe('permissions selfRevoke', function () {
   describe('POST /accesses', function ( ) {
     let username,
         personalToken,
+        appToken,
+        streamId,
         basePathAccess;
-    
+
     beforeEach(async function () {
       username = cuid();
       personalToken = cuid();
+      appToken = cuid();
+      streamId = cuid();
       basePathAccess = `/${username}/accesses/`;
       const user = await mongoFixtures.user(username, {});
       await user.access({
         type: 'personal',
         token: personalToken});
       await user.session(personalToken);
+      await user.stream({
+        id: streamId,
+        name: 'Does not matter either'
+      });
+      await user.access({
+        type: 'app',
+        token: appToken,
+        permissions: [
+          {
+            streamId: streamId,
+            level: 'manage'
+          },
+        ]
+      });
     });
 
-    afterEach(() => {
-      mongoFixtures.clean();
+    afterEach(async () => {
+      await mongoFixtures.clean();
     });
 
     it('[JYL5] must list accesses with forbidden selfRevoke by GET /accesses', async () => {
@@ -64,7 +82,7 @@ describe('permissions selfRevoke', function () {
           setting: 'forbidden'
         }]
       });
-      
+
       assert.equal(res.status, 201);
       assert.exists(res.body.access);
 
@@ -107,6 +125,26 @@ describe('permissions selfRevoke', function () {
       assert.equal(res.body.error.id, 'invalid-parameters-format');
     });
 
+    it('[UZR] an appToken with managed rights should allow to create an access with selfRevoke forbidden', async function () {
+      const res = await server.request()
+        .post(basePathAccess)
+        .set('Authorization', appToken)
+        .send({
+          type: 'shared',
+          name: 'whatever',
+          permissions: [{
+            streamId: streamId,
+            level: 'manage',
+          },{
+            feature: 'selfRevoke',
+            setting: 'forbidden'
+          }]
+        });
+      assert.equal(res.status, 201);
+      const access = res.body.access;
+      assert.exists(access);
+    });
+
   });
 
   describe('DELETE /accesses', function () {
@@ -140,7 +178,7 @@ describe('permissions selfRevoke', function () {
             level: 'contribute'
           }]
         };
-        if (! access.selfRevoke) { 
+        if (! access.selfRevoke) {
           data.permissions.push({
             feature: 'selfRevoke',
             setting: 'forbidden'
@@ -149,8 +187,8 @@ describe('permissions selfRevoke', function () {
         access.id = (await user.access(data)).attrs.id;
       }
     });
-    afterEach(() => {
-      mongoFixtures.clean();
+    afterEach(async () => {
+      await mongoFixtures.clean();
     });
 
     for (let i = 0; i < accessKeys.length; i++) {
@@ -167,6 +205,6 @@ describe('permissions selfRevoke', function () {
         }
       });
     }
-    
+
   });
 });

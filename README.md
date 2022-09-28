@@ -101,16 +101,16 @@ With env variables:
 ```
 just tag-tests
 ```
-to tag yet-untagged test cases with a (hopefully) unique id for unambiguous reference. After tagging new cases, please use the check in [test-results](https://github.com/pryv/dev-pryv.io-test-results) for possible duplicates.
+to tag yet-untagged test cases with a (hopefully) unique id for unambiguous reference. The scripts issues warnings if duplicate ids or programmatically-generated ids are found (as the latter escape the duplicates check). Note as well that the [dev-site](https://github.com/pryv/dev-site) will fail to build if there are missing ids or duplicates in the generated test results (see below).
 
 ### Generating test results
 
 ```
 just test-results-(init-repo|generate|upload)
 ```
-Test results are kept in the [dev-pryv.io-test-results](https://github.com/pryv/dev-pryv.io-test-results) repository and published on the dev site.
+Test results are kept in the [dev-test-results](https://github.com/pryv/dev-test-results) repository and published on the dev site.
 - `just test-results-init-repo` to checkout the repository locally
-- `just test-results-generate` to run the test suite and save the results to `test_results/service-core/${TAG_VERSION}/${TIMESTAMP}-service-core.json`
+- `just test-results-generate` to run the test suite and save the results to `test-results/service-core/${TAG_VERSION}/${TIMESTAMP}-service-core.json`
 - `just test-results-upload` to upload the results
 
 
@@ -235,6 +235,5 @@ Or increase the number of authorized files using: `ulimit -n 1024` (or more if n
 
 
 # License
-Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
-Unauthorized copying of this file, via any medium is strictly prohibited
-Proprietary and confidential
+
+[UNLICENSED](LICENSE)

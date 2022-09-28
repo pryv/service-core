@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -9,7 +9,7 @@
 const SyslogWatch = require('../support/SyslogWatch');
 
 describe('Syslog', () => {
-  let userid = cuid();
+  let userId = cuid();
   let createdBy = cuid();
   let syslogWatch;
 
@@ -29,7 +29,7 @@ describe('Syslog', () => {
         }
       }, event);
 
-    await audit.eventForUser(userid, e);
+    await audit.eventForUser(userId, e);
     return e;
   }
 
@@ -40,7 +40,7 @@ describe('Syslog', () => {
       this.timeout(5000);
       const randomString = cuid();
 
-      const logString = userid +
+      const logString = userId +
       ' log/unknown createdBy:' + createdBy +
       ' [":_audit:test"] ' +  JSON.stringify({action: 'events.get', message: randomString});
 
@@ -60,7 +60,7 @@ describe('Syslog', () => {
       this.timeout(5000);
       const randomString = cuid();
 
-      const logString = userid +
+      const logString = userId +
       ' log/test createdBy:' + createdBy +
       ' streamIds:[":_audit:test"] ' +  randomString;
 
@@ -81,7 +81,7 @@ describe('Syslog', () => {
       this.timeout(5000);
       const randomString = cuid();
 
-      const logString = userid + ' TEST FILTERED ' +  randomString;
+      const logString = userId + ' TEST FILTERED ' +  randomString;
 
       syslogWatch(
         function() { // syslog Watch is ready

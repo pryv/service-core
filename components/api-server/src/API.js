@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -189,7 +189,7 @@ class API {
     const apiSpanName = 'api:' + methodId;
     tracing.startSpan(apiSpanName, tags);
 
-    const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
+    const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE, tracing: tracing});
 
     let unanmedCount = 0;
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -200,6 +200,7 @@ class API {
       const nextCloseSpan = function(err) {
         if (err != null) tracing.setError(fnName, err); 
         tracing.finishSpan(fnName);
+        if (err != null) result.closeTracing(); // close open span for result that was left open
         next(err);
       }
       // --- 

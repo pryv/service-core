@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -26,7 +26,7 @@ class Size {
     this.dbDocumentsItems = dbDocumentsItems;
     this.attachedFilesItems = attachedFilesItems;
   }
-  
+
   /**
    * Computes and updates storage size for the given user.
    *
@@ -34,11 +34,11 @@ class Size {
    */
   async computeForUser(user) {
     const mall = await getMall();
-    const mallSize = await mall.storageUsedForUser(user.id);
+    const mallSize = await mall.getUserStorageSize(user.id);
     const storageUsed = {
       dbDocuments: mallSize + await computeCategory(this.dbDocumentsItems),
       attachedFiles: await computeCategory(this.attachedFilesItems),
-    }
+    };
     let userObject = new User(user);
     const usersRepository = await getUsersRepository();
     await usersRepository.updateOne(

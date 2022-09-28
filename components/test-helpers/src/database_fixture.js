@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -17,9 +17,7 @@ const _ = require('lodash');
 const storage = require('storage');
 
 const Webhook = require('business').webhooks.Webhook;
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
-const userIndex = require('business/src/users/UserLocalIndex');
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
 const { getMall } = require('mall');
@@ -43,12 +41,12 @@ class Context {
   }
 
   async cleanEverything (): Promise<mixed> {
-    const collectionNames = ['accesses', 'sessions', 'followedSlices', 'webhooks', 'versions']
-    const collections = collectionNames.map(collectionName => {
-      return bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb))
+    const collectionNames = ['accesses', 'sessions', 'followedSlices', 'webhooks', 'versions'];
+    collectionNames.forEach(collectionName => {
+      bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb));
     });
-    await userIndex.init();
-    await userIndex.deleteAll();
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
     await initMall();
 
     // await Promise.all(collections);
@@ -121,8 +119,6 @@ class GenericChildHolder<T: ChildResource> {
   // (if given) needs to be of the same type, subclass of T.
   //
   create<U: T>(resource: U, cb?: (U) => mixed): Promise<U> {
-    const name = resource.constructor.name;
-
     const createdResource = resource.create();
     this.pending.push(createdResource);
 
@@ -296,17 +292,15 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   }
 
   async createUser (): Object<mixed> {
-    const db = this.db;
     const attributes = this.attrs;
     const usersRepository = await getUsersRepository();
     const userObj: User = new User(attributes);
-    await usersRepository.insertOne(userObj);
+    await usersRepository.insertOne(userObj, false, true);
     return this.attrs;
   }
 
   async remove(): Promise<mixed> {
     const db = this.db;
-    const user = null; // NOTE not needed for access to users collection.
     const username = this.context.userName;
     const collections = [
       db.accesses,
@@ -318,11 +312,10 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     //const removeUser = bluebird.fromCallback((cb) =>
     //  db.users.removeOne(user, {username: username}, cb));
     // get streams ids from the config that should be deleted
-    const accountStreams = SystemStreamsSerializer.getAccountMap();
-
+    // const accountStreams = SystemStreamsSerializer.getAccountMap();
 
     const usersRepository = await getUsersRepository();
-    await usersRepository.deleteOne(this.context.user.id);
+    await usersRepository.deleteOne(this.context.user.id, username, true);
 
     const removeSessions = bluebird.fromCallback((cb) =>
       db.sessions.removeForUser(username, cb));
@@ -379,7 +372,6 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
    * @returns {Promise<mixed>}
    */
   create() {
-    const db = this.db;
     const user = this.context.user;
     const attributes = this.attrs;
 
@@ -410,7 +402,6 @@ class FixtureEvent extends FixtureTreeNode implements ChildResource {
       .try(async () => await this.createEvent());
   }
   async createEvent() {
-    const db = this.db;
     const user = this.context.user;
     const attributes = this.attrs;
     if (mall == null) mall = await getMall();

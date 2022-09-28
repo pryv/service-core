@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -35,12 +35,12 @@ exports.resetUsers = async () => {
   await SystemStreamsSerializer.init();
   const customAccountProperties = buildCustomAccountProperties();
 
-  const usersRepository = await getUsersRepository(); 
-  await usersRepository.deleteAll();  
+  const usersRepository = await getUsersRepository();
+  await usersRepository.deleteAll();
 
   for (const user of users) {
     const userObj: User = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
-    await usersRepository.insertOne(userObj);
+    await usersRepository.insertOne(userObj, false, true);
   }
 };
 
@@ -53,7 +53,7 @@ exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
   if (personalAccessToken) {
     accesses[0].token = personalAccessToken;
   }
-  
+
   if (addToId) {
     var data = _.cloneDeep(accesses);
     for (var i = 0; i < data.length; i++) {
@@ -100,10 +100,7 @@ exports.resetEvents = function (done, user) {
   async.series([
     async function removeNonAccountEvents() {
       mall = await getMall();
-      const nonAccountEvents = await mall.events.get(user.id, {state: 'all', includeDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
-      for (const event of nonAccountEvents) {
-        await mall.events.delete(user.id, {id: event.id, state: 'all', includeDeletions: true, includeHistory: true});
-      }
+      await mall.events.delete(user.id, {state: 'all', withDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
     },
     async function createEvents() {
       await mall.events.createMany(user.id,  eventsToWrite)
@@ -113,7 +110,7 @@ exports.resetEvents = function (done, user) {
       done2();
     }
   ], done);
-  
+
 };
 
 // streams
@@ -133,10 +130,10 @@ exports.resetStreams = function (done, user) {
       await addStreams(children);
     }
   }
-  
+
   async.series([
-    async () => { 
-      mall = await getMall(); 
+    async () => {
+      mall = await getMall();
       await mall.streams.deleteAll(myUser.id, 'local');
       await addStreams(streams);
     },
@@ -332,7 +329,7 @@ function getDumpFilesArchive(dumpFolder) {
 function buildCustomAccountProperties() {
   const accountStreams = getConfigUnsafe(true).get('custom:systemStreams:account');
   if (accountStreams == null) return {};
-  
+
   const customProperties = {};
   accountStreams.forEach(stream => {
     customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -146,6 +146,10 @@ class UserDatabase {
   deleteEvents(params) {
     const queryString = prepareEventsDeleteQuery(params);
     this.logger.debug('DELETE events: ' +queryString);
+    if (queryString.indexOf('MATCH') > 0) {
+      $$('TODO.. SQLite does not know how to delete with "MATCH" statement', queryString);
+      return null;
+    }
     const res = this.db.prepare(queryString).run();
     return res;
   }

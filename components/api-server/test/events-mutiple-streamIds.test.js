@@ -1,10 +1,10 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, beforeEach, after, afterEach, it */
+/* global describe, before, beforeEach, after, afterEach, it */
 
 require('./test-helpers');
 
@@ -17,10 +17,7 @@ const assert = chai.assert;
 const charlatan = require('charlatan');
 const { integrity } = require('business');
 
-const helpers = require('./helpers');
-const validation = helpers.validation;
-
-const {fixturePath, fixtureFile} = require('./unit/test-helper');
+const { fixturePath } = require('./unit/test-helper');
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -198,7 +195,7 @@ describe('events.streamIds', function () {
 
     });
 
-    describe('POST /events', function() { 
+    describe('POST /events', function() {
 
       it('[X4PX] must forbid to provide both streamId and streamIds', async function () {
         const res = await server.request()
@@ -294,8 +291,8 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('PUT /events/:id', function() { 
-      
+    describe('PUT /events/:id', function() {
+
       it('[BBBX] must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
           .put(eventPath(eventIdA))
@@ -332,7 +329,7 @@ describe('events.streamIds', function () {
         assert.equal(err.id, ErrorIds.InvalidOperation);
       });
 
-      describe('when modifying streamIds', function() { 
+      describe('when modifying streamIds', function() {
 
         it('[TQHG] must forbid providing an unknown streamId', async function () {
           const unknownStreamId = 'does-not-exist';
@@ -347,7 +344,7 @@ describe('events.streamIds', function () {
           assert.equal(err.id, ErrorIds.UnknownReferencedResource);
           assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
         });
-  
+
         it('[6Q8B] must allow streamId addition, if you have a contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdA))
@@ -360,7 +357,7 @@ describe('events.streamIds', function () {
           assert.equal(event.streamId, streamAId);
           assert.deepEqual(event.streamIds, [streamAId, streamBId]);
         });
-        
+
         it('[MFF7] must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdA))
@@ -372,7 +369,7 @@ describe('events.streamIds', function () {
           const err = res.body.error;
           assert.equal(err.id, ErrorIds.Forbidden);
         });
-  
+
         it('[83N6] must allow streamId deletion, if you have a contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdAB))
@@ -384,7 +381,7 @@ describe('events.streamIds', function () {
           const event = res.body.event;
           assert.deepEqual(event.streamIds, [streamAId]);
         });
-        
+
         it('[JLS5] must forbid streamId deletion, if you have read but no contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdAB))
@@ -418,9 +415,9 @@ describe('events.streamIds', function () {
         const error = res.body.error;
         assert.equal(error.id, ErrorIds.Gone);
       });
-      
+
     });
-    
+
     describe('POST /event/stop', function () {
 
       function path() {
@@ -439,7 +436,7 @@ describe('events.streamIds', function () {
         const error = res.body.error;
         assert.equal(error.id, ErrorIds.Gone);
       });
-      
+
     });
 
     describe('DELETE /events/:id', function () {
@@ -488,18 +485,18 @@ describe('events.streamIds', function () {
     });
 
     describe('GET /events/:id/:fileId -- attachments', () => {
-      
+
       let userId, streamId, event,
-          appToken, appReadToken, 
+          appToken, appReadToken,
           sharedToken, sharedReadToken;
-    
+
       beforeEach(() => {
         userId = cuid();
         streamId = cuid();
         appToken = cuid();
         sharedToken = cuid();
       });
-    
+
       beforeEach(async () => {
         const user = await mongoFixtures.user(userId);
         await user.stream({
@@ -507,9 +504,9 @@ describe('events.streamIds', function () {
           name: streamId.toUpperCase(),
         });
         await user.access({
-          type: 'app', 
+          type: 'app',
           token: appToken,
-          name: charlatan.Lorem.word(), 
+          name: charlatan.Lorem.word(),
           permissions: [{
             streamId: streamId,
             level: 'manage',
@@ -518,14 +515,14 @@ describe('events.streamIds', function () {
         await user.access({
           type: 'shared',
           token: sharedToken,
-          name: charlatan.Lorem.word(), 
+          name: charlatan.Lorem.word(),
           permissions: [{
             streamId: streamId,
             level: 'read',
           }],
         });
       });
-    
+
       beforeEach(async () => {
         const res = await server.request()
           .post(path('events'))
@@ -547,7 +544,7 @@ describe('events.streamIds', function () {
       function path(resource) {
         return `/${userId}/${resource}`;
       }
-  
+
       it('[JNS8] should retrieve the attachment with the app token', async () => {
         const res = await server.request()
           .get(path(`events/${event.id}/${event.attachments[0].id}`))
@@ -568,7 +565,7 @@ describe('events.streamIds', function () {
         assert.equal(res.headers['content-disposition'], 'attachment; filename*=UTF-8\'\'' + event.attachments[0].fileName);
         assert.equal(res.headers['content-length'],event.attachments[0].size);
         assert.equal(res.headers['content-type'], event.attachments[0].type);
-      }); 
+      });
 
       it('[NH1O] should retrieve the attachment with the shared access readToken', async () => {
         const res = await server.request()
@@ -690,8 +687,8 @@ describe('events.streamIds', function () {
         streamIds: [streamA_AId, streamA_A_AId]
       });
     });
-    afterEach(() => {
-      mongoFixtures.clean();
+    afterEach(async () => {
+      await mongoFixtures.clean();
     });
 
     /**
@@ -740,7 +737,7 @@ describe('events.streamIds', function () {
     describe('DELETE /streams', function () {
 
       describe('When the stream\'s event is part of at least another stream outside of its descendants', function () {
-      
+
         describe('when mergeEventsWithParent=false', function () {
 
           it('[TWDG] must not delete events, but remove the deleted streamId from their streamIds', async function () {
@@ -750,7 +747,7 @@ describe('events.streamIds', function () {
                 .set('Authorization', manageAccessToken)
                 .query({ mergeEventsWithParent: false });
             }
-      
+
             const res = await server.request()
               .get(pathEventId(eventIdA_AandB))
               .set('Authorization', manageAccessToken);
@@ -772,7 +769,7 @@ describe('events.streamIds', function () {
                 .set('Authorization', manageAccessToken)
                 .query({ mergeEventsWithParent: false });
             }
-      
+
             const res = await server.request()
               .get(basePathEvent)
               .set('Authorization', manageAccessToken)
@@ -800,12 +797,12 @@ describe('events.streamIds', function () {
                 .set('Authorization', manageAccessToken)
                 .query({ mergeEventsWithParent: true });
             }
-      
+
             const res = await server.request()
               .get(basePathEvent)
               .set('Authorization', manageAccessToken);
             assert.equal(res.body.events.length, 3);
-            
+
             let foundAandA_A = false;
             let foundA_AandA_A_A = false;
             let foundA_AandB = false;
@@ -831,7 +828,7 @@ describe('events.streamIds', function () {
 
         });
       });
-      
+
     });
   });
 });

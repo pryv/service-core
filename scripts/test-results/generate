@@ -9,7 +9,7 @@
 
 /**
  * Runs Mocha on each component (same principle as `components-run`)
- * and saves the JSON reports into the `test_results` repo folder (assuming the `init` script ran beforehand).
+ * and saves the JSON reports into the `test-results` repo folder (assuming the `init` script ran beforehand).
  */
 const fs = require('fs');
 const path = require('path');
@@ -63,7 +63,7 @@ function initPaths () {
     process.exit(1);
   }
 
-  const results = path.join(root, 'test_results/service-core/');
+  const results = path.join(root, 'test-results/service-core/');
   if (!fs.existsSync(results)) {
     console.error(`Results repository folder '${results}' is missing. First 'just test-results-init-repo'`);
     process.exit(1);

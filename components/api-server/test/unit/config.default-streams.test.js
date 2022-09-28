@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -12,7 +12,7 @@ const systemStreamsConfig = require('api-server/config/components/systemStreams'
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfig } = require('@pryv/boiler');
 const treeUtils = require('utils/src/treeUtils');
-const { DataStore } = require('pryv-datastore');
+const { defaults: dataStoreDefaults } = require('pryv-datastore');
 
 const PRIVATE_PREFIX = ':_system:';
 const CUSTOMER_PREFIX = ':system:';
@@ -27,10 +27,10 @@ describe('XXXSystemStreams config', () => {
     [systemStreamsConfig.features.IS_SHOWN]: true, // if true, will be returned in events.get
     [systemStreamsConfig.features.IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
     [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: false, // if true, the field will be required in the validation
-    created: DataStore.Defaults.UNKNOWN_DATE,
-    modified: DataStore.Defaults.UNKNOWN_DATE,
-    createdBy: DataStore.Defaults.BY_SYSTEM,
-    modifiedBy: DataStore.Defaults.BY_SYSTEM,
+    created: dataStoreDefaults.UnknownDate,
+    modified: dataStoreDefaults.UnknownDate,
+    createdBy: dataStoreDefaults.SystemAccessId,
+    modifiedBy: dataStoreDefaults.SystemAccessId,
   };
 
   after(async () => {
@@ -82,7 +82,7 @@ describe('XXXSystemStreams config', () => {
           }
         ],
       };
-      
+
       store = new nconf.Provider();
       store.use('memory');
       store.set('custom:systemStreams', customStreams);
@@ -95,16 +95,16 @@ describe('XXXSystemStreams config', () => {
         .map(s => SystemStreamsSerializer.addCustomerPrefixToStreamId(s.id));
     });
 
-    
+
     it('[GB8G] must set default values and other fields', () => {
       const systemStreams = store.get('systemStreams');
       for (const streamId of customStreamIds) {
         const configStream = treeUtils.findById(
-          customStreams.account, 
+          customStreams.account,
           SystemStreamsSerializer.removePrefixFromStreamId(streamId))
-          || 
+          ||
           treeUtils.findById(
-            customStreams.other, 
+            customStreams.other,
             SystemStreamsSerializer.removePrefixFromStreamId(streamId));
         const systemStream = treeUtils.findById(systemStreams, streamId)
         for (const [key, value] of Object.entries(systemStream)) {
@@ -219,7 +219,7 @@ describe('XXXSystemStreams config', () => {
       } catch (err) {
         assert.include(err.message, 'Config error: custom system stream cannot be unique and not indexed. Stream: ');
       }
-      
+
     });
   });
 

@@ -1,27 +1,27 @@
 /**
  * @license
- * Copyright (C) 2012-2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 
 const _ = require('lodash');
 const Transform = require('stream').Transform;
-const streamsUtils = require('./streamsUtils');
+const storeDataUtils = require('./storeDataUtils');
 const errorFactory = require('errors').factory;
 
-// ------------  Duration -----------// 
+// ------------  Duration -----------//
 
 function durationToStoreEndTime (eventData) {
-  if (eventData.time == null) {delete eventData.duration; return eventData; }// deleted event 
+  if (eventData.time == null) {delete eventData.duration; return eventData; }// deleted event
 
-  if (eventData.duration === null) { // exactly null 
+  if (eventData.duration === null) { // exactly null
     eventData.endTime = null;
   } else if (eventData.duration === undefined) { // (no undefined)
     // event.time is not defined for deleted events
     eventData.endTime = eventData.time;
   } else { // defined
-    
+
     eventData.endTime = eventData.time + eventData.duration;
   }
   delete eventData.duration;
@@ -29,7 +29,7 @@ function durationToStoreEndTime (eventData) {
 }
 
 function endTimeFromStoreToDuration (eventData) {
-  if (eventData.time == null) { delete eventData.endTime; return eventData; }// deleted event 
+  if (eventData.time == null) { delete eventData.endTime; return eventData; }// deleted event
 
   if (eventData.endTime === null) {
     eventData.duration = null;
@@ -39,7 +39,7 @@ function endTimeFromStoreToDuration (eventData) {
     if (prevDuration != null && prevDuration != eventData.duration) {
       console.log('What !! ', new Error('Duration issue.. This should not thappen'));
     }
-  } 
+  }
   delete eventData.endTime;
   // force duration property undefined if 0
   if (eventData.duration === 0) { delete eventData.duration; }
@@ -49,11 +49,7 @@ function endTimeFromStoreToDuration (eventData) {
 // state
 
 function stateToStore(eventData) {
-  if (eventData.delete !== undefined) {
-    delete eventData.trashed;
-  } else {
     eventData.trashed = (eventData.trashed === true);
-  }
   return eventData;
 };
 
@@ -62,10 +58,10 @@ function stateFromStore(eventData) {
   return eventData;
 };
 
-// ---------  deletion ------ // 
+// ---------  deletion ------ //
 
 function deletionToStore (eventData) {
-  if (eventData.deleted === undefined) { // undefined => null 
+  if (eventData.deleted === undefined) { // undefined => null
     eventData.deleted = null;
   }
   return eventData;
@@ -81,14 +77,14 @@ function deletionFromStore (eventData) {
 };
 
 // ----------- All events fields ------- //
-const ALL_FIELDS = 
-  ['streamIds', 'time', 
-  'endTime', 
-  'type', 'content', 
-  'description', 'attachments', 
-  'clientData', 'trashed', 
+const ALL_FIELDS =
+  ['streamIds', 'time',
+  'endTime',
+  'type', 'content',
+  'description', 'attachments',
+  'clientData', 'trashed',
   'created', 'createdBy',
-  'modified', 'modifiedBy', 
+  'modified', 'modifiedBy',
   'integrity'];
 
 /** set to null all undefined fields */
@@ -114,33 +110,31 @@ function nullifyFromStore(eventData) {
 
 
 function removeStoreIds(storeId, eventData) {
-  const [eventStoreId, eventId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.id);
+  const [eventStoreId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
   if (eventStoreId !== storeId) {
     throw errorFactory.invalidRequestStructure('Cannot create event with id and streamIds belonging to different stores', eventData);
   }
-  eventData.id = eventId;
+  eventData.id = storeEventId;
 
   // cleanup storeId from streamId
   if (eventData.streamIds != null) { // it might happen that deleted is set but streamIds is not when loading test data
     for (let i = 0; i < eventData.streamIds.length; i++) {
       // check that the event belongs to a single store.
-      const [testStoreId, streamId] = streamsUtils.storeIdAndStreamIdForStreamId(eventData.streamIds[i]);
+      const [testStoreId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.streamIds[i]);
       if (storeId == null) { storeId = testStoreId; }
       else if (testStoreId !== storeId) {
         throw errorFactory.invalidRequestStructure('Cannot create event with id and streamIds belonging to different stores', eventData);
       }
-      eventData.streamIds[i] = streamId;
+      eventData.streamIds[i] = storeStreamId;
     }
   }
   return eventData;
 }
 
 function addStoreId(storeId, eventData) {
-  if (storeId === 'local') return eventData;
-  const storePrefix = ':' + storeId + ':';
-  eventData.id = storePrefix + eventData.id;
-  if (eventData.streamIds != null) {
-   eventData.streamIds = eventData.streamIds.map(streamId => storePrefix +streamId);
+  eventData.id = storeDataUtils.getFullItemId(storeId, eventData.id);
+  if (eventData.streamIds) {
+    eventData.streamIds = eventData.streamIds.map(storeDataUtils.getFullItemId.bind(null, storeId));
   }
   return eventData;
 }

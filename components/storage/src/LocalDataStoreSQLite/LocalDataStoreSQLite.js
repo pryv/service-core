@@ -13,64 +13,59 @@
 const bluebird = require('bluebird');
 
 const storage = require('../index');
-const {DataStore}  = require('pryv-datastore');
+const ds  = require('pryv-datastore');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront 
 
-const LocalUserStreams = require('../LocalDataStore/LocalUserStreams');
+const userStreams = require('../localDataStore/localUserStreams');
 const LocalUserEventsSQLite = require('./LocalUserEventsSQLite');
-const LocalTransaction = require('../LocalDataStore/LocalTransaction');
+const LocalTransaction = require('../localDataStore/LocalTransaction');
 
 const Storage = require('audit/src/storage/Storage');
 
 const STORE_ID = 'local';
 const STORE_NAME = 'Local Store';
-class LocalDataStoreSQLite extends DataStore {
-  _id: string = "local";
-  _name: string = "Local Store";
-  _streams: DataStore.UserStreams;
-  _events: DataStore.UserEvents;
-  settings: any;
-  constructor() {
-    super();
-    this.settings = { attachments: { setFileReadToken: true } };
-  }
-  async init(): Promise<DataStore> {
+module.exports = ds.createDataStore({
+  id: 'local',
+  name:  'Local Store',
+  settings: { attachments: { setFileReadToken: true } },
+
+  async init() {
     await SystemStreamsSerializer.init();
+
+    const database = await storage.getDatabase();
     
+    // streams
+    const streamsCollection = await database.getCollection({ name: 'streams' });
     const userStreamsStorage = (await storage.getStorageLayer()).streams;
-    this._streams = new LocalUserStreams(userStreamsStorage);
-    
+    userStreams.init(streamsCollection, userStreamsStorage);
+    this.streams = userStreams;
+
+    // events
     const eventFilesStorage = (await storage.getStorageLayer()).eventFiles;
     
     const userStorage = new Storage('local');
     await userStorage.init();
-    this._events = new LocalUserEventsSQLite(userStorage, eventFilesStorage);
+    this.events = new LocalUserEventsSQLite(userStorage, eventFilesStorage);
     
     return this;
-  }
-  get streams() {
-    return this._streams;
-  }
-  get events() {LocalUserEventsSQLite
-    return this._events;
-  }
-  async newTransaction(): Promise<DataStore.Transaction> {
+  },
+
+  async newTransaction() {
     const transaction = new LocalTransaction();
     await transaction.init();
     return transaction;
-  }
-  async deleteUser(uid: string): Promise<void> {
-    await this._streams._deleteUser(uid);
-    await this._events._deleteUser(uid);
-  }
-  async storageUsedForUser(uid: string) {
-    const streamsSize = await this._streams._storageUsedForUser(uid);
-    const eventsSize = await this._events._storageUsedForUser(uid);
-    return streamsSize + eventsSize;
-  }
-}
+  },
+  async deleteUser(uid: string) {
+    await this.streams._deleteUser(uid);
+    await this.events._deleteUser(uid);
+  },
 
-module.exports = LocalDataStoreSQLite;
+  async getUserStorageSize(uid: string) { // Here we should simply look at the db file size 
+    //const streamsSize = await this.streams._storageUsedForUser(uid);
+    const eventsSize = await this.events._storageUsedForUser(uid);
+    return eventsSize;
+  }
+});
 
 

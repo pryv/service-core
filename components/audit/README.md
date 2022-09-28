@@ -32,3 +32,8 @@ Hard coded ids:
 Was implemented in dnsLess=False but seems it was never used
 
 !! Check that skipAudit for 'auth.usernameCheck' and 'auth.emailCheck' does not open security issue..
+
+
+# License
+
+[UNLICENSED](LICENSE)

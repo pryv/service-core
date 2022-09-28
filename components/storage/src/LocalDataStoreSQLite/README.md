@@ -3,7 +3,7 @@
 Current storage can be activated by changing the following line in `mall/src/index.js` to point SQLite storage
 
 ```
-const LocalStore: DataStore = require('storage/src/LocalDataStore');
+const LocalStore: DataStore = require('storage/src/localDataStore');
 ```
 
 Goal, of this code it to be able to pass the tests suites. 

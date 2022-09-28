@@ -8,113 +8,166 @@
  */
 const fs = require('fs');
 const path = require('path');
+const chalk = require('chalk');
 
 const componentsPath = path.resolve(__dirname, '../components');
 
+const missing = {};
+const existingIds = {};
+const duplicates = {};
+const programmaticallyAssignedRefs = [];
+let testFilesCount = 0;
 let testsCount = 0;
-let taggedTests = 0;
-let tags = {};
+let missingTestsCount = 0;
 
-readDir(componentsPath);
+scanDir(componentsPath);
+tagMissing();
+report();
 
-console.log('total tests', testsCount);
-console.log('tagged tests', taggedTests);
-
-function readDir(dirName) {
-  fs.readdirSync(dirName, { withFileTypes: true }).forEach(function (file) {
+function scanDir (dirPath) {
+  fs.readdirSync(dirPath, { withFileTypes: true }).forEach(function (file) {
     const fileName = file.name;
-    const subPath = path.resolve(dirName, fileName);
+    const subPath = path.resolve(dirPath, fileName);
     const stats = fs.statSync(subPath);
     if (stats.isDirectory()) {
-      readDir(subPath);
+      scanDir(subPath);
     }
 
     if (isTestFile(fileName)) {
-      addIdToTests(subPath);
+      testFilesCount++;
+      scanTestFile(subPath);
     }
   });
 }
 
-function isTestFile(filename) {
+function isTestFile (filename) {
   return filename.endsWith('.test.js');
 }
 
-function addIdToTests(file) {
-  let isTagged = false;
-
-  const fileContent = fs.readFileSync(file, 'utf8');
+function scanTestFile (filePath) {
+  const fileContent = fs.readFileSync(filePath, 'utf8');
   const lines = fileContent.split('\n');
   lines.forEach((line, i) => {
-    const trimmed = line.trim();
-    if (isTestName(trimmed)) {
-      if (isUntagged(trimmed)) {
-        let tag = null;
-        while (tag === null) {
-          tag = genTag();
-          if (tags[tag]) tag = null;
-        }
-        registerTag(tag);
-        const tagged = sSplice(line, tag);
-        lines[i] = tagged;
-        isTagged = true;
-        taggedTests++;
+    if (!isTestName(line)) {
+      return;
+    }
+
+    testsCount++;
+
+    const testId = getTestId(line);
+    if (!testId) {
+      missingTestsCount++;
+      if (!missing[filePath]) {
+        missing[filePath] = {
+          lines,
+          lineIndicesToTag: []
+        };
       }
-      testsCount++;
+      missing[filePath].lineIndicesToTag.push(i);
+    } else {
+      const ref = `${filePath}:${i + 1}`;
+      if (isProgrammaticallyAssigned(testId)) {
+        programmaticallyAssignedRefs.push(ref);
+      } else if (!existingIds[testId]) {
+        existingIds[testId] = ref;
+      } else {
+        if (!duplicates[testId]) {
+          duplicates[testId] = [existingIds[testId]];
+        }
+        duplicates[testId].push(ref);
+      }
     }
   });
+}
 
-  if (isTagged) {
-    const newContent = lines.join('\n');
-    fs.writeFileSync(file, newContent);
+function isTestName (line) {
+  return line.trim().startsWith('it(');
+}
+
+function getTestId (line) {
+  const test = line.trim().match(/^it\(['"`]\[(.+?)\](.*)/);
+  return test ? test[1] : null;
+}
+
+function isProgrammaticallyAssigned (testId) {
+  return !testId.match(/^[A-Z0-9]{4}$/);
+}
+
+function tagMissing () {
+  for (const [filePath, data] of Object.entries(missing)) {
+    for (const i of data.lineIndicesToTag) {
+      const tag = `[${generateTestId()}] `;
+      data.lines[i] = insertTag(data.lines[i], tag);
+    }
+    fs.writeFileSync(filePath, data.lines.join('\n'));
   }
 }
 
-function sSplice(string, toAdd) {
-  const aString = string.split('');
-  const from = string.indexOf('it(') + 4;
-  aString.splice(from, 0, toAdd);
-  return aString.join('');
-}
+function generateTestId () {
+  const chars = 'ABCDEFGHIJKLMONPQRSTUVWXYZ0123456789';
 
-function isTestName(line) {
-  return line.startsWith('it(');
-}
+  let testId;
+  do {
+    testId = generateCandidate();
+  } while (existingIds[testId]);
+  return testId;
 
-function ignoreLine(line) {
-  return ! line.startsWith('it(\'');
-}
-
-function registerTag(tag) {
-  if (tags[tag]) { 
-    throw('[' + tag + '] Is used multiple time');
-  }
-  tags[tag] = true;
-}
-
-function isUntagged(line) {
-  if (ignoreLine(line)) {
-    console.log("Ignored test line: " + line);
-    return false;
-  }
-  const test = line.match(/^it\('\[([A-Z0-9]{4})\](.*)/);
-  if (! test) {
-    console.log('Tagging => ' + line);
-    return true;
-  }
-  registerTag(test[1]);
-  return false;
-}
-
-function genTag() {
-  const alphabet = 'ABCDEFGHIJKLMONPQRSTUVWXYZ0123456789';
-
-  return '[' + getLetter() + getLetter() + getLetter() + getLetter() + '] ';
-
-  function getLetter() {
-    return alphabet[randomIntFromInterval(0, alphabet.length - 1)];
+  function generateCandidate () {
+    return randomChar() + randomChar() + randomChar() + randomChar();
   }
 
-  function randomIntFromInterval(min, max) { // min and max included
+  function randomChar () {
+    return chars[randomIntFromInterval(0, chars.length - 1)];
+  }
+
+  function randomIntFromInterval (min, max) { // min and max included
     return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+}
+
+function insertTag (line, tagStr) {
+  const position = line.indexOf('it(') + 4;
+  return line.substring(0, position) + tagStr + line.substring(position);
+}
+
+function report () {
+  log();
+  log('Tagging complete.');
+  logListItem(`Found ${testsCount} test(s) in ${testFilesCount} test file(s)`, 0);
+  if (missingTestsCount > 0) {
+    logListItem(`Tagged ${missingTestsCount} test(s) whose id was missing in ${Object.keys(missing).length} test file(s)`, 0);
+  } else {
+    logListItem('No tests required tagging', 0);
+  }
+  log();
+
+  if (programmaticallyAssignedRefs.length > 0) {
+    warn('Could not check for duplicates in programmatically-assigned test ids:');
+    for (const ref of programmaticallyAssignedRefs) {
+      logListItem(ref, 0);
+    }
+  }
+  log();
+
+  if (Object.keys(duplicates).length > 0) {
+    warn('Duplicate test ids found:');
+    for (const [testId, refs] of Object.entries(duplicates)) {
+      logListItem(`${chalk.red(testId)} in:`, 0);
+      for (const ref of refs) {
+        logListItem(ref, 1);
+      }
+    }
+  }
+
+  function log (s) {
+    console.log(s ?? '');
+  }
+
+  function logListItem (s, level) {
+    console.log(`${' '.repeat(level)}· ${s}`);
+  }
+
+  function warn (s) {
+    console.warn(`${chalk.yellow(chalk.bold('Warning'))}: ${s}`);
   }
 }
