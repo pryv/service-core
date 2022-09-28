@@ -56,9 +56,9 @@ start-deps:
         nats-server scripts/start-mongo influxd
 
 # Start the given server component for dev (expects 'dist/{component}/bin/server')
-start component:
+start component *params:
     cd dist/components/{{component}} && \
-    NODE_ENV=development bin/server
+    NODE_ENV=development bin/server {{params}}
 
 # Start the given server component for dev, automatically restarting on file changes (requires nodemon)
 start-mon component:

@@ -122,7 +122,7 @@ class Database {
       this.client = client;
       this.db = client.db(this.databaseName);
 
-      client.db('admin').command({ setFeatureCompatibilityVersion: '4.0' }, {}, callback);
+      client.db('admin').command({ setFeatureCompatibilityVersion: '4.2' }, {}, callback);
     });
   }
 
