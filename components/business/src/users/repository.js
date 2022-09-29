@@ -124,12 +124,12 @@ class UsersRepository {
   }
 
   /**
-   * record a new passwordHash for this user. 
+   * record a new passwordHash for this user.
    * This should be renamed to setPasswordHash when password will be removed from Events
    *
    */
   async recordNewPasswordHashForUserId(userId: string, passwordHash: string, createdBy: string, time: number): Promise<?any> {
-    return await userAccountStorage.passwordSetHash(userId, passwordHash, createdBy, time);
+    return await userAccountStorage.addPassword(userId, passwordHash, createdBy, time);
   }
 
   async getOnePropertyValue(userId: string, propertyKey: string) {

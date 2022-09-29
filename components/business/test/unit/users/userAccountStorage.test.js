@@ -4,8 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/* global describe, it, before, after */
+
 const assert = require('chai').assert;
 const cuid = require('cuid');
+const timestamp = require('unix-timestamp');
 
 const userAccountStorage = require('business/src/users/userAccountStorage');
 
@@ -13,12 +16,12 @@ describe('[UAST] Users Account Storage', () => {
   const passwords = []; // password will be stored in reverse order (oldest first)
   const userId = cuid();
 
-  before(async function () {
+  before(async () => {
     await userAccountStorage.init();
     // create five passwords with one day delay between each other
-    const now = Date.now() / 1000;
+    const now = timestamp.now();
     for (let i = 4; i >= 0; i--) { // in descending order
-      const createdPassword = await userAccountStorage.passwordSetHash(userId, 'hash' + i, 'createdByTest', now - 3600 * 24 * i);
+      const createdPassword = await userAccountStorage.addPassword(userId, `hash_${i}`, 'test', timestamp.add(now, `-${i}d`));
       assert.exists(createdPassword.passwordId);
       assert.exists(createdPassword.time);
       passwords.push(createdPassword);
@@ -29,39 +32,40 @@ describe('[UAST] Users Account Storage', () => {
 
   });
 
-  it('[1OQP] must find created password hashesin history', async () => {
-    // they should be found
-    for (const password of passwords) {
-      const passwordExists = await userAccountStorage.passwordHashExistsInHistory(userId, password.hash, passwords.length);
-      assert.isTrue(passwordExists, 'should find password ' + JSON.stringify(password));
-    }
+  describe('passwordExistsInHistory()', () => {
+    it('[1OQP] must return true when looking for existing passwords', async () => {
+      for (const password of passwords) {
+        const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, password.hash, passwords.length);
+        assert.isTrue(passwordExists, 'should find password ' + JSON.stringify(password));
+      }
+    });
+
+    it('[DO33] must return false when looking for a non-existing password', async () => {
+      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, 'unknown_hash', passwords.length);
+      assert.isFalse(passwordExists, 'should not find password with non-existing hash');
+    });
+
+    it('[FEYP] must return false when looking for an existing password that is beyond the given range', async () => {
+      const oldestPassword = passwords[0];
+      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, oldestPassword.hash, passwords.length - 1);
+      assert.isFalse(passwordExists, 'should not find password beyond the given range: ' + JSON.stringify(oldestPassword));
+    });
   });
 
-  it('[FEYP] must not find oldest password hash in history if not covered by nLast', async () => {
-    // take oldest password
-    const oldestPassword = passwords[0];
-    const passwordExists = await userAccountStorage.passwordHashExistsInHistory(userId, oldestPassword.hash, passwords.length - 1);
-    assert.isFalse(passwordExists, 'should not find oldest password' + JSON.stringify(oldestPassword));
-  });
+  // TODO consider removing passwordExistsInHistorySince (not needed?)
+  describe('passwordExistsInHistory()', () => {
+    it('[Q7BV] must find existing password hashes in history since oldest passowrd hash', async () => {
+      for (const password of passwords) {
+        const passwordExists = await userAccountStorage.passwordExistsInHistorySince(userId, password.hash, passwords[0].time - 1);
+        assert.isTrue(passwordExists, 'should find password ' + JSON.stringify(password));
+      }
+    });
 
-  it('[DO33] must not find inexisisting password hash in history ', async () => {
-    // take oldest password
-    const passwordExists = await userAccountStorage.passwordHashExistsInHistory(userId, 'bob', passwords.length);
-    assert.isFalse(passwordExists, 'should not find password with inexistant hash');
+    it('[7RB9] must not find existing password hashes in history if not covered by timeframe', async () => {
+      for (const password of passwords) {
+        const passwordExists = await userAccountStorage.passwordExistsInHistorySince(userId, password.hash, password.time + 1);
+        assert.isFalse(passwordExists, 'should not find password ' + JSON.stringify(password) + ' with time > ' + (password.time + 1));
+      }
+    });
   });
-
-  it('[Q7BV] must find existing password hashes in history since oldest passowrd hash', async () => {
-    for (const password of passwords) {
-      const passwordExists = await userAccountStorage.passwordHashExistsInHistorySince(userId, password.hash, passwords[0].time - 1);
-      assert.isTrue(passwordExists, 'should find password ' + JSON.stringify(password));
-    }
-  });
-
-  it('[7RB9] must not find existing password hashes in history if not covered by timeframe', async () => {
-    for (const password of passwords) {
-      const passwordExists = await userAccountStorage.passwordHashExistsInHistorySince(userId, password.hash, password.time + 1);
-      assert.isFalse(passwordExists, 'should not find password ' + JSON.stringify(password) + ' with time > ' + (password.time + 1));
-    }
-  });
-
 });
