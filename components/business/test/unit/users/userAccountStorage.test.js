@@ -52,20 +52,18 @@ describe('[UAST] Users Account Storage', () => {
     });
   });
 
-  // TODO consider removing passwordExistsInHistorySince (not needed?)
-  describe('passwordExistsInHistory()', () => {
-    it('[Q7BV] must find existing password hashes in history since oldest passowrd hash', async () => {
-      for (const password of passwords) {
-        const passwordExists = await userAccountStorage.passwordExistsInHistorySince(userId, password.hash, passwords[0].time - 1);
-        assert.isTrue(passwordExists, 'should find password ' + JSON.stringify(password));
+  describe('Password history time uniqueness', () => {
+    it('[B2I7] must throw an error if 2 password are created with the same date', async () => {
+      const userId2 = cuid();
+      const now = timestamp.now();
+      await userAccountStorage.addPassword(userId2, 'hash_1', 'test', now);
+      try {
+        await userAccountStorage.addPassword(userId2, 'hash_2', 'test', now);
+      } catch (e) {
+        assert.equal(e.message, 'UNIQUE constraint failed: passwords.time');
+        return;
       }
-    });
-
-    it('[7RB9] must not find existing password hashes in history if not covered by timeframe', async () => {
-      for (const password of passwords) {
-        const passwordExists = await userAccountStorage.passwordExistsInHistorySince(userId, password.hash, password.time + 1);
-        assert.isFalse(passwordExists, 'should not find password ' + JSON.stringify(password) + ' with time > ' + (password.time + 1));
-      }
+      assert.isFalse(true, 'should throw an error');
     });
   });
 });

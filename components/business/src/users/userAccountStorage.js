@@ -40,8 +40,7 @@ let initState = InitStates.NOT_INITIALIZED;
 module.exports = {
   init,
   addPassword,
-  passwordExistsInHistory,
-  passwordExistsInHistorySince
+  passwordExistsInHistory
 };
 
 async function init () {
@@ -67,8 +66,7 @@ async function addPassword (userId, passwordHash, createdBy, time = timestamp.no
   const db = await getUserDB(userId);
   const passwordId = cuid();
   const result = { passwordId, hash: passwordHash, time, createdBy };
-  db.prepare('INSERT INTO passwords (passwordId, hash, time, createdBy) VALUES (@passwordId, @hash, @time, @createdBy)')
-    .run(result);
+  db.prepare('INSERT INTO passwords (passwordId, hash, time, createdBy) VALUES (@passwordId, @hash, @time, @createdBy)').run(result);
   return result;
 }
 
@@ -79,14 +77,6 @@ async function passwordExistsInHistory (userId, passwordHash, historyLength) {
     if (entry.hash === passwordHash) return true;
   }
   return false;
-}
-
-// TODO consider removing (not needed?)
-async function passwordExistsInHistorySince (userId, hash, sinceTime) {
-  const db = await getUserDB(userId);
-  const getHashSince = db.prepare('SELECT hash, time FROM passwords WHERE time >= @sinceTime AND hash = @hash');
-  const result = getHashSince.get({ hash, sinceTime });
-  return (result != null); // null or undefined
 }
 
 async function getUserDB (userId) {
@@ -100,10 +90,9 @@ async function openUserDB (userId) {
   db.pragma('journal_mode = WAL');
   // db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
   db.unsafeMode(true);
-  db.prepare('CREATE TABLE IF NOT EXISTS passwords (passwordId TEXT PRIMARY KEY, hash TEXT NOT NULL, time REAL NOT NULL, createdBy TEXT NOT NULL);').run();
+  db.prepare('CREATE TABLE IF NOT EXISTS passwords (time REAL PRIMARY KEY, passwordId TEXT NOT NULL, hash TEXT NOT NULL, createdBy TEXT NOT NULL);').run();
   db.prepare('CREATE INDEX IF NOT EXISTS passwords_hash ON passwords(hash);').run();
-  db.prepare('CREATE INDEX IF NOT EXISTS passwords_time ON passwords(time);').run();
-  db.prepare('CREATE INDEX IF NOT EXISTS passwords_time ON passwords(time);').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS passwords_time ON passwords(passwordId);').run();
   dbCache.set(userId, db);
   return db;
 }
