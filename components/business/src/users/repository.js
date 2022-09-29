@@ -124,11 +124,10 @@ class UsersRepository {
   }
 
   /**
-   * record a new passwordHash for this user.
-   * This should be renamed to setPasswordHash when password will be removed from Events
-   *
+   * Add a new password hash for the given user.
+   * TODO: should be renamed to something like "addPassword" when password is removed from events
    */
-  async recordNewPasswordHashForUserId(userId: string, passwordHash: string, createdBy: string, time: number): Promise<?any> {
+  async recordNewPasswordForUserId(userId: string, passwordHash: string, createdBy: string, time: number): Promise<?any> {
     return await userAccountStorage.addPassword(userId, passwordHash, createdBy, time);
   }
 
@@ -249,7 +248,7 @@ class UsersRepository {
       // record passsword in history
       for (const event of events) {
         if (event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH)) {
-          const createdPass = await this.recordNewPasswordHashForUserId(user.id, event.content, event.createdBy, event.time);
+          const createdPass = await this.recordNewPasswordForUserId(user.id, event.content, event.createdBy, event.time);
         }
       }
     });
@@ -289,7 +288,7 @@ class UsersRepository {
     });
 
     if (update.passwordHash != null) {
-      await this.recordNewPasswordHashForUserId(user.id, update.passwordHash, accessId, modifiedTime);
+      await this.recordNewPasswordForUserId(user.id, update.passwordHash, accessId, modifiedTime);
     }
   }
 
