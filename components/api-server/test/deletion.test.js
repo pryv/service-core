@@ -183,12 +183,15 @@ describe('[PGTD] DELETE /users/:username', () => {
               .times(1)
               .reply(200, { deleted: true });
           }
-          pubsub.setTestNatsDeliverHook(function(scopeName, eventName, payload) {
-            natsDelivered.push({scopeName, eventName, payload});
-          });
+          if (pubsub.isNatsEnabled()) {
+            pubsub.setTestNatsDeliverHook(function (scopeName, eventName, payload) {
+              natsDelivered.push({ scopeName, eventName, payload });
+            });
+          }; // true OpenSource Setup
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
-        after(async function() {
+        after(async function () {
+          if (!pubsub.isNatsEnabled()) { return; }; // true OpenSource Setup
           pubsub.setTestNatsDeliverHook(null);
         });
 
@@ -252,10 +255,12 @@ describe('[PGTD] DELETE /users/:username', () => {
         it(`[${testIDs[i][10]}] should delete user from the cache`, async function() {
           const usersExists = cache.getUserId(userToDelete.attrs.id);
           assert.isUndefined(usersExists);
-          assert.equal(natsDelivered.length, 1);
-          assert.equal(natsDelivered[0].scopeName, 'cache.' + MESSAGES.UNSET_USER);
-          assert.equal(natsDelivered[0].eventName, MESSAGES.UNSET_USER);
-          assert.equal(natsDelivered[0].payload.username, userToDelete.attrs.id);
+          if (pubsub.isNatsEnabled()) {
+            assert.equal(natsDelivered.length, 1);
+            assert.equal(natsDelivered[0].scopeName, 'cache.' + MESSAGES.UNSET_USER);
+            assert.equal(natsDelivered[0].eventName, MESSAGES.UNSET_USER);
+            assert.equal(natsDelivered[0].payload.username, userToDelete.attrs.id);
+          }
         });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
           const user = await usersRepository.getUserById(username2);
@@ -299,6 +304,7 @@ describe('[PGTD] DELETE /users/:username', () => {
         });
         it(`[${testIDs[i][7]}] should delete on register`, async function() {
           if (settingsToTest[i][0]) this.skip(); // isDnsLess
+          if (! pubsub.isNatsEnabled()) this.skip(); // openSource
           assert.isTrue(deletedOnRegister);
         });
       });
