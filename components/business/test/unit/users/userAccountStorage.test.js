@@ -22,7 +22,6 @@ describe('[UAST] Users Account Storage', () => {
     const now = timestamp.now();
     for (let i = 4; i >= 0; i--) { // in descending order
       const createdPassword = await userAccountStorage.addPassword(userId, `hash_${i}`, 'test', timestamp.add(now, `-${i}d`));
-      assert.exists(createdPassword.passwordId);
       assert.exists(createdPassword.time);
       passwords.push(createdPassword);
     }

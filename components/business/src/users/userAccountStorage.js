@@ -64,9 +64,8 @@ async function init () {
 
 async function addPassword (userId, passwordHash, createdBy, time = timestamp.now()) {
   const db = await getUserDB(userId);
-  const passwordId = cuid();
-  const result = { passwordId, hash: passwordHash, time, createdBy };
-  db.prepare('INSERT INTO passwords (passwordId, hash, time, createdBy) VALUES (@passwordId, @hash, @time, @createdBy)').run(result);
+  const result = { hash: passwordHash, time, createdBy };
+  db.prepare('INSERT INTO passwords (hash, time, createdBy) VALUES (@hash, @time, @createdBy)').run(result);
   return result;
 }
 
@@ -90,9 +89,8 @@ async function openUserDB (userId) {
   db.pragma('journal_mode = WAL');
   // db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
   db.unsafeMode(true);
-  db.prepare('CREATE TABLE IF NOT EXISTS passwords (time REAL PRIMARY KEY, passwordId TEXT NOT NULL, hash TEXT NOT NULL, createdBy TEXT NOT NULL);').run();
+  db.prepare('CREATE TABLE IF NOT EXISTS passwords (time REAL PRIMARY KEY, hash TEXT NOT NULL, createdBy TEXT NOT NULL);').run();
   db.prepare('CREATE INDEX IF NOT EXISTS passwords_hash ON passwords(hash);').run();
-  db.prepare('CREATE INDEX IF NOT EXISTS passwords_time ON passwords(passwordId);').run();
   dbCache.set(userId, db);
   return db;
 }
