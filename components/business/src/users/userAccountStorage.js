@@ -64,8 +64,9 @@ async function init () {
 
 async function addPassword (userId, passwordHash, createdBy, time = timestamp.now()) {
   const db = await getUserDB(userId);
-  const result = { hash: passwordHash, time, createdBy };
-  db.prepare('INSERT INTO passwords (hash, time, createdBy) VALUES (@hash, @time, @createdBy)').run(result);
+  const passwordId = cuid();
+  const result = { time, hash: passwordHash, passwordId, createdBy };
+  db.prepare('INSERT INTO passwords (time, hash, passwordId, createdBy) VALUES (@time, @hash, @passwordId, @createdBy)').run(result);
   return result;
 }
 

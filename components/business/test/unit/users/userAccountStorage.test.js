@@ -31,6 +31,21 @@ describe('[UAST] Users Account Storage', () => {
 
   });
 
+  describe('addPassword()', () => {
+    it('[B2I7] must throw an error if two passwords are added with the same time', async () => {
+      const userId2 = cuid();
+      const now = timestamp.now();
+      await userAccountStorage.addPassword(userId2, 'hash_1', 'test', now);
+      try {
+        await userAccountStorage.addPassword(userId2, 'hash_2', 'test', now);
+      } catch (e) {
+        assert.equal(e.message, 'UNIQUE constraint failed: passwords.time');
+        return;
+      }
+      assert.isFalse(true, 'should throw an error');
+    });
+  });
+
   describe('passwordExistsInHistory()', () => {
     it('[1OQP] must return true when looking for existing passwords', async () => {
       for (const password of passwords) {
@@ -48,21 +63,6 @@ describe('[UAST] Users Account Storage', () => {
       const oldestPassword = passwords[0];
       const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, oldestPassword.hash, passwords.length - 1);
       assert.isFalse(passwordExists, 'should not find password beyond the given range: ' + JSON.stringify(oldestPassword));
-    });
-  });
-
-  describe('Password history time uniqueness', () => {
-    it('[B2I7] must throw an error if 2 password are created with the same date', async () => {
-      const userId2 = cuid();
-      const now = timestamp.now();
-      await userAccountStorage.addPassword(userId2, 'hash_1', 'test', now);
-      try {
-        await userAccountStorage.addPassword(userId2, 'hash_2', 'test', now);
-      } catch (e) {
-        assert.equal(e.message, 'UNIQUE constraint failed: passwords.time');
-        return;
-      }
-      assert.isFalse(true, 'should throw an error');
     });
   });
 });
