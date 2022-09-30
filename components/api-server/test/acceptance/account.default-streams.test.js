@@ -17,6 +17,7 @@ const { getApplication } = require('api-server/src/application');
 
 const { pubsub } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const userAccountStorage = require('business/src/users/userAccountStorage');
 const { getConfig } = require('@pryv/boiler');
 
 const { databaseFixture } = require('test-helpers');
@@ -74,7 +75,7 @@ describe('[ACCO] Account with system streams', function () {
   }
   /**
    * Create additional event
-   * @param string streamId 
+   * @param string streamId
    */
   async function createAdditionalEvent (streamIdWithPrefix, content) {
     eventDataForadditionalEvent = {
@@ -121,7 +122,7 @@ describe('[ACCO] Account with system streams', function () {
         // create additional events for all editable streams
         const settings = _.cloneDeep(helpers.dependencies.settings);
         scope = nock(settings.services.register.url);
-        
+
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
@@ -138,9 +139,9 @@ describe('[ACCO] Account with system streams', function () {
           await createAdditionalEvent(editableStreamsId);
         }
 
-        allVisibleAccountEvents = await mall.events.get(user.attrs.id, 
+        allVisibleAccountEvents = await mall.events.get(user.attrs.id,
           {streams: [
-            {any: visibleStreamsIds}, 
+            {any: visibleStreamsIds},
             {and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}
           ]});
         // get account info
@@ -178,15 +179,16 @@ describe('[ACCO] Account with system streams', function () {
     describe('and when valid data is provided', () => {
       let passwordBefore;
       let passwordAfter;
+      let user;
       before(async function () {
-        await createUser();
-        basePath += '/change-password'
+        user = await createUser();
+        basePath += '/change-password';
         // modify account info
         passwordBefore = await getActiveEvent('passwordHash');
         res = await request.post(basePath)
           .send({
             newPassword: charlatan.Lorem.characters(7),
-            oldPassword: user.attrs.password,
+            oldPassword: user.attrs.password
           })
           .set('authorization', access.token);
         passwordAfter = await getActiveEvent('passwordHash');
@@ -197,22 +199,26 @@ describe('[ACCO] Account with system streams', function () {
       it('[PWAA] should update event with password hash', async () => {
         assert.notEqual(passwordBefore.content, passwordAfter.content);
       });
+      it('[ACNE] should find password in password history', async () => {
+        assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordBefore.content, 2), 'missing previous password in history');
+        assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordAfter.content, 1), 'missing new password in history');
+      });
     });
     describe('when the password in the database does not exist', () => {
       before(async function () {
         await createUser();
-        basePath += '/change-password'
+        basePath += '/change-password';
         // remove passwordHash event from the database
-        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
-       
+        await mall.events.delete(user.attrs.id, { streams: [{ any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')] }] });
+
         // make sure the event was deleted
-        let password = await getActiveEvent('passwordHash');
+        const password = await getActiveEvent('passwordHash');
         assert.isNull(password);
 
         res = await request.post(basePath)
           .send({
             newPassword: charlatan.Lorem.characters(7),
-            oldPassword: 'any-password',
+            oldPassword: 'any-password'
           })
           .set('authorization', access.token);
       });
@@ -305,11 +311,11 @@ describe('[ACCO] Account with system streams', function () {
             const settings = _.cloneDeep(helpers.dependencies.settings);
             scope = nock(settings.services.register.url);
             scope.put(`/users`)
-              .reply(400, { error: { 
+              .reply(400, { error: {
                 id: ErrorIds.ItemAlreadyExists,
                 data: { email: user2.attrs.email },
             }});
-  
+
             // modify account info
             res = await request.put(basePath)
               .send({ email: user2.attrs.email })
@@ -332,7 +338,7 @@ describe('[ACCO] Account with system streams', function () {
         let notActiveEmailBefore;
         let activeLanguageBefore;
         let notActiveLanguageBefore;
-  
+
         let activeEmailAfter;
         let notActiveEmailAfter;
         let activeLanguageAfter;
@@ -351,16 +357,16 @@ describe('[ACCO] Account with system streams', function () {
               serviceRegisterRequest = body;
               return true;
             }).times(3).reply(200, {});
-          
+
           // create additional events
           await createAdditionalEvent(SystemStreamsSerializer.addCustomerPrefixToStreamId('email'), charlatan.Internet.email());
           await createAdditionalEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('language'));
-  
+
           activeEmailBefore = await getActiveEvent('email', false);
           notActiveEmailBefore = await getNotActiveEvent('email', false);
           activeLanguageBefore = await getActiveEvent('language');
           notActiveLanguageBefore = await getNotActiveEvent('language');
-  
+
           // modify account info
           res = await request.put(basePath)
             .send({
@@ -420,6 +426,6 @@ describe('[ACCO] Account with system streams', function () {
           });
         });
       });
-      
+
   });
 });

@@ -17,6 +17,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
 
+const userAccountStorage = require('./userAccountStorage');
 const usersIndex = require('./UsersLocalIndex');
 const { getMall } = require('mall');
 const { getPlatform } = require('platform');
@@ -44,6 +45,7 @@ class UsersRepository {
     this.storageLayer = await storage.getStorageLayer();
     this.sessionsStorage = this.storageLayer.sessions;
     this.accessStorage = this.storageLayer.accesses;
+    await userAccountStorage.init();
     await usersIndex.init();
   }
 
@@ -119,6 +121,14 @@ class UsersRepository {
       dbDocuments: await this.getOnePropertyValue(userId, 'dbDocuments') || 0,
       attachedFiles: await this.getOnePropertyValue(userId, 'attachedFiles') || 0
     };
+  }
+
+  /**
+   * Add a new password hash for the given user.
+   * TODO: should be renamed to something like "addPassword" when password is removed from events
+   */
+  async recordNewPasswordForUserId(userId: string, passwordHash: string, createdBy: string, time: number): Promise<?any> {
+    return await userAccountStorage.addPassword(userId, passwordHash, createdBy, time);
   }
 
   async getOnePropertyValue(userId: string, propertyKey: string) {
@@ -233,8 +243,14 @@ class UsersRepository {
 
       // add the user to local index
       await usersIndex.addUser(user.username, user.id);
-
       await this.mall.events.createMany(user.id, events, mallTransaction);
+
+      // record passsword in history
+      for (const event of events) {
+        if (event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH)) {
+          const createdPass = await this.recordNewPasswordForUserId(user.id, event.content, event.createdBy, event.time);
+        }
+      }
     });
     return user;
   }
@@ -252,6 +268,7 @@ class UsersRepository {
     const mallTransaction = await this.mall.newTransaction();
     const localTransaction = await mallTransaction.getStoreTransaction('local');
 
+    const modifiedTime = timestamp.now();
     await localTransaction.exec(async () => {
       // update all account streams and don't allow additional properties
       for (const [streamIdWithoutPrefix, content] of Object.entries(update)) {
@@ -263,12 +280,16 @@ class UsersRepository {
         }]};
         const updateFields =  {
           content,
-          modified: timestamp.now(),
+          modified: modifiedTime,
           modifiedBy: accessId,
         };
         await this.mall.events.updateMany(user.id, query, {fieldsToSet: updateFields}, mallTransaction);
       }
     });
+
+    if (update.passwordHash != null) {
+      await this.recordNewPasswordForUserId(user.id, update.passwordHash, accessId, modifiedTime);
+    }
   }
 
   async deleteOne(userId: string, username: ?string, skipFowardToRegister: ?boolean): Promise<number> {
