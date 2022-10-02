@@ -601,7 +601,7 @@ describe('registration: cluster', function() {
         });
         it('[1BF3] should find password in password history', async () => {
           const user = await usersRepository.getUserByUsername(userData.username);
-          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, user.passwordHash, 1), 'missing password in history');
+          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, userData.password, 1), 'missing password in history');
         });
       });
       describe('when an invalid one is provided', () => {

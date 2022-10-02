@@ -21,6 +21,8 @@ const Sqlite3 = require('better-sqlite3');
 const LRU = require('lru-cache');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
+const encryption = require('utils').encryption;
+const bluebird = require('bluebird');
 
 const UserLocalDirectory = require('./UserLocalDirectory');
 
@@ -39,7 +41,7 @@ let initState = InitStates.NOT_INITIALIZED;
 
 module.exports = {
   init,
-  addPassword,
+  addPasswordHash,
   passwordExistsInHistory
 };
 
@@ -62,18 +64,20 @@ async function init () {
   initState = InitStates.READY;
 }
 
-async function addPassword (userId, passwordHash, createdBy, time = timestamp.now()) {
+async function addPasswordHash (userId, passwordHash, createdBy, time = timestamp.now()) {
   const db = await getUserDB(userId);
   const result = { time, hash: passwordHash, createdBy };
   db.prepare('INSERT INTO passwords (time, hash, createdBy) VALUES (@time, @hash, @createdBy)').run(result);
   return result;
 }
 
-async function passwordExistsInHistory (userId, passwordHash, historyLength) {
+async function passwordExistsInHistory (userId, password, historyLength) {
   const db = await getUserDB(userId);
   const getLastN = db.prepare('SELECT hash, time FROM passwords ORDER BY time DESC LIMIT ?');
   for (const entry of getLastN.iterate(historyLength)) {
-    if (entry.hash === passwordHash) return true;
+    if (await bluebird.fromCallback(cb => encryption.compare(password, entry.hash, cb))) {
+      return true;
+    }
   }
   return false;
 }

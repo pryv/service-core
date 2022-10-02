@@ -9,6 +9,8 @@
 const assert = require('chai').assert;
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
+const bluebird = require('bluebird');
+const encryption = require('utils').encryption;
 
 const userAccountStorage = require('business/src/users/userAccountStorage');
 
@@ -21,8 +23,11 @@ describe('[UAST] Users Account Storage', () => {
     // create five passwords with one day delay between each other
     const now = timestamp.now();
     for (let i = 4; i >= 0; i--) { // in descending order
-      const createdPassword = await userAccountStorage.addPassword(userId, `hash_${i}`, 'test', timestamp.add(now, `-${i}d`));
+      const password = `pass_${i}`;
+      const passswordHash = await bluebird.fromCallback(cb => encryption.hash(password, cb));
+      const createdPassword = await userAccountStorage.addPasswordHash(userId, passswordHash, 'test', timestamp.add(now, `-${i}d`));
       assert.exists(createdPassword.time);
+      createdPassword.password = password;
       passwords.push(createdPassword);
     }
   });
@@ -31,13 +36,13 @@ describe('[UAST] Users Account Storage', () => {
 
   });
 
-  describe('addPassword()', () => {
+  describe('addPasswordHash()', () => {
     it('[B2I7] must throw an error if two passwords are added with the same time', async () => {
       const userId2 = cuid();
       const now = timestamp.now();
-      await userAccountStorage.addPassword(userId2, 'hash_1', 'test', now);
+      await userAccountStorage.addPasswordHash(userId2, 'hash_1', 'test', now);
       try {
-        await userAccountStorage.addPassword(userId2, 'hash_2', 'test', now);
+        await userAccountStorage.addPasswordHash(userId2, 'hash_2', 'test', now);
       } catch (e) {
         assert.equal(e.message, 'UNIQUE constraint failed: passwords.time');
         return;
@@ -49,7 +54,7 @@ describe('[UAST] Users Account Storage', () => {
   describe('passwordExistsInHistory()', () => {
     it('[1OQP] must return true when looking for existing passwords', async () => {
       for (const password of passwords) {
-        const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, password.hash, passwords.length);
+        const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, password.password, passwords.length);
         assert.isTrue(passwordExists, 'should find password ' + JSON.stringify(password));
       }
     });
@@ -61,7 +66,7 @@ describe('[UAST] Users Account Storage', () => {
 
     it('[FEYP] must return false when looking for an existing password that is beyond the given range', async () => {
       const oldestPassword = passwords[0];
-      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, oldestPassword.hash, passwords.length - 1);
+      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, oldestPassword.password, passwords.length - 1);
       assert.isFalse(passwordExists, 'should not find password beyond the given range: ' + JSON.stringify(oldestPassword));
     });
   });

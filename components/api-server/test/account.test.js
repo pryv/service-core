@@ -22,7 +22,7 @@ const testData = helpers.data;
 const _ = require('lodash');
 const bluebird = require('bluebird');
 const { getUsersRepository } = require('business/src/users');
-
+const userAccountStorage = require('business/src/users/userAccountStorage');
 let usersRepository = null;
 
 describe('account', function () {
@@ -30,6 +30,7 @@ describe('account', function () {
 
   before(async () => {
     usersRepository = await getUsersRepository();
+    await userAccountStorage.init();
   });
 
   const basePath = '/' + user.username + '/account';
@@ -382,6 +383,10 @@ describe('account', function () {
         },
         function verifyNewPassword (stepDone) {
           request.login(_.defaults({ password: data.newPassword }, user), stepDone);
+        },
+        async function checkPasswordInHistory () {
+          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, data.oldPassword, 2), 'missing previous password in history');
+          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, data.newPassword, 1), 'missing new password in history');
         }
       ], done);
     });
