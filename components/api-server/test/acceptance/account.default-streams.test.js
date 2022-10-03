@@ -178,30 +178,26 @@ describe('[ACCO] Account with system streams', function () {
   describe('POST /change-password', () => {
     describe('and when valid data is provided', () => {
       let passwordBefore;
-      let passwordAfter;
+      const passwordAfter = charlatan.Lorem.characters(7);
       let user;
       before(async function () {
         user = await createUser();
         basePath += '/change-password';
         // modify account info
-        passwordBefore = await getActiveEvent('passwordHash');
+        passwordBefore = user.attrs.password;
         res = await request.post(basePath)
           .send({
-            newPassword: charlatan.Lorem.characters(7),
-            oldPassword: user.attrs.password
+            newPassword: passwordAfter,
+            oldPassword: passwordBefore
           })
           .set('authorization', access.token);
-        passwordAfter = await getActiveEvent('passwordHash');
       });
       it('[X9VQ] should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('[PWAA] should update event with password hash', async () => {
-        assert.notEqual(passwordBefore.content, passwordAfter.content);
-      });
       it('[ACNE] should find password in password history', async () => {
-        assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordBefore.content, 2), 'missing previous password in history');
-        assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordAfter.content, 1), 'missing new password in history');
+        assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordBefore, 2), 'missing previous password in history');
+        assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordAfter, 1), 'missing new password in history');
       });
     });
     describe('when the password in the database does not exist', () => {
