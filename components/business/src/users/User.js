@@ -93,7 +93,7 @@ class User {
       'storageUsed',
     ]);
   }
-  
+
   /**
    * Get account with id property added to it
    */
@@ -152,13 +152,13 @@ function loadAccountData (user: User, params): void {
 
 async function buildEventsFromAccount (user: User): Promise<Array<Event>> {
   const accountLeavesMap: Map<string, SystemStream> = SystemStreamsSerializer.getAccountLeavesMap();
-  
+
   // convert to events
   const account: {} = user.getFullAccount();
 
   // change password into hash (also allow for tests to pass passwordHash directly)
   if (user.password != null && user.passwordHash == null) {
-    account.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(user.password, cb));
+    account.passwordHash = await encryption.hash(user.password);
   }
   delete user.password;
 

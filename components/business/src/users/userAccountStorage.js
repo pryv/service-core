@@ -19,10 +19,8 @@
 const path = require('path');
 const Sqlite3 = require('better-sqlite3');
 const LRU = require('lru-cache');
-const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
-const bluebird = require('bluebird');
 
 const UserLocalDirectory = require('./UserLocalDirectory');
 
@@ -75,7 +73,7 @@ async function passwordExistsInHistory (userId, password, historyLength) {
   const db = await getUserDB(userId);
   const getLastN = db.prepare('SELECT hash, time FROM passwords ORDER BY time DESC LIMIT ?');
   for (const entry of getLastN.iterate(historyLength)) {
-    if (await bluebird.fromCallback(cb => encryption.compare(password, entry.hash, cb))) {
+    if (await encryption.compare(password, entry.hash)) {
       return true;
     }
   }

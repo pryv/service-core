@@ -258,9 +258,7 @@ class UsersRepository {
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
     // change password into hash if it exists
     if (update.password != null) {
-      update.passwordHash = await bluebird.fromCallback(
-        cb => encryption.hash(update.password, cb),
-      );
+      update.passwordHash = await encryption.hash(update.password);
     }
     delete update.password;
 
@@ -313,9 +311,7 @@ class UsersRepository {
     const currentPass = await getUserPasswordHash(userId, this.mall);
     let isValid: boolean = false;
     if (currentPass != null) {
-      isValid = await bluebird.fromCallback(
-        cb => encryption.compare(password, currentPass, cb),
-      );
+      isValid = await encryption.compare(password, currentPass);
     }
     return isValid;
   }

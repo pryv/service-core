@@ -9,7 +9,6 @@
 const assert = require('chai').assert;
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
-const bluebird = require('bluebird');
 const encryption = require('utils').encryption;
 
 const userAccountStorage = require('business/src/users/userAccountStorage');
@@ -24,8 +23,8 @@ describe('[UAST] Users Account Storage', () => {
     const now = timestamp.now();
     for (let i = 4; i >= 0; i--) { // in descending order
       const password = `pass_${i}`;
-      const passswordHash = await bluebird.fromCallback(cb => encryption.hash(password, cb));
-      const createdPassword = await userAccountStorage.addPasswordHash(userId, passswordHash, 'test', timestamp.add(now, `-${i}d`));
+      const passwordHash = await encryption.hash(password);
+      const createdPassword = await userAccountStorage.addPasswordHash(userId, passwordHash, 'test', timestamp.add(now, `-${i}d`));
       assert.exists(createdPassword.time);
       createdPassword.password = password;
       passwords.push(createdPassword);
