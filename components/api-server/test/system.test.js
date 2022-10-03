@@ -7,7 +7,6 @@
 
 /* global describe, before, beforeEach, after, it */
 
-require('./test-helpers');
 
 const async = require('async');
 const should = require('should');
@@ -19,7 +18,9 @@ const assert = require('chai').assert;
 const bluebird = require('bluebird');
 const os = require('os');
 const fs = require('fs');
+const { setTimeout } = require('timers/promises');
 
+require('./test-helpers');
 const helpers = require('./helpers');
 const ErrorIds = require('errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
@@ -209,7 +210,7 @@ describe('system (ex-register)', function () {
           status: 201,
           schema: methodsSchema.createUser.result
         });
-        await new Promise(r => setTimeout(r, 1000));
+        await setTimeout(1000);
         mailSent.should.eql(true);
 
         // getUpdatedUsers

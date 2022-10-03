@@ -10,4 +10,5 @@ module.exports = {
   getUsersRepository: require('./repository').getUsersRepository,
   UserRepositoryOptions: require('./UserRepositoryOptions'),
   User: require('./User'),
+  getPasswordRules: require('./passwordRules')
 };

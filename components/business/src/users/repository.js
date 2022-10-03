@@ -8,6 +8,7 @@
 
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
+const { setTimeout } = require('timers/promises');
 
 const User = require('./User');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
@@ -337,7 +338,7 @@ let usersRepository = null;
 let usersRepositoryInitializing = false;
 async function getUsersRepository() {
   while (usersRepositoryInitializing) {
-    await new Promise((r) => setTimeout(r, 100));
+    await setTimeout(100);
   }
   if (!usersRepository) {
     usersRepositoryInitializing = true;

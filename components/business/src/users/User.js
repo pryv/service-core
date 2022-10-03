@@ -9,17 +9,14 @@
 const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
-const bluebird = require('bluebird');
 
-const treeUtils = require('utils/src/treeUtils');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
 
-const { getConfigUnsafe } = require('@pryv/boiler');
-const { encryption } = require('utils')
+const { encryption } = require('utils');
 
-import type { SystemStream } from 'business/src/system-streams';
-import type { Event } from 'business/src/events';
+import type { SystemStream } from 'business/src/system-streams';
+import type { Event } from 'business/src/events';
 
 class User {
   // User properties that exists by default (email could not exist with specific config)

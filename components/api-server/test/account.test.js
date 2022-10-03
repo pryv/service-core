@@ -26,7 +26,7 @@ const { getUsersRepository } = require('business/src/users');
 const userAccountStorage = require('business/src/users/userAccountStorage');
 let usersRepository = null;
 
-describe('account', function () {
+describe('[ACCO] account', function () {
   const user = Object.assign({}, testData.users[0]);
 
   before(async () => {
@@ -362,7 +362,7 @@ describe('account', function () {
   });
 
   describe('/change-password', function () {
-    beforeEach(async () => { await resetUsers; });
+    before(async () => { await resetUsers(); });
 
     const path = basePath + '/change-password';
 
@@ -415,6 +415,74 @@ describe('account', function () {
       request.post(path, testData.accesses[4].token).send({ some: 'data' }).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
+    });
+
+    describe('[APWD] When password rules are enabled', function () {
+      const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), {
+        auth: {
+          passwordComplexityMinCharCategories: 3,
+          passwordComplexityMinLength: 8,
+          passwordAgeMaxDays: 365,
+          passwordAgeMinDays: 1,
+          passwordPreventReuseHistoryLength: 3
+        }
+      });
+
+      // common test data
+      const baseData = { oldPassword: user.password };
+      const goodPassword3CharCats = '1L0v3T0p1n4mb0urz';
+      const goodPassword4CharCats = '1.L0v3.T0p1n4mb0urz';
+      const badPassword2CharCats = '1l0v3c0urg3tt3z'; // missing caps & special chars
+      const badPasswordTooShort = '1L0v3U!'; // 7 chars vs 8 minimum
+
+      before(async () => {
+        await server.ensureStartedAsync(settings);
+      });
+
+      it('[1YPT] must return an error if the new password is too short', async () => {
+        const data = _.defaults({ newPassword: badPasswordTooShort }, baseData);
+        const res = await request.post(path).send(data);
+        validation.check(res, {
+          status: 400,
+          id: ErrorIds.InvalidOperation
+        });
+      });
+
+      it('[352R] must accept the new password if it is long enough', async () => {
+        const data = _.defaults({ newPassword: goodPassword3CharCats }, baseData);
+        const res = await request.post(path).send(data);
+        validation.check(res, {
+          status: 200
+        });
+        baseData.oldPassword = data.newPassword;
+      });
+
+      it('[663A] must return an error if the new password does not contains characters from enough categories', async () => {
+        const data = _.defaults({ newPassword: badPassword2CharCats }, baseData);
+        const res = await request.post(path).send(data);
+        validation.check(res, {
+          status: 400,
+          id: ErrorIds.InvalidOperation
+        });
+      });
+
+      it('[OY2G] must accept the new password if it contains characters from enough categories', async () => {
+        await server.ensureStartedAsync(_.merge(_.cloneDeep(settings), { auth: { passwordComplexityMinCharCategories: 4 } }));
+        const data = _.defaults({ newPassword: goodPassword4CharCats }, baseData);
+        const res = await request.post(path).send(data);
+        validation.check(res, {
+          status: 200
+        });
+        baseData.oldPassword = data.newPassword;
+      });
+
+      it('must return an error if the new password is found in the N last passwords used');
+
+      it('must accept the new password if different from the N last passwords used');
+
+      it('must return an error if the current password’s age is below the set minimum');
+
+      it('must accept the new password if the current one’s age is greater than the set minimum');
     });
   });
 
