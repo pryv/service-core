@@ -4,25 +4,25 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/* global describe, before, beforeEach, after, afterEach it */
 // @flow
 
-/* global describe, before, beforeEach, after, afterEach it */
+const chai = require('chai');
+const assert = chai.assert;
+const should = require('should');
+const _ = require('lodash');
+const async = require('async');
+const fs = require('fs');
+const os = require('os');
+const request = require('superagent');
+const url = require('url');
 
 require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
-const async = require('async');
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
-const should = require('should');
-const chai = require('chai');
-const assert = chai.assert;
-const request = require('superagent');
 const testData = helpers.data;
-const url = require('url');
-const _ = require('lodash');
-const fs = require('fs');
-const os = require('os');
 const { UserRepositoryOptions } = require('business/src/users');
 
 describe('auth', function () {
@@ -75,6 +75,7 @@ describe('auth', function () {
               .set('Origin', trustedOrigin)
               .send(authData)
               .end(function (err, res) {
+                should.not.exist(err);
                 assert.strictEqual(res.statusCode, 200);
 
                 should.exist(res.body.token);
@@ -94,6 +95,7 @@ describe('auth', function () {
               { name: authData.appId },
               null,
               function (err, access) {
+                should.not.exist(err);
                 access.modifiedBy.should.eql(UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
                 stepDone();
               }
@@ -114,13 +116,14 @@ describe('auth', function () {
               .set('Origin', trustedOrigin)
               .send(authData)
               .end(function (err, res) {
+                should.not.exist(err);
                 personalToken = res.body.token;
                 stepDone();
               });
           },
           function expireSession (stepDone) {
             helpers.dependencies.storage.sessions.expireNow(personalToken,
-              function (err, session) {
+              function (err/* , session */) {
                 stepDone(err);
               }
             );
@@ -131,6 +134,7 @@ describe('auth', function () {
               .set('Origin', trustedOrigin)
               .set('Authorization', personalToken)
               .end(function (err, res) {
+                should.exist(err);
                 assert.strictEqual(res.statusCode, 403);
                 assert.strictEqual(res.body.error.id, 'invalid-access-token');
                 assert.strictEqual(res.body.error.message, 'Access session has expired.');
@@ -152,6 +156,7 @@ describe('auth', function () {
               .set('Origin', trustedOrigin)
               .send(authData)
               .end(function (err, res) {
+                should.not.exist(err);
                 assert.strictEqual(res.statusCode, 200);
                 originalToken = res.body.token;
                 stepDone();
@@ -163,6 +168,7 @@ describe('auth', function () {
               .set('Origin', trustedOrigin)
               .send(authData)
               .end(function (err, res) {
+                should.not.exist(err);
                 assert.strictEqual(res.statusCode, 200);
                 assert.strictEqual(res.body.token, originalToken);
                 assert.exists(res.body.apiEndpoint);
@@ -181,8 +187,8 @@ describe('auth', function () {
         .set('Origin', 'https://test.rec.la:1234')
         .send(authData)
         .end(function (err, res) {
+          should.not.exist(err);
           assert.strictEqual(res.statusCode, 200);
-
           done();
         });
     });
@@ -193,8 +199,8 @@ describe('auth', function () {
         .post(path(authDataNoCORS.username))
         .send(authDataNoCORS)
         .end(function (err, res) {
+          should.not.exist(err);
           assert.strictEqual(res.statusCode, 200);
-
           done();
         });
     });
@@ -205,8 +211,8 @@ describe('auth', function () {
         .set('Referer', trustedOrigin)
         .send(authData)
         .end(function (err, res) {
+          should.not.exist(err);
           assert.strictEqual(res.statusCode, 200);
-
           done();
         });
     });
@@ -217,6 +223,7 @@ describe('auth', function () {
         .set('Referer', trustedOrigin)
         .send(authData)
         .end(function (err, res) {
+          should.not.exist(err);
           res.statusCode.should.eql(200);
           done();
         });
@@ -230,8 +237,8 @@ describe('auth', function () {
           _.defaults({ username: authData.username.toUpperCase() }, authData)
         )
         .end(function (err, res) {
+          should.not.exist(err);
           assert.strictEqual(res.statusCode, 200);
-
           done();
         });
     });
@@ -249,6 +256,7 @@ describe('auth', function () {
         .set('Origin', trustedOrigin)
         .send(data)
         .end(function (err, res) {
+          should.exist(err);
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials
@@ -265,6 +273,7 @@ describe('auth', function () {
         .set('Origin', trustedOrigin)
         .send(data)
         .end(function (err, res) {
+          should.exist(err);
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials
@@ -280,6 +289,7 @@ describe('auth', function () {
         .set('Origin', 'http://mismatching.origin')
         .send(authData)
         .end(function (err, res) {
+          should.exist(err);
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials
@@ -321,6 +331,7 @@ describe('auth', function () {
             { name: randomId, type: 'personal' },
             null,
             (err, access) => {
+              should.not.exist(err);
               should(access.token).be.equal(lastResult);
               done();
             }
@@ -336,6 +347,7 @@ describe('auth', function () {
         .set('Origin', trustedOrigin)
         .send(authData)
         .end(function (err, res) {
+          should.not.exist(err);
           assert.strictEqual(res.statusCode, 200);
 
           should.exist(res.body.token);
@@ -391,7 +403,7 @@ describe('auth', function () {
             }
           }
         };
-        server.ensureStarted.call(server, settings, stepDone);
+        server.ensureStarted(settings, stepDone);
       }
 
       after(server.ensureStarted.bind(server, helpers.dependencies.settings));
@@ -408,6 +420,7 @@ describe('auth', function () {
                 .set('Origin', trustedOrigin)
                 .send(wrongPasswordData)
                 .end(function (err, res) {
+                  should.exist(err);
                   assert.strictEqual(res.statusCode, 401);
                   stepDone();
                 });
@@ -445,6 +458,7 @@ describe('auth', function () {
                 .set('Origin', trustedOrigin)
                 .send(wrongPasswordData)
                 .end(function (err, res) {
+                  should.exist(err);
                   assert.strictEqual(res.statusCode, 400);
                   stepDone();
                 });

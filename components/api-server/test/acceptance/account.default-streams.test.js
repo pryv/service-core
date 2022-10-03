@@ -4,14 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const cuid = require('cuid');
-const _ = require('lodash');
-const bluebird = require('bluebird');
-const nock = require('nock');
+/* global describe, it, before, after */
+
 const assert = require('chai').assert;
-const { describe, before, it } = require('mocha');
-const supertest = require('supertest');
+const _ = require('lodash');
+const cuid = require('cuid');
+const bluebird = require('bluebird');
 const charlatan = require('charlatan');
+const nock = require('nock');
+const supertest = require('supertest');
+
 const ErrorIds = require('errors').ErrorIds;
 const { getApplication } = require('api-server/src/application');
 
@@ -50,7 +52,7 @@ describe('[ACCO] Account with system streams', function () {
     basePath = '/' + user.attrs.username + '/account';
     access = await user.access({
       type: 'personal',
-      token: cuid(),
+      token: cuid()
     });
     access = access.attrs;
     await user.session(access.token);
@@ -58,19 +60,19 @@ describe('[ACCO] Account with system streams', function () {
     return user;
   }
 
-  async function getActiveEvent(streamId, isPrivate = true) {
+  async function getActiveEvent (streamId, isPrivate = true) {
     const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-    const streamQuery = [{ any: [streamIdWithPrefix], and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}];
-    const res = await mall.events.get(user.attrs.id, {streams: streamQuery });
-    if(res.length === 0) return null;
+    const streamQuery = [{ any: [streamIdWithPrefix], and: [{ any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }] }];
+    const res = await mall.events.get(user.attrs.id, { streams: streamQuery });
+    if (res.length === 0) return null;
     return res[0];
   }
 
   async function getNotActiveEvent (streamId, isPrivate = true) {
     const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-    const streamQuery = [{ any: [streamIdWithPrefix], and: [{not: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}];
-    const res = await mall.events.get(user.attrs.id, {streams: streamQuery });
-    if(res.length === 0) return null;
+    const streamQuery = [{ any: [streamIdWithPrefix], and: [{ not: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }] }];
+    const res = await mall.events.get(user.attrs.id, { streams: streamQuery });
+    if (res.length === 0) return null;
     return res[0];
   }
   /**
@@ -78,7 +80,7 @@ describe('[ACCO] Account with system streams', function () {
    * @param string streamId
    */
   async function createAdditionalEvent (streamIdWithPrefix, content) {
-    eventDataForadditionalEvent = {
+    const eventDataForadditionalEvent = {
       streamIds: [streamIdWithPrefix],
       content: content || charlatan.Lorem.characters(7),
       type: 'string/pryv'
@@ -90,21 +92,21 @@ describe('[ACCO] Account with system streams', function () {
 
   before(async function () {
     config = await getConfig();
-    config.injectTestConfig({testsSkipForwardToRegister: false});
+    config.injectTestConfig({ testsSkipForwardToRegister: false });
     isDnsLess = config.get('dnsLess:isActive');
     helpers = require('api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
     app = getApplication(true);
     await app.initiate();
     // Initialize notifications dependency
-    let axonMsgs = [];
+    const axonMsgs = [];
     const axonSocket = {
-      emit: (...args) => axonMsgs.push(args),
+      emit: (...args) => axonMsgs.push(args)
     };
     pubsub.setTestNotifier(axonSocket);
     pubsub.status.emit(pubsub.SERVER_READY);
-    await require("api-server/src/methods/account")(app.api);
-    await require("api-server/src/methods/events")(app.api);
+    await require('api-server/src/methods/account')(app.api);
+    await require('api-server/src/methods/events')(app.api);
     request = supertest(app.expressApp);
     mall = await getMall();
   });
@@ -140,10 +142,12 @@ describe('[ACCO] Account with system streams', function () {
         }
 
         allVisibleAccountEvents = await mall.events.get(user.attrs.id,
-          {streams: [
-            {any: visibleStreamsIds},
-            {and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}
-          ]});
+          {
+            streams: [
+              { any: visibleStreamsIds },
+              { and: [{ any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }] }
+            ]
+          });
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
       });
@@ -232,16 +236,16 @@ describe('[ACCO] Account with system streams', function () {
       async function generateResetToken (username) {
         // generate a reset token for user1
         return await bluebird.fromCallback(
-          (cb) => pwdResetReqsStorage.generate(username,cb));
+          (cb) => pwdResetReqsStorage.generate(username, cb));
       }
       before(async function () {
         await createUser();
-        basePath += '/reset-password'
+        basePath += '/reset-password';
         // remove passwordHash event from the database
-        await mall.events.delete(user.attrs.id, {streams: [{any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')]}]});
+        await mall.events.delete(user.attrs.id, { streams: [{ any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')] }] });
 
         // make sure the event was deleted
-        let password = await getActiveEvent('passwordHash');
+        const password = await getActiveEvent('passwordHash');
         assert.isNull(password);
 
         res = await request.post(basePath)
@@ -263,165 +267,166 @@ describe('[ACCO] Account with system streams', function () {
   });
 
   describe('PUT /account', () => {
-      describe('when updating the username', () => {
-        before(async function () {
-          await createUser();
-          // modify account info
-          res = await request.put(basePath)
-            .send({username: charlatan.Lorem.characters(7)})
-            .set('authorization', access.token);
-        });
-        it('[P69J] should return 400', async () => {
-          assert.equal(res.status, 400);
-        });
-        it('[DBM6] should return the correct error', async () => {
-          // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
-          assert.equal(res.body.error.data.length, 1);
-          assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
-        });
+    describe('when updating the username', () => {
+      before(async function () {
+        await createUser();
+        // modify account info
+        res = await request.put(basePath)
+          .send({ username: charlatan.Lorem.characters(7) })
+          .set('authorization', access.token);
       });
-      describe('when updating non editable fields', () => {
-        before(async function () {
-          await createUser();
-          // modify account info
-          res = await request.put(basePath)
-            .send({ attachedFiles: 2 })
-            .set('authorization', access.token);
-        });
-        it('[90N3] should return 400', async () => {
-          assert.equal(res.status, 400);
-        });
-        it('[QHZ4] should return the correct error', async () => {
-          // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
-          assert.equal(res.body.error.data.length, 1);
-          assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
-        });
+      it('[P69J] should return 400', async () => {
+        assert.equal(res.status, 400);
       });
-      describe('when updating a unique field that is already taken', () => {
-        describe('and the field is not unique in mongodb', () => {
-          let scope;
-          let user2;
-          before(async function () {
-            user2 = await createUser();
-            await createUser();
-            const settings = _.cloneDeep(helpers.dependencies.settings);
-            scope = nock(settings.services.register.url);
-            scope.put(`/users`)
-              .reply(400, { error: {
-                id: ErrorIds.ItemAlreadyExists,
-                data: { email: user2.attrs.email },
-            }});
-
-            // modify account info
-            res = await request.put(basePath)
-              .send({ email: user2.attrs.email })
-              .set('authorization', access.token);
-          });
-          it('[K3X9] should return a 409 error', async () => {
-            assert.equal(res.status, 409);
-          });
-          it('[8TRP] should return the correct error', async () => {
-            assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
-            assert.deepEqual(res.body.error.data, { email: user2.attrs.email});
-          });
-        });
+      it('[DBM6] should return the correct error', async () => {
+        // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
+        assert.equal(res.body.error.data.length, 1);
+        assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
       });
-
-      describe('when updating email and language and non-active fields exists', () => {
-        const newEmail = charlatan.Internet.email();
-        const newLanguage = charlatan.Lorem.characters(2);
-        let activeEmailBefore;
-        let notActiveEmailBefore;
-        let activeLanguageBefore;
-        let notActiveLanguageBefore;
-
-        let activeEmailAfter;
-        let notActiveEmailAfter;
-        let activeLanguageAfter;
-        let notActiveLanguageAfter;
-
+    });
+    describe('when updating non editable fields', () => {
+      before(async function () {
+        await createUser();
+        // modify account info
+        res = await request.put(basePath)
+          .send({ attachedFiles: 2 })
+          .set('authorization', access.token);
+      });
+      it('[90N3] should return 400', async () => {
+        assert.equal(res.status, 400);
+      });
+      it('[QHZ4] should return the correct error', async () => {
+        // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
+        assert.equal(res.body.error.data.length, 1);
+        assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
+      });
+    });
+    describe('when updating a unique field that is already taken', () => {
+      describe('and the field is not unique in mongodb', () => {
         let scope;
+        let user2;
         before(async function () {
+          user2 = await createUser();
           await createUser();
           const settings = _.cloneDeep(helpers.dependencies.settings);
-          nock.cleanAll();
-          scope = nock(settings.services.register.url)
-          scope.put(`/users`)
-            .reply(200, {});
-          scope.put('/users',
-            (body) => {
-              serviceRegisterRequest = body;
-              return true;
-            }).times(3).reply(200, {});
-
-          // create additional events
-          await createAdditionalEvent(SystemStreamsSerializer.addCustomerPrefixToStreamId('email'), charlatan.Internet.email());
-          await createAdditionalEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('language'));
-
-          activeEmailBefore = await getActiveEvent('email', false);
-          notActiveEmailBefore = await getNotActiveEvent('email', false);
-          activeLanguageBefore = await getActiveEvent('language');
-          notActiveLanguageBefore = await getNotActiveEvent('language');
+          scope = nock(settings.services.register.url);
+          scope.put('/users')
+            .reply(400, {
+              error: {
+                id: ErrorIds.ItemAlreadyExists,
+                data: { email: user2.attrs.email }
+              }
+            });
 
           // modify account info
           res = await request.put(basePath)
-            .send({
-              email: newEmail,
-              language: newLanguage,
-            })
+            .send({ email: user2.attrs.email })
             .set('authorization', access.token);
-
-          activeEmailAfter = await getActiveEvent('email', false);
-          notActiveEmailAfter = await getNotActiveEvent('email', false);
-          activeLanguageAfter = await getActiveEvent('language');
-          notActiveLanguageAfter = await getNotActiveEvent('language');
         });
-        it('[JJ81] should return 200', async () => {
-          assert.equal(res.status, 200);
+        it('[K3X9] should return a 409 error', async () => {
+          assert.equal(res.status, 409);
         });
-        it('[K9IC] should returned updated account data', async () => {
-          assert.deepEqual(res.body.account, {
-              username: user.attrs.username,
-              email: newEmail,
-              language: newLanguage,
-              storageUsed: { dbDocuments: 0, attachedFiles: 0 },
-          });
-        });
-        it('[JQHX] should update only active events in the database', async () => {
-          assert.deepEqual(notActiveEmailBefore, notActiveEmailAfter);
-          assert.deepEqual(notActiveLanguageBefore, notActiveLanguageAfter);
-          assert.notEqual(activeEmailBefore.content, activeEmailAfter.content);
-          assert.notEqual(activeLanguageBefore.content, activeLanguageAfter.content);
-          assert.equal(activeEmailAfter.content, newEmail);
-          assert.equal(activeLanguageAfter.content, newLanguage);
-        });
-        it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async function () {
-          if (isDnsLess) this.skip();
-          // email is already skipped
-          assert.deepEqual(serviceRegisterRequest, {
-            username: user.attrs.username,
-            user: {
-              email: [
-                {
-                  creation: false,
-                  isActive: true,
-                  isUnique: true,
-                  value: newEmail
-                }
-              ],
-              language: [
-                {
-                  value: newLanguage,
-                  isUnique: false,
-                  isActive: true,
-                  creation: false
-                }
-              ],
-            },
-            fieldsToDelete: {}
-          });
+        it('[8TRP] should return the correct error', async () => {
+          assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
+          assert.deepEqual(res.body.error.data, { email: user2.attrs.email });
         });
       });
+    });
 
+    describe('when updating email and language and non-active fields exists', () => {
+      const newEmail = charlatan.Internet.email();
+      const newLanguage = charlatan.Lorem.characters(2);
+      let activeEmailBefore;
+      let notActiveEmailBefore;
+      let activeLanguageBefore;
+      let notActiveLanguageBefore;
+
+      let activeEmailAfter;
+      let notActiveEmailAfter;
+      let activeLanguageAfter;
+      let notActiveLanguageAfter;
+
+      let scope;
+      before(async function () {
+        await createUser();
+        const settings = _.cloneDeep(helpers.dependencies.settings);
+        nock.cleanAll();
+        scope = nock(settings.services.register.url);
+        scope.put('/users')
+          .reply(200, {});
+        scope.put('/users',
+          (body) => {
+            serviceRegisterRequest = body;
+            return true;
+          }).times(3).reply(200, {});
+
+        // create additional events
+        await createAdditionalEvent(SystemStreamsSerializer.addCustomerPrefixToStreamId('email'), charlatan.Internet.email());
+        await createAdditionalEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('language'));
+
+        activeEmailBefore = await getActiveEvent('email', false);
+        notActiveEmailBefore = await getNotActiveEvent('email', false);
+        activeLanguageBefore = await getActiveEvent('language');
+        notActiveLanguageBefore = await getNotActiveEvent('language');
+
+        // modify account info
+        res = await request.put(basePath)
+          .send({
+            email: newEmail,
+            language: newLanguage
+          })
+          .set('authorization', access.token);
+
+        activeEmailAfter = await getActiveEvent('email', false);
+        notActiveEmailAfter = await getNotActiveEvent('email', false);
+        activeLanguageAfter = await getActiveEvent('language');
+        notActiveLanguageAfter = await getNotActiveEvent('language');
+      });
+      it('[JJ81] should return 200', async () => {
+        assert.equal(res.status, 200);
+      });
+      it('[K9IC] should returned updated account data', async () => {
+        assert.deepEqual(res.body.account, {
+          username: user.attrs.username,
+          email: newEmail,
+          language: newLanguage,
+          storageUsed: { dbDocuments: 0, attachedFiles: 0 }
+        });
+      });
+      it('[JQHX] should update only active events in the database', async () => {
+        assert.deepEqual(notActiveEmailBefore, notActiveEmailAfter);
+        assert.deepEqual(notActiveLanguageBefore, notActiveLanguageAfter);
+        assert.notEqual(activeEmailBefore.content, activeEmailAfter.content);
+        assert.notEqual(activeLanguageBefore.content, activeLanguageAfter.content);
+        assert.equal(activeEmailAfter.content, newEmail);
+        assert.equal(activeLanguageAfter.content, newLanguage);
+      });
+      it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async function () {
+        if (isDnsLess) this.skip();
+        // email is already skipped
+        assert.deepEqual(serviceRegisterRequest, {
+          username: user.attrs.username,
+          user: {
+            email: [
+              {
+                creation: false,
+                isActive: true,
+                isUnique: true,
+                value: newEmail
+              }
+            ],
+            language: [
+              {
+                value: newLanguage,
+                isUnique: false,
+                isActive: true,
+                creation: false
+              }
+            ]
+          },
+          fieldsToDelete: {}
+        });
+      });
+    });
   });
 });

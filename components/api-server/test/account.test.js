@@ -6,21 +6,22 @@
  */
 /* global describe, before, beforeEach, it */
 
-require('./test-helpers');
-const fs = require('fs');
 const assert = require('chai').assert;
+const should = require('should');
+const _ = require('lodash');
+const async = require('async');
+const bluebird = require('bluebird');
+const fs = require('fs');
+
+require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
-const async = require('async');
 const ErrorIds = require('errors').ErrorIds;
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/accountMethods');
 const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
-const should = require('should');
 const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
-const _ = require('lodash');
-const bluebird = require('bluebird');
 const { getUsersRepository } = require('business/src/users');
 const userAccountStorage = require('business/src/users/userAccountStorage');
 let usersRepository = null;
