@@ -239,7 +239,12 @@ class UsersRepository {
       await this.mall.events.createMany(user.id, events, mallTransaction);
 
       // set user password
-      await await this.setUserPassword(user.id, user.password, user.accessId);
+      if (user.passwordHash) { // if we have passwordHash it comes from (ex-register)
+        await userAccountStorage.addPasswordHash(user.id, user.passwordHash, user.accessId);
+      } else { // standard create user
+        await await this.setUserPassword(user.id, user.password, user.accessId);
+      }
+     
     });
     return user;
   }

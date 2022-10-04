@@ -162,7 +162,7 @@ describe('system (ex-register)', function () {
     const newUserPassword = '1l0v3p0t1r0nZ';
     const newUserData = {
       username: 'mr-dupotager',
-      password: newUserPassword,
+      passwordHash: encryption.hashSync(newUserPassword),
       email: 'dupotager@test.com',
       language: 'fr'
     };
@@ -188,8 +188,9 @@ describe('system (ex-register)', function () {
             require('nock')(this.context.url)
               .post('')
               .reply(200, function (uri, body) {
-                body.message.global_merge_vars[0].content.should.be.equal('mr-dupotager');
-                body.template_name.should.match(/welcome/);
+                const assert = require('assert');
+                assert.equal(body.message.global_merge_vars[0].content, 'mr-dupotager', 'mail server mock is expecting mr-dupotager');
+                assert.match(body.template_name, /welcome/, 'mr-dupotager', 'mail server mock is expecting welcom in message body');
                 this.context.testNotifier.emit('mail-sent1');
               }.bind(this));
           }
@@ -223,6 +224,8 @@ describe('system (ex-register)', function () {
           return user.username === newUserData.username;
         });
         validation.checkStoredItem(actual.getAccountWithId(), 'user');
+        // password hash is not retrieved with getAll
+        delete expected.passwordHash;
         const account = actual.getReadableAccount();
         account.username = newUserData.username;
         account.should.eql(expected);
@@ -305,7 +308,7 @@ describe('system (ex-register)', function () {
           // create user
           const data = {
             username: 'recla',
-            password: 'youpi',
+            passwordHash: encryption.hashSync('youpi'),
             email: 'recla@rec.la',
             language: 'fr'
           };
@@ -359,7 +362,7 @@ describe('system (ex-register)', function () {
         async function () {
           const data = {
             username: testData.users[0].username,
-            password: '$-1s-b4d-f0r-U',
+            passwordHash: '$-1s-b4d-f0r-U',
             email: 'roudoudou@choupinou.ch',
             language: 'fr'
           };
