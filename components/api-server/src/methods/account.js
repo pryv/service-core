@@ -162,7 +162,7 @@ module.exports = async function (api) {
   async function setPassword(context, params, result, next) {
     try {
       const usersRepository = await getUsersRepository();
-      // from update password OR from create user 
+      // from update password OR from reset Password
       const password = params.newPassword || context.userBusiness.password;
       await usersRepository.setUserPassword(context.userBusiness.id, password, 'system');
     } catch (err) {
