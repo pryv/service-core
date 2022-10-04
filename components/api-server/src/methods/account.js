@@ -99,8 +99,7 @@ module.exports = async function (api) {
     verifyOldPassword,
     checkNewPasswordAgainstRules,
     addUserBusinessToContext,
-    addNewPasswordParameter,
-    updateAccount
+    setPassword
   );
 
   async function verifyOldPassword (context, params, result, next) {
@@ -160,6 +159,18 @@ module.exports = async function (api) {
     next();
   }
 
+  async function setPassword(context, params, result, next) {
+    try {
+      const usersRepository = await getUsersRepository();
+      // from update password OR from create user 
+      const password = params.newPassword || context.userBusiness.password;
+      await usersRepository.setUserPassword(context.userBusiness.id, password, 'system');
+    } catch (err) {
+      return next(err);
+    } 
+    next();
+  }
+
   function sendPasswordResetMail(context, params, result, next) {
     // Skip this step if reset mail is deactivated
     const isMailActivated = emailSettings.enabled;
@@ -190,8 +201,7 @@ module.exports = async function (api) {
     requireTrustedAppFn,
     checkResetToken,
     addUserBusinessToContext,
-    addNewPasswordParameter,
-    updateAccount,
+    setPassword,
     destroyPasswordResetToken,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
   );
@@ -214,14 +224,6 @@ module.exports = async function (api) {
         next();
       }
     );
-  }
-
-  function addNewPasswordParameter (context, params, result, next) {
-    if (!context.userBusiness.passwordHash) {
-      return next(errors.unexpectedError());
-    }
-    params.update = { password: params.newPassword };
-    next();
   }
 
   async function updateDataOnPlatform (context, params, result, next) {

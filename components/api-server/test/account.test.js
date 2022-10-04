@@ -378,7 +378,9 @@ describe('[ACCO] account', function () {
               status: 200,
               schema: methodsSchema.changePassword.result
             });
-            accountNotifCount.should.eql(1, 'account notifications');
+            // removing password from event account dimplies no notif.. Should we add this back? 
+            // I see no reason as it does not impact cache
+            // accountNotifCount.should.eql(1, 'account notifications');
             stepDone();
           });
         },

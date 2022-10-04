@@ -38,11 +38,6 @@ module.exports = function (action) {
     schema.properties.id = helpers.string();
   }
 
-  // only accept password hash on create (request from registration-server) (and store of course)
-  if (action === Action.CREATE || action === Action.STORE) {
-    schema.properties.passwordHash = helpers.string();
-  }
-
   switch (action) {
   case Action.READ:
     schema.required = [ 'id', 'username', 'email', 'language' ];
@@ -53,7 +48,7 @@ module.exports = function (action) {
     schema.additionalProperties = true;
     break;
   case Action.CREATE:
-    schema.required = [ 'username', 'passwordHash', 'email', 'language' ];
+    schema.required = [ 'username', 'password', 'email', 'language' ];
     break;
   }
 

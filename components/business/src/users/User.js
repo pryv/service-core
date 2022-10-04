@@ -42,7 +42,6 @@ class User {
     appId?: string,
     invitationToken?: string,
     password?: string,
-    passwordHash?: string,
     referer?: string,
   }) {
     this.username = params.username;
@@ -139,7 +138,7 @@ function loadAccountData (user: User, params): void {
   });
   // temporarily add password because the encryption need to be loded asyncronously
   // and it could not be done in the contructor
-  if (params.password && !params.passwordHash) {
+  if (params.password ) {
     user.password = params.password;
   }
   if (params.id) {
@@ -152,12 +151,6 @@ async function buildEventsFromAccount (user: User): Promise<Array<Event>> {
 
   // convert to events
   const account: {} = user.getFullAccount();
-
-  // change password into hash (also allow for tests to pass passwordHash directly)
-  if (user.password != null && user.passwordHash == null) {
-    account.passwordHash = await encryption.hash(user.password);
-  }
-  delete user.password;
 
   const events: Array<Event> = [];
   for (const [streamId, stream] of Object.entries(accountLeavesMap)) {

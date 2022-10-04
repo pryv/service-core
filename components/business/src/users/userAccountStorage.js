@@ -40,7 +40,8 @@ let initState = InitStates.NOT_INITIALIZED;
 module.exports = {
   init,
   addPasswordHash,
-  passwordExistsInHistory
+  passwordExistsInHistory,
+  getPasswordHash
 };
 
 async function init () {
@@ -60,6 +61,13 @@ async function init () {
   });
 
   initState = InitStates.READY;
+}
+
+
+async function getPasswordHash(userId) {
+  const db = await getUserDB(userId);
+  const last = db.prepare('SELECT hash FROM passwords ORDER BY time DESC LIMIT 1').get();
+  return last?.hash;
 }
 
 async function addPasswordHash (userId, passwordHash, createdBy, time = timestamp.now()) {

@@ -162,7 +162,7 @@ describe('system (ex-register)', function () {
     const newUserPassword = '1l0v3p0t1r0nZ';
     const newUserData = {
       username: 'mr-dupotager',
-      passwordHash: encryption.hashSync(newUserPassword),
+      password: newUserPassword,
       email: 'dupotager@test.com',
       language: 'fr'
     };
@@ -223,8 +223,6 @@ describe('system (ex-register)', function () {
           return user.username === newUserData.username;
         });
         validation.checkStoredItem(actual.getAccountWithId(), 'user');
-        // password hash is not retrieved with getAll
-        delete expected.passwordHash;
         const account = actual.getReadableAccount();
         account.username = newUserData.username;
         account.should.eql(expected);
@@ -307,7 +305,7 @@ describe('system (ex-register)', function () {
           // create user
           const data = {
             username: 'recla',
-            passwordHash: encryption.hashSync('youpi'),
+            password: 'youpi',
             email: 'recla@rec.la',
             language: 'fr'
           };
@@ -361,7 +359,7 @@ describe('system (ex-register)', function () {
         async function () {
           const data = {
             username: testData.users[0].username,
-            passwordHash: '$-1s-b4d-f0r-U',
+            password: '$-1s-b4d-f0r-U',
             email: 'roudoudou@choupinou.ch',
             language: 'fr'
           };
