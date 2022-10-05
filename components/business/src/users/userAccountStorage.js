@@ -85,7 +85,6 @@ async function passwordExistsInHistory (userId, password, historyLength) {
  * For tests
  */
 async function clearHistory (userId) {
-  console.debug("STORAGE, CLEAR HISTORY");
   const db = await getUserDB(userId);
   db.prepare('DELETE FROM passwords').run();
 }
