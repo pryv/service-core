@@ -12,6 +12,7 @@ const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
 
 const userAccountStorage = require('business/src/users/userAccountStorage');
+const userLocalDirectory = require('business').users.userLocalDirectory;
 
 describe('[UAST] Users Account Storage', () => {
   const passwords = []; // password will be stored in reverse order (oldest first)
@@ -32,7 +33,7 @@ describe('[UAST] Users Account Storage', () => {
   });
 
   after(async () => {
-
+    await userLocalDirectory.deleteUserDirectory(userId);
   });
 
   describe('addPasswordHash()', () => {
@@ -59,7 +60,7 @@ describe('[UAST] Users Account Storage', () => {
     });
 
     it('[DO33] must return false when looking for a non-existing password', async () => {
-      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, 'unknown_hash', passwords.length);
+      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, 'unknown-password', passwords.length);
       assert.isFalse(passwordExists, 'should not find password with non-existing hash');
     });
 
