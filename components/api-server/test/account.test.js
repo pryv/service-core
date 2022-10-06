@@ -424,6 +424,7 @@ describe('[ACCO] account', function () {
       const baseData = { oldPassword: user.password };
 
       before(async () => {
+        await resetUsers();
         await server.ensureStartedAsync(settings);
       });
 
@@ -880,7 +881,7 @@ describe('[ACCO] account', function () {
               .end(function (res) {
                 validation.checkError(res, {
                   status: 400,
-                  id: ErrorIds.InvalidOperation
+                  id: ErrorIds.InvalidParametersFormat
                 });
                 assert.match(res.body.error.message, /characters long/);
                 stepDone();
