@@ -51,6 +51,24 @@ describe('[UAST] Users Account Storage', () => {
     });
   });
 
+  describe('getCurrentPasswordTime()', () => {
+    it('[85PW] must return the time of the current password', async () => {
+      const uId = cuid();
+      const time = timestamp.now('-1w');
+      await userAccountStorage.addPasswordHash(uId, 'hash', 'test', time);
+      const actualTime = await userAccountStorage.getCurrentPasswordTime(uId);
+      assert.strictEqual(actualTime, time, 'times should match');
+    });
+
+    it('[V54S] must throw an error if there is no password for the user id', async () => {
+      try {
+        await userAccountStorage.getCurrentPasswordTime(cuid());
+      } catch (e) {
+        assert.match(e.message, /No password found/);
+      }
+    });
+  });
+
   describe('passwordExistsInHistory()', () => {
     it('[1OQP] must return true when looking for existing passwords', async () => {
       for (const password of passwords) {

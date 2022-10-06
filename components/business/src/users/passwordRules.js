@@ -5,7 +5,10 @@
  * Proprietary and confidential
  */
 
+const timestamp = require('unix-timestamp');
+
 const userAccountStorage = require('./userAccountStorage');
+const errors = require('errors').factory;
 
 let singleton = null;
 
@@ -31,9 +34,17 @@ async function init (authSettings) {
 
   return {
     /**
+     * TODO: merge with verification of current password once passwords are entirely within user account storage
+     * @param {String} userId
+     * @throws {APIError} If the password does not follow the configured rules
+     */
+    async checkCurrentPasswordAge (userId) {
+      await checkMinimumAge(userId);
+    },
+    /**
      * @param {String} userId
      * @param {String} password
-     * @throws {Error} If the password does not follow the configured rules
+     * @throws {APIError} If the password does not follow the configured rules
      */
     async checkNewPassword (userId, password) {
       checkLength(password);
@@ -42,6 +53,18 @@ async function init (authSettings) {
     }
   };
 
+  async function checkMinimumAge (userId) {
+    const minDays = settings.passwordAgeMinDays;
+    if (minDays === 0) {
+      return;
+    }
+    const pwdTime = await userAccountStorage.getCurrentPasswordTime(userId);
+    if (timestamp.now(`-${minDays}d`) < pwdTime) {
+      const msg = `The current password was set less than ${minDays} day(s) ago`;
+      throw errors.invalidOperation(`The password cannot be changed yet (age rules): ${msg}`);
+    }
+  }
+
   function checkLength (password) {
     const minLength = settings.passwordComplexityMinLength;
     if (minLength === 0) {
@@ -49,7 +72,8 @@ async function init (authSettings) {
     }
     const length = password.length;
     if (length <= minLength) {
-      throw new Error(`Password is ${length} characters long, but at least ${minLength} are required`);
+      const msg = `Password is ${length} characters long, but at least ${minLength} are required`;
+      throw errors.invalidParametersFormat(`The new password does not follow complexity rules: ${msg}`, [msg]);
     }
   }
 
@@ -60,7 +84,8 @@ async function init (authSettings) {
     }
     const count = countCharCategories(password);
     if (count < requiredCharCats) {
-      throw new Error(`Password contains characters from ${count} categories, but at least ${requiredCharCats} are required`);
+      const msg = `Password contains characters from ${count} categories, but at least ${requiredCharCats} are required`;
+      throw errors.invalidParametersFormat(`The new password does not follow complexity rules: ${msg}`, [msg]);
     }
   }
 
@@ -77,7 +102,8 @@ async function init (authSettings) {
       return;
     }
     if (await userAccountStorage.passwordExistsInHistory(userId, password, settings.passwordPreventReuseHistoryLength)) {
-      throw new Error(`Password was found in the ${settings.passwordPreventReuseHistoryLength} last used passwords, which is forbidden`);
+      const msg = `Password was found in the ${settings.passwordPreventReuseHistoryLength} last used passwords, which is forbidden`;
+      throw errors.invalidOperation(`The new password does not follow reuse rules: ${msg}`);
     }
   }
 }

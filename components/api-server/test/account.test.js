@@ -12,6 +12,8 @@ const _ = require('lodash');
 const async = require('async');
 const bluebird = require('bluebird');
 const fs = require('fs');
+const timestamp = require('unix-timestamp');
+const encryption = require('utils').encryption;
 
 require('./test-helpers');
 const helpers = require('./helpers');
@@ -425,81 +427,121 @@ describe('[ACCO] account', function () {
         await server.ensureStartedAsync(settings);
       });
 
-      it('[1YPT] must return an error if the new password is too short', async () => {
-        const data = _.defaults({ newPassword: helpers.passwordRules.passwords.badTooShort }, baseData);
-        const res = await request.post(path).send(data);
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation
+      describe('Complexity rules:', function () {
+        it('[1YPT] must return an error if the new password is too short', async () => {
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.badTooShort }, baseData);
+          const res = await request.post(path).send(data);
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidParametersFormat
+          });
+          assert.match(res.body.error.message, /characters long/);
         });
-        assert.match(res.body.error.message, /characters long/);
-      });
 
-      it('[352R] must accept the new password if it is long enough', async () => {
-        const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good3CharCats }, baseData);
-        const res = await request.post(path).send(data);
-        validation.check(res, {
-          status: 200
+        it('[352R] must accept the new password if it is long enough', async () => {
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good3CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.check(res, {
+            status: 200
+          });
+          baseData.oldPassword = data.newPassword;
         });
-        baseData.oldPassword = data.newPassword;
-      });
 
-      it('[663A] must return an error if the new password does not contains characters from enough categories', async () => {
-        const data = _.defaults({ newPassword: helpers.passwordRules.passwords.bad2CharCats }, baseData);
-        const res = await request.post(path).send(data);
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation
+        it('[663A] must return an error if the new password does not contains characters from enough categories', async () => {
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.bad2CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidParametersFormat
+          });
+          assert.match(res.body.error.message, /categories/);
         });
-        assert.match(res.body.error.message, /categories/);
-      });
 
-      it('[OY2G] must accept the new password if it contains characters from enough categories', async () => {
-        // also tests checking for all 4 categories
-        await server.ensureStartedAsync(_.merge(_.cloneDeep(settings), { auth: { passwordComplexityMinCharCategories: 4 } }));
-        const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
-        const res = await request.post(path).send(data);
-        validation.check(res, {
-          status: 200
-        });
-        baseData.oldPassword = data.newPassword;
-      });
-
-      it('[AFX4] must return an error if the new password is found in the N last passwords used', async () => {
-        const passwordsHistory = await setupPasswordHistory(settings.auth.passwordPreventReuseHistoryLength);
-        const data = _.defaults({ newPassword: passwordsHistory[0] }, baseData);
-        const res = await request.post(path).send(data);
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation
-        });
-        assert.match(res.body.error.message, /last used/);
-      });
-
-      it('[6XXP] must accept the new password if different from the N last passwords used', async () => {
-        const passwordsHistory = await setupPasswordHistory(settings.auth.passwordPreventReuseHistoryLength + 1);
-        const data = _.defaults({ newPassword: passwordsHistory[0] }, baseData);
-        const res = await request.post(path).send(data);
-        validation.check(res, {
-          status: 200
+        it('[OY2G] must accept the new password if it contains characters from enough categories', async () => {
+          // also tests checking for all 4 categories
+          await server.ensureStartedAsync(_.merge(_.cloneDeep(settings), { auth: { passwordComplexityMinCharCategories: 4 } }));
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.check(res, {
+            status: 200
+          });
+          baseData.oldPassword = data.newPassword;
         });
       });
 
-      async function setupPasswordHistory (historyLength) {
-        const passwordsHistory = [];
-        for (let n = historyLength; n >= 1; n--) {
-          const pwd = `${helpers.passwordRules.passwords.good4CharCats}-${n}`;
-          const res = await request.post(path).send(_.defaults({ newPassword: pwd }, baseData));
-          validation.check(res, { status: 200 });
-          passwordsHistory.push(pwd);
-          baseData.oldPassword = pwd;
+      describe('Reuse rules:', function () {
+        it('[AFX4] must return an error if the new password is found in the N last passwords used', async () => {
+          const passwordsHistory = await setupPasswordHistory(settings.auth.passwordPreventReuseHistoryLength);
+          const data = _.defaults({ newPassword: passwordsHistory[0] }, baseData);
+          const res = await request.post(path).send(data);
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidOperation
+          });
+          assert.match(res.body.error.message, /last used/);
+        });
+
+        it('[6XXP] must accept the new password if different from the N last passwords used', async () => {
+          const passwordsHistory = await setupPasswordHistory(settings.auth.passwordPreventReuseHistoryLength + 1);
+          const data = _.defaults({ newPassword: passwordsHistory[0] }, baseData);
+          const res = await request.post(path).send(data);
+          validation.check(res, {
+            status: 200
+          });
+          baseData.oldPassword = data.newPassword;
+        });
+
+        async function setupPasswordHistory (historyLength) {
+          const passwordsHistory = [];
+          for (let n = historyLength; n >= 1; n--) {
+            const pwd = `${helpers.passwordRules.passwords.good4CharCats}-${n}`;
+            const res = await request.post(path).send(_.defaults({ newPassword: pwd }, baseData));
+            validation.check(res, { status: 200 });
+            passwordsHistory.push(pwd);
+            baseData.oldPassword = pwd;
+          }
+          return passwordsHistory;
         }
-        return passwordsHistory;
-      }
+      });
 
-      it('[J4O6] must return an error if the current password’s age is below the set minimum');
+      describe('Age rules:', function () {
+        const passwordAgeSettings = _.merge(_.cloneDeep(settings), { auth: { passwordAgeMinDays: 1 } });
 
-      it('[RGGN] must accept the new password if the current one’s age is greater than the set minimum');
+        it('[J4O6] must return an error if the current password’s age is below the set minimum', async () => {
+          await server.ensureStartedAsync(passwordAgeSettings);
+
+          // setup current password with time less than 1d ago
+          await userAccountStorage.clearHistory(user.id);
+          const passwordHash = await encryption.hash(baseData.oldPassword);
+          await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', timestamp.now('-23h'));
+
+          // try and change
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidOperation
+          });
+          assert.match(res.body.error.message, /day\(s\) ago/);
+        });
+
+        it('[RGGN] must accept the new password if the current one’s age is greater than the set minimum', async () => {
+          await server.ensureStartedAsync(passwordAgeSettings);
+
+          // setup current password with time more than 1d ago
+          await userAccountStorage.clearHistory(user.id);
+          const passwordHash = await encryption.hash(baseData.oldPassword);
+          await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', timestamp.now('-25h'));
+
+          // try and change
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.check(res, {
+            status: 200
+          });
+          baseData.oldPassword = data.newPassword;
+        });
+      });
     });
   });
 

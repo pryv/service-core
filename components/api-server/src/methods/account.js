@@ -118,10 +118,11 @@ module.exports = async function (api) {
 
   async function enforcePasswordRules (context, params, result, next) {
     try {
+      await passwordRules.checkCurrentPasswordAge(context.user.id);
       await passwordRules.checkNewPassword(context.user.id, params.newPassword);
       next();
     } catch (err) {
-      return next(errors.invalidOperation(`The new password does not follow the rules: ${err.message}`, null, err));
+      return next(err);
     }
   }
 

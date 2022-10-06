@@ -40,6 +40,7 @@ let initState = InitStates.NOT_INITIALIZED;
 module.exports = {
   init,
   addPasswordHash,
+  getCurrentPasswordTime,
   passwordExistsInHistory,
   clearHistory
 };
@@ -68,6 +69,15 @@ async function addPasswordHash (userId, passwordHash, createdBy, time = timestam
   const result = { time, hash: passwordHash, createdBy };
   db.prepare('INSERT INTO passwords (time, hash, createdBy) VALUES (@time, @hash, @createdBy)').run(result);
   return result;
+}
+
+async function getCurrentPasswordTime (userId) {
+  const db = await getUserDB(userId);
+  const last = db.prepare('SELECT hash, time FROM passwords ORDER BY time DESC LIMIT 1').get();
+  if (!last) {
+    throw new Error(`No password found in database for user id "${userId}"`)
+  }
+  return last.time;
 }
 
 async function passwordExistsInHistory (userId, password, historyLength) {
