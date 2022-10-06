@@ -22,7 +22,7 @@ const timestamp = require('unix-timestamp');
  * @param api
  */
 module.exports = async function (api) {
-  const usersRepository = await getUsersRepository(); 
+  const usersRepository = await getUsersRepository();
   const storageLayer = await getStorageLayer();
   const userAccessesStorage = storageLayer.accesses;
   const sessionsStorage = storageLayer.sessions;
@@ -56,11 +56,14 @@ module.exports = async function (api) {
       if (!isValid) {
         return next(errors.invalidCredentials());
       }
-      const expirationAndRenewalInfos = await passwordRules.getExpirationAndRenewalInfos(context.user.id);
-      if (expirationAndRenewalInfos.passwordExpires <= timestamp.now()) {
-        return next(errors.invalidCredentials('Password expired since: ' + new Date(expirationAndRenewalInfos.passwordExpires * 1000)));
+      const expirationAndChangeTimes = await passwordRules.getPasswordExpirationAndChangeTimes(context.user.id);
+      if (expirationAndChangeTimes.passwordExpires <= timestamp.now()) {
+        const formattedExpDate = timestamp.toDate(expirationAndChangeTimes.passwordExpires).toISOString();
+        const err = errors.invalidCredentials('Password expired since ' + formattedExpDate);
+        err.data = { expiredTime: expirationAndChangeTimes.passwordExpires };
+        return next(err);
       }
-      Object.assign(result, expirationAndRenewalInfos);
+      Object.assign(result, expirationAndChangeTimes);
       next();
     } catch (err) {
       // handles unexpected errors
@@ -122,17 +125,17 @@ module.exports = async function (api) {
         });
       }
     });
-    
+
     function findAccess(context, callback) {
       userAccessesStorage.findOne(context.user, context.accessQuery, null, callback);
     }
-    
+
     function createAccess(access, context, callback) {
       _.extend(access, context.accessQuery);
       context.initTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.insertOne(context.user, access, callback);
     }
-    
+
     function updatePersonalAccess(access, context, callback) {
       context.updateTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);

@@ -33,6 +33,7 @@ async function init (authSettings) {
   };
 
   return {
+    getPasswordExpirationAndChangeTimes,
     /**
      * TODO: merge with verification of current password once passwords are entirely within user account storage
      * @param {String} userId
@@ -50,24 +51,25 @@ async function init (authSettings) {
       checkLength(password);
       checkCharCategories(password);
       await checkHistory(userId, password);
-    },
-    async getExpirationAndRenewalInfos (userId) {
-      return await getExpirationAndRenewalInfos(userId);
     }
   };
 
-  async function getExpirationAndRenewalInfos (userId) {
-    const pwdTime = await userAccountStorage.getCurrentPasswordTime(userId);
-    if (pwdTime === null) return {};
-
-    const res = {};
+  /**
+   * @param {String} userId
+   * @returns {Object} times
+   * @returns {number} times.passwordExpires `undefined` if "max age" setting is disabled
+   * @returns {number} times.passwordCanBeChanged `undefined` if "min age" setting is disabled
+   */
+  async function getPasswordExpirationAndChangeTimes (userId) {
     const maxDays = settings.passwordAgeMaxDays;
-    if (maxDays !== 0) res.passwordExpires = pwdTime + maxDays * 24 * 60 * 60;
-
     const minDays = settings.passwordAgeMinDays;
+    const pwdTime = await userAccountStorage.getCurrentPasswordTime(userId);
+    const res = {};
+    if (maxDays !== 0) {
+      res.passwordExpires = timestamp.add(pwdTime, `${maxDays}d`);
+    }
     if (minDays !== 0) {
-      const passwordCanBeChanged = pwdTime + minDays * 24 * 60 * 60;
-      if (passwordCanBeChanged > timestamp.now()) res.passwordCanBeChanged = passwordCanBeChanged;
+      res.passwordCanBeChanged = timestamp.add(pwdTime, `${minDays}d`);
     }
     return res;
   }

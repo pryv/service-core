@@ -15,7 +15,7 @@ const async = require('async');
 const fs = require('fs');
 const os = require('os');
 const request = require('superagent');
-const url = require('url');
+const timestamp = require('unix-timestamp');
 
 require('./test-helpers');
 const helpers = require('./helpers');
@@ -24,12 +24,14 @@ const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
 const testData = helpers.data;
 const { UserRepositoryOptions } = require('business/src/users');
+const userAccountStorage = require('business/src/users/userAccountStorage');
+const encryption = require('utils').encryption;
 
 describe('auth', function () {
   this.timeout(5000);
 
   function apiPath (username) {
-    return url.resolve(server.url, username);
+    return new URL(username, server.url).href;
   }
 
   function basePath (username) {
@@ -492,36 +494,53 @@ describe('auth', function () {
 
     describe('[WPRA] When password rules are enabled', function () {
       const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
+      const maxAge = helpers.passwordRules.settingsOverride.auth.passwordAgeMaxDays;
+      const minAge = 1;
 
       before(async () => {
         await testData.resetUsers();
-        settings.auth.passwordAgeMinDays = 1;
+        settings.auth.passwordAgeMinDays = minAge;
         await server.ensureStartedAsync(settings);
       });
 
-      after(async () => { // restore server with original config
+      after(async () => {
+        // restore server with original config
         await server.ensureStartedAsync(helpers.dependencies.settings);
       });
 
-      it('[675V] must succeed if the password is not yet expired, returning the planned expiration (max age) timestamp (passwordExpires) and possible change (min age) timestamp (passwordCanBeChanged)', async function () {
-        const result = await request.post(path(authData.username)).set('Origin', trustedOrigin).send(authData);
-        assert.exists(result.body.passwordExpires);
-        assert.exists(result.body.passwordCanBeChanged);
+      it('[675V] must succeed if the password is not yet expired, returning planned expiration time and possible change time', async function () {
+        // setup current password with time not yet expired
+        await userAccountStorage.clearHistory(user.id);
+        const passwordHash = await encryption.hash(user.password);
+        const passwordTime = timestamp.now(`-${maxAge - 1}d`);
+        await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', passwordTime);
+
+        const res = await request.post(path(authData.username)).set('Origin', trustedOrigin).send(authData);
+        assert.exists(res.body.passwordExpires);
+        assert.approximately(res.body.passwordExpires, timestamp.add(passwordTime, `${maxAge}d`), 1000);
+        assert.exists(res.body.passwordCanBeChanged);
+        assert.approximately(res.body.passwordCanBeChanged, timestamp.add(passwordTime, `${minAge}d`), 1000);
       });
 
       // this test should be kept at the end of the describe as it impacts the configuration
-      it('[D3EV] must return an error if the password has expired, indicating the date it did so and the max age setting value', async function () {
-        const newSettings = _.cloneDeep(settings);
-        newSettings.auth.passwordAgeMaxDays = -1;
-        await server.ensureStartedAsync(newSettings);
-        try {
-          await request.post(path(authData.username)).set('Origin', trustedOrigin).send(authData);
-          throw new Error('Should throw an expired since error');
-        } catch (e) {
-          const errorResult = e.response?.body?.error;
-          assert.equal(errorResult.id, ErrorIds.InvalidCredentials);
-          assert.include(errorResult.message, 'Password expired since: ');
-        }
+      it('[D3EV] must return an error if the password has expired, indicating the date it did so', async function () {
+        // setup current password with expired time
+        await userAccountStorage.clearHistory(user.id);
+        const passwordHash = await encryption.hash(user.password);
+        const passwordTime = timestamp.now(`-${maxAge + 1}d`);
+        await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', passwordTime);
+
+        const res = await request.post(path(authData.username))
+          .ok(() => true)
+          .set('Origin', trustedOrigin)
+          .send(authData);
+        validation.checkError(res, {
+          status: 401,
+          id: ErrorIds.InvalidCredentials
+        });
+        const expectedExpirationTime = timestamp.add(passwordTime, `${maxAge}d`);
+        assert.include(res.body.error.message, `Password expired since ${timestamp.toDate(expectedExpirationTime).toISOString()}`);
+        assert.deepEqual(res.body.error.data, { expiredTime: expectedExpirationTime });
       });
     });
   });

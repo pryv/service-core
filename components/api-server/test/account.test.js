@@ -13,7 +13,6 @@ const async = require('async');
 const bluebird = require('bluebird');
 const fs = require('fs');
 const timestamp = require('unix-timestamp');
-const encryption = require('utils').encryption;
 
 require('./test-helpers');
 const helpers = require('./helpers');
@@ -26,6 +25,7 @@ const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
 const { getUsersRepository } = require('business/src/users');
 const userAccountStorage = require('business/src/users/userAccountStorage');
+const encryption = require('utils').encryption;
 let usersRepository = null;
 
 describe('[ACCO] account', function () {
