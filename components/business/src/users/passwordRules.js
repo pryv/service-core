@@ -67,7 +67,7 @@ async function init (authSettings) {
     const minDays = settings.passwordAgeMinDays;
     if (minDays !== 0) {
       const passwordCanBeChanged = pwdTime + minDays * 24 * 60 * 60;
-      if (passwordCanBeChanged < pwdTime) res.passwordCanBeChangedAt = passwordCanBeChanged;
+      if (passwordCanBeChanged > timestamp.now()) res.passwordCanBeChanged = passwordCanBeChanged;
     }
     return res;
   }
