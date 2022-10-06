@@ -50,8 +50,27 @@ async function init (authSettings) {
       checkLength(password);
       checkCharCategories(password);
       await checkHistory(userId, password);
+    },
+    async getExpirationAndRenewalInfos (userId) {
+      return await getExpirationAndRenewalInfos(userId);
     }
   };
+
+  async function getExpirationAndRenewalInfos (userId) {
+    const pwdTime = await userAccountStorage.getCurrentPasswordTime(userId);
+    if (pwdTime === null) return {};
+
+    const res = {};
+    const maxDays = settings.passwordAgeMaxDays;
+    if (maxDays !== 0) res.passwordExpires = pwdTime + maxDays * 24 * 60 * 60;
+
+    const minDays = settings.passwordAgeMinDays;
+    if (minDays !== 0) {
+      const passwordCanBeChanged = pwdTime + minDays * 24 * 60 * 60;
+      if (passwordCanBeChanged < pwdTime) res.passwordCanBeChangedAt = passwordCanBeChanged;
+    }
+    return res;
+  }
 
   async function checkMinimumAge (userId) {
     const minDays = settings.passwordAgeMinDays;

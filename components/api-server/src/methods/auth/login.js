@@ -9,11 +9,12 @@ const { ApiEndpoint } = require('utils');
 const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
-const { getUsersRepository, UserRepositoryOptions } = require('business/src/users');
+const { getUsersRepository, UserRepositoryOptions, getPasswordRules  } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
 const { getStorageLayer } = require('storage');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+const timestamp = require('unix-timestamp');
 
 /**
  * Auth API methods implementations.
@@ -26,7 +27,8 @@ module.exports = async function (api) {
   const userAccessesStorage = storageLayer.accesses;
   const sessionsStorage = storageLayer.sessions;
   const config = await getConfig();
-  const authSettings =  config.get('auth');
+  const authSettings = config.get('auth');
+  const passwordRules = await getPasswordRules(authSettings);
 
   api.register('auth.login',
     commonFns.getParamsValidation(methodsSchema.login.params),
@@ -54,6 +56,11 @@ module.exports = async function (api) {
       if (!isValid) {
         return next(errors.invalidCredentials());
       }
+      const expirationAndRenewalInfos = await passwordRules.getExpirationAndRenewalInfos(context.user.id);
+      if (expirationAndRenewalInfos.passwordExpires <= timestamp.now()) {
+        return next(errors.invalidCredentials('Password expired since: ' + new Date(expirationAndRenewalInfos.passwordExpires * 1000)));
+      }
+      Object.assign(result, expirationAndRenewalInfos);
       next();
     } catch (err) {
       // handles unexpected errors

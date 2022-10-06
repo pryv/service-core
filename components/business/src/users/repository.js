@@ -316,6 +316,12 @@ class UsersRepository {
     }
     return isValid;
   }
+
+  async getPasswordExpirationDeltaInSeconds(userId): Promise<number|null> {
+    const checkCurrentPasswordAge
+    return await userAccountStorage.
+  }
+
   async count(): Promise<number> {
     const users = await usersIndex.getAllByUsername();
     return Object.keys(users).length;

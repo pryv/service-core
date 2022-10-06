@@ -489,6 +489,24 @@ describe('auth', function () {
         })
         .should.eql([]);
     }
+
+    describe('[WPRA] When password rules are enabled', function () {
+      const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
+      const baseData = { oldPassword: user.password };
+
+      before(async () => {
+        await testData.resetUsers();
+        await server.ensureStartedAsync(settings);
+      });
+
+      it('[675V] must succeed if the password is not yet expired, returning the planned expiration (max age) timestamp (passwordExpires) and possible change (min age) timestamp (passwordCanBeChanged)', async function () {
+        const result = await request.post(path(authData.username)).set('Origin', trustedOrigin).send(authData);
+        assert.exists(result.body.passwordExpires);
+      });
+      it('[D3EV] must return an error if the password has expired, indicating the date it did so and the max age setting value', async function () {
+        $$('todo');
+      });
+    });
   });
 
   describe('/logout', function () {
