@@ -54,8 +54,8 @@ describe('Migration - 1.7.x',function () {
     const versions1 = getVersions('1.7.1');
     const newIndexes = testData.getStructure('1.7.0').indexes;
     const defaultUser = { id: 'u_0' };
- 
-    const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds(); 
+
+    const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds();
 
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
 
@@ -76,10 +76,10 @@ describe('Migration - 1.7.x',function () {
 
 
     // perform migration
-    await bluebird.fromCallback(cb => versions0.migrateIfNeeded(cb));
-    await bluebird.fromCallback(cb => versions1.migrateIfNeeded(cb));
+    await versions0.migrateIfNeeded();
+    await versions1.migrateIfNeeded();
     // verify that user accounts were migrated to events
-    for(const user of users) {
+    for (const user of users) {
       // we must verify that all system streamIds were translated to another prefix
       const eventsCursor = await bluebird.fromCallback(cb => eventsCollection.find(
         {

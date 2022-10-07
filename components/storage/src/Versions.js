@@ -4,11 +4,14 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var async = require('async'),
-    migrations = require('./migrations/index'),
-    MigrationContext = require('./migrations/MigrationContext'),
-    timestamp = require('unix-timestamp');
-var collectionInfo = {
+
+const bluebird = require('bluebird');
+const timestamp = require('unix-timestamp');
+const packageFile = require('../package.json');
+const migrations = require('./migrations/index');
+const MigrationContext = require('./migrations/MigrationContext');
+
+const collectionInfo = {
   name: 'versions',
   indexes: []
 };
@@ -33,62 +36,62 @@ module.exports = Versions;
  * @param migrationsOverride Use for tests
  * @constructor
  */
-function Versions(database, attachmentsDirPath, logger, migrationsOverride) {
+function Versions (database, attachmentsDirPath, logger, migrationsOverride) {
   this.database = database;
   this.attachmentsDirPath = attachmentsDirPath;
   this.migrations = migrationsOverride || migrations;
   this.logger = logger;
 }
 
-Versions.prototype.getCurrent = function (callback) {
-  this.database.findOne(collectionInfo, {}, {sort: {migrationCompleted: -1}}, function (err, v) {
-    if (err) { return callback(err); }
-    callback(null, v);
-  });
+Versions.prototype.getCurrent = async function () {
+  return await bluebird.fromCallback(function (cb) {
+    this.database.findOne(collectionInfo, {}, { sort: { migrationCompleted: -1 } }, cb)
+  }.bind(this));
 };
 
-Versions.prototype.migrateIfNeeded = function (callback) {
-  this.getCurrent(function (err, v) {
-    if (err) { return callback(err); }
-    var currentVNum = v ? v._id : '0.0.0';
-    var migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {
-      return vNum > currentVNum;
-    }).sort();
-    async.forEachSeries(migrationsToRun, migrate.bind(this), callback);
-  }.bind(this));
-
-  var context = new MigrationContext({
+Versions.prototype.migrateIfNeeded = async function () {
+  const v = await this.getCurrent();
+  let currentVNum = v?._id;
+  if (!v) {
+    // new install: init to package version
+    currentVNum = packageFile.version;
+    await bluebird.fromCallback(function (cb) {
+      this.database.insertOne(collectionInfo, { _id: currentVNum }, cb);
+    }.bind(this));
+  }
+  const migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {
+    return vNum > currentVNum;
+  }).sort();
+  const context = new MigrationContext({
     database: this.database,
     attachmentsDirPath: this.attachmentsDirPath,
     logger: this.logger
   });
+  for (const migration of migrationsToRun) {
+    await migrate.call(this, migration);
+  }
+
   /**
    * @this {Versions}
    */
-  function migrate(vNum, done) {
-    async.series([
-      function (stepDone) {
-        var update = {
-          $set: {
-            migrationStarted: timestamp.now()
-          }
-        };
-        this.database.upsertOne(collectionInfo, {_id: vNum}, update, stepDone);
-      }.bind(this),
-      function (stepDone) {
-        this.migrations[vNum](context, stepDone);
-      }.bind(this),
-      function (stepDone) {
-        var update = {$set: {migrationCompleted: timestamp.now()}};
-        this.database.updateOne(collectionInfo, {_id: vNum}, update, stepDone);
-      }.bind(this)
-    ], done);
+  async function migrate (vNum) {
+    await bluebird.fromCallback(function (cb) {
+      this.database.upsertOne(collectionInfo, { _id: vNum }, { $set: { migrationStarted: timestamp.now() } }, cb);
+    }.bind(this));
+    await bluebird.fromCallback(function (cb) {
+      this.migrations[vNum](context, cb);
+    }.bind(this));
+    await bluebird.fromCallback(function (cb) {
+      this.database.updateOne(collectionInfo, { _id: vNum }, { $set: { migrationCompleted: timestamp.now() } }, cb);
+    }.bind(this));
   }
 };
 
 /**
  * For tests only.
  */
-Versions.prototype.removeAll = function (callback) {
-  this.database.deleteMany(collectionInfo, {}, callback);
+Versions.prototype.removeAll = async function () {
+  await bluebird.fromCallback(function (cb) {
+    this.database.deleteMany(collectionInfo, {}, cb);
+  }.bind(this));
 };

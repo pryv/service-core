@@ -5,6 +5,7 @@
  * Proprietary and confidential
  */
 const _ = require('lodash');
+const async = require('async');
 
 const Versions = require('../../src/Versions');
 const migrations = require('../../src/migrations');
@@ -13,7 +14,13 @@ const storage = helpers.dependencies.storage;
 const database = storage.database;
 const { getLogger } = require('@pryv/boiler');
 
-const compareIndexes = exports.compareIndexes = function (expected, actual) {
+module.exports = {
+  compareIndexes,
+  getVersions,
+  applyPreviousIndexes
+};
+
+function compareIndexes (expected, actual) {
   expected.forEach((index) => {
     index.index = _.extend(index.index, { userId: 1 });
   });
@@ -25,33 +32,33 @@ const compareIndexes = exports.compareIndexes = function (expected, actual) {
     actual.forEach((index) => {
       const actualKeys = Object.keys(index.key);
       if ((_.difference(expectedKeys, actualKeys).length + _.difference(actualKeys, expectedKeys).length) === 0) {
-        found = true; 
+        found = true;
       }
     });
-    if (! found) {
+    if (!found) {
       throw new Error('Index expected not found:' + JSON.stringify(expectedItem));
     }
   });
 }
 
-const getVersions = exports.getVersions = function getVersions(/* migration1Id, migration2Id, ... */) {
+function getVersions (/* migration1Id, migration2Id, ... */) {
   const pickArgs = [].slice.call(arguments);
   pickArgs.unshift(migrations);
   const pickedMigrations = _.pick.apply(_, pickArgs);
   return new Versions(database,
-      helpers.dependencies.settings.eventFiles.attachmentsDirPath,
-      getLogger('versions'),
-      pickedMigrations);
+    helpers.dependencies.settings.eventFiles.attachmentsDirPath,
+    getLogger('versions'),
+    pickedMigrations);
 }
 
-const applyPreviousIndexes = exports.applyPreviousIndexes = function (collectionName, indexes, callback) {
+function applyPreviousIndexes (collectionName, indexes, callback) {
   async.forEachSeries(indexes, ensureIndex, function (err) {
     if (err) { return callback(err); }
     database.initializedCollections[collectionName] = true;
     callback();
-  }.bind(this));
+  });
 
-  function ensureIndex(item, itemCallback) {
+  function ensureIndex (item, itemCallback) {
     database.db.collection(collectionName)
       .createIndex(item.index, item.options, itemCallback);
   }
