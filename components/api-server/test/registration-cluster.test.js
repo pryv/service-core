@@ -711,17 +711,12 @@ describe('registration: cluster', function () {
       });
     });
 
-    describe('When password rules are enabled', function () {
+    describe('[RCPW] When password rules are enabled', function () {
       const validation = helpers.validation;
 
       before(async () => {
-        // TODO: this does not work
         config.injectTestConfig(helpers.passwordRules.settingsOverride);
-      });
-
-      it('[0OBL] must fail if the new password does not comply (smoke test; see "/change-password" in account tests)', async () => {
-        userData = Object.assign(defaults(), { password: helpers.passwordRules.passwords.badTooShort });
-
+        userData = defaults();
         nock(regUrl)
           .post('/users/validate', () => true)
           .reply(200, { errors: [] });
@@ -731,12 +726,21 @@ describe('registration: cluster', function () {
         nock(regUrl)
           .put('/users', () => true)
           .reply(200, { ok: true });
+      });
 
+      it('[0OBL] must fail if the new password does not comply (smoke test; see "/change-password" in account tests)', async () => {
+        userData.password = helpers.passwordRules.passwords.badTooShort;
         const res = await request.post(methodPath).send(userData);
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.InvalidParametersFormat
         });
+      });
+
+      it('[5BQL] must succeed if the new password complies (smoke test; see "/change-password" in account tests)', async () => {
+        userData.password = helpers.passwordRules.passwords.good4CharCats;
+        const res = await request.post(methodPath).send(userData);
+        validation.check(res, { status: 201 });
       });
     });
   });

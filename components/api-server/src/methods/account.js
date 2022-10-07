@@ -33,7 +33,7 @@ module.exports = async function (api) {
   const storageLayer = await getStorageLayer();
   const passwordResetRequestsStorage = storageLayer.passwordResetRequests;
   const platform = await getPlatform();
-  const passwordRules = await getPasswordRules(authSettings);
+  const passwordRules = await getPasswordRules();
 
   const emailSettings = servicesSettings.email;
   const requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);

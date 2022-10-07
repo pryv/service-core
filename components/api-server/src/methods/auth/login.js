@@ -28,7 +28,7 @@ module.exports = async function (api) {
   const sessionsStorage = storageLayer.sessions;
   const config = await getConfig();
   const authSettings = config.get('auth');
-  const passwordRules = await getPasswordRules(authSettings);
+  const passwordRules = await getPasswordRules();
 
   api.register('auth.login',
     commonFns.getParamsValidation(methodsSchema.login.params),

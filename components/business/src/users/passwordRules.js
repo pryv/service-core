@@ -6,6 +6,7 @@
  */
 
 const timestamp = require('unix-timestamp');
+const { getConfig } = require('@pryv/boiler');
 
 const userAccountStorage = require('./userAccountStorage');
 const errors = require('errors').factory;
@@ -15,16 +16,16 @@ let singleton = null;
 /**
  * Return the password rules singleton, initializing it with the given settings if needed.
  */
-module.exports = async function get (authSettings) {
+module.exports = async function get () {
   if (!singleton) {
-    singleton = init(authSettings);
+    singleton = init();
   }
   return singleton;
 };
 
-async function init (authSettings) {
+async function init () {
   await userAccountStorage.init();
-  const settings = authSettings;
+  const config = await getConfig();
   const charCategoriesRegExps = {
     lowercase: /[a-z]/,
     uppercase: /[A-Z]/,
@@ -63,8 +64,8 @@ async function init (authSettings) {
    * @returns {number} times.passwordCanBeChanged `undefined` if "min age" setting is disabled
    */
   async function getPasswordExpirationAndChangeTimes (userId) {
-    const maxDays = settings.passwordAgeMaxDays;
-    const minDays = settings.passwordAgeMinDays;
+    const maxDays = settings().passwordAgeMaxDays;
+    const minDays = settings().passwordAgeMinDays;
     const pwdTime = await userAccountStorage.getCurrentPasswordTime(userId);
     const res = {};
     if (maxDays !== 0) {
@@ -77,7 +78,7 @@ async function init (authSettings) {
   }
 
   async function checkMinimumAge (userId) {
-    const minDays = settings.passwordAgeMinDays;
+    const minDays = settings().passwordAgeMinDays;
     if (minDays === 0) {
       return;
     }
@@ -89,7 +90,7 @@ async function init (authSettings) {
   }
 
   function checkLength (password) {
-    const minLength = settings.passwordComplexityMinLength;
+    const minLength = settings().passwordComplexityMinLength;
     if (minLength === 0) {
       return;
     }
@@ -101,7 +102,7 @@ async function init (authSettings) {
   }
 
   function checkCharCategories (password) {
-    const requiredCharCats = settings.passwordComplexityMinCharCategories;
+    const requiredCharCats = settings().passwordComplexityMinCharCategories;
     if (requiredCharCats === 0) {
       return;
     }
@@ -120,13 +121,17 @@ async function init (authSettings) {
   }
 
   async function checkHistory (userId, password) {
-    const historyLength = settings.passwordPreventReuseHistoryLength;
+    const historyLength = settings().passwordPreventReuseHistoryLength;
     if (historyLength === 0) {
       return;
     }
-    if (await userAccountStorage.passwordExistsInHistory(userId, password, settings.passwordPreventReuseHistoryLength)) {
-      const msg = `Password was found in the ${settings.passwordPreventReuseHistoryLength} last used passwords, which is forbidden`;
+    if (await userAccountStorage.passwordExistsInHistory(userId, password, settings().passwordPreventReuseHistoryLength)) {
+      const msg = `Password was found in the ${settings().passwordPreventReuseHistoryLength} last used passwords, which is forbidden`;
       throw errors.invalidOperation(`The new password does not follow reuse rules: ${msg}`);
     }
+  }
+
+  function settings () {
+    return config.get('auth');
   }
 }

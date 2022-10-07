@@ -34,8 +34,7 @@ module.exports = async function (api) {
   const servicesSettings = config.get('services');
   const isDnsLess = config.get('dnsLess:isActive');
   await usersIndex.init();
-  const authSettings = config.get('auth');
-  const passwordRules = await getPasswordRules(authSettings);
+  const passwordRules = await getPasswordRules();
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
