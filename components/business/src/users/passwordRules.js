@@ -43,14 +43,16 @@ async function init (authSettings) {
       await checkMinimumAge(userId);
     },
     /**
-     * @param {String} userId
+     * @param {String} userId Optional; if set, will check the user's password history
      * @param {String} password
      * @throws {APIError} If the password does not follow the configured rules
      */
     async checkNewPassword (userId, password) {
       checkLength(password);
       checkCharCategories(password);
-      await checkHistory(userId, password);
+      if (userId) {
+        await checkHistory(userId, password);
+      }
     }
   };
 

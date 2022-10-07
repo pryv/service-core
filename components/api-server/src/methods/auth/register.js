@@ -15,6 +15,8 @@ const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUti
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
 const usersIndex = require('business/src/users/UsersLocalIndex');
+const { getPasswordRules } = require('business').users;
+
 
 import type { MethodContext } from 'business';
 import type Result  from '../Result';
@@ -32,6 +34,8 @@ module.exports = async function (api) {
   const servicesSettings = config.get('services');
   const isDnsLess = config.get('dnsLess:isActive');
   await usersIndex.init();
+  const authSettings = config.get('auth');
+  const passwordRules = await getPasswordRules(authSettings);
 
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
@@ -50,6 +54,7 @@ module.exports = async function (api) {
     setAuditAccessId(AuditAccessIds.PUBLIC),
     // data validation methods
     commonFns.getParamsValidation(methodsSchema.register.params),
+    enforcePasswordRules,
     registration.prepareUserData,
     ifDnsLess(skip, registration.createUserStep1_ValidateUserOnPlatform.bind(registration)),
     //user registration methods
@@ -59,6 +64,15 @@ module.exports = async function (api) {
     registration.buildResponse.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );
+
+  async function enforcePasswordRules (context, params, result, next) {
+    try {
+      await passwordRules.checkNewPassword(null, params.password);
+      next();
+    } catch (err) {
+      return next(err);
+    }
+  }
 
   // Username check
   /**

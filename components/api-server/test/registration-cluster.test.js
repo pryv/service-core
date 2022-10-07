@@ -14,6 +14,7 @@ const charlatan = require('charlatan');
 const bluebird = require('bluebird');
 const supertest = require('supertest');
 
+const helpers = require('./helpers');
 const { getConfig } = require('@pryv/boiler');
 const { getApplication } = require('api-server/src/application');
 const ErrorIds = require('errors/src/ErrorIds');
@@ -59,6 +60,7 @@ describe('registration: cluster', function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.context.cleanEverything();
   });
+
   before(async function () {
     config.injectTestConfig({
       dnsLess: { isActive: false },
@@ -76,6 +78,7 @@ describe('registration: cluster', function () {
 
     usersRepository = await getUsersRepository();
   });
+
   after(async function () {
     config.injectTestConfig({});
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -98,6 +101,7 @@ describe('registration: cluster', function () {
     }
     return validationRequest;
   }
+
   function buildRegistrationRequest (user, request, hasToken = true) {
     const registrationRequest = {
       host: { name: res.req._header.split('Host: ')[1].split('\r\n')[0] },
@@ -115,6 +119,7 @@ describe('registration: cluster', function () {
     }
     return registrationRequest;
   }
+
   function stripRegistrationRequest (request) {
     delete request.user.language;
     delete request.user.id;
@@ -264,6 +269,7 @@ describe('registration: cluster', function () {
         assert.equal(secondEmail, userData.email);
       });
     });
+
     describe('when a user with the same username/email already exists in core but not in register', () => {
       let firstValidationRequest;
       let firstRegistrationRequest;
@@ -331,6 +337,7 @@ describe('registration: cluster', function () {
         assert.deepEqual(registrationSent, firstRegistrationRequest);
       });
     });
+
     describe('when the username exists in register', () => {
       before(async () => {
         userData = _.extend({}, defaults(), { username: 'wactiv' });
@@ -627,6 +634,7 @@ describe('registration: cluster', function () {
         });
       });
     });
+
     describe('when invitationTokens are set to [] (forbidden creation)', () => {
       describe('when any string is provided', () => {
         before(async () => {
@@ -699,6 +707,35 @@ describe('registration: cluster', function () {
               param: 'insurancenumber'
             }
           ]);
+        });
+      });
+    });
+
+    describe('When password rules are enabled', function () {
+      const validation = helpers.validation;
+
+      before(async () => {
+        // TODO: this does not work
+        config.injectTestConfig(helpers.passwordRules.settingsOverride);
+      });
+
+      it('[0OBL] must fail if the new password does not comply (smoke test; see "/change-password" in account tests)', async () => {
+        userData = Object.assign(defaults(), { password: helpers.passwordRules.passwords.badTooShort });
+
+        nock(regUrl)
+          .post('/users/validate', () => true)
+          .reply(200, { errors: [] });
+        nock(regUrl)
+          .post('/users', () => true)
+          .reply(200, { username: userData.username });
+        nock(regUrl)
+          .put('/users', () => true)
+          .reply(200, { ok: true });
+
+        const res = await request.post(methodPath).send(userData);
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidParametersFormat
         });
       });
     });
