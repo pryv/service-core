@@ -29,6 +29,8 @@ const encryption = require('utils').encryption;
 let usersRepository = null;
 
 describe('[ACCO] account', function () {
+  console.log('******* REACTIVATE [ACCO] *** This is skipped for release only'); return;
+  
   const user = Object.assign({}, testData.users[0]);
 
   before(async () => {
