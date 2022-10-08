@@ -56,7 +56,10 @@ Versions.prototype.migrateIfNeeded = async function () {
     // new install: init to package version
     currentVNum = packageFile.version;
     await bluebird.fromCallback(function (cb) {
-      this.database.insertOne(collectionInfo, { _id: currentVNum }, cb);
+      this.database.insertOne(collectionInfo, {
+        _id: currentVNum,
+        initialInstall: timestamp.now()
+      }, cb);
     }.bind(this));
   }
   const migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {

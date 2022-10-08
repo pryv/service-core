@@ -6,7 +6,7 @@
  */
 /* global describe, it, before, assert */
 
-require('test-helpers/src/api-server-tests-config');
+const timestamp = require('unix-timestamp');
 const { getVersions } = require('./util');
 
 describe('Migrations - new install', () => {
@@ -19,6 +19,8 @@ describe('Migrations - new install', () => {
   it('[OVYL] must set the initial version to the package file version and not perform other migrations', async () => {
     await versions.migrateIfNeeded();
     const v = await versions.getCurrent();
-    assert.deepEqual(v, { _id: process.env.npm_package_version });
+    assert.exists(v);
+    assert.equal(v._id, process.env.npm_package_version);
+    assert.approximately(v.initialInstall, timestamp.now(), 1000);
   });
 });
