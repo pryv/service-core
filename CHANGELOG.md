@@ -1,7 +1,10 @@
 ## 1.8
 
 ### 1.8.0
-- add password rules
+
+- Add support for password rules: complexity, age, reuse; see API server's `auth.password*` settings
+  - Affected methods are: create user (`POST /users`), change password (`{user endpoint}/account/change-password`), reset password (`{user endpoint}/account/reset-password`) and login (`{user endpoint}/auth/login`)
+- Add undocumented support for external stores (a.k.a. "data mapping" feature); see component `pryv-datastore` (will be published separately when appropriate)
 
 ## 1.7
 
