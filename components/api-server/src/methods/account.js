@@ -163,12 +163,11 @@ module.exports = async function (api) {
   async function setPassword(context, params, result, next) {
     try {
       const usersRepository = await getUsersRepository();
-      // from update password OR from reset Password
-      const password = params.newPassword || context.userBusiness.password;
-      await usersRepository.setUserPassword(context.userBusiness.id, password, 'system');
+      await usersRepository.setUserPassword(context.userBusiness.id, params.newPassword, 'system');
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     } catch (err) {
       return next(err);
-    } 
+    }
     next();
   }
 
@@ -229,7 +228,6 @@ module.exports = async function (api) {
   }
 
   async function updateDataOnPlatform (context, params, result, next) {
-
     try {
       const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
 

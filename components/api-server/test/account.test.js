@@ -29,8 +29,6 @@ const encryption = require('utils').encryption;
 let usersRepository = null;
 
 describe('[ACCO] account', function () {
-  console.log('******* REACTIVATE [ACCO] *** This is skipped for release only'); return;
-  
   const user = Object.assign({}, testData.users[0]);
 
   before(async () => {
@@ -382,9 +380,7 @@ describe('[ACCO] account', function () {
               status: 200,
               schema: methodsSchema.changePassword.result
             });
-            // removing password from event account dimplies no notif.. Should we add this back? 
-            // I see no reason as it does not impact cache
-            // accountNotifCount.should.eql(1, 'account notifications');
+            accountNotifCount.should.eql(1, 'account notifications');
             stepDone();
           });
         },
