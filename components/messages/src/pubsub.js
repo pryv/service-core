@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -98,6 +98,7 @@ let nats = null;
 function initNats() {
   if (nats != null || isOpenSource) return;
   nats = require('./nats_pubsub');
+  logger.debug('initNats');
 }
 
 
@@ -133,26 +134,45 @@ class PubSubFactory {
   _cache;
   get status() {
     if (this._status == null) this._status =  new PubSub('status', {nats: CONSTANTS.NATS_MODE_NONE, forwardToTests: true});
+    this._status.setMaxListeners(1); // 1 is enough
     return this._status;
   }
   get webhooks() {
     if (this._webhooks == null) this._webhooks =  new PubSub('webhooks');
+    this._webhooks.setMaxListeners(10); // 1 should be enough but setting 10 for tests 
     return this._webhooks;
   }
   get series() {
     if (this._series == null) this._series =  new PubSub('series');
+    this._series.setMaxListeners(1); // 1 is enough
     return this._series;
   }
   get notifications() {
-    if (this._notifications == null) this._notifications =  new PubSub('notifications', {nats: CONSTANTS.NATS_MODE_KEY, forwardToTests: true});
+    if (this._notifications == null) {
+      this._notifications =  new PubSub('notifications', {nats: CONSTANTS.NATS_MODE_KEY, forwardToTests: true});
+      this._notifications.setMaxListeners(100); // Number of max socket.io or webhooks connections
+    }
     return this._notifications;
   }
   get cache() {
-    if (this._cache == null) this._cache =  new PubSub('cache', {nats: CONSTANTS.NATS_MODE_KEY, forwardToInternal: false});
+    if (this._cache == null) {
+      this._cache =  new PubSub('cache', {nats: CONSTANTS.NATS_MODE_KEY, forwardToInternal: false});
+      this._cache.setMaxListeners(1); // 1 is enough
+    }
     return this._cache;
   }
   setTestNotifier(testNotifier) {
     globalTestNotifier = testNotifier;
+  }
+  setTestNatsDeliverHook(deliverHook) {
+    if (nats == null) {
+      console.log(new Error('NATS not initialized'));
+    } 
+    nats.setTestNatsDeliverHook(deliverHook);
+  }
+  // used by tests to detect true "OpenSource" setup
+  isNatsEnabled() {
+    return nats != null;
   }
 }
 

@@ -1,11 +1,5 @@
-/**
- * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
- */
-// flow-typed signature: 081eb78fc3d05183ad7b27e9b7d935b1
-// flow-typed version: c6154227d1/chai_v4.x.x/flow_>=v0.104.x
+// flow-typed signature: 055d97c4302b7989c7221251421dca7c
+// flow-typed version: 673c7738c2/chai_v4.x.x/flow_>=v0.104.x
 
 declare module "chai" {
   declare type ExpectChain<T> = {
@@ -196,6 +190,9 @@ declare module "chai" {
     static isAbove(val: number, abv: number, msg?: string): void;
     static isBelow(val: number, blw: number, msg?: string): void;
 
+    static exists(val : mixed, msg? : string) : void;
+    static notExists(val : mixed, msg? : string) : void;
+
     static isAtMost(val: number, atmst: number, msg?: string): void;
     static isAtLeast(val: number, atlst: number, msg?: string): void;
 
@@ -228,6 +225,9 @@ declare module "chai" {
 
     static notInclude(exp: string, inc: mixed, msg?: string): void;
     static notInclude<T>(exp: Array<T>, inc: T, msg?: string): void;
+
+    static deepInclude<T>(haystack : T[] | string, needle : $Shape<T>, msg?: string) : void;
+    static notDeepInclude<T>(haystack : T[] | string, needle : $Shape<T>, msg?: string) : void;
 
     static match(exp: mixed, re: RegExp, msg?: string): void;
     static notMatch(exp: mixed, re: RegExp, msg?: string): void;

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -78,7 +78,7 @@ describe('Audit Streams and Events', function () {
         .query({})
         .set('Authorization', appAccess.token);
 
-      const expectedStreamids = ['yo', ':_audit:access-' + appAccess.id, ':_audit:actions'];
+      const expectedStreamids = ['yo', ':_audit:access-' + appAccess.id];
       assert.exists(res.body.streams);
       assert.equal(res.body.streams.length, expectedStreamids.length);
       for (const stream of res.body.streams) {
@@ -112,11 +112,20 @@ describe('Audit Streams and Events', function () {
       assert.isAtLeast(res.body.streams.length, 2);
     });
 
-    it('[WOIG] must retrieve list of available actions', async() => { 
+    it('[WOIG] appToken must not retrieve list of available actions', async() => { 
       const res = await coreRequest
         .get(streamsPath)
         .query({parentId: ':_audit:actions'})
         .set('Authorization', appAccess.token);
+      assert.equal(res.status, 403);
+      assert.exists(res.body.error);
+    });
+
+    it('[TFZL] personalToken must retrieve list of available actions', async() => { 
+      const res = await coreRequest
+        .get(streamsPath)
+        .query({parentId: ':_audit:actions'})
+        .set('Authorization', personalToken);
       assert.exists(res.body.streams);
       assert.isAtLeast(res.body.streams.length, 1);
       for (const stream of res.body.streams) {
@@ -146,7 +155,8 @@ describe('Audit Streams and Events', function () {
       const res = await coreRequest
         .get(eventsPath)
         .set('Authorization', appAccess.token)
-        .query({ streams: [':_audit:action-events.get'] });
+        .query({ streams: JSON.stringify([{any: [':_audit:access-' + appAccess.id], all: [':_audit:action-events.get']}]) });
+      
       assert.equal(res.status, 200);
       const logs = res.body.events;
       assert.isAtLeast(logs.length, 1);

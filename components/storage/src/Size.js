@@ -1,16 +1,15 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 const bluebird = require('bluebird');
 
 const { getUsersRepository, UserRepositoryOptions, User } = require('business/src/users');
+const { getMall } = require('mall');
 
 class Size {
-
-  userEventsStorage;
   dbDocumentsItems;
   attachedFilesItems;
 
@@ -23,22 +22,23 @@ class Size {
  * @param {Array} attachedFilesItems
  * @constructor
  */
-  constructor(userEventsStorage, dbDocumentsItems, attachedFilesItems) {
-    this.userEventsStorage = userEventsStorage;
+  constructor(dbDocumentsItems, attachedFilesItems) {
     this.dbDocumentsItems = dbDocumentsItems;
     this.attachedFilesItems = attachedFilesItems;
   }
-  
+
   /**
    * Computes and updates storage size for the given user.
    *
    * @param {Object} user
    */
   async computeForUser(user) {
+    const mall = await getMall();
+    const mallSize = await mall.getUserStorageSize(user.id);
     const storageUsed = {
-      dbDocuments: await computeCategory(this.dbDocumentsItems),
+      dbDocuments: mallSize + await computeCategory(this.dbDocumentsItems),
       attachedFiles: await computeCategory(this.attachedFilesItems),
-    }
+    };
     let userObject = new User(user);
     const usersRepository = await getUsersRepository();
     await usersRepository.updateOne(

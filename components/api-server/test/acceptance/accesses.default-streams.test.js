@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -32,7 +32,7 @@ describe("Accesses with account streams", function () {
   let app;
   let request;
   let res;
-  let accountAccess;
+  let createAccessResponse;
   let accountAccessData;
   let mongoFixtures;
   let basePath;
@@ -59,7 +59,7 @@ describe("Accesses with account streams", function () {
 
   async function createUserAndAccess (permissionLevel, streamId) {
     await createUser();
-    accountAccess = await request.post(basePath)
+    createAccessResponse = await request.post(basePath)
       .send({
         name: charlatan.Lorem.characters(7),
         permissions: [
@@ -70,7 +70,7 @@ describe("Accesses with account streams", function () {
         ]
       })
       .set('authorization', access.token);
-    accountAccessData = accountAccess.body.access;
+    accountAccessData = createAccessResponse.body.access;
   }
 
   async function getAccessInDb (id) {
@@ -103,26 +103,26 @@ describe("Accesses with account streams", function () {
   describe('POST /accesses', () => {
     describe('When using a personal access', () => {
       describe('to create an access for visible account streams', () => {
-        describe('with a read-level permission', async () => {
-          let streamId;
+        describe('with a read-level permission', () => {
+          let systemEmailStreamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
           before(async function () {
-            streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
-            await createUserAndAccess(permissionLevel, streamId);
+            systemEmailStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
+            await createUserAndAccess(permissionLevel, systemEmailStreamId);
           });
           it('[UE9G] should return 201', async () => {
-            assert.equal(accountAccess.status, 201);
+            assert.equal(createAccessResponse.status, 201);
           });
           it('[BUYP] should create access in the database', async () => {
-            assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+            assert.deepEqual(accountAccessData.permissions, [{ streamId: systemEmailStreamId, level: permissionLevel }]);
           });
           it('[S3IQ] should enable user to read visible stream event with this access', async () => {
             res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
             assert.equal(res.body.events.length, 1);
-            assert.equal(res.body.events[0].streamId, streamId);
+            assert.equal(res.body.events[0].streamId, systemEmailStreamId);
           });
 
-          describe('for the “account” stream', async () => {
+          describe('for the “account” stream', () => {
             let streamId;
             const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
@@ -130,18 +130,18 @@ describe("Accesses with account streams", function () {
               await createUserAndAccess(permissionLevel, streamId);
             });
             it('[XEAK] should return 201', async () => {
-              assert.equal(accountAccess.status, 201);
+              assert.equal(createAccessResponse.status, 201);
             });
             it('[65I4] should create access in the database', async () => {
               assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
             });
             it('[L99L] should allow to access visible events in storageUsed', async () => {
               res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
-              assert.equal(res.body.events.length, 7);
+              assert.equal(res.body.events.length, 6);
               validation.validateAccountEvents(res.body.events);
             });
           });
-          describe('for the “storageUsed” stream', async () => {
+          describe('for the “storageUsed” stream', () => {
             let streamId;
             const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
@@ -149,7 +149,7 @@ describe("Accesses with account streams", function () {
               await createUserAndAccess(permissionLevel, streamId);
             });
             it('[EPEP] should return 201', async () => {
-              assert.equal(accountAccess.status, 201);
+              assert.equal(createAccessResponse.status, 201);
             });
             it('[U3UM] should create access in the database', async () => {
               assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
@@ -168,7 +168,7 @@ describe("Accesses with account streams", function () {
             });
           });
         });
-        describe('with a create-only-level permission', async () => {
+        describe('with a create-only-level permission', () => {
           let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CREATE_ONLY;
           before(async function () {
@@ -176,13 +176,13 @@ describe("Accesses with account streams", function () {
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[IWMQ] should return 201', async () => {
-            assert.equal(accountAccess.status, 201);
+            assert.equal(createAccessResponse.status, 201);
           });
           it('[APYN] should create access in the database', async () => {
             assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
           });
         });
-        describe('with a contribute-level permission', async () => {
+        describe('with a contribute-level permission', () => {
           let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CONTRIBUTE;
           before(async function () {
@@ -190,7 +190,7 @@ describe("Accesses with account streams", function () {
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[R0M1] should return 201', async () => {
-            assert.equal(accountAccess.status, 201);
+            assert.equal(createAccessResponse.status, 201);
           });
           it('[Q8R8] should create access in the database', async () => {
             assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
@@ -217,60 +217,71 @@ describe("Accesses with account streams", function () {
           });
         });
 
-        describe('with a manage-level permission', async () => {
+        describe('with a manage-level permission', () => {
           let streamId;
           before(async function () {
             streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
             await createUserAndAccess(AccessLogic.PERMISSION_LEVEL_MANAGE, streamId);
           });
           it('[93HO] should return 400', async () => {
-            assert.equal(accountAccess.status, 400);
+            assert.equal(createAccessResponse.status, 400);
           });
           it('[YPHX] should return the correct error', async () => {
-            assert.deepEqual(accountAccess.body.error, {
+            assert.deepEqual(createAccessResponse.body.error, {
               id: ErrorIds.InvalidOperation,
-              message: ErrorMessages[ErrorIds.TooHighAccessForAccountStreams],
+              message: ErrorMessages[ErrorIds.TooHighAccessForSystemStreams],
               data: { param: streamId }
             });
           });
         });
       });
-      describe('to create an access for not visible account streams', async () => {
+      describe('to create an access for not visible account streams', () => {
         let streamId;
         before(async function () {
-          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash');
+          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken');
           await createUserAndAccess('read', streamId);
         });
         it('[ATGU] should return 400', async () => {
-          assert.equal(accountAccess.status, 400);
+          assert.equal(createAccessResponse.status, 400);
         });
         it('[Q2KZ] should return the correct error', async () => {
-          assert.deepEqual(accountAccess.body.error, {
+          assert.deepEqual(createAccessResponse.body.error, {
             id: ErrorIds.InvalidOperation,
             message: ErrorMessages[ErrorIds.DeniedStreamAccess],
             data: { param: streamId }
           });
         });
       });
+      describe('to create an access for unexisting system streams', () => {
+        
+        before(async function () {
+          const streamId = ':system:' + charlatan.Lorem.characters(10);
+          await createUserAndAccess('read', streamId);
+        });
+        it('[KKKS] should return 403 forbidden', async () => {
+          assert.equal(createAccessResponse.status, 403);
+          assert.equal(createAccessResponse.body.error.id, ErrorIds.Forbidden);
+        });
+      })
     });
   });
 
-  describe('DELETE /accesses', async () => {
+  describe('DELETE /accesses', () => {
     describe('When using a personal access', () => {
-      describe('to delete an account stream access', async () => {
+      describe('to delete an account stream access', () => {
         let streamId;
         const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
         before(async function () {
           streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed');
           await createUserAndAccess(permissionLevel, streamId);
-          res = await request.delete(path.join(basePath, accountAccess.body.access.id))
+          res = await request.delete(path.join(basePath, createAccessResponse.body.access.id))
             .set('authorization', access.token);
         });
         it('[Z40J] should return 200', async () => {
           assert.equal(res.status, 200);
         });
         it('[MP9T] should delete the access in the database', async () => {
-          const deletedAccess = await getAccessInDb(accountAccess.body.access.id);
+          const deletedAccess = await getAccessInDb(createAccessResponse.body.access.id);
           assert.equal(deletedAccess, null);
         });
       });

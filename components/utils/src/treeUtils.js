@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -40,10 +40,11 @@ exports.buildTree = function (array, stripParentIds) {
 
     if (clone.hasOwnProperty('parentId') && clone.parentId) {
       // child
-      if (! map[clone.parentId]) {
+      if (! map[clone.parentId]) {
         // missing parent -> ignore
         return;
       }
+      if (map[clone.parentId].children == null) map[clone.parentId].children = [];
       map[clone.parentId].children.push(clone);
     } else {
       // root

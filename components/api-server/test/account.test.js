@@ -1,43 +1,46 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, beforeEach, it */
+/* global describe, before, beforeEach, it */
 
-require('./test-helpers'); 
-const fs = require('fs');
 const assert = require('chai').assert;
+const should = require('should');
+const _ = require('lodash');
+const async = require('async');
+const bluebird = require('bluebird');
+const fs = require('fs');
+const timestamp = require('unix-timestamp');
+
+require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
-const async = require('async');
 const ErrorIds = require('errors').ErrorIds;
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/accountMethods');
 const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
-const should = require('should');
-const storage = helpers.dependencies.storage.user.events;
 const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
-const _ = require('lodash');
-const bluebird = require('bluebird');
 const { getUsersRepository } = require('business/src/users');
-
+const userAccountStorage = require('business/src/users/userAccountStorage');
+const encryption = require('utils').encryption;
 let usersRepository = null;
 
-describe('account', function () {
+describe('[ACCO] account', function () {
   const user = Object.assign({}, testData.users[0]);
-  
+
   before(async () => {
-    usersRepository = await getUsersRepository(); 
+    usersRepository = await getUsersRepository();
+    await userAccountStorage.init();
   });
-  
-  let basePath = '/' + user.username + '/account';
+
+  const basePath = '/' + user.username + '/account';
   let request = null; // must be set after server instance started
 
   // to verify data change notifications
-  var accountNotifCount;
+  let accountNotifCount;
   server.on('axon-account-changed', function () { accountNotifCount++; });
 
   before(function (done) {
@@ -47,7 +50,7 @@ describe('account', function () {
       testData.resetEvents,
       testData.resetProfile,
       testData.resetFollowedSlices,
-      
+
       testData.resetStreams,
       testData.resetAttachments,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
@@ -59,19 +62,18 @@ describe('account', function () {
   });
 
   describe('GET /', function () {
-
-    beforeEach(async () => { await resetUsers() });
+    beforeEach(async () => { await resetUsers(); });
 
     it('[PHSB] must return the user\'s account details', function (done) {
       request.get(basePath).end(function (res) {
-        var expected = _.clone(user);
+        const expected = _.clone(user);
         delete expected.id;
         delete expected.password;
         delete expected.storageUsed;
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
-          body: {account: expected},
+          body: { account: expected },
           sanitizeFn: cleanUpDetails,
           sanitizeTarget: 'account'
         }, done);
@@ -83,11 +85,10 @@ describe('account', function () {
         validation.checkErrorForbidden(res, done);
       });
     });
-
   });
 
   describe('PUT /', function () {
-    beforeEach(async () => { await resetUsers() });
+    beforeEach(async () => { await resetUsers(); });
 
     it('[0PPV] must modify account details with the sent data, notifying register if e-mail changed',
       function (done) {
@@ -100,7 +101,7 @@ describe('account', function () {
         // setup registration server mock
         let regServerCalled = false;
         helpers.instanceTestSetup.set(settings, {
-          context: _.defaults({username: user.username}, settings.services.register),
+          context: _.defaults({ username: user.username }, settings.services.register),
           execute: function () {
             const scope = require('nock')(this.context.url);
             scope.put('/users')
@@ -110,7 +111,7 @@ describe('account', function () {
               }.bind(this));
           }
         });
-        
+
         // fetch service call data from server process
         server.on('reg-server-called', function (sentData) {
           sentData.should.eql({
@@ -128,7 +129,7 @@ describe('account', function () {
                   creation: false,
                   isActive: true,
                   isUnique: false,
-                  value: updatedData.language,
+                  value: updatedData.language
                 }
               ]
             },
@@ -140,17 +141,17 @@ describe('account', function () {
           server.ensureStarted.bind(server, settings),
           function update (stepDone) {
             request.put(basePath).send(updatedData).end(function (res) {
-              //jshint -W030
+              // jshint -W030
               regServerCalled.should.be.ok;
-              let expected = _.defaults(updatedData, user);
+              const expected = _.defaults(updatedData, user);
               delete expected.id;
               delete expected.password;
               delete expected.storageUsed;
-              
+
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result,
-                body: {account: expected},
+                body: { account: expected },
                 sanitizeFn: cleanUpDetails,
                 sanitizeTarget: 'account'
               });
@@ -158,7 +159,7 @@ describe('account', function () {
               stepDone();
             });
           },
-          async function verifyData () {           
+          async function verifyData () {
             const retrievedUser = await usersRepository.getUserByUsername(user.username);
             validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
           }
@@ -166,7 +167,7 @@ describe('account', function () {
       });
 
     it('[AT0V] must return a correct error if the sent data is badly formatted', function (done) {
-      request.put(basePath).send({badProperty: 'bad value'}).end(function (res) {
+      request.put(basePath).send({ badProperty: 'bad value' }).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
@@ -175,15 +176,14 @@ describe('account', function () {
       request
         .put(basePath, testData.accesses[4].token)
         .send({ language: 'zh' }).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+          validation.checkErrorForbidden(res, done);
+        });
     });
-
   });
 
   let filesystemBlockSize = 1024;
 
-  function getFilesystemBlockSize(done) {
+  function getFilesystemBlockSize (done) {
     const testFilePath = './file_test.txt';
     const testValue = '0';
     fs.writeFile(testFilePath, testValue, (err) => {
@@ -203,6 +203,23 @@ describe('account', function () {
   }
 
   describe('storage space monitoring', function () {
+    before(function (done) {
+      async.series([
+        testData.resetUsers,
+        testData.resetAccesses,
+        testData.resetEvents,
+        testData.resetProfile,
+        testData.resetFollowedSlices,
+
+        testData.resetStreams,
+        testData.resetAttachments,
+        server.ensureStarted.bind(server, helpers.dependencies.settings),
+        function (stepDone) {
+          request = helpers.request(server.url);
+          request.login(user, stepDone);
+        }
+      ], done);
+    });
     before(getFilesystemBlockSize);
 
     // when checking files storage size we allow a small 1k error margin to account for folder sizes
@@ -210,7 +227,7 @@ describe('account', function () {
     // tests the computation of user storage size which is used from different API methods
     // (so we're not directly testing an API method here)
     it('[NFJQ] must properly compute used storage size for a given user when called', async () => {
-      let newAtt = testData.attachments.image;
+      const newAtt = testData.attachments.image;
 
       let storageUsed = await storageSize.computeForUser(user);
       assert.isAbove(storageUsed.dbDocuments, 0);
@@ -218,14 +235,14 @@ describe('account', function () {
       const expectedAttsSize = _.reduce(testData.events, function (total, evt) {
         return total + getTotalAttachmentsSize(evt);
       }, 0);
-      
+
       // On Ubuntu with ext4 FileSystem the size difference is 4k, not 1k. I still dunno why.
       assert.approximately(storageUsed.attachedFiles, expectedAttsSize, filesystemBlockSize);
       const initialStorageUsed = storageUsed;
 
       await bluebird.fromCallback(cb => addEventWithAttachment(newAtt, cb));
       storageUsed = await storageSize.computeForUser(user);
-      
+
       // hard to know what the exact difference should be, so we just expect it's bigger
       assert.isAbove(storageUsed.dbDocuments, initialStorageUsed.dbDocuments);
       assert.approximately(storageUsed.attachedFiles, initialStorageUsed.attachedFiles +
@@ -242,18 +259,18 @@ describe('account', function () {
 
       // Initial nightly task
       execSync('node ./bin/nightly');
-      
+
       // Verify initial storage usage
       const initialStorageUsed = await storageSize.computeForUser(user);
       initialStorageUsed.attachedFiles.should.be.above(0);
-      
+
       // Add an attachment
       await bluebird.fromCallback(
         (cb) => addEventWithAttachment(newAtt, cb));
-      
+
       // Another nightly task
       execSync('node ./bin/nightly');
-      
+
       // Verify updated storage usage
       const updatedStorageUsed = await storageSize.computeForUser(user);
 
@@ -267,33 +284,33 @@ describe('account', function () {
         .field('event', JSON.stringify({ type: 'test/i', streamId: testData.streams[0].id }))
         .attach('image', attachment.path, attachment.filename)
         .end(function (res) {
-          validation.check(res, {status: 201});
+          validation.check(res, { status: 201 });
           callback();
         });
     }
 
     it('[0QVH] must be approximately updated (diff) when adding an attached file', function (done) {
-      var initialStorageUsed,
-        newAtt = testData.attachments.image;
+      let initialStorageUsed;
+      const newAtt = testData.attachments.image;
       async.series([
         async function checkInitial () {
           const retrievedUser = await usersRepository.getUserById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
         },
-        function addAttachment(stepDone) {
+        function addAttachment (stepDone) {
           request.post('/' + user.username + '/events/' + testData.events[0].id)
-              .attach('image', newAtt.path, newAtt.filename)
-              .end(function (res) {
-                validation.check(res, {status: 200});
-                stepDone();
-              });
+            .attach('image', newAtt.path, newAtt.filename)
+            .end(function (res) {
+              validation.check(res, { status: 200 });
+              stepDone();
+            });
         },
         async function checkUpdated () {
           const retrievedUser = await usersRepository.getUserById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
           retrievedUser.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
           retrievedUser.storageUsed.attachedFiles.should.be.approximately(
-                  initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);
+            initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);
         }
       ], done);
     });
@@ -304,16 +321,16 @@ describe('account', function () {
 
       const path = '/' + user.username + '/events/' + testData.events[0].id + '/' +
         deletedAtt.id;
-      try { 
+      try {
         await request.del(path);
       } catch (e) {
         // not an error, but the callback returns the response in 1st position
         // either we do the request with superagent, or we update request()
       }
-      
+
       const updatedStoragedUsed = await storageSize.computeForUser(user);
       assert.equal(updatedStoragedUsed.dbDocuments, initialStorageUsed.dbDocuments);
-      assert.approximately(updatedStoragedUsed.attachedFiles, 
+      assert.approximately(updatedStoragedUsed.attachedFiles,
         initialStorageUsed.attachedFiles - deletedAtt.size,
         filesystemBlockSize);
     });
@@ -322,45 +339,43 @@ describe('account', function () {
       const deletedEvt = testData.events[2];
       const deletedEvtPath = '/' + user.username + '/events/' + deletedEvt.id;
       const initialStorageUsed = await storageSize.computeForUser(user);
-      try { 
-        await request.del(deletedEvtPath)
+      try {
+        await request.del(deletedEvtPath);
       } catch (e) {}
-      try { 
-        await request.del(deletedEvtPath)
+      try {
+        await request.del(deletedEvtPath);
       } catch (e) {}
-        
+
       const updatedStoragedUsed = await storageSize.computeForUser(user);
       assert.equal(updatedStoragedUsed.dbDocuments, initialStorageUsed.dbDocuments);
-      assert.approximately(updatedStoragedUsed.attachedFiles, 
+      assert.approximately(updatedStoragedUsed.attachedFiles,
         initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt),
         filesystemBlockSize);
     });
 
-    function getTotalAttachmentsSize(event) {
-      if (! event.attachments) {
+    function getTotalAttachmentsSize (event) {
+      if (!event.attachments) {
         return 0;
       }
       return _.reduce(event.attachments, function (evtTotal, att) {
         return evtTotal + att.size;
       }, 0);
     }
-
   });
 
   describe('/change-password', function () {
+    before(async () => { await resetUsers(); });
 
-    beforeEach(async () => { await resetUsers });
-
-    var path = basePath + '/change-password';
+    const path = basePath + '/change-password';
 
     it('[6041] must change the password to the given value', function (done) {
-      var data = {
+      const data = {
         oldPassword: user.password,
         newPassword: 'Dr0ws$4p'
       };
       async.series([
         function changePassword (stepDone) {
-          request.post(path).send(data).end(function (res) { 
+          request.post(path).send(data).end(function (res) {
             validation.check(res, {
               status: 200,
               schema: methodsSchema.changePassword.result
@@ -370,13 +385,17 @@ describe('account', function () {
           });
         },
         function verifyNewPassword (stepDone) {
-          request.login(_.defaults({password: data.newPassword}, user), stepDone);
+          request.login(_.defaults({ password: data.newPassword }, user), stepDone);
+        },
+        async function checkPasswordInHistory () {
+          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, data.oldPassword, 2), 'missing previous password in history');
+          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, data.newPassword, 1), 'missing new password in history');
         }
       ], done);
     });
 
     it('[STWH] must return an error if the given old password does not match', function (done) {
-      var data = {
+      const data = {
         oldPassword: 'bad-password',
         newPassword: 'Dr0ws$4p'
       };
@@ -389,35 +408,162 @@ describe('account', function () {
     });
 
     it('[8I1N] must return a correct error if the sent data is badly formatted', function (done) {
-      request.post(path).send({badProperty: 'bad value'}).end(function (res) {
+      request.post(path).send({ badProperty: 'bad value' }).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
     it('[J5VH] must be forbidden to non-personal accesses', function (done) {
-      request.post(path, testData.accesses[4].token).send({some: 'data'}).end(function (res) {
+      request.post(path, testData.accesses[4].token).send({ some: 'data' }).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
+    describe('[APWD] When password rules are enabled', function () {
+      const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
+      const baseData = { oldPassword: user.password };
+
+      before(async () => {
+        await resetUsers();
+        await server.ensureStartedAsync(settings);
+      });
+
+      describe('Complexity rules:', function () {
+        it('[1YPT] must return an error if the new password is too short', async () => {
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.badTooShort }, baseData);
+          const res = await request.post(path).send(data);
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidParametersFormat
+          });
+          assert.match(res.body.error.message, /characters long/);
+        });
+
+        it('[352R] must accept the new password if it is long enough', async () => {
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good3CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.check(res, {
+            status: 200
+          });
+          baseData.oldPassword = data.newPassword;
+        });
+
+        it('[663A] must return an error if the new password does not contains characters from enough categories', async () => {
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.bad2CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidParametersFormat
+          });
+          assert.match(res.body.error.message, /categories/);
+        });
+
+        it('[OY2G] must accept the new password if it contains characters from enough categories', async () => {
+          // also tests checking for all 4 categories
+          await server.ensureStartedAsync(_.merge(_.cloneDeep(settings), { auth: { passwordComplexityMinCharCategories: 4 } }));
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.check(res, {
+            status: 200
+          });
+          baseData.oldPassword = data.newPassword;
+        });
+      });
+
+      describe('Reuse rules:', function () {
+        it('[AFX4] must return an error if the new password is found in the N last passwords used', async () => {
+          const passwordsHistory = await setupPasswordHistory(settings.auth.passwordPreventReuseHistoryLength);
+          const data = _.defaults({ newPassword: passwordsHistory[0] }, baseData);
+          const res = await request.post(path).send(data);
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidOperation
+          });
+          assert.match(res.body.error.message, /last used/);
+        });
+
+        it('[6XXP] must accept the new password if different from the N last passwords used', async () => {
+          const passwordsHistory = await setupPasswordHistory(settings.auth.passwordPreventReuseHistoryLength + 1);
+          const data = _.defaults({ newPassword: passwordsHistory[0] }, baseData);
+          const res = await request.post(path).send(data);
+          validation.check(res, {
+            status: 200
+          });
+          baseData.oldPassword = data.newPassword;
+        });
+
+        async function setupPasswordHistory (historyLength) {
+          const passwordsHistory = [];
+          for (let n = historyLength; n >= 1; n--) {
+            const pwd = `${helpers.passwordRules.passwords.good4CharCats}-${n}`;
+            const res = await request.post(path).send(_.defaults({ newPassword: pwd }, baseData));
+            validation.check(res, { status: 200 });
+            passwordsHistory.push(pwd);
+            baseData.oldPassword = pwd;
+          }
+          return passwordsHistory;
+        }
+      });
+
+      describe('Age rules:', function () {
+        const passwordAgeSettings = _.merge(_.cloneDeep(settings), { auth: { passwordAgeMinDays: 1 } });
+
+        it('[J4O6] must return an error if the current password’s age is below the set minimum', async () => {
+          await server.ensureStartedAsync(passwordAgeSettings);
+
+          // setup current password with time less than 1d ago
+          await userAccountStorage.clearHistory(user.id);
+          const passwordHash = await encryption.hash(baseData.oldPassword);
+          await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', timestamp.now('-23h'));
+
+          // try and change
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidOperation
+          });
+          assert.match(res.body.error.message, /day\(s\) ago/);
+        });
+
+        it('[RGGN] must accept the new password if the current one’s age is greater than the set minimum', async () => {
+          await server.ensureStartedAsync(passwordAgeSettings);
+
+          // setup current password with time more than 1d ago
+          await userAccountStorage.clearHistory(user.id);
+          const passwordHash = await encryption.hash(baseData.oldPassword);
+          await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', timestamp.now('-25h'));
+
+          // try and change
+          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
+          const res = await request.post(path).send(data);
+          validation.check(res, {
+            status: 200
+          });
+          baseData.oldPassword = data.newPassword;
+        });
+      });
+    });
   });
 
   describe('/request-password-reset and /reset-password', function () {
-
-    beforeEach(async () => { await resetUsers });
+    beforeEach(async () => {
+      await resetUsers;
+      server.removeAllListeners('password-reset-token');
+    });
 
     const requestPath = basePath + '/request-password-reset';
     const resetPath = basePath + '/reset-password';
-    const authData = {appId: 'pryv-test'};
+    const authData = { appId: 'pryv-test' };
 
     it('[G1VN] "request" must trigger an email with a reset token, store that token, ' +
        'then "reset" must reset the password to the given value', function (done) {
-      let settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = _.cloneDeep(helpers.dependencies.settings);
       let resetToken;
       const newPassword = 'Dr0ws$4p';
-      
+
       settings.services.email.enabled = true;
-      
+
       // setup mail server mock
 
       helpers.instanceTestSetup.set(settings, {
@@ -425,7 +571,7 @@ describe('account', function () {
         execute: function () {
           require('nock')(this.context.url).post('')
             .reply(200, function (uri, body) {
-              var token = body.message.global_merge_vars[0].content; // HACK, assume structure 
+              const token = body.message.global_merge_vars[0].content; // HACK, assume structure
               this.context.testNotifier.emit('password-reset-token', token);
             }.bind(this));
         }
@@ -437,7 +583,7 @@ describe('account', function () {
 
       async.series([
         server.ensureStarted.bind(server, settings),
-        function requestReset(stepDone) { 
+        function requestReset (stepDone) {
           request.post(requestPath)
             .unset('authorization')
             .set('Origin', 'http://test.pryv.local')
@@ -449,7 +595,7 @@ describe('account', function () {
               }, stepDone);
             });
         },
-        function verifyStoredRequest(stepDone) {
+        function verifyStoredRequest (stepDone) {
           should.exist(resetToken);
           pwdResetReqsStorage.get(
             resetToken,
@@ -462,7 +608,7 @@ describe('account', function () {
             }
           );
         },
-        function doReset(stepDone) {
+        function doReset (stepDone) {
           const data = _.defaults({
             resetToken: resetToken,
             newPassword: newPassword
@@ -477,29 +623,29 @@ describe('account', function () {
               }, stepDone);
             });
         },
-        function verifyNewPassword(stepDone) {
-          request.login(_.defaults({password: newPassword}, user), stepDone);
+        function verifyNewPassword (stepDone) {
+          request.login(_.defaults({ password: newPassword }, user), stepDone);
         }
       ], done);
     });
-    
+
     it('[HV0V] must not trigger a reset email if mailing is deactivated', function (done) {
-      let settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testResetMailNotSent(settings, done);
     });
-    
+
     it('[VZ1W] must not trigger a reset email if reset mail is deactivated', function (done) {
-      let settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = {
         resetPassword: false
       };
       testResetMailNotSent(settings, done);
     });
-    
+
     function testResetMailNotSent (settings, callback) {
       let mailSent = false;
-          
+
       // setup mail server mock
       helpers.instanceTestSetup.set(settings, {
         context: settings.services.email.mandrill,
@@ -518,7 +664,7 @@ describe('account', function () {
 
       async.series([
         server.ensureStarted.bind(server, settings),
-        function requestReset(stepDone) {
+        function requestReset (stepDone) {
           request.post(requestPath)
             .unset('authorization')
             .set('Origin', 'http://test.pryv.local')
@@ -531,7 +677,7 @@ describe('account', function () {
               mailSent.should.eql(false);
               stepDone();
             });
-        },
+        }
       ], callback);
     }
 
@@ -541,7 +687,7 @@ describe('account', function () {
       const user1 = testData.users[1];
 
       async.series([
-        function generateResetToken(stepDone) {
+        function generateResetToken (stepDone) {
           // generate a reset token for user1
           pwdResetReqsStorage.generate(
             user1.username,
@@ -552,8 +698,8 @@ describe('account', function () {
             }
           );
         },
-        function doReset(stepDone) {
-          var data = _.defaults({
+        function doReset (stepDone) {
+          const data = _.defaults({
             resetToken: resetToken,
             newPassword: newPassword
           }, authData);
@@ -572,70 +718,189 @@ describe('account', function () {
     });
 
     it('[J6GB] "request" must return an error if the requesting app is not trusted', function (done) {
-      request.post(requestPath).send({appId: 'bad-app-id'})
-          .unset('authorization')
-          .set('Origin', 'http://test.pryv.local')
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidCredentials
-        }, done);
-      });
+      request.post(requestPath).send({ appId: 'bad-app-id' })
+        .unset('authorization')
+        .set('Origin', 'http://test.pryv.local')
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 401,
+            id: ErrorIds.InvalidCredentials
+          }, done);
+        });
     });
 
     it('[5K14] "request" must return an error if sent data is badly formatted', function (done) {
-      request.post(requestPath).send({badParam: '?'})
-          .unset('authorization')
-          .end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
+      request.post(requestPath).send({ badParam: '?' })
+        .unset('authorization')
+        .end(function (res) {
+          validation.checkErrorInvalidParams(res, done);
+        });
     });
 
     it('[PKBP] "reset" must return an error if the reset token is invalid/expired', function (done) {
-      var data = _.defaults({
+      const data = _.defaults({
         resetToken: 'bad-token',
         newPassword: '>-=(♥️)=-<'
       }, authData);
       request.post(resetPath).send(data)
-          .unset('authorization')
-          .set('Origin', 'http://test.pryv.local')
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidAccessToken
-        }, done);
-      });
+        .unset('authorization')
+        .set('Origin', 'http://test.pryv.local')
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 401,
+            id: ErrorIds.InvalidAccessToken
+          }, done);
+        });
     });
 
     it('[ON9V] "reset" must return an error if the requesting app is not trusted', function (done) {
       request.post(resetPath).send({ resetToken: '?', newPassword: '123456', appId: 'bad-app-id' })
-          .unset('authorization')
-          .set('Origin', 'http://test.pryv.local')
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidCredentials
-        }, done);
-      });
+        .unset('authorization')
+        .set('Origin', 'http://test.pryv.local')
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 401,
+            id: ErrorIds.InvalidCredentials
+          }, done);
+        });
     });
 
     it('[T5L9] "reset" must return an error if sent data is badly formatted', function (done) {
-      request.post(resetPath).send({badParam: '?'})
-          .unset('authorization')
-          .end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
+      request.post(resetPath).send({ badParam: '?' })
+        .unset('authorization')
+        .end(function (res) {
+          validation.checkErrorInvalidParams(res, done);
+        });
     });
 
+    it('[VGRT] "reset" must return an error if the reset token was already used', function (done) {
+      let resetToken = null;
+      const newPassword = 'myN3wF4ncYp4ssw0rd';
+      const user = testData.users[0];
+
+      async.series([
+        function generateResetToken (stepDone) {
+          // generate a reset token for user1
+          pwdResetReqsStorage.generate(
+            user.username,
+            function (err, token) {
+              should.exist(token);
+              resetToken = token;
+              stepDone();
+            }
+          );
+        },
+        function doResetFirst (stepDone) {
+          const data = _.defaults({ resetToken, newPassword }, authData);
+          // use user1's resetToken to reset user0's password
+          request.post(resetPath).send(data)
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.requestPasswordReset.result
+              });
+              stepDone();
+            });
+        },
+        function doResetSecond (stepDone) {
+          const data = _.defaults({ resetToken, newPassword }, authData);
+          // use user1's resetToken to reset user0's password
+          request.post(resetPath).send(data)
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .end(function (res) {
+              validation.checkError(res, {
+                status: 401,
+                id: ErrorIds.InvalidAccessToken
+              }, stepDone);
+            });
+        }
+      ], done);
+    });
+
+    describe('[RPWD] When password rules are enabled', function () {
+      it('[HZCU] must fail if the new password does not comply (smoke test; see "/change-password" tests)', function (done) {
+        const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
+        settings.services.email.enabled = true;
+
+        let resetToken;
+        const badPassword = helpers.passwordRules.passwords.badTooShort;
+
+        // setup mail server mock
+
+        helpers.instanceTestSetup.set(settings, {
+          context: settings.services.email,
+          execute: function () {
+            require('nock')(this.context.url).post('')
+              .reply(200, function (uri, body) {
+                const token = body.message.global_merge_vars[0].content; // HACK, assume structure
+                this.context.testNotifier.emit('password-reset-token', token);
+              }.bind(this));
+          }
+        });
+        // fetch reset token from server process
+        server.on('password-reset-token', function (token) {
+          resetToken = token;
+        });
+
+        async.series([
+          server.ensureStarted.bind(server, settings),
+          function requestReset (stepDone) {
+            request.post(requestPath)
+              .unset('authorization')
+              .set('Origin', 'http://test.pryv.local')
+              .send(authData)
+              .end(function (res) {
+                validation.check(res, {
+                  status: 200,
+                  schema: methodsSchema.requestPasswordReset.result
+                }, stepDone);
+              });
+          },
+          function verifyStoredRequest (stepDone) {
+            should.exist(resetToken);
+            pwdResetReqsStorage.get(
+              resetToken,
+              user.username,
+              function (err, resetReq) {
+                should.not.exist(err);
+                should.exist(resetReq);
+                should(resetReq._id).be.equal(resetToken);
+                should(resetReq.username).be.equal(user.username);
+                stepDone();
+              }
+            );
+          },
+          function doReset (stepDone) {
+            const data = _.defaults({
+              resetToken: resetToken,
+              newPassword: badPassword
+            }, authData);
+            request.post(resetPath).send(data)
+              .unset('authorization')
+              .set('Origin', 'http://test.pryv.local')
+              .end(function (res) {
+                validation.checkError(res, {
+                  status: 400,
+                  id: ErrorIds.InvalidParametersFormat
+                });
+                assert.match(res.body.error.message, /characters long/);
+                stepDone();
+              });
+          }
+        ], done);
+      });
+    });
   });
 
-  async function resetUsers() {
+  async function resetUsers () {
     accountNotifCount = 0;
     await testData.resetUsers();
   }
 
-  function cleanUpDetails(accountDetails) {
+  function cleanUpDetails (accountDetails) {
     delete accountDetails.storageUsed;
   }
-
 });

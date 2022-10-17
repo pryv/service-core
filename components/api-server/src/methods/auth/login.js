@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -9,11 +9,12 @@ const { ApiEndpoint } = require('utils');
 const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
-const { getUsersRepository, UserRepositoryOptions } = require('business/src/users');
+const { getUsersRepository, UserRepositoryOptions, getPasswordRules  } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
 const { getStorageLayer } = require('storage');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
+const timestamp = require('unix-timestamp');
 
 /**
  * Auth API methods implementations.
@@ -21,12 +22,13 @@ const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUti
  * @param api
  */
 module.exports = async function (api) {
-  const usersRepository = await getUsersRepository(); 
+  const usersRepository = await getUsersRepository();
   const storageLayer = await getStorageLayer();
   const userAccessesStorage = storageLayer.accesses;
   const sessionsStorage = storageLayer.sessions;
   const config = await getConfig();
-  const authSettings =  config.get('auth');
+  const authSettings = config.get('auth');
+  const passwordRules = await getPasswordRules();
 
   api.register('auth.login',
     commonFns.getParamsValidation(methodsSchema.login.params),
@@ -54,6 +56,14 @@ module.exports = async function (api) {
       if (!isValid) {
         return next(errors.invalidCredentials());
       }
+      const expirationAndChangeTimes = await passwordRules.getPasswordExpirationAndChangeTimes(context.user.id);
+      if (expirationAndChangeTimes.passwordExpires <= timestamp.now()) {
+        const formattedExpDate = timestamp.toDate(expirationAndChangeTimes.passwordExpires).toISOString();
+        const err = errors.invalidCredentials('Password expired since ' + formattedExpDate);
+        err.data = { expiredTime: expirationAndChangeTimes.passwordExpires };
+        return next(err);
+      }
+      Object.assign(result, expirationAndChangeTimes);
       next();
     } catch (err) {
       // handles unexpected errors
@@ -115,17 +125,17 @@ module.exports = async function (api) {
         });
       }
     });
-    
+
     function findAccess(context, callback) {
       userAccessesStorage.findOne(context.user, context.accessQuery, null, callback);
     }
-    
+
     function createAccess(access, context, callback) {
       _.extend(access, context.accessQuery);
       context.initTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.insertOne(context.user, access, callback);
     }
-    
+
     function updatePersonalAccess(access, context, callback) {
       context.updateTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);

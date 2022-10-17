@@ -1,4 +1,5 @@
 ---
+testsSkipForwardToRegister: true
 auth:
   adminAccessKey: some_key_yo
   trustedApps: pryv-test@http://test.pryv.local, pryv-test-no-cors@*, *@https://*.rec.la*
@@ -24,6 +25,8 @@ services:
     key: test-system-key
 axonMessaging:
   enabled: true
+nats:
+ uri: 'nats://127.0.0.1:4222'
 reporting:
   licenseName: pryv.io-test-license
   templateVersion: 1.0.0
@@ -66,20 +69,18 @@ custom:
       type: email/string
       name: Email
       isRequiredInValidation: true
+  dataStores:
+    - id: dummy
+      name: Dummy Store
+      path: ../../mall/test-helpers/dummyDataStore # should be fully qualified path
+      config: null
+    - id: faulty
+      name: Faulty Store
+      path: ../../mall/test-helpers/faultyDataStore # should be fully qualified path
+      config: null
 backwardCompatibility:
   systemStreams:
     prefix:
       isActive: false
-stores:
-  loadExternal:
-    - id: dummy
-      name: Dummy Store
-      path: ../implementations/dummy # should be fully qualified path for external stores
-      config: null
-    - id: faulty
-      name: Faulty Store
-      path: ../implementations/faulty # should be fully qualified path
-      config: null
 trace:
   enable: true
-    

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -26,7 +26,8 @@ exports = module.exports = function (action) {
     'apiEndpoint': string({minLength: 1}),
     'name': string({minLength: 1}),
     'permissions': permissions(action),
-    'lastUsed': helpers.number()
+    'lastUsed': helpers.number(),
+    'integrity': string({nullable: true}),
   }, {
     additionalProperties: false
   });
@@ -123,7 +124,6 @@ var permissions = exports.permissions = function (action) {
     'streamId': {
       type: ['string', 'null']
     },
-    'limitations': helpers.object({}, {nullable: true}),
     'level': permissionLevel
   }, {
     id: 'streamPermission',
@@ -136,15 +136,6 @@ var permissions = exports.permissions = function (action) {
     streamPermission.properties.name = string();
   }
 
-  var tagPermission = object({
-    'tag': string(),
-    'level': permissionLevel
-  }, {
-    id: 'tagPermission',
-    additionalProperties: false,
-    required: [ 'tag', 'level' ]
-  });
-
   var featurePermission = object({
     'feature': string(),
     'setting': featureSetting
@@ -155,6 +146,6 @@ var permissions = exports.permissions = function (action) {
   });
 
   return array({
-    oneOf: [streamPermission, tagPermission, featurePermission]
+    oneOf: [streamPermission, featurePermission]
   });
 };

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -9,17 +9,12 @@
 const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
-const bluebird = require('bluebird');
 
-const treeUtils = require('utils/src/treeUtils');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
 
-const { getConfigUnsafe } = require('@pryv/boiler');
-const { encryption } = require('utils')
-
-const SystemStream = require('business/src/system-streams/SystemStream');
-const Event = require('business/src/events/Event');
+import type { SystemStream } from 'business/src/system-streams';
+import type { Event } from 'business/src/events';
 
 class User {
   // User properties that exists by default (email could not exist with specific config)
@@ -45,9 +40,9 @@ class User {
     appId?: string,
     invitationToken?: string,
     password?: string,
-    passwordHash?: string,
     referer?: string,
   }) {
+    this.username = params.username;
     buildAccountFields(this);
     loadAccountData(this, params);
 
@@ -92,12 +87,14 @@ class User {
       'storageUsed',
     ]);
   }
-  
+
   /**
    * Get account with id property added to it
    */
   getAccountWithId () {
-    return _.pick(this, this.accountFields.concat('id').filter(x => x !== 'dbDocuments' && x != 'attachedFiles'));
+    const res = _.pick(this, this.accountFields.concat('id').filter(x => x !== 'dbDocuments' && x != 'attachedFiles'));
+    res.username = this.username;
+    return res;
   }
 
   /**
@@ -131,15 +128,13 @@ function buildAccountFields (user: User): void {
 
 function loadAccountData (user: User, params): void {
   user.accountFields.forEach(field => {
-    if (field === 'dbDocuments' || field === 'attachedFiles') {
+    if (field === 'dbDocuments' || field === 'attachedFiles') {
       //console.log('XXXXXX loadAccountData > Ignoring', field);
     } else {
       if (params[field] != null) user[field] = params[field];
     }
   });
-  // temporarily add password because the encryption need to be loded asyncronously
-  // and it could not be done in the contructor
-  if (params.password && !params.passwordHash) {
+  if (params.password ) {
     user.password = params.password;
   }
   if (params.id) {
@@ -149,15 +144,9 @@ function loadAccountData (user: User, params): void {
 
 async function buildEventsFromAccount (user: User): Promise<Array<Event>> {
   const accountLeavesMap: Map<string, SystemStream> = SystemStreamsSerializer.getAccountLeavesMap();
-  
+
   // convert to events
   const account: {} = user.getFullAccount();
-
-  // change password into hash (also allow for tests to pass passwordHash directly)
-  if (user.password != null && user.passwordHash == null) {
-    account.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(user.password, cb));
-  }
-  delete user.password;
 
   const events: Array<Event> = [];
   for (const [streamId, stream] of Object.entries(accountLeavesMap)) {
@@ -198,7 +187,7 @@ function createEvent (
     time: timestamp.now(),
     createdBy: accessId,
     modifiedBy: accessId,
-    attachements: [],
+    attachments: [],
     tags: []
   };
 

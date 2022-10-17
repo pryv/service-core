@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -27,6 +27,7 @@ const WebhooksApp = require('../../src/application');
 const { Webhook, Repository } = require('business').webhooks;
 const repository = new Repository(webhooksStorage, userStorage);
 const HttpServer = require('business/test/acceptance/webhooks/support/httpServer');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const BOOT_MESSAGE = require('../../src/messages').BOOT_MESSAGE;
 
@@ -40,6 +41,7 @@ describe('webhooks', function() {
 
   let mongoFixtures;
   before(async function () {
+    await SystemStreamsSerializer.init();
     mongoFixtures = databaseFixture(await produceMongoConnection());
   });
 

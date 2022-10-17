@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -13,90 +13,40 @@ const charlatan = require('charlatan');
 const { getConfig } = require('@pryv/boiler');
 const testServiceInfo = require('../../../../../test/service-info.json');
 
-describe.skip('config: serviceInfo', () => {
+describe('config: serviceInfo', () => {
   let config;
+  let isOpenSource;
 
   before(async () => {
     config = await getConfig();
+    isOpenSource = config.get('openSource:isActive');
   });
 
-  describe('init()', () => {
-    describe('when dnsLess is active', () => {
-     
-      before(() => {
-        config.injectTestConfig({
-          dnsLess: { isActive: true }
-        });
-      });
 
-      it('[O4I1] should work', async () => {
-        await getConfig();
-      });
-      it('[KEH6] should build serviceInfo', () => {
+  describe('when dnsLess is disabled', () => {
+
+    describe('when "serviceInfoUrl" points to a file', () => {
+      it('[D2P7] should load serviceInfo', () => {
         const serviceInfo = config.get('service');
-        let dnsLessPublicUrl = config.get('dnsLess:publicUrl');
-        if (dnsLessPublicUrl.slice(-1) === '/') dnsLessPublicUrl = dnsLessPublicUrl.slice(0, -1);
-
-        const REG_PATH = '/reg';
-        const WWW_PATH = '/www';
-        
-        const serial = parseInt(serviceInfo.serial.slice(1));        
-
-        assert.approximately(serial, Date.now() / 1000, 5);
-        assert.equal(serviceInfo.api, dnsLessPublicUrl + '/{username}/');
-        assert.equal(serviceInfo.register, dnsLessPublicUrl + REG_PATH + '/');
-        assert.equal(serviceInfo.access, dnsLessPublicUrl + REG_PATH + '/access/');
-        assert.deepEqual(serviceInfo.assets, {
-          definitions: dnsLessPublicUrl + WWW_PATH + '/assets/index.json',
-        });
-      });
-    });
-
-    describe('when dnsLess is disabled', () => {
-      before(() => {
-        config.injectTestConfig({
-          dnsLess: { isActive: false },
-        });
-      });
-
-      describe('when "serviceInfoUrl" points to a file', () => {
-        it('[WOQ8] should work', async () => {
-          await getConfig();
-        });
-        it('[D2P7] should load serviceInfo', () => {
-          const serviceInfo = config.get('service');
+        if (! isOpenSource) {
           assert.deepEqual(serviceInfo, testServiceInfo);
-        });
+        } else {
+          assert.deepEqual(serviceInfo, {
+            access: 'http://localhost:3000/reg/access/',
+            api: 'http://localhost:3000/{username}/',
+            serial: '2019061301',
+            register: 'http://localhost:3000/reg/',
+            name: 'Pryv Lab',
+            home: 'https://sw.pryv.me',
+            support: 'https://pryv.com/helpdesk',
+            terms: 'https://pryv.com/terms-of-use/',
+            eventTypes: 'https://api.pryv.com/event-types/flat.json',
+            assets: { definitions: 'http://localhost:3000/www/assets/index.json' }
+          });
+        }
       });
-
-      describe('when "serviceInfoUrl" points to an online resource', () => {
-
-        let serviceInfo;
-        before(() => {
-          const regUrl = 'https://reg.mydomain.com';
-          const SERVICE_INFO_PATH = '/service/info';
-          config.set('serviceInfoUrl', regUrl + SERVICE_INFO_PATH);
-
-          serviceInfo = {
-            salut: 'abc',
-            encore: 'def',
-            yolo: 123,
-          };
-
-          nock(regUrl)
-            .get(SERVICE_INFO_PATH)
-            .reply(200, serviceInfo);
-        });
-
-        it('[4WYN] should work', async () => {
-          await getConfig();
-        });
-        it('[NY3E] should load serviceInfo', () => {
-          const configServiceInfo = config.get('service');
-          assert.deepEqual(configServiceInfo, serviceInfo);
-        });
-      });
-      
     });
+
   });
+
 });

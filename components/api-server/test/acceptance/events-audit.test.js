@@ -1,10 +1,10 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, it*/
+/* global describe, before, it */
 
 const { getConfig } = require('@pryv/boiler');
 const { databaseFixture } = require('test-helpers');
@@ -22,9 +22,11 @@ describe('Audit logs events', () => {
   let username;
   let auditToken, actionsToken;
   let streamId;
-  before(async () => {
+  before(async function () {
     config = await getConfig();
-  
+    await SystemStreamsSerializer.init();
+    if (config.get('openSource:isActive')) this.skip();
+
     mongoFixtures = databaseFixture(await produceMongoConnection());
 
     username = cuid();
@@ -64,7 +66,7 @@ describe('Audit logs events', () => {
     });
     await user.session(personalToken);
 
-    server = await context.spawn({ 
+    server = await context.spawn({
       dnsLess: { isActive: true }, // so updating account streams does not notify register
       audit: {
         active: true,
@@ -92,6 +94,7 @@ describe('Audit logs events', () => {
   });
 
   after(async () => {
+    if (config.get('openSource:isActive')) return;
     await server.stop();
     await mongoFixtures.clean();
     config.injectTestConfig({});
@@ -139,6 +142,7 @@ describe('Audit logs events', () => {
     it('[0BK7] must not return null values or trashed=false', async () => {
       const res = await get('/events', { streams: [':_audit:action-events.get']}, personalToken);
       const events = res.body.events;
+      assert.isNotNull(events[0]);
       const event = events[0];
       for (const [key, val] of Object.entries(event)) {
         assert.isNotNull(val, `"null" property ${key} of event is present.`);

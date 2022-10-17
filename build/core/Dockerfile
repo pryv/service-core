@@ -5,7 +5,7 @@ ARG DATA_DIR="/app/data"
 # ================================ Gnats =======================================
 # Download and expand the nats-server binary
 WORKDIR /var/spool/nats-server
-RUN sh /app/bin/scripts/setup-nats-server.sh
+RUN /app/bin/scripts/setup-nats-server
 RUN mv ./nats-server/nats-server-v2.3.4-linux-amd64/nats-server /usr/local/bin/
 # ================================ Gnats end =======================================
 
@@ -15,6 +15,6 @@ RUN mkdir -p $DATA_DIR/attachments && \
     chown -R app:app $DATA_DIR
 
 # Clean up after ourselves.
-RUN apt-get remove -y autoconf automake 
+RUN apt-get remove -y autoconf automake
 RUN apt-get autoremove && apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* & rm -rf /app/bin/build

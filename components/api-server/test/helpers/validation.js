@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -17,6 +17,8 @@ const { assert, expect } = require('chai');
 const util = require('util');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { integrity } = require('business');
+const isOpenSource = require('@pryv/boiler').getConfigUnsafe('true').get('openSource:isActive');
 
 /**
  * Expose common JSON schemas.
@@ -51,6 +53,8 @@ var schemas = exports.schemas = {
  * @param {Function} done Optional
  */
 exports.check = function (response, expected, done) {
+  assert.exists(response, '"response" must be a valid HTTP response object');
+
   response.statusCode.should.eql(expected.status);
 
   // ignore common metadata
@@ -60,6 +64,20 @@ exports.check = function (response, expected, done) {
   if (expected.schema) {
     checkJSON(response, expected.schema);
   }
+  // service info .. also expose an "access" property
+  if (response.body.access != null && response.body.api == null) {
+    checkAccessIntegrity(response.body.access);
+  }
+  if (response.body.event != null) {
+    checkEventIntegrity(response.body.event);
+  }
+  if (response.body.events != null) {
+    response.body.events.forEach(checkEventIntegrity);
+  }
+  if (response.body.eventDeletions != null) {
+    response.body.eventDeletions.forEach(checkEventDeletionIntegrity);
+  }
+
   if (expected.sanitizeFn) {
     expect(expected.sanitizeTarget).to.exist;
     expected.sanitizeFn(response.body[expected.sanitizeTarget]);
@@ -74,6 +92,29 @@ exports.check = function (response, expected, done) {
   if (done) { done(); }
 };
 
+function checkEventDeletionIntegrity(e) {
+  //deletion integrity can be null
+  if (e.intergity != null) checkEventIntegrity(e);
+}
+
+function checkEventIntegrity(e) {
+  if (! integrity.events.isActive) return;
+  if (isOpenSource) return;
+  const int = integrity.events.hash(e);
+  if (e.integrity != int) {
+    throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(e, null, 2)));
+  }
+}
+
+function checkAccessIntegrity(access) {
+  if (! integrity.accesses.isActive) return;
+  if (isOpenSource) return;
+  const int = integrity.accesses.hash(access);
+  if (access.integrity != int) {
+    throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(access, null, 2)));
+  }
+}
+
 /**
  * Specific check for errors.
  *
@@ -87,14 +128,14 @@ exports.check = function (response, expected, done) {
 exports.checkError = function (response, expected, done) {
   response.statusCode.should.eql(expected.status);
   checkJSON(response, schemas.errorResult);
-  
+
   const error = response.body.error;
   assert.equal(error.id, expected.id);
 
   if (expected.data != null) {
     assert.deepEqual(error.data, expected.data);
   }
-  
+
   if (done) done();
 };
 
@@ -128,7 +169,7 @@ exports.checkStoredItem = function (item, schemaName) {
 
 function checkMeta(parentObject) {
   expect(parentObject.meta).to.exist;
-  
+
   const meta = parentObject.meta;
 
   assert.match(meta.apiVersion, /^\d+\.\d+\.\d+/);
@@ -144,9 +185,9 @@ exports.checkErrorInvalidParams = function (res, done) {
   expect(res.statusCode).to.equal(400);
 
   checkJSON(res, schemas.errorResult);
-  const body = res.body; 
-  const error = body.error; 
-  
+  const body = res.body;
+  const error = body.error;
+
   expect(error).to.exist;
   expect(error.id).to.equal(ErrorIds.InvalidParametersFormat);
   expect(res.body.error.data).to.exist; // expect validation errors
@@ -198,11 +239,11 @@ exports.checkErrorUnknown = function (res, done) {
  * `actual` and `expected` if not empty).
  */
 exports.checkObjectEquality = checkObjectEquality;
-function checkObjectEquality(actual, expected) {
-  var verifiedProps = [];
-
+function checkObjectEquality(actual, expected, verifiedProps = []) {
+  var isApprox = false;
   if (expected.created) {
     checkApproxTimeEquality(actual.created, expected.created);
+    isApprox = isApprox || actual.created != expected.created ;
   }
   verifiedProps.push('created');
 
@@ -212,11 +253,13 @@ function checkObjectEquality(actual, expected) {
 
   if (expected.modified) {
     checkApproxTimeEquality(actual.modified, expected.modified);
+    isApprox = isApprox || actual.modified != expected.modified ;
   }
   verifiedProps.push('modified');
 
   if (expected.deleted) {
     checkApproxTimeEquality(actual.deleted, expected.deleted);
+    isApprox = isApprox || actual.deleted != expected.deleted ;
   }
   verifiedProps.push('deleted');
 
@@ -227,9 +270,10 @@ function checkObjectEquality(actual, expected) {
   if (expected.children != null) {
     expect(actual.children).to.exist;
     assert.strictEqual(actual.children.length, expected.children.length);
-    
+
     for (var i = 0, n = expected.children.length; i < n; i++) {
-      checkObjectEquality(actual.children[i], expected.children[i]);
+      const subApprox = checkObjectEquality(actual.children[i], expected.children[i]);
+      isApprox = isApprox || subApprox ;
     }
   }
   verifiedProps.push('children');
@@ -238,25 +282,29 @@ function checkObjectEquality(actual, expected) {
   if (expected.attachments != null) {
     expect(actual.attachments).to.exist;
 
-    assert.strictEqual(actual.attachments.length, expected.attachments.length, 
+    assert.strictEqual(actual.attachments.length, expected.attachments.length,
       `Must have ${expected.attachments.length} attachments.`);
-    
-    const expectMap = new Map(); 
+
+    const expectMap = new Map();
     for (let ex of expected.attachments)
       expectMap.set(ex.id, ex);
-    
+
     for (let act of actual.attachments) {
       const ex = expectMap.get(act.id);
       assert.isNotNull(ex);
-      
+
       checkObjectEquality(act, ex);
     }
   }
   verifiedProps.push('attachments');
 
+  // Integrity cannot be checked when "approximate results"
+  if (isApprox) verifiedProps.push('integrity');
+
   const remaining = _.omit(actual, verifiedProps);
   const expectedRemaining = _.omit(expected, verifiedProps);
   assert.deepEqual(remaining, expectedRemaining);
+  return isApprox; //(forward to eventual recursive calls)
 }
 
 function checkApproxTimeEquality(actual, expected, epsilon=2) {
@@ -320,7 +368,7 @@ exports.sanitizeEvent = function (event) {
       delete att.readToken;
     });
   }
-  
+
   return event;
 };
 
@@ -393,33 +441,36 @@ exports.removeAccountStreams = function (streams) {
     }
   }
   return streams;
-}
+};
 
+// TODO: cleanup this mess, we shouldn't have data creation logic in "validation", nor these `require()` mid-file
 exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
-  const {StreamsUtils, getStores} = require('stores');
-  function isShown(storeId) {
-    if (storeId === 'local') return false;
-    if (storesId == null) return true;
-    return storesId.includes(storeId);
-  }
+  const { getMall } = require('mall');
+  const streamsUtils = require('mall/src/helpers/streamsUtils');
 
-  // -- ADD Stores
-  const mainStore = await getStores();
-  for (const source of [...mainStore.stores].reverse()) { // cloning array before reversing it!
-    if (isShown(source.id)) {
-      const stream = StreamsUtils.sourceToStream(source, {
+  // -- ADD stores
+  const mall = await getMall();
+  for (const store of [...mall.stores.values()].reverse()) { // cloning array before reversing it!
+    if (isShown(store.id)) {
+      const stream = streamsUtils.createStoreRootStream(store, {
         children: [],
         childrenHidden: true // To be discussed
       });
       if (atTheEnd) {
-        streams.push(stream)
+        streams.push(stream);
       } else {
         streams.unshift(stream);
       }
     }
-  };
+  }
   return streams;
-}
+
+  function isShown (storeId) {
+    if (storeId === 'local') return false;
+    if (storesId == null) return true;
+    return storesId.includes(storeId);
+  }
+};
 
 /*
  * Strips off item from tracking properties

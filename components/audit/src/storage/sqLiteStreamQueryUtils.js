@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -10,7 +10,7 @@
  * @param {} streamQuery 
  */
 exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
-  if (!streamQuery) return null;
+  if (streamQuery == null) return null;
   
 
   if (streamQuery.length === 1) {
@@ -20,18 +20,20 @@ exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
   }
   
   function processBlock(block) {
+    if (typeof block === 'string') return '"'+block+'"';
     let res = ''; // A OR B
-    const orExists = block.any && block.any.length > 0 && block.any[0] !== '*';
-    if (orExists) { 
+    const allExists = block.any && block.any.length > 0 && block.any[0] !== '*';
+    if (allExists) { 
       if (block.any.length === 1) {
         res += addQuotes(block.any)[0];
       } else {
         res += '(' + addQuotes(block.any).join(' OR ') + ')';
       }
     }
-    if (block.all && block.all.length > 0) {
-      if (orExists) res+= ' AND ';
-      res +=  addQuotes(block.all).join(' AND ');
+    if (block.and && block.and.length > 0) {
+      if (allExists) res+= ' AND ';
+      const subs = block.and.map(processBlock);
+      res +=  subs.join(' AND ');
     }
     if (block.not && block.not.length > 0) { 
       res += ' NOT ';

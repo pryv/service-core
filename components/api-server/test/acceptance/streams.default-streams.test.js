@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -19,6 +19,8 @@ const { databaseFixture } = require('test-helpers');
 const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { defaults: dataStoreDefaults } = require('pryv-datastore');
+const treeUtils = require('utils/src/treeUtils');
 
 describe("System streams", function () {
   let app;
@@ -46,7 +48,7 @@ describe("System streams", function () {
 
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
-  
+
     app = getApplication(true);
     await app.initiate();
 
@@ -56,30 +58,24 @@ describe("System streams", function () {
       emit: (...args) => axonMsgs.push(args),
     };
     pubsub.setTestNotifier(axonSocket);
-    
+
     pubsub.status.emit(pubsub.SERVER_READY);
     require("api-server/src/methods/streams")(app.api);
-  
+
     request = supertest(app.expressApp);
   });
 
   describe('GET /streams', () => {
     describe('When using a personal access', () => {
       it('[9CGO] Should return all streams - including system ones', async () => {
-        const expectedRes = [];
+        const expectedRes = [];
         validation.addStoreStreams(expectedRes)
-        const readableStreams = [
+        let readableStreams = [
           {
-            name: 'account',
+            name: 'Account',
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
             parentId: null,
             children: [
-              {
-                name: 'Username',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('username'),
-                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
-                children: []
-              },
               {
                 name: 'Language',
                 id: SystemStreamsSerializer.addPrivatePrefixToStreamId('language'),
@@ -117,7 +113,7 @@ describe("System streams", function () {
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
               },
-              { 
+              {
                 name: 'Email',
                 id: SystemStreamsSerializer.addCustomerPrefixToStreamId('email'),
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
@@ -127,7 +123,7 @@ describe("System streams", function () {
           },
           {
             id: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
-            name: 'helpers',
+            name: 'Helpers',
             parentId: null,
             children: [
               {
@@ -137,12 +133,20 @@ describe("System streams", function () {
                 children: []
               },
 
-            ] 
+            ]
           }
         ];
 
-        const { UserStreams } = require('stores/interfaces/DataSource')
-        UserStreams.applyDefaults(readableStreams);
+
+        const { DataStore } = require('pryv-datastore')
+
+        readableStreams = treeUtils.cloneAndApply(readableStreams, (s) => {
+          s.createdBy = dataStoreDefaults.SystemAccessId;
+          s.modifiedBy = dataStoreDefaults.SystemAccessId;
+          return s;
+        });
+
+        dataStoreDefaults.applyOnStreams(readableStreams);
 
         expectedRes.push(...readableStreams);
 
@@ -207,7 +211,7 @@ describe("System streams", function () {
           res = await request.delete(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
             .set('authorization', access.token);
         });
-        it('[1R35] should return status 400', async () => { 
+        it('[1R35] should return status 400', async () => {
           assert.equal(res.status, 400);
         });
         it('[4939] should return the correct error', async () => {

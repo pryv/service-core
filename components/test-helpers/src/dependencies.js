@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -27,9 +27,8 @@ var deps = module.exports = {
       accesses: new storage.user.Accesses(database),
       eventFiles: new storage.user.EventFiles(
         config.get('eventFiles'), getLogger('eventFiles')),
-      events: new storage.user.Events(database), 
       followedSlices: new storage.user.FollowedSlices(database),
-      streams: new storage.user.Streams(database),
+      streams: new storage.user.Streams(database), // TODO: reomove when mall is fully implemented for streams
       profile: new storage.user.Profile(database),
       webhooks: new storage.user.Webhooks(database),
     }
@@ -37,6 +36,6 @@ var deps = module.exports = {
 };
 
 const dbDocumentsItems = _.values(_.pick(deps.storage.user, 
-  'accesses', 'events', 'followedSlices', 'streams', 'profile'));
+  'accesses', 'followedSlices', 'profile'));
 const attFilesItems = _.values(_.pick(deps.storage.user, 'eventFiles'));
-deps.storage.size = new storage.Size(deps.storage.user.events, dbDocumentsItems, attFilesItems);
+deps.storage.size = new storage.Size(dbDocumentsItems, attFilesItems);

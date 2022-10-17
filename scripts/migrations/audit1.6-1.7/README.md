@@ -1,4 +1,4 @@
-# HOWTO 
+# HOWTO
 
 1. Mount `/var/log/pryv/audit/pryvio_core/` to `/app/audit` in pryvio_core docker container
 
@@ -22,6 +22,5 @@
 
 
 # License
-Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
-Unauthorized copying of this file, via any medium is strictly prohibited
-Proprietary and confidential
+
+[UNLICENSED](LICENSE)

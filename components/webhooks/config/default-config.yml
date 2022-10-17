@@ -14,3 +14,20 @@ database:
   name: pryv-node
 nats:
   uri: 'nats://127.0.0.1:4222'
+
+integrity:
+  isActive:
+    attachments: true
+    events: true
+    accesses: true
+  algorithm: sha256
+
+backwardCompatibility:
+  systemStreams:
+    prefix:
+      isActive: false
+  tags:
+    isActive: true
+    rootStreamId: 'tags-migrated'
+    streamIdPrefix: 'tag-migrated-'
+    

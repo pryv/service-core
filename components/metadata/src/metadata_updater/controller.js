@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -89,7 +89,7 @@ class Controller {
   // Returns a Flush operation for the update `update`. Acts as a producer. 
   // 
   flushOp(update: PendingUpdate): Operation {
-    return new Flush(update, this.db, this.logger);
+    return new Flush(update);
   }
 }
 

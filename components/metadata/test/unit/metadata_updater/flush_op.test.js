@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -23,17 +23,21 @@ const { databaseFixture } = require('test-helpers');
 
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
-const { Flush, CustomUsersRepository } = require('../../../src/metadata_updater/flush');
+const { Flush } = require('../../../src/metadata_updater/flush');
 const { getLogger } = require('@pryv/boiler');
+const { getMall } = require('mall');
+
+let mall;
 
 describe('Flush', () => {
   const connection = produceMongoConnection();
   const db = produceStorageLayer(connection);
   const logger = getLogger('flush'); 
 
-  const now = 100000;
-  const from = now - 10; 
-  const to = now - 1;
+  const now = Date.now() / 1000;
+  const initialDuration = 100;
+  const fromDeltaTime = initialDuration - 10; 
+  const toDeltaTime = initialDuration - 1;
 
   const modifiedTime = Date.now() / 1e3 ;
   
@@ -46,6 +50,8 @@ describe('Flush', () => {
   // Construct a simple database fixture containing an event to update
   let userId, parentStreamId, eventId, eventWithContentId; 
   before(async () => {
+    mall = await getMall();
+
     userId = cuid(); 
     parentStreamId = cuid(); 
     eventId = cuid(); 
@@ -54,8 +60,10 @@ describe('Flush', () => {
     await pryv.user(userId, {}, (user) => {
       user.stream({id: parentStreamId}, (stream) => {
         stream.event({
+          time: now,
           id: eventId, 
           type: 'series:mass/kg', 
+          description: 'no initial data',
           content: {
             elementType: 'mass/kg', 
             fields: ['value'], 
@@ -63,14 +71,16 @@ describe('Flush', () => {
           }
         });
         stream.event({
+          time: now,
           id: eventWithContentId, 
           type: 'series:mass/kg', 
+          description: 'with initial ' + initialDuration + ' seconds off data ',
           content: {
             elementType: 'mass/kg', 
             fields: ['value'], 
             required: ['value']
           },
-          duration: now + 100,
+          duration: initialDuration,
         });
       });
     });
@@ -83,18 +93,18 @@ describe('Flush', () => {
       const update = makeUpdate(now, { 
         userId: userId, eventId: eventId, 
         author: 'author123', 
-        from: from, 
-        to: to,
+        from: fromDeltaTime, 
+        to: toDeltaTime,
       }); 
-      op = new Flush(update, db, logger);
+      op = new Flush(update);
     });
     
     it('[D5N1] writes event metadata to disk', async () => {
       await op.run();
-      const event = await loadEvent(db, userId, eventId);
+      const event = await mall.events.getOne(userId, eventId);
       assert.strictEqual(event.modifiedBy, 'author123');
       assert.approximately(event.modified, modifiedTime, 3);
-      assert.strictEqual(event.duration, to); 
+      assert.strictEqual(event.duration, toDeltaTime); 
     });
   });
   describe('event with existing metadata', () => {
@@ -104,71 +114,43 @@ describe('Flush', () => {
       const update = makeUpdate(now, { 
         userId: userId, eventId: eventWithContentId, 
         author: 'author123', 
-        from: from, 
-        to: to,
+        from: fromDeltaTime, 
+        to: toDeltaTime,
       }); 
-      op = new Flush(update, db, logger);
+      op = new Flush(update);
     });
     
-    it('[5QO0] doesn\'t modfify duration', async () => {
+    it('[5QO0] doesn\'t modify duration', async () => {
       await op.run(); 
-      const event = await loadEvent(db, userId, eventWithContentId);
+      const event = await mall.events.getOne(userId, eventWithContentId);
       // See fixture above
-      assert.strictEqual(event.duration, now + 100); 
+      assert.strictEqual(event.duration, initialDuration ); 
     });
+
     it('[Z70F] leaves base data intact', async () => {
       await op.run(); 
-      const event = await loadEvent(db, userId, eventWithContentId);
+      const event = await mall.events.getOne(userId, eventWithContentId);
 
       const content = event.content;
       assert.strictEqual(content.elementType, 'mass/kg');
       assert.deepEqual(content.fields, ['value']);
       assert.deepEqual(content.required, ['value']);
     });
-  });
-});
 
-describe('UsersRepository', () => {
-  const connection = produceMongoConnection();
-  const db = produceStorageLayer(connection);
-
-  // Construct and clean a database fixture. 
-  const pryv = databaseFixture(connection);
-  after(function () {
-    pryv.clean(); 
-  });
-
-  // Construct a simple database fixture containing an event to update
-  let userId;
-  let username;
-  before(() => {
-    userId = cuid(); 
-    username = charlatan.App.name(5);
-    return pryv.user(username, { id: userId });
-  });
-
-  let repository: CustomUsersRepository;
-  beforeEach(() => {
-    repository = new CustomUsersRepository(db);
-  });
-  
-  describe('#resolve(name)', () => {
-    it('[80TC] returns the user id', async () => {
-      const user = await repository.resolve(username); 
-      assert.strictEqual(user.id, userId);
+    it('[UD1B] update event duration if over current Duration', async () => {
+      const update = makeUpdate(now, { 
+        userId: userId, eventId: eventWithContentId, 
+        author: 'author123', 
+        from: fromDeltaTime, 
+        to: toDeltaTime + 100,
+      }); 
+      const op2 = new Flush(update);
+      await op2.run(); 
+      const event = await mall.events.getOne(userId, eventWithContentId);
+      // See fixture above
+      assert.strictEqual(event.duration, toDeltaTime + 100 ); 
     });
-    it('[8K9H] caches the user information for a while', async () => {
-      // Prime the cache
-      await repository.resolve(username); 
-      
-      // Disable the database access for now; results can only come from the
-      // cache. 
-      // FLOW (These are not the robots you're looking for).
-      repository.db = null; 
-      
-      const user = await repository.resolve(username); 
-      assert.strictEqual(user.id, userId);
-    });
+
   });
 });
 
@@ -206,11 +188,4 @@ function produceMongoConnection(): storage.Database {
 // 
 function produceStorageLayer(connection: storage.Database): storage.StorageLayer {
   return storage.getStorageLayerSync();
-}
-
-function loadEvent(db: storage.StorageLayer, userId: string, eventId: string): Promise<any> {
-  const user = { id: userId };
-  const query = { id: eventId };
-  return bluebird.fromCallback(
-    cb => db.events.findOne(user, query, null, cb));
 }

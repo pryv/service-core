@@ -1,27 +1,29 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var errors = require('errors').factory,
-  commonFns = require('./helpers/commonFunctions'),
-  mailing = require('./helpers/mailing'),
-  methodsSchema = require('../schema/accountMethods');
+
+const bluebird = require('bluebird');
+
+const errors = require('errors').factory;
+const commonFns = require('./helpers/commonFunctions');
+const mailing = require('./helpers/mailing');
+const methodsSchema = require('../schema/accountMethods');
 
 const { getConfig } = require('@pryv/boiler');
 const { pubsub } = require('messages');
-const { getStorageLayer } = require('storage');
+const { getStorageLayer } = require('storage');
+const { getPlatform } = require('platform');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
-const Registration = require('business/src/auth/registration'),
-  ErrorMessages = require('errors/src/ErrorMessages'),
-  ErrorIds = require('errors').ErrorIds,
-  { getServiceRegisterConn } = require('business/src/auth/service_register'),
-  { getUsersRepository, UserRepositoryOptions} = require('business/src/users');
+const ErrorMessages = require('errors/src/ErrorMessages');
+const ErrorIds = require('errors').ErrorIds;
+const { getUsersRepository, UserRepositoryOptions, getPasswordRules } = require('business/src/users');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-  /**
+/**
  * @param api
  */
 module.exports = async function (api) {
@@ -30,15 +32,14 @@ module.exports = async function (api) {
   const servicesSettings = config.get('services');
   const storageLayer = await getStorageLayer();
   const passwordResetRequestsStorage = storageLayer.passwordResetRequests;
+  const platform = await getPlatform();
+  const passwordRules = await getPasswordRules();
 
-  var emailSettings = servicesSettings.email,
-    requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
+  const emailSettings = servicesSettings.email;
+  const requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // initialize service-register connection
-  const serviceRegisterConn = getServiceRegisterConn();
-  const usersRepository = await getUsersRepository(); 
-
-  const isDnsLess = config.get('dnsLess:isActive') === true;
+  const usersRepository = await getUsersRepository();
 
   // RETRIEVAL
 
@@ -54,15 +55,15 @@ module.exports = async function (api) {
         return next(errors.unexpectedError(err));
       }
     });
-  
+
 
   // UPDATE
 
   api.register('account.update',
-    commonFns.basicAccessAuthorizationCheck,  
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.update.params),
     validateThatAllFieldsAreEditable,
-    notifyServiceRegister,
+    updateDataOnPlatform,
     updateAccount,
     addUserBusinessToContext,
     buildResultData,
@@ -70,11 +71,11 @@ module.exports = async function (api) {
 
   /**
    * Validate if given parameters are allowed for the edit
-   * 
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   *
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   function validateThatAllFieldsAreEditable (context, params, result, next) {
     const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
@@ -87,7 +88,7 @@ module.exports = async function (api) {
           { field: streamId }
         ));
       }
-    })
+    });
     next();
   }
   // CHANGE PASSWORD
@@ -96,21 +97,30 @@ module.exports = async function (api) {
     commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,
+    enforcePasswordRules,
     addUserBusinessToContext,
-    addNewPasswordParameter,
-    updateAccount
+    setPassword
   );
 
   async function verifyOldPassword (context, params, result, next) {
-    try{
+    try {
       const isValid = await usersRepository.checkUserPassword(context.user.id, params.oldPassword);
       if (!isValid) {
-        return next(errors.invalidOperation(
-          'The given password does not match.'));
+        return next(errors.invalidOperation('The given password does not match.'));
       }
       next();
     } catch (err) {
       // handles unexpected errors
+      return next(err);
+    }
+  }
+
+  async function enforcePasswordRules (context, params, result, next) {
+    try {
+      await passwordRules.checkCurrentPasswordAge(context.user.id);
+      await passwordRules.checkNewPassword(context.user.id, params.newPassword);
+      next();
+    } catch (err) {
       return next(err);
     }
   }
@@ -124,8 +134,6 @@ module.exports = async function (api) {
     addUserBusinessToContext,
     sendPasswordResetMail,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_REQUEST));
-
-  
 
   function generatePasswordResetRequest(context, params, result, next) {
     const username = context.user.username;
@@ -146,6 +154,17 @@ module.exports = async function (api) {
       const usersRepository = await getUsersRepository();
       context.userBusiness = await usersRepository.getUserByUsername(context.user.username);
       if (! context.userBusiness) return next(errors.unknownResource('user', context.user.username));
+    } catch (err) {
+      return next(err);
+    }
+    next();
+  }
+
+  async function setPassword(context, params, result, next) {
+    try {
+      const usersRepository = await getUsersRepository();
+      await usersRepository.setUserPassword(context.userBusiness.id, params.newPassword, 'system');
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     } catch (err) {
       return next(err);
     }
@@ -181,9 +200,10 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.resetPassword.params),
     requireTrustedAppFn,
     checkResetToken,
+    enforcePasswordRules,
     addUserBusinessToContext,
-    addNewPasswordParameter,
-    updateAccount,
+    setPassword,
+    destroyPasswordResetToken,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
   );
 
@@ -201,43 +221,33 @@ module.exports = async function (api) {
         if (! reqData) {
           return next(errors.invalidAccessToken('The reset token is invalid or expired'));
         }
+        context.passwordResetRequest = reqData;
         next();
       }
     );
   }
 
-  function addNewPasswordParameter (context, params, result, next) {
-    if (!context.userBusiness.passwordHash) {
-      return next(errors.unexpectedError());
-    }
-    params.update = { password: params.newPassword };
-    next();
-  }
-
-  async function notifyServiceRegister (context, params, result, next) {
-    // no need to update service register if it is single node setup
-    if (isDnsLess) {
-      return next();
-    }
+  async function updateDataOnPlatform (context, params, result, next) {
     try {
       const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
 
       const operations: Array<{}> = [];
       for (const [key, value] of Object.entries(params.update)) {
+        // get previous value of the field;
+        const previousValue = await usersRepository.getOnePropertyValue(context.user.id, key);
+
         operations.push({
-          update: {
-            key,
-            value,
-            isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
-          }
-        })
+          action: 'update',
+          key,
+          value,
+          previousValue,
+          isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
+          isActive: true
+        });
       }
-      await serviceRegisterConn.updateUserInServiceRegister(
-        context.user.username,
-        operations,
-        true,
-        false,
-      );
+
+      await platform.updateUserAndForward(context.user.username, operations);
+
     } catch (err) {
       return next(err);
     }
@@ -246,7 +256,7 @@ module.exports = async function (api) {
 
   async function updateAccount(context, params, result, next) {
     try {
-      const accessId = (context.access?.id) ? context.access.id : UserRepositoryOptions.SYSTEM_USER_ACCESS_ID
+      const accessId = (context.access?.id) ? context.access.id : UserRepositoryOptions.SYSTEM_USER_ACCESS_ID;
       await usersRepository.updateOne(
         context.user,
         params.update,
@@ -259,12 +269,19 @@ module.exports = async function (api) {
     next();
   }
 
+  async function destroyPasswordResetToken(context, params, result, next) {
+    const id = context.passwordResetRequest._id;
+
+    await bluebird.fromCallback(cb => passwordResetRequestsStorage.destroy(id, context.user.username, cb));
+    next();
+  }
+
   /**
    * Build response body for the account update
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   async function buildResultData (context, params, result, next) {
     Object.keys(params.update).forEach(key => {

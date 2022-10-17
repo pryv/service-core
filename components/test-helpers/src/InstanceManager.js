@@ -1,19 +1,18 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var async = require('async'),
-    axon = require('axon'),
-    deepEqual = require('deep-equal'),
-    EventEmitter = require('events').EventEmitter,
-    fs = require('fs'),
-    spawn = require('child_process').spawn,
-    temp = require('temp'),
-    util = require('util');
+const async = require('async');
+const axon = require('axon');
+const EventEmitter = require('events').EventEmitter;
+const fs = require('fs');
+const spawn = require('child_process').spawn;
+const temp = require('temp');
+const util = require('util');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger } = require('@pryv/boiler');
 
 module.exports = InstanceManager;
 
@@ -32,16 +31,15 @@ let spawnCounter = 0;
  * @param {Object} settings Must contain `serverFilePath`, `axonMessaging` and `logging`
  * @constructor
  */
-function InstanceManager(settings) {
+function InstanceManager (settings) {
   InstanceManager.super_.call(this);
 
-  var serverSettings = null,
-      tempConfigPath = temp.path({suffix: '.json'}),
-      serverProcess = null,
-      serverReady = false,
-      messagingSocket = axon.socket('sub-emitter'),
-      logger = getLogger('instance-manager');
-
+  let serverSettings = null;
+  const tempConfigPath = temp.path({ suffix: '.json' });
+  let serverProcess = null;
+  let serverReady = false;
+  const messagingSocket = axon.socket('sub-emitter');
+  const logger = getLogger('instance-manager');
 
   // setup TCP axonMessaging subscription
 
@@ -70,16 +68,15 @@ function InstanceManager(settings) {
     if (typeof settings.logs === 'undefined') settings.logs = {};
     if (typeof settings.logs.console === 'undefined') settings.logs.console = {};
 
-    
     if (process.env.LOGS) {
-      settings.logs.console.active = true; 
+      settings.logs.console.active = true;
       settings.logs.console.level = process.env.LOGS;
     } else {
-      settings.logs.console.active = false; 
+      settings.logs.console.active = false;
     }
 
     logger.debug('ensure started', settings.http);
-    if (deepEqual(settings, serverSettings)) {
+    if (util.isDeepStrictEqual(settings, serverSettings)) {
       if (isRunning()) {
         // nothing to do
         return callback();
@@ -98,6 +95,8 @@ function InstanceManager(settings) {
     this.start(callback);
   };
 
+  this.ensureStartedAsync = util.promisify(this.ensureStarted).bind(this);
+
   /**
    * Just restarts the instance, leaving settings as they are.
    *
@@ -114,10 +113,12 @@ function InstanceManager(settings) {
     this.start(callback);
   };
 
+  this.restartAsync = util.promisify(this.restart).bind(this);
+
   /**
    * @api private
    */
-  this.setup = function() {
+  this.setup = function () {
     // adjust config settings for test instance
     serverSettings.axonMessaging.pubConnectInsteadOfBind = true;
 
@@ -134,7 +135,7 @@ function InstanceManager(settings) {
 
     // write config to temp path
     fs.writeFileSync(tempConfigPath, JSON.stringify(serverSettings, null, 2));
-    var args = ['--config=' + tempConfigPath];
+    const args = ['--config=' + tempConfigPath];
     args.unshift(settings.serverFilePath);
 
     // setup debug if needed (assumes current process debug port is 5858 i.e. default)
@@ -154,15 +155,15 @@ function InstanceManager(settings) {
 
     // start proc
     logger.debug('Starting server instance... with config ' + tempConfigPath);
-    var options = {
+    const options = {
       // Uncomment here if you want to see server output
       stdio: 'inherit',
-      env: {...process.env, PRYV_BOILER_SUFFIX: '-' + spawnCounter++}
+      env: { ...process.env, PRYV_BOILER_SUFFIX: '-' + spawnCounter++ }
     };
     serverProcess = spawn(process.argv[0], args, options);
-    var serverExited = false,
-        exitCode = null;
-    serverProcess.on('exit', function (code/*, signal*/) {
+    let serverExited = false;
+    let exitCode = null;
+    serverProcess.on('exit', function (code/*, signal */) {
       logger.debug('Server instance exited with code ' + code);
       serverExited = true;
       exitCode = code;
@@ -175,7 +176,7 @@ function InstanceManager(settings) {
       callback();
     });
 
-    function isReadyOrExited() {
+    function isReadyOrExited () {
       return serverReady || serverExited;
     }
   };
@@ -188,17 +189,17 @@ function InstanceManager(settings) {
    * @api private
    */
   this.stop = function () {
-    if (! isRunning()) { return; }
+    if (!isRunning()) { return; }
     logger.debug('Killing server instance... ');
-    if (! serverProcess.kill()) {
+    if (!serverProcess.kill()) {
       logger.warn('Failed to kill the server instance (it may have exited already).');
     }
     serverProcess = null;
     serverReady = false;
   };
 
-  function isRunning() {
-    return !! serverProcess;
+  function isRunning () {
+    return !!serverProcess;
   }
 
   process.on('exit', this.stop);

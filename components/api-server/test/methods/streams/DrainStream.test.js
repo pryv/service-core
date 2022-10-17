@@ -1,15 +1,15 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 /*global describe, it*/
 'use strict';
 
-var DrainStream = require('../../../src/methods/streams/DrainStream'),
-    R = require('ramda'),
-    should = require('should');
+const DrainStream = require('../../../src/methods/streams/DrainStream'),
+      _ = require('lodash'),
+      should = require('should');
 
 describe('DrainStream', function () {
 
@@ -19,7 +19,7 @@ describe('DrainStream', function () {
 
     function expectation (err, array) {
       should.not.exist(err);
-      (R.equals(array, input)).should.be.true();
+      (_.isEqual(array, input)).should.be.true();
       done();
     }
 

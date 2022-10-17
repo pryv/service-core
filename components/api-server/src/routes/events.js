@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -17,23 +17,21 @@ const _ = require('lodash');
 const middleware = require('middleware');
 const { setMethodId } = require('middleware');
 const hasFileUpload = require('../middleware/uploads').hasFileUpload;
-const attachmentsAccessMiddleware = require('../middleware/attachment_access');
+const attachmentsAccessMiddlewareFactory = require('../middleware/attachment-access');
+
 
 import type Application  from '../application';
 
 // Set up events route handling.
-module.exports = function(expressApp: express$Application, app: Application) {
+module.exports = async function(expressApp: express$Application, app: Application) {
   const api = app.api;
   const config = app.config;
   const storage = app.storageLayer;
 
-  const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
+
   const filesReadTokenSecret = config.get('auth:filesReadTokenSecret');
 
   const loadAccessMiddleware = middleware.loadAccess(storage);
-
-  const attachmentsStatic = express.static(attachmentsDirPath);
-  
   expressApp.get(Paths.Events + '/',
     setMethodId('events.get'),
     loadAccessMiddleware,
@@ -49,7 +47,8 @@ module.exports = function(expressApp: express$Application, app: Application) {
         skip: 'number',
         limit: 'number',
         modifiedSince: 'number',
-        includeDeletions: 'boolean'
+        includeDeletions: 'boolean',
+        running: 'boolean'
       });
       api.call(req.context, params, methodCallback(res, next, 200));
     });
@@ -73,12 +72,12 @@ module.exports = function(expressApp: express$Application, app: Application) {
   //  and thus if something is missing from the (router-)visible url, something 
   //  will be missing upon file access. 
   // 
+  const attachmentsAccessMiddleware = await attachmentsAccessMiddlewareFactory();
   expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', 
     setMethodId('events.getAttachment'),
     retrieveAccessFromReadToken, 
     loadAccessMiddleware,
-    attachmentsAccessMiddleware(storage.events), 
-    attachmentsStatic
+    attachmentsAccessMiddleware
   );
 
   // Parses the 'readToken' and verifies that the access referred to by id in 
@@ -131,6 +130,8 @@ module.exports = function(expressApp: express$Application, app: Application) {
       const params = req.body;
       if (req.files) {
         params.files = req.files;
+      } else {
+        delete params.files;
       }
       api.call(req.context, params, methodCallback(res, next, 201));
     });

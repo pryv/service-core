@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -22,30 +22,25 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getUsersRepository, User } = require('business/src/users');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
+const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
 
 // users
 const users = exports.users = require('./data/users');
 const defaultUser = users[0];
 
-const customAccountProperties = buildCustomAccountProperties();
-
-
 exports.resetUsers = async () => {
   logger.debug('resetUsers');
   await getConfig(); // lock up to the time config is ready
-  await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
-    { name: 'events' },
-    {
-      streamIds: {
-        $in: SystemStreamsSerializer.getAccountStreamIds(),
-      }
-    }, cb));
-  const usersRepository = await getUsersRepository(); 
-  
+  await SystemStreamsSerializer.init();
+  const customAccountProperties = buildCustomAccountProperties();
+
+  const usersRepository = await getUsersRepository();
+  await usersRepository.deleteAll();
+
   for (const user of users) {
     const userObj: User = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
-    await usersRepository.insertOne(userObj);
+    await usersRepository.insertOne(userObj, false, true);
   }
 };
 
@@ -58,9 +53,9 @@ exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
   if (personalAccessToken) {
     accesses[0].token = personalAccessToken;
   }
-  
+
   if (addToId) {
-    var data = JSON.parse(JSON.stringify(accesses));
+    var data = _.cloneDeep(accesses);
     for (var i = 0; i < data.length; i++) {
       data[i].id += u.id;
     }
@@ -96,19 +91,26 @@ exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
   const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
-
+  let eventsToWrite = events.map(e => {
+    const eventToWrite = _.cloneDeep(e);
+    delete eventToWrite.tags;
+    return eventToWrite;
+  })
+  let mall;
   async.series([
-    storage.user.events.removeMany.bind(storage.user.events, 
-      user,
-      {
-        streamIds: {
-          $nin: allAccountStreamIds
-        }
-      }
-    ),
-    storage.user.events.insertMany.bind(storage.user.events, user, events)
+    async function removeAccountEvents() {
+      mall = await getMall();
+      await mall.events.delete(user.id, {state: 'all', withDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
+    },
+    async function createEvents() {
+      await mall.events.createMany(user.id,  eventsToWrite)
+    },
+    function removeZerosDuration(done2) {
+      events.forEach( e => { if (e.duration === 0) delete e.duration});
+      done2();
+    }
   ], done);
-  
+
 };
 
 // streams
@@ -116,7 +118,27 @@ exports.resetEvents = function (done, user) {
 const streams = exports.streams = require('./data/streams');
 
 exports.resetStreams = function (done, user) {
-  resetData(storage.user.streams, user || defaultUser, streams, done);
+  const myUser = user || defaultUser;
+  let mall = null;
+
+  async function addStreams(arrayOfStreams) {
+    for (const stream of arrayOfStreams) {
+      const children = stream?.children || [];
+      const streamData = _.clone(stream);
+      delete streamData.children;
+      await mall.streams.create(myUser.id, streamData);
+      await addStreams(children);
+    }
+  }
+
+  async.series([
+    async () => {
+      mall = await getMall();
+      await mall.streams.deleteAll(myUser.id, 'local');
+      await addStreams(streams);
+    },
+  ], done)
+
 };
 
 function resetData (storage, user, items, done) {
@@ -137,21 +159,33 @@ const attachments = exports.attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
   document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
   document_modified: getAttachmentInfo('document', 'document.modified.pdf', 'application/pdf'),
-  image: getAttachmentInfo('image', 'image (space and special chars).png', 'image/png'),
+  image: getAttachmentInfo('image', 'image (space and special chars)é__.png', 'image/png'),
   imageBigger: getAttachmentInfo('imageBigger', 'image-bigger.jpg', 'image/jpeg'),
   text: getAttachmentInfo('text', 'text.txt', 'text/plain')
 };
 
+// following https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
+// compute sri with openssl
+// cat FILENAME.js | openssl dgst -sha384 -binary | openssl base64 -A
+// replaces: 'sha256 ' + crypto.createHash('sha256').update(data).digest('hex');
+function getSubresourceIntegrity(filePath) {
+  const algorithm = 'sha256';
+  return algorithm + '-' + childProcess.execSync(`cat "${filePath}" | openssl dgst -${algorithm} -binary | openssl base64 -A`)
+}
+
+
 function getAttachmentInfo(id, filename, type) {
   const filePath = path.join(attachmentsDirPath, filename);
   const data = fs.readFileSync(filePath);
+  const integrity = getSubresourceIntegrity(filePath);
   return {
     id: id,
     filename: filename,
     path: filePath,
     data: data,
     size: data.length,
-    type: type
+    type: type,
+    integrity: integrity,
   };
 }
 
@@ -178,7 +212,8 @@ function copyAttachmentFn(attachmentInfo, user, eventId) {
     } catch (e) {
       return callback(e);
     }
-    storage.user.eventFiles.saveAttachedFile(tmpPath, user, eventId, attachmentInfo.id, callback);
+    storage.user.eventFiles.saveAttachedFileFromTemp(tmpPath, user.id, eventId, attachmentInfo.id).then(
+      (fileID) => { callback(null, fileID); }, (err) => { callback(err); });
   };
 }
 
@@ -294,7 +329,7 @@ function getDumpFilesArchive(dumpFolder) {
 function buildCustomAccountProperties() {
   const accountStreams = getConfigUnsafe(true).get('custom:systemStreams:account');
   if (accountStreams == null) return {};
-  
+
   const customProperties = {};
   accountStreams.forEach(stream => {
     customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);

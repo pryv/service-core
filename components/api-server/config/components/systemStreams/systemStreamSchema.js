@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -21,7 +21,7 @@ module.exports = {
     isShown: boolean({ nullable: false }),
     isEditable: boolean({ nullable: false }),
     isRequiredInValidation: boolean({ nullable: false }),
-    type: string({ minLength: 2 }),
+    type: string({ pattern: '^[a-z0-9-]+\/[a-z0-9-]+$' }),
     parentId: string({ minLength: 2, nullable: true }),
     default: {},
     children: array({'$ref': 'systemStreamsSchema'}, {nullable: true}),

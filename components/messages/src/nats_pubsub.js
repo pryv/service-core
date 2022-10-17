@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -13,6 +13,9 @@ const { encode, decode } = JSONCodec();
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('messages:pubsub:nats');
 
+// Might be set pubsub-setTestNatsDeliverHook() for testing purposes
+let testDeliverHook = null;
+
 let natsConnection = null;
 async function init() {
   if (natsConnection != null) return;
@@ -22,6 +25,7 @@ async function init() {
 
 async function deliver(scopeName, eventName, payload) {
   await init();
+  if (testDeliverHook != null) testDeliverHook(scopeName, eventName, payload);
   logger.debug('deliver', scopeName, eventName, payload);
   if (payload == null) payload = ''; // nats does not support null messages
   if (natsConnection == null) return;
@@ -46,8 +50,13 @@ async function subscribe(scopeName, pubsub) {
   return sub;
 }
 
+function setTestNatsDeliverHook(deliverHook) {
+  testDeliverHook = deliverHook;
+}
+
 module.exports = {
   init,
   deliver,
-  subscribe
+  subscribe,
+  setTestNatsDeliverHook,
 }

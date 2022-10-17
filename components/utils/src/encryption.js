@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -10,19 +10,17 @@
  * Encryption helper functions (wraps bcrypt functionality for hashing).
  */
 
-type Callback = (err?: ?Error, value: mixed) => void;
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 
-var bcrypt = require('bcrypt'),
-    crypto = require('crypto');
-
-var salt = bcrypt.genSaltSync(process.env.NODE_ENV === 'development' ? 1 : 10);
+const salt = bcrypt.genSaltSync(process.env.NODE_ENV === 'development' ? 1 : 10);
 
 /**
  * @param {String} value The value to be hashed.
- * @param {Function} callback (error, hash)
+ * @returns {String} The hash
  */
-exports.hash = function (value: string, callback: Callback) {
-  bcrypt.hash(value, salt, callback);
+exports.hash = async function (value: string) {
+  return await bcrypt.hash(value, salt);
 };
 
 /**
@@ -35,10 +33,10 @@ exports.hashSync = function (value: string): string {
 /**
  * @param {String} value The value to check
  * @param {String} hash The hash to check the value against
- * @param {Function} callback (error, {Boolean} result)
+ * @return {Boolean} True if the value matches the hash
  */
-exports.compare = function (value: string, hash: string, callback: Callback) {
-  bcrypt.compare(value, hash, callback);
+exports.compare = async function (value: string, hash: string) {
+  return await bcrypt.compare(value, hash);
 };
 
 /**
@@ -47,13 +45,9 @@ exports.compare = function (value: string, hash: string, callback: Callback) {
  * @param {String} fileId
  * @param {Object} access
  * @param {String} secret
- * @returns {string}
+ * @returns {String}
  */
-exports.fileReadToken = function(
-  fileId: string, 
-  accessId: string, accessToken: string, 
-  secret: string) 
-{
+exports.fileReadToken = function(fileId: string, accessId: string, accessToken: string, secret: string) {
   return accessId + '-' + getFileHMAC(fileId, accessToken, secret);
 };
 
@@ -73,8 +67,8 @@ exports.parseFileReadToken = function (fileReadToken: string) {
 };
 
 exports.isFileReadTokenHMACValid = function (
-  hmac: string, fileId: string, token: string, 
-  secret: string) 
+  hmac: string, fileId: string, token: string,
+  secret: string)
 {
   return hmac === getFileHMAC(fileId, token, secret);
 };
@@ -84,10 +78,10 @@ function getFileHMAC(fileId, token, secret): string {
   hmac.setEncoding('base64');
   hmac.write(fileId + '-' + token);
   hmac.end();
-  
+
   const base64HMAC = hmac.read();
   if (base64HMAC == null) throw new Error('AF: HMAC cannot be null');
-  
+
   return base64HMAC
     .toString()   // function signature says we might have a buffer here.
     .replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '');

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -30,13 +30,14 @@ exports = module.exports = function (action) {
     'time': number(),
     'duration': number({nullable: true}),
     'streamId': string(),
-    'streamIds': array(string(), { nullable: false }),
+    'streamIds': array(string(), { nullable: false, minItems: 1 }),
     'tags': array(string(), {nullable: true}),
     'type': string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
     'content': {},
     'description': string({nullable: true}),
     'clientData': object({}, {nullable: true}),
-    'trashed': boolean({nullable: true})
+    'trashed': boolean({nullable: true}),
+    'integrity': string({nullable: true}),
   }, {
     id: helpers.getTypeURI('event', action),
     additionalProperties: false
@@ -86,7 +87,8 @@ exports.attachments = array(object({
   fileName: string(),
   type: string(),
   size: number(),
-  readToken: string()
+  readToken: string(),
+  integrity: string()
 }, {
   required: [ 'id', 'fileName', 'type', 'size', 'readToken' ],
   additionalProperties: false

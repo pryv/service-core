@@ -1,10 +1,10 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const { safetyCleanDuplicate } = require('business/src/auth/service_register');
+const { safetyCleanDuplicate } = require('platform/src/service_register');
 const assert = require('chai').assert;
 
 describe('Service Register Errors', function () {

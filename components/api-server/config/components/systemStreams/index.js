@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -13,15 +13,17 @@ const path = require('path');
 const treeUtils = require('utils/src/treeUtils');
 const validation = require('api-server/src/schema/validation');
 const string = require('api-server/src/methods/helpers/string');
-const slugify = require('slug');
 const systemStreamSchema = require('./systemStreamSchema');
-const SystemStream = require('business/src/system-streams/SystemStream');
+import type { SystemStream } from 'business/src/system-streams';
 
 const IS_SHOWN: string = 'isShown';
 const IS_INDEXED: string = 'isIndexed';
 const IS_EDITABLE: string = 'isEditable';
 const IS_UNIQUE: string = 'isUnique';
 const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
+const REGEX_VALIDATION: string = 'regexValidation';
+
+const { defaults: dataStoreDefaults } = require('pryv-datastore');
 
 module.exports.features = {
   IS_SHOWN,
@@ -29,6 +31,7 @@ module.exports.features = {
   IS_EDITABLE,
   IS_UNIQUE,
   IS_REQUIRED_IN_VALIDATION,
+  REGEX_VALIDATION,
 };
 
 const DEFAULT: string = 'default';
@@ -41,7 +44,11 @@ const DEFAULT_VALUES_FOR_FIELDS: {} = {
   [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
   [IS_SHOWN]: true, // if true, will be returned in events.get
   [IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
-  [IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
+  [IS_REQUIRED_IN_VALIDATION]: false, // if true, the field will be required in the validation
+  created: dataStoreDefaults.UnknownDate,
+  modified: dataStoreDefaults.UnknownDate,
+  createdBy: dataStoreDefaults.SystemAccessId,
+  modifiedBy: dataStoreDefaults.SystemAccessId,
 };
 
 /**
@@ -54,20 +61,12 @@ const DEFAULT_VALUES_FOR_FIELDS: {} = {
  */
 function load(config: {}): {} {
   // default system streams that should be not changed
-  let defaultAccountStreams: Array<SystemStream> = 
+  let defaultAccountStreams: Array<SystemStream> =
     [{
       id: 'account',
-      type: 'none',
+      name: 'Account',
+      type: 'none/none',
       children: [
-        {
-          id: 'username',
-          name: 'Username',
-          type: 'identifier/string',
-          [IS_INDEXED]: true,
-          [IS_UNIQUE]: true,
-          [IS_REQUIRED_IN_VALIDATION]: true,
-          [IS_EDITABLE]: false,
-        },
         {
           id: 'language',
           name: 'Language',
@@ -95,13 +94,6 @@ function load(config: {}): {} {
           [IS_EDITABLE]: false,
         },
         {
-          id: 'passwordHash',
-          name: 'Password Hash',
-          type: 'password-hash/string',
-          [IS_SHOWN]: false,
-          [IS_EDITABLE]: false,
-        },
-        {
           id: 'referer',
           name: 'Referer',
           type: 'identifier/string',
@@ -113,7 +105,7 @@ function load(config: {}): {} {
         {
           id: 'storageUsed',
           name: 'Storage used',
-          type: 'data-quantity/b',     
+          type: 'data-quantity/b',
           children: [
             {
               id: 'dbDocuments',
@@ -138,7 +130,8 @@ function load(config: {}): {} {
 
   let helpers: Array<SystemStream> = [{
     id: 'helpers',
-    type: 'none',
+    name: 'Helpers',
+    type: 'none/none',
     children: [
       {
         id: 'active',
@@ -163,7 +156,7 @@ function load(config: {}): {} {
 
   defaultAccountStreams[0].children = defaultAccountStreams[0].children.concat(customAccountStreams);
   const fullAccountStreams: Array<SystemStream> = defaultAccountStreams; // for readability
-  
+
   let otherCustomStreams: Array<SystemStream> = config.get('custom:systemStreams:other');
   if (otherCustomStreams == null) otherCustomStreams = [];
   otherCustomStreams = extendSystemStreamsWithDefaultValues(otherCustomStreams);
@@ -214,12 +207,12 @@ function addParentIdAndChildren(streams: Array<SystemStream>): Array<SystemStrea
 
 /**
  * Extend system stream properties with default values
- * @param {*} streams 
+ * @param {*} streams
  */
 function extendSystemStreamsWithDefaultValues (
   streams: Array<SystemStream>
 ): Array<SystemStream>{
-  return treeUtils.cloneAndApply(streams, s => { 
+  return treeUtils.cloneAndApply(streams, s => {
     const stream = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, s);
     if (stream.name == null) {
       stream.name = stream.id;
@@ -230,7 +223,7 @@ function extendSystemStreamsWithDefaultValues (
 
 /**
  * Adds the prefix to each "id" property of the provided system streams array.
- * 
+ *
  * @param {Array<systemStream>} systemStreams array of system streams
  * @param {string} prefix the prefix to add
  */
@@ -265,23 +258,23 @@ function validateOtherStreams(systemStream: SystemStream): void {
   throwIfNonVisible(systemStream);
 
   function throwIfUnique(systemStream: SystemStream): void {
-    if (systemStream[IS_UNIQUE]) throw new Error('Config error: custom "other" system stream cannot be unique. Only "account" streams can be unique. Stream: ' + 
+    if (systemStream[IS_UNIQUE]) throw new Error('Config error: custom "other" system stream cannot be unique. Only "account" streams can be unique. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
   function throwIfIndexed(systemStream: SystemStream): void {
-    if (systemStream[IS_INDEXED]) throw new Error('Config error: custom "other" system stream cannot be indexed. Only "account" streams can be indexed. Stream: ' + 
+    if (systemStream[IS_INDEXED]) throw new Error('Config error: custom "other" system stream cannot be indexed. Only "account" streams can be indexed. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
   function throwIfNonEditable(systemStream: SystemStream): void {
-    if (! systemStream[IS_EDITABLE]) throw new Error('Config error: custom "other" system stream cannot be non-editable. Only "account" streams can be non-editable. Stream: ' + 
+    if (! systemStream[IS_EDITABLE]) throw new Error('Config error: custom "other" system stream cannot be non-editable. Only "account" streams can be non-editable. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
   function throwIfRequiredAtRegistration(systemStream: SystemStream): void {
-    if (systemStream[IS_REQUIRED_IN_VALIDATION]) throw new Error('Config error: custom "other" system stream cannot be required at registration. Only "account" streams can be required at registration. Stream: ' + 
+    if (systemStream[IS_REQUIRED_IN_VALIDATION]) throw new Error('Config error: custom "other" system stream cannot be required at registration. Only "account" streams can be required at registration. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
   function throwIfNonVisible(systemStream: SystemStream): void {
-    if (! systemStream[IS_SHOWN]) throw new Error('Config error: custom "other" system stream cannot be non visible. Only "account" streams can non visible. Stream: ' + 
+    if (! systemStream[IS_SHOWN]) throw new Error('Config error: custom "other" system stream cannot be non visible. Only "account" streams can non visible. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
 }
@@ -293,7 +286,7 @@ function throwIfNotUnique(
   isBackwardCompatible: boolean = false
 ): Array<Map<string, boolean>> {
   const streamIdWithoutPrefix: string = _removePrefixFromStreamId(streamId);
-  
+
   if (seenWithPrefix[streamId]) {
     throw new Error(`Config error: Custom system stream id duplicate. Remove duplicate custom system stream with streamId: "${streamIdWithoutPrefix}".`);
   } else if (seen[streamIdWithoutPrefix] && isBackwardCompatible) {

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -11,9 +11,7 @@ const { Tags } = require('opentracing');
 
 const ah = require('./hooks');
 
-
 const TRACING_NAME: string = 'api-server';
-
 
 /**
  * Starts jaeger tracer
@@ -22,14 +20,15 @@ const TRACING_NAME: string = 'api-server';
   const config = {
     serviceName: serviceName,
     sampler: { // Tracing all spans. See https://www.jaegertracing.io/docs/1.7/sampling/#client-sampling-configuration
-      type: 'const',
+      type: 'const', // previous was "const" set to ratelimiting to prevent crashes with benchmark
       param: 1,
     },
   };
+  const options = {
+
+  }
   return initJaegerTracer(config, {});
 }
-
-
 
 /**
  * The jaeger tracer singleton
@@ -40,8 +39,6 @@ const TRACING_NAME: string = 'api-server';
    tracerSingleton = initTracer(TRACING_NAME);
    return tracerSingleton;
  }
-
-
 
 /**
  * Object implementing 
@@ -76,7 +73,7 @@ class Tracing {
    * Starts a new span with the given name and tags.
    * The span is a child of the latest span if there is one.
    */
-  startSpan(name: string, tags: ?{}, childOf: ?string): void {
+  startSpan(name: string, tags: ?{}, childOf: ?string): string {
     this.history.push('start ' + name);
     //console.log('started span', name, ', spans present', this.lastIndex+2)
     ///console.log('started span', name, ', spans present', this.lastIndex+2)
@@ -123,6 +120,24 @@ class Tracing {
       span.setTag(key, value);
     }
   }
+
+  /** 
+   * Add log information to span
+   */
+  logForSpan(name: ?string, data: ?object): void {
+    this.history.push('log ' + name + ': ' + JSON.stringify(data));
+    let span;
+    if (name == null) {
+      span = this.spansStack[lastIndex];
+    } else {
+      span = this.spansStack.find(span => span._operationName === name);
+    }
+    if (span == null) {
+      console.log('Cannot find Span for Log: ' + name, this.history);
+    } else {
+      span.log(data);
+    }
+  }
   
   /**
    * Finishes the span with the given name. Throws an error if no span with such a name exists.
@@ -160,7 +175,7 @@ class Tracing {
 class DummyTracing {
   startSpan() {}
   finishSpan() {}
-  logSpan() {}
+  logForSpan() {}
   setError() {}
 }
 

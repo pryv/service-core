@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -42,7 +42,7 @@ class WebhooksService {
     logger: Logger
   }) {
     this.logger = params.logger;
-    this.repository = new WebhooksRepository(params.storage.webhooks, params.storage.events);
+    this.repository = new WebhooksRepository(params.storage.webhooks);
     this.settings = params.settings;
 
     this.NATS_CONNECTION_URI = this.settings.get('nats:uri');

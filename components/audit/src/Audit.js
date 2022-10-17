@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -19,6 +19,7 @@ const validation = require('./validation');
 const { WITHOUT_USER_METHODS_MAP } = require('./ApiMethods');
 const AuditFilter = require('./AuditFilter');
 const { AuditAccessIds } = require('./MethodContextUtils');
+const util = require('util');
 
 /**
  * EventEmitter interface is just for tests syncing for now
@@ -62,12 +63,16 @@ class Audit {
     if (! this.filter.isAudited(methodId)) return;
 
     context.tracing.startSpan('audit.validApiCall');
-
+    
     const userId = context?.user?.id;
     const event = buildDefaultEvent(context);
+    if (context.auditIntegrityPayload != null) {
+      event.content.record = context.auditIntegrityPayload; 
+    }
     event.type = CONSTANTS.EVENT_TYPE_VALID;
     await this.eventForUser(userId, event, methodId);
-    
+
+    context.tracing.logForSpan('audit.validApiCall', {userId, event, methodId});
     context.tracing.finishSpan('audit.validApiCall');
   }
 
@@ -92,7 +97,7 @@ class Audit {
   }
 
   async eventForUser(userId, event) {
-    logger.debug('eventForUser: ' + userId + ' ' + logger.inspect(event));
+    logger.debug('eventForUser: ' + userId + ' ' + util.inspect(event, {breakLength: Infinity, colors: true}));
 
     const methodId = event.content.action;
 

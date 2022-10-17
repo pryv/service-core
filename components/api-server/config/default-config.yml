@@ -10,7 +10,7 @@ reporting:
   licenseName: 'REPLACE ME'
   templateVersion: '1.0.0'
 
-http: 
+http:
   ip: '127.0.0.1'
   port: 3000
 
@@ -26,14 +26,19 @@ database:
 userFiles:
   path: 'REPLACE ME'
 
-eventFiles: 
+eventFiles:
   attachmentsDirPath: 'REPLACE ME'
   previewsDirPath: 'REPLACE ME'
 
 auth:
   filesReadTokenSecret: 'REPLACE ME'
+  passwordComplexityMinCharCategories: 0
+  passwordComplexityMinLength: 0
+  passwordAgeMaxDays: 0
+  passwordAgeMinDays: 0
+  passwordPreventReuseHistoryLength: 0
 
-customExtensions: 
+customExtensions:
   defaultFolder: 'REPLACE ME'
   customAuthStepFn: ''
 
@@ -43,8 +48,8 @@ axonMessaging:
   port: 4000
   pubConnectInsteadOfBind: false
 
-updates: 
-  ignoreProtectedFields: false 
+updates:
+  ignoreProtectedFields: false
 
 influxdb:
   host: 127.0.0.1
@@ -55,7 +60,7 @@ webhooks:
   maxRetries: 5
   runsSize: 20
 
-versioning: 
+versioning:
   forceKeepHistory: false
   deletionMode: 'keep-nothing'
 
@@ -68,6 +73,10 @@ backwardCompatibility:
   systemStreams:
     prefix:
       isActive: false
+  tags:
+    isActive: true
+    rootStreamId: 'tags-migrated'
+    streamIdPrefix: 'tag-migrated-'
 
 custom:
   systemStreams:
@@ -80,14 +89,10 @@ custom:
       type: email/string
       name: Email
       isRequiredInValidation: true
-
-stores:
-  loadExternal: []
+  dataStores: []
 
 caching:
   isActive: true
-  localStreams: true
-  accesses: true
 
 logs:
   console:
@@ -106,3 +111,13 @@ uploads:
 
 trace:
   enable: false
+
+integrity:
+  isActive:
+    attachments: true
+    events: true
+    accesses: true
+  algorithm: sha256
+
+accessTracking:
+  isActive: true

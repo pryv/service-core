@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -10,8 +10,6 @@ const bluebird = require('bluebird');
 const _ = require('lodash');
 
 const Webhook = require('./Webhook');
-const WebhooksStorage = require('storage').StorageLayer.webhooks;
-const UserEventsStorage = require('storage').StorageLayer.events;
 const { getUsersRepository } = require('business/src/users');
 
 /** 
@@ -19,12 +17,9 @@ const { getUsersRepository } = require('business/src/users');
  */
 class Repository {
   storage: WebhooksStorage;
-  userEventsStorage: UserEventsStorage;
 
-  constructor (webhooksStorage: WebhooksStorage, userEventsStorage: UserEventsStorage) {
+  constructor (webhooksStorage: WebhooksStorage) {
     this.storage = webhooksStorage;
-    this.userEventsStorage = userEventsStorage;
-    
   }
 
   /**

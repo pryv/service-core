@@ -1,0 +1,19 @@
+---
+serviceInfoUrl: file://test/service-info.json
+logs:
+  console:
+    active: true
+    level: warn
+database:
+  host: 127.0.0.1
+influxdb:
+  host: 127.0.0.1
+  port: 8086
+nats:
+  uri: nats://127.0.0.1:4222
+services:
+  register:
+    url: http://127.0.0.1:8080
+metadataUpdater:
+  host: 127.0.0.1
+  port: 9000

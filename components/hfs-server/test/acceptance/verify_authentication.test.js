@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -19,19 +19,23 @@ const { databaseFixture } = require('test-helpers');
 const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
 const { getConfig, getLogger } = require('@pryv/boiler');
 
+const { getMall } = require('mall');
+ 
 describe('Metadata Loader', function () {
 
-  let database, config, pryv;
+  let database, config, pryv, mall;
   before(async function () {
     config = await getConfig();
+    await require('business/src/system-streams/serializer').init();
     database = await storage.getDatabase(); 
     pryv = databaseFixture(database);
+    mall = await getMall();
   });
   
 
   let loader; 
   beforeEach(() => {
-    loader = new MetadataLoader(database, getLogger('metadata'));
+    loader = new MetadataLoader(database, mall, getLogger('metadata-test'));
   });
 
   const USER_NAME = 'foo';
@@ -68,6 +72,7 @@ describe('Metadata Cache', function () {
   let config;
   before(async function () {
     config = await getConfig();
+    await require('business/src/system-streams/serializer').init();
   });
   it('[O8AE] returns loaded metadata for N minutes', async () => {
     let n = 0; 
@@ -82,6 +87,7 @@ describe('Metadata Cache', function () {
     
     // FLOW stubbing the value of loader here.
     const cache = new MetadataCache(null, loaderStub, config);
+    await cache.init();
     
     const a = await cache.forSeries('foo', '1234', '5678');
     const b = await cache.forSeries('foo', '1234', '5678');

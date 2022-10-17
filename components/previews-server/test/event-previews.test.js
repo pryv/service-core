@@ -1,13 +1,14 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, beforeEach, it */
+/* global describe, before, beforeEach, it */
+
+const should = require('chai').should(); /* eslint-disable-line */
 
 require('./test-helpers');
-
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -22,15 +23,22 @@ const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const superagent = require('superagent');
+const { getMall } = require('mall');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('event previews', function () {
-
-  let user = Object.assign({}, testData.users[0]);
+  const user = Object.assign({}, testData.users[0]);
   const token = testData.accesses[2].token;
   const basePath = '/' + user.username + '/events';
   let request = null;
+  let mall = null;
 
-  function path(id) {
+  before(async function () {
+    await SystemStreamsSerializer.init();
+    mall = await getMall();
+  });
+
+  function path (id) {
     return basePath + '/' + id;
   }
 
@@ -49,28 +57,27 @@ describe('event previews', function () {
   });
 
   describe('GET /<event id>/preview', function () {
-
-    beforeEach(function(done) {
+    beforeEach(function (done) {
       rimraf(storage.user.eventFiles.settings.previewsDirPath, done);
     });
 
-    it('[NRT9] must return JPEG previews for "picture/attached" events and cache the result', 
-      async function() {
-        const request = helpers.unpatchedRequest(server.url);
+    it('[NRT9] must return JPEG previews for "picture/attached" events and cache the result',
+      async function () {
+        const request = helpers.request(server.url);
         const event = testData.events[2];
 
         const res = await request.get(path(event.id), token);
-          
+
         await checkSizeFits(res.body, {}, { width: 256, height: 256 });
-        
+
         res.statusCode.should.eql(200);
         res.header['content-type'].should.eql('image/jpeg');
-        
+
         const eventFiles = storage.user.eventFiles;
         const cachedPath = eventFiles.getPreviewFilePath(user, event.id, 256);
-        
+
         const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
-        
+
         modified.toString().should.eql(event.modified.toString());
       });
 
@@ -85,28 +92,27 @@ describe('event previews', function () {
     });
 
     it('[PBC1] must adjust the desired size to the bigger standard size (if exists)', async function () {
-      const request = helpers.unpatchedRequest(server.url);
+      const request = helpers.request(server.url);
       const event = testData.events[2];
 
-      const res = await request.get(path(event.id), token).query({h: 280});
-      
-      await checkSizeFits(res.body, {height: 280}, { width: 512, height: 512 });
-      
+      const res = await request.get(path(event.id), token).query({ h: 280 });
+
+      await checkSizeFits(res.body, { height: 280 }, { width: 512, height: 512 });
+
       res.statusCode.should.eql(200);
       res.header['content-type'].should.eql('image/jpeg');
     });
 
     it('[415L] must limit the desired size to the biggest standard size if too big', async function () {
-      const request = helpers.unpatchedRequest(server.url);
+      const request = helpers.request(server.url);
       const event = testData.events[2];
 
       // due to the test image's aspect ratio, the height will exceed the biggest dimension (1024)
       const res = await request
         .get(path(event.id), token)
-        .query({width: 280});
-        
-      
-      await checkSizeFits(res.body, {width: 280}, { width: 1024, height: 1024 });
+        .query({ width: 280 });
+
+      await checkSizeFits(res.body, { width: 280 }, { width: 1024, height: 1024 });
 
       res.statusCode.should.eql(200);
       res.header['content-type'].should.eql('image/jpeg');
@@ -118,16 +124,16 @@ describe('event previews', function () {
      * @param {Object} maxTargetSize
      * @param done
      */
-    async function checkSizeFits(imageBuffer, minTargetSize, maxTargetSize) {
+    async function checkSizeFits (imageBuffer, minTargetSize, maxTargetSize) {
       const size = await bluebird.fromCallback(
-        (cb) => gm(imageBuffer).size({bufferStream: true}, cb));
-              
+        (cb) => gm(imageBuffer).size({ bufferStream: true }, cb));
+
       assert.isAtLeast(size.width, minTargetSize.width || 0);
       assert.isAtMost(size.width, maxTargetSize.width);
-      
+
       assert.isAtLeast(size.height, minTargetSize.height || 0);
       assert.isAtMost(size.height, maxTargetSize.height);
-      
+
       assert.isTrue(
         size.width === maxTargetSize.width || size.height === maxTargetSize.height,
         'Either dimension needs to be maxed out.'
@@ -138,7 +144,7 @@ describe('event previews', function () {
       const event = testData.events[2];
       let cachedPath, cachedStats;
       async.series([
-        function retrieveInitialPreview(stepDone) {
+        function retrieveInitialPreview (stepDone) {
           request.get(path(event.id), token).end(function (res) {
             res.statusCode.should.eql(200);
             cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
@@ -146,17 +152,17 @@ describe('event previews', function () {
             stepDone();
           });
         },
-        function retrieveAgain(stepDone) {
+        function retrieveAgain (stepDone) {
           request.get(path(event.id), token).end(function (res) {
             res.statusCode.should.eql(200);
-            
+
             const newStats = fs.statSync(cachedPath);
 
-            // The file should not have been recreated. By comparing ino and 
-            // birthtimeMs, we assume that the file is the same. 
+            // The file should not have been recreated. By comparing ino and
+            // birthtimeMs, we assume that the file is the same.
             assert.strictEqual(newStats.ino, cachedStats.ino);
             assert.strictEqual(newStats.birthtimeMs, cachedStats.birthtimeMs);
-            
+
             stepDone();
           });
         }
@@ -164,11 +170,15 @@ describe('event previews', function () {
     });
 
     it('[2MME] must regenerate the cached file if obsolete', function (done) {
-      const event = testData.events[2];
+      const eventId = testData.events[2].id;
+      let event;
       let cachedPath, cachedFileModified, updatedEvent;
       async.series([
-        async function retrieveInitialPreview() {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
+        async function retrieveEvent () {
+          event = await mall.events.getOne(user.id, eventId);
+        },
+        async function retrieveInitialPreview () {
+          const res = await bluebird.fromCallback(cb => request.get(path(eventId), token).end((res) => {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
@@ -176,18 +186,15 @@ describe('event previews', function () {
           const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           cachedFileModified = modified.toString();
         },
-        function updateEvent(stepDone) {
-          const update = {
+        async function updateEvent () {
+          Object.assign(event, {
             description: 'Updated',
             modified: timestamp.now(),
             modifiedBy: testData.accesses[2].id
-          };
-          storage.user.events.updateOne(user, {id: event.id}, update, function (err, updatedEvt) {
-            updatedEvent = updatedEvt;
-            stepDone();
           });
+          updatedEvent = await mall.events.update(user.id, event);
         },
-        async function retrieveAgain() {
+        async function retrieveAgain () {
           const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
             cb(null, res);
           }));
@@ -231,16 +238,16 @@ describe('event previews', function () {
     });
 
     it('[QUM3] must return a proper error if event data is corrupted (no attachment object)', (done) => {
-      const data = { streamIds: [ testData.streams[2].id ], type: 'picture/attached' };
+      const data = { streamIds: [testData.streams[2].id], type: 'picture/attached' };
       let createdEvent;
       async.series([
-        function addCorruptEvent(stepDone) {
-          storage.user.events.insertOne(user, data, function (err, event) {
+        function addCorruptEvent (stepDone) {
+          mall.events.create(user.id, data).then((event) => {
             createdEvent = event;
             stepDone();
-          });
+          }, stepDone);
         },
-        function getPreview(stepDone) {
+        function getPreview (stepDone) {
           request.get(path(createdEvent.id), token).end(function (res) {
             res.statusCode.should.eql(422);
             res.body.error.id.should.eql(errors.ErrorIds.CorruptedData);
@@ -255,17 +262,17 @@ describe('event previews', function () {
       const filePath = storage.user.eventFiles.getAttachedFilePath(user, event.id, event.attachments[0].id);
       const tempPath = filePath + '_bak';
       async.series([
-        function removeFile(stepDone) {
+        function removeFile (stepDone) {
           fs.rename(filePath, tempPath, stepDone);
         },
-        function getPreview(stepDone) {
+        function getPreview (stepDone) {
           request.get(path(event.id), token).end(function (res) {
             res.statusCode.should.eql(422);
             res.body.error.id.should.eql(errors.ErrorIds.CorruptedData);
             stepDone();
           });
         },
-        function restoreFile(stepDone) {
+        function restoreFile (stepDone) {
           fs.rename(tempPath, filePath, stepDone);
         }
       ], done);
@@ -278,18 +285,16 @@ describe('event previews', function () {
         done();
       });
     });
-
   });
 
   describe('POST /clean-up-cache', function () {
-
     const basePath = '/' + user.username + '/clean-up-cache';
 
     it('[FUYE] must clean up cached previews not accessed for one week by default', function (done) {
       const event = testData.events[2];
       let aCachedPath, anotherCachedPath;
       async.series([
-        async function retrieveAPreview() {
+        async function retrieveAPreview () {
           const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
             cb(null, res);
           }));
@@ -297,24 +302,24 @@ describe('event previews', function () {
           aCachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
           // add delay as the attribute is written after the response is sent
           setTimeout(
-            async function() {
+            async function () {
               const lastAccessed = await xattr.get(aCachedPath, 'user.pryv.lastAccessed');
               assert.isNotNull(lastAccessed);
             }, 50);
         },
-        async function retrieveAnotherPreview() {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).query({h: 511}).end((res) => {
+        async function retrieveAnotherPreview () {
+          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).query({ h: 511 }).end((res) => {
             cb(null, res);
           }));
           assert.strictEqual(res.statusCode, 200);
           anotherCachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 512);
           await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
         },
-        async function hackLastAccessTime() {
+        async function hackLastAccessTime () {
           const twoWeeksAgo = timestamp.now('-2w');
           await xattr.set(aCachedPath, 'user.pryv.lastAccessed', twoWeeksAgo.toString());
         },
-        async function cleanupCache() {
+        async function cleanupCache () {
           const res = await bluebird.fromCallback(cb => request.post(basePath, token).end((res) => {
             cb(null, res);
           }));
@@ -348,7 +353,5 @@ describe('event previews', function () {
       const stat = fs.statSync(cachedPath);
       assert.isNotNull(stat);
     });
-
   });
-
 });

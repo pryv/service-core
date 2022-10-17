@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -105,52 +105,6 @@ module.exports = [
     id: 'a_5',
     token: 'a_5_token',
     apiEndpoint: 'https://a_5_token@userzero.pryv.me/',
-    name: 'app-with-just-tag-permissions',
-    type: 'app',
-    permissions: [
-      {
-        tag: 'super',
-        level: 'contribute'
-      },
-      {
-        tag: 'fragilistic',
-        level: 'read'
-      }
-    ],
-    created: timestamp.now(),
-    createdBy: 'test',
-    modified: timestamp.now(),
-    modifiedBy: 'test',
-    lastUsed: 0,
-    calls: {}
-  },
-  {
-    id: 'a_6',
-    token: 'a_6_token',
-    apiEndpoint: 'https://a_6_token@userzero.pryv.me/',
-    name: 'app-with-both-stream-and-tag-permissions',
-    type: 'app',
-    permissions: [
-      {
-        streamId: streams[0].id,
-        level: 'contribute'
-      },
-      {
-        tag: 'fragilistic',
-        level: 'read'
-      }
-    ],
-    created: timestamp.now(),
-    createdBy: 'test',
-    modified: timestamp.now(),
-    modifiedBy: 'test',
-    lastUsed: 0,
-    calls: {}
-  },
-  {
-    id: 'a_7',
-    token: 'a_7_token',
-    apiEndpoint: 'https://a_7_token@userzero.pryv.me/',
     name: 'deleted shared (should expire)',
     type: 'shared',
     permissions: [
@@ -167,4 +121,47 @@ module.exports = [
     calls: {},
     deleted: timestamp.now('-3y1d')
   },
+  {
+    id: 'a_6',
+    token: 'a_6_token',
+    apiEndpoint: 'https://a_6_token@userzero.pryv.me/',
+    name: 'stream 2.1: manage',
+    type: 'shared',
+    permissions: [
+      {
+        streamId: streams[2].children[1].id,
+        level: 'manage'
+      }
+    ],
+    created: timestamp.now(),
+    createdBy: 'test',
+    modified: timestamp.now(),
+    modifiedBy: 'test',
+    lastUsed: 0,
+    calls: {}
+  },
+  /*{ // used to generate dump 1.7.1 - to remove when finished
+    id: 'a_6',
+    token: 'a_6_token',
+    apiEndpoint: 'htpps://a_6_token@user-system-perms.pryv.me/',
+    name: 'access with system stream permissions',
+    type: 'app',
+    permissions: [
+      {
+        streamId: '.account',
+        level: 'read',
+      },
+      {
+        streamId: '.email',
+        level: 'contribute',
+      },
+    ],
+    created: timestamp.now('-1y'),
+    createdBy: 'test',
+    modified: timestamp.now('-1y'),
+    modifiedBy: 'test',
+    lastUsed: timestamp.now('-1m'),
+    calls: {},
+    deleted: timestamp.now('-1m')
+  }*/
 ];

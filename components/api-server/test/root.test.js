@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -23,9 +23,20 @@ const superagent = require('superagent'); // for basic auth
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
+const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { getConfig } = require('@pryv/boiler');
+const { integrity } = require('business');
 
-describe('root', function() {
+let isAuditActive = false;
+
+describe('[ROOT] root', function() {
   let user, user2;
+
+  before(async () => {
+    const config = await getConfig();
+    isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
+  });
+
 
   let mongoFixtures;
   before(async function () {
@@ -41,6 +52,7 @@ describe('root', function() {
       sharedAccessToken, sharedAccess,
       stream, streamId, 
       stream2, streamId2,
+      stream3, streamId3,
       username2, appAccess2Token;
   before(() => {
     username = cuid();
@@ -51,6 +63,7 @@ describe('root', function() {
     appAccess2Token = cuid();
     streamId = cuid();
     streamId2 = cuid();
+    streamId3 = cuid();
     username2 = '00000';
   });
 
@@ -73,6 +86,7 @@ describe('root', function() {
     await stream.event();
     stream = stream.attrs;
     stream2 = await user.stream({ id: streamId2 });
+    stream3 = await user.stream({ id: streamId3 });
     await stream2.event();
     stream2 = stream.attrs;
     await user.access({
@@ -100,7 +114,7 @@ describe('root', function() {
     user2 = await mongoFixtures.user(username2, {
       id: 'u_2',
       password: 't3st-Numb3r',
-      email: '00000@test.com',
+      email: '00001@test.com',
       language: 'en'
     });
     await user2.access({
@@ -178,7 +192,7 @@ describe('root', function() {
       validation.checkMeta(res.body);
     });
 
-    it('[P06Y] should properly translate the Host header\'s username (i.e. subdomain)', async function() {
+    it('[P06Y] should properly translate the Host header\'s username (i.e. subdomain)', async function() {
       const res = await server.request()
         .get('/events')
         .set('Authorization', appAccessToken1)
@@ -222,7 +236,7 @@ describe('root', function() {
 
     it('[VJTP] should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields', async function() {
       const res = await server.request()
-        .post('/' + username + '/streams/' + streamId)
+        .post('/' + username + '/streams/' + streamId3)
         .type('form')
         .query({ mergeEventsWithParent: false })
         .send({ _auth: appAccessToken1 })
@@ -240,7 +254,7 @@ describe('root', function() {
       assert.equal(res.status, 400);
     });
 
-    it('[J2WP] should update the access\'s "last used" time and *internal* request counters', async function() {
+    it('[J2WP] trackingFunctions should update the access\'s "last used" time and *internal* request counters', async function() {
       let expectedTime;
       const calledMethodKey = 'events:get';
       let originalCallCount;
@@ -312,13 +326,11 @@ describe('root', function() {
         .set('Authorization', sharedAccessToken);
       
       // extend sharedAccess with audit rights
-      sharedAccess.permissions.push({
-        streamId: ':_audit:access-' + sharedAccess.id, 
-        level: 'read'});
-      sharedAccess.permissions.push({
-        streamId: ':_audit:actions', 
-        limitations: { 'events.get': {streams: { all: [ 'access-' + sharedAccess.id ] } } },
-        level: 'read'});
+      if (isAuditActive) {
+        sharedAccess.permissions.push({
+          streamId: ':_audit:access-' + sharedAccess.id, 
+          level: 'read'});
+      }
 
       validation.check(
         res,
@@ -488,9 +500,11 @@ describe('root', function() {
           {
             id: results[0].event.id,
             tags: [],
+            integrity: results[0].event.integrity
           },
           _.extend(calls[0].params, { streamId: calls[0].params.streamIds[0]})
-        )
+        ),
+        integrity.events.isActive ? [] : ['integrity']
       );
 
       assert.exists(results[1].event);
@@ -499,9 +513,14 @@ describe('root', function() {
         _.defaults(
           {
             id: results[1].event.id,
+            integrity: results[1].event.integrity
           },
-          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
-        )
+          _.extend(calls[1].params, { 
+            streamId: calls[1].params.streamIds[0],
+            streamIds: calls[1].params.streamIds.concat(calls[1].params.tags.map(t => TAG_PREFIX + t))
+          }),
+        ),
+        integrity.events.isActive ? [] : ['integrity']
       );
       assert.exists(results[2].error);
       assert.equal(results[2].error.id, ErrorIds.UnknownReferencedResource);
@@ -563,9 +582,11 @@ describe('root', function() {
           {
             tags: [],
             id: results[1].event.id,
+            integrity: results[1].event.integrity 
           },
-          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]}),
-        )
+          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
+        ),
+        integrity.events.isActive ? []: ['integrity']
       );
 
       const getEventsResult = results[2];

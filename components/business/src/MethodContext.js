@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -20,7 +20,7 @@ const { getUsersRepository } = require('business/src/users');
 import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
-const { getStores, StreamsUtils } = require('stores');
+const { getMall, streamsUtils } = require('mall');
 
 const cache = require('cache');
 
@@ -59,7 +59,7 @@ class MethodContext {
 
   accessToken: ?string;
   callerId: ?string;
-  headers: ?object; // used in custom auth function
+  headers: ?{}; // used in custom auth function
 
   methodId: ?string; // API method id. Ex.: 'events.get'
 
@@ -69,9 +69,12 @@ class MethodContext {
   customAuthStepFn: ?CustomAuthFunction;
 
   methodId: ?string;
-  stores: Store;
+  mall: Mall;
 
   _tracing: ?Tracing;
+
+  // events get
+  acceptStreamsQueryNonStringified: ?boolean;
 
   /**
    * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
@@ -83,7 +86,6 @@ class MethodContext {
     username: string,
     auth: ?string,
     customAuthStepFn: ?CustomAuthFunction,
-    eventsStorage: ?StorageLayer,
     headers: Map<string, any>,
     query: ?{},
     tracing: ?Tracing,
@@ -91,7 +93,7 @@ class MethodContext {
     this.source = source;
 
     this.user = { id: null, username: username};
-    this.stores = null;
+    this.mall = null;
     this.access = null;
 
     this.customAuthStepFn = customAuthStepFn;
@@ -101,7 +103,6 @@ class MethodContext {
     this.headers = headers;
 
     this.methodId = null;
-    SystemStreamsSerializer.getSerializer(); // ensure it's loaded
     if (auth != null) this.parseAuth(auth);
     this.originalQuery = _.cloneDeep(query);
     if (this.originalQuery?.auth) delete this.originalQuery.auth;
@@ -140,9 +141,9 @@ class MethodContext {
     }
   }
 
-  // Load the userId and stores 
+  // Load the userId and mall 
   async init() {
-    this.stores = await getStores();
+    this.mall = await getMall();
     const usersRepository = await getUsersRepository();
     this.user = { 
       id: await usersRepository.getUserIdForUsername(this.user.username),
@@ -153,7 +154,7 @@ class MethodContext {
 
   // Retrieve the userBusiness
   async retrieveUser() {
-    this.stores = await getStores();
+    this.mall = await getMall();
     try {
       // get user details
       const usersRepository = await getUsersRepository();
@@ -215,8 +216,7 @@ class MethodContext {
         'Cannot find access from token.', 403);
       
     this.access = new AccessLogic(this.user.id, access);
-    cache.setForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, this.access.token, this.access);
-    cache.setForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, this.access.id, this.access);
+    cache.setAccessLogic(this.user.id, this.access);
   }
 
   // Internal: Loads `this.access`. 
@@ -229,7 +229,7 @@ class MethodContext {
         'The access token is missing: expected an ' +
         '"Authorization" header or an "auth" query string parameter.');
 
-    this.access = cache.getForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, token);
+    this.access = cache.getAccessLogicForToken(this.user.id, token);
     
     if (this.access == null) { // retreiveing from Db
       await this._retrieveAccess(storage, {token: token})
@@ -255,7 +255,7 @@ class MethodContext {
   // 
   async retrieveAccessFromId(storage: StorageLayer, accessId: string): Promise<Access> {
 
-    this.access = cache.getForUserId(this.user.id, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, accessId);
+    this.access = cache.getAccessLogicForId(this.user.id, accessId);
 
     if (this.access == null) {
       await this._retrieveAccess(storage, { id: accessId });
@@ -315,7 +315,7 @@ class MethodContext {
    * @returns 
    */
   async streamForStreamId(streamId: string, storeId: string) {
-    return await this.stores.streams.getOne(this.user.id, streamId, storeId);
+    return await this.mall.streams.getOne(this.user.id, streamId, storeId);
   }
 
   initTrackingProperties(item: any, authorOverride: ?string) {

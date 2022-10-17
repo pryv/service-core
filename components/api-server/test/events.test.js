@@ -1,12 +1,12 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 /*global describe, before, beforeEach, it */
 
-require('./test-helpers'); 
+require('./test-helpers');
 
 const bluebird = require('bluebird');
 const helpers = require('./helpers');
@@ -28,6 +28,9 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const supertest = require('supertest');
+const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { integrity } = require('business');
+const { getMall } = require('mall');
 
 require('date-utils');
 
@@ -40,6 +43,12 @@ describe('events', function () {
       request = null,
       access = null,
       filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
+
+  let mall;
+
+  before(async function() {
+    mall = await getMall();
+  });
 
   function path(id, base) {
     return (base || basePath) + '/' + id;
@@ -69,7 +78,7 @@ describe('events', function () {
     ], done);
   });
 
-  describe('XXXXGET /', function () {
+  describe('GET /', function () {
 
     before(resetEvents);
 
@@ -92,7 +101,9 @@ describe('events', function () {
         let allEvents;
         let accountStreamsEvents;
         async.series([
-          storage.insertMany.bind(storage, user, additionalEvents),
+          async function createEvents() { 
+            return mall.events.createMany(user.id,  additionalEvents)
+          },
           function getDefault (stepDone) {
             request.get(basePath).end(function (res) {
               response = res;
@@ -264,7 +275,7 @@ describe('events', function () {
           }, done);
         });
       });
-    
+
     it('[W5IT] must take into account fromTime and toTime even if set to 0', function (done) {
       const params = {
         fromTime: 0,
@@ -285,12 +296,12 @@ describe('events', function () {
         }, done);
       });
     });
-    
+
     it('[Y6SY] must take into account modifiedSince even if set to 0', function (done) {
       var params = {
         modifiedSince: 0
       };
-      
+
       request.get(basePath).query(params).end(function (res) {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
         res.body.events = separatedEvents.events;
@@ -423,6 +434,22 @@ describe('events', function () {
       });
     });
 
+    it('[C3HU] must return an error if withDeletions is given as parameter', function (done) {
+      var params = {
+        state: 'all',
+        modifiedSince: timestamp.now('-45m'),
+        includeDeletions: true,
+        withDeletions: true
+      };
+
+      request.get(basePath).query(params).end(async function (res) {
+        res.body.should.have.property('error');
+        res.body.error.should.have.property('id', 'invalid-parameters-format');
+        done();
+      });
+    });
+
+
     it('[B766] must include event deletions (since that time) when requested', function (done) {
       var params = {
         state: 'all',
@@ -434,7 +461,13 @@ describe('events', function () {
       });
       var eventDeletions = events.filter(function (e) {
         return (e.deleted && e.deleted > timestamp.now('-45m'));
+      }).map(function (e) { 
+        if (e.type != null) {
+          return {id: e.id, deleted: e.deleted};
+        }
+        return e;
       });
+
       events = validation.removeDeletionsAndHistory(events).filter(function (e) {
         return (e.modified >= timestamp.now('-45m'));
       });
@@ -464,31 +497,12 @@ describe('events', function () {
       });
     });
 
-    it('[ESLZ] must not keep event deletions past a certain time ' +
-        '(cannot test because cannot force-run Mongo\'s TTL cleanup task)'
-      //TODO do this test when cleanup is delegated to nightlyTask
-    /*, function (done) {
-      var params = {
-        state: 'all',
-        modifiedSince: timestamp.now('-5y'),
-        includeDeletions: true
-      };
-      request.get(basePath).query(params).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result
-        });
-        res.body.eventDeletions.should.eql(_.at(testData.events, 13, 14))
-        done();
-      });
-    }*/);
-
     it('[V72A] must only return running period event(s) when requested', function (done) {
       var params = {
         running: true
       };
       var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
-        return (typeof e.duration !== 'undefined') && e.duration === null;
+        return e.duration === null;
       }).sort(function (a, b) {
         return b.time - a.time;
       });
@@ -536,7 +550,7 @@ describe('events', function () {
         res.statusCode.should.eql(200);
         res.body.event.should.have.property('attachments');
         res.body.event.attachments.forEach(attachment => {
-          attachment.should.have.property('readToken');          
+          attachment.should.have.property('readToken');
         });
 
         done();
@@ -568,6 +582,31 @@ describe('events', function () {
         }
       ], done);
     });
+
+    it('[ZDY4] must accept special chars in Content-Disposition header', function (done) {
+      var event = testData.events[0],
+          attIndex = 1;
+      async.waterfall([
+        function retrieveAttachmentInfo(stepDone) {
+          request.get(basePath).query({sortAscending: true, streams: event.streamIds[0] }).end(function (res) {
+            stepDone(null, res.body.events[0].attachments[attIndex]);
+          });
+        },
+        function retrieveAttachedFile(att, stepDone) {
+          request.get(path(event.id) + '/' + att.id)
+              .unset('Authorization')
+              .query({readToken: att.readToken})
+              .end(function (res) {
+            res.statusCode.should.eql(200);
+            res.headers.should.have.property('content-type', att.type);
+            res.headers.should.have.property('content-length', att.size.toString());
+            res.headers.should.have.property('content-disposition', 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(att.fileName) );
+            stepDone();
+          });
+        }
+      ], done);
+    });
+
 
     it('[TN27] must allow a filename path suffix after the file id', function (done) {
       var event = testData.events[0],
@@ -670,7 +709,7 @@ describe('events', function () {
     beforeEach(resetEvents);
 
     it('[1GR6] must create an event with the sent data, returning it', function (done) {
-      var data = {
+      const data = {
         time: timestamp.fromDate('2012-03-22T10:00'),
         duration: timestamp.duration('55m'),
         type: 'temperature/celsius',
@@ -687,22 +726,40 @@ describe('events', function () {
         modified: timestamp.now('-1h'),
         modifiedBy: 'should-be-ignored'
       };
-      var originalCount,
-          createdEventId,
-          created;
+      const processedTags = ['patapoumpoum'];
+      const processedStreamIds = data.streamIds.concat(processedTags.map(t => TAG_PREFIX + t));
+      const expected = _.cloneDeep(data);
+      expected.tags = processedTags;
+      expected.streamIds = processedStreamIds;
+      expected.streamId = data.streamIds[0];
+
+      let originalCount;
+      let createdEventId;
+      let created;
 
       async.series([
-        function countInitialEvents(stepDone) {
-          storage.countAll(user, function (err, count) {
-            originalCount = count;
-            stepDone();
-          });
+        async function countInitialEvents() {
+          const events = await mall.events.get(user.id, {});
+          originalCount = events.length;
         },
         function addNewEvent(stepDone) {
           request.post(basePath).send(data).end(function (res) {
+            const event = res?.body.event;
+            assert.exists(event);
+            assert.notEqual(event.created, data.created);
+            assert.notEqual(event.createdBy, data.createdBy);
+            assert.notEqual(event.modified, data.modified);
+            assert.notEqual(event.modifiedBy, data.modifiedBy);
+            expected.created = event.created;
+            expected.createdBy = event.createdBy;
+            expected.modified = event.modified;
+            expected.modifiedBy = event.modifiedBy;
+            expected.id = event.id;
+            integrity.events.set(expected);
             validation.check(res, {
               status: 201,
-              schema: methodsSchema.create.result
+              schema: methodsSchema.create.result,
+              body: { event: expected },
             });
             created = timestamp.now();
             createdEventId = res.body.event.id;
@@ -710,25 +767,25 @@ describe('events', function () {
             stepDone();
           });
         },
-        function verifyEventData(stepDone) {
-          storage.find(user, {}, null, function (err, events) {
-            events.length.should.eql(originalCount + 1, 'events');
+        async function verifyEventData() {
+          const events = await mall.events.get(user.id, {});
 
-            var expected = _.clone(data);
-            expected.streamId = expected.streamIds[0];
-            expected.id = createdEventId;
-            expected.tags = ['patapoumpoum'];
-            expected.created = expected.modified = created;
-            expected.createdBy = expected.modifiedBy = access.id;
-            var actual = _.find(events, function (event) {
-              return event.id === createdEventId;
-            });
-            actual.streamId = actual.streamIds[0]; 
-            validation.checkStoredItem(actual, 'event');
-            validation.checkObjectEquality(actual, expected);
+          events.length.should.eql(originalCount + 1, 'events');
 
-            stepDone();
+          var expected = _.clone(data);
+
+          expected.streamId = expected.streamIds[0];
+          expected.id = createdEventId;
+          expected.streamIds = expected.streamIds.concat(['patapoumpoum'].map(t => TAG_PREFIX + t));
+          delete expected.tags; // tags are not stored anymore
+          expected.created = expected.modified = created;
+          expected.createdBy = expected.modifiedBy = access.id;
+          var actual = _.find(events, function (event) {
+            return event.id === createdEventId;
           });
+          actual.streamId = actual.streamIds[0];
+          validation.checkStoredItem(actual, 'event');
+          validation.checkObjectEquality(actual, expected);
         }
       ], done);
     });
@@ -753,7 +810,7 @@ describe('events', function () {
         done();
       });
     });
-    
+
     it('[6BVW] must accept explicit null for optional fields', function (done) {
       const data = {
         type: 'test/null',
@@ -819,7 +876,7 @@ describe('events', function () {
         validation.checkErrorInvalidParams(res, done);
       });
     });
-    
+
     it('[O7Y2] must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');
       var data = {
@@ -851,23 +908,6 @@ describe('events', function () {
       });
     });
 
-    it('[0IHM] must try casting string event content to number if appropriate', function (done) {
-      var data = {
-        streamId: testData.streams[2].id,
-        type: 'mass/kg',
-        content: '75.3'
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        });
-
-        res.body.event.content.should.equal(+data.content);
-
-        done();
-      });
-    });
 
     it('[UL6Y] must not stop the running period event if the stream allows overlapping', function (done) {
       var data = {
@@ -886,12 +926,13 @@ describe('events', function () {
             }, stepDone);
           });
         },
-        function verifyData(stepDone) {
-          storage.findOne(user, {id: testData.events[11].id}, null, function (err, event) {
-            // HERE
-            event.should.eql(testData.events[11]);
-            stepDone();
-          });
+        async function verifyData() {
+          const event = await mall.events.getOne(user.id, testData.events[11].id);
+          // HERE
+          // as event comes from storage we will not find "tags"
+          const expected = _.cloneDeep(testData.events[11]);
+          delete expected.tags;
+          event.should.eql(expected);
         }
       ], done);
     });
@@ -985,13 +1026,26 @@ describe('events', function () {
       });
     });
 
+    it('[Z87W] must not accept an empty streamIds array', (done) => {
+      request.post(basePath).send({
+        streamIds: [],
+        type: 'note/txt',
+        content: 'i should return an error!',
+      }).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidParametersFormat
+        }, done);
+      });
+    });
+
   });
 
   describe('POST / (multipart content)', function () {
 
     beforeEach(resetEvents);
 
-    it('[4CUV] must create a new event with the uploaded files', function (done) {
+    it('[4CUV] must create a new event with the uploaded files', function (finalDone) {
       var data = {
         time: timestamp.now(),
         type: 'wisdom/test',
@@ -1001,55 +1055,89 @@ describe('events', function () {
         streamIds: [testData.streams[0].id],
         tags: ['houba']
       };
-      request.post(basePath)
-        .field('event', JSON.stringify(data))
-        .attach('document', testData.attachments.document.path,
+      async.series([
+        postEventsWithAttachments,
+        checkEvents,
+      ], finalDone);
+
+
+      let createdEvent; // set by postEventsWithAttachments reused by checkEvents
+      let expected; // set by postEventsWithAttachments reused by checkEvents
+      function postEventsWithAttachments(done) {
+        request.post(basePath)
+          .field('event', JSON.stringify(data))
+          .attach('document', testData.attachments.document.path,
             testData.attachments.document.filename)
-        .attach('image', testData.attachments.image.path,
+          .attach('image', testData.attachments.image.path,
             testData.attachments.image.filename)
-        .end(function (res) {
-          validation.check(res, {
-            status: 201,
-            schema: methodsSchema.create.result
-          });
+          .end(function (res) {
+            validation.check(res, {
+              status: 201,
+              schema: methodsSchema.create.result
+            });
 
-          var createdEvent = res.body.event;
-          validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
-          validation.sanitizeEvent(createdEvent);
+            createdEvent = res.body.event;
 
-          var expected = _.extend({
-            id: createdEvent.id,
-            attachments: [
-              {
-                id: createdEvent.attachments[0].id,
-                fileName: testData.attachments.document.filename,
-                type: testData.attachments.document.type,
-                size: testData.attachments.document.size
-              },
-              {
-                id: createdEvent.attachments[1].id,
-                fileName: testData.attachments.image.filename,
-                type: testData.attachments.image.type,
-                size: testData.attachments.image.size
-              }
-            ],
-            streamIds: data.streamIds,
-          }, data);
-          validation.checkObjectEquality(createdEvent, expected);
+            validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
+            validation.sanitizeEvent(createdEvent);
+            expected = _.extend(data, {
+              id: createdEvent.id,
+              integrity: createdEvent.integrity,
+              attachments: [
+                {
+                  id: createdEvent.attachments[0].id,
+                  fileName: testData.attachments.document.filename,
+                  type: testData.attachments.document.type,
+                  size: testData.attachments.document.size,
+                  integrity: testData.attachments.document.integrity
+                },
+                {
+                  id: createdEvent.attachments[1].id,
+                  fileName: testData.attachments.image.filename,
+                  type: testData.attachments.image.type,
+                  size: testData.attachments.image.size,
+                  integrity: testData.attachments.image.integrity
+                }
+              ],
+              streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+            });
 
-          // check attached files
-          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+            expected.created = createdEvent.created;
+            expected.createdBy = createdEvent.createdBy;
+            expected.modified = createdEvent.modified;
+            expected.modifiedBy = createdEvent.modifiedBy;
+            if (! integrity.attachments.isActive) {
+              delete expected.attachments[0].integrity;
+              delete expected.attachments[1].integrity;
+            }
+            if (! integrity.events.isActive) {
+              delete expected.integrity;
+            }
+            integrity.events.set(expected);
+            validation.checkObjectEquality(createdEvent, expected);
+
+            // check attached files
+            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
               createdEvent.attachments[0].id,
               testData.attachments.document.filename).should.equal('');
-          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
               createdEvent.attachments[1].id,
               testData.attachments.image.filename).should.equal('');
 
 
-          eventsNotifCount.should.eql(1, 'events notifications');
+            eventsNotifCount.should.eql(1, 'events notifications');
 
+            done();
+          });
+      }
+
+      function checkEvents(done) {
+        request.get(basePath + '/' + createdEvent.id).end(function (res) {
+          validation.checkObjectEquality(validation.sanitizeEvent(res.body.event), expected);
           done();
         });
+      };
+
     });
 
     it('[HROI] must properly handle part names containing special chars (e.g. ".", "$")', function (done) {
@@ -1075,18 +1163,27 @@ describe('events', function () {
         });
 
         var createdEvent = validation.sanitizeEvent(res.body.event);
-        var expected = _.extend({
+        var expected = _.extend(data, {
           id: createdEvent.id,
           attachments: [
             {
               id: createdEvent.attachments[0].id,
               fileName: 'file.name.with.many.dots.pdf',
               type: testData.attachments.document.type,
-              size: testData.attachments.document.size
+              size: testData.attachments.document.size,
+              integrity: testData.attachments.document.integrity
             }
           ],
-          streamIds: [data.streamIds[0]],
-        }, data);
+          streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+          integrity: createdEvent.integrity
+        });
+
+        if (! integrity.attachments.isActive) {
+          delete expected.attachments[0].integrity;
+        }
+        if (! integrity.events.isActive) {
+          delete expected.integrity;
+        }
         validation.checkObjectEquality(createdEvent, expected);
 
         // check attached files
@@ -1111,10 +1208,10 @@ describe('events', function () {
         }, done);
       });
     });
-    
+
     it('[R8ER] must return an error if there is more than one non-file content part', function (done) {
       request.post(basePath)
-        .field('event', 
+        .field('event',
           JSON.stringify({ streamIds: [testData.streams[0].id], type: testType }))
         .field('badPart', 'text')
         .end(function (res) {
@@ -1140,7 +1237,7 @@ describe('events', function () {
           .attach('text', testData.attachments.text.path,
               testData.attachments.text.fileName)
           .end(function (res) {
-            time = timestamp.now();
+
             validation.check(res, {
               status: 200,
               schema: methodsSchema.update.result
@@ -1159,29 +1256,30 @@ describe('events', function () {
             expected.attachments = [];
             updatedEvent.attachments.forEach(function (attachment) {
               if (attachment.fileName === testData.attachments.image.filename) {
-                expected.attachments.push(
-                  {
-                    id: attachment.id,
-                    fileName: testData.attachments.image.filename,
-                    type: testData.attachments.image.type,
-                    size: testData.attachments.image.size
-                  }
-                );
+                const attData = {
+                  id: attachment.id,
+                  fileName: testData.attachments.image.filename,
+                  type: testData.attachments.image.type,
+                  size: testData.attachments.image.size,
+                };
+                if (integrity.attachments.isActive) attData.integrity = testData.attachments.image.integrity;
+                expected.attachments.push(attData);
               }
               if (attachment.fileName === testData.attachments.text.filename) {
-                expected.attachments.push(
-                  {
-                    id: attachment.id,
-                    fileName: testData.attachments.text.filename,
-                    type: testData.attachments.text.type,
-                    size: testData.attachments.text.size
-                  }
-                );
+               const attData = {
+                  id: attachment.id,
+                  fileName: testData.attachments.text.filename,
+                  type: testData.attachments.text.type,
+                  size: testData.attachments.text.size
+                }
+                if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
+                expected.attachments.push(attData);
               }
             });
-            expected.modified = time;
+            expected.modified = updatedEvent.modified;
             expected.modifiedBy = access.id;
             expected = _.defaults(expected, event);
+            integrity.events.set(expected);
 
             validation.checkObjectEquality(updatedEvent, expected);
 
@@ -1205,8 +1303,8 @@ describe('events', function () {
 
         request
           .post(path(event.id))
-          .attach('text', 
-            testData.attachments.text.path, 
+          .attach('text',
+            testData.attachments.text.path,
             testData.attachments.text.fileName)
           .end(function (res) {
             validation.check(res, {
@@ -1216,16 +1314,18 @@ describe('events', function () {
 
             var updatedEvent = validation.sanitizeEvent(res.body.event);
             var expectedAttachments = event.attachments.slice();
-            expectedAttachments.push({
+            const attData = {
               id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
               fileName: testData.attachments.text.filename,
               type: testData.attachments.text.type,
-              size: testData.attachments.text.size
-            });
+              size: testData.attachments.text.size,
+            };
+            if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
+            expectedAttachments.push(attData);
 
-            const attachments = updatedEvent.attachments; 
+            const attachments = updatedEvent.attachments;
             should(attachments.length).be.eql(expectedAttachments.length);
-            
+
             attachments.should.eql(expectedAttachments);
 
             attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
@@ -1242,7 +1342,7 @@ describe('events', function () {
 
   describe('GET /<id>', () => {
     beforeEach(resetEvents);
-    
+
     it('[8GSS] allows access at level=read', async () => {
       const request = supertest(server.url);
       const access = _.find(testData.accesses, (v) => v.id === 'a_2');
@@ -1302,19 +1402,16 @@ describe('events', function () {
             expected.modified = time;
             expected.modifiedBy = access.id;
             expected.attachments = original.attachments;
-            expected.streamIds = data.streamIds;
+            expected.streamIds = data.streamIds.concat(expected.tags.map(t => TAG_PREFIX + t));
             validation.checkObjectEquality(res.body.event, expected);
 
             eventsNotifCount.should.eql(1, 'events notifications');
             stepDone();
           });
         },
-        function verifyStoredItem(stepDone) {
-          storage.database.findOne(storage.getCollectionInfo(user), {_id: original.id}, {},
-              function (err, dbEvent) {
-            dbEvent.endTime.should.eql(data.time + data.duration);
-            stepDone();
-          });
+        async function verifyStoredItem() {
+          const dbEvent = await mall.events.getOne(user.id, original.id);
+          dbEvent.duration.should.eql(data.duration);
         }
       ], done);
     });
@@ -1342,19 +1439,23 @@ describe('events', function () {
         });
 
         should(res.body.event.modified).be.approximately(time, 2);
-        var expected = _.clone(original);
-        delete expected.modified; 
+        var expected = _.cloneDeep(original);
+        delete expected.modified;
         expected.modifiedBy = access.id;
         expected.streamId = expected.streamIds[0];
-        _.extend(expected.clientData, data.clientData);
+        expected.modified = res.body.event.modified;
+        expected.created = res.body.event.created;
+        expected.clientData = _.extend(expected.clientData, data.clientData);
+
         delete expected.clientData.numberProp;
+        integrity.events.set(expected);
         validation.checkObjectEquality(res.body.event, expected);
 
         eventsNotifCount.should.eql(1, 'events notifications');
         done();
       });
     });
-    
+
     it('[FM3G] must accept explicit null for optional fields', function (done) {
       const data = {
         type: 'test/null',
@@ -1421,7 +1522,7 @@ describe('events', function () {
         streamId: testData.streams[0].id
       };
       let eventId;
-      
+
       beforeEach(function (done) {
         request.post(basePath).send(event).end(function (res) {
           validation.check(res, {
@@ -1432,7 +1533,7 @@ describe('events', function () {
           done();
         });
       });
-    
+
       it('[L15U] must prevent update of protected fields and throw a forbidden error in strict mode',
         function (done) {
           const forbiddenUpdate = {
@@ -1443,7 +1544,7 @@ describe('events', function () {
             modified: 1,
             modifiedBy: 'alice'
           };
-            
+
           async.series([
             function instanciateServerWithStrictMode(stepDone) {
               setIgnoreProtectedFieldUpdates(false, stepDone);
@@ -1459,7 +1560,7 @@ describe('events', function () {
             }
           ], done);
         });
-        
+
       it('[6NZ7] must prevent update of protected fields and log a warning in non-strict mode',
         function (done) {
           const forbiddenUpdate = {
@@ -1502,7 +1603,7 @@ describe('events', function () {
 
     it('[CUM3] must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');
-      
+
       request.put(path(testData.events[1].id)).send({tags: [bigTag]})
         .end(function (res) {
           validation.check(res, {
@@ -1599,12 +1700,14 @@ describe('events', function () {
         expected.attachments = expected.attachments.slice();
         // NOTE We cannot be sure that we still are at the exact same second that
         // we were just now when we did the call. So don't use time here, test
-        // for time delta below. 
-        delete expected.modified; 
+        // for time delta below.
+        delete expected.modified;
         expected.modifiedBy = access.id;
+        expected.modified = updatedEvent.modified;
         expected.attachments.shift();
+        integrity.events.set(expected);
         validation.checkObjectEquality(updatedEvent, expected);
-        
+
         var time = timestamp.now();
         should(updatedEvent.modified).be.approximately(time, 2);
 
@@ -1658,12 +1761,18 @@ describe('events', function () {
     it('[73CD] must delete the event when already trashed including all its attachments', function (done) {
       var id = testData.events[0].id,
           deletionTime;
+      let event;
 
       async.series([
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
+          async function getEvent() {
+            event = await mall.events.getOne(user.id, id);
+          },
+          async function trashEvent() {
+            event.trashed = true;
+            await mall.events.update(user.id, event);
+          },
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {
-              deletionTime = timestamp.now();
 
               validation.check(res, {
                 status: 200,
@@ -1674,26 +1783,19 @@ describe('events', function () {
               stepDone();
             });
           },
-          function verifyEventData(stepDone) {
-            storage.findAll(user, null, async function (err, events) {
-              const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
-              events = separatedEvents.events;
-              const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-              validation.validateAccountEvents(actualAccountStreamsEvents);
+          async function verifyEventData() {
+            let events = await mall.events.get(user.id, {state: 'all', deletedSince: 0});
 
-              events.length.should.eql(testData.events.length, 'events');
-
-              var deletion = _.find(events, function (event) {
-                return event.id === id;
-              });
-              should.exist(deletion);
-              validation.checkObjectEquality(deletion, { id: id, deleted: deletionTime });
-
-              var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
-              fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
-
-              stepDone();
+            var deletion = _.find(events, function (event) {
+              return event.id === id;
             });
+            should.exist(deletion);
+            const expected = { id: id, deleted: deletion.deleted };
+            integrity.events.set(expected);
+            validation.checkObjectEquality(deletion, expected);
+
+            var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
+            fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
           }
         ],
         done

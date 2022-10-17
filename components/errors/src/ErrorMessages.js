@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -26,7 +26,7 @@ const ErrorMessages = {
   [ErrorIds.InvalidInvitationToken]: 'Invalid invitation token',
   [ErrorIds.MissingRequiredField]: 'Missing required field',
   [ErrorIds.DeniedStreamAccess]: 'It is forbidden to access this stream.',
-  [ErrorIds.TooHighAccessForAccountStreams]: 'Only read and contribute accesses are allowed for the account streams',
+  [ErrorIds.TooHighAccessForSystemStreams]: 'Only read, create-only and contribute accesses are allowed for system streams',
   [ErrorIds.EmailRequired]: 'Email is required',
   [ErrorIds.PasswordRequired]: 'Password is required',
   [ErrorIds.InvalidPassword]: 'Password should have between 5 and 23 characters',
@@ -37,6 +37,7 @@ const ErrorMessages = {
   [ErrorIds.ForbiddenToEditNoneditableAccountFields]: 'It is forbidden to edit non-editable acccount fields.',
   [ErrorIds.UnexpectedError]: 'Unexpected error',
   [ErrorIds.NewPasswordFieldIsRequired]: 'newPassword field is required.',
+  IndexedParameterInvalidFormat: 'Indexed parameters must be numbers or strings if required.',
 };
 Object.freeze(ErrorMessages);
 

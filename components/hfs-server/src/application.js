@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -13,7 +13,10 @@ const {getConfig, getLogger, boiler} = require('@pryv/boiler').init({
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
-  },{
+  }, {
+    scope: 'defaults-paths',
+    file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
+  }, {
     scope: 'defaults-data',
     file: path.resolve(__dirname, '../config/default-config.yml')
   }, {
@@ -32,6 +35,7 @@ const Context = require('./context');
 const Server = require('./server'); 
 
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const opentracing = require('opentracing');
 const initTracer = require('jaeger-client').initTracer;
@@ -49,11 +53,13 @@ async function createContext(
   const influx = new business.series.InfluxConnection({host: host, port: port}); 
   
   const mongo = await storage.getDatabase();
+  
     
   const tracer = produceTracer(config, getLogger('jaeger'));
   const typeRepoUpdateUrl = config.get('service:eventTypes');
     
   const context = new Context(influx, mongo, tracer, typeRepoUpdateUrl, config);
+  await context.init();
   
   if (config.has('metadataUpdater:host')) {
     const mdHost = config.get('metadataUpdater:host'); 
@@ -111,6 +117,7 @@ class Application {
   async init() {
     this.logger = getLogger('application');
     this.config = await getConfig();
+    await SystemStreamsSerializer.init();
     await setCommonMeta.loadSettings();
 
     

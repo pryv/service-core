@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -12,11 +12,12 @@ const systemStreamsConfig = require('api-server/config/components/systemStreams'
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfig } = require('@pryv/boiler');
 const treeUtils = require('utils/src/treeUtils');
+const { defaults: dataStoreDefaults } = require('pryv-datastore');
 
 const PRIVATE_PREFIX = ':_system:';
 const CUSTOMER_PREFIX = ':system:';
 
-describe('SystemStreams config', () => {
+describe('XXXSystemStreams config', () => {
   let store;
   let customRootStreamId = 'myNewStream';
 
@@ -25,12 +26,15 @@ describe('SystemStreams config', () => {
     [systemStreamsConfig.features.IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
     [systemStreamsConfig.features.IS_SHOWN]: true, // if true, will be returned in events.get
     [systemStreamsConfig.features.IS_EDITABLE]: true, // if true, user will be allowed to edit through events.put
-    [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: false // if true, the field will be required in the validation
+    [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: false, // if true, the field will be required in the validation
+    created: dataStoreDefaults.UnknownDate,
+    modified: dataStoreDefaults.UnknownDate,
+    createdBy: dataStoreDefaults.SystemAccessId,
+    modifiedBy: dataStoreDefaults.SystemAccessId,
   };
 
   after(async () => {
-    const config = await getConfig();
-    SystemStreamsSerializer.reloadSerializer(config);
+    await SystemStreamsSerializer.reloadSerializer();
   });
 
   describe('when valid custom systemStreams are provided', () => {
@@ -78,28 +82,29 @@ describe('SystemStreams config', () => {
           }
         ],
       };
-      
+
       store = new nconf.Provider();
       store.use('memory');
       store.set('custom:systemStreams', customStreams);
+      store.set('NODE_ENV', 'test');
       systemStreamsConfig.load(store);
-      SystemStreamsSerializer.reloadSerializer(store);
+      await SystemStreamsSerializer.reloadSerializer(store);
 
       customStreamIds = treeUtils.flattenTree(customStreams.account)
         .concat(treeUtils.flattenTree(customStreams.other))
         .map(s => SystemStreamsSerializer.addCustomerPrefixToStreamId(s.id));
     });
 
-    
+
     it('[GB8G] must set default values and other fields', () => {
       const systemStreams = store.get('systemStreams');
       for (const streamId of customStreamIds) {
         const configStream = treeUtils.findById(
-          customStreams.account, 
+          customStreams.account,
           SystemStreamsSerializer.removePrefixFromStreamId(streamId))
-          || 
+          ||
           treeUtils.findById(
-            customStreams.other, 
+            customStreams.other,
             SystemStreamsSerializer.removePrefixFromStreamId(streamId));
         const systemStream = treeUtils.findById(systemStreams, streamId)
         for (const [key, value] of Object.entries(systemStream)) {
@@ -122,7 +127,7 @@ describe('SystemStreams config', () => {
     it('[KMT3] must prefix default streams with the Pryv prefix', () => {
       const systemStreams = store.get('systemStreams');
       [ 'account',
-        'username', 'language', 'appId', 'invitationToken', 'passwordHash', 'referer', 'storageUsed', 'dbDocuments', 'attachedFiles',
+        'username', 'language', 'appId', 'invitationToken', 'referer', 'storageUsed', 'dbDocuments', 'attachedFiles',
         'helpers', 'active', 'unique'
       ].forEach(streamId => {
         assert.exists(treeUtils.findById(PRIVATE_PREFIX + streamId));
@@ -141,7 +146,7 @@ describe('SystemStreams config', () => {
 
   describe('When retro-compatibility is activated and a streamId unicity conflict exists between a custom system streamId and a default one', () => {
     it('[3Z9N] must throw a config error', () => {
-      const streamId = 'username';
+      const streamId = 'language';
       const customStreams = {
         account: [
           {
@@ -195,26 +200,47 @@ describe('SystemStreams config', () => {
   });
 
   describe('When providing a custom system stream that is unique but not indexed', () => {
-    it('[42A1] must throw a config error', async () => {
+    it('[42A1] must throw a config error', () => {
       const store = new nconf.Provider();
       store.use('memory');
       store.set('custom:systemStreams:account',
         [
           {
-              id: 'faulty-params',
-              type: 'string/pryv',
-              [systemStreamsConfig.features.IS_INDEXED]: false,
-              [systemStreamsConfig.features.IS_UNIQUE]: true,
-            },
-          ]
-        );
+            id: 'faulty-params',
+            type: 'string/pryv',
+            [systemStreamsConfig.features.IS_INDEXED]: false,
+            [systemStreamsConfig.features.IS_UNIQUE]: true,
+          },
+        ]
+      );
       try {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw.');
       } catch (err) {
         assert.include(err.message, 'Config error: custom system stream cannot be unique and not indexed. Stream: ');
       }
-      
+
+    });
+  });
+
+  describe('When providing a custom system stream that has an invalid type', () => {
+    it.skip('[LU0A] must throw a config error', () => {
+      const store = new nconf.Provider();
+      store.use('memory');
+      store.set('custom:systemStreams:account',
+        [
+          {
+            id: 'faulty-type',
+            type: 'hellow', // not supporting the (^[a-z0-9-]+/[a-z0-9-]+$) format
+          },
+        ]
+      );
+      try {
+        systemStreamsConfig.load(store);
+        assert.fail('supposed to throw.');
+      } catch (err) {
+        assert.include(err.message, 'Config error: custom system stream cannot be unique and not indexed. Stream: ');
+      }
     });
   });
 
@@ -240,7 +266,7 @@ describe('SystemStreams config', () => {
     });
   });
 
-  describe('When providing an other custom stream that is indexed', () => {
+  describe('When providing an "other" custom stream that is indexed', () => {
     it('[2IBL] must throw a config error', async () => {
       const store = new nconf.Provider();
       store.use('memory');
@@ -262,7 +288,7 @@ describe('SystemStreams config', () => {
     });
   });
 
-  describe('When providing an other custom stream that is non editable', () => {
+  describe('When providing an "other" custom stream that is non editable', () => {
     it('[655X] must throw a config error', async () => {
       const store = new nconf.Provider();
       store.use('memory');
@@ -284,7 +310,7 @@ describe('SystemStreams config', () => {
     });
   });
 
-  describe('When providing an other custom stream that is required at registration', () => {
+  describe('When providing an "other" custom stream that is required at registration', () => {
     it('[OJJ0] must throw a config error', async () => {
       const store = new nconf.Provider();
       store.use('memory');
@@ -302,28 +328,6 @@ describe('SystemStreams config', () => {
         assert.fail('supposed to throw.');
       } catch (err) {
         assert.include(err.message, 'Config error: custom "other" system stream cannot be required at registration. Only "account" streams can be required at registration. Stream: ');
-      }
-    });
-  });
-
-  describe('When providing an other custom stream that is not visible', () => {
-    it('[TY42] must throw a config error', async () => {
-      const store = new nconf.Provider();
-      store.use('memory');
-      store.set('custom:systemStreams:other',
-        [
-          {
-              id: 'faulty-params',
-              type: 'string/pryv',
-              [systemStreamsConfig.features.IS_SHOWN]: false,
-            },
-          ]
-        );
-      try {
-        systemStreamsConfig.load(store);
-        assert.fail('supposed to throw.');
-      } catch (err) {
-        assert.include(err.message, 'Config error: custom "other" system stream cannot be non visible. Only "account" streams can non visible. Stream: ');
       }
     });
   });

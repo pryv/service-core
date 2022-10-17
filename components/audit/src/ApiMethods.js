@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -50,7 +50,9 @@ const ALL_METHODS = [
   'events.create',
   'events.update',
   'events.delete',
+  'events.getAttachment',
   'events.deleteAttachment',
+  'system.checkPlatformIntegrity',
   'system.createUser',
   'system.deactivateMfa',
   'system.getUserInfo',
@@ -62,6 +64,7 @@ const NOT_AUDITED_METHODS = [
   'system.getUserInfo',
   'auth.usernameCheck',
   'auth.emailCheck',
+  'system.checkPlatformIntegrity',
 ];
 
 const AUDITED_METHODS = ALL_METHODS.filter(m => ! NOT_AUDITED_METHODS.includes(m));
@@ -77,10 +80,10 @@ const WITH_USER_METHODS = AUDITED_METHODS.filter(m => ! WITHOUT_USER_METHODS.inc
 
 const allMethodsMap = buildMap(ALL_METHODS);
 
-function isMethodDeclared(methodId) {
-  if (methodId.includes('*')) return true; // including to register for wildcards such as "followedSlices.*", or "*"
-  if (allMethodsMap[methodId]) return true;
-  return false;
+function throwIfMethodIsNotDeclared(methodId) {
+  if (methodId.includes('*')) return; // including to register for wildcards such as "followedSlices.*", or "*"
+  if (allMethodsMap[methodId]) return;
+  throw new Error('Attempting to add a method not declared in audit, methodId: "' + methodId + '". Please add it to components/audit/src/ApiMethods.js#ALL_METHODS')
 }
 
 module.exports = {
@@ -91,7 +94,7 @@ module.exports = {
   WITHOUT_USER_METHODS: WITHOUT_USER_METHODS,
   WITHOUT_USER_METHODS_MAP: buildMap(WITHOUT_USER_METHODS),
   WITH_USER_METHODS: WITH_USER_METHODS,
-  isMethodDeclared: isMethodDeclared,
+  throwIfMethodIsNotDeclared,
 };
 
 /**

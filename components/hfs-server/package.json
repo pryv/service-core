@@ -1,18 +1,11 @@
 {
   "name": "hfs-server",
-  "version": "1.0.0",
+  "version": "1.8.0",
   "private": true,
-  "description": "This package is part of Pryv.io - a Pryv S.A. Software",
-  "homepage": "http://pryv.com",
+  "description": "High frequency series storage on InfluxDB",
+  "homepage": "https://pryv.com",
   "repository": {},
   "license": "UNLICENSED",
   "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
-  "main": "src/server.js",
-  "scripts": {
-    "start": "node bin/server --config config/local.json",
-    "test": "NODE_ENV=test ../../node_modules/.bin/mocha -R dot --timeout 8000 'test/acceptance/store_data.test.js' --exit"
-  },
-  "devDependencies": {
-    "mongodb-core": "^3.2.7"
-  }
+  "main": "src/server.js"
 }

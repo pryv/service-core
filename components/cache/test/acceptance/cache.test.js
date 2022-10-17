@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -84,21 +84,22 @@ describe('Cache', function() {
   this.beforeEach(() => {
     // make sure config is clean;
     config.injectTestConfig({});
+    cache.clear(); // clear & reload configuration
   });
 
   it('[FELT] Second get stream must be faster that first one', async () => {
     function isEmpty() {
-      assert.notExists(cache.getForUserId(username, cache.NS.STREAMS_FOR_USERID, 'local'));
-      assert.notExists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token));
-      assert.notExists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, appAccess.id));
-      assert.notExists(cache.get(cache.NS.USERID_BY_USERNAME, username));
+      assert.notExists(cache.getStreams(username, 'local'));
+      assert.notExists(cache.getAccessLogicForToken(username, appAccess.token));
+      assert.notExists(cache.getAccessLogicForId(username, appAccess.id));
+      assert.notExists(cache.getUserId(username));
     }
 
     function isFull() {
-      assert.exists(cache.getForUserId(username, cache.NS.STREAMS_FOR_USERID, 'local'));
-      assert.exists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_TOKEN, appAccess.token));
-      assert.exists(cache.getForUserId(username, cache.NS.ACCESS_LOGIC_FOR_USERID_BY_ACCESSID, appAccess.id));
-      assert.exists(cache.get(cache.NS.USERID_BY_USERNAME, username));
+      assert.exists(cache.getStreams(username, 'local'));
+      assert.exists(cache.getAccessLogicForToken(username, appAccess.token));
+      assert.exists(cache.getAccessLogicForId(username, appAccess.id));
+      assert.exists(cache.getUserId(username));
     }
 
     // loop 3 times and calculate average time
@@ -133,8 +134,7 @@ describe('Cache', function() {
   
     const data = `first-with-cache: ${t1}, second-with-cache: ${t2}, no-cache: ${t3}  => `;
     assert.isBelow(t2,t1, 'second-with-cache streams.get should be faster than first-with-cache' + data);
-    assert.isAbove(t3,t2 * 1.5, 'cache streams.get should be at least 40% longer than second-with-cache ' + data);
-    assert.isAbove(t3,t1, 'no-cache streams.get should be longer than first-with-cache' + data);
+    assert.isAbove(t3,t2 * 1.4, 'cache streams.get should be at least 40% longer than second-with-cache ' + data);
   });
 
   it('[XDP6] Cache should reset permissions on stream structure change when moving a stream in and out ', async () => {

@@ -1,12 +1,12 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 const Transform = require('stream').Transform;
 const inherits = require('util').inherits;
-const { changeMultipleStreamIdsPrefix } = require('../helpers/backwardCompatibility');
+const { convertStreamIdsToOldPrefixOnResult } = require('../helpers/backwardCompatibility');
 
 module.exports = ChangeStreamIdPrefixStream;
 
@@ -22,7 +22,7 @@ function ChangeStreamIdPrefixStream() {
 inherits(ChangeStreamIdPrefixStream, Transform);
 
 ChangeStreamIdPrefixStream.prototype._transform = function (event, encoding, callback) {
-  event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds);
+  convertStreamIdsToOldPrefixOnResult(event);
   this.push(event);
   callback();
 };

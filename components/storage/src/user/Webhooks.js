@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -59,7 +59,7 @@ Webhooks.prototype.getCollectionInfo = function (userOrUserId) {
  */
 Webhooks.prototype.delete = function (userOrUserId, query, callback) {
   const update = {
-    $set: { deleted: new Date() },
+    $set: { deleted: Date.now() / 1000 },
     $unset: {
       accessId: 1,
       url: 1,
