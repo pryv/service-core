@@ -33,7 +33,7 @@ module.exports = async function (api) {
   const storageLayer = await getStorageLayer();
   const passwordResetRequestsStorage = storageLayer.passwordResetRequests;
   const platform = await getPlatform();
-  const passwordRules = getPasswordRules(authSettings);
+  const passwordRules = await getPasswordRules();
 
   const emailSettings = servicesSettings.email;
   const requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
@@ -97,7 +97,7 @@ module.exports = async function (api) {
     commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,
-    checkNewPasswordAgainstRules,
+    enforcePasswordRules,
     addUserBusinessToContext,
     setPassword
   );
@@ -115,12 +115,13 @@ module.exports = async function (api) {
     }
   }
 
-  async function checkNewPasswordAgainstRules (context, params, result, next) {
+  async function enforcePasswordRules (context, params, result, next) {
     try {
-      passwordRules.checkNewPassword(params.newPassword);
+      await passwordRules.checkCurrentPasswordAge(context.user.id);
+      await passwordRules.checkNewPassword(context.user.id, params.newPassword);
       next();
     } catch (err) {
-      return next(errors.invalidOperation(`The new password does not follow the rules: ${err.message}`, null, err));
+      return next(err);
     }
   }
 
@@ -200,6 +201,7 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.resetPassword.params),
     requireTrustedAppFn,
     checkResetToken,
+    enforcePasswordRules,
     addUserBusinessToContext,
     setPassword,
     destroyPasswordResetToken,

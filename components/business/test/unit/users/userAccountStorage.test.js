@@ -12,6 +12,7 @@ const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
 
 const userAccountStorage = require('business/src/users/userAccountStorage');
+const userLocalDirectory = require('business').users.userLocalDirectory;
 
 describe('[UAST] Users Account Storage', () => {
   const passwords = []; // password will be stored in reverse order (oldest first)
@@ -32,7 +33,7 @@ describe('[UAST] Users Account Storage', () => {
   });
 
   after(async () => {
-
+    await userLocalDirectory.deleteUserDirectory(userId);
   });
 
   describe('addPasswordHash()', () => {
@@ -50,6 +51,24 @@ describe('[UAST] Users Account Storage', () => {
     });
   });
 
+  describe('getCurrentPasswordTime()', () => {
+    it('[85PW] must return the time of the current password', async () => {
+      const uId = cuid();
+      const time = timestamp.now('-1w');
+      await userAccountStorage.addPasswordHash(uId, 'hash', 'test', time);
+      const actualTime = await userAccountStorage.getCurrentPasswordTime(uId);
+      assert.strictEqual(actualTime, time, 'times should match');
+    });
+
+    it('[V54S] must throw an error if there is no password for the user id', async () => {
+      try {
+        await userAccountStorage.getCurrentPasswordTime(cuid());
+      } catch (e) {
+        assert.match(e.message, /No password found/);
+      }
+    });
+  });
+
   describe('passwordExistsInHistory()', () => {
     it('[1OQP] must return true when looking for existing passwords', async () => {
       for (const password of passwords) {
@@ -59,7 +78,7 @@ describe('[UAST] Users Account Storage', () => {
     });
 
     it('[DO33] must return false when looking for a non-existing password', async () => {
-      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, 'unknown_hash', passwords.length);
+      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, 'unknown-password', passwords.length);
       assert.isFalse(passwordExists, 'should not find password with non-existing hash');
     });
 

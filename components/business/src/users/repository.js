@@ -244,7 +244,7 @@ class UsersRepository {
       } else { // standard create user
         await await this.setUserPassword(user.id, user.password, user.accessId);
       }
-     
+
     });
     return user;
   }
@@ -256,7 +256,7 @@ class UsersRepository {
     }
     delete update.password;
     delete update.passwordHash
-    // --- end password  ------ // 
+    // --- end password  ------ //
 
     // Start a transaction session
     const mallTransaction = await this.mall.newTransaction();
@@ -309,7 +309,7 @@ class UsersRepository {
   }
 
   /**
-   * @param {string} userId 
+   * @param {string} userId
    * @param {string} password
    */
   async setUserPassword(userId: String, password: String, accessId = 'system', modifiedTime): Promise {

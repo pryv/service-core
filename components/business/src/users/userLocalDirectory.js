@@ -4,12 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * ToolSet to manipulate User's local directory
  */
-const path = require('path');
-const fs = require('fs');
 
+const path = require('path');
 const rimraf = require('rimraf');
 const bluebird = require('bluebird');
 const mkdirp = require('mkdirp');
@@ -17,16 +17,42 @@ const mkdirp = require('mkdirp');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('user-local-directory');
 
+module.exports = {
+  init,
+  ensureUserDirectory,
+  pathForuserId,
+  pathForAttachment,
+  deleteUserDirectory
+};
+
 let basePath;
 let attachmentsBasePath;
+
+/**
+ * Load config and make sure baseUserDirectory exists
+ * This could also handle eventual migrations
+ */
+async function init () {
+  if (basePath) return;
+  const config = await getConfig();
+  const candidateBasePath = config.get('userFiles:path');
+  mkdirp.sync(candidateBasePath);
+  basePath = candidateBasePath;
+
+  const candidateAttachmentsBasePath = config.get('eventFiles:attachmentsDirPath');
+  mkdirp.sync(candidateAttachmentsBasePath);
+  attachmentsBasePath = candidateAttachmentsBasePath;
+
+  logger.debug('User local files: ' + basePath + '  Attachments in: ' + attachmentsBasePath);
+}
 
 /**
  * Return and **creates** the desired user path
  * @param {string} userId -- user id (cuid format)
  * @param {string} [extraPath] -- Optional, extra path
  */
-async function ensureUserDirectory(userId, extraPath = '') {
-  const resultPath = pathForuserId(userId, extraPath)
+async function ensureUserDirectory (userId, extraPath = '') {
+  const resultPath = pathForuserId(userId, extraPath);
   await mkdirp(resultPath); // ensures directory exists
   return resultPath;
 }
@@ -36,12 +62,12 @@ async function ensureUserDirectory(userId, extraPath = '') {
  * @param {string} userId -- user id (cuid format)
  * @param {string} [extraPath] -- Optional, extra path
  */
-function pathForuserId(userId, extraPath = '') {
+function pathForuserId (userId, extraPath = '') {
   if (basePath == null) {
-    throw(new Error('Initialize UserLocalDirectory first'));
+    throw new Error('Run init() first');
   }
-  if (! userId || userId.length < 3) {
-    throw(new Error('Invalid or too short userId: ' + userId));
+  if (!userId || userId.length < 3) {
+    throw new Error('Invalid or too short userId: ' + userId);
   }
   const dir1 = userId.substr(userId.length - 1, 1); // last character of id
   const dir2 = userId.substr(userId.length - 2, 1);
@@ -58,9 +84,9 @@ function pathForuserId(userId, extraPath = '') {
  * @param {string} fileId
  * @param {boolean} [ensureDirs] - default: false creates needed directories if set
  */
-function pathForAttachment(userId, eventId, fileId, ensureDirs = false) {
+function pathForAttachment (userId, eventId, fileId, ensureDirs = false) {
   if (attachmentsBasePath == null) {
-    throw(new Error('Initialize UserLocalDirectory first'));
+    throw new Error('Run init() first');
   }
   return path.join(attachmentsBasePath, userId, eventId, fileId);
 }
@@ -70,34 +96,7 @@ function pathForAttachment(userId, eventId, fileId, ensureDirs = false) {
  *
  * @param {*} userId -- user id
  */
-async function deleteUserDirectory(userId) {
+async function deleteUserDirectory (userId) {
   const userFolder = pathForuserId(userId);
   await bluebird.fromCallback(cb => rimraf(userFolder, { disableGlob: true }, cb));
-}
-
-/**
- * Load config and make sure baseUserDirectory exists
- * This could also handle eventual migrations
- */
-async function init() {
-  if (basePath) return;
-  const config = await getConfig();
-  const candidateBasePath = config.get('userFiles:path');
-  mkdirp.sync(candidateBasePath);
-  basePath = candidateBasePath;
-
-  const candidateAttachmentsBasePath = config.get('eventFiles:attachmentsDirPath');
-  mkdirp.sync(candidateAttachmentsBasePath);
-  attachmentsBasePath = candidateAttachmentsBasePath;
-
-  logger.debug('User local files: ' + basePath + '  Attachments in: ' + attachmentsBasePath);
-}
-
-
-module.exports = {
-  ensureUserDirectory,
-  pathForuserId,
-  pathForAttachment,
-  deleteUserDirectory,
-  init,
 }

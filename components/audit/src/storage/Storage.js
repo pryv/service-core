@@ -10,7 +10,7 @@ const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:storage');
-const ensureUserDirectory = require('business').users.UserLocalDirectory.ensureUserDirectory;
+const ensureUserDirectory = require('business').users.userLocalDirectory.ensureUserDirectory;
 
 const CACHE_SIZE = 500;
 

@@ -48,14 +48,12 @@ describe('Migration - 1.8.0', function () {
     await platform.deleteAll();
 
     // perform migration
-    await bluebird.fromCallback(cb => newVersion.migrateIfNeeded(cb));
+    await newVersion.migrateIfNeeded();
   });
 
-  after(async function () {
+  after(async () => {});
 
-  });
-
-  it('[WBIK] must handle userIndex/events  migration from 1.7.5 to 1.8.0', async function () {
+  it('[WBIK] must handle userIndex/events  migration from 1.7.5 to 1.8.0', async () => {
     // check that all users are migrated
     const newUsers = await usersIndex.getAllByUsername();
     for (const [username, userId] of Object.entries(initialEventsUsers)) {
@@ -69,12 +67,12 @@ describe('Migration - 1.8.0', function () {
     assert.isEmpty(Object.keys(initialEventsUsers), 'Not all users migrated');
   });
 
-  it('[PH6C] must handle userIndex/repository migration from 1.7.5 to 1.8.0', async function () {
+  it('[PH6C] must handle userIndex/repository migration from 1.7.5 to 1.8.0', async () => {
     const { errors } = await usersIndex.checkIntegrity();
     assert.isEmpty(errors, 'Found error(s) in the userIndex vs events check');
   });
 
-  it('[URHS] must handle platfrom migration from 1.7.5 to 1.8.0', async function () {
+  it('[URHS] must handle platfrom migration from 1.7.5 to 1.8.0', async () => {
     const { errors } = await platform.checkIntegrity();
     assert.isEmpty(errors, 'Found error(s) in the platform vs Users check');
   });

@@ -22,7 +22,7 @@ const LRU = require('lru-cache');
 const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
 
-const UserLocalDirectory = require('./UserLocalDirectory');
+const userLocalDirectory = require('./userLocalDirectory');
 
 const CACHE_SIZE = 100;
 const VERSION = '1.0.0';
@@ -40,8 +40,10 @@ let initState = InitStates.NOT_INITIALIZED;
 module.exports = {
   init,
   addPasswordHash,
+  getPasswordHash,
+  getCurrentPasswordTime,
   passwordExistsInHistory,
-  getPasswordHash
+  clearHistory
 };
 
 async function init () {
@@ -53,7 +55,7 @@ async function init () {
   }
   initState = InitStates.INITIALIZING;
 
-  await UserLocalDirectory.init();
+  await userLocalDirectory.init();
 
   dbCache = new LRU({
     max: CACHE_SIZE,
@@ -63,8 +65,7 @@ async function init () {
   initState = InitStates.READY;
 }
 
-
-async function getPasswordHash(userId) {
+async function getPasswordHash (userId) {
   const db = await getUserDB(userId);
   const last = db.prepare('SELECT hash FROM passwords ORDER BY time DESC LIMIT 1').get();
   return last?.hash;
@@ -75,6 +76,15 @@ async function addPasswordHash (userId, passwordHash, createdBy, time = timestam
   const result = { time, hash: passwordHash, createdBy };
   db.prepare('INSERT INTO passwords (time, hash, createdBy) VALUES (@time, @hash, @createdBy)').run(result);
   return result;
+}
+
+async function getCurrentPasswordTime (userId) {
+  const db = await getUserDB(userId);
+  const last = db.prepare('SELECT hash, time FROM passwords ORDER BY time DESC LIMIT 1').get();
+  if (!last) {
+    throw new Error(`No password found in database for user id "${userId}"`);
+  }
+  return last.time;
 }
 
 async function passwordExistsInHistory (userId, password, historyLength) {
@@ -88,16 +98,24 @@ async function passwordExistsInHistory (userId, password, historyLength) {
   return false;
 }
 
+/**
+ * For tests
+ */
+async function clearHistory (userId) {
+  const db = await getUserDB(userId);
+  db.prepare('DELETE FROM passwords').run();
+}
+
 async function getUserDB (userId) {
   return dbCache.get(userId) || await openUserDB(userId);
 }
 
 async function openUserDB (userId) {
-  const userPath = await UserLocalDirectory.ensureUserDirectory(userId);
+  const userPath = await userLocalDirectory.ensureUserDirectory(userId);
   const dbPath = path.join(userPath, `account-${VERSION}.sqlite`);
   const db = new Sqlite3(dbPath, DB_OPTIONS);
   db.pragma('journal_mode = WAL');
-  // db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
+  // db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go below the second
   db.unsafeMode(true);
   db.prepare('CREATE TABLE IF NOT EXISTS passwords (time REAL PRIMARY KEY, hash TEXT NOT NULL, createdBy TEXT NOT NULL);').run();
   db.prepare('CREATE INDEX IF NOT EXISTS passwords_hash ON passwords(hash);').run();

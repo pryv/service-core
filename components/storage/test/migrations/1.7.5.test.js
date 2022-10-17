@@ -47,7 +47,7 @@ describe('Migration - 1.7.5',function () {
     const previousAccessesWithSystemStreamPermissions = await (await accessesCollection.find({"permissions.streamId": { $regex : /^\./ }})).toArray();
     const accessToCheck = previousAccessesWithSystemStreamPermissions[0];
     // perform migration
-    await bluebird.fromCallback(cb => newVersion.migrateIfNeeded(cb));
+    await newVersion.migrateIfNeeded();
 
     // verify that accesses were migrated
     let isAccessToCheckProcessed = false;

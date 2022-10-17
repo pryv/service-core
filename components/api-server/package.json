@@ -1,6 +1,6 @@
 {
   "name": "api-server",
-  "version": "1.7.12",
+  "version": "1.8.0",
   "private": true,
   "description": "Express server implementing the main Pryv.io API.",
   "homepage": "https://pryv.com",

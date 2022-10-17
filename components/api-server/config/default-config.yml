@@ -32,6 +32,11 @@ eventFiles:
 
 auth:
   filesReadTokenSecret: 'REPLACE ME'
+  passwordComplexityMinCharCategories: 0
+  passwordComplexityMinLength: 0
+  passwordAgeMaxDays: 0
+  passwordAgeMinDays: 0
+  passwordPreventReuseHistoryLength: 0
 
 customExtensions:
   defaultFolder: 'REPLACE ME'
