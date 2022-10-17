@@ -204,66 +204,6 @@ describe('[ACCO] Account with system streams', function () {
         assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordAfter, 1), 'missing new password in history');
       });
     });
-    describe('when the password in the database does not exist', () => {
-      before(async function () {
-        await createUser();
-        basePath += '/change-password';
-        // remove passwordHash event from the database
-        await mall.events.delete(user.attrs.id, { streams: [{ any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')] }] });
-
-        // make sure the event was deleted
-        const password = await getActiveEvent('passwordHash');
-        assert.isNull(password);
-
-        res = await request.post(basePath)
-          .send({
-            newPassword: charlatan.Lorem.characters(7),
-            oldPassword: 'any-password'
-          })
-          .set('authorization', access.token);
-      });
-      it('[8S2S] should return 400', async () => {
-        assert.equal(res.status, 400);
-      });
-      it('[WG4L] should return the correct error', async () => {
-        assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
-      });
-    });
-  });
-
-  describe('POST /reset-password', () => {
-    describe('when the password in the database does not exist', () => {
-      async function generateResetToken (username) {
-        // generate a reset token for user1
-        return await bluebird.fromCallback(
-          (cb) => pwdResetReqsStorage.generate(username, cb));
-      }
-      before(async function () {
-        await createUser();
-        basePath += '/reset-password';
-        // remove passwordHash event from the database
-        await mall.events.delete(user.attrs.id, { streams: [{ any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash')] }] });
-
-        // make sure the event was deleted
-        const password = await getActiveEvent('passwordHash');
-        assert.isNull(password);
-
-        res = await request.post(basePath)
-          .send({
-            newPassword: charlatan.Lorem.characters(7),
-            resetToken: await generateResetToken(user.attrs.username),
-            appId: 'pryv-test'
-          })
-          .set('Origin', 'http://test.pryv.local')
-          .set('authorization', access.token);
-      });
-      it('[551W] should return 500', async () => {
-        assert.equal(res.status, 500);
-      });
-      it('[I5M6] should return the correct error', async () => {
-        assert.equal(res.body.error.id, ErrorIds.UnexpectedError);
-      });
-    });
   });
 
   describe('PUT /account', () => {

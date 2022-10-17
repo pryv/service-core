@@ -29,8 +29,6 @@ const encryption = require('utils').encryption;
 let usersRepository = null;
 
 describe('[ACCO] account', function () {
-  console.log('******* REACTIVATE [ACCO] *** This is skipped for release only'); return;
-  
   const user = Object.assign({}, testData.users[0]);
 
   before(async () => {
@@ -549,7 +547,10 @@ describe('[ACCO] account', function () {
   });
 
   describe('/request-password-reset and /reset-password', function () {
-    beforeEach(async () => { await resetUsers; });
+    beforeEach(async () => {
+      await resetUsers;
+      server.removeAllListeners('password-reset-token');
+    });
 
     const requestPath = basePath + '/request-password-reset';
     const resetPath = basePath + '/reset-password';

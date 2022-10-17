@@ -188,8 +188,9 @@ describe('system (ex-register)', function () {
             require('nock')(this.context.url)
               .post('')
               .reply(200, function (uri, body) {
-                body.message.global_merge_vars[0].content.should.be.equal('mr-dupotager');
-                body.template_name.should.match(/welcome/);
+                const assert = require('assert');
+                assert.equal(body.message.global_merge_vars[0].content, 'mr-dupotager', 'mail server mock is expecting mr-dupotager');
+                assert.match(body.template_name, /welcome/, 'mr-dupotager', 'mail server mock is expecting welcom in message body');
                 this.context.testNotifier.emit('mail-sent1');
               }.bind(this));
           }

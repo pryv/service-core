@@ -455,7 +455,7 @@ describe('backward-compatibility', () => {
         const res = await post(`/${username}/accesses/`, {
           name: charlatan.Lorem.characters(10),
           permissions: [{
-            streamId: '.passwordHash',
+            streamId: '.invitationToken',
             level: 'read',
           }, {
             feature: 'selfRevoke',
@@ -642,7 +642,7 @@ describe('backward-compatibility', () => {
           const res = await post(`/${username}/accesses/`, {
             name: charlatan.Lorem.characters(10),
             permissions: [{
-              streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash'),
+              streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken'),
               level: 'read',
             }],
             clientData: {

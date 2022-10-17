@@ -124,14 +124,6 @@ class UsersRepository {
     };
   }
 
-  /**
-   * Add a new password hash for the given user.
-   * TODO: should be renamed to something like "addPasswordHash" when password is removed from events
-   */
-  async recordNewPasswordHashForUserId(userId: string, passwordHash: string, createdBy: string, time: number): Promise<?any> {
-    return await userAccountStorage.addPasswordHash(userId, passwordHash, createdBy, time);
-  }
-
   async getOnePropertyValue(userId: string, propertyKey: string) {
     const query = {limit: 1, state: 'all', streams: [{any: [SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(propertyKey)]}]};
     const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
@@ -246,20 +238,23 @@ class UsersRepository {
       await usersIndex.addUser(user.username, user.id);
       await this.mall.events.createMany(user.id, events, mallTransaction);
 
-      // record passsword in history
-      for (const event of events) {
-        if (event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH)) {
-          const createdPass = await this.recordNewPasswordHashForUserId(user.id, event.content, event.createdBy, event.time);
-        }
+      // set user password
+      if (user.passwordHash) {
+        // if coming from deprecated `system.createUser`; TODO: remove when that method is removed
+        await userAccountStorage.addPasswordHash(user.id, user.passwordHash, user.accessId);
+      } else {
+        // regular user creation
+        await await this.setUserPassword(user.id, user.password, user.accessId);
       }
+
     });
     return user;
   }
 
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
     // change password into hash if it exists
-    if (update.password != null) {
-      update.passwordHash = await encryption.hash(update.password);
+    if (update.password) {
+      await this.setUserPassword(user.id, update.password, accessId);
     }
     delete update.password;
 
@@ -285,10 +280,6 @@ class UsersRepository {
         await this.mall.events.updateMany(user.id, query, {fieldsToSet: updateFields}, mallTransaction);
       }
     });
-
-    if (update.passwordHash != null) {
-      await this.recordNewPasswordHashForUserId(user.id, update.passwordHash, accessId, modifiedTime);
-    }
   }
 
   async deleteOne(userId: string, username: ?string, skipFowardToRegister: ?boolean): Promise<number> {
@@ -309,7 +300,7 @@ class UsersRepository {
   }
 
   async checkUserPassword(userId: string, password: string): Promise<boolean> {
-    const currentPass = await getUserPasswordHash(userId, this.mall);
+    const currentPass = await userAccountStorage.getPasswordHash(userId);
     let isValid: boolean = false;
     if (currentPass != null) {
       isValid = await encryption.compare(password, currentPass);
@@ -317,22 +308,19 @@ class UsersRepository {
     return isValid;
   }
 
+  /**
+   * @param {string} userId
+   * @param {string} password
+   */
+  async setUserPassword(userId: String, password: String, accessId = 'system', modifiedTime): Promise {
+    const passwordHash = await encryption.hash(password);
+    await userAccountStorage.addPasswordHash(userId, passwordHash, accessId, modifiedTime);
+  }
+
   async count(): Promise<number> {
     const users = await usersIndex.getAllByUsername();
     return Object.keys(users).length;
   }
-}
-
-/**
- * Get user password hash
- * @param string userId
- */
-async function getUserPasswordHash(userId: string, mall: any): Promise<?string> {
-  const userPassEvents = await mall.events.get(userId, {streams: [{any: [SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH]}]});
-  if (userPassEvents.length > 0) {
-    return (userPassEvents[0].content != null) ? userPassEvents[0].content : null;
-  }
-  return null;
 }
 
 let usersRepository = null;

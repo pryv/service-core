@@ -99,8 +99,7 @@ module.exports = async function (api) {
     verifyOldPassword,
     enforcePasswordRules,
     addUserBusinessToContext,
-    addNewPasswordParameter,
-    updateAccount
+    setPassword
   );
 
   async function verifyOldPassword (context, params, result, next) {
@@ -161,6 +160,17 @@ module.exports = async function (api) {
     next();
   }
 
+  async function setPassword(context, params, result, next) {
+    try {
+      const usersRepository = await getUsersRepository();
+      await usersRepository.setUserPassword(context.userBusiness.id, params.newPassword, 'system');
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
+    } catch (err) {
+      return next(err);
+    }
+    next();
+  }
+
   function sendPasswordResetMail(context, params, result, next) {
     // Skip this step if reset mail is deactivated
     const isMailActivated = emailSettings.enabled;
@@ -192,8 +202,7 @@ module.exports = async function (api) {
     checkResetToken,
     enforcePasswordRules,
     addUserBusinessToContext,
-    addNewPasswordParameter,
-    updateAccount,
+    setPassword,
     destroyPasswordResetToken,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
   );
@@ -218,16 +227,7 @@ module.exports = async function (api) {
     );
   }
 
-  function addNewPasswordParameter (context, params, result, next) {
-    if (!context.userBusiness.passwordHash) {
-      return next(errors.unexpectedError());
-    }
-    params.update = { password: params.newPassword };
-    next();
-  }
-
   async function updateDataOnPlatform (context, params, result, next) {
-
     try {
       const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
 
