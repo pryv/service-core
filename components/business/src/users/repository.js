@@ -239,9 +239,11 @@ class UsersRepository {
       await this.mall.events.createMany(user.id, events, mallTransaction);
 
       // set user password
-      if (user.passwordHash) { // if we have passwordHash it comes from (ex-register)
+      if (user.passwordHash) {
+        // if coming from deprecated `system.createUser`; TODO: remove when that method is removed
         await userAccountStorage.addPasswordHash(user.id, user.passwordHash, user.accessId);
-      } else { // standard create user
+      } else {
+        // regular user creation
         await await this.setUserPassword(user.id, user.password, user.accessId);
       }
 
@@ -250,13 +252,11 @@ class UsersRepository {
   }
 
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
-    // ---  password  ------- //
-    if (update.password ) {
-      await this.setUserPassword(user.id, update.passsword, accessId);
+    // change password into hash if it exists
+    if (update.password) {
+      await this.setUserPassword(user.id, update.password, accessId);
     }
     delete update.password;
-    delete update.passwordHash
-    // --- end password  ------ //
 
     // Start a transaction session
     const mallTransaction = await this.mall.newTransaction();
@@ -316,7 +316,6 @@ class UsersRepository {
     const passwordHash = await encryption.hash(password);
     await userAccountStorage.addPasswordHash(userId, passwordHash, accessId, modifiedTime);
   }
-
 
   async count(): Promise<number> {
     const users = await usersIndex.getAllByUsername();

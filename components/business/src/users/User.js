@@ -13,8 +13,6 @@ const timestamp = require('unix-timestamp');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
 
-const { encryption } = require('utils');
-
 import type { SystemStream } from 'business/src/system-streams';
 import type { Event } from 'business/src/events';
 
@@ -130,14 +128,12 @@ function buildAccountFields (user: User): void {
 
 function loadAccountData (user: User, params): void {
   user.accountFields.forEach(field => {
-    if (field === 'dbDocuments' || field === 'attachedFiles') {
+    if (field === 'dbDocuments' || field === 'attachedFiles') {
       //console.log('XXXXXX loadAccountData > Ignoring', field);
     } else {
       if (params[field] != null) user[field] = params[field];
     }
   });
-  // temporarily add password because the encryption need to be loded asyncronously
-  // and it could not be done in the contructor
   if (params.password ) {
     user.password = params.password;
   }

@@ -53,7 +53,8 @@ class Registration {
    */
   async prepareUserData(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     context.newUser = new User(params);
-    context.newUser.passwordHash = params.passwordHash; // accept passwordHash at creation only
+    // accept passwordHash at creation only; TODO: remove this once deprecated method `system.createUser` is removed
+    context.newUser.passwordHash = params.passwordHash;
     context.user = {
       id: context.newUser.id,
       username: context.newUser.username
