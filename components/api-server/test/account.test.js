@@ -547,7 +547,10 @@ describe('[ACCO] account', function () {
   });
 
   describe('/request-password-reset and /reset-password', function () {
-    beforeEach(async () => { await resetUsers; });
+    beforeEach(async () => {
+      await resetUsers;
+      server.removeAllListeners();
+    });
 
     const requestPath = basePath + '/request-password-reset';
     const resetPath = basePath + '/reset-password';
