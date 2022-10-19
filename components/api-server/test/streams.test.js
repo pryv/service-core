@@ -26,6 +26,7 @@ const charlatan = require('charlatan');
 const bluebird = require('bluebird');
 
 const { getMall } = require('mall');
+const cache = require('cache');
 
 const chai = require('chai');
 const assert = chai.assert;
@@ -205,8 +206,10 @@ describe('[STRE] streams', function () {
           });
         },
         async function verifyStreamData() {
+          // server and current "mall" instance are not running on the same instance and cache must me invalidated manually
+          cache.unsetStreams(user.id, 'local');
           const streams = await mall.streams.get(user.id, {storeId: 'local', hideRootStreams: true});
-          streams.length.should.eql(originalCount + 1, 'streams');
+          streams.length.should.eql(originalCount + 1, 'should count one more root stream');
 
           var expected = _.clone(data);
           expected.id = createdStream.id;
@@ -326,6 +329,8 @@ describe('[STRE] streams', function () {
             });
           },
           async function _recountChildStreams() {
+            // server and current "mall" instance are not running on the same instance and cache must me invalidated manually
+            cache.unsetStreams(user.id, 'local');
             const streams = await mall.streams.get(user.id, {id: initialRootStreamId, storeId: 'local', expandChildren: -1});
             const count = streams[0].children.length;
             assert.strictEqual(count, originalCount + 1, 'Created a child stream.');

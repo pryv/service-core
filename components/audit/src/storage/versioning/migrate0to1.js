@@ -24,7 +24,7 @@ const unlinkFilePromise = require('fs/promises').unlink;
 const path = require('path');
 const fs = require('fs');
 const { getLogger } = require('@pryv/boiler');
-const UserLocalDirectory = require('business').users.UserLocalDirectory;
+const userLocalDirectory = require('business').users.userLocalDirectory;
 const UserDatabase = require('../UserDatabase');
 
 const logger =  getLogger('sqlite-storage-migration:migrate0to1');
@@ -65,7 +65,7 @@ async function migrate0to1(v0dbPath, v1user, logger) {
 }
 
 async function checkAllUsers(storage) {
-  const userDir = UserLocalDirectory.getBasePath();
+  const userDir = userLocalDirectory.getBasePath();
   const auditDBVersionFile = path.join(userDir, 'audit-db-version-' + storage.getVersion() + '.txt'); 
   if (fs.existsSync(auditDBVersionFile)) {
     logger.debug('Audit db version file found, skipping migration for ' + storage.getVersion());
@@ -77,14 +77,14 @@ async function checkAllUsers(storage) {
     skip: 0
   };
 
-  await UserLocalDirectory.foreachUserDirectory(checkUserDir, userDir, logger);
+  await userLocalDirectory.foreachUserDirectory(checkUserDir, userDir, logger);
   logger.info('Done with migration for ' + storage.getVersion() + ': ' + counts.done + ' done, ' + counts.skip + ' skipped');
 
   await fs.writeFileSync(auditDBVersionFile, 'DO NOT DELETE THIS FILE - IT IS USED TO DETECT MIGRATION SUCESS');
 
-  async function checkUserDir(userId, userDir) {
+  async function checkUserDir (userId, userDir) {
     // check if a migration from a non upgradeable schema (copy file to file) is needed
-    const v0dbPath = await storage._dbPathForUserid(userId, '');
+    const v0dbPath = await storage._dbPathForUserId(userId, '');
   
     if (! fs.existsSync(v0dbPath)) {
       logger.info('OK for ' + userId);

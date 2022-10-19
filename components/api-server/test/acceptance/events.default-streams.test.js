@@ -250,7 +250,7 @@ describe("[FG5R] Events of system streams", () => {
       describe('to retrieve a non visible system event', () => {
         before(async function () {
           await createUser();
-          const defaultEvent = await findDefaultCoreEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash'));
+          const defaultEvent = await findDefaultCoreEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken'));
           res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
         });
         it('[Y2OA] should return 403', () => {
@@ -1094,7 +1094,7 @@ describe("[FG5R] Events of system streams", () => {
             content: charlatan.Lorem.characters(7),
             type: 'password-hash/pryv'
           };
-          const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH);
+          const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken'));
 
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
@@ -1106,7 +1106,7 @@ describe("[FG5R] Events of system streams", () => {
         it('[BB5F] should return the correct error', () => {
           assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
           assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
-          assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH});
+          assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken')});
         });
       });
     });

@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Extends the common test support object with server-specific stuff.
  */
@@ -15,3 +16,4 @@ exports.commonTests = require('./commonTests');
 exports.dependencies = require('./dependencies');
 exports.validation = require('./validation');
 exports.SourceStream = require('./SourceStream');
+exports.passwordRules = require('./passwordRules');

@@ -167,9 +167,12 @@ class PubSubFactory {
   setTestNatsDeliverHook(deliverHook) {
     if (nats == null) {
       console.log(new Error('NATS not initialized'));
-      return;
     } 
     nats.setTestNatsDeliverHook(deliverHook);
+  }
+  // used by tests to detect true "OpenSource" setup
+  isNatsEnabled() {
+    return nats != null;
   }
 }
 

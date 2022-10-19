@@ -69,7 +69,6 @@ function throwAPIError (err, storeId) {
     err = apiErrors.unexpectedError(err);
   }
   if (storeId != null) {
-    $$(err);
     err.message = `Error from data store "${storeId}": ${err.message}`;
   }
   throw err;

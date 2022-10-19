@@ -9,9 +9,10 @@ const unlinkSync = require('fs').unlinkSync;
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
-const UserLocalDirectory = require('business').users.UserLocalDirectory;
 
 const versionning = require('./versioning');
+const logger = getLogger('audit:storage');
+const ensureUserDirectory = require('business').users.userLocalDirectory.ensureUserDirectory;
 
 const CACHE_SIZE = 500;
 const VERSION = '1.0.0';
@@ -26,7 +27,6 @@ class Storage {
       throw('Database already initalized');
     }
     this.config = await getConfig();
-    await UserLocalDirectory.init();
     await versionning.checkAllUsers(this);
     this.logger.debug('Db initalized');
     this.initialized = true;
@@ -88,8 +88,9 @@ class Storage {
     this.userDBsCache.clear();
   }
 
- 
-
+  async _dbPathForUserId(userId, versionString) {
+    return await dbPathForUserid(userId, versionString);
+  }
 }
 
 async function open(storage, userId, logger) {
@@ -102,11 +103,11 @@ async function open(storage, userId, logger) {
 
 /**
  * @private
- * @param {string} uid -- user id (cuid format)
+ * @param {string} userId -- user id (cuid format)
  * @param {string} versionString -- version of the database
  */
-async function dbPathForUserid(userid, versionString) {
-  const userPath = await UserLocalDirectory.ensureUserDirectory(userid);
+async function dbPathForUserid(userId, versionString) {
+  const userPath = await ensureUserDirectory(userId);
   return path.join(userPath, this.id + versionString + '.sqlite');
 }
 

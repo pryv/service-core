@@ -7,75 +7,52 @@
 // @flow
 
 const superagent = require('superagent');
-const url = require('url');
-const should = require('should');
 const assert = require('chai').assert;
 
-/**
- * Helper for HTTP requests (with access token authentication).
- */
 module.exports = request;
-module.exports.unpatched = unpatchedRequest; 
 
-
-// --------------------------------- new usage, unpatched sa with helpers added
-function unpatchedRequest(serverURL: string): UnpatchedRequest {
-  return new UnpatchedRequest(serverURL); 
-}
-
-class UnpatchedRequest {
-  serverURL: string; 
-  token: ?string; 
-  
-  constructor(serverURL: string) {
-    this.serverURL = serverURL;
-    this.token = null; 
-  }
-  
-  get(...args) {
-    return this.execute('GET', ...args);
-  }
-  
-  execute(method: string, path: string, token?: string) {
-    const authToken = token || this.token; 
-    const destUrl = url.resolve(this.serverURL, path);
-
-    return new superagent.Request(method, destUrl)
-      .set('authorization', authToken);
-  }
-}
-
-// -------------------------------------------------------- deprecated old usage
-function request(serverURL: string) {
+/**
+ * Helper for HTTP requests. Returns a SuperAgent request:
+ * - that sets the `authorization` header with the given token if any
+ * - that always succeeds regardless of the HTTP status code (see SuperAgent's `ok()` method)
+ * - whose `end()` method calls the given callback function with a single argument if expected
+ */
+function request (serverURL) {
   return new Request(serverURL);
 }
 
-function Request(serverURL) {
+function Request (serverURL) {
   this.serverURL = serverURL;
   this.token = null;
 }
 
-var methods = ['get', 'post', 'put', 'del', 'options'];
-methods.forEach(function (method) {
-  Request.prototype[method] = function (path: any, token: any) {
-    const destUrl = url.resolve(this.serverURL, path);
-    const authToken = token || this.token; 
-    
-    return new IndifferentRequest(method, destUrl, authToken);
+['get', 'post', 'put', 'del', 'options'].forEach(method => {
+  Request.prototype[method] = function (...args) {
+    return this.execute(method, ...args);
   };
 });
+
+Request.prototype.execute = function (method, path, token) {
+  if (method === 'del') { method = 'delete'; }
+  const destURL = new URL(path, this.serverURL).href;
+  const authToken = token || this.token;
+
+  return (new PryvTestRequest(method, destURL))
+    .ok(() => true)
+    .set('authorization', authToken);
+};
 
 /**
  * @param {Function} callback (error)
  */
-Request.prototype.login = function (user: any, callback: any) {
-  var targetURL = url.resolve(this.serverURL, user.username + '/auth/login');
-  var authData = {
+Request.prototype.login = function (user, callback) {
+  const targetURL = new URL(user.username + '/auth/login', this.serverURL).href;
+  const authData = {
     username: user.username,
     password: user.password,
     appId: 'pryv-test'
-  }; 
- 
+  };
+
   return superagent.post(targetURL)
     .set('Origin', 'http://test.pryv.local')
     .send(authData).end(function (err, res) {
@@ -94,37 +71,22 @@ Request.prototype.login = function (user: any, callback: any) {
 };
 
 /**
- * A superagent request that only ever calls back with a single argument.  The
- * argument will be the response object, regardless of the error status of  the
- * query. 
- * 
- * NOTE This is not a good idea, but most of our tests assume this behaviour
- *      because things used to be this way. Important right now, deprecated as 
- *      well. 
- */ 
-class IndifferentRequest extends superagent.Request {
-  
-  /** Construct a request. 
-   * 
-   * @see superagent.Request
-   *    
-   * @param  {string} method HTTP Method to use for this request
-   * @param  {string|url.Url} url request url
-   * @param  {string} token authentication token to use
-   */   
-  constructor(method: string, url: string, token: string) {
-    // NOTE newer superagent versions don't know about delete; Let's pretend 
-    // we do. 
-    if (method === 'del') method = 'delete';
-
-    super(method, url)
-      .set('authorization', token);
-  }
-  
-  end(callback: (res: any) => void) {
-    super.end((err, res) => {
-      callback(res || err);
-    });
-  } 
+ * SuperAgent request sub-constructor.
+ *
+ * NOTE: This can be removed if/when we don't need the `end()` override (see below).
+ */
+function PryvTestRequest (method, url) {
+  superagent.Request.call(this, method, url);
 }
+PryvTestRequest.prototype = Object.create(superagent.Request.prototype);
 
+/**
+ * Overrides SuperAgent's `end()` to call the given callback function with a
+ * single argument (the HTTP response object) _if the callback expects just
+ * one argument_.
+ */
+PryvTestRequest.prototype.end = function (callback) {
+  superagent.Request.prototype.end.call(this, (err, res) => {
+    callback.length === 1 ? callback(res || err) : callback(err, res);
+  });
+};

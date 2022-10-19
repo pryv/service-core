@@ -94,13 +94,6 @@ function load(config: {}): {} {
           [IS_EDITABLE]: false,
         },
         {
-          id: 'passwordHash',
-          name: 'Password Hash',
-          type: 'password-hash/string',
-          [IS_SHOWN]: false,
-          [IS_EDITABLE]: false,
-        },
-        {
           id: 'referer',
           name: 'Referer',
           type: 'identifier/string',

@@ -15,13 +15,13 @@ const methodsSchema = require('../schema/accountMethods');
 const { getConfig } = require('@pryv/boiler');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
-const {getPlatform } = require('platform');
+const { getPlatform } = require('platform');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 const ErrorMessages = require('errors/src/ErrorMessages');
 const ErrorIds = require('errors').ErrorIds;
-const { getUsersRepository, UserRepositoryOptions} = require('business/src/users');
+const { getUsersRepository, UserRepositoryOptions, getPasswordRules } = require('business/src/users');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 /**
  * @param api
@@ -33,6 +33,7 @@ module.exports = async function (api) {
   const storageLayer = await getStorageLayer();
   const passwordResetRequestsStorage = storageLayer.passwordResetRequests;
   const platform = await getPlatform();
+  const passwordRules = await getPasswordRules();
 
   const emailSettings = servicesSettings.email;
   const requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
@@ -96,21 +97,30 @@ module.exports = async function (api) {
     commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,
+    enforcePasswordRules,
     addUserBusinessToContext,
-    addNewPasswordParameter,
-    updateAccount
+    setPassword
   );
 
   async function verifyOldPassword (context, params, result, next) {
-    try{
+    try {
       const isValid = await usersRepository.checkUserPassword(context.user.id, params.oldPassword);
       if (!isValid) {
-        return next(errors.invalidOperation(
-          'The given password does not match.'));
+        return next(errors.invalidOperation('The given password does not match.'));
       }
       next();
     } catch (err) {
       // handles unexpected errors
+      return next(err);
+    }
+  }
+
+  async function enforcePasswordRules (context, params, result, next) {
+    try {
+      await passwordRules.checkCurrentPasswordAge(context.user.id);
+      await passwordRules.checkNewPassword(context.user.id, params.newPassword);
+      next();
+    } catch (err) {
       return next(err);
     }
   }
@@ -124,8 +134,6 @@ module.exports = async function (api) {
     addUserBusinessToContext,
     sendPasswordResetMail,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_REQUEST));
-
-
 
   function generatePasswordResetRequest(context, params, result, next) {
     const username = context.user.username;
@@ -146,6 +154,17 @@ module.exports = async function (api) {
       const usersRepository = await getUsersRepository();
       context.userBusiness = await usersRepository.getUserByUsername(context.user.username);
       if (! context.userBusiness) return next(errors.unknownResource('user', context.user.username));
+    } catch (err) {
+      return next(err);
+    }
+    next();
+  }
+
+  async function setPassword(context, params, result, next) {
+    try {
+      const usersRepository = await getUsersRepository();
+      await usersRepository.setUserPassword(context.userBusiness.id, params.newPassword, 'system');
+      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     } catch (err) {
       return next(err);
     }
@@ -181,9 +200,9 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.resetPassword.params),
     requireTrustedAppFn,
     checkResetToken,
+    enforcePasswordRules,
     addUserBusinessToContext,
-    addNewPasswordParameter,
-    updateAccount,
+    setPassword,
     destroyPasswordResetToken,
     setAuditAccessId(AuditAccessIds.PASSWORD_RESET_TOKEN)
   );
@@ -208,16 +227,7 @@ module.exports = async function (api) {
     );
   }
 
-  function addNewPasswordParameter (context, params, result, next) {
-    if (!context.userBusiness.passwordHash) {
-      return next(errors.unexpectedError());
-    }
-    params.update = { password: params.newPassword };
-    next();
-  }
-
   async function updateDataOnPlatform (context, params, result, next) {
-
     try {
       const editableAccountMap: Map<string, SystemStream> = SystemStreamsSerializer.getEditableAccountMap();
 

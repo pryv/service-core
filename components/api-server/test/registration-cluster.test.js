@@ -7,23 +7,25 @@
 /* global describe, it, before, after */
 // @flow
 
+const assert = require('chai').assert;
+const _ = require('lodash');
 const nock = require('nock');
 const charlatan = require('charlatan');
-const _ = require('lodash');
 const bluebird = require('bluebird');
 const supertest = require('supertest');
-const assert = require('chai').assert;
 
+const helpers = require('./helpers');
 const { getConfig } = require('@pryv/boiler');
 const { getApplication } = require('api-server/src/application');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const { getUsersRepository, User } = require('business/src/users');
+const userAccountStorage = require('business/src/users/userAccountStorage');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 const { ApiEndpoint } = require('utils');
 
-function defaults() {
+function defaults () {
   return {
     appId: 'pryv-test',
     username: charlatan.Lorem.characters(7),
@@ -35,19 +37,17 @@ function defaults() {
   };
 }
 
-describe('registration: cluster', function() {
-
+describe('registration: cluster', function () {
   let isDnsLess;
   before(async function () {
     config = await getConfig();
     isDnsLess = config.get('dnsLess:isActive');
     if (isDnsLess) this.skip();
-  })
+  });
 
   let app;
   let request;
   let res;
-  let settings;
   let config;
   let regUrl;
   let userData;
@@ -60,8 +60,8 @@ describe('registration: cluster', function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.context.cleanEverything();
   });
-  before(async function () {
 
+  before(async function () {
     config.injectTestConfig({
       dnsLess: { isActive: false },
       openSource: { isActive: false },
@@ -78,6 +78,7 @@ describe('registration: cluster', function() {
 
     usersRepository = await getUsersRepository();
   });
+
   after(async function () {
     config.injectTestConfig({});
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -85,45 +86,49 @@ describe('registration: cluster', function() {
   });
 
   const methodPath = '/users';
-  const defaultServerName = 'abc';
 
-  function buildValidationRequest(user, hasToken = true) {
+  function buildValidationRequest (user, hasToken = true) {
     const validationRequest = {
       core: res.req._header.split('Host: ')[1].split('\r\n')[0],
       username: user.username,
       uniqueFields: {
         username: user.username,
-        email: user.email,
-      },
+        email: user.email
+      }
     };
-    hasToken ? validationRequest.invitationToken = user.invitationToken : null;
+    if (hasToken) {
+      validationRequest.invitationToken = user.invitationToken;
+    }
     return validationRequest;
   }
-  function buildRegistrationRequest(user, request, hasToken = true) {
+
+  function buildRegistrationRequest (user, request, hasToken = true) {
     const registrationRequest = {
       host: { name: res.req._header.split('Host: ')[1].split('\r\n')[0] },
-      unique: [ 'username', 'email' ],
-      user: {
+      unique: ['username', 'email'],
+      user: {
         username: user.username,
         email: user.email,
         appId: user.appId,
         referer: user.referer,
-        insurancenumber: user.insurancenumber,
+        insurancenumber: user.insurancenumber
       }
     };
-    hasToken ? registrationRequest.user.invitationToken = user.invitationToken : null;
+    if (hasToken) {
+      registrationRequest.user.invitationToken = user.invitationToken;
+    }
     return registrationRequest;
   }
-  function stripRegistrationRequest(request) {
+
+  function stripRegistrationRequest (request) {
     delete request.user.language;
     delete request.user.id;
     return request;
   }
 
-  describe('POST /users (create user)', function() {
-
+  describe('POST /users (create user)', function () {
     describe('[WAUW] when a user with the same username (not email) already exists in core but not in register', () => {
-      let oldEmail, firstUser, secondUser, firstValidationRequest, firstRegistrationRequest;
+      let oldEmail, firstUser, secondUser, firstValidationRequest, firstRegistrationRequest, serviceRegisterRequestsPUT;
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
@@ -182,7 +187,7 @@ describe('registration: cluster', function() {
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
 
-        let initUser = new User(userData);
+        const initUser = new User(userData);
         assert.equal(body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
       });
       it('[7QB6] should send the right data to register', () => {
@@ -204,9 +209,9 @@ describe('registration: cluster', function() {
 
         const users = [firstUser, secondUser];
         assert.equal(serviceRegisterRequestsPUT.length, users.length, 'should have recieved 2 PUT requests');
-        for (let i = 0; i < serviceRegisterRequestsPUT.length ; i++) {
+        for (let i = 0; i < serviceRegisterRequestsPUT.length; i++) {
           const putRequest = serviceRegisterRequestsPUT[i];
-          assert.deepEqual( putRequest, {
+          assert.deepEqual(putRequest, {
             username: users[i].username,
             user: {
               appId: [
@@ -230,7 +235,7 @@ describe('registration: cluster', function() {
                   creation: true,
                   isActive: true,
                   isUnique: false,
-                  value: 'en',
+                  value: 'en'
                 }
               ],
               referer: [
@@ -254,9 +259,8 @@ describe('registration: cluster', function() {
               ]
             },
             fieldsToDelete: {}
-          })
+          });
         }
-
       });
       it('[A2EM] should replace first user events in the storage', () => {
         const firstEmail = firstUser.events.filter(e => e.type === 'email/string')[0].content;
@@ -265,6 +269,7 @@ describe('registration: cluster', function() {
         assert.equal(secondEmail, userData.email);
       });
     });
+
     describe('when a user with the same username/email already exists in core but not in register', () => {
       let firstValidationRequest;
       let firstRegistrationRequest;
@@ -289,7 +294,7 @@ describe('registration: cluster', function() {
             username: 'anyusername'
           });
         nock(regUrl)
-          .put('/users', (body) => {
+          .put('/users', (/* body */) => {
             return true;
           })
           .times(2)
@@ -302,7 +307,7 @@ describe('registration: cluster', function() {
           .reply(200, { deleted: true });
 
         res = await request.post(methodPath).send(userData);
-        firstValidationRequest = buildValidationRequest(userData)
+        firstValidationRequest = buildValidationRequest(userData);
         firstRegistrationRequest = buildRegistrationRequest(userData);
         res = await request.post(methodPath).send(userData);
       });
@@ -316,9 +321,9 @@ describe('registration: cluster', function() {
       it('[ZHYX] should send the right data to register', () => {
         // validate validation request - first and third requests
         // should be validation and they shuold be equal
-        //(remove core because validation and registration was done
+        // (remove core because validation and registration was done
         // by different processes - port is different)
-        let validationSent2 = Object.assign({}, serviceRegisterRequests[0]);
+        const validationSent2 = Object.assign({}, serviceRegisterRequests[0]);
         delete validationSent2.core;
         delete serviceRegisterRequests[2].core;
         assert.deepEqual(validationSent2, serviceRegisterRequests[2]);
@@ -332,6 +337,7 @@ describe('registration: cluster', function() {
         assert.deepEqual(registrationSent, firstRegistrationRequest);
       });
     });
+
     describe('when the username exists in register', () => {
       before(async () => {
         userData = _.extend({}, defaults(), { username: 'wactiv' });
@@ -496,7 +502,7 @@ describe('registration: cluster', function() {
               username: userData.username
             });
           nock(regUrl)
-            .put('/users', (body) => {
+            .put('/users', (/* body */) => {
               return true;
             })
             .reply(201, {
@@ -533,14 +539,14 @@ describe('registration: cluster', function() {
               return true;
             })
             .reply(200, {
-              username: userData.username,
+              username: userData.username
             });
           nock(regUrl)
-            .put('/users', (body) => {
+            .put('/users', (/* body */) => {
               return true;
             })
             .reply(201, {
-              ok: true,
+              ok: true
             });
           res = await request.post(methodPath).send(userData);
         });
@@ -552,10 +558,9 @@ describe('registration: cluster', function() {
           assert.deepEqual(validationSent, buildValidationRequest(userData, false));
           let registrationSent = serviceRegisterRequests[1];
           registrationSent = stripRegistrationRequest(registrationSent);
-          //assert.deepEqual(registrationSent, buildRegistrationRequest(userData, false));
+          // assert.deepEqual(registrationSent, buildRegistrationRequest(userData, false));
         });
       });
-
     });
 
     describe('when invitationTokens are defined', () => {
@@ -576,14 +581,14 @@ describe('registration: cluster', function() {
               return true;
             })
             .reply(200, {
-              username: userData.username,
+              username: userData.username
             });
           nock(regUrl)
-            .put('/users', (body) => {
+            .put('/users', (/* body */) => {
               return true;
             })
             .reply(200, {
-              ok: true,
+              ok: true
             });
           res = await request.post(methodPath).send(userData);
         });
@@ -597,6 +602,10 @@ describe('registration: cluster', function() {
           registrationSent = stripRegistrationRequest(registrationSent);
 
           assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
+        });
+        it('[1BF3] should find password in password history', async () => {
+          const user = await usersRepository.getUserByUsername(userData.username);
+          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, userData.password, 1), 'missing password in history');
         });
       });
       describe('when an invalid one is provided', () => {
@@ -613,7 +622,7 @@ describe('registration: cluster', function() {
               error: {
                 id: ErrorIds.InvalidInvitationToken
               }
-             });
+            });
           res = await request.post(methodPath).send(userData);
         });
         it('[4GON] should respond with status 400', () => {
@@ -625,6 +634,7 @@ describe('registration: cluster', function() {
         });
       });
     });
+
     describe('when invitationTokens are set to [] (forbidden creation)', () => {
       describe('when any string is provided', () => {
         before(async () => {
@@ -639,7 +649,8 @@ describe('registration: cluster', function() {
             .reply(400, {
               error: {
                 id: ErrorIds.InvalidInvitationToken
-              } });
+              }
+            });
           res = await request.post(methodPath).send(userData);
         });
         it('[CX9N] should respond with status 400', () => {
@@ -700,8 +711,37 @@ describe('registration: cluster', function() {
       });
     });
 
+    describe('[RCPW] When password rules are enabled', function () {
+      const validation = helpers.validation;
+
+      before(async () => {
+        config.injectTestConfig(helpers.passwordRules.settingsOverride);
+        userData = defaults();
+        nock(regUrl)
+          .post('/users/validate', () => true)
+          .reply(200, { errors: [] });
+        nock(regUrl)
+          .post('/users', () => true)
+          .reply(200, { username: userData.username });
+        nock(regUrl)
+          .put('/users', () => true)
+          .reply(200, { ok: true });
+      });
+
+      it('[0OBL] must fail if the new password does not comply (smoke test; see "/change-password" in account tests)', async () => {
+        userData.password = helpers.passwordRules.passwords.badTooShort;
+        const res = await request.post(methodPath).send(userData);
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidParametersFormat
+        });
+      });
+
+      it('[5BQL] must succeed if the new password complies (smoke test; see "/change-password" in account tests)', async () => {
+        userData.password = helpers.passwordRules.passwords.good4CharCats;
+        const res = await request.post(methodPath).send(userData);
+        validation.check(res, { status: 201 });
+      });
+    });
   });
-
-
-
 });

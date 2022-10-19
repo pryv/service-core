@@ -37,6 +37,7 @@ ignore:
 - flow-typed
 - nats-server
 - node_modules
+- test-results
 - var-pryv
 
 license: |
