@@ -12,7 +12,8 @@ const { getConfig, getLogger } = require('@pryv/boiler');
 
 const versionning = require('./versioning');
 const logger = getLogger('audit:storage');
-const ensureUserDirectory = require('business').users.userLocalDirectory.ensureUserDirectory;
+const userLocalDirectory = require('business').users.userLocalDirectory;
+const ensureUserDirectory = userLocalDirectory.ensureUserDirectory;
 
 const CACHE_SIZE = 500;
 const VERSION = '1.0.0';
@@ -27,6 +28,7 @@ class Storage {
       throw('Database already initalized');
     }
     this.config = await getConfig();
+    await userLocalDirectory.init();
     await versionning.checkAllUsers(this);
     this.logger.debug('Db initalized');
     this.initialized = true;
@@ -75,7 +77,7 @@ class Storage {
     const userDb = await this.forUser(userId);
     await userDb.close();
     this.userDBsCache.delete(userId);
-    const dbPath = await dbPathForUserid(userId);
+    const dbPath = await this.dbPathForUserid(userId);
     try {
       await unlinkFilePromise(dbPath);
     } catch (err) {
@@ -88,27 +90,18 @@ class Storage {
     this.userDBsCache.clear();
   }
 
-  async _dbPathForUserId(userId, versionString) {
-    return await dbPathForUserid(userId, versionString);
+  async dbPathForUserId(userId) {
+    const userPath = await ensureUserDirectory(userId);
+    return path.join(userPath, this.id + '-' + this.getVersion() + '.sqlite');
   }
 }
 
 async function open(storage, userId, logger) {
   logger.debug('open: ' + userId);
-  const db = new UserDatabase(logger, {dbPath: await dbPathForUserid(userId)});
+  const db = new UserDatabase(logger, {dbPath: await storage.dbPathForUserId(userId)});
   await db.init();
   storage.userDBsCache.set(userId, db);
   return db;
-}
-
-/**
- * @private
- * @param {string} userId -- user id (cuid format)
- * @param {string} versionString -- version of the database
- */
-async function dbPathForUserid(userId, versionString) {
-  const userPath = await ensureUserDirectory(userId);
-  return path.join(userPath, this.id + versionString + '.sqlite');
 }
 
 module.exports = Storage;

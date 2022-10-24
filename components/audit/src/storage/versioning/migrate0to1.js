@@ -84,7 +84,7 @@ async function checkAllUsers(storage) {
 
   async function checkUserDir (userId, userDir) {
     // check if a migration from a non upgradeable schema (copy file to file) is needed
-    const v0dbPath = await storage._dbPathForUserId(userId, '');
+    const v0dbPath = path.join(userDir, 'audit.sqlite');
   
     if (! fs.existsSync(v0dbPath)) {
       logger.info('OK for ' + userId);
