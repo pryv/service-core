@@ -22,7 +22,7 @@ exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
     if (typeof block === 'string') return '"'+block+'"';
     let res = ''; // A OR B
     const anyExists = block.any && block.any.length > 0 && block.any[0] !== '*';
-    if (anyExists) { 
+    if (anyExists) {
       if (block.any.length === 1) {
         res += addQuotes(block.any)[0];
       } else {
@@ -30,7 +30,7 @@ exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
       }
     }
     if (block.and && block.and.length > 0) {
-      if (anyExists) res+= ' AND ';
+      if (anyExists) res += ' AND ';
       const subs = block.and.map(processBlock);
       res +=  subs.join(' AND ');
     }

@@ -483,7 +483,6 @@ class SystemStreamsSerializer {
  * @param string filter - boolean value used for filtering
  */
 function filterMapStreams (streams: Array<SystemStream>, filter: string = IS_SHOWN): Map<string, SystemStream> {
-  
   let streamsMap: Map<string, SystemStream> = {};
 
   if (! Array.isArray(streams)) {
