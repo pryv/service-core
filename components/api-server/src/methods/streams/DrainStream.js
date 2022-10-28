@@ -21,7 +21,7 @@ module.exports = DrainStream;
  * @constructor
  */
 function DrainStream(params, callback) {
-  Writable.call(this, { objectMode: true });
+  Writable.call(this, { objectMode: true, highWaterMark: 1});
 
   this.limit = 100000;
 

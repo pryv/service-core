@@ -17,7 +17,7 @@ inherits(ApplyEventsFromDbStream, Transform);
  * @param {Array<Function>} convs 
  */
 function ApplyEventsFromDbStream(itemFromDBConverters) {
-  Transform.call(this, {objectMode: true});
+  Transform.call(this, {objectMode: true, highWaterMark: 1});
   this.trans = converters.getRenamePropertyFn('_id', 'id');
   this.converters = itemFromDBConverters;
 }

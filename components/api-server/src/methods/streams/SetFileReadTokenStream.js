@@ -20,7 +20,7 @@ module.exports = SetFileReadTokenStream;
  * @constructor
  */
 function SetFileReadTokenStream(params) {
-  Transform.call(this, {objectMode: true});
+  Transform.call(this, {objectMode: true, highWaterMark: 1});
 
   this.access = params.access;
   this.filesReadTokenSecret = params.filesReadTokenSecret;

@@ -16,7 +16,7 @@ module.exports = ChangeStreamIdPrefixStream;
  * @constructor
  */
 function ChangeStreamIdPrefixStream() {
-  Transform.call(this, {objectMode: true});
+  Transform.call(this, {objectMode: true, highWaterMark: 1});
 }
 
 inherits(ChangeStreamIdPrefixStream, Transform);

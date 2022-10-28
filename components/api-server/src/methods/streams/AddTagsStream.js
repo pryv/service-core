@@ -16,7 +16,7 @@ module.exports = AddTagsStream;
  * @constructor
  */
 function AddTagsStream() {
-  Transform.call(this, {objectMode: true});
+  Transform.call(this, {objectMode: true, highWaterMark: 1});
 }
 
 inherits(AddTagsStream, Transform);

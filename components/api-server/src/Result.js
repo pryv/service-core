@@ -198,23 +198,37 @@ class Result {
     if (streamsArray.length < 1) 
       throw new Error('streams array empty');
 
+    const flushStream = new ResultStream(this._private.tracing, this._private.tracingId);
+
     // Are we handling a single stream?
     if (streamsArray.length === 1) {
       const first = streamsArray[0];
-      return first.stream
+      first.stream
         .pipe(new ArrayStream(first.name, true))
-        .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
-        .pipe(res);
+        .pipe(flushStream);
+    } else {
+      // assert: streamsArray.length > 1
+      const streams = [];
+      for (let i=0; i<streamsArray.length; i++) {
+        const s = streamsArray[i];
+        streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
+      }
+      new MultiStream(streams).pipe(flushStream);
     }
 
-    // assert: streamsArray.length > 1
-    const streams = [];
-    for (let i=0; i<streamsArray.length; i++) {
-      const s = streamsArray[i];
-      streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
-    }
+    // force write 
+    flushStream.on('readable', _ => {
+      let chunk;
+      while (null !== (chunk = flushStream.read())) {
+        console.log(chunk.length);
+        res.write(chunk);
+      }
+    });
+    flushStream.on('end', () => {
+      res.end();
+    });
 
-    return new MultiStream(streams).pipe(new ResultStream(this._private.tracing, this._private.tracingId)).pipe(res);
+    return flushStream;
   }
   
   writeSingle(res: express$Response, successCode: number) {
@@ -270,29 +284,41 @@ class ResultStream extends Transform {
   isStart: boolean;
   tracing: object;
   tracingId: string;
+  buffer;
+  bufferSize;
   
-  constructor(tracing, parentTracingId) {
-    super({objectMode: true});
-    
+  constructor(tracing, parentTracingId, bufferSize) {
+    super({objectMode: true, highWaterMark: 1});
+    this.bufferSize = bufferSize || 2048 ;
     this.isStart = true;
+    this.buffer = '';
     this.tracing = tracing;
     this.tracingId = this.tracing.startSpan('resultStream', {}, parentTracingId);
+  }
+
+  pushToBuffer(data) {
+    this.buffer += data;
+    if (this.buffer.length >= this.bufferSize) {
+      this.push(this.buffer);
+      this.buffer = '';
+    }
   }
   
   _transform(data, encoding, callback) {
     if (this.isStart) {
-      this.push('{');
+      this.pushToBuffer('{');
       this.isStart = false;
       this.tracing.logForSpan(this.tracingId, {event: 'start'});
     }
-    this.push(data);
+    this.pushToBuffer(data);
     this.tracing.logForSpan(this.tracingId, {event: 'push'});
     callback();
   }
   
   _flush(callback) {
     const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
-    this.push(thing + '}');
+    this.pushToBuffer(thing + '}');
+    if (this.buffer.length > 0) this.push(this.buffer);
     this.tracing.finishSpan('resultStream');
     callback();
   }
@@ -321,7 +347,7 @@ class StreamConcatArray {
       streamConcact.nextFactoryCallBack = callback;
       streamConcact._next();
     }
-    this.multistream = new MultiStream(factory, {objectMode: true});
+    this.multistream = new MultiStream(factory, {objectMode: true, highWaterMark: 1});
   }
 
   /**

@@ -16,7 +16,7 @@ module.exports = CleanDeletedEventsStream;
  * @constructor
  */
 function CleanDeletedEventsStream () {
-  Transform.call(this, { objectMode: true });
+  Transform.call(this, { objectMode: true, highWaterMark: 1});
 }
 
 inherits(CleanDeletedEventsStream, Transform);

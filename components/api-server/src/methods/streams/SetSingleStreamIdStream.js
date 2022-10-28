@@ -14,7 +14,7 @@ module.exports = SetSingleStreamIdStream;
  * @constructor
  */
 function SetSingleStreamIdStream() {
-  Transform.call(this, {objectMode: true});
+  Transform.call(this, {objectMode: true, highWaterMark: 1});
 }
 
 inherits(SetSingleStreamIdStream, Transform);

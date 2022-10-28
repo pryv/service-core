@@ -17,7 +17,7 @@ module.exports = Source;
  * @constructor
  */
 function Source(array) {
-  Readable.call(this, {objectMode: true});
+  Readable.call(this, {objectMode: true, highWaterMark: 1});
   this.array = _.cloneDeep(array); // shift changes in place
 }
 

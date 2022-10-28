@@ -167,7 +167,7 @@ function convertEventFromStore(storeId, eventData) {
 class ConvertEventFromStoreStream extends Transform {
   storeId : string;
   constructor(storeId) {
-    super({objectMode: true});
+    super({objectMode: true, highWaterMark: 1});
     this.storeId = storeId;
   }
   _transform = function (event, encoding, callback) {
