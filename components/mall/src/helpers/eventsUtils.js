@@ -140,11 +140,9 @@ function addStoreId(storeId, eventData) {
 }
 
 function removeEmptyAttachments(eventData) {
-  if (eventData?.attachments != null && eventData.attachments.length == 0) { 
-    delete eventData.attachments; 
+  if (eventData?.attachments != null && eventData.attachments.length == 0) {
+    delete eventData.attachments;
   }
-
-
   return eventData;
 }
 

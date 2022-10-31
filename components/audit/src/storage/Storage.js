@@ -10,8 +10,7 @@ const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
 
-const versionning = require('./versioning');
-const logger = getLogger('audit:storage');
+const versioning = require('./versioning');
 const userLocalDirectory = require('business').users.userLocalDirectory;
 const ensureUserDirectory = userLocalDirectory.ensureUserDirectory;
 
@@ -29,16 +28,16 @@ class Storage {
     }
     this.config = await getConfig();
     await userLocalDirectory.init();
-    await versionning.checkAllUsers(this);
-    this.logger.debug('Db initalized');
+    await versioning.checkAllUsers(this);
+    this.logger.debug('DB initialized');
     this.initialized = true;
     return this;
   }
 
-  constructor(id, options) { 
+  constructor(id, options) {
     this.id = id;
     this.logger = getLogger(this.id + ':storage');
-    this.options = options || {}; 
+    this.options = options || {};
     this.userDBsCache = new LRU({
       max: this.options.max || CACHE_SIZE,
       dispose: function (db, key) { db.close(); }

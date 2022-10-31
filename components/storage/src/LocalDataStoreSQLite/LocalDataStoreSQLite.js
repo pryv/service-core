@@ -8,14 +8,13 @@
 // @flow
 
 /**
- * Local Data Store. 
+ * Local Data Store.
  */
-const bluebird = require('bluebird');
 
 const storage = require('../index');
 const ds  = require('pryv-datastore');
 
-const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront 
+const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
 
 const userStreams = require('../localDataStore/localUserStreams');
 const LocalUserEventsSQLite = require('./LocalUserEventsSQLite');
@@ -34,7 +33,7 @@ module.exports = ds.createDataStore({
     await SystemStreamsSerializer.init();
 
     const database = await storage.getDatabase();
-    
+
     // streams
     const streamsCollection = await database.getCollection({ name: 'streams' });
     const userStreamsStorage = (await storage.getStorageLayer()).streams;
@@ -43,11 +42,11 @@ module.exports = ds.createDataStore({
 
     // events
     const eventFilesStorage = (await storage.getStorageLayer()).eventFiles;
-    
+
     const userStorage = new Storage('local');
     await userStorage.init();
     this.events = new LocalUserEventsSQLite(userStorage, eventFilesStorage);
-    
+
     return this;
   },
 
@@ -56,16 +55,15 @@ module.exports = ds.createDataStore({
     await transaction.init();
     return transaction;
   },
+
   async deleteUser(uid: string) {
     await this.streams._deleteUser(uid);
     await this.events._deleteUser(uid);
   },
 
-  async getUserStorageSize(uid: string) { // Here we should simply look at the db file size 
+  async getUserStorageSize(uid: string) { // Here we should simply look at the db file size
     //const streamsSize = await this.streams._storageUsedForUser(uid);
     const eventsSize = await this.events._storageUsedForUser(uid);
     return eventsSize;
   }
 });
-
-

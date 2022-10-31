@@ -8,7 +8,6 @@ const sqlite3 = require('better-sqlite3');
 const eventSchemas = require('./schemas/events')
 const {createFTSFor } = require('./FullTextSearchDataBase');
 const events = require('./schemas/events');
-const { getLogger } = require('@pryv/boiler');
 const { Readable } = require('stream');
 
 const { toSQLiteQuery } = require('audit/src/storage/sqLiteStreamQueryUtils');
@@ -40,14 +39,14 @@ class UserDatabase {
   version;
 
   /**
-   * 
+   *
    * @param {Object} params
    * @param {string} params.dbPath // the file to use as database
    */
   constructor(logger, params) {
     this.logger = logger.getLogger('user-database');
     this.db = new sqlite3(params.dbPath, DB_OPTIONS);
-  } 
+  }
 
   async init() {
     this.db.pragma('journal_mode = WAL');
@@ -55,7 +54,7 @@ class UserDatabase {
     this.db.unsafeMode(true);
 
     // here we might want to skip DB initialization if version is not null
-   
+
     this.create = {};
     this.getAll = {};
     this.get = {};
@@ -80,7 +79,7 @@ class UserDatabase {
         this.db.prepare(`CREATE INDEX IF NOT EXISTS ${tableName}_${columnName} ON ${tableName}(${columnName})`).run();
       });
 
-      this.create[tableName] = this.db.prepare(`INSERT INTO ${tableName} (` + 
+      this.create[tableName] = this.db.prepare(`INSERT INTO ${tableName} (` +
         columnNames.join(', ') + ') VALUES (@' +
         columnNames.join(', @') + ')');
 
@@ -91,13 +90,13 @@ class UserDatabase {
     createFTSFor(this.db, 'events', tables['events'], ['streamIds']);
 
     this.queryGetTerms = this.db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
-    
+
 
   }
 
   async updateEvent(eventId, eventData) {
     const eventForDb = eventSchemas.eventToDB(eventData);
-   
+
     if (eventForDb.streamIds == null) { eventForDb.streamIds = ALL_EVENTS_TAG; }
 
     delete eventForDb.eventid;
@@ -111,9 +110,9 @@ class UserDatabase {
       if (res.changes !== 1) {
         throw new Error('Event not found');
       }
-    }, 10000); 
+    }, 10000);
 
-    
+
     const resultEvent = eventSchemas.eventFromDB(eventForDb);
     return resultEvent;
   }
@@ -127,7 +126,7 @@ class UserDatabase {
     const eventForDb = eventSchemas.eventToDB(event);
     this.create.events.run(eventForDb);
     this.logger.debug('(sync) CREATE event:' + JSON.stringify(eventForDb));
-  }  
+  }
 
   async createEvent(event) {
     const eventForDb = eventSchemas.eventToDB(event);
@@ -164,7 +163,7 @@ class UserDatabase {
 
   getEvents(params) {
     const queryString = prepareEventsGetQuery(params);
-    
+
     this.logger.debug('GET Events:' + queryString);
     const res = this.db.prepare(queryString).all();
     if (res != null) {
@@ -218,7 +217,7 @@ class UserDatabase {
         statement();
         return;
       } catch (error) {
-        if (error.code !== 'SQLITE_BUSY') { // ignore 
+        if (error.code !== 'SQLITE_BUSY') { // ignore
           throw error;
         }
         const waitTime = i > (WAIT_LIST_MS.length - 1) ? 100 : WAIT_LIST_MS[i];
@@ -241,13 +240,13 @@ function prepareEventsGetQuery(params) {
 }
 
 const converters = {
-  equal: (content) => { 
+  equal: (content) => {
     const realField = (content.field === 'id') ? 'eventid' : content.field;
     if (content.value === null) return `${realField} IS NULL`;
     const value = events.coerceSelectValueForCollumn(realField, content.value);
     return `${realField} = ${value}`;
   },
-  greater: (content) => { 
+  greater: (content) => {
     const value = events.coerceSelectValueForCollumn(content.field, content.value);
     return `${content.field} > ${value}`;
   },
@@ -255,15 +254,15 @@ const converters = {
     const value = events.coerceSelectValueForCollumn(content.field, content.value);
     return `${content.field} >= ${value}`;
   },
-  lowerOrEqual: (content) => { 
+  lowerOrEqual: (content) => {
     const value = events.coerceSelectValueForCollumn(content.field, content.value);
     return `${content.field} <= ${value}`;
   },
-  greaterOrEqualOrNull: (content) => { 
+  greaterOrEqualOrNull: (content) => {
     const value = events.coerceSelectValueForCollumn(content.field, content.value);
     return `(${content.field} >= ${value} OR ${content.field} IS NULL)`;
   },
-  typesList: (list) => { 
+  typesList: (list) => {
     if (list.length == 0) return null;
     const lt = list.map((type) => {
       const typeCorced = events.coerceSelectValueForCollumn('type', type);
@@ -299,7 +298,7 @@ function prepareQuery(params = {}, isDelete = false) {
   if (ands.length > 0) {
     queryString += ' WHERE ' + ands.join(' AND ') ;
   }
-  
+
   if (! isDelete) {
     if (params.options?.sort) {
       const sorts = [];
@@ -323,4 +322,3 @@ function prepareQuery(params = {}, isDelete = false) {
 
 
 module.exports = UserDatabase;
-

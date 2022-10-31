@@ -12,12 +12,6 @@
  * Events implementation
  */
 
-const bluebird = require('bluebird');
-const _ = require('lodash');
-const Readable = require('stream').Readable;
-
-const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
-
 const errorFactory = require('errors').factory;
 
 class LocalUserEvents {
@@ -47,7 +41,7 @@ class LocalUserEvents {
       await db.createEvent(event);
       return event;
     } catch (err) {
-      if (err.message === 'UNIQUE constraint failed: events.eventid') { 
+      if (err.message === 'UNIQUE constraint failed: events.eventid') {
         throw errorFactory.itemAlreadyExists('event', {id: event.id}, err);
       }
       throw errorFactory.unexpectedError(err);
@@ -89,12 +83,11 @@ class LocalUserEvents {
     return db.deleteEvents(params);
   }
 
-
   async _deleteUser(userId: string): Promise<void> {
     return await this.delete(userId, {query: []});
   }
 
-  async _storageUsedForUser(userId: string) { 
+  async _storageUsedForUser(userId: string) {
     const db = await this.storage.forUser(userId);
     return db.eventsCount();
   }
