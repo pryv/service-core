@@ -46,7 +46,7 @@ async function getMall(): Promise<Mall> {
 
   // Load built-in stores
 
-  if (config.get('storage:use') === 'sqlite') {
+  if (config.get('database:engine') === 'sqlite') {
     const LocalStore: DataStore  = require('storage/src/LocalDataStoreSQLite'); // change to LocalDataStoreSQLite for SQLite PoC
     mall.addStore(LocalStore);
     logger.info('Using sqlite PoC Datastore');
