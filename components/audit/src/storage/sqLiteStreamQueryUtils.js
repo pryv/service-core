@@ -5,21 +5,23 @@
  * Proprietary and confidential
  */
 
+const { ALL_EVENTS_TAG } = require('./schemas/events');
+
 /**
- * Transform queries for SQLite - to be run on 
- * @param {} streamQuery 
+ * Transform queries for SQLite - to be run on
+ * @param {} streamQuery
  */
-exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
+exports.toSQLiteQuery = function toSQLiteQuery (streamQuery) {
   if (streamQuery == null) return null;
- 
+
   if (streamQuery.length === 1) {
     return processBlock(streamQuery[0]);
   } else { // pack in $or
     return '(' + streamQuery.map(processBlock).join(') OR (') + ')';
   }
-  
+
   function processBlock(block) {
-    if (typeof block === 'string') return '"'+block+'"';
+    if (typeof block === 'string') return '"' + block + '"';
     let res = ''; // A OR B
     const anyExists = block.any && block.any.length > 0 && block.any[0] !== '*';
     if (anyExists) {
@@ -32,18 +34,18 @@ exports.toSQLiteQuery = function toSQLiteQuery(streamQuery) {
     if (block.and && block.and.length > 0) {
       if (anyExists) res += ' AND ';
       const subs = block.and.map(processBlock);
-      res +=  subs.join(' AND ');
+      res += subs.join(' AND ');
     }
-    if (block.not && block.not.length > 0) { 
-      if (! anyExists) res += ' ".." ';
+    if (block.not && block.not.length > 0) {
+      if (!anyExists) res += ' "' + ALL_EVENTS_TAG + '" ';
       res += ' NOT ';
       res += addQuotes(block.not).join(' NOT ');
     }
     if (res === '') res = null;
-    return res ;
+    return res;
   }
-}
+};
 
-function addQuotes(array) {
-  return array.map((x) => '"'+x+'"');
+function addQuotes (array) {
+  return array.map((x) => '"' + x + '"');
 }
