@@ -22,8 +22,6 @@ const LocalTransaction = require('../localDataStore/LocalTransaction');
 
 const Storage = require('audit/src/storage/Storage');
 
-const STORE_ID = 'local';
-const STORE_NAME = 'Local Store';
 module.exports = ds.createDataStore({
   id: 'local',
   name:  'Local Store',

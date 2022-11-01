@@ -21,28 +21,24 @@
 
 const sqlite3 = require('better-sqlite3');
 const unlinkFilePromise = require('fs/promises').unlink;
-const path = require('path');
-const fs = require('fs');
-const { getLogger } = require('@pryv/boiler');
-const userLocalDirectory = require('business').users.userLocalDirectory;
-const UserDatabase = require('../UserDatabase');
 
-const logger =  getLogger('sqlite-storage-migration:migrate0to1');
+module.exports = {
+  migrate0to1
+};
 
-async function migrate0to1(v0dbPath, v1user, logger) {
+async function migrate0to1 (v0dbPath, v1user, logger) {
   const v0db = new sqlite3(v0dbPath);
   const v0EventsIterator = v0db.prepare('SELECT * FROM events').iterate();
-  const res = {
-    count : 0,
-  }
+  const res = { count: 0 };
+
   v1user.db.exec('BEGIN');
-  for (let eventData of v0EventsIterator) {
+  for (const eventData of v0EventsIterator) {
     eventData.id = eventData.eventid;
     delete eventData.eventid;
 
     if (eventData.duration) { // NOT null, 0, undefined
       eventData.endTime = eventData.time + eventData.duration; 
-    } else { 
+    } else {
       eventData.endTime = eventData.time;
     }
    
@@ -63,61 +59,3 @@ async function migrate0to1(v0dbPath, v1user, logger) {
   await unlinkFilePromise(v0dbPath);
   return res;
 }
-
-async function checkAllUsers(storage) {
-  const userDir = userLocalDirectory.getBasePath();
-  const auditDBVersionFile = path.join(userDir, 'audit-db-version-' + storage.getVersion() + '.txt'); 
-  if (fs.existsSync(auditDBVersionFile)) {
-    logger.debug('Audit db version file found, skipping migration for ' + storage.getVersion());
-    return;
-  }
-
-  const counts = {
-    done: 0,
-    skip: 0
-  };
-
-  await userLocalDirectory.foreachUserDirectory(checkUserDir, userDir, logger);
-  logger.info('Done with migration for ' + storage.getVersion() + ': ' + counts.done + ' done, ' + counts.skip + ' skipped');
-
-  await fs.writeFileSync(auditDBVersionFile, 'DO NOT DELETE THIS FILE - IT IS USED TO DETECT MIGRATION SUCESS');
-
-  async function checkUserDir (userId, userDir) {
-    // check if a migration from a non upgradeable schema (copy file to file) is needed
-    const v0dbPath = path.join(userDir, 'audit.sqlite');
-  
-    if (! fs.existsSync(v0dbPath)) {
-      logger.info('OK for ' + userId);
-      counts.skip++;
-      return; // skip as file exists
-    };
-
-    const v1dbPath = await storage.dbPathForUserid(userId);
-    if (fs.existsSync(v1dbPath)) {
-      logger.error('ERROR: Found V0 and V1 database for: ' + userId + '>>> Manually delete one of the version in: ' + userDir);
-      process.exit(1);
-    };
-
-    const v1user = new UserDatabase(logger, {dbPath: v1dbPath});
-   
-    try {
-      await v1user.init();
-      const resMigrate = await migrate0to1(v0dbPath, v1user, logger);
-      logger.info('Migrated ' + resMigrate.count + ' records for ' + userId);
-      await v1user.close();
-      counts.done++;
-    } catch (err) {
-      logger.error('ERROR during Migration V0 to V1: ' + err.message + ' >> For User: ' + userId + '>>> Check Dbs in: ' + userDir);
-      logger.error(err);
-      await unlinkFilePromise(v1dbPath);
-      process.exit(1);
-    }
-  }
-}
-
-
-
-module.exports = {
-  migrate0to1,
-  checkAllUsers,
-};

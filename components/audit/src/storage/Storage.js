@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 const path = require('path');
-const unlinkSync = require('fs').unlinkSync;
+const unlinkFilePromise = require('fs/promises').unlink;
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
@@ -26,11 +26,11 @@ class Storage {
     if (this.initialized) {
       throw('Database already initalized');
     }
+    this.initialized = true;
     this.config = await getConfig();
     await userLocalDirectory.init();
     await versioning.checkAllUsers(this);
     this.logger.debug('DB initialized');
-    this.initialized = true;
     return this;
   }
 
@@ -81,6 +81,7 @@ class Storage {
       await unlinkFilePromise(dbPath);
     } catch (err) {
       this.logger.debug('deleteUser: Error' + err);
+      throw err;
     }
   }
 

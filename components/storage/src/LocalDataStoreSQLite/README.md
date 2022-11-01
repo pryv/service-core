@@ -1,6 +1,6 @@
 # Proof of Concept for SQLite event storage. 
 
-Current storage can be activated by changing the following line in `mall/src/index.js` to point SQLite storage
+Current storage can be activated by changing the setting `database:engine` to `sqlite`
 
 ```
 const LocalStore: DataStore = require('storage/src/localDataStore');
