@@ -19,10 +19,10 @@ describe('Audit Storage Migration', () => {
   let logger;
   before(async () => {
     await initTests();
-    logger = getLogger('sqlite-sttorage-migration-test');
+    logger = getLogger('sqlite-storage-migration-test');
   });
 
-  it('[MFFR]  Migrate v0 to v1', async function () {
+  it('[MFFR] a single Migrate v0 to v1', async function () {
     const userid = cuid();
     const srcPath = path.join(__dirname, '../support/migration/audit-v0.sqlite');
     const v0dbPath = path.join(os.tmpdir(), userid + '-v0.sqlite');
@@ -35,5 +35,12 @@ describe('Audit Storage Migration', () => {
     const resMigrate = await versioning.migrate0to1(v0dbPath, v1user, logger);
     assert.equal(resMigrate.count, 298);
   });
+
+  it('[RXVF]  check userDir and perform migration when needed', async function () {
+    throw new Error('todo');
+  });
   
+  it('[SQIY]  check userDir and skip migration when not needed', async function () {
+    throw new Error('todo');
+  });
 });
