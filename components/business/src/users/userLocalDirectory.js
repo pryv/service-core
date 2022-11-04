@@ -25,11 +25,18 @@ module.exports = {
   pathForAttachment,
   deleteUserDirectory,
   getBasePath,
-  foreachUserDirectory
+  foreachUserDirectory,
+  setBasePathTestOnly
 };
-
+let config;
 let basePath;
 let attachmentsBasePath;
+
+// temporarly set baseBath for tests;
+function setBasePathTestOnly(path) {
+  basePath = path || config.get('userFiles:path');
+}
+
 
 /**
  * Load config and make sure baseUserDirectory exists
@@ -37,7 +44,7 @@ let attachmentsBasePath;
  */
 async function init () {
   if (basePath) return;
-  const config = await getConfig();
+  config = await getConfig();
   const candidateBasePath = config.get('userFiles:path');
   mkdirp.sync(candidateBasePath);
   basePath = candidateBasePath;

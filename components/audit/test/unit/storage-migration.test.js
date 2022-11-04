@@ -5,15 +5,18 @@
  * Proprietary and confidential
  */
 
+ const setUserBasePathTestOnly = require('business').users.userLocalDirectory.setBasePathTestOnly;
+
 /* global describe, assert, cuid, audit, config, initTests*/
 
 const path = require('path');
-const { copyFile } = require('fs/promises');
+const { copy, remove, pathExists } = require('fs-extra');
 const cuid = require('cuid');
 const versioning = require('../../src/storage/versioning');
 const UserDatabase = require('../../src/storage/UserDatabase');
 const os = require('os');
 const { getLogger } = require('@pryv/boiler');
+const Storage = require('../../src/storage/Storage');
 
 describe('Audit Storage Migration', () => {
   let logger;
@@ -22,12 +25,17 @@ describe('Audit Storage Migration', () => {
     logger = getLogger('sqlite-storage-migration-test');
   });
 
+  after(() => {
+    // reset userDirectory base path to original 
+    setUserBasePathTestOnly();
+  });
+
   it('[MFFR] a single Migrate v0 to v1', async function () {
     const userid = cuid();
     const srcPath = path.join(__dirname, '../support/migration/audit-v0.sqlite');
     const v0dbPath = path.join(os.tmpdir(), userid + '-v0.sqlite');
     const v1dbPath = path.join(os.tmpdir(), userid + '-v1.sqlite');
-    await copyFile(srcPath, v0dbPath);
+    await copy(srcPath, v0dbPath);
 
     const v1user = new UserDatabase(logger, {dbPath: v1dbPath});
     await v1user.init();
@@ -36,11 +44,19 @@ describe('Audit Storage Migration', () => {
     assert.equal(resMigrate.count, 298);
   });
 
-  it('[RXVF]  check userDir and perform migration when needed', async function () {
-    throw new Error('todo');
+
+
+  it('[RXVF] check userDir and perform migration when needed', async function () {
+    this.timeout(10000);
+    const srcDir = path.join(__dirname, '../support/migration-userDirV0');
+    const tempUserDir = path.join(os.tmpdir(), 'pryv.io-test-userdir-' + Math.random().toString(36).substring(2, 8));
+    await copy(srcDir, tempUserDir);
+    assert.isFalse(await pathExists(path.join(tempUserDir, 'audit-db-version-1.0.0.txt')));
+    setUserBasePathTestOnly(tempUserDir);
+    const storage = new Storage('audit');
+    await storage.init();
+    assert.isTrue(await pathExists(path.join(tempUserDir, 'audit-db-version-1.0.0.txt')));
+    storage.close();
   });
-  
-  it('[SQIY]  check userDir and skip migration when not needed', async function () {
-    throw new Error('todo');
-  });
+
 });
