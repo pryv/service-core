@@ -36,11 +36,11 @@ describe('Migration - 1.7.x',function () {
   let webhooksCollection;
 
   before(async function() {
-    eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
-    usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
-    streamsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'streams' }, cb));
-    accessesCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'accesses' }, cb));
-    webhooksCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'webhooks' }, cb));
+    eventsCollection = await database.getCollection({ name: 'events' });
+    usersCollection = await database.getCollection({ name: 'users' });
+    streamsCollection = await database.getCollection({ name: 'streams' });
+    accessesCollection = await database.getCollection({ name: 'accesses' });
+    webhooksCollection = await database.getCollection({ name: 'webhooks' });
   });
 
   after(async function() {
@@ -60,20 +60,19 @@ describe('Migration - 1.7.x',function () {
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
 
     // get backup of users
-    const usersCursor = await bluebird.fromCallback(cb => usersCollection.find({}, cb));
+    const usersCursor = usersCollection.find({});
     const users = await usersCursor.toArray();
 
     // for tags keeps info on existings tags & events
-    const previousEventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
-    const previousAccessesWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
+    const previousEventsWithTags = await eventsCollection.find({ tags: { $exists: true, $ne: [] } }).toArray();
+    const previousAccessesWithTags = await accessesCollection.find({ 'permissions.tag': { $exists: true } }).toArray();
 
     // deleted
     const collectionsWithDelete = [eventsCollection, accessesCollection, streamsCollection, webhooksCollection];
     const previousItemsWithDelete = {};
     for (const collection of collectionsWithDelete) {
-      previousItemsWithDelete[collection.namespace] = await (await collection.find({ 'deleted': { $type: 'date'} })).toArray();
+      previousItemsWithDelete[collection.namespace] = await collection.find({ deleted: { $type: 'date' } }).toArray();
     }
-
 
     // perform migration
     await versions0.migrateIfNeeded();
@@ -81,11 +80,10 @@ describe('Migration - 1.7.x',function () {
     // verify that user accounts were migrated to events
     for (const user of users) {
       // we must verify that all system streamIds were translated to another prefix
-      const eventsCursor = await bluebird.fromCallback(cb => eventsCollection.find(
-        {
-          //streamIds: {$in: userAccountStreamIds},
-          userId: { $eq: user._id },
-        }, cb));
+      const eventsCursor = eventsCollection.find({
+        // streamIds: {$in: userAccountStreamIds},
+        userId: { $eq: user._id }
+      });
 
       const events = await eventsCursor.toArray();
 
@@ -108,7 +106,7 @@ describe('Migration - 1.7.x',function () {
 
 
     // ----------------- tag migrations
-    const eventsWithTags = await (await bluebird.fromCallback(cb => eventsCollection.find({ tags: { $exists: true, $ne: [] } }, cb))).toArray();
+    const eventsWithTags = await eventsCollection.find({ tags: { $exists: true, $ne: [] } }).toArray();
     assert.equal(eventsWithTags.length, 0);
     for (event of previousEventsWithTags) {
       const newEvent = await eventsCollection.findOne({ _id: event._id });
@@ -123,7 +121,7 @@ describe('Migration - 1.7.x',function () {
     }
 
     //-- permissions
-    const permissionsWithTags = await (await accessesCollection.find({ 'permissions.tag': { $exists: true} })).toArray();
+    const permissionsWithTags = await accessesCollection.find({ 'permissions.tag': { $exists: true } }).toArray();
     assert.equal(permissionsWithTags.length, 0);
 
     for (const previousAccess of previousAccessesWithTags) {
@@ -143,7 +141,7 @@ describe('Migration - 1.7.x',function () {
     // -----------------  deleted  migrations
 
     for (const collection of collectionsWithDelete) {
-      const newItems = await (await collection.find({ 'deleted': { $type: 'date'} })).toArray();
+      const newItems = await collection.find({ deleted: { $type: 'date' } }).toArray();
       assert.equal(newItems.length, 0, collection.namespace + ' should have no item with deleted dates' );
 
       for (const previousItem of previousItemsWithDelete[collection.namespace]) {

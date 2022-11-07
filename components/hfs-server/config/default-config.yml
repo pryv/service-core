@@ -9,8 +9,9 @@ logs:
     active: true
     level: debug
 database:
-  host: 127.0.0.1
-  name: pryv-node
+  host: 'localhost'
+  port: 27017
+  name: 'pryv-node'
 influxdb:
   host: 127.0.0.1
   port: 8086
@@ -39,4 +40,3 @@ backwardCompatibility:
     isActive: true
     rootStreamId: 'tags-migrated'
     streamIdPrefix: 'tag-migrated-'
-    

@@ -21,10 +21,9 @@ describe('Database', () => {
   };
 
   let database;
-  beforeEach((done) => {
+  beforeEach(async () => {
     database = new Database(connectionSettings);
-
-    database.ensureConnect(done);
+    await database.ensureConnect();
   });
 
   describe('#close()', () => {
@@ -42,7 +41,7 @@ describe('Database', () => {
         options: {unique: true}
       }]
     };
-        
+
     beforeEach((done) => {
       database.insertOne(collectionInfo, {name: 'toto', username: 'mrtoto', age: 17}, (err) => {
         done(err);

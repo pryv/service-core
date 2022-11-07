@@ -9,23 +9,18 @@ const { UsersRepository, getUsersRepository, User } = require('business/src/user
 
 const { getLogger } = require('@pryv/boiler');
 /**
- * v1.7.1: 
- * - change delete date from numbers to daate 
+ * v1.7.1:
+ * - change delete date from numbers to daate
  */
 module.exports = async function (context, callback) {
 
   const logger = getLogger('migration-1.7.1');
   logger.info('V1.7.0 => v1.7.1 Migration started');
 
-  const eventsCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'events' }, cb));
-  const streamsCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'streams' }, cb));
-  const accessesCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'accesses' }, cb));
-  const webhooksCollection = await bluebird.fromCallback(cb =>
-      context.database.getCollection({ name: 'webhooks' }, cb));
-
+  const eventsCollection = await context.database.getCollection({ name: 'events' });
+  const streamsCollection = await context.database.getCollection({ name: 'streams' });
+  const accessesCollection = await context.database.getCollection({ name: 'accesses' });
+  const webhooksCollection = await context.database.getCollection({ name: 'webhooks' });
 
   await migrateDeletedDates(accessesCollection);
   await migrateDeletedDates(eventsCollection);
@@ -38,7 +33,7 @@ module.exports = async function (context, callback) {
   //----------------- DELETED Dates to Number
 
   async function migrateDeletedDates(collection) {
-    const cursor = await collection.find({ deleted: { $type: 'date' } });
+    const cursor = collection.find({ deleted: { $type: 'date' } });
     let requests = [];
     let document;
     let eventsMigrated = 0;
