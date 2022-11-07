@@ -6,15 +6,13 @@
  */
 // @flow
 
-const async = require('async');
 const MongoClient = require('mongodb').MongoClient;
-const lodash = require('lodash');
-const bluebird = require('bluebird');
+const _ = require('lodash');
+const { setTimeout } = require('timers/promises');
 
 const { getLogger } = require('@pryv/boiler');
 
 import type { Db as MongoDB, Collection }  from 'mongodb';
-
 
 type DatabaseOptions = {
   writeConcern: {
@@ -57,7 +55,7 @@ class Database {
     const authPart = getAuthPart(settings);
     this.logger = getLogger('database');
 
-    this.connectionString = `mongodb://${authPart}${settings.host}:${settings.port}/${settings.name}`;
+    this.connectionString = `mongodb://${authPart}${settings.host}:${settings.port}/`;
     this.databaseName = settings.name;
     this.options = {
       writeConcern: {
@@ -66,9 +64,7 @@ class Database {
       },
       connectTimeoutMS: settings.connectTimeoutMS,
       socketTimeoutMS: settings.socketTimeoutMS,
-      useNewUrlParser: true,
-      appname: 'pryv.io core',
-      useUnifiedTopology: true,
+      appname: 'pryv.io core'
     };
 
     this.db = null;
@@ -81,49 +77,42 @@ class Database {
   /**
    * Waits until DB engine is up. For use at startup.
    */
-  waitForConnection(callback: DatabaseCallback) {
+  async waitForConnection() {
     let connected = false;
-    const isConnected = () => connected;
 
-    async.doUntil(
-      checkConnection.bind(this), isConnected, callback);
-
-    /**
-     * @this {Database}
-     */
-    function checkConnection(checkDone: () => mixed) {
-      this.ensureConnect((err) => {
-        if (err != null) {
-          this.logger.warn('Cannot connect to ' + this.connectionString + ', retrying in a sec');
-          return setTimeout(checkDone, 1000);
-        }
+    while (!connected) {
+      try {
+        await this.ensureConnect();
         connected = true;
-        checkDone();
-      });
+      } catch (err) {
+        this.logger.warn('Cannot connect to ' + this.connectionString + ', retrying in a sec');
+        await setTimeout(1000);
+        continue;
+      }
     }
   }
 
   /**
-   * @api private
+   * @private
    */
-  ensureConnect(callback: DatabaseCallback) {
+  async ensureConnect() {
     // this check does not work.
     if (this.db) {
-      return callback();
+      return;
     }
     this.logger.debug('Connecting to ' + this.connectionString);
-    MongoClient.connect(this.connectionString, this.options, (err, client) => {
-      if (err != null) {
-        this.logger.debug(err);
-        return callback(err);
-      }
+    this.client = new MongoClient(this.connectionString, this.options);
+    try {
+      await this.client.connect();
 
       this.logger.debug('Connected');
-      this.client = client;
-      this.db = client.db(this.databaseName);
+      await this.client.db('admin').command({ setFeatureCompatibilityVersion: '4.2' }, {});
 
-      client.db('admin').command({ setFeatureCompatibilityVersion: '4.2' }, {}, callback);
-    });
+      this.db = this.client.db(this.databaseName);
+    } catch (err) {
+      this.logger.debug(err);
+      throw err;
+    }
   }
 
   addUserIdToIndexIfNeeded(collectionInfo) {
@@ -144,63 +133,42 @@ class Database {
     return collectionInfo;
   }
 
-  // Internal function.
-  //
-  async getCollection(collectionInfo: CollectionInfo, callback: ?GetCollectionCallback) {
-    try {
-      // Make sure we have a connect
-      await bluebird.fromCallback(  cb => this.ensureConnect(cb) );
+  /**
+   * @protected
+   */
+  async getCollection(collectionInfo: CollectionInfo) {
+    await this.ensureConnect();
 
-      if (this.collectionConnectionsCache[collectionInfo.name]) {
-        if (callback != null) {
-          return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
-        }
-        return this.collectionConnectionsCache[collectionInfo.name];
-      }
-
-      // Load the collection
-      const db = this.db;
-      const collection: Collection = db.collection(collectionInfo.name);
-
-      this.addUserIdToIndexIfNeeded(collectionInfo);
-
-      // Ensure that proper indexing is initialized
-      await ensureIndexes.call(this, collection, collectionInfo.indexes);
-
-      this.collectionConnectionsCache[collectionInfo.name] = collection;
-      // returning the collection.
-      if (callback != null) {
-        return callback(null, collection);
-      }
-      return collection;
-    }
-    catch (err) {
-      if (callback != null) {
-        return callback(err);
-      }
-      throw err;
+    if (this.collectionConnectionsCache[collectionInfo.name]) {
+      return this.collectionConnectionsCache[collectionInfo.name];
     }
 
-    // Called with `this` set to the Database instance.
-    //
-    async function ensureIndexes(collection: Collection, indexes) {
-      const initializedCollections = this.initializedCollections;
-      const collectionName: string = collection.collectionName;
-      if (indexes == null) return;
-      if (initializedCollections[collectionName]) return;
-      for (const item of indexes) {
-        const options = lodash.merge({}, item.options, {
-          background: true
-        });
+    const collection: Collection = this.db.collection(collectionInfo.name);
+    this.addUserIdToIndexIfNeeded(collectionInfo);
+    await this.ensureIndexes(collection, collectionInfo.indexes);
 
-        await collection.createIndex(item.index, options);
-      }
-
-      initializedCollections[collectionName] = true;
-    }
+    this.collectionConnectionsCache[collectionInfo.name] = collection;
+    return collection;
   }
 
+  /**
+   * @private
+   */
+  async ensureIndexes(collection: Collection, indexes) {
+    const initializedCollections = this.initializedCollections;
+    const collectionName: string = collection.collectionName;
+    if (indexes == null) return;
+    if (initializedCollections[collectionName]) return;
+    for (const item of indexes) {
+      const options = _.merge({}, item.options, {
+        background: true
+      });
 
+      await collection.createIndex(item.index, options);
+    }
+
+    initializedCollections[collectionName] = true;
+  }
 
 
   // Internal function. Does the same job as `getCollection` above, but calls `errCallback`
@@ -220,15 +188,9 @@ class Database {
   //      ...
   //    }
   //
-  async getCollectionSafe(
-    collectionInfo: CollectionInfo,
-    errCallback: DatabaseCallback, block: UsesCollectionBlock)
+  getCollectionSafe(collectionInfo: CollectionInfo, errCallback: DatabaseCallback, collCallback: CollectionCallback)
   {
-    return await this.getCollection(collectionInfo, (err, coll) => {
-      if (err != null) return errCallback(err);
-
-      return block(coll);
-    });
+    this.getCollection(collectionInfo).then(collCallback, errCallback);
   }
 
   /**
@@ -283,7 +245,7 @@ class Database {
     if (collectionInfo.name == 'streams') tellMeIfStackDoesNotContains(['localUserStreams.js'], {for: collectionInfo.name});
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.find(query).count(callback);
+      collection.countDocuments(query, callback);
     });
   }
 
@@ -460,7 +422,7 @@ class Database {
    * Execute N requests directly on the DB
    */
   async bulkWrite(collectionInfo: CollectionInfo, requests: Array<Object>) {
-    const collection = await bluebird.fromCallback(cb => this.getCollection(collectionInfo, cb));
+    const collection = await this.getCollection(collectionInfo);
     return await collection.bulkWrite(requests);
   }
 
@@ -576,10 +538,10 @@ class Database {
    * @param {Function} callback
    */
   dropDatabase(callback: DatabaseCallback) {
-    this.ensureConnect(function (err) {
-      if (err) { return callback(err); }
-      this.db.dropDatabase(callback);
-    }.bind(this));
+    this.ensureConnect().then(
+      () => { this.db.dropDatabase(callback); },
+      callback
+    );
   }
 
   /**
@@ -643,14 +605,7 @@ type MongoDBError = {
   getDuplicateSystemStreamId?: () => string,
 }
 
-type UpdateIfNeededCallback = (item: Object) => Object | null;
-
-type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;
-type GetCollectionCallback =
-  (err?: ?Error, collection?: ?Collection) => mixed;
-
-
-type UsesCollectionBlock = (coll: Collection) => mixed;
+type CollectionCallback = (coll: Collection) => mixed;
 
 // Information about a MongoDB collection.
 type CollectionInfo = {

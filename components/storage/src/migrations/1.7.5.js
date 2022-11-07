@@ -14,7 +14,7 @@ const { getLogger } = require('@pryv/boiler');
 const DOT: string = '.';
 import type { Permission } from 'business/src/accesses';
 /**
- * v1.7.5: 
+ * v1.7.5:
  * - migrate system streamIds in access permissions
  */
 module.exports = async function (context, callback) {
@@ -25,15 +25,14 @@ module.exports = async function (context, callback) {
   const logger = getLogger('migration-1.7.5');
   logger.info('V1.7.1 => v1.7.5 Migration started');
 
-  const accessesCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'accesses' }, cb));
+  const accessesCollection = await context.database.getCollection({ name: 'accesses' });
   await migrateAccessPermissions(accessesCollection);
 
   logger.info('V1.7.1 => v1.7.5 Migration finished');
   callback();
 
   async function migrateAccessPermissions(collection) {
-    const cursor = await collection.find({'permissions.streamId': { $regex : /^\./ }});
+    const cursor = collection.find({'permissions.streamId': { $regex : /^\./ }});
     let requests = [];
     let accessesMigrated = 0;
     while (await cursor.hasNext()) {
@@ -58,17 +57,17 @@ module.exports = async function (context, callback) {
             await collection.bulkWrite(requests);
             logger.info('Updated access permissions streamIds for ' + accessesMigrated + ' ' + collection.namespace);
             requests = [];
-          }    
+          }
         }
       }
-      
+
     }
 
     if (requests.length > 0) {
       await collection.bulkWrite(requests);
       logger.info('Updated access permissions streamIds for ' + accessesMigrated + ' ' + collection.namespace);
     }
-    
+
     function hasDotPermission(permissions: Array<Permission>): boolean {
       for (const permission: Permission of permissions) {
         if (permission.streamId != null && permission.streamId.startsWith(DOT)) return true;

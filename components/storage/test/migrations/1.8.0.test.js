@@ -79,9 +79,9 @@ describe('Migration - 1.8.0', function () {
 });
 
 async function getInitialEventsUsers () {
-  const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
+  const eventsCollection = await database.getCollection({ name: 'events' });
   const query = { streamIds: { $in: [':_system:username'] } };
-  const cursor = await eventsCollection.find(query, { projection: { userId: 1, content: 1 } });
+  const cursor = eventsCollection.find(query, { projection: { userId: 1, content: 1 } });
 
   const users = {};
   while (await cursor.hasNext()) {

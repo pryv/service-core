@@ -18,18 +18,15 @@ import type { Permission } from 'business/src/accesses';
 const PlatformWideDB = require('platform/src/DB');
 
 /**
- * v1.7.5: 
+ * v1.7.5:
  * - migrate system streamIds in access permissions
  */
 module.exports = async function (context, callback) {
-
   const logger = getLogger('migration-1.8.0');
   logger.info('V1.7.5 => v1.8.0 Migration started');
 
   await SystemStreamsSerializer.init();
-  const eventsCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'events' }, cb));
-
- 
+  const eventsCollection = await context.database.getCollection({ name: 'events' });
 
   try {
     await migrateUserids();
@@ -38,7 +35,6 @@ module.exports = async function (context, callback) {
     return callback(e);
   }
 
-  
   logger.info('V1.7.5 => v1.8.0 Migration finished');
   callback();
 
@@ -50,7 +46,7 @@ module.exports = async function (context, callback) {
     const usersIndex = require('business/src/users/UsersLocalIndex');
     await usersIndex.init();
     const query =  { streamIds: { $in: [':_system:username'] } };
-    const cursor = await eventsCollection.find(query, {projection: {userId: 1, content: 1}});
+    const cursor = eventsCollection.find(query, {projection: {userId: 1, content: 1}});
     while (await cursor.hasNext()) {
       const user = await cursor.next();
       await usersIndex.addUser(user.content, user.userId);
@@ -62,9 +58,9 @@ module.exports = async function (context, callback) {
     await platformWideDB.init();
 
      // Retrieve all existing users
-    const usersRepository = await getUsersRepository(); 
+    const usersRepository = await getUsersRepository();
     const users = await usersRepository.getAll();
-    const indexedFields = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix(); 
+    const indexedFields = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix();
 
     for (let i = 0; i < users.length; i++) {
       const user = users[i];
@@ -80,19 +76,19 @@ module.exports = async function (context, callback) {
 
         if (isUnique) {
           const currentUsername = await platformWideDB.getUsersUniqueField(field, value);
-          if (currentUsername == username) { logDebug('skip'); continue }; // already set 
+          if (currentUsername == username) { logDebug('skip'); continue }; // already set
           if (currentUsername != null) throw(new Error('Error while migrating user unique field to user: ' + username + ', value: ' + value + ' is already associated with user: ' + currentUsername));
           await platformWideDB.setUserUniqueField(username, field, value);
           logDebug('set unique');
 
         } else {
           const currentValue = await platformWideDB.getUserIndexedField(username, field);
-          if (currentValue == value) { logDebug('skip'); continue }; // already set 
+          if (currentValue == value) { logDebug('skip'); continue }; // already set
           if (currentValue != null) throw(new Error('Error while migrating user indexed field to user: ' + username + ', value: ' + value + ' is already set to : ' + currentValue));
           await platformWideDB.setUserIndexedField(username, field, value);
           logDebug('set indexed');
         }
-       
+
       }
     }
 

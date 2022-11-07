@@ -28,7 +28,7 @@ describe('Migration - 1.7.5',function () {
   let accessesCollection;
 
   before(async function() {
-    accessesCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'accesses' }, cb));
+    accessesCollection = await database.getCollection({ name: 'accesses' });
   });
 
   after(async function() {
@@ -44,7 +44,7 @@ describe('Migration - 1.7.5',function () {
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.7.1', mongoFolder, cb));
 
     // verify accesses afterwards
-    const previousAccessesWithSystemStreamPermissions = await (await accessesCollection.find({"permissions.streamId": { $regex : /^\./ }})).toArray();
+    const previousAccessesWithSystemStreamPermissions = await accessesCollection.find({"permissions.streamId": { $regex : /^\./ }}).toArray();
     const accessToCheck = previousAccessesWithSystemStreamPermissions[0];
     // perform migration
     await newVersion.migrateIfNeeded();
@@ -52,7 +52,7 @@ describe('Migration - 1.7.5',function () {
     // verify that accesses were migrated
     let isAccessToCheckProcessed = false;
 
-    const accesses = await (await bluebird.fromCallback(cb => accessesCollection.find({}, cb))).toArray();
+    const accesses = await accessesCollection.find({}).toArray();
     for (const access of accesses) {
       if (access.type === 'personal') continue;
       if ( access._id === accessToCheck._id) isAccessToCheckProcessed = true;

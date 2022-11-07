@@ -13,10 +13,10 @@ const { getLogger } = require('@pryv/boiler');
 const { TAG_ROOT_STREAMID, TAG_PREFIX }: { TAG_ROOT_STREAMID: string, TAG_PREFIX: string } = require('api-server/src/methods/helpers/backwardCompatibility');
 const DOT: string = '.';
 /**
- * v1.7.0: 
+ * v1.7.0:
  * - refactor streamId prefixes from '.' to ':_system:' and ':system'
  * - remove XX__unique properties from all events containing '.unique'
- * 
+ *
  * - remove tags and set them as "root streams" with the prefix "tag-"
  */
 module.exports = async function (context, callback) {
@@ -27,15 +27,12 @@ module.exports = async function (context, callback) {
   await SystemStreamsSerializer.init();
   const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
   const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
-  const eventsCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'events' }, cb));
-  const streamsCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'streams' }, cb));
-  const accessesCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'accesses' }, cb));
+  const eventsCollection = await context.database.getCollection({ name: 'events' });
+  const streamsCollection = await context.database.getCollection({ name: 'streams' });
+  const accessesCollection = await context.database.getCollection({ name: 'accesses' });
 
 
-  
+
   await migrateAccounts(eventsCollection);
   await migrateTags(eventsCollection, streamsCollection);
   await migrateTagsAccesses(accessesCollection);
@@ -47,7 +44,7 @@ module.exports = async function (context, callback) {
 
 
   async function migrateAccounts (eventsCollection): Promise<void> {
-    const usernameCursor = await eventsCollection.find({ 
+    const usernameCursor = eventsCollection.find({
       streamIds: { $in: ['.username'] },
       deleted: null,
       headId: null,
@@ -161,19 +158,19 @@ module.exports = async function (context, callback) {
     }
   }
 
-  //----------------- TAGS 
+  //----------------- TAGS
 
-  
-  async function migrateTags(eventsCollection, streamsCollection): Promise<void> { 
-    
+
+  async function migrateTags(eventsCollection, streamsCollection): Promise<void> {
+
     const mall = await getMall();
-    // get all users with tags 
+    // get all users with tags
     const usersWithTag = await eventsCollection.distinct('userId', {tags: { $exists: true, $ne: null }});
     for (userId of usersWithTag) {
-      const now = Date.now() / 1000; 
+      const now = Date.now() / 1000;
 
       async function createStream(id, name, parentId) {
-        try { 
+        try {
           await mall.streams.create(userId, {name: name, id: id, parentId: parentId, modifiedBy: 'migration', createdBy: 'migration', created: now, modified: now});
         } catch (e) {
           if (e.id !== 'item-already-exists') throw(e)// already exists.. oK
@@ -184,16 +181,16 @@ module.exports = async function (context, callback) {
       await createStream(TAG_ROOT_STREAMID, 'Migrated Tags')
       // get all tags for user
       const tags = await eventsCollection.distinct('tags', {userId: userId});
-      for (tag of tags) { 
+      for (tag of tags) {
         await createStream(TAG_PREFIX + tag, tag, TAG_ROOT_STREAMID);
         await migrateEvents(userId);
       }
       // migrate tags (add to streams for each event)
     }
-  
+
     async function migrateEvents(userId) {
       eventsMigrated = 0;
-      const cursor = await eventsCollection.find({ userId: userId, tags: { $exists: true, $ne: [] } });
+      const cursor = eventsCollection.find({ userId: userId, tags: { $exists: true, $ne: [] } });
       let requests = [];
       let event;
       while (await cursor.hasNext()) {
@@ -228,7 +225,7 @@ module.exports = async function (context, callback) {
   }
 
   async function migrateTagsAccesses(accessesCollection): Promise<void> {
-    const cursor = await accessesCollection.find({ 'permissions.tag': { $exists: true} });
+    const cursor = accessesCollection.find({ 'permissions.tag': { $exists: true} });
     let requests = [];
     let accessesMigrated = 0;
     while (await cursor.hasNext()) {
@@ -258,7 +255,7 @@ module.exports = async function (context, callback) {
           }
         }
       });
-      
+
       if (requests.length === 1000) {
         //Execute per 1000 operations and re-init
         await accessesCollection.bulkWrite(requests);

@@ -74,14 +74,10 @@ BaseStorage.prototype.countAll = function(userOrUserId, callback) {
   this.database.countAll(this.getCollectionInfo(userOrUserId), callback);
 };
 
-BaseStorage.prototype.initCollection = function (userOrUserId, callback) {
-  this.database.getCollection(this.getCollectionInfo(userOrUserId), callback);
-};
-
-/// Returns the number of documents in the collection, minus those that are 
-/// either `deleted` or have a `headId`, aka the number of live / trashed 
-/// documents. 
-/// 
+/// Returns the number of documents in the collection, minus those that are
+/// either `deleted` or have a `headId`, aka the number of live / trashed
+/// documents.
+///
 BaseStorage.prototype.count = function(userOrUserId, query, callback) {
   query.deleted = null;
   query.headId = null;
@@ -104,7 +100,7 @@ BaseStorage.prototype.find = function(userOrUserId, query, options, callback) {
 };
 
 /**
- * Used by "mall" only 
+ * Used by "mall" only
  */
 BaseStorage.prototype.findIncludingDeletionsAndVersions = function(userOrUserId, query, options, callback) {
   this.database.find(
@@ -125,7 +121,7 @@ BaseStorage.prototype.findIncludingDeletionsAndVersions = function(userOrUserId,
  * 1. Finds all documents matching the given query
  * 2. Check them against some logic done by `updateIfNeedCallback` one by one
  * 3. Eventually perform an update (in Bulk) if `updateIfNeedCallback` returns an operation
- * 
+ *
  * This is used by integrity processes to re-set integrity values on updateMany
  *
  * @param {Object} collectionInfo
@@ -148,7 +144,7 @@ BaseStorage.prototype.findIncludingDeletionsAndVersions = function(userOrUserId,
     let updatesDone = 0;
     async function executBulk() {
       if (updatesToDo.length === 0) return;
-      
+
       const bulkResult = await database.bulkWrite(collectionInfo, updatesToDo);
       updatesDone += bulkResult?.result?.nModified || 0;
       if (bulkResult?.result?.nModified != updatesToDo.length) {
@@ -163,7 +159,7 @@ BaseStorage.prototype.findIncludingDeletionsAndVersions = function(userOrUserId,
         const document = await cursor.next();
         const _id = document._id; // keep mongodb _id;
         const updateQuery = updateIfNeededCallback(this.applyItemFromDB(document));
-        if (updateQuery == null) continue; // nothing to do .. 
+        if (updateQuery == null) continue; // nothing to do ..
 
         updatesToDo.push(
           {
@@ -177,9 +173,9 @@ BaseStorage.prototype.findIncludingDeletionsAndVersions = function(userOrUserId,
           await executBulk();
         }
       }
-      // flush 
+      // flush
       await executBulk();
-    
+
       return callback(null, {count: updatesDone});
     } catch (err) {
       return callback(err);
@@ -231,7 +227,7 @@ BaseStorage.prototype.findDeletionsStreamed = function(
 
 BaseStorage.prototype.findOne = function(userOrUserId, query, options, callback) {
   query.deleted = null;
-  
+
   this.database.findOne(
     this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query),
@@ -402,7 +398,7 @@ BaseStorage.prototype.findAll = function(userOrUserId, options, callback) {
  * Inserts an array of items; each item must have a valid id and data already. For tests only.
  */
 BaseStorage.prototype.insertMany = function(userOrUserId, items, callback, options) {
-  // Groumpf... Many tests are relying on this.. 
+  // Groumpf... Many tests are relying on this..
   const nItems = _.cloneDeep(items);
   this.database.insertMany(
     this.getCollectionInfo(userOrUserId),
@@ -460,7 +456,7 @@ BaseStorage.prototype.applyOptionsToDB = function(options) {
     this.defaultOptions
   );
 
-  if (dbOptions.fields != null) 
+  if (dbOptions.fields != null)
     throw new Error("AF: fields key is deprecated; we're not using it anymore.");
 
   if (dbOptions.projection != null)
@@ -516,11 +512,11 @@ BaseStorage.prototype.applyUpdateToDB = function(updatedData) {
   const input = _.cloneDeep(updatedData);
   const data = {};
 
-  if (input.$min != null) { 
+  if (input.$min != null) {
     data.$min = input.$min;
     delete input.$min;
   }
-  if (input.$max != null) { 
+  if (input.$max != null) {
     data.$max = input.$max;
     delete input.$max;
   }
@@ -541,11 +537,11 @@ BaseStorage.prototype.applyUpdateToDB = function(updatedData) {
   } else {
     data.$unset = {}; // code in 'converters.js' depends on this.
   }
-  
+
   // Maybe add more of these?
   //    https://docs.mongodb.com/manual/reference/operator/update/
   data.$set = input;
-  
+
   var dbUpdate = applyConvertersToDB(
     data,
     this.converters.updateToDB

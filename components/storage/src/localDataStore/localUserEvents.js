@@ -145,7 +145,7 @@ module.exports = (ds.createUserEvents({
 
   async _getUserStorageSize(userId: string) {
     // TODO: fix this total HACK
-    return await (await this.eventsCollection.find({userId})).count();
+    return await this.eventsCollection.countDocuments({userId});
   }
 }): any);
 
