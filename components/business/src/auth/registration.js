@@ -6,8 +6,6 @@
  */
 // @flow
 
-const _ = require('lodash');
-const cuid = require('cuid');
 const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
@@ -16,7 +14,6 @@ const { getPlatform } = require('platform');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
-const ErrorIds = require('errors').ErrorIds;
 
 const { getLogger } = require('@pryv/boiler');
 const { ApiEndpoint } = require('utils');
@@ -49,14 +46,16 @@ class Registration {
 
   /**
    * Do minimal manipulation with data like username conversion to lowercase
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   async prepareUserData(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     context.newUser = new User(params);
-    context.user = { 
+    // accept passwordHash at creation only; TODO: remove this once deprecated method `system.createUser` is removed
+    context.newUser.passwordHash = params.passwordHash;
+    context.user = {
       id: context.newUser.id,
       username: context.newUser.username
     };
@@ -85,7 +84,7 @@ class Registration {
           uniqueFields[streamIdWithoutPrefix] = context.newUser[streamIdWithoutPrefix];
         }
       }
-      
+
       // do the validation and reservation in service-register
       await this.platform.createUserStep1_ValidateUser(
         context.newUser.username,
@@ -113,7 +112,7 @@ class Registration {
     next: ApiCallback
   ) {
     try {
-      // assert that we have obtained a lock on register, so any conflicting fields here 
+      // assert that we have obtained a lock on register, so any conflicting fields here
       // would be failed registration attempts that partially saved user data.
       const usersRepository = await getUsersRepository();
 
@@ -137,10 +136,10 @@ class Registration {
 
   /**
    * Save user to the database
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   async createUser(
     context: MethodContext,
@@ -202,13 +201,13 @@ class Registration {
     }
     next();
   }
-  
+
   /**
    * Build response for user registration
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
   async buildResponse (
     context: MethodContext,
@@ -233,9 +232,9 @@ class Registration {
     result: Result,
     next: ApiCallback
   ) {
-    
+
     const emailSettings = this.servicesSettings.email;
-   
+
     // Skip this step if welcome mail is deactivated
     const emailActivation = emailSettings.enabled;
     if (emailActivation?.welcome === false) {

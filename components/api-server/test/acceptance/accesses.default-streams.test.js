@@ -238,7 +238,7 @@ describe("Accesses with account streams", function () {
       describe('to create an access for not visible account streams', () => {
         let streamId;
         before(async function () {
-          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('passwordHash');
+          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken');
           await createUserAndAccess('read', streamId);
         });
         it('[ATGU] should return 400', async () => {

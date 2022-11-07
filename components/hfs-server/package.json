@@ -1,6 +1,6 @@
 {
   "name": "hfs-server",
-  "version": "1.7.12",
+  "version": "1.8.0",
   "private": true,
   "description": "High frequency series storage on InfluxDB",
   "homepage": "https://pryv.com",

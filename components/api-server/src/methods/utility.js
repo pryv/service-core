@@ -9,18 +9,18 @@
 const commonFns = require('./helpers/commonFunctions');
 const errorHandling = require('errors').errorHandling;
 const methodsSchema = require('../schema/generalMethods');
-const _ = require('lodash');
 const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
+const { getPasswordRules } = require('business/src/users');
 
 import type API  from '../API';
 import type { MethodContext } from 'business';
 import type Result  from '../Result';
 import type { ApiCallback }  from '../API';
 
-const { Permission } = require('business/src/accesses');
+const { Permission } = require('business/src/accesses');
 
 const updateAccessUsageStats = require('./helpers/updateAccessUsageStats');
 
@@ -43,6 +43,7 @@ module.exports = async function (api: API) {
   const isAuditActive = (! isOpenSource) && config.get('audit:active');
 
   const updateAccessUsage = await updateAccessUsageStats();
+  const passwordRules = await getPasswordRules();
 
   let audit;
   if (isAuditActive) {
@@ -53,13 +54,13 @@ module.exports = async function (api: API) {
     commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
     getAccessInfoApiFn);
 
-  function getAccessInfoApiFn(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function getAccessInfoApiFn(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const accessInfoProps: Array<string> = ['id', 'token', 'type', 'name', 'deviceName', 'permissions',
       'lastUsed', 'expires', 'deleted', 'clientData',
       'created', 'createdBy', 'modified', 'modifiedBy', 'calls'
     ];
     const userProps: Array<string> = ['username'];
-    
+
     for (const prop of accessInfoProps) {
       const accessProp = context.access[prop];
       if (accessProp != null) result[prop] = accessProp;
@@ -72,7 +73,12 @@ module.exports = async function (api: API) {
       const userProp = context.user[prop];
       if (userProp != null) result.user[prop] = userProp;
     }
-  
+
+    if (context.access.isPersonal()) {
+      const expirationAndChangeTimes = await passwordRules.getPasswordExpirationAndChangeTimes(context.user.id);
+      Object.assign(result.user, expirationAndChangeTimes);
+    }
+
     next();
 
     /**
@@ -93,7 +99,7 @@ module.exports = async function (api: API) {
     updateAccessUsage);
 
   async function callBatchApiFn(context: MethodContext, calls: Array<ApiCall>, result: Result, next: ApiCallback) {
-    // allow non stringified stream queries in batch calls 
+    // allow non stringified stream queries in batch calls
     context.acceptStreamsQueryNonStringified = true;
     context.disableAccessUsageStats = true;
 
@@ -116,7 +122,7 @@ module.exports = async function (api: API) {
         // Perform API call
         const result: Result = await bluebird.fromCallback(
           (cb) => api.call(context, call.params, cb));
-        
+
         if (isAuditActive) await audit.validApiCall(context, result);
 
         return await bluebird.fromCallback(
@@ -130,7 +136,7 @@ module.exports = async function (api: API) {
         errorHandling.logError(err, reqContext, logger);
 
         if (isAuditActive) await audit.errorApiCall(context, err);
-        
+
         return {error: errorHandling.getPublicErrorData(err)};
       }
     }

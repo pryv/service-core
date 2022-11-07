@@ -127,7 +127,7 @@ describe('XXXSystemStreams config', () => {
     it('[KMT3] must prefix default streams with the Pryv prefix', () => {
       const systemStreams = store.get('systemStreams');
       [ 'account',
-        'username', 'language', 'appId', 'invitationToken', 'passwordHash', 'referer', 'storageUsed', 'dbDocuments', 'attachedFiles',
+        'username', 'language', 'appId', 'invitationToken', 'referer', 'storageUsed', 'dbDocuments', 'attachedFiles',
         'helpers', 'active', 'unique'
       ].forEach(streamId => {
         assert.exists(treeUtils.findById(PRIVATE_PREFIX + streamId));

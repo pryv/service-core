@@ -22,7 +22,7 @@ const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
 
 const { pubsub } = require('messages');
-const UserLocalDirectory = require('business').users.UserLocalDirectory;
+const userLocalDirectory = require('business').users.userLocalDirectory;
 const { AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 let initTestsDone = false;
@@ -35,7 +35,7 @@ async function initTests() {
   await audit.init();
   global.audit = audit;
   global.config = await getConfig();
-  await UserLocalDirectory.init();
+  await userLocalDirectory.init();
 }
 
 
@@ -51,8 +51,8 @@ async function initCore() {
       isActive: true,
     },
   });
-  const database = await storage.getDatabase();  
-  
+  const database = await storage.getDatabase();
+
 
   global.getNewFixture = function() {
     return databaseFixture(database);
@@ -121,5 +121,3 @@ Object.assign(global, {
   CONSTANTS: audit.CONSTANTS,
   AuditAccessIds: AuditAccessIds,
 });
-
-

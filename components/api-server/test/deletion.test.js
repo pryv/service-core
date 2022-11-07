@@ -154,7 +154,7 @@ describe('[PGTD] DELETE /users/:username', () => {
   [0,1,2].forEach(function (i) {
     describe(`[DOA${i}] dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
-       
+
         config.injectTestConfig({
           dnsLess: {isActive: settingsToTest[i][0]},
           isOpenSource: {isActive: settingsToTest[i][1]},
@@ -248,7 +248,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert.isFalse(isFound);
         });
         it(`[${testIDs[i][9]}] should delete user audit events`, async function() {
-          const pathToUserAuditData = require('business').users.UserLocalDirectory.pathForuserId(userToDelete.attrs.id);
+          const pathToUserAuditData = require('business').users.userLocalDirectory.pathForuserId(userToDelete.attrs.id);
           const userFileExists = fs.existsSync(pathToUserAuditData);
           assert.isFalse(userFileExists);
         });
