@@ -23,8 +23,6 @@ const tables = {
 const ALL_EVENTS_TAG = events.ALL_EVENTS_TAG;
 
 const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25,  25,  50,  50, 100];
-
-const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 class UserDatabase {
   /**
    * sqlite3 instance
