@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 /* global describe, it, before, after, beforeEach, afterEach */
 
@@ -18,7 +18,6 @@ const sinon = require('sinon');
 const rpc = require('tprpc');
 
 const { Corpus } = require('../fixtures/base');
-import type { ISearchService }  from '../fixtures/base';
 
 describe('Base API', () => {
   const endpoint = '127.0.0.1:4020';
@@ -30,7 +29,7 @@ describe('Base API', () => {
   });
   
   // If nothing else is done, this is the server implementation
-  const impl: ISearchService = {
+  const impl = {
     search: () => {
       return Promise.resolve({
         results: [
@@ -55,7 +54,7 @@ describe('Base API', () => {
   let server; 
   before(async () => {
     server = new rpc.Server();
-    server.add(definition, 'SearchService', (impl: ISearchService));
+    server.add(definition, 'SearchService', (impl));
     await server.listen(endpoint);
   });
   after(() => {
@@ -63,7 +62,7 @@ describe('Base API', () => {
   });
   
   // And this is the client-side object that implements the service. 
-  let proxy: ISearchService; 
+  let proxy; 
   before(() => {
     const client = new rpc.Client(definition);
     proxy = client.proxy('SearchService', endpoint); 

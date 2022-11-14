@@ -7,18 +7,17 @@
 
 const _ = require('lodash');
 
-import type ContextSource from 'business/src/MethodContext';
 const { DummyTracing } = require('tracing');
 
 class MinimalMethodContext {
-  source: ContextSource;
-  user: ?User;
-  username: ?String;
-  access: ?Access;
-  originalQuery: ?{};
-  _tracing: Tracing;
+  source;
+  user;
+  username;
+  access;
+  originalQuery;
+  _tracing;
 
-  constructor(req: express$Request) {
+  constructor(req) {
     this.source =  {
       name: 'http',
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
@@ -48,7 +47,7 @@ class MinimalMethodContext {
  * Helper for express to set a Minimal Context, for methods that does use the standard MethodContext.
  * Note: will have no effect is a context already exists.
  */
-function setMinimalMethodContext(req: express$Request, res: express$Response, next: express$NextFunction) {
+function setMinimalMethodContext(req, res, next) {
   if (req.context) {
     return next(new Error('Context already set'));
   }

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+//
 
 // Tests pertaining to storing data in a hf series.
 
@@ -34,25 +34,8 @@ const { getMall } = require('mall');
 
 const { getUsersRepository, User } = require('business/src/users');
 
-import type { IMetadataUpdaterService } from 'metadata';
 
-type Header = Array<string>;
-type Rows   = Array<Row>;
-type Row    = Array<DataPoint>;
-type DataPoint = string | number | boolean;
 
-type TryOpResult = {
-  ok: boolean,
-  user: { id: string },
-  event: { id: string },
-  status: number,
-  body: Object,
-}
-type ErrorDocument = {
-  status: number,
-  id: string,
-  message: string,
-}
 
 describe('Storing data in a HF series', function() {
 
@@ -122,7 +105,7 @@ describe('Storing data in a HF series', function() {
       });
     });
 
-    function storeData(data: {}, token: string): any {
+    function storeData(data, token) {
       logger.debug('storing some data', data);
 
       // Insert some data into the events series:
@@ -199,11 +182,11 @@ describe('Storing data in a HF series', function() {
       await storeSampleMeasurement(dbName, measurementName);
       await queryData();
 
-      function cycleDatabase(dbName: string) {
+      function cycleDatabase(dbName) {
         return influx.dropDatabase(dbName).
           then(() => influx.createDatabase(dbName));
       }
-      function storeSampleMeasurement(dbName: string, measurementName: string) {
+      function storeSampleMeasurement(dbName, measurementName) {
         const options = { database: dbName };
 
         const points = [
@@ -283,13 +266,13 @@ describe('Storing data in a HF series', function() {
     // Tries to store `data` in an event with attributes `attrs`. Returns
     // true if the whole operation is successful.
     //
-    async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
+    async function tryStore(attrs, header, data) {
       const effectiveAttrs = lodash.merge(
         { streamIds: [parentStreamId], time: Date.now() / 1000 },
         attrs
       );
       const usersRepository = await getUsersRepository();
-      const user: User = await usersRepository.getUserById(userId);
+      const user = await usersRepository.getUserById(userId);
       assert.isNotNull(user);
 
       const event = await mall.events.create(user.id, effectiveAttrs);
@@ -326,7 +309,7 @@ describe('Storing data in a HF series', function() {
     }
 
 
-    async function storeData(eventId, data): any {
+    async function storeData(eventId, data) {
       const request = hfServer.request();
       const response = await request
         .post(`/${userId}/events/${eventId}/series`)
@@ -471,7 +454,7 @@ describe('Storing data in a HF series', function() {
     describe('bypassing authentication', () => {
       const EVENT_ID = 'EVENTID';
 
-      function storeData(data): any {
+      function storeData(data) {
         const request = server.request();
         const response = request
           .post(`/USERNAME/events/${EVENT_ID}/series`)
@@ -480,7 +463,7 @@ describe('Storing data in a HF series', function() {
 
         return response;
       }
-      function queryData(): Promise<Object> {
+      function queryData() {
         const request = server.request();
         let response = request
           .get(`/USERNAME/events/${EVENT_ID}/series`)
@@ -660,7 +643,7 @@ describe('Storing data in a HF series', function() {
         describe('when using a metadata updater stub', () => {
           // A stub for the real service. Tests might replace parts of this to do
           // custom assertions.
-          let stub: IMetadataUpdaterService;
+          let stub;
           beforeEach(() => {
             stub = {
               scheduleUpdate: () => {  return Promise.resolve({ }); },
@@ -680,7 +663,7 @@ describe('Storing data in a HF series', function() {
             const endpoint = '127.0.0.1:14000';
 
             rpcServer = new rpc.Server();
-            rpcServer.add(definition, 'MetadataUpdaterService', (stub: IMetadataUpdaterService));
+            rpcServer.add(definition, 'MetadataUpdaterService', (stub));
             await rpcServer.listen(endpoint);
 
             // Tell the server (already running) to use our rpc server.
@@ -696,7 +679,7 @@ describe('Storing data in a HF series', function() {
 
           it('[GU3L] should schedule a metadata update on every store', async () => {
             let updaterCalled = false;
-            // FLOW This is ok, we're replacing the stub with something compatible.
+            // This is ok, we're replacing the stub with something compatible.
             stub.scheduleUpdate = () => {
               updaterCalled = true;
               return Promise.resolve({ });
@@ -770,14 +753,14 @@ describe('Storing data in a HF series', function() {
       // Tries to store `data` in an event with attributes `attrs`. Returns
       // true if the whole operation is successful.
       //
-      async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
+      async function tryStore(attrs, header, data) {
         const effectiveAttrs = lodash.merge(
           { streamIds: [ parentStreamId ] , time: Date.now() / 1000},
           attrs
         );
 
         const usersRepository = await getUsersRepository();
-        const user: User = await usersRepository.getUserById(userId);
+        const user = await usersRepository.getUserById(userId);
 
         assert.isNotNull(user);
 
@@ -936,14 +919,14 @@ describe('Storing data in a HF series', function() {
 
       // Tries to store complex `data` in the event identified by `eventId`.
       //
-      async function tryStore(header: Header, data: Rows, eventId: string): Promise<boolean> {
+      async function tryStore(header, data, eventId) {
         const response = await storeOp(header, data, eventId);
 
         return response.statusCode === 200;
       }
       // Attempts a store operation and expects to fail. Returns details on
       // the error.
-      async function failStore(header: Header, data: Rows, eventId: string): Promise<ErrorDocument> {
+      async function failStore(header, data, eventId) {
         const response = await storeOp(header, data, eventId);
 
         assert.notStrictEqual(response.statusCode, 200);
@@ -956,7 +939,7 @@ describe('Storing data in a HF series', function() {
           message: error.message,
         };
       }
-      async function storeOp(header: Header, data: Rows, eventId: string): Promise<any> {
+      async function storeOp(header, data, eventId) {
         eventId = eventId || ratioEventId;
         const requestData = {
           format: 'flatJSON',
@@ -1093,7 +1076,7 @@ describe('Storing data in a HF series', function() {
 
       // Tries to store complex `data` in the event identified by `eventId`.
       //
-      async function tryStore(header: Header, data: Rows): Promise<boolean> {
+      async function tryStore(header, data) {
         const requestData = {
           format: 'flatJSON',
           fields: header,

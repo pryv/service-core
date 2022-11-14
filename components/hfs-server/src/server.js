@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* @flow */
+/*  */
 
 const http = require('http');
 const express = require('express');
@@ -22,7 +22,6 @@ const getAuth = require('middleware/src/getAuth');
 const KEY_IP = 'http:ip';
 const KEY_PORT = 'http:port';  
 
-import type Context  from './context';
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 
@@ -34,24 +33,24 @@ class Server {
   config;
   
   // The express application. 
-  expressApp: express$Application; 
+  expressApp; 
   
   // base url for any access to this server. 
-  baseUrl: string; 
+  baseUrl; 
   
   // http server object
-  server: net$Server; 
+  server; 
   
   // Logger used here.
   logger; 
   errorlogger; 
   
   // Web request context
-  context: Context; 
+  context; 
   
   
 
-  constructor(config, context: Context) {
+  constructor(config, context) {
     this.logger = getLogger('server');
     this.errorLogger = this.logger.getLogger('errors');
     this.config = config; 
@@ -70,7 +69,7 @@ class Server {
    * @return {Promise<true>} A promise that will resolve once the server is 
    *    started and accepts connections.
    */
-  async start(): Promise<true> {
+  async start() {
     await getConfig(); // makes sure config is loaded
     const ip = this.config.get(KEY_IP); 
     const port = this.config.get(KEY_PORT); 
@@ -92,7 +91,7 @@ class Server {
   
   /** Logs that the server has started.
    */
-  logStarted(arg: any): Promise<*> {
+  logStarted(arg) {
     const addr = this.server.address(); 
     this.logger.info(`started. (http://${addr.address}:${addr.port})`);
     
@@ -106,7 +105,7 @@ class Server {
    * @return {Promise<true>} A promise that will resolve once the server has 
    *    stopped. 
    */
-  stop(): Promise<true> {
+  stop() {
     const server = this.server;
       
     this.logger.info('stopping...');
@@ -121,7 +120,7 @@ class Server {
    * 
    * @return express application.
    */
-  async setupExpress(): Promise<express$Application> {
+  async setupExpress() {
     const logger = this.logger;
     const config = this.config;
     const traceEnabled = config.get('trace:enable'); 
@@ -152,7 +151,7 @@ class Server {
   
   /** Defines all the routes that we serve from this server. 
    */   
-  defineApplication(app: express$Application) {
+  defineApplication(app) {
     const ctx = this.context; 
     const c = controllerFactory(ctx); 
     
@@ -167,7 +166,7 @@ class Server {
 /** GET /system/status - Answers the caller with a status of the application. 
  * This call should eventually permit health checks for this subsystem. 
  */ 
-function systemStatus(req: express$Request, res: express$Response) {
+function systemStatus(req, res) {
   res
     .status(200)
     .json({

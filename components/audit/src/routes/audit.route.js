@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const _ = require('lodash');
 
@@ -15,10 +15,9 @@ const middleware = require('middleware');
 const { setMethodId } = require('middleware');
 const tryCoerceStringValues = require('api-server/src/schema/validation').tryCoerceStringValues;
 
-import type Application  from 'api-server/src/application';
 
 // Event streams route handling.
-module.exports = function (expressApp: express$Application, app: Application) {
+module.exports = function (expressApp, app) {
 
   const api = app.api;
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
@@ -26,7 +25,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
   expressApp.get(Paths.Audit, 
     setMethodId('audit.getLogs'),
     loadAccessMiddleware,
-    function (req: express$Request, res, next) {
+    function (req, res, next) {
       const params = _.extend({}, req.query);
       tryCoerceStringValues(params, { // standard event type
         fromTime: 'number',

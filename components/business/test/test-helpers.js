@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 'use strict';
-// @flow
+// 
 
 // Helper methods and setup for all unit tests. 
 

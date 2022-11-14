@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 process.env.NODE_ENV = 'test';
 
 process.on('unhandledRejection', unhandledRejection);
@@ -22,7 +22,7 @@ function unhandledRejection(reason, promise) {
 
 // Set up a context for spawning api-servers.
 const { SpawnContext } = require('test-helpers').spawner;
-const context: SpawnContext = new SpawnContext(); 
+const context = new SpawnContext(); 
 /* global after */
 after(async () => {
   await context.shutdown(); 
@@ -33,11 +33,11 @@ const { getConfig } = require('@pryv/boiler');
 const InfluxConnection = require('business/src/series/influx_connection');
 
 // Produces and returns a connection to MongoDB. 
-async function produceMongoConnection(): Promise<Database> {
+async function produceMongoConnection() {
   return await storage.getDatabase(); 
 }
 
-function produceInfluxConnection(settings: any) {
+function produceInfluxConnection(settings) {
   const host = settings.get('influxdb:host'); 
   const port = settings.get('influxdb:port');
   return new InfluxConnection({host: host, port: port});

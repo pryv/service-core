@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 var errors = require('errors').factory;
 
@@ -31,7 +31,7 @@ var errors = require('errors').factory;
  * @param next {Function} callback for next middleware in chain
  * @return {void}
  */
-function validateFileUpload(req: express$Request, res: express$Response, next: Function) {
+function validateFileUpload(req, res, next) {
   const body = req.body; 
 
   if (req.is('multipart/form-data') && body != null && typeof body === 'object') 

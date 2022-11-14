@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 /* global describe, it, beforeEach, afterEach, before */
 
@@ -25,7 +25,7 @@ describe('Server', () => {
   }); 
   
   
-  function toUrl(path): string {
+  function toUrl(path) {
     const baseUrl = server.baseUrl; 
       
     return url.resolve(baseUrl, path);

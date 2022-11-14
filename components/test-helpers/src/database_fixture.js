@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const bluebird = require('bluebird');
 const lodash = require('lodash');
@@ -30,17 +30,17 @@ async function initMall() {
 }
 
 class Context {
-  databaseConn: storage.Database;
+  databaseConn;
 
   constructor(databaseConn) {
     this.databaseConn = databaseConn;
   }
 
-  forUser(user: string) {
+  forUser(user) {
     return new UserContext(this, user);
   }
 
-  async cleanEverything (): Promise<mixed> {
+  async cleanEverything () {
     const collectionNames = ['accesses', 'sessions', 'followedSlices', 'webhooks', 'versions'];
     collectionNames.forEach(collectionName => {
       bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb));
@@ -55,21 +55,12 @@ class Context {
   }
 }
 
-type DatabaseShortcuts = {
-  sessions: Sessions,
-
-  streams: storage.user.Streams,
-  accesses: storage.user.Accesses,
-  webhooks: storage.user.Webhooks,
-}
 class UserContext {
-  userName: string;
-  context: Context;
-  user: {
-    id: string,
-  };
+  userName;
+  context;
+  user;
 
-  constructor(context, userName: string) {
+  constructor(context, userName) {
     this.context = context;
     this.userName = userName;
 
@@ -88,25 +79,20 @@ class UserContext {
   }
 }
 
-interface ChildResource {
-  create(): Promise<mixed>;
-  childs: ChildHolder;
-  attrs: Attributes;
-}
-class GenericChildHolder<T: ChildResource> {
-  childs: Array<T>;
-  pending: Array<Promise<*>>;
+class GenericChildHolder {
+  childs;
+  pending;
 
   constructor() {
     this.childs = [];
     this.pending = [];
   }
 
-  push(child: T) {
+  push(child) {
     this.childs.push(child);
   }
 
-  hasChilds(): boolean {
+  hasChilds() {
     return this.childs.length > 0;
   }
 
@@ -118,7 +104,7 @@ class GenericChildHolder<T: ChildResource> {
   // Child needs to be any subclass of T. The first parameter of the callback
   // (if given) needs to be of the same type, subclass of T.
   //
-  create<U: T>(resource: U, cb?: (U) => mixed): Promise<U> {
+  create(resource, cb) {
     const createdResource = resource.create();
     this.pending.push(createdResource);
 
@@ -136,22 +122,17 @@ class GenericChildHolder<T: ChildResource> {
   // then returns a promise that only resolves once all individual promises
   // resolve (aka Promise.all).
   //
-  all<U>(fun: (T) => Promise<U>): Promise<Array<U>> {
+  all(fun) {
     return bluebird.map(this.childs, fun);
   }
 }
-type ChildHolder = GenericChildHolder<ChildResource>;
-type Attributes = {
-  id: string,
-  _id: string,
-}
 class FixtureTreeNode {
-  childs: ChildHolder;
-  context: UserContext;
-  db: DatabaseShortcuts;
-  attrs: Attributes;
+  childs;
+  context;
+  db;
+  attrs;
 
-  constructor(context: UserContext, attrs: {}) {
+  constructor(context, attrs) {
     this.childs = new GenericChildHolder();
     this.context = context;
 
@@ -160,14 +141,14 @@ class FixtureTreeNode {
     this.attrs = this.attributes(attrs);
   }
 
-  hasChilds(): boolean {
+  hasChilds() {
     return this.childs.hasChilds();
   }
 
   /** Merges attributes given with generated attributes and returns the
    * resulting attribute set.
    */
-  attributes(attrs: {}): Attributes {
+  attributes(attrs) {
     return lodash.merge(
       {
         id: generateId(),
@@ -189,10 +170,10 @@ class FixtureTreeNode {
 }
 
 class Fixture {
-  childs: GenericChildHolder<FixtureUser>;
-  context: Context;
+  childs;
+  context;
 
-  constructor(context: Context) {
+  constructor(context) {
     this.context = context;
 
     this.childs = new GenericChildHolder();
@@ -203,7 +184,7 @@ class Fixture {
   // Creates a Pryv user. If a block is given (`cb`), it is called after
   // the user is really created.
   //
-  async user(name: string, attrs: {}={}, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
+  async user(name, attrs={}, cb) {
     await initMall();
     return bluebird.try(() => {
       const u = new FixtureUser(
@@ -219,7 +200,7 @@ class Fixture {
   // this in an afterEach function to ensure that the database is clean after
   // running tests.
   //
-  async clean(): Promise<mixed> {
+  async clean() {
     let errorIntegrity;
     try {
       // check integrity before reset--- This could trigger error related to previous test
@@ -242,9 +223,9 @@ class Fixture {
   }
 }
 
-class FixtureUser extends FixtureTreeNode implements ChildResource {
+class FixtureUser extends FixtureTreeNode {
   /** Internal constructor for a user fixture. */
-  constructor (context: UserContext, name: string, attrs: {}) {
+  constructor (context, name, attrs) {
     super(
       context,
       lodash.merge({
@@ -256,30 +237,30 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
       }, attrs));
   }
 
-  stream(attrs: {}={}, cb: (FixtureStream) => void): Promise<mixed> {
+  stream(attrs={}, cb) {
     const s = new FixtureStream(this.context, attrs);
 
     return this.childs.create(s, cb);
   }
 
-  event(attrs: {}): Promise<FixtureEvent> {
+  event(attrs) {
     logger.debug('event', attrs);
     const e = new FixtureEvent(this.context, attrs);
 
     return this.childs.create(e);
   }
 
-  access(attrs: {}={}): Promise<mixed> {
+  access(attrs={}) {
     const a = new FixtureAccess(this.context, attrs);
 
     return this.childs.create(a);
   }
-  session(token?: string): Promise<mixed> {
+  session(token) {
     const s = new FixtureSession(this.context, token);
 
     return this.childs.create(s);
   }
-  webhook(attrs: {}={}, accessId: string): Promise<mixed> {
+  webhook(attrs={}, accessId) {
     const w = new FixtureWebhook(this.context, attrs, accessId);
     return this.childs.create(w);
   }
@@ -287,19 +268,19 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   /** Removes all resources belonging to the user, then creates them again,
    * according to the spec stored here.
    */
-  create (): Promise<mixed> {
+  create () {
     return this.createUser();
   }
 
-  async createUser (): Object<mixed> {
+  async createUser () {
     const attributes = this.attrs;
     const usersRepository = await getUsersRepository();
-    const userObj: User = new User(attributes);
+    const userObj = new User(attributes);
     await usersRepository.insertOne(userObj, false, true);
     return this.attrs;
   }
 
-  async remove(): Promise<mixed> {
+  async remove() {
     const db = this.db;
     const username = this.context.userName;
     const collections = [
@@ -325,7 +306,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
       .then(() =>
         bluebird.map(collections, (coll) => this.safeRemoveColl(coll)) );
   }
-  safeRemoveColl(col): Promise<*> {
+  safeRemoveColl(col) {
     const user = this.context.user;
     // const colName = col.getCollectionInfo(user).name;
 
@@ -345,10 +326,10 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     };
   }
 }
-class FixtureStream extends FixtureTreeNode implements ChildResource {
-  parentId: ?string;
+class FixtureStream extends FixtureTreeNode {
+  parentId;
 
-  constructor(context: UserContext, attrs: {}, parentId: ?string) {
+  constructor(context, attrs, parentId) {
     if (parentId) {
       attrs.parentId = parentId;
     }
@@ -356,12 +337,12 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
     this.parentId = attrs.parentId;
   }
 
-  stream(attrs: {}={}, cb: (FixtureStream) => void) {
+  stream(attrs={}, cb) {
     const s = new FixtureStream(this.context, attrs, this.attrs.id);
 
     return this.childs.create(s, cb);
   }
-  event(attrs: {}): Promise<FixtureEvent> {
+  event(attrs) {
     logger.debug('event', attrs);
     const e = new FixtureEvent(this.context, attrs, this.attrs.id);
 
@@ -386,8 +367,8 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
     };
   }
 }
-class FixtureEvent extends FixtureTreeNode implements ChildResource {
-  constructor(context: UserContext, attrs: {}, streamId: string) {
+class FixtureEvent extends FixtureTreeNode {
+  constructor(context, attrs, streamId) {
     if (streamId) {
       // used by stream.event()
       super(context, {...attrs, streamIds: [streamId]});
@@ -421,8 +402,8 @@ class FixtureEvent extends FixtureTreeNode implements ChildResource {
     };
   }
 }
-class FixtureAccess extends FixtureTreeNode implements ChildResource {
-  constructor(context: UserContext, attrs: {}) {
+class FixtureAccess extends FixtureTreeNode {
+  constructor(context, attrs) {
     super(context, attrs);
   }
 
@@ -444,8 +425,8 @@ class FixtureAccess extends FixtureTreeNode implements ChildResource {
   }
 }
 
-class FixtureWebhook extends FixtureTreeNode implements ChildResource {
-  constructor(context: UserContext, attrs: {}, accessId: string) {
+class FixtureWebhook extends FixtureTreeNode {
+  constructor(context, attrs, accessId) {
     super(context, {...attrs, accessId: accessId});
   }
 
@@ -471,10 +452,10 @@ class FixtureWebhook extends FixtureTreeNode implements ChildResource {
  * will not really allow fixture creation, so we're cloning some of the code
  * here.
  */
-class FixtureSession extends FixtureTreeNode implements ChildResource {
-  session: storage.Sessions;
+class FixtureSession extends FixtureTreeNode {
+  session;
 
-  constructor(context: UserContext, token?: string) {
+  constructor(context, token) {
     const attrs = {};
     if (token != null) attrs.id = token;
 
@@ -513,16 +494,12 @@ class FixtureSession extends FixtureTreeNode implements ChildResource {
   }
 }
 
-import type { IndexDefinition } from 'storage';
 
 class Sessions {
-  collectionInfo: {
-    name: string,
-    indexes: Array<IndexDefinition>,
-  };
-  databaseConn: storage.Database;
+  collectionInfo;
+  databaseConn;
 
-  constructor(databaseConn: storage.Database) {
+  constructor(databaseConn) {
     this.databaseConn = databaseConn;
 
     this.collectionInfo = {
@@ -537,7 +514,7 @@ class Sessions {
     };
   }
 
-  insertOne(user: {id: string}, attributes: Attributes, cb: () => void) {
+  insertOne(user, attributes, cb) {
     const id = attributes.id;
     delete attributes.id;
     attributes['_id'] = id;
@@ -548,7 +525,7 @@ class Sessions {
       cb);
   }
 
-  removeForUser (userName: string, cb: () => void) {
+  removeForUser (userName, cb) {
     this.databaseConn.deleteMany(
       this.collectionInfo,
       {'data.username': userName},
@@ -556,7 +533,7 @@ class Sessions {
   }
 }
 
-function databaseFixture (database: storage.Database) {
+function databaseFixture (database) {
   const context = new Context(database);
 
   return new Fixture(context);

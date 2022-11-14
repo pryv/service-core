@@ -11,18 +11,18 @@ const { Tags } = require('opentracing');
 /**
  * return currentTracer or null if not available
  */
- module.exports.getHookedTracer = (name: string, tags: ?{}): HookedTracer  => {
+ module.exports.getHookedTracer = (name, tags)  => {
   const requestContext = ah.getRequestContext();
   //console.log(requestContext);
   return new HookedTracer(requestContext?.data?.tracing, name, tags);
 }
 
 class HookedTracer {
-  tracing: ?Tracing;
-  name: string;
-  running: boolean;
+  tracing;
+  name;
+  running;
 
-  constructor(tracing: ?Tracing, name: string, tags: ?{}) {
+  constructor(tracing, name, tags) {
     this.tracing = tracing;
     this.name = name;
     this.running = true;
@@ -34,7 +34,7 @@ class HookedTracer {
     }
   }
 
-  tag(tags: ?{}) {
+  tag(tags) {
     if (! this.running) throw new Error('Cannot tag a finished span ' + this.name);
     if (tags == null) return;
     for (const [key, value] of Object.entries(tags)) {
@@ -44,7 +44,7 @@ class HookedTracer {
     }
   }
 
-  finishOnCallBack(cb: FinishCallback): FinishCallback {
+  finishOnCallBack(cb) {
     const that = this;
     return function(err, result) {
       if (err != null) { 
@@ -57,7 +57,7 @@ class HookedTracer {
     }
   }
 
-  finish(tags: ?{}) { 
+  finish(tags) { 
     if (! this.running) throw new Error('Cannot finish a finished span ' + this.name);
     if (this.tracing == null) {
       return;
@@ -69,4 +69,3 @@ class HookedTracer {
   }
 }
 
-type FinishCallback = (err?: Error | null, result?: mixed) => mixed;

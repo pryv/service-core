@@ -4,9 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
-import type Result  from '../Result';
 
 /**
  * Helper function for handling method responses.
@@ -17,8 +16,8 @@ import type Result  from '../Result';
  *                                      and returning a number
  * @returns {Function}
  */
-module.exports = function (res: express$Response, next: express$NextFunction, successCode: number) {
-  return function (err: ?Error, result: ?Result) {
+module.exports = function (res, next, successCode) {
+  return function (err, result) {
 
     if (err != null) {
       return next(err);

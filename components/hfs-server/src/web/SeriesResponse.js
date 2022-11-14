@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const business = require('business');
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
@@ -14,17 +14,17 @@ const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta').se
  * This class is used to represent a series response. It serializes to JSON. 
  */
 class SeriesResponse {
-  matrix: business.series.DataMatrix; 
+  matrix; 
   
   /** Constructs a series response from an existing data matrix. 
    */
-  constructor(mat: business.series.DataMatrix) {
+  constructor(mat) {
     this.matrix = mat; 
   }
 
   /** Answers the client with a series response (JSON). 
    */
-  answer(res: express$Response) {
+  answer(res) {
     res
       .json(this)
       .status(200);

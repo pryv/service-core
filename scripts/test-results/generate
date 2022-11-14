@@ -57,9 +57,9 @@ paths.updateLatestSymlinks();
 function initPaths () {
   const root = path.join(__dirname, '/../..');
 
-  const components = path.resolve(root, 'dist/components');
+  const components = path.resolve(root, 'components');
   if (!fs.existsSync(components)) {
-    console.error('"dist/components" folder is missing. Compile your code first (e.g. `just compile-dev`)');
+    console.error('"components" folder is missing');
     process.exit(1);
   }
 

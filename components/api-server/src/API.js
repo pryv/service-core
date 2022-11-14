@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const async = require('async');
 const APIError = require('errors').APIError;
@@ -22,17 +22,8 @@ const RESULT_TO_OBJECT_MAX_ARRAY_SIZE = 100000;
 // The string used as wildcard for method id filters. Must be 1-character long.
 const WILDCARD = '*';
 
-type Filter = {
-  idFilter: string, 
-  fns: Array<ApiFunction>, 
-}
-type ApiFunction = string | 
-  (context: MethodContext, params: Object, result: Result, next: ApiCallback) => mixed; 
 
-export type ApiCallback = 
-  (err: ?Error, result: ?Result) => mixed;
 
-import type { MethodContext } from 'business';
 
 // Maps each API method's implementation as a chain of functions (akin to
 // middleware) to its id. Handles method calls coming from HTTP or web sockets.
@@ -40,9 +31,9 @@ import type { MethodContext } from 'business';
 class API {
   // Each key is a method id, each value is the array of functions implementing
   // it. 
-  map: Map<string, Array<ApiFunction>>;
+  map;
   
-  filters: Array<Filter>;
+  filters;
 
   
   constructor() {
@@ -73,7 +64,7 @@ class API {
   // - `api.register('resources.get', fn1, fn2, ...)`
   // - `api.register('events.start', fn1, 'events.create', ...)`
   // 
-  register(id: string, ...fns: Array<ApiFunction>) {
+  register(id, ...fns) {
     if (isAuditActive) throwIfMethodIsNotDeclared(id);
 
     const methodMap = this.map; 
@@ -139,7 +130,7 @@ class API {
   
   // Searches for filters that match `id` and applies them. 
   // 
-  applyMatchingFilters(id: string) {
+  applyMatchingFilters(id) {
     const filters = this.filters; 
     
     for (const filter of filters) {
@@ -149,7 +140,7 @@ class API {
 
   // Searches for existing methods that are matched by this filter. 
   // 
-  applyToMatchingIds(filter: Filter) {
+  applyToMatchingIds(filter) {
     const methodMap = this.map; 
     
     for (const id of methodMap.keys()) {
@@ -160,7 +151,7 @@ class API {
   // If `filter` matches/applies to `id`, appends the filter functions to the
   // list of functions of `id`. 
   // 
-  applyIfMatches(filter: Filter, id: string) {
+  applyIfMatches(filter, id) {
     if (matches(filter.idFilter, id)) {
       const methodMap = this.map; 
       const methodList = methodMap.get(id);
@@ -174,8 +165,8 @@ class API {
 
   // ------------------------------------------------------------ handling calls
   
-  call(context: MethodContext, params: mixed, callback: ApiCallback) {
-    const methodId: string = context.methodId;
+  call(context, params, callback) {
+    const methodId = context.methodId;
     const methodMap = this.map; 
     const methodList = methodMap.get(methodId);
     
@@ -230,7 +221,7 @@ class API {
 
   // ----------------------------------------------------------- call statistics 
   
-  getMethodKeys(): Array<string> {
+  getMethodKeys() {
     const methodMap = this.map; 
     
     return Array.from(methodMap.keys()); 
@@ -239,7 +230,7 @@ class API {
 
 module.exports = API;
 
-function matches(idFilter: string, id: string) {
+function matches(idFilter, id) {
   // i.e. check whether the given id starts with the given filter without the
   // wildcard
   const filterWithoutWildcard = idFilter.slice(0, -1);

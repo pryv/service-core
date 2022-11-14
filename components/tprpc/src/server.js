@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const bluebird = require('bluebird');
 const TChannel = require('tchannel');
@@ -13,13 +13,9 @@ const lodash = require('lodash');
 
 const Definition = require('./definition');
 
-type Handler = Object;
-type PBType = any;
-type PBRequest = any;
-type PBResponse = any;
 
 class Server {
-  channel: TChannel; 
+  channel; 
   logger;
   
   constructor() {
@@ -27,7 +23,7 @@ class Server {
     this.logger = getLogger('tprpc:server');
   }
   
-  async listen(endpoint: string): Promise<*> {
+  async listen(endpoint) {
     // endpoint is of the form 'ip:port'
     const idx = endpoint.indexOf(':');
     if (idx < 0) throw new Error('Endpoint must be of the form IP:PORT.');
@@ -46,7 +42,7 @@ class Server {
   // 
   // `handler` implements the interface exposed to clients. 
   // 
-  add(definition: Definition, name: string, handler: Handler) {
+  add(definition, name, handler) {
     const channel = this.channel; 
     
     const subChannel = channel.makeSubChannel({
@@ -62,9 +58,9 @@ class Server {
   // Handles an individual request to a method. 
   // 
   async handleRequest(
-    methodName: string, reqType: PBType, resType: PBType, 
-    handler: Handler, 
-    req: PBRequest, res: PBResponse, arg2: Buffer, arg3: Buffer): Promise<void>
+    methodName, reqType, resType, 
+    handler, 
+    req, res, arg2, arg3)
   {
     const request = reqType.decode(arg3);
     const impl = handler[lodash.lowerFirst(methodName)];

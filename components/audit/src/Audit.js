@@ -29,7 +29,7 @@ class Audit {
   _storage;
   _syslog;
   filter;
-  tracer: {};
+  tracer;
 
   /**
    * Requires to call async init() to use

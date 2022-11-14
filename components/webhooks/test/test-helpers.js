@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+//
 
 process.env.NODE_ENV = 'test';
 
@@ -35,7 +35,7 @@ const { getConfigUnsafe } = require('@pryv/boiler').init({
 process.on('unhandledRejection', unhandledRejection);
 
 // Handles promise rejections that aren't caught somewhere. This is very useful
-// for debugging. 
+// for debugging.
 function unhandledRejection(reason, promise) {
   console.warn(                                // eslint-disable-line no-console
     'Unhandled promise rejection:', promise,
@@ -43,11 +43,11 @@ function unhandledRejection(reason, promise) {
 }
 
 const storage = require('storage');
-// FLOW __dirname can be undefined when node is run outside of file.
+// __dirname can be undefined when node is run outside of file.
 
-// Produces and returns a connection to MongoDB. 
-// 
-function produceMongoConnection(): Database {
+// Produces and returns a connection to MongoDB.
+//
+function produceMongoConnection() {
   return storage.getDatabaseSync(true);
 }
 

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const path = require('path');
 const fs = require('fs');
@@ -15,25 +15,22 @@ const bluebird = require('bluebird');
 const protobuf = require('protobufjs');
 const protobufLoad = bluebird.promisify(protobuf.load);
 
-type PBNamespace = any; 
-type PBType = any;
-type MethodCallback = (name: string, req: PBType, res: PBType) => mixed;
 
 // Tools for interacting with a service definition written in protobuf 3. 
 // 
 class Definition {
-  definitionPath: string;           // original load path for this definition
-  root: PBNamespace;                // protobuf root dictionary
+  definitionPath;           // original load path for this definition
+  root;                // protobuf root dictionary
   
   // Loads a protobuf3 service definition file and returns an instance of
   // `Definition`.
   // 
-  static async load(path: string): Promise<Definition> {
+  static async load(path) {
     const root = await protobufLoad(path);
     return new Definition(path, root); 
   }
 
-  constructor(path: string, root: PBNamespace) {
+  constructor(path, root) {
     this.definitionPath = path; 
     this.root = root;
   }
@@ -62,7 +59,7 @@ class Definition {
   // Note that your protobuf service description should be closed and not
   // require external types, unless you import those from 'elsewhere. 
   // 
-  writeTypeSignature(filename: string, targetPath?: string) {
+  writeTypeSignature(filename, targetPath) {
     const sigPath = targetPath || path.dirname(this.definitionPath);
     const sigFilename = path.join(sigPath, filename);
     
@@ -83,17 +80,17 @@ class Definition {
 
   // Looks up the service given by name and returns a ServiceDefinition instance. 
   // 
-  lookup(serviceName: string): PBType {
+  lookup(serviceName) {
     const root = this.root; 
     const service = root.lookup(serviceName);
     return service;
   }
 
-  forEachMethod(serviceName: string, fn: MethodCallback): void {
+  forEachMethod(serviceName, fn) {
     const root = this.root; 
     const service = root.lookup(serviceName);
     const descriptor = service.toJSON();
-    const methods: Object = descriptor.methods; 
+    const methods = descriptor.methods; 
     
     if (methods == null) 
       throw new Error(`No methods in service '${serviceName}', is this really a service?`);
@@ -113,8 +110,8 @@ class Definition {
 // written into a .js file. 
 // 
 class Compiler {
-  enumValues: Map<string, Set<Object>>; // all enums we encounter
-  file: File;
+  enumValues; // all enums we encounter
+  file;
   
   constructor(file) {
     this.file = file;
@@ -178,7 +175,7 @@ class Compiler {
     this.enumValues.set(name, new Set(values));
   }
   // Generic object printer. 
-  printObject(obj, fn: (string, Object) => mixed) {
+  printObject(obj, fn) {
     if (obj != null) {
       for (const key of Object.keys(obj)) {
         const value = obj[key];
@@ -188,7 +185,7 @@ class Compiler {
     }
   }
   // Translates a type to an interface, if needed. 
-  translateToInterface(name: string): string {
+  translateToInterface(name) {
     const enumValues = this.enumValues;
     
     if (enumValues.has(name)) {
@@ -215,7 +212,7 @@ class Compiler {
     // NOT REACHED
   }
   // Translates a type to the aequivalent flow-type type. 
-  translateType(field: Object): string {
+  translateType(field) {
     let output = this.translateToInterface(field.type); 
     if (field.rule === 'repeated') {
       output = `Array<${output}>`;
@@ -223,7 +220,7 @@ class Compiler {
     return output;
   }
   // Returns all the values that are allowed for an enum as a string. 
-  allowedEnumValues(values: Set<Object>) {
+  allowedEnumValues(values) {
     return Array.from(values)
       .map(e => e.toString())
       .join(' | ');
@@ -242,13 +239,13 @@ class Compiler {
 // A thin wrapper around 'fs', doing resource disposal. 
 // 
 class File {
-  fd: number;         // The file descriptor returned by fs.open. 
+  fd;         // The file descriptor returned by fs.open. 
   
   // Opens a file (`fs.open`) and wraps the produced file descriptor into 
   // an instance of this class. Then calls the `block` with the newly created 
   // instance. Once the block exits, the file is closed. 
   // 
-  static open(name: string, mode: string, block: (f: File) => mixed) {
+  static open(name, mode, block) {
     const fd = fs.openSync(name, mode);
     const file = new File(fd);
     
@@ -257,11 +254,11 @@ class File {
     file.close(); 
   }
   
-  constructor(fd: number) {
+  constructor(fd) {
     this.fd = fd; 
   }
   
-  writeln(line: string) {
+  writeln(line) {
     return fs.writeSync(this.fd, line + '\n');
   }
   

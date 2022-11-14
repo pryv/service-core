@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const fs = require('fs');
 const timestamp = require('unix-timestamp');
@@ -12,21 +12,16 @@ const xattr = require('fs-xattr');
 const { resolve } = require('path');
 const { readdir } = require('fs').promises;
 
-type CacheSettings  = {
-  maxAge: number;
-  rootPath: string;
-  logger: Object;
-}
 
 // Basic implementation for file cache cleanup, relying on xattr.
 class Cache {
-  settings: CacheSettings;
-  cleanUpInProgress: boolean;
+  settings;
+  cleanUpInProgress;
 
   static EventModifiedXattrKey = 'user.pryv.eventModified';
   static LastAccessedXattrKey = 'user.pryv.lastAccessed'
 
-  constructor(settings: CacheSettings) {
+  constructor(settings) {
     this.settings = settings;
     this.cleanUpInProgress = false;
   }

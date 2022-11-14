@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 // Main service class for the Metadata Updater Service. 
 
@@ -16,30 +16,27 @@ const { Controller } = require('./controller');
 const { ErrorLogger } = require('./error_logger');
 
 
-import type { IMetadataUpdaterService, IUpdateRequests, IUpdateResponse, 
-  IUpdateId, IPendingUpdate } from './interface';
   
-import type { StorageLayer } from 'storage';
 
 // The metadata updater service receives 'scheduleUpdate' rpc messages on the
 // tchannel/protobuf3 interface (from the network). It then flushes these
 // updates every N ms to MongoDB.   
 // 
-class Service implements IMetadataUpdaterService {
-  db: StorageLayer;
+class Service {
+  db;
   logger;
   
   // Underlying transport and RPC dispatcher
-  server: rpc.Server;
+  server;
   
   // Where we store incoming work, this is shared between this class and the
   // controller.
-  pending: PendingUpdatesMap; 
+  pending; 
   
   // Controller for work done in this service. 
-  controller: Controller;
+  controller;
   
-  constructor(db: StorageLayer, logger) {
+  constructor(db, logger) {
     this.db = db;
     this.logger = logger.getLogger('service'); 
     this.logger.debug('instanciated');
@@ -51,7 +48,7 @@ class Service implements IMetadataUpdaterService {
   
   // Starts the service, including all subprocesses.
   // 
-  async start(endpoint: string) {
+  async start(endpoint) {
     const logger = this.logger; 
     const server = this.server; 
     const controller = this.controller;
@@ -72,17 +69,17 @@ class Service implements IMetadataUpdaterService {
     controller.runEach(runEachMs);
   }
   
-  produceServiceImpl(): IMetadataUpdaterService {
+  produceServiceImpl() {
     const logger = this.logger; 
 
     return ErrorLogger.wrap(
-      (this: IMetadataUpdaterService), 
+      (this), 
       logger);
   }
   
   // --------------------------------------------------- IMetadataUpdaterService
   
-  async scheduleUpdate(req: IUpdateRequests): Promise<IUpdateResponse> {
+  async scheduleUpdate(req) {
     const pending = this.pending; 
     const logger = this.logger; 
         
@@ -99,7 +96,7 @@ class Service implements IMetadataUpdaterService {
     
     return {};
   }
-  async getPendingUpdate(req: IUpdateId): Promise<IPendingUpdate> {
+  async getPendingUpdate(req) {
     const pending = this.pending; 
     
     const update = pending.get(PendingUpdate.key(req));

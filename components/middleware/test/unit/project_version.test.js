@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+//
 
 /* global describe, it, beforeEach, afterEach */
 const path = require('path');
@@ -19,7 +19,7 @@ const fs = require('fs');
 
 const { getAPIVersion } = require('../../src/project_version');
 
-const versionFilePath = path.join(__dirname, '../../../../../', '.api-version');
+const versionFilePath = path.join(__dirname, '../../../../', '.api-version');
 
 describe('APIVersion#version', () => {
 
@@ -56,10 +56,10 @@ describe('APIVersion#version', () => {
         const versionFromGitTag = execSync('git describe --tags').toString().trim();
         assert.strictEqual(version, versionFromGitTag);
       } catch (err) { // test fails in CI because no .git/
-        if (err.message.includes('not a git repository')) return; 
+        if (err.message.includes('not a git repository')) return;
         assert.fail(err);
       }
-      
+
     });
   });
 });

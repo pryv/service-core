@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow 
+//  
 
 const path = require('path');
 const fs = require('fs');
@@ -17,11 +17,11 @@ module.exports = lodash.merge({}, toplevel, {
   fixtureFile: fixtureFile, 
 }); 
 
-function fixturePath(...parts: Array<string>): string {
+function fixturePath(...parts) {
   return path
     .join(__dirname, '../fixtures', ...parts)
     .normalize(); 
 }
-function fixtureFile(...parts: Array<string>): Buffer {
+function fixtureFile(...parts) {
   return fs.readFileSync(fixturePath(...parts));
 }

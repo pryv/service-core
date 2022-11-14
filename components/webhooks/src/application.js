@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const path = require('path');
 require('@pryv/boiler').init({
@@ -35,7 +35,7 @@ class Application {
   logger;
   settings;
 
-  webhooksService: services.WebhooksService;
+  webhooksService;
 
   async setup() {
     await this.initSettings();
@@ -75,7 +75,7 @@ class Application {
     await service.start();
   }
 
-  stop(): void {
+  stop() {
     return this.webhooksService.stop();
   }
 

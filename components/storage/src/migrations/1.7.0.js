@@ -10,8 +10,8 @@ const { UsersRepository, getUsersRepository, User } = require('business/src/user
 const { getMall } = require('mall');
 
 const { getLogger } = require('@pryv/boiler');
-const { TAG_ROOT_STREAMID, TAG_PREFIX }: { TAG_ROOT_STREAMID: string, TAG_PREFIX: string } = require('api-server/src/methods/helpers/backwardCompatibility');
-const DOT: string = '.';
+const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const DOT = '.';
 /**
  * v1.7.0:
  * - refactor streamId prefixes from '.' to ':_system:' and ':system'
@@ -25,8 +25,8 @@ module.exports = async function (context, callback) {
   logger.info('V1.6.21 => v1.7.0 Migration started');
 
   await SystemStreamsSerializer.init();
-  const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
-  const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
+  const newSystemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds();
+  const oldToNewStreamIdsMap = buildOldToNewStreamIdsMap(newSystemStreamIds);
   const eventsCollection = await context.database.getCollection({ name: 'events' });
   const streamsCollection = await context.database.getCollection({ name: 'streams' });
   const accessesCollection = await context.database.getCollection({ name: 'accesses' });
@@ -43,14 +43,14 @@ module.exports = async function (context, callback) {
   callback();
 
 
-  async function migrateAccounts (eventsCollection): Promise<void> {
+  async function migrateAccounts (eventsCollection) {
     const usernameCursor = eventsCollection.find({
       streamIds: { $in: ['.username'] },
       deleted: null,
       headId: null,
     });
 
-    let usersCounter: number = 0;
+    let usersCounter = 0;
     while (await usernameCursor.hasNext()) {
       const usernameEvent = await usernameCursor.next();
       if (usersCounter % 200 === 0) {
@@ -62,16 +62,16 @@ module.exports = async function (context, callback) {
   }
 
 
-  async function migrateUserEvents(usernameEvent: {}, eventsCollection: {}, oldToNewStreamIdsMap: Map<string, string>, newSystemStreamIds: Array<string>): Promise<void> {
-    const eventsCursor: {} = eventsCollection.find({ userId: usernameEvent.userId });
-    const BUFFER_SIZE: number = 500;
-    let requests: Array<{}> = [];
+  async function migrateUserEvents(usernameEvent, eventsCollection, oldToNewStreamIdsMap, newSystemStreamIds) {
+    const eventsCursor = eventsCollection.find({ userId: usernameEvent.userId });
+    const BUFFER_SIZE = 500;
+    let requests = [];
     while (await eventsCursor.hasNext()) {
-      let event: Event = await eventsCursor.next();
+      let event = await eventsCursor.next();
 
       if (! isSystemEvent(event)) continue;
 
-      const streamIds: Array<string> = translateStreamIdsIfNeeded(event.streamIds, oldToNewStreamIdsMap);
+      const streamIds = translateStreamIdsIfNeeded(event.streamIds, oldToNewStreamIdsMap);
 
       const request = {
         updateOne: {
@@ -89,7 +89,7 @@ module.exports = async function (context, callback) {
     }
     if (requests.length > 1) await flushToDb(requests, eventsCollection);
 
-    function isUniqueEvent(streamIds: Array<string>): boolean {
+    function isUniqueEvent(streamIds) {
       if (streamIds.indexOf('.unique') > -1) return true;
       return false;
     }
@@ -103,7 +103,7 @@ module.exports = async function (context, callback) {
       return unsets;
     }
 
-    function isSystemEvent(event: Event): boolean {
+    function isSystemEvent(event) {
       if (event.streamIds == null) return false; // if event is deleted
       for (const streamId of event.streamIds) {
         if (streamId.startsWith('.')) return true; // can't use new check because it doesn't work with DOT anymore
@@ -111,39 +111,39 @@ module.exports = async function (context, callback) {
       return false;
     }
 
-    async function flushToDb(events: Array<{}>, eventsCollection: {}): Promise<Array<{}>> {
-      const result: {} = await eventsCollection.bulkWrite(events);
+    async function flushToDb(events, eventsCollection) {
+      const result = await eventsCollection.bulkWrite(events);
       logger.info(`flushed ${result.nModified} modifications into database`);
       return [];
     }
 
-    function translateStreamIdsIfNeeded(streamIds: Array<string>, oldToNewMap: Map<string, string>): Array<string> {
-      const translatedStreamIds: Array<string> = [];
+    function translateStreamIdsIfNeeded(streamIds, oldToNewMap) {
+      const translatedStreamIds = [];
       for (const streamId of streamIds) {
         translatedStreamIds.push(translateToNewOrNothing(streamId, oldToNewMap));
       }
       return translatedStreamIds;
 
-      function translateToNewOrNothing(oldStreamId: string, oldToNewMap: Map<string, string>): string {
+      function translateToNewOrNothing(oldStreamId, oldToNewMap) {
         return oldToNewMap[oldStreamId] ? oldToNewMap[oldStreamId] : oldStreamId;
       }
     }
   }
 
-  function buildOldToNewStreamIdsMap(newSystemStreamIds: Array<string>): Map<string, string> {
-    const oldToNewMap: {} = {};
+  function buildOldToNewStreamIdsMap(newSystemStreamIds) {
+    const oldToNewMap = {};
     for (const newStreamId of newSystemStreamIds) {
-      const oldStreamId: string = translateToOldPrefix(newStreamId);
+      const oldStreamId = translateToOldPrefix(newStreamId);
       oldToNewMap[oldStreamId] = newStreamId;
     }
     return oldToNewMap;
 
-    function translateToOldPrefix(streamId: string): string {
+    function translateToOldPrefix(streamId) {
       return DOT + SystemStreamsSerializer.removePrefixFromStreamId(streamId);
     }
   }
 
-  async function rebuildIndexes(database, eventsCollection): Promise<void> {
+  async function rebuildIndexes(database, eventsCollection) {
     for (const item of eventsIndexes) {
       item.options.background = true;
       await eventsCollection.createIndex(item.index, item.options);
@@ -161,7 +161,7 @@ module.exports = async function (context, callback) {
   //----------------- TAGS
 
 
-  async function migrateTags(eventsCollection, streamsCollection): Promise<void> {
+  async function migrateTags(eventsCollection, streamsCollection) {
 
     const mall = await getMall();
     // get all users with tags
@@ -224,7 +224,7 @@ module.exports = async function (context, callback) {
     }
   }
 
-  async function migrateTagsAccesses(accessesCollection): Promise<void> {
+  async function migrateTagsAccesses(accessesCollection) {
     const cursor = accessesCollection.find({ 'permissions.tag': { $exists: true} });
     let requests = [];
     let accessesMigrated = 0;

@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 
 /**
  * Local Data Store.
@@ -30,7 +30,7 @@ module.exports = (ds.createDataStore({
     }
   },
 
-  async init (): Promise<DataStore> {
+  async init () {
     await SystemStreamsSerializer.init();
 
     const database = await storage.getDatabase();
@@ -66,23 +66,23 @@ module.exports = (ds.createDataStore({
   streams: userStreams,
   events: userEvents,
 
-  async newTransaction (): Promise<DataStore.Transaction> {
+  async newTransaction () {
     const transaction = new LocalTransaction();
     await transaction.init();
     return transaction;
   },
 
-  async deleteUser (userId: string): Promise<void> {
+  async deleteUser (userId) {
     await userStreams._deleteUser(userId);
     await userEvents._deleteUser(userId);
   },
 
-  async getUserStorageSize (userId: string) {
+  async getUserStorageSize (userId) {
     const streamsSize = await userStreams._getUserStorageSize(userId);
     const eventsSize = await userEvents._getUserStorageSize(userId);
     return streamsSize + eventsSize;
   }
-}): any);
+}));
 
 const eventsIndexes = [
   {

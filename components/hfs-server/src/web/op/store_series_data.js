@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 //  POST /events/:event_id/series - Store data in a series. 
 
@@ -16,14 +16,11 @@ const TracedOperations = require('./traced_operations');
 
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
 
-import type { TypeRepository } from 'business';
-import type Context  from '../../context';
-import type {SeriesMetadata}  from '../../metadata_cache';
 
 /** POST /events/:event_id/series - Store data in a series. 
  */
-async function storeSeriesData(ctx: Context, 
-  req: express$Request, res: express$Response)
+async function storeSeriesData(ctx, 
+  req, res)
 {
   const trace = new TracedOperations(ctx);
   const series = ctx.series;
@@ -87,12 +84,11 @@ async function storeSeriesData(ctx: Context,
     .json(setCommonMeta({status: 'ok'}));
 }
 
-type DataMatrix = business.series.DataMatrix;
 
 // Parses request data into a data matrix that can be used as input to the
 // influx store. You should give this method the `req.body`. 
 // 
-function parseData(createRequest: mixed, meta: SeriesMetadata, typeRepo: TypeRepository): DataMatrix {
+function parseData(createRequest, meta, typeRepo) {
   try {
     const type = meta.produceRowType(typeRepo);
     

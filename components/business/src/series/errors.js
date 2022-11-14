@@ -4,14 +4,14 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 // Thrown when the request parsing fails. 
 // 
 class ParseFailure extends Error {
 }
 
-function error(msg: string): Error {
+function error(msg) {
   return new ParseFailure(msg);
 }
 

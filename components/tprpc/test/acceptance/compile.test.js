@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 /* global describe, it, beforeEach, afterEach */
 
@@ -50,7 +50,7 @@ describe('Type Compilation', function () {
 // Asserts that the file at `path` contains the `content` given. Content is
 // stripped of its indent, which is determined from the first non-empty line.
 //
-async function assertContains(path: string, content: string) {
+async function assertContains(path, content) {
   const lines = content.split('\n');
 
   // Discard all empty lines from head of `lines`.
@@ -101,7 +101,7 @@ async function assertContains(path: string, content: string) {
 
 // Reads a file assuming it is utf8 text.
 //
-async function readFile(path: string): Promise<string> {
+async function readFile(path) {
   const stat = await fs.statSync(path);
   const fd = await fs.openSync(path, 'r');
 

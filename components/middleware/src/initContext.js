@@ -4,11 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+//
 
 const { MethodContext } = require('business');
-import type { CustomAuthFunction,  ContextSource} from 'business';
-import type { StorageLayer } from 'storage';
 
 
 // Returns a middleware function that initializes the method context into
@@ -16,32 +14,32 @@ import type { StorageLayer } from 'storage';
 // username) and the access token. the access itself is **not** loaded from
 // token here as it may be modified in the course of method execution, for
 // example when calling a batch of methods. it is the api methods'
-// responsibility to load the access when needed. 
-// 
+// responsibility to load the access when needed.
+//
 module.exports = function initContext(
-  storageLayer: StorageLayer, customAuthStepFn: ?CustomAuthFunction
+  storageLayer, customAuthStepFn
 ) {
   return function (
-    req: express$Request, res: express$Response, next: express$NextFunction
+    req, res, next
   ) {
     const authorizationHeader = req.headers['authorization'];
 
-    const contextSource: ContextSource = {
+    const contextSource = {
       name: 'http',
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
     };
-    // FLOW We should not do this, but we're doing it.
+    // We should not do this, but we're doing it.
     req.context = new MethodContext(
       contextSource,
       req.params.username,
-      authorizationHeader, 
+      authorizationHeader,
       customAuthStepFn,
       req.headers,
       req.query,
       req.tracing,
     );
-    
-    // Convert the above promise into a callback. 
+
+    // Convert the above promise into a callback.
     return req.context.init().then(() => next()).catch(next);
   };
 };

@@ -4,13 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 // TypeRepository is the repository for all Pryv event types. It allows access
 // to coercion and validation. 
 
-import type { EventType, Content }  from './types/interfaces';
-import type { Event } from './events';
 
 const fs = require('fs');
 const lodash = require('lodash');
@@ -30,7 +28,7 @@ const SERIES_PREFIX = 'series:';
 // Returns true if the name given refers to a series type. Currently this means
 // that the name starts with SERIES_PREFIX. 
 // 
-function isSeriesType(name: string): boolean {
+function isSeriesType(name) {
   return name.startsWith(SERIES_PREFIX);
 }
 
@@ -40,14 +38,14 @@ class TypeValidator {
 
   // Validates the given event type against its schema. 
   // 
-  validate(type: EventType, content: Content): Promise<Content> {
+  validate(type, content) {
     return type.callValidator(this, content);
   }
 
   validateWithSchema(
-    content: Content,
-    schema: any
-  ): Promise<Content> {
+    content,
+    schema
+  ) {
     return bluebird.try(() => {
       const validator = new ZSchemaValidator();
 
@@ -88,7 +86,7 @@ class TypeValidator {
 // 
 class TypeRepository {
 
-  _validator: ZSchemaValidator;
+  _validator;
 
   constructor() {
     this._validator = new ZSchemaValidator();
@@ -104,8 +102,8 @@ class TypeRepository {
    * 
    * The old path: lookup(), then validator() are too heavy
    */
-  async validate(event: Event) {
-    const content: {} = event.hasOwnProperty('content') ? event.content : null;
+  async validate(event) {
+    const content = event.hasOwnProperty('content') ? event.content : null;
     const schema = defaultTypes.types[event.type];
     if (schema == null) throw new Error(`Event type validation was used on the unknown type "${event.type}".`);
     return bluebird
@@ -118,7 +116,7 @@ class TypeRepository {
   // it needs to be part of our standard types list that we load on startup
   // (#tryUpdate). 
   // 
-  isKnown(name: string): boolean {
+  isKnown(name) {
     if (isSeriesType(name)) {
       const leafTypeName = name.slice(SERIES_PREFIX.length);
       return this.isKnown(leafTypeName);
@@ -131,7 +129,7 @@ class TypeRepository {
   // complex ('position/wgs84'). Leaf types are listed in 
   // `event-types.default.json`. 
   // 
-  lookupLeafType(name: string): EventType {
+  lookupLeafType(name) {
     if (!this.isKnown(name)) throw new errors.TypeDoesNotExistError(
       `Type '${name}' does not exist in this Pryv instance.`);
 
@@ -150,7 +148,7 @@ class TypeRepository {
   // 
   // @throw {TypeDoesNotExistError} when name doesn't refer to a built in type.
   // 
-  lookup(name: string) {
+  lookup(name) {
     if (isSeriesType(name)) {
       const leafTypeName = name.slice(SERIES_PREFIX.length);
       const leafType = this.lookupLeafType(leafTypeName);
@@ -164,14 +162,14 @@ class TypeRepository {
 
   // Produces a validator instance. 
   //
-  validator(): TypeValidator {
+  validator() {
     return new TypeValidator();
   }
 
   // Tries to update the stored type definitions with a file found on the 
   // internet. 
   // 
-  async tryUpdate(sourceURL: string, apiVersion: string): Promise<void> {
+  async tryUpdate(sourceURL, apiVersion) {
     function unavailableError(err) {
       throw new Error(
         'Could not update event types from ' + sourceURL +
@@ -182,7 +180,7 @@ class TypeRepository {
         'Invalid event types schema returned from ' + sourceURL +
         '\nErrors: ' + err.errors);
     }
-    const FILE_PROTOCOL: string = 'file://';
+    const FILE_PROTOCOL = 'file://';
     function isFileUrl(url) { return url.startsWith(FILE_PROTOCOL); }
     function removeFileProtocol(url) { return url.substring(FILE_PROTOCOL.length); }
 
@@ -190,10 +188,10 @@ class TypeRepository {
 
     try {
       if (isFileUrl(sourceURL)) { // used for tests
-        const filePath: string = removeFileProtocol(sourceURL);
+        const filePath = removeFileProtocol(sourceURL);
         eventTypesDefinition = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       } else {
-        const USER_AGENT_PREFIX: string = 'Pryv.io/';
+        const USER_AGENT_PREFIX = 'Pryv.io/';
         const res = await superagent
           .get(sourceURL)
           .set('User-Agent', USER_AGENT_PREFIX + apiVersion);
@@ -221,5 +219,4 @@ module.exports = {
   errors: errors,
 };
 
-export type { InfluxRowType };
 

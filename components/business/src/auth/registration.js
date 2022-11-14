@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const errors = require('errors').factory;
 const { errorHandling } = require('errors');
@@ -18,18 +18,16 @@ const { getUsersRepository, User } = require('business/src/users');
 const { getLogger } = require('@pryv/boiler');
 const { ApiEndpoint } = require('utils');
 
-import type { MethodContext } from 'business';
-import type { ApiCallback } from 'api-server/src/API';
 
 /**
  * Create (register) a new user
  */
 class Registration {
-  logger: any;
-  storageLayer: any;
-  accountStreamsSettings: any = SystemStreamsSerializer.getAccountMap();
-  servicesSettings: any; // settigns to get the email to send user welcome email
-  platform: Platform;
+  logger;
+  storageLayer;
+  accountStreamsSettings = SystemStreamsSerializer.getAccountMap();
+  servicesSettings; // settigns to get the email to send user welcome email
+  platform;
 
   constructor(logging, storageLayer, servicesSettings) {
     this.logger = getLogger('business:registration');
@@ -51,7 +49,7 @@ class Registration {
    * @param {*} result
    * @param {*} next
    */
-  async prepareUserData(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async prepareUserData(context, params, result, next) {
     context.newUser = new User(params);
     // accept passwordHash at creation only; TODO: remove this once deprecated method `system.createUser` is removed
     context.newUser.passwordHash = params.passwordHash;
@@ -70,10 +68,10 @@ class Registration {
    * @param {*} next
    */
   async createUserStep1_ValidateUserOnPlatform(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
+    context,
+    params,
+    result,
+    next
   ) {
     try {
       const uniqueFields = {username: context.newUser.username};
@@ -106,10 +104,10 @@ class Registration {
    * @param {*} next
    */
   async deletePartiallySavedUserIfAny(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
+    context,
+    params,
+    result,
+    next
   ) {
     try {
       // assert that we have obtained a lock on register, so any conflicting fields here
@@ -142,10 +140,10 @@ class Registration {
    * @param {*} next
    */
   async createUser(
-    context: MethodContext,
-    params: mixed,
+    context,
+    params,
     result,
-    next: ApiCallback
+    next
   ) {
     // if it is testing user, skip registration process
     if (context.newUser.username === 'recla') {
@@ -173,10 +171,10 @@ class Registration {
    * @param {*} next
    */
   async createUserStep2_CreateUserOnPlatform (
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
+    context,
+    params,
+    result,
+    next
   ) {
     try {
       // get streams ids from the config that should be retrieved
@@ -210,10 +208,10 @@ class Registration {
    * @param {*} next
    */
   async buildResponse (
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
+    context,
+    params,
+    result,
+    next
   ) {
     result.username =  context.newUser.username;
     result.apiEndpoint = ApiEndpoint.build(context.newUser.username, context.newUser.token);
@@ -227,10 +225,10 @@ class Registration {
    * @param {*} next
    */
   sendWelcomeMail(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
+    context,
+    params,
+    result,
+    next
   ) {
 
     const emailSettings = this.servicesSettings.email;

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 
 
@@ -17,13 +17,13 @@ const logger = getLogger('child_process');
 
 
 class ApplicationLauncher {
-  app: ?Application; 
+  app; 
   
   constructor() {
     this.app = null; 
   }
   
-  async launch(injectSettings: Object) {
+  async launch(injectSettings) {
     try {
       logger.debug('launch with settings', injectSettings);
   
