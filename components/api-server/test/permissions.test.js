@@ -335,7 +335,7 @@ describe('[ACCP] Access permissions', function () {
     describe('custom auth step (e.g. to validate/parse caller id)', function () {
       const fileName = 'customAuthStepFn.js';
       const srcPath = path.join(__dirname, 'permissions.fixtures', fileName);
-      const destPath = path.join(__dirname, '../../../../custom-extensions', fileName);
+      const destPath = path.join(__dirname, '../../../custom-extensions', fileName);
 
       before(function (done) {
         async.series([

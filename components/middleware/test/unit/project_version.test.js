@@ -13,7 +13,9 @@ const bluebird = require('bluebird');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const { getAPIVersion } = require('../../src/project_version');
-const versionFilePath = path.join(__dirname, '../../../../../', '.api-version');
+
+const versionFilePath = path.join(__dirname, '../../../../', '.api-version');
+
 describe('APIVersion#version', () => {
   describe('when a ".api-version" file exists in the project and is != that 1.2.3', () => {
     before(() => {
