@@ -5,67 +5,68 @@
  * Proprietary and confidential
  */
 
-// 
+//
 
 
-// Type signature for a mapping function that helps convert eventIds into 
-// InfluxDB measurement names. 
+// Type signature for a mapping function that helps convert eventIds into
+// InfluxDB measurement names.
 
 // A store operation that stores data for multiple series in one call to the
-// backend. 
-// 
-// Example: 
-//    
+// backend.
+//
+// Example:
+//
 //    const batch = await repository.makeBatch(...);
-//    await batch.store(); 
-// 
+//    await batch.store();
+//
 class NamespaceBatch {
   connection;
   namespace;
-  
+
   constructor(conn, namespace) {
     this.connection = conn;
     this.namespace = namespace;
   }
-  
+
   // Stores a batch request into InfluxDB and returns a promise that will
-  // resolve once the request completes successfully. 
+  // resolve once the request completes successfully.
   async store(data, resolver) {
     // These options will apply to all the points:
     const appendOptions = {
-      database: this.namespace, 
+      database: this.namespace,
     };
-    
-    const points = []; 
 
-    // Loop through all batch requests and convert each row into an IPoint 
-    // structure. 
+    const points = [];
+
+    // Loop through all batch requests and convert each row into an IPoint
+    // structure.
     for (const element of data.elements()) {
       const eventId = element.eventId;
       const data = element.data;
       const measurementName = await resolver(eventId);
-      
+
       data.eachRow((row) => {
         points.push(
           toIPoint(eventId, row, measurementName));
       });
     }
-    
-    const conn = this.connection; 
+
+    const conn = this.connection;
     return conn.writePoints(points, appendOptions);
-    
-    // Converts a single `Row` of data into an IPoint structure. 
+
+    // Converts a single `Row` of data into an IPoint structure.
     function toIPoint(eventId, row, measurementName) {
-      const struct = row.toStruct(); 
-      // FLOW This cannot fail, but somehow flow things we access the deltaTime. 
-      delete struct.deltaTime; 
-      
+      const struct = row.toStruct();
+      // TODO review this now that flow is gone:
+      // This cannot fail, but somehow flow things we access the deltaTime.
+      delete struct.deltaTime;
+
       const timestamp = row.get('deltaTime');
-      
+
       return {
-        tags: [], 
-        fields: struct, 
-        timestamp: timestamp, 
+        tags: [],
+        fields: struct,
+        timestamp: timestamp,
         measurement: measurementName,
       };
     }

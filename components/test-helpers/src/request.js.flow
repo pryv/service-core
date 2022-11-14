@@ -1,6 +1,0 @@
-// 
-
-// NOTE Declaration is made here because the dynamic declaration of methods 
-// cannot be inferred by the checker. 
-
-

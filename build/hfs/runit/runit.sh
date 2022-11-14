@@ -2,7 +2,7 @@
 
 set -e
 
-cd /app/bin/dist/components/hfs-server
+cd /app/bin/components/hfs-server
 
 # Sets $num_procs to 2 or the value of $NUM_PROCS, if set.
 if [ -z ${NUM_PROCS+x} ]
@@ -21,7 +21,7 @@ else
 fi
 
 export NODE_ENV=production
-export NODE_PATH=/app/bin/dist/
+export NODE_PATH=/app/bin/
 
 create_links() {
 	# cleanup all existing services, if any

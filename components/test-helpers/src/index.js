@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// 
+//
 
 exports = module.exports = {
   request: require('./request'),
@@ -24,21 +24,18 @@ exports = module.exports = {
 //  the test helpers. Eventually, we'll write tests in a different style and not
 //  need these anymore.
 
-// FLOW
 Object.defineProperty(exports, 'attachmentsCheck', {
   get: function () {
     return require('./attachmentsCheck');
   }
 });
 
-// FLOW
 Object.defineProperty(exports, 'data', {
   get: function () {
     return require('./data');
   }
 });
 
-// FLOW
 Object.defineProperty(exports, 'dependencies', {
   get: function () {
     return require('./dependencies');

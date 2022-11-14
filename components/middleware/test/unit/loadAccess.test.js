@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+//
 
 const loadAccessMiddleware = require('../../src/loadAccess');
 const should = require('should');
@@ -43,10 +43,10 @@ describe('loadAccess middleware', function() {
   });
 
   describe('when an access is actually loaded in request context', function() {
-  
+
     it('[OD3D] should add the access id as Pryv-access-id header if token is valid', async function () {
       req.auth = 'valid';
-      // FLOW Mocking req and res
+      // Mocking req and res
       await bluebird.fromCallback(cb => loadAccess(req, res, cb));
       should(res.headers['Pryv-Access-Id']).be.eql('validAccess');
     });
@@ -54,7 +54,7 @@ describe('loadAccess middleware', function() {
     it('[UDW7] should still set the Pryv-access-id header in case of error (e.g. expired token)', async function () {
       req.auth = 'expired';
       try {
-        // FLOW Mocking req and res
+        // Mocking req and res
         await bluebird.fromCallback(cb => loadAccess(req, res, cb));
       } catch (err) {
         should.exist(err);
@@ -67,7 +67,7 @@ describe('loadAccess middleware', function() {
 
     it('[9E2D] should not set the Pryv-access-id header', async function () {
       req.auth = 'invalid';
-      // FLOW Mocking req and res
+      // Mocking req and res
       await bluebird.fromCallback(cb => loadAccess(req, res, cb));
       should.not.exist(res.headers['Pryv-Access-Id']);
     });
