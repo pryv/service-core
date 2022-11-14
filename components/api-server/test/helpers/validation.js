@@ -53,6 +53,8 @@ var schemas = exports.schemas = {
  * @param {Function} done Optional
  */
 exports.check = function (response, expected, done) {
+  assert.exists(response, '"response" must be a valid HTTP response object');
+
   response.statusCode.should.eql(expected.status);
 
   // ignore common metadata

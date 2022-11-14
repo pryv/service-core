@@ -23,7 +23,7 @@
  * @param {string} [id=rowid] - (optional id for the table) ! column must be of "Integer" type an be a primary KEY
  */
 function createFTSFor(db, tableName, tableData, columnsToInclude, id) {
-  const itemId = id || 'rowid';
+  const itemId = id || 'rowid';
   const columnsTypes = [];
   const columnNames = Object.keys(tableData);
 
@@ -31,7 +31,7 @@ function createFTSFor(db, tableName, tableData, columnsToInclude, id) {
   columnNames.map((columnName) => {
     const column = tableData[columnName];
     const unindexed = columnsToInclude.includes(columnName) ? '' : ' UNINDEXED';
-    //if (columnName !== itemId)
+    if (columnName !== itemId)
       columnsTypes.push(columnName + unindexed);
   });
   columnsTypes.push(`content='${tableName}'`);
@@ -45,25 +45,25 @@ function createFTSFor(db, tableName, tableData, columnsToInclude, id) {
   db.prepare(`CREATE VIRTUAL TABLE IF NOT EXISTS ${tableName}_fts_v USING fts5vocab(${tableName}_fts, 'row');`).run();
 
   // Triggers to update FTS table 
-  db.prepare(`CREATE TRIGGER IF NOT EXISTS  ${tableName}_ai AFTER INSERT ON ${tableName}
+  db.prepare(`CREATE TRIGGER IF NOT EXISTS ${tableName}_ai AFTER INSERT ON ${tableName}
     BEGIN
-      INSERT INTO  ${tableName}_fts (${itemId}, ${columnsToInclude.join(', ')})
+      INSERT INTO ${tableName}_fts (rowid, ${columnsToInclude.join(', ')})
         VALUES (new.${itemId}, new.${columnsToInclude.join(', new.')});
     END;
     `).run();
 
-  db.prepare(`CREATE TRIGGER IF NOT EXISTS  ${tableName}_ad AFTER DELETE ON ${tableName}
+  db.prepare(`CREATE TRIGGER IF NOT EXISTS ${tableName}_ad AFTER DELETE ON ${tableName}
     BEGIN
-      INSERT INTO ${tableName}_fts (${itemId}, ${columnsToInclude.join(', ')})
+      INSERT INTO ${tableName}_fts (${tableName}_fts, rowid, ${columnsToInclude.join(', ')})
         VALUES ('delete', old.${itemId}, old.${columnsToInclude.join(', old.')});
     END;
   `).run();
-
+  
   db.prepare(`CREATE TRIGGER IF NOT EXISTS ${tableName}_au AFTER UPDATE ON ${tableName}
     BEGIN
-      INSERT INTO ${tableName}_fts (${itemId}, ${columnsToInclude.join(', ')})
+      INSERT INTO ${tableName}_fts (${tableName}_fts, rowid, ${columnsToInclude.join(', ')})
         VALUES ('delete', old.${itemId}, old.${columnsToInclude.join(', old.')});
-      INSERT INTO ${tableName}_fts (${itemId},  ${columnsToInclude.join(', ')})
+      INSERT INTO ${tableName}_fts (rowid,  ${columnsToInclude.join(', ')})
         VALUES (new.${itemId}, new.${columnsToInclude.join(', new.')});
     END;
   `).run();

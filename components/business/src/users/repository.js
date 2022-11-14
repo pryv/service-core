@@ -8,6 +8,7 @@
 
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
+const { setTimeout } = require('timers/promises');
 
 const User = require('./User');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
@@ -17,6 +18,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
 
+const userAccountStorage = require('./userAccountStorage');
 const usersIndex = require('./UsersLocalIndex');
 const { getMall } = require('mall');
 const { getPlatform } = require('platform');
@@ -44,6 +46,7 @@ class UsersRepository {
     this.storageLayer = await storage.getStorageLayer();
     this.sessionsStorage = this.storageLayer.sessions;
     this.accessStorage = this.storageLayer.accesses;
+    await userAccountStorage.init();
     await usersIndex.init();
   }
 
@@ -233,18 +236,25 @@ class UsersRepository {
 
       // add the user to local index
       await usersIndex.addUser(user.username, user.id);
-
       await this.mall.events.createMany(user.id, events, mallTransaction);
+
+      // set user password
+      if (user.passwordHash) {
+        // if coming from deprecated `system.createUser`; TODO: remove when that method is removed
+        await userAccountStorage.addPasswordHash(user.id, user.passwordHash, user.accessId);
+      } else {
+        // regular user creation
+        await await this.setUserPassword(user.id, user.password, user.accessId);
+      }
+
     });
     return user;
   }
 
   async updateOne(user: User, update: {}, accessId: string): Promise<void> {
     // change password into hash if it exists
-    if (update.password != null) {
-      update.passwordHash = await bluebird.fromCallback(
-        cb => encryption.hash(update.password, cb),
-      );
+    if (update.password) {
+      await this.setUserPassword(user.id, update.password, accessId);
     }
     delete update.password;
 
@@ -252,6 +262,7 @@ class UsersRepository {
     const mallTransaction = await this.mall.newTransaction();
     const localTransaction = await mallTransaction.getStoreTransaction('local');
 
+    const modifiedTime = timestamp.now();
     await localTransaction.exec(async () => {
       // update all account streams and don't allow additional properties
       for (const [streamIdWithoutPrefix, content] of Object.entries(update)) {
@@ -263,7 +274,7 @@ class UsersRepository {
         }]};
         const updateFields =  {
           content,
-          modified: timestamp.now(),
+          modified: modifiedTime,
           modifiedBy: accessId,
         };
         await this.mall.events.updateMany(user.id, query, {fieldsToSet: updateFields}, mallTransaction);
@@ -289,40 +300,37 @@ class UsersRepository {
   }
 
   async checkUserPassword(userId: string, password: string): Promise<boolean> {
-    const currentPass = await getUserPasswordHash(userId, this.mall);
+    const currentPass = await userAccountStorage.getPasswordHash(userId);
     let isValid: boolean = false;
     if (currentPass != null) {
-      isValid = await bluebird.fromCallback(
-        cb => encryption.compare(password, currentPass, cb),
-      );
+      isValid = await encryption.compare(password, currentPass);
     }
     return isValid;
   }
+
+  /**
+   * @param {string} userId
+   * @param {string} password
+   */
+  async setUserPassword(userId: String, password: String, accessId = 'system', modifiedTime): Promise {
+    const passwordHash = await encryption.hash(password);
+    await userAccountStorage.addPasswordHash(userId, passwordHash, accessId, modifiedTime);
+  }
+
   async count(): Promise<number> {
     const users = await usersIndex.getAllByUsername();
     return Object.keys(users).length;
   }
 }
 
-/**
- * Get user password hash
- * @param string userId
- */
-async function getUserPasswordHash(userId: string, mall: any): Promise<?string> {
-  const userPassEvents = await mall.events.get(userId, {streams: [{any: [SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH]}]});
-  if (userPassEvents.length > 0) {
-    return (userPassEvents[0].content != null) ? userPassEvents[0].content : null;
-  }
-  return null;
-}
-
 let usersRepository = null;
 let usersRepositoryInitializing = false;
 async function getUsersRepository() {
   while (usersRepositoryInitializing) {
-    await new Promise((r) => setTimeout(r, 100));
+    await setTimeout(100);
   }
   if (!usersRepository) {
+    await SystemStreamsSerializer.init();
     usersRepositoryInitializing = true;
     usersRepository = new UsersRepository();
     await usersRepository.init();

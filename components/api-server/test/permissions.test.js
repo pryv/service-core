@@ -6,7 +6,7 @@
  */
 /*global describe, before, beforeEach, after, it */
 
-require('./test-helpers'); 
+require('./test-helpers');
 const helpers = require('./helpers');
 const treeUtils = require('utils').treeUtils;
 const server = helpers.dependencies.instanceManager;
@@ -106,7 +106,7 @@ describe('[ACCP] Access permissions', function () {
         var params = {
           limit: 100, // i.e. all
           state: 'all'
-        }; 
+        };
         request.get(basePath, token(2)).query(params).end(function (res) {
           validation.checkFilesReadToken(res.body.events, testData.accesses[2],
             filesReadTokenSecret);
@@ -347,7 +347,7 @@ describe('[ACCP] Access permissions', function () {
         async.series([
           function setupCustomAuthStep(stepDone) {
             fs.readFile(srcPath, function (err, data) {
-              if (err) 
+              if (err)
                 return stepDone(err);
 
               fs.writeFile(destPath, data, stepDone);
@@ -356,7 +356,7 @@ describe('[ACCP] Access permissions', function () {
           server.restart.bind(server)
         ], function (err) {
           if (err) done(err);
-          
+
           if (! fs.existsSync(destPath))
             throw new Error('Failed creating :' + destPath);
 
@@ -393,8 +393,7 @@ describe('[ACCP] Access permissions', function () {
 
       it('[H58Z] must allow access whith "callerid" headers', function (done) {
         var successAuth = token(sharedAccessIndex);
-        const myRequest = helpers.unpatchedRequest(server.url);
-        myRequest.execute('post', basePath, successAuth)
+        request.post(basePath, successAuth)
           .set('callerid', 'Georges (unparsed)')
           .send(newEventData).end(function (err, res) {
           res.statusCode.should.eql(201);

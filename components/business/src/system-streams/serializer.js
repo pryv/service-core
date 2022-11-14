@@ -517,7 +517,6 @@ function initializeSerializer(serializer) {
   const options = {
     STREAM_ID_ACTIVE: 'active',
     STREAM_ID_UNIQUE: 'unique',
-    STREAM_ID_PASSWORDHASH: 'passwordHash',
     STREAM_ID_HELPERS: 'helpers',
     STREAM_ID_ACCOUNT: 'account',
   };

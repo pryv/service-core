@@ -13,8 +13,10 @@ reporting:
 http:
   ip: '127.0.0.1'
   port: 3000
+  
 
 database:
+  engine: 'mongodb' # set to sqlite for poc sqlite storage for events
   authUser: ''
   authPassword: ''
   host: 'localhost'
@@ -32,6 +34,11 @@ eventFiles:
 
 auth:
   filesReadTokenSecret: 'REPLACE ME'
+  passwordComplexityMinCharCategories: 0
+  passwordComplexityMinLength: 0
+  passwordAgeMaxDays: 0
+  passwordAgeMinDays: 0
+  passwordPreventReuseHistoryLength: 0
 
 customExtensions:
   defaultFolder: 'REPLACE ME'

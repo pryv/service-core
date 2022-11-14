@@ -35,10 +35,10 @@ class Deletion {
     this.config = config;
   }
 
-  
+
 
   /**
-   * Authorization check order: 
+   * Authorization check order:
    * 1- is a valid admin token
    * 2- is a valid personalToken
    */
@@ -54,14 +54,14 @@ class Deletion {
         return setAdminAuditAccessId(context, params, result, next);
       }
     }
-   
+
     if (canDelete.includes('personalToken')) {
       if(context.access && context.access.isPersonal && context.access.isPersonal()) {
         return next();
-      } 
+      }
       // If personal Token is available, then error code is different
       return next(errors.invalidAccessToken('Cannot find access from token.', 403));
-    } 
+    }
     return next(errors.unknownResource());
   }
 
@@ -71,7 +71,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    const usersRepository = await getUsersRepository(); 
+    const usersRepository = await getUsersRepository();
     const user = await usersRepository.getUserByUsername(params.username);
     if (!user || !user.id) {
       return next(errors.unknownResource('user', params.username));
@@ -158,10 +158,10 @@ class Deletion {
     params: mixed,
     result: Result,
     next: ApiCallback
-  ) { 
+  ) {
     if (this.config.get('openSource:isActive')) return next();
     // dynamic loading , because series functionality does not exist in opensource
-    const deleteUserDirectory = require('business/src/users/UserLocalDirectory').deleteUserDirectory;
+    const deleteUserDirectory = require('business').users.userLocalDirectory.deleteUserDirectory;
     await deleteUserDirectory(context.user.id);
     next();
   }
@@ -190,7 +190,7 @@ class Deletion {
             () => {}
           )
         );
-      
+
       const usersRepository = await getUsersRepository();
       await usersRepository.deleteOne(context.user.id, context.user.username);
 

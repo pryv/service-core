@@ -37,9 +37,8 @@ const { getConfig, getLogger } = require(DistPath + 'node_modules/@pryv/boiler')
 
 const logger = getLogger();
 
-
 const audit = require( DistPath + 'components/audit');
-const UserLocalDirectory = require(DistPath + 'components/business/src/users/UserLocalDirectory');
+const userLocalDirectory = require(DistPath + 'components/business/src/users/userLocalDirectory');
 
 // ---------------- username => ID ---------------//
 
@@ -82,7 +81,7 @@ async function listDirectory(logDiretory) {
   });
 }
 
-// in reverse order !!  
+// in reverse order !!
 function listAuditFilesForUser(username) {
   function getLogN(filname) {
     const s = filname.split('.');
@@ -133,7 +132,7 @@ function readFile(username, filename) {
       }
       if (last) resolve();
       if (count > 10) { 
-        cb(false); 
+        cb(false);
         resolve();
         return;
       }
@@ -216,7 +215,7 @@ function eventFromLine(line, username) {
   if (line.indexOf('message repeated') > 0 && line.indexOf('times: [') > 0) return false;
 
   const detailPos = line.indexOf(RESULT_LINE);
-  if (detailPos < 0) {  
+  if (detailPos < 0) {
     console.error('beginning of data anchor "Details:" not found');
     errors.push({
       username,
@@ -256,7 +255,7 @@ function eventFromLine(line, username) {
   }
   //logger.info('===', time, userAnchor[username].lastSync, time - userAnchor[username].lastSync, userAnchor[username]);
   userAnchor[username].count++;
-  
+
   const methodId = methodIdForAction2(data.action, username);
   if (! methodId) {
     return false; // skip
@@ -277,8 +276,8 @@ function eventFromLine(line, username) {
     }
   }
   if (data.access_id) {
-    event.streamIds.push(audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + data.access_id); 
-  } 
+    event.streamIds.push(audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + data.access_id);
+  }
 
   if (data.error_id) {
     event.type = audit.CONSTANTS.EVENT_TYPE_ERROR;
@@ -294,7 +293,7 @@ function eventFromLine(line, username) {
 // -----------  Anchor --------- //
 
 function getLastSynchedItem(username) {
-  const res = userStorageByUsername[username].getLogs({limit: 1, sortAscending: false, createdBy: 'migration'});
+  const res = userStorageByUsername[username].getEvents({limit: 1, sortAscending: false, createdBy: 'migration'});
   if (res[0] && res[0].time) { 
     userAnchor[username].lastSync = res[0].time; 
   }
@@ -319,7 +318,7 @@ async function getAuditLogDir() {
 }
 
 
-// --- FLOW  
+// --- FLOW
 
 
 let db, config, audiLogsDirs, userIdMap = {}, userStorageByUsername = {}, userAnchor = {};
@@ -329,9 +328,9 @@ async function start() {
     logger.info('Skipping Migration Audit is not active');
   };
   await audit.init();
-  await UserLocalDirectory.init();
+  await userLocalDirectory.init();
   audiLogsDirs = await getAuditLogDir();
-  
+
   db = await connectToMongo();
   usernames = await listDirectory(audiLogsDirs);
   for (let username of usernames) {

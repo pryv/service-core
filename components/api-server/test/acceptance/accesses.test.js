@@ -8,8 +8,6 @@
 
 /* global describe, it, before, after, beforeEach */
 
-const { databaseFixture } = require('test-helpers');
-
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const chai = require('chai');
@@ -20,18 +18,20 @@ const _ = require('lodash');
 const charlatan = require('charlatan');
 
 const { ErrorIds } = require('errors/src');
+const helpers = require('../helpers');
+const databaseFixture = helpers.databaseFixture;
+const userAccountStorage = require('business/src/users/userAccountStorage');
 
 describe('accesses', () => {
-
   let storage, produceMongoConnection, context;
   before(() => {
-    storage = require('test-helpers').dependencies.storage.user.accesses;
+    storage = helpers.dependencies.storage.user.accesses;
     ({ produceMongoConnection, context } = require('../test-helpers'));
   });
 
   describe('access deletions', () => {
-
     let userId, streamId, activeToken, deletedToken, accessToken;
+
     before(async () => {
       userId = cuid();
       streamId = cuid();
@@ -41,38 +41,42 @@ describe('accesses', () => {
     });
 
     after(async () => {
-      let mongoFixtures = databaseFixture(await produceMongoConnection());
+      const mongoFixtures = databaseFixture(await produceMongoConnection());
       await mongoFixtures.context.cleanEverything();
     });
-    describe('when given a few existing accesses', () => {
 
+    describe('when given a few existing accesses', () => {
       const deletedTimestamp = timestamp.now('-1h');
 
       let mongoFixtures;
       before(async () => {
-          mongoFixtures = databaseFixture(await produceMongoConnection());
-          const user = await mongoFixtures.user(userId);
-          await user.stream({ id: streamId }, () => {});
+        mongoFixtures = databaseFixture(await produceMongoConnection());
+        const user = await mongoFixtures.user(userId);
+        await user.stream({ id: streamId }, () => {});
 
-          await user.access({
-            type: 'app', token: activeToken,
-            name: 'active access', permissions: []
-          });
-          await user.access({
-            type: 'app', token: deletedToken,
-            name: 'deleted access', permissions: [],
-            deleted: deletedTimestamp
-          });
+        await user.access({
+          type: 'app',
+          token: activeToken,
+          name: 'active access',
+          permissions: []
+        });
+        await user.access({
+          type: 'app',
+          token: deletedToken,
+          name: 'deleted access',
+          permissions: [],
+          deleted: deletedTimestamp
+        });
 
-          await user.access({ token: accessToken, type: 'personal' });
-          await user.session(accessToken);
+        await user.access({ token: accessToken, type: 'personal' });
+        await user.session(accessToken);
       });
-
 
       let server;
       before(async () => {
         server = await context.spawn();
       });
+
       after(() => {
         server.stop();
       });
@@ -89,13 +93,12 @@ describe('accesses', () => {
         });
 
         it('[H7ZS] access should contain tokens and apiEndpoints', () => {
-          for (let access of accesses) {
+          for (const access of accesses) {
             assert.exists(access.token);
             assert.exists(access.apiEndpoint);
             assert.include(access.apiEndpoint, access.token);
           }
         });
-
 
         it('[P12L] should contain deletions', () => {
           assert.isNotNull(deletions);
@@ -103,7 +106,7 @@ describe('accesses', () => {
 
         it('[BQ7M] contains active accesses', () => {
           assert.equal(accesses.length, 2);
-          const activeAccess = accesses.find( a => a.token === activeToken );
+          const activeAccess = accesses.find(a => a.token === activeToken);
           assert.isNotNull(activeAccess);
         });
 
@@ -119,7 +122,6 @@ describe('accesses', () => {
       });
 
       describe('accesses.create', () => {
-
         describe('for a valid access', () => {
           let createdAccess;
 
@@ -196,9 +198,7 @@ describe('accesses', () => {
           it('[7ZPK] error should say that the deleted field is forbidden upon creation', () => {
             assert.equal(error.id, ErrorIds.InvalidParametersFormat);
           });
-
         });
-
       });
 
       describe('accesses.update', () => {
@@ -208,7 +208,7 @@ describe('accesses', () => {
           res = await server.request()
             .get(`/${userId}/accesses`)
             .set('Authorization', accessToken);
-          activeAccess = res.body.accesses.find( a => a.token === activeToken );
+          activeAccess = res.body.accesses.find(a => a.token === activeToken);
           res = await server.request()
             .put(`/${userId}/accesses/${activeAccess.id}`)
             .set('Authorization', accessToken)
@@ -225,17 +225,14 @@ describe('accesses', () => {
         it('[OS36] error should say that the deleted field is forbidden upon update', () => {
           assert.equal(error.id, ErrorIds.Gone);
         });
-
       });
-
     });
   });
 
   describe('Delete app access', () => {
-
     let username, streamId, access,
-        sharedAccess1, sharedAccess2, sharedAccess3,
-        expiredSharedAccess;
+      sharedAccess1, sharedAccess2, sharedAccess3,
+      expiredSharedAccess;
     before(() => {
       username = cuid();
       streamId = charlatan.Lorem.word();
@@ -252,7 +249,7 @@ describe('accesses', () => {
         name: charlatan.Lorem.word() + 0,
         permissions: [{
           streamId: streamId,
-          level: "read",
+          level: 'read'
         }]
       });
       access = access.attrs;
@@ -261,9 +258,9 @@ describe('accesses', () => {
         name: charlatan.Lorem.word() + 1,
         permissions: [{
           streamId: streamId,
-          level: "read",
+          level: 'read'
         }],
-        createdBy: access.id,
+        createdBy: access.id
       });
       sharedAccess1 = sharedAccess1.attrs;
       sharedAccess2 = await user.access({
@@ -271,9 +268,9 @@ describe('accesses', () => {
         name: charlatan.Lorem.word() + 2,
         permissions: [{
           streamId: streamId,
-          level: "read",
+          level: 'read'
         }],
-        createdBy: access.id,
+        createdBy: access.id
       });
       sharedAccess2 = sharedAccess2.attrs;
       // some unrelated access that shouldn't be changed
@@ -282,8 +279,8 @@ describe('accesses', () => {
         name: charlatan.Lorem.word() + 3,
         permissions: [{
           streamId: streamId,
-          level: "read",
-        }],
+          level: 'read'
+        }]
       });
       sharedAccess3 = sharedAccess3.attrs;
       expiredSharedAccess = await user.access({
@@ -292,8 +289,8 @@ describe('accesses', () => {
         name: charlatan.Lorem.word() + 4,
         permissions: [{
           streamId: streamId,
-          level: "read",
-        }],
+          level: 'read'
+        }]
       });
       expiredSharedAccess = expiredSharedAccess.attrs;
     });
@@ -314,7 +311,7 @@ describe('accesses', () => {
       before(async () => {
         res = await server.request()
           .del(`/${username}/accesses/${access.id}`)
-          .set('Authorization', access.token)
+          .set('Authorization', access.token);
       });
 
       it('[WE2O] should return the accessDeletion and relatedDeletions', () => {
@@ -354,7 +351,6 @@ describe('accesses', () => {
         });
       });
     });
-
   });
 
   describe('access expiry', () => {
@@ -375,32 +371,33 @@ describe('accesses', () => {
     });
 
     describe('when given a few existing accesses', () => {
-
       let mongoFixtures;
       before(async () => {
         mongoFixtures = databaseFixture(await produceMongoConnection());
         const user = await mongoFixtures.user(userId);
-        await user.stream({id: streamId}, () => { });
+        await user.stream({ id: streamId }, () => { });
 
         // A token that expired one day ago
         await user.access({
-          type: 'app', token: expiredToken,
+          type: 'app',
+          token: expiredToken,
           expires: timestamp.now('-1d'),
           name: 'expired access',
-          permissions: [],
+          permissions: []
         });
 
         // A token that is still valid
         await user.access({
           id: hasExpiryId,
-          type: 'app', token: hasExpiryToken,
+          type: 'app',
+          token: hasExpiryToken,
           expires: timestamp.now('1d'),
           name: 'valid access',
           permissions: [
             {
-              'streamId': 'diary',
-              'defaultName': 'Diary',
-              'level': 'read'
+              streamId: 'diary',
+              defaultName: 'Diary',
+              level: 'read'
             }
           ]
         });
@@ -408,11 +405,12 @@ describe('accesses', () => {
         // A token that did never expire
         await user.access({
           id: validId,
-          type: 'app', token: cuid(),
-          name: 'doesnt expire',
+          type: 'app',
+          token: cuid(),
+          name: 'doesnt expire'
         });
 
-        await user.access({token: accessToken, type: 'personal'});
+        await user.access({ token: accessToken, type: 'personal' });
         await user.session(accessToken);
       });
 
@@ -443,9 +441,10 @@ describe('accesses', () => {
             assert.isNotNull(accesses);
           });
           it('[7NPE] contains only active accesses', () => {
-            for (const a of accesses)
+            for (const a of accesses) {
               assert.isFalse(isExpired(a),
                 `Access '${a.name}' is expired`);
+            }
           });
         });
 
@@ -479,9 +478,9 @@ describe('accesses', () => {
             permissions: [
               {
                 streamId: 'work',
-                level: 'read',
-              },
-            ],
+                level: 'read'
+              }
+            ]
           };
 
           let res, access;
@@ -493,8 +492,8 @@ describe('accesses', () => {
 
             access = res.body.access;
 
-            if (! res.ok && res.body.error != null) {
-              console.error(res.body.error);  // eslint-disable-line no-console
+            if (!res.ok && res.body.error != null) {
+              console.error(res.body.error); // eslint-disable-line no-console
               // console.dir(res.body.error.data[0].inner);
             }
           });
@@ -512,9 +511,9 @@ describe('accesses', () => {
             permissions: [
               {
                 streamId: 'work',
-                level: 'read',
-              },
-            ],
+                level: 'read'
+              }
+            ]
           };
 
           let res, access;
@@ -526,8 +525,8 @@ describe('accesses', () => {
 
             access = res.body.access;
 
-            if (! res.ok && res.body.error != null) {
-              console.error(res.body.error);  // eslint-disable-line no-console
+            if (!res.ok && res.body.error != null) {
+              console.error(res.body.error); // eslint-disable-line no-console
               // console.dir(res.body.error.data[0].inner);
             }
           });
@@ -545,9 +544,9 @@ describe('accesses', () => {
             permissions: [
               {
                 streamId: 'work',
-                level: 'read',
-              },
-            ],
+                level: 'read'
+              }
+            ]
           };
 
           let res;
@@ -576,9 +575,9 @@ describe('accesses', () => {
                 requestingAppId: 'valid access',
                 requestedPermissions: [
                   {
-                    'streamId': 'diary',
-                    'defaultName': 'Diary',
-                    'level': 'read'
+                    streamId: 'diary',
+                    defaultName: 'Diary',
+                    level: 'read'
                   }
                 ]
               });
@@ -615,8 +614,7 @@ describe('accesses', () => {
       });
 
       describe('other API accesses', () => {
-
-        function apiAccess(token) {
+        function apiAccess (token) {
           return server.request()
             .get(`/${userId}/events`)
             .set('Authorization', token);
@@ -655,13 +653,13 @@ describe('accesses', () => {
 
   describe('access client data', () => {
     let mongoFixtures;
-    function sampleAccess(name, clientData) {
+    function sampleAccess (name, clientData) {
       return {
         id: cuid(),
         type: 'app',
         name: name,
         permissions: [],
-        clientData: clientData,
+        clientData: clientData
       };
     }
 
@@ -678,7 +676,7 @@ describe('accesses', () => {
         aString: 'a random string',
         aNumber: 42,
         anArray: ['what', 'a', 'big', 'array', 'you', 'got'],
-        anObject: {child: 'I feel empty', leaf: 42}
+        anObject: { child: 'I feel empty', leaf: 42 }
       };
       existingAccess = sampleAccess('Access with complex clientData', complexClientData);
       toBeUpdateAccess1 = sampleAccess('Access to be updated 1', complexClientData);
@@ -689,13 +687,12 @@ describe('accesses', () => {
     });
 
     describe('when given a few existing accesses', () => {
-
       let mongoFixtures;
       before(async () => {
         mongoFixtures = databaseFixture(await produceMongoConnection());
         const user = await mongoFixtures.user(userId);
-        await user.stream({id: streamId}, () => { });
-        await user.access({token: accessToken, type: 'personal'});
+        await user.stream({ id: streamId }, () => { });
+        await user.access({ token: accessToken, type: 'personal' });
         await user.access(existingAccess);
         await user.access(toBeUpdateAccess1);
         await user.access(toBeUpdateAccess2);
@@ -729,15 +726,13 @@ describe('accesses', () => {
         it('[NY85] contains existing accesses with clientData', () => {
           for (const a of accesses) {
             const fixtureAccess =
-              fixtureAccesses.find(f => {return f.id === a.id;});
-            if (fixtureAccess != null)
-              assert.deepEqual(a.clientData, fixtureAccess.clientData);
+              fixtureAccesses.find(f => { return f.id === a.id; });
+            if (fixtureAccess != null) { assert.deepEqual(a.clientData, fixtureAccess.clientData); }
           }
         });
       });
 
       describe('accesses.create', () => {
-
         function sampleAccess (name, clientData) {
           return {
             name: name,
@@ -745,10 +740,10 @@ describe('accesses', () => {
             permissions: [
               {
                 streamId: 'work',
-                level: 'read',
-              },
+                level: 'read'
+              }
             ],
-            clientData: clientData,
+            clientData: clientData
           };
         }
 
@@ -811,8 +806,7 @@ describe('accesses', () => {
       });
 
       describe('accesses.checkApp', () => {
-
-        async function checkAppRequest(req) {
+        async function checkAppRequest (req) {
           const res = await server.request()
             .post(`/${userId}/accesses/check-app`)
             .set('Authorization', accessToken)
@@ -830,7 +824,7 @@ describe('accesses', () => {
             body = await checkAppRequest({
               requestingAppId: existingAccess.name,
               requestedPermissions: existingAccess.permissions,
-              clientData: existingAccess.clientData,
+              clientData: existingAccess.clientData
             });
           });
 
@@ -846,7 +840,7 @@ describe('accesses', () => {
             body = await checkAppRequest({
               requestingAppId: existingAccess.name,
               requestedPermissions: existingAccess.permissions,
-              clientData: {},
+              clientData: {}
             });
           });
 
@@ -861,7 +855,7 @@ describe('accesses', () => {
           before(async () => {
             body = await checkAppRequest({
               requestingAppId: existingAccess.name,
-              requestedPermissions: existingAccess.permissions,
+              requestedPermissions: existingAccess.permissions
             });
           });
 
@@ -875,24 +869,23 @@ describe('accesses', () => {
   });
 
   describe('access-info', () => {
-
-    let mongoFixtures, userId,
-        token;
-
-    before(() => {
-      token = cuid();
-      userId = cuid();
-    })
+    let mongoFixtures;
+    const userId = cuid();
+    let user;
+    const appToken = cuid();
+    const personalToken = cuid();
 
     before(async () => {
       mongoFixtures = databaseFixture(await produceMongoConnection());
-      const user = await mongoFixtures.user(userId);
+      user = await mongoFixtures.user(userId);
       await user.access({
-        type: 'app', token: token,
-        name: charlatan.Lorem.word(), permissions: [{
+        type: 'app',
+        token: appToken,
+        name: charlatan.Lorem.word(),
+        permissions: [{
           streamId: charlatan.Lorem.word(),
-          level: 'read',
-        }],
+          level: 'read'
+        }]
       });
     });
 
@@ -904,19 +897,67 @@ describe('accesses', () => {
       server.stop();
     });
 
-    function path() {
+    function path () {
       return `/${userId}/access-info`;
     }
 
     it('[PH0K] should return the username', async () => {
       const res = await server.request()
         .get(path())
-        .set('Authorization', token);
+        .set('Authorization', appToken);
       const body = res.body;
       assert.exists(body.user);
-      assert.exists(body.user.username)
+      assert.exists(body.user.username);
       assert.equal(body.user.username, userId);
     });
 
+    describe('[APRA] When password rules are enabled', async () => {
+      const settingsOverride = _.cloneDeep(helpers.passwordRules.settingsOverride);
+      settingsOverride.auth.passwordAgeMinDays = 1;
+
+      const passwordTime = timestamp.now(`-${settingsOverride.auth.passwordAgeMaxDays - 1}d`);
+
+      before(async () => {
+        server = await context.spawn(settingsOverride);
+
+        await user.access({
+          type: 'personal',
+          token: personalToken
+        });
+        await user.session(personalToken);
+
+        // setup current password with time not yet expired
+        await userAccountStorage.clearHistory(userId);
+        await userAccountStorage.addPasswordHash(userId, 'test-password-hash', 'test', passwordTime);
+      });
+
+      after(() => {
+        server.stop();
+      });
+
+      it('[2X82] must return password information for personal accesses', async function () {
+        const res = await server.request()
+          .get(path())
+          .set('Authorization', personalToken);
+
+        assert.equal(res.status, 200);
+        const userInfo = res.body.user;
+        assert.exists(userInfo.passwordExpires);
+        assert.approximately(userInfo.passwordExpires, timestamp.add(passwordTime, `${settingsOverride.auth.passwordAgeMaxDays}d`), 1000);
+        assert.exists(userInfo.passwordCanBeChanged);
+        assert.approximately(userInfo.passwordCanBeChanged, timestamp.add(passwordTime, `${settingsOverride.auth.passwordAgeMinDays}d`), 1000);
+      });
+
+      it('[Q7J6] must not return password information for other accesses', async function () {
+        const res = await server.request()
+          .get(path())
+          .set('Authorization', appToken);
+
+        assert.equal(res.status, 200);
+        const userInfo = res.body.user;
+        assert.notExists(userInfo.passwordExpires);
+        assert.notExists(userInfo.passwordCanBeChanged);
+      });
+    });
   });
 });

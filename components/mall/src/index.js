@@ -46,8 +46,14 @@ async function getMall(): Promise<Mall> {
 
   // Load built-in stores
 
-  const localStore: DataStore = require('storage/src/localDataStore');
-  mall.addStore(localStore);
+  if (config.get('database:engine') === 'sqlite') {
+    const LocalStore: DataStore  = require('storage/src/LocalDataStoreSQLite'); // change to LocalDataStoreSQLite for SQLite PoC
+    mall.addStore(LocalStore);
+    logger.info('Using SQLite PoC Datastore');
+  } else {
+    const localStore: DataStore = require('storage/src/localDataStore');
+    mall.addStore(localStore);
+  }
 
   if (!config.get('openSource:isActive') && config.get('audit:active')) {
     const auditDataStore = require('audit/src/datastore/auditDataStore');

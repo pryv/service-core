@@ -5,36 +5,47 @@
  * Proprietary and confidential
  */
 const path = require('path');
-const unlinkSync = require('fs').unlinkSync;
+const fs = require('fs/promises');
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
-const logger = getLogger('audit:storage');
-const ensureUserDirectory = require('business').users.UserLocalDirectory.ensureUserDirectory;
+
+const versioning = require('./versioning');
+const userLocalDirectory = require('business').users.userLocalDirectory;
+const ensureUserDirectory = userLocalDirectory.ensureUserDirectory;
 
 const CACHE_SIZE = 500;
-
+const VERSION = '1.0.0';
 class Storage {
   initialized = false;
   userDBsCache = null;
   options = null;
+  id = null;
 
   async init() {
     if (this.initialized) {
       throw('Database already initalized');
     }
-    this.config = await getConfig();
-    logger.debug('Db initalized');
     this.initialized = true;
+    this.config = await getConfig();
+    await userLocalDirectory.init();
+    await versioning.checkAllUsers(this);
+    this.logger.debug('DB initialized');
     return this;
   }
 
-  constructor(options) {
+  constructor(id, options) {
+    this.id = id;
+    this.logger = getLogger(this.id + ':storage');
     this.options = options || {};
     this.userDBsCache = new LRU({
       max: this.options.max || CACHE_SIZE,
       dispose: function (db, key) { db.close(); }
     });
+  }
+
+  getVersion() {
+    return VERSION;
   }
 
   /**
@@ -50,9 +61,9 @@ class Storage {
    * @returns {UserDatabase}
    */
   async forUser(userId) {
-    logger.debug('forUser: ' + userId);
+    this.logger.debug('forUser: ' + userId);
     this.checkInititalized();
-    return this.userDBsCache.get(userId) || await open(this, userId);
+    return this.userDBsCache.get(userId) || await open(this, userId, this.logger);
   }
 
   /**
@@ -61,15 +72,16 @@ class Storage {
    * @returns {void}
    */
   async deleteUser(userId) {
-    logger.info('deleteUser: ' + userId);
+    this.logger.info('deleteUser: ' + userId);
     const userDb = await this.forUser(userId);
     await userDb.close();
     this.userDBsCache.delete(userId);
-    const dbPath = await dbPathForUserid(userId);
+    const dbPath = await this.dbPathForUserid(userId);
     try {
-      unlinkSync(dbPath);
+      await fs.unlink(dbPath);
     } catch (err) {
-      logger.debug('deleteUser: Error' + err);
+      this.logger.debug('deleteUser: Error' + err);
+      throw err;
     }
   }
 
@@ -77,24 +89,19 @@ class Storage {
     this.checkInititalized();
     this.userDBsCache.clear();
   }
+
+  async dbPathForUserId(userId) {
+    const userPath = await ensureUserDirectory(userId);
+    return path.join(userPath, this.id + '-' + this.getVersion() + '.sqlite');
+  }
 }
 
-async function open(storage, userId) {
+async function open(storage, userId, logger) {
   logger.debug('open: ' + userId);
-  const db = new UserDatabase({dbPath: await dbPathForUserid(userId)});
+  const db = new UserDatabase(logger, {dbPath: await storage.dbPathForUserId(userId)});
+  await db.init();
   storage.userDBsCache.set(userId, db);
   return db;
 }
-
-
-/**
- * @param {string} userId -- user id (cuid format)
- */
-async function dbPathForUserid(userId) {
-  const userPath = await ensureUserDirectory(userId);
-  return path.join(userPath, 'audit.sqlite');
-}
-
-
 
 module.exports = Storage;
