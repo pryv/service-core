@@ -5,14 +5,13 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getLogger } = require('@pryv/boiler');
 
-const DOT: string = '.';
-import type { Permission } from 'business/src/accesses';
+const DOT = '.';
 /**
  * v1.7.5:
  * - migrate system streamIds in access permissions
@@ -68,15 +67,15 @@ module.exports = async function (context, callback) {
       logger.info('Updated access permissions streamIds for ' + accessesMigrated + ' ' + collection.namespace);
     }
 
-    function hasDotPermission(permissions: Array<Permission>): boolean {
-      for (const permission: Permission of permissions) {
+    function hasDotPermission(permissions) {
+      for (const permission of permissions) {
         if (permission.streamId != null && permission.streamId.startsWith(DOT)) return true;
       }
       return false;
     }
 
-    function translateToNewOrNothing(permission: Permission): Permission {
-      const oldStreamId: string = permission.streamId;
+    function translateToNewOrNothing(permission) {
+      const oldStreamId = permission.streamId;
       if (oldStreamId == null) return permission;
       if (! oldStreamId.startsWith(DOT)) return permission;
 

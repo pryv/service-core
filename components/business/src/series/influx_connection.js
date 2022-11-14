@@ -4,59 +4,58 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const influx = require('influx');
 const { getLogger } = require('@pryv/boiler');
 
-import type {IPoint}  from 'influx';
 
 /** Connection to the influx database. Adds error handling and logging on top
  * of our database driver. 
  */
 class InfluxConnection {
-  conn: influx.InfluxDB; 
+  conn; 
   logger; 
   
-  constructor(connectionSettings: ISingleHostConfig) {
+  constructor(connectionSettings) {
     this.conn = new influx.InfluxDB(connectionSettings);
     this.logger = getLogger('influx'); 
   }
   
-  createDatabase(name: string): Promise<*> {
+  createDatabase(name) {
     this.logger.debug(`Creating database ${name}.`);
     return this.conn.createDatabase(name);
   }
   
-  dropDatabase(name: string): Promise<void> {
+  dropDatabase(name) {
     this.logger.debug(`Dropping database ${name}.`);
     return this.conn.dropDatabase(name);
   }
   
   writeMeasurement(
-    name: string, 
-    points: Array<IPoint>, 
-    options?: IWriteOptions
-  ): Promise<void> 
+    name, 
+    points, 
+    options
+  ) 
   {
     this.logger.debug(`Write -> ${name}: ${points.length} points.`);
     return this.conn.writeMeasurement(name, points, options);
   }
 
   dropMeasurement(
-    name: string,
-    dbName: string
-  ): Promise<void> {
+    name,
+    dbName
+  ) {
     this.logger.debug(`Drop -> measurement: ${name} on dbName ${dbName}`, this.logger);
     return this.conn.dropMeasurement(name, dbName);
   }
   
-  writePoints(points: Array<IPoint>, options?: IWriteOptions): Promise<void> {
+  writePoints(points, options) {
     this.logger.debug(`Write -> (multiple): ${points.length} points.`);
     return this.conn.writePoints(points, options);
   }
   
-  query(query: string, options?: IQueryOptions): Promise<IResults> {
+  query(query, options) {
     const singleLine = query.replace(/\s+/g, ' ');
     this.logger.debug(`Query: ${singleLine}`); 
     
@@ -66,7 +65,7 @@ class InfluxConnection {
   /**
    * used for tests, Returns an array of database names
    */
-  getDatabases(): Promise<Array<string>> {
+  getDatabases() {
     return this.conn.getDatabaseNames();
   }
 }

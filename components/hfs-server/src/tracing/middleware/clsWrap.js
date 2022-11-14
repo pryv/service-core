@@ -5,18 +5,18 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 
 // Express middleware that makes sure we have a continuation local storage 
 // context for each express request. 
 
 const cls = require('../cls');
 
-function clsWrap(req: express$Request, res: express$Response, next: express$NextFunction) {
+function clsWrap(req, res, next) {
   return cls.startExpressContext(req, res, next);
 }
 
-function factory(): express$Middleware {
+function factory() {
   return clsWrap;
 }
 module.exports = factory;

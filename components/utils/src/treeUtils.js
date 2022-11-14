@@ -116,7 +116,7 @@ exports.flattenSimpleObject = function (object) {
   return result;
 };
 
-function flattenRecursiveSimpleObject (originalObject, resultArray: []): void {
+function flattenRecursiveSimpleObject (originalObject, resultArray) {
   Object.keys(originalObject).forEach(function (key) {
     var value = _.clone(originalObject[key]);
     if (typeof value == 'object') {

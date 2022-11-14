@@ -24,7 +24,7 @@ const {getConfig, getLogger } = require('@pryv/boiler').init({
   }]
 });
 
-// @flow
+// 
 const http = require('http');
 
 const middleware = require('middleware');
@@ -35,9 +35,8 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 
 const ExtensionLoader = utils.extension.ExtensionLoader;
 
-import type { Extension } from 'utils';
 
-function loadCustomAuthStepFn(customExtensions): ?Extension {
+function loadCustomAuthStepFn(customExtensions) {
   const defaultFolder = customExtensions.defaultFolder;
   const customAuthStepFnPath = customExtensions.customAuthStepFn;
 
@@ -88,7 +87,7 @@ async function start() {
 
   // setup HTTP
 
-  const server: ExtendedAttributesServer = http.createServer(expressApp);
+  const server = http.createServer(expressApp);
   module.exports = server;
 
   // Go
@@ -116,10 +115,6 @@ async function start() {
   });
 }
 
-type ExtendedAttributesServer = net$Server & {
-  key?: string,
-  url?: string,
-}
 
 const loggerLaunch = getLogger('launch');
 

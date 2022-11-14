@@ -4,13 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const bluebird = require('bluebird');
 const { getUsersRepository } = require('business/src/users');
 const { PendingUpdate } = require('./pending_updates');
 
-import type { Operation }  from './controller';
 
 const { getMall } = require('mall');
 const { getLogger } = require('@pryv/boiler');
@@ -18,19 +17,19 @@ const logger = getLogger('hfs:flush');
 
 // Operation that flushes the update to MongoDB. 
 // 
-class Flush implements Operation {
+class Flush {
   
   // The update to flush when calling #run. 
-  update: PendingUpdate;
+  update;
 
   
-  constructor(update: PendingUpdate) {
+  constructor(update) {
     this.update = update; 
   }
   
   // Flushes the information in `this.update` to disk (MongoDB).
   // 
-  async run(): Promise<true> {
+  async run() {
     const update = this.update; 
     const request = update.request;
     

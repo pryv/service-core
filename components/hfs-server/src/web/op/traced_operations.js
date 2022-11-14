@@ -5,33 +5,31 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 
-import type Context  from '../../context';
-import type { Span }  from 'opentracing';
 
 // A small class that helps clean up the tracing code in the controller code 
 // above. 
 // 
 class TracedOperations {
-  ongoingOps: Map<string, Span>;
+  ongoingOps;
   
-  context: Context; 
+  context; 
   
-  constructor(context: Context) {
+  constructor(context) {
     this.ongoingOps = new Map(); 
     
     this.context = context;
   }
   
-  start(name: string, opts?: Object) {
+  start(name, opts) {
     const ongoing = this.ongoingOps; 
     const ctx = this.context; 
     
     const span = ctx.childSpan(name, opts);
     ongoing.set(name, span);
   }
-  finish(name: string) {
+  finish(name) {
     const ongoing = this.ongoingOps; 
     
     const span = ongoing.get(name);

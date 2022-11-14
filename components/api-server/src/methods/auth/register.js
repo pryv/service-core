@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const commonFns = require('./../helpers/commonFunctions');
 const errors = require('errors').factory;
@@ -18,9 +18,6 @@ const usersIndex = require('business/src/users/UsersLocalIndex');
 const { getPasswordRules } = require('business').users;
 
 
-import type { MethodContext } from 'business';
-import type Result  from '../Result';
-import type { ApiCallback }  from '../API';
 
 /**
  * Auth API methods implementations.
@@ -37,7 +34,7 @@ module.exports = async function (api) {
   const passwordRules = await getPasswordRules();
 
   // REGISTER
-  const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
+  const registration = new Registration(logging, storageLayer, servicesSettings);
   await registration.init();
   const platform = await getPlatform();
 
@@ -100,7 +97,7 @@ module.exports = async function (api) {
    * @param {*} result
    * @param {*} next
    */
-  async function checkLocalUsersUniqueField(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function checkLocalUsersUniqueField(context, params, result, next) {
     result.reserved = false;
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
@@ -128,7 +125,7 @@ module.exports = async function (api) {
    * @param {*} result
    * @param {*} next
    */
-  async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function checkUsername(context, params, result, next) {
     result.reserved = false;
     try {
       result.reserved = await platform.isUsernameReserved(params.username);

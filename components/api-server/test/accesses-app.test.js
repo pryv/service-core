@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 /*global describe, before, beforeEach, it */
 
@@ -20,13 +20,12 @@ const { getConfig } = require('@pryv/boiler');
 
 const { integrity } = require('business');
 
-import type Request  from './helpers';
 
 describe('[ACCP] accesses (app)', function () {
 
   let helpers, server, validation, storage, testData;
   let additionalTestAccesses, user, access, basePath, accessesNotifCount;
-  let request: ?Request = null; // must be set after server instance started
+  let request = null; // must be set after server instance started
 
   function buildApiEndpoint(username, token) {
     return ApiEndpoint.build(username, token);
@@ -150,7 +149,7 @@ describe('[ACCP] accesses (app)', function () {
   function path(id) {
     return basePath + '/' + id;
   }
-  function req(): Request {
+  function req() {
     if (request) return request; 
     throw new Error('request is still not defined.');
   }
@@ -210,7 +209,7 @@ describe('[ACCP] accesses (app)', function () {
           schema: methodsSchema.create.result
         });
 
-        const expected: {[key: string]: any} = _.cloneDeep(data);
+        const expected = _.cloneDeep(data);
         expected.id = res.body.access.id;
         expected.token = res.body.access.token;
         expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);

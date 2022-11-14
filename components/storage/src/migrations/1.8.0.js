@@ -5,15 +5,14 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository } = require('business/src/users/repository');
 
 const { getLogger } = require('@pryv/boiler');
 
-const DOT: string = '.';
-import type { Permission } from 'business/src/accesses';
+const DOT = '.';
 
 const PlatformWideDB = require('platform/src/DB');
 

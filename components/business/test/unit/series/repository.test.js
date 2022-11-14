@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 'use strict';
-// @flow
+// 
 
 // Tests pertaining to storing data in a hf series. 
 
@@ -27,7 +27,7 @@ describe('business.series.Repository', function () {
     ); 
 
     // A test double for the actual connection:
-    const influxConnection: influx.InfluxDB = {
+    const influxConnection = {
       createDatabase: () => Promise.resolve(true),
       writeMeasurement: () => Promise.resolve(true), 
       dropMeasurement: () => Promise.resolve(true)

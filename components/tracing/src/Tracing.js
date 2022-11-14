@@ -11,12 +11,12 @@ const { Tags } = require('opentracing');
 
 const ah = require('./hooks');
 
-const TRACING_NAME: string = 'api-server';
+const TRACING_NAME = 'api-server';
 
 /**
  * Starts jaeger tracer
  */
- function initTracer(serviceName: string) {
+ function initTracer(serviceName) {
   const config = {
     serviceName: serviceName,
     sampler: { // Tracing all spans. See https://www.jaegertracing.io/docs/1.7/sampling/#client-sampling-configuration
@@ -34,7 +34,7 @@ const TRACING_NAME: string = 'api-server';
  * The jaeger tracer singleton
  */
  let tracerSingleton;
- function getTracer(): {} {
+ function getTracer() {
    if (tracerSingleton != null) return tracerSingleton;
    tracerSingleton = initTracer(TRACING_NAME);
    return tracerSingleton;
@@ -48,17 +48,17 @@ class Tracing {
   /**
    * the jaeger tracer
    */
-  tracer: {};
+  tracer;
   /**
    * used to track the top span to set the parent in startSpan()
    */
-  spansStack: Array<{}>;
+  spansStack;
   /**
    * index of the top stack element. To avoid using length-1
    */
-  lastIndex: number;
+  lastIndex;
 
-  history: Array<string>;
+  history;
 
   constructor () {
     this.tracer = getTracer();
@@ -73,7 +73,7 @@ class Tracing {
    * Starts a new span with the given name and tags.
    * The span is a child of the latest span if there is one.
    */
-  startSpan(name: string, tags: ?{}, childOf: ?string): string {
+  startSpan(name, tags, childOf) {
     this.history.push('start ' + name);
     //console.log('started span', name, ', spans present', this.lastIndex+2)
     ///console.log('started span', name, ', spans present', this.lastIndex+2)
@@ -106,7 +106,7 @@ class Tracing {
   /**
    * Tags an existing span. Used mainly for errors, by setError()
    */
-  tagSpan(name: ?string, key: string, value: string): void {
+  tagSpan(name, key, value) {
     this.history.push('tag ' + name + ':  ' + key + ' > ' + value);
     let span;
     if (name == null) {
@@ -124,7 +124,7 @@ class Tracing {
   /** 
    * Add log information to span
    */
-  logForSpan(name: ?string, data: ?object): void {
+  logForSpan(name, data) {
     this.history.push('log ' + name + ': ' + JSON.stringify(data));
     let span;
     if (name == null) {
@@ -142,7 +142,7 @@ class Tracing {
   /**
    * Finishes the span with the given name. Throws an error if no span with such a name exists.
    */
-  finishSpan(name: ?string, forceName: ?string): void {
+  finishSpan(name, forceName) {
     this.history.push('finish ' + name);
     let span;
     if (name == null) {
@@ -158,7 +158,7 @@ class Tracing {
     ///console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
   }
 
-  setError(name: ?string, err: Error) {
+  setError(name, err) {
     this.tagSpan(name, Tags.ERROR, true);
     this.tagSpan(name, 'errorId', err.id);
     this.tagSpan(name, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);

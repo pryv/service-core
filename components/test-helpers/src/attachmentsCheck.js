@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 /**
  * Test helper functions for attached files.
@@ -20,7 +20,7 @@ const eventFilesStorage = require('./dependencies').storage.user.eventFiles;
 // underneath).
 // 
 exports.compareTestAndAttachedFiles = function (
-  user: mixed, eventId: string, fileId: string, originalFileName: ?string) 
+  user, eventId, fileId, originalFileName) 
 {
   if (originalFileName == null) {
     originalFileName = fileId;

@@ -4,15 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const errors = require('errors').factory;
     
 // NOTE Name chosen to be unwieldy, so as not to make this look too good. 
-declare class RequestWithOriginalMethodAndBody extends express$Request { 
-  originalMethod: ?string;
-  originalBody: any;
-}
 
 /**
  * Middleware to allow overriding HTTP method, "Authorization" header and JSON
@@ -21,9 +17,9 @@ declare class RequestWithOriginalMethodAndBody extends express$Request {
  * after e.g. bodyParser middleware.
  */
 function normalizeRequest(
-  req: RequestWithOriginalMethodAndBody, 
-  res: express$Response, 
-  next: express$NextFunction) 
+  req, 
+  res, 
+  next) 
 {
   if (! req.is('application/x-www-form-urlencoded')) { return next(); }
   

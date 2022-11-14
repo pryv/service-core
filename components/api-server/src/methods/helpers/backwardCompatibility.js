@@ -4,31 +4,23 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-//@flow
+//
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-import type { Event } from 'business/src/events';
-import type { Stream } from 'business/src/streams';
-import type { Permission } from 'business/src/accesses';
-import type { MethodContext } from 'business';
-import type { ApiCallback } from 'api-server/src/API';
-import type { StreamQueryWithStoreId } from 'business/src/events';
-import type { GetEventsParams } from './eventsGetUtils';
-import type Result from '../../Result';
 
-const OLD_PREFIX: string = '.';
+const OLD_PREFIX = '.';
 
 // loaded lazily from config using loadTagConfigIfNeeded()
-let TAG_ROOT_STREAMID: ?string;
-let TAG_PREFIX: ?string;
-let TAG_PREFIX_LENGTH: ?number;
-let isTagBackwardCompatibilityActive: ?boolean;
+let TAG_ROOT_STREAMID;
+let TAG_PREFIX;
+let TAG_PREFIX_LENGTH;
+let isTagBackwardCompatibilityActive;
 
 loadTagConfigIfNeeded();
 
-function loadTagConfigIfNeeded(): void {
+function loadTagConfigIfNeeded() {
   if (TAG_PREFIX != null) return; // only testing this one as all 3 values are set together
   const config = getConfigUnsafe(true);
   TAG_PREFIX = config.get('backwardCompatibility:tags:streamIdPrefix');
@@ -37,7 +29,7 @@ function loadTagConfigIfNeeded(): void {
   isTagBackwardCompatibilityActive = config.get('backwardCompatibility:tags:isActive');
 }
 
-function convertStreamIdsToOldPrefixOnResult(event: Event) {
+function convertStreamIdsToOldPrefixOnResult(event) {
   let count = 0;
   if (event.streamIds == null) return;
   const newStreamIds = event.streamIds.map((streamId) => {
@@ -52,18 +44,18 @@ function convertStreamIdsToOldPrefixOnResult(event: Event) {
   }
 }
 
-function changeMultipleStreamIdsPrefix(streamIds: Array<string>, toOldPrefix: boolean = true): Array<string> {
-  const changeFunction: string => string = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
+function changeMultipleStreamIdsPrefix(streamIds, toOldPrefix = true) {
+  const changeFunction = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
 
-  const oldStyleStreamIds: Array<string> = [];
+  const oldStyleStreamIds = [];
   for (const streamId of streamIds) {
     oldStyleStreamIds.push(changeFunction(streamId));
   }
   return oldStyleStreamIds;
 }
 
-function changePrefixIdForStreams(streams: Array<Stream>, toOldPrefix: boolean = true): Array<Stream> {
-  const changeFunction: string => string = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
+function changePrefixIdForStreams(streams, toOldPrefix = true) {
+  const changeFunction = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
 
   for (const stream of streams) {
     stream.id = changeFunction(stream.id);
@@ -73,7 +65,7 @@ function changePrefixIdForStreams(streams: Array<Stream>, toOldPrefix: boolean =
   return streams;
 }
 
-function replaceWithOldPrefix(streamId: string): string {
+function replaceWithOldPrefix(streamId) {
   if (SystemStreamsSerializer.isSystemStreamId(streamId)) {
     return changeToOldPrefix(streamId);
   } else {
@@ -81,36 +73,36 @@ function replaceWithOldPrefix(streamId: string): string {
   }
 }
 
-function changeToOldPrefix(streamId: string): string {
+function changeToOldPrefix(streamId) {
   return OLD_PREFIX + SystemStreamsSerializer.removePrefixFromStreamId(streamId);
 }
 
-function replaceWithNewPrefix(streamId: string): string {
+function replaceWithNewPrefix(streamId) {
   if (! streamId.startsWith(OLD_PREFIX)) return streamId;
-  const streamIdWithoutPrefix: string = removeOldPrefix(streamId);
+  const streamIdWithoutPrefix = removeOldPrefix(streamId);
   if (SystemStreamsSerializer.isCustomerSystemStreamId(streamIdWithoutPrefix)) return SystemStreamsSerializer.addCustomerPrefixToStreamId(streamIdWithoutPrefix);
   if (SystemStreamsSerializer.isPrivateSystemStreamId(streamIdWithoutPrefix)) return SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix);
   return streamIdWithoutPrefix;
 
-  function removeOldPrefix(streamId: string): string {
+  function removeOldPrefix(streamId) {
     if (streamId.startsWith(OLD_PREFIX)) return streamId.substr(OLD_PREFIX.length);
     return streamId;
   }
 }
 
 function changeStreamIdsPrefixInStreamQuery(
-  isStreamIdPrefixBackwardCompatibilityActive: boolean,
-  context: MethodContext,
-  params: GetEventsParams,
-  result: Result,
-  next: ApiCallback
-): ?Function {
+  isStreamIdPrefixBackwardCompatibilityActive,
+  context,
+  params,
+  result,
+  next
+) {
   if (! isStreamIdPrefixBackwardCompatibilityActive || context.disableBackwardCompatibility) return next();
-  const streamsQueries: Array<StreamQueryWithStoreId> = params.arrayOfStreamQueriesWithStoreId;
-  const oldStyleStreamsQueries: Array<StreamQueryWithStoreId> = [];
+  const streamsQueries = params.arrayOfStreamQueriesWithStoreId;
+  const oldStyleStreamsQueries = [];
   for (const streamsQuery of streamsQueries) {
     const oldStyleStreamQuery = {};
-    for (const [prop: string, streamIds: Array<string>] of Object.entries(streamsQuery)) {
+    for (const [prop, streamIds] of Object.entries(streamsQuery)) {
       if (prop === 'storeId') {
         oldStyleStreamQuery[prop] = streamIds; // hack
       } else {
@@ -123,9 +115,9 @@ function changeStreamIdsPrefixInStreamQuery(
   next();
 }
 
-function changeStreamIdsInPermissions(permissions: Array<Permission>, toOldPrefix: boolean = true): Array<Permission> {
-  const changeFunction: string => string = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
-  const oldStylePermissions: Array<Permission> = [];
+function changeStreamIdsInPermissions(permissions, toOldPrefix = true) {
+  const changeFunction = toOldPrefix ? replaceWithOldPrefix : replaceWithNewPrefix;
+  const oldStylePermissions = [];
 
   for (const permission of permissions) {
     if (permission.streamId != null) { // do not change "feature" permissions
@@ -140,9 +132,9 @@ function changeStreamIdsInPermissions(permissions: Array<Permission>, toOldPrefi
  * Replaces the tags in an event with streamIds with the corresponding prefix
  * Deletes the tags.
  */
-function replaceTagsWithStreamIds(event: Event): Event {
+function replaceTagsWithStreamIds(event) {
   if (event.tags == null) return event;
-  for (const tag: string of event.tags) {
+  for (const tag of event.tags) {
     event.streamIds.push(TAG_PREFIX + tag);
   }
   delete event.tags;
@@ -152,9 +144,9 @@ function replaceTagsWithStreamIds(event: Event): Event {
 /**
  * put back tags in events, taken from its streamIds
  */
-function putOldTags(event: Event): Event {
+function putOldTags(event) {
   event.tags = [];
-  for (const streamId: string of event.streamIds) {
+  for (const streamId of event.streamIds) {
     if (isTagStreamId(streamId)) {
       event.tags.push(removeTagPrefix(streamId));
     }
@@ -162,11 +154,11 @@ function putOldTags(event: Event): Event {
   return event;
 }
 
-function removeTagPrefix(streamId: string): string {
+function removeTagPrefix(streamId) {
   return streamId.slice(TAG_PREFIX_LENGTH);
 }
 
-function isTagStreamId(streamId: string): boolean {
+function isTagStreamId(streamId) {
   return streamId.startsWith(TAG_PREFIX);
 }
 

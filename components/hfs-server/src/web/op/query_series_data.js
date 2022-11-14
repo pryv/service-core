@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const { tryCoerceStringValues } = require('api-server').validation;
 
@@ -17,9 +17,6 @@ const SeriesResponse = require('../SeriesResponse');
 
 const AUTH_HEADER = 'authorization';
 
-import type {Query, Repository} from 'business';
-import type {MetadataRepository, SeriesMetadata}  from '../../metadata_cache';
-import type Context  from '../../context';
 
 /** GET /events/:event_id/series - Query a series for a data subset.
  *
@@ -30,8 +27,8 @@ import type Context  from '../../context';
  * @return {void}
  */
 async function querySeriesData(
-  ctx: Context, req: express$Request,
-  res: express$Response): mixed 
+  ctx, req,
+  res) 
 {
   const metadata = ctx.metadata;
   const seriesRepo = ctx.series;
@@ -39,7 +36,7 @@ async function querySeriesData(
   // Extract parameters from request:
   const username = req.params.user_name;
   const eventId = req.params.event_id;
-  const accessToken: ?string = req.headers[AUTH_HEADER];
+  const accessToken = req.headers[AUTH_HEADER];
 
   // If required params are not there, abort.
   if (accessToken == null) throw errors.missingHeader(AUTH_HEADER, 401);
@@ -54,7 +51,7 @@ async function querySeriesData(
   await retrievePoints(seriesRepo, res, query, seriesMeta);
 }
 
-function coerceStringParams(params: Object): Query {
+function coerceStringParams(params) {
   tryCoerceStringValues(params, {
     fromDeltaTime: 'number',
     toDeltaTime: 'number',
@@ -68,11 +65,11 @@ function coerceStringParams(params: Object): Query {
   return query;
 }
 
-function applyDefaultValues(query: Object) {
+function applyDefaultValues(query) {
   if (query.to == null) query.to = timestamp.now(); 
 }
 
-function validateQuery(query: Query) {
+function validateQuery(query) {
   if (query.from != null && isNaN(query.from)) 
     throw errors.invalidParametersFormat("'from' must contain seconds since epoch.");
 
@@ -84,8 +81,8 @@ function validateQuery(query: Query) {
 }
 
 async function verifyAccess(
-  username: string, eventId: string, authToken: string, 
-  metadata: MetadataRepository): Promise<SeriesMetadata>
+  username, eventId, authToken, 
+  metadata)
 {
   const seriesMeta = await metadata.forSeries(username, eventId, authToken);
   
@@ -95,8 +92,8 @@ async function verifyAccess(
 }
 
 async function retrievePoints(
-  seriesRepo: Repository, res: express$Response,
-  query: Query, seriesMeta: SeriesMetadata): Promise<void>
+  seriesRepo, res,
+  query, seriesMeta)
 {
   const seriesInstance = await seriesRepo.get(...seriesMeta.namespaceAndName());
   const data = await seriesInstance.query(query);

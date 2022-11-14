@@ -4,26 +4,20 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
-export type APIErrorOptions = {
-  httpStatus?: number, 
-  data?: mixed, 
-  innerError?: ?Error, 
-  dontNotifyAirbrake?: boolean, 
-}
 
 // The constructor to use for all errors within the API.
 // 
 class APIError extends Error {
-  id: string; 
-  message: string; 
-  httpStatus: ?number;
-  data: ?mixed; 
-  innerError: ?Error; 
-  dontNotifyAirbrake: boolean; 
+  id; 
+  message; 
+  httpStatus;
+  data; 
+  innerError; 
+  dontNotifyAirbrake; 
   
-  constructor(id: string, message: string, options: ?APIErrorOptions) {
+  constructor(id, message, options) {
     super(); 
     
     this.id = id;

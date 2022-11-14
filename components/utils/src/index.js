@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 module.exports = {
   ApiEndpoint: require('./api-endpoint'),
@@ -17,5 +17,3 @@ module.exports = {
 };
 
 // Reexport the Logger interface for external declarations.
-import type { Extension }  from './extension';
-export type { Extension };

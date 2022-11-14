@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 /**
  * Regroups the different URL paths served by this module.
@@ -45,7 +45,7 @@ const Paths = module.exports = {
 };
 Object.freeze(Paths);
 
-function makePath(...a: Array<string>): string {
+function makePath(...a) {
   a.unshift('/');
 
   return path.join(...a);

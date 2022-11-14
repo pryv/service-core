@@ -5,12 +5,12 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 
 // Thrown when the remote code throws an error. 
 // 
 class RemoteError extends Error {
-  constructor(message: string) {
+  constructor(message) {
     super(`(remote error) ${message}`);
   }
 }

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 /* global describe, it */
 require('../test-helper');
@@ -45,7 +45,7 @@ describe('tryCoerceStringValues', () => {
     not_ok('123abc');
     not_ok('123.45aksfhjal');
     
-    function ok(n: string, e: number) {
+    function ok(n, e) {
       const o = { a: n };
       const s = { a: 'number' };
       
@@ -53,7 +53,7 @@ describe('tryCoerceStringValues', () => {
       
       assert.equal(o.a, e);
     }
-    function not_ok(n: string) {
+    function not_ok(n) {
       const o = { a: n };
       const s = { a: 'number' };
       

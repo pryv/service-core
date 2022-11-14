@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 
 /**
  * Local Data Store.
@@ -54,12 +54,12 @@ module.exports = ds.createDataStore({
     return transaction;
   },
 
-  async deleteUser(uid: string) {
+  async deleteUser(uid) {
     await this.streams._deleteUser(uid);
     await this.events._deleteUser(uid);
   },
 
-  async getUserStorageSize(uid: string) { // Here we should simply look at the db file size
+  async getUserStorageSize(uid) { // Here we should simply look at the db file size
     //const streamsSize = await this.streams._storageUsedForUser(uid);
     const eventsSize = await this.events._storageUsedForUser(uid);
     return eventsSize;

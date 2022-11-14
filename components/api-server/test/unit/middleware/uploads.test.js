@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 'use strict'; 
-// @flow
+// 
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -17,10 +17,10 @@ const uploads = require('../../../src/middleware/uploads');
 
 /* globals describe, it */
 describe('uploads middleware', function() {
-  function app(): express$Application {
+  function app() {
     const app = express(); 
     
-    const verifyAssumptions = (req: express$Request, res) => {
+    const verifyAssumptions = (req, res) => {
       res
         .status(200)
         .json({files: req.files});

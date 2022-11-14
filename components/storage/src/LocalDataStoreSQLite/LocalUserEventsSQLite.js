@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 
 /**
  * Local Data Store.
@@ -15,10 +15,10 @@
 const errorFactory = require('errors').factory;
 
 class LocalUserEvents {
-  storage: any;
-  eventsFileStorage: any;
+  storage;
+  eventsFileStorage;
 
-  constructor(storage: any, eventsFileStorage: any) {
+  constructor(storage, eventsFileStorage) {
     this.storage = storage;
     this.eventsFileStorage = eventsFileStorage;
   }
@@ -48,7 +48,7 @@ class LocalUserEvents {
     }
   }
 
-  async saveAttachedFiles(userId: string, eventId, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) {
+  async saveAttachedFiles(userId, eventId, attachmentsItems, transaction) {
     const attachmentsResponse = [];
     for (const attachment of attachmentsItems) {
       const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, eventId);
@@ -57,11 +57,11 @@ class LocalUserEvents {
     return attachmentsResponse;
   }
 
-  async getAttachedFile (userId: string, eventId, fileId: string) {
+  async getAttachedFile (userId, eventId, fileId) {
     return this.eventsFileStorage.getAttachedFileStream(userId, eventId, fileId);
   }
 
-  async deleteAttachedFile(userId: string, eventId, fileId: string, transaction?: Transaction) {
+  async deleteAttachedFile(userId, eventId, fileId, transaction) {
     return await this.eventsFileStorage.removeAttachedFile(userId, eventId, fileId);
   }
 
@@ -83,11 +83,11 @@ class LocalUserEvents {
     return db.deleteEvents(params);
   }
 
-  async _deleteUser(userId: string): Promise<void> {
+  async _deleteUser(userId) {
     return await this.delete(userId, {query: []});
   }
 
-  async _storageUsedForUser(userId: string) {
+  async _storageUsedForUser(userId) {
     const db = await this.storage.forUser(userId);
     return db.eventsCount();
   }

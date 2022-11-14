@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 /**
  * Helper functions for error handling.
@@ -22,7 +22,7 @@ const errorHandling = module.exports = {};
  * @param {Object} req The request context; expected properties: url, method, body
  * @param {Object} logger The logger object (expected methods: debug, info, warn, error)
  */
-errorHandling.logError = function (error: Error, req: express$Request | Object, logger: {}) {
+errorHandling.logError = function (error, req, logger) {
   //console.log('XXXXXX', error); // uncomment to log 500 errors on test running using InstanceManager  
   var metadata = {};
   if (req) {
@@ -59,7 +59,7 @@ errorHandling.logError = function (error: Error, req: express$Request | Object, 
 /**
  * Returns a public-safe error object from the given API error.
  */
-errorHandling.getPublicErrorData = function (error: Error) {
+errorHandling.getPublicErrorData = function (error) {
   if (error instanceof APIError) {
     let publicError = {
       id: error.id,

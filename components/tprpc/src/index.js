@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const Server = require('./server');
 const Client = require('./client');
@@ -17,4 +17,3 @@ module.exports = {
   load: Definition.load, 
 };
 
-export type { Definition };

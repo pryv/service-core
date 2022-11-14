@@ -4,21 +4,20 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const logger = require('@pryv/boiler').getLogger('PUM');
 const Heap = require('heap');
 
 // Code related to bookkeeping for pending updates. Will probably move. 
 
-import type { IUpdateRequest, IUpdateId }  from './interface';
 
-type EpochTime = number; // time from epoch, in seconds
+ // time from epoch, in seconds
 
 class PendingUpdatesMap {
   // Currently pending updates. 
-  map: Map<PendingUpdateKey, PendingUpdate>; 
-  heap: Heap<PendingUpdate>;
+  map; 
+  heap;
   
   constructor() {
     this.map = new Map(); 
@@ -32,7 +31,7 @@ class PendingUpdatesMap {
   // The collection takes ownership of the `update` parameter, meaning it may 
   // well modify it down the line. 
   // 
-  merge(update: PendingUpdate) {
+  merge(update) {
     const map = this.map; 
     const heap = this.heap;
     
@@ -56,7 +55,7 @@ class PendingUpdatesMap {
   // Returns a pending update stored under `key` if such an update exists 
   // currently. Ownership remains with the map.
   // 
-  get(key: PendingUpdateKey): ?PendingUpdate {
+  get(key) {
     const map = this.map; 
 
     return map.get(key) || null;
@@ -64,7 +63,7 @@ class PendingUpdatesMap {
 
   // Returns the amount of updates the map stores.
   // 
-  size(): number {
+  size() {
     return this.map.size;
   }
   
@@ -72,7 +71,7 @@ class PendingUpdatesMap {
   // Ownership passes to the caller; the updates are deleted from all internal
   // structures. 
   // 
-  getElapsed(now: EpochTime): Array<PendingUpdate> {
+  getElapsed(now) {
     const heap = this.heap;
     const map = this.map;
     const elapsed = [];
@@ -103,39 +102,28 @@ class PendingUpdatesMap {
   }
 }
 
-type UpdateStruct = {
-  userId: string,  // user name
-  eventId: string, // event id
-  author: string, // token
-  timestamp: EpochTime, // when was the update made
-  dataExtent: {
-    from: EpochTime, // lowest update timestamp
-    to: EpochTime, // highest update timestamp
-  }
-};
 
-opaque type PendingUpdateKey = string;
 
 const STALE_LIMIT = 5 * 60; // how stale can data ever get?
 const COOLDOWN_TIME = 10;   // how long do we wait before flushing in general?
 
 class PendingUpdate {
-  request: UpdateStruct;
+  request;
   
   // When should we flush this update at the latest?
-  deadline: EpochTime; 
+  deadline; 
   
   // Flush at the earliest; awaiting more updates with the same key
-  cooldown: EpochTime; 
+  cooldown; 
   
-  static fromUpdateRequest(now: EpochTime, req: IUpdateRequest): PendingUpdate {
+  static fromUpdateRequest(now, req) {
     return new PendingUpdate(now, req);
   }
-  static key(id: IUpdateId): PendingUpdateKey {
+  static key(id) {
     return key(id.userId, id.eventId);
   }
   
-  constructor(now: EpochTime, req: UpdateStruct) {
+  constructor(now, req) {
     this.request = req; // flow has got our back here...
     this.deadline = now + STALE_LIMIT;
     this.cooldown = now + COOLDOWN_TIME;
@@ -144,7 +132,7 @@ class PendingUpdate {
     if (from > to) throw new Error('Invalid update, from > to.');
   }
   
-  key(): PendingUpdateKey {
+  key() {
     const request = this.request; 
     return key(request.userId, request.eventId);
   }
@@ -153,12 +141,12 @@ class PendingUpdate {
   // to the meaning of each update field; for example the update that is 
   // later will determine the update author. This method modifies this. 
   // 
-  merge(other: PendingUpdate) {
+  merge(other) {
     if (this.key() !== other.key()) 
       throw new Error('Attempting update with data for a different series.');
     
     // The later update wins for timestamp and author
-    const ts = (e: PendingUpdate) => e.request.timestamp;
+    const ts = (e) => e.request.timestamp;
     const later = [this, other]
       .sort((a, b) => ts(a) - ts(b))[1];
       
@@ -180,18 +168,18 @@ class PendingUpdate {
     this.cooldown = request.timestamp + COOLDOWN_TIME;
   }
 
-  flushAt(): EpochTime {
+  flushAt() {
     return Math.min(this.deadline, this.cooldown);
   }
 }
 
-function key(a: string, b: string): PendingUpdateKey {
+function key(a, b) {
   return [a, b].join('/');
 }
 
 // Compares two pending updates for the purpose of sorting. 
 // 
-function comparePendingUpdates(a: PendingUpdate, b: PendingUpdate): number {
+function comparePendingUpdates(a, b) {
   // For now, just use the deadline property.
   const ts = (e) => e.flushAt();
   

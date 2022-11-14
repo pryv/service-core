@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 'use strict';
-// @flow
+// 
 
 // Tests pertaining to managing influx data - acceptance tests that actually write. 
 

@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 'use strict';
-// @flow
+// 
 
 const Action = require('api-server/src/schema/Action');
 const event = require('api-server/src/schema/event');

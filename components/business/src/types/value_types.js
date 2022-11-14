@@ -4,19 +4,17 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
-import type {PropertyType}  from './interfaces';
 
 // Type of an actual value.
-export interface ValueType extends PropertyType { }
 
 const errors = require('./errors');
 
 // A value of type 'number'.
 //
-class NumberType implements ValueType {
-  coerce(value: any): number {
+class NumberType {
+  coerce(value) {
     switch (typeof value) {
       case 'string':
         return this.coerceString(value);
@@ -27,7 +25,7 @@ class NumberType implements ValueType {
     throw new errors.InputTypeError(`Unknown outer type (${typeof value}).`);
   }
 
-  coerceString(str: string) {
+  coerceString(str) {
     const reNumber = /^\d+(\.\d+)?$/;
     if (! reNumber.test(str)) {
       throw new errors.InputTypeError(`Doesn't look like a valid number: '${str}'.`);
@@ -37,8 +35,8 @@ class NumberType implements ValueType {
   }
 }
 
-class BooleanType implements ValueType {
-  coerce(value: any): boolean {
+class BooleanType {
+  coerce(value) {
     if (value === true) return true;
     if (value === false) return false;
     if (value === 'true') return true;
@@ -47,19 +45,19 @@ class BooleanType implements ValueType {
   }
 }
 
-class StringType implements ValueType {
-  coerce(value: any): string {
+class StringType {
+  coerce(value) {
     return '' + value;
   }
 }
 
-class NullType implements ValueType {
-  coerce(/* value: any */): null {
+class NullType {
+  coerce(/* value: any */) {
     return null;
   }
 }
 
-function produceInner(type: string): ValueType {
+function produceInner(type) {
   switch (type) {
     case 'number': return new NumberType();
     case 'string': return new StringType();

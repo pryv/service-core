@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 const Deletion = require('business/src/auth/deletion');
 const { getStorageLayer } = require('storage');
 const { getLogger, getConfig } = require('@pryv/boiler');
@@ -19,12 +19,12 @@ const { getLogger, getConfig } = require('@pryv/boiler');
  * @param authSettings
  */
 module.exports = async function(
-  api: any
+  api
 ) {
   const config = await getConfig();
   const logging = getLogger('delete');
   const storageLayer = await getStorageLayer();
-  const deletion: Deletion = new Deletion(logging, storageLayer, config);
+  const deletion = new Deletion(logging, storageLayer, config);
 
   api.register(
     'auth.delete',

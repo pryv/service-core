@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 // Retrieves the projects version from git and from our deploy process. 
 
@@ -36,7 +36,7 @@ const { execSync } = require('child_process');
 class ProjectVersion {
   // Returns the projects version number. 
   // 
-  version(): string {
+  version() {
     const version = this.readStaticVersion(); 
     if (version != null && version != '1.2.3') return version; 
 
@@ -52,7 +52,7 @@ class ProjectVersion {
     return versionFromGitTag || version || DEFAULT_VERSION;
   }
   
-  readStaticVersion(): ?string {
+  readStaticVersion() {
     const searchPaths = process.mainModule.paths; 
       
     for (const current of searchPaths) {
@@ -71,7 +71,7 @@ class ProjectVersion {
 }
 
 let version = null;
-async function getAPIVersion(forceRefresh: ?boolean): Promise<string> {
+async function getAPIVersion(forceRefresh) {
   if (! version || forceRefresh) {
     const pv = new ProjectVersion();
     version = pv.version();

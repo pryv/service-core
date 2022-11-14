@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 /* global describe, it, after, before, beforeEach, afterEach*/
 const chai = require('chai');
@@ -19,23 +19,7 @@ const {
   produceInfluxConnection } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
 
-import type { IMetadataUpdaterService } from 'metadata';
 
-type DataValue = string | number;
-type Row = Array<DataValue>;
-type FlatJSONData = {
-  format: 'flatJSON', 
-  fields: Array<string>, 
-  points: Array<Row>, 
-};
-type SeriesEnvelope = {
-  eventId: string, 
-  data: FlatJSONData, 
-};
-type SeriesBatchEnvelope = {
-  format: 'seriesBatch', 
-  data: Array<SeriesEnvelope>; 
-};
 
 describe('Storing BATCH data in a HF series', function() {
 
@@ -90,7 +74,7 @@ describe('Storing BATCH data in a HF series', function() {
       });
     });
     
-    function storeData(data: SeriesBatchEnvelope): any {      
+    function storeData(data) {      
       const request = server.request(); 
       return request
         .post(`/${userId}/series/batch`)
@@ -124,7 +108,7 @@ describe('Storing BATCH data in a HF series', function() {
       if (body == null || body.status == null) throw new Error(); 
       assert.strictEqual(body.status, 'ok'); 
 
-      const headers: {[string]: string} = response.headers; 
+      const headers = response.headers; 
       assert.match(headers['api-version'], /^\d+\.\d+\.\d+/);
       
       // Check if the data is really there
@@ -134,7 +118,7 @@ describe('Storing BATCH data in a HF series', function() {
         SELECT * FROM "event.${eventId}"
       `;
         
-      const result: IResults = await influx.query(query, options);
+      const result = await influx.query(query, options);
       assert.strictEqual(result.length, 3);
       
       const expectedValues = [
@@ -335,7 +319,7 @@ describe('Storing BATCH data in a HF series', function() {
     describe('when using a metadata updater stub', () => {
       // A stub for the real service. Tests might replace parts of this to do 
       // custom assertions.
-      let stub: IMetadataUpdaterService;
+      let stub;
       beforeEach(() => {
         stub = {
           scheduleUpdate: () => { return Promise.resolve({ }); },
@@ -355,7 +339,7 @@ describe('Storing BATCH data in a HF series', function() {
         const endpoint = '127.0.0.1:14000';
 
         rpcServer = new rpc.Server(); 
-        rpcServer.add(definition, 'MetadataUpdaterService', (stub: IMetadataUpdaterService));
+        rpcServer.add(definition, 'MetadataUpdaterService', (stub));
         await rpcServer.listen(endpoint);
         
         // Tell the server (already running) to use our rpc server. 
@@ -395,7 +379,7 @@ describe('Storing BATCH data in a HF series', function() {
       });
     });
 
-    function storeData(request, data: SeriesBatchEnvelope): any {      
+    function storeData(request, data) {      
       return request
         .post(`/${userId}/series/batch`)
         .set('authorization', accessToken)

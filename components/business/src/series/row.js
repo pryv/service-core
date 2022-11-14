@@ -4,24 +4,23 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const _ = require('lodash');
 const assert = require('assert');
 
-import type { Element }  from './data_matrix';
 
 /** A single row of the data matrix. Stores a reference to the original
  * matrix; this is like a pointer, not like a value. It is used during iteration
  * to reference individual rows.
  */
 class Row {
-  values: Array<Element>;
-  columnNames: Array<string>;
+  values;
+  columnNames;
 
   /** Constructs a row - internal constructor. Use DataMatrix to produce rows.
    */
-  constructor(values: Array<*>, columnNames: Array<string>) {
+  constructor(values, columnNames) {
     this.values = values;
     this.columnNames = columnNames;
   }
@@ -34,7 +33,7 @@ class Row {
    *
    * @return {Object} The current row in object (struct) form.
    */
-  toStruct(): Object {
+  toStruct() {
     const obj = _.zipObject(this.columnNames, this.values);
     return _.pickBy(obj, val => val !== null);
   }
@@ -44,7 +43,7 @@ class Row {
    * You need to make sure that you access an actual column,
    * otherwise this method throws an error.
    */
-  get(column: string): Element {
+  get(column) {
     const idx = this.columnNames.indexOf(column);
     if (idx < 0) throw new Error(`No such column ${column}.`);
 
@@ -57,7 +56,7 @@ class Row {
   // Returns this rows deltaTime. If the deltaTime is not available, a runtime
   // error is thrown.
   //
-  deltaTime(): number {
+  deltaTime() {
     const value = this.get('deltaTime');
     if (typeof value !== 'number') throw new Error('Deltatime must be a number');
     if (value < 0) throw new Error('Deltatime must be greater than 0');

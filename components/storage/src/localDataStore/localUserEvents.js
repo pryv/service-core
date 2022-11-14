@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 
 const _ = require('lodash');
 const Readable = require('stream').Readable;
@@ -23,7 +23,7 @@ module.exports = (ds.createUserEvents({
   eventsCollection: null,
   eventsFileStorage: null,
 
-  init (eventsCollection: any, eventsFileStorage: any) {
+  init (eventsCollection, eventsFileStorage) {
     this.eventsCollection = eventsCollection;
     this.eventsFileStorage = eventsFileStorage;
   },
@@ -77,7 +77,7 @@ module.exports = (ds.createUserEvents({
     }
   },
 
-  async saveAttachedFiles(userId: string, eventId, attachmentsItems: Array<AttachmentItem>, transaction?: Transaction) {
+  async saveAttachedFiles(userId, eventId, attachmentsItems, transaction) {
     const attachmentsResponse = [];
     for (const attachment of attachmentsItems) {
       const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, eventId);
@@ -86,11 +86,11 @@ module.exports = (ds.createUserEvents({
     return attachmentsResponse;
   },
 
-  async getAttachedFile (userId: string, eventId, fileId: string) {
+  async getAttachedFile (userId, eventId, fileId) {
     return this.eventsFileStorage.getAttachedFileStream(userId, eventId, fileId);
   },
 
-  async deleteAttachedFile(userId: string, eventId, fileId: string, transaction?: Transaction) {
+  async deleteAttachedFile(userId, eventId, fileId, transaction) {
     return await this.eventsFileStorage.removeAttachedFile(userId, eventId, fileId);
   },
 
@@ -137,17 +137,17 @@ module.exports = (ds.createUserEvents({
     return cursor;
   },
 
-  async _deleteUser(userId: string): Promise<void> {
+  async _deleteUser(userId) {
     const query = {userId};
     const res = await this.eventsCollection.deleteMany(query, {});
     return res;
   },
 
-  async _getUserStorageSize(userId: string) {
+  async _getUserStorageSize(userId) {
     // TODO: fix this total HACK
     return await this.eventsCollection.countDocuments({userId});
   }
-}): any);
+}));
 
 //--------------- helpers ------------//
 

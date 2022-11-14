@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const assert = require('assert');
 
@@ -21,11 +21,11 @@ const assert = require('assert');
 //    proxy.foo();    // calls original foo, writes 'yes' to the console
 //    proxy.bar();    // throws 'bar', logs "Uncaught error 'bar' during call to Object#bar."
 // 
-class ErrorLogger<T: Object> {
-  target: T; 
+class ErrorLogger {
+  target; 
   logger; 
   
-  static wrap(target: T, logger): T {
+  static wrap(target, logger) {
     // #get is expected to be invariant, but is covariant (because we're using
     // the 'class' syntax here).
     // FLOW 
@@ -35,12 +35,12 @@ class ErrorLogger<T: Object> {
     return proxy; 
   }
   
-  constructor(target: T, logger) {
+  constructor(target, logger) {
     this.target = target;
     this.logger = logger; 
   }
   
-  get(target: T, propKey: string) {
+  get(target, propKey) {
     assert(target === this.target);
     
     // FLOW Whatever this results in, it will be what we want.
@@ -52,7 +52,7 @@ class ErrorLogger<T: Object> {
     // Otherwise: Wrap the function with our exception handler. 
     const origMethod = origValue;
     const wrapper = this; 
-    return function (...args: Array<mixed>) {
+    return function (...args) {
       try {
         const retval = origMethod.apply(this, args);
         
@@ -74,7 +74,7 @@ class ErrorLogger<T: Object> {
     };
   }
   
-  handleException(err: Error, target: T, propKey: string) {
+  handleException(err, target, propKey) {
     const logger = this.logger; 
     logger.error(`Uncaught error: '${err.toString()}' during call to ${target.constructor.name}#${propKey}.`);
   }

@@ -4,12 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const path = require('path');
 const methodCallback = require('../methodCallback');
 const API = require('../../API');
-import type Application from '../../application';
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const regPath = require('../Paths').Register;
@@ -21,16 +20,16 @@ const { setMinimalMethodContext, setMethodId } = require('middleware');
  * Routes for users
  * @param app
  */
-module.exports = function (expressApp: express$Application, app: Application) {
+module.exports = function (expressApp, app) {
 
-  const api: API = app.api;
+  const api = app.api;
   const isDnsLess = getConfigUnsafe().get('dnsLess:isActive');
 
   // POST /users: create a new user
   expressApp.post('/users', 
     setMinimalMethodContext,
     setMethodId('auth.register'),
-    function (req: express$Request, res: express$Response, next: express$NextFunction) {
+    function (req, res, next) {
       req.context.host = req.headers.host;
       api.call(req.context, req.body, methodCallback(res, next, 201));
   });
@@ -39,7 +38,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
     expressApp.post(path.join(regPath, '/user'), 
       setMinimalMethodContext,
       setMethodId('auth.register'),
-      function (req: express$Request, res: express$Response, next: express$NextFunction) {
+      function (req, res, next) {
         req.context.host = req.headers.host;
         if (req.body) req.body.appId = req.body.appid;
         api.call(req.context, req.body, methodCallback(res, next, 201));
@@ -47,19 +46,19 @@ module.exports = function (expressApp: express$Application, app: Application) {
     expressApp.get(path.join(regPath, '/:username/check_username'), 
       setMinimalMethodContext,
       setMethodId('auth.usernameCheck'),
-      (req: express$Request, res, next) => {
+      (req, res, next) => {
         api.call(req.context, req.params, methodCallback(res, next, 200));
     });
     expressApp.get(path.join(regPath, '/:email/check_email'), 
       setMinimalMethodContext,
       setMethodId('auth.emailCheck'),
-      (req: express$Request, res, next) => {
+      (req, res, next) => {
         api.call(req.context, req.params, methodCallback(res, next, 200));
     });
-    expressApp.post(path.join(regPath, '/username/check'), (req: express$Request, res, next) => {
+    expressApp.post(path.join(regPath, '/username/check'), (req, res, next) => {
       next(errors.goneResource());
     });
-    expressApp.post(path.join(regPath, '/email/check'), (req: express$Request, res, next) => {
+    expressApp.post(path.join(regPath, '/email/check'), (req, res, next) => {
       next(errors.goneResource());
     });
   }

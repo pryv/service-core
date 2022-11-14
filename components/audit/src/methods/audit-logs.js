@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-//@flow
+//
 
 const errors = require('errors').factory;
 const async = require('async');
@@ -14,8 +14,6 @@ const methodsSchema = require('../schema/auditMethods');
 const eventsGetUtils = require('api-server/src/methods/helpers/eventsGetUtils');
 const { getStoreQueryFromParams } = require('mall/src/helpers/eventsQueryUtils');
 
-import type { GetEventsParams } from 'api-server/src/methods/helpers/eventsGetUtils';
-import type { StreamQuery } from 'business/src/events';
 
 const audit = require('audit');
 const auditStorage = audit.storage;
@@ -50,7 +48,7 @@ function anyStarStreamQueryIsNullQUery(context, params, result, next) {
    * arrayOfStreamQueries === [{ any: ['*']}]
    * @param {*} arrayOfStreamQueries
    */
-  function isStar(arrayOfStreamQueries): boolean {
+  function isStar(arrayOfStreamQueries) {
     return params.arrayOfStreamQueries.length === 1 &&
     params.arrayOfStreamQueries[0]?.any?.length === 1 &&
     params.arrayOfStreamQueries[0]?.any[0] === '*';
@@ -64,12 +62,12 @@ function anyStarStreamQueryIsNullQUery(context, params, result, next) {
  */
 function removeStoreIdFromStreamQuery(context, params, result, next) {
   if (params.arrayOfStreamQueries == null) return next();
-  for (const query: StreamQuery of params.arrayOfStreamQueries) {
+  for (const query of params.arrayOfStreamQueries) {
     for (const item of ['all', 'any', 'not']) {
       if (query[item] != null) {
-        const streamIds: Array<string> = query[item];
-        for (let i: number = 0; i < streamIds.length ; i++) {
-          const streamId: string = streamIds[i];
+        const streamIds = query[item];
+        for (let i = 0; i < streamIds.length ; i++) {
+          const streamId = streamIds[i];
           if (! streamId.startsWith(audit.CONSTANTS.STORE_PREFIX)) {
             return next(errors.invalidRequestStructure(
               'Invalid "streams" parameter. It should be an array of streamIds starting with Audit store prefix: "' + audit.CONSTANTS.STORE_PREFIX + '"', params.arrayOfStreamQueries));
@@ -87,9 +85,9 @@ function limitStreamQueryToAccessToken(context, params, result, next) {
   if (params.arrayOfStreamQueries == null) { params.arrayOfStreamQueries = [{}]; }
 
   // stream corresponding to acces.id exemple: "access-{acces.id}"
-  const streamId: string = audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id;
+  const streamId = audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + context.access.id;
 
-  for (const query: StreamQuery of params.arrayOfStreamQueries) {
+  for (const query of params.arrayOfStreamQueries) {
     if (query.any == null) {
       query.any = [streamId]
     } else {

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -14,16 +14,16 @@ const PORT = 6123;
 
 class HttpServer extends EventEmitter {
 
-  app: express$Application;
-  server: ?HttpServer;
-  messages: Array<string>;
-  metas: Array<string>;
-  messageReceived: boolean;
-  messageCount: number;
-  responseStatus: number;
-  responseDelay: ?number;
+  app;
+  server;
+  messages;
+  metas;
+  messageReceived;
+  messageCount;
+  responseStatus;
+  responseDelay;
 
-  constructor(path: string, statusCode: number, responseBody: {}, delay: number) {
+  constructor(path, statusCode, responseBody, delay) {
     super();
     const app = express();
 
@@ -36,7 +36,7 @@ class HttpServer extends EventEmitter {
 
     const that = this;
     app.use(bodyParser.json());
-    app.post(path, (req: express$Request, res: express$Response) => {
+    app.post(path, (req, res) => {
 
       this.emit('received');
       if (that.responseDelay == null) {
@@ -61,7 +61,7 @@ class HttpServer extends EventEmitter {
     this.app = app;
   }
 
-  async listen(port: number) {
+  async listen(port) {
     this.server = await this.app.listen(port || PORT);
   }
 
@@ -85,11 +85,11 @@ class HttpServer extends EventEmitter {
     return this.messageCount;
   }
 
-  setResponseStatus(newStatus: number) {
+  setResponseStatus(newStatus) {
     this.responseStatus = newStatus;
   }
 
-  setResponseDelay(delay: number) {
+  setResponseDelay(delay) {
     this.responseDelay = delay;
   }
 

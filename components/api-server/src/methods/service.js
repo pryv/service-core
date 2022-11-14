@@ -4,24 +4,20 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
-import type { MethodContext } from 'business';
-import type API  from '../API';
-import type { ApiCallback }  from '../API';
-import type Result  from '../Result';
 
 const _ = require('lodash');
 const { getConfig } = require('@pryv/boiler');
 
-module.exports = function (api: API) {
+module.exports = function (api) {
   this.serviceInfo = null;
 
   api.register('service.info',
     getServiceInfo
   );
 
-  async function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {  
+  async function getServiceInfo(context, params, result, next) {  
     if (! this.serviceInfo) {
       this.serviceInfo = (await getConfig()).get('service');
     }

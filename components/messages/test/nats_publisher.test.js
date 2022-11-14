@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 require('test-helpers/src/api-server-tests-config');
 require('api-server/test/unit/test-helper');
 

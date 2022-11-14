@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const lodash = require('lodash');
 
@@ -15,16 +15,10 @@ const metadataUpdater = require('./metadata_updater');
 
 const cls = require('./tracing/cls');
 
-import type {MetadataRepository}  from './metadata_cache';
 
-import type { IMetadataUpdaterService } from 'metadata';
 
-import type { Database } from 'storage';
 
-type Repository = business.series.Repository;
-type InfluxConnection = business.series.InfluxConnection; 
 
-import type { Tracer, Span }  from 'opentracing';
 const { getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 
@@ -33,21 +27,21 @@ const { getMall } = require('mall');
 // more and together make up the configuration of the system.  
 // 
 class Context {
-  series: Repository; 
-  metadata: MetadataRepository;
-  metadataUpdater: IMetadataUpdaterService;
-  mongoConn: Database;
+  series; 
+  metadata;
+  metadataUpdater;
+  mongoConn;
   
   // Application level performance and error tracing:
-  tracer: Tracer; 
+  tracer; 
   
-  typeRepository: business.types.TypeRepository;
+  typeRepository;
   config;
   
   constructor(
-    influxConn: InfluxConnection, mongoConn: Database, 
-    tracer: Tracer, 
-    typeRepoUpdateUrl: string, config) 
+    influxConn, mongoConn, 
+    tracer, 
+    typeRepoUpdateUrl, config) 
   {
     this.series = new business.series.Repository(influxConn);
     this.metadataUpdater = new metadataUpdater.MetadataForgetter(
@@ -63,7 +57,7 @@ class Context {
     await  this.configureMetadataCache();
   }
   
-  configureTypeRepository(url: string) {
+  configureTypeRepository(url) {
     const typeRepo = new business.types.TypeRepository(); 
     typeRepo.tryUpdate(url); // async
     
@@ -78,14 +72,14 @@ class Context {
   
   // Configures the metadata updater service. 
   // 
-  async configureMetadataUpdater(endpoint: string) {
+  async configureMetadataUpdater(endpoint) {
     const updater = await metadataUpdater.produce(endpoint)   
     this.metadataUpdater = updater;
   }
   
   // Starts a child span below the request span. 
   // 
-  childSpan(name: string, opts?: Object): Span {
+  childSpan(name, opts) {
     const tracer = this.tracer; 
     const rootSpan = cls.getRootSpan();
     

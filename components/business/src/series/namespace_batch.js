@@ -5,16 +5,11 @@
  * Proprietary and confidential
  */
 
-// @flow
+// 
 
-import type { IPoint }  from 'influx';
-import type InfluxConnection  from './influx_connection';
-import type { BatchRequest }  from './batch_request';
-import type Row  from './row';
 
 // Type signature for a mapping function that helps convert eventIds into 
 // InfluxDB measurement names. 
-type MeasurementNameResolver = (eventId: string) => Promise<string>;
 
 // A store operation that stores data for multiple series in one call to the
 // backend. 
@@ -25,23 +20,23 @@ type MeasurementNameResolver = (eventId: string) => Promise<string>;
 //    await batch.store(); 
 // 
 class NamespaceBatch {
-  connection: InfluxConnection;
-  namespace: string;
+  connection;
+  namespace;
   
-  constructor(conn: InfluxConnection, namespace: string) {
+  constructor(conn, namespace) {
     this.connection = conn;
     this.namespace = namespace;
   }
   
   // Stores a batch request into InfluxDB and returns a promise that will
   // resolve once the request completes successfully. 
-  async store(data: BatchRequest, resolver: MeasurementNameResolver): Promise<*> {
+  async store(data, resolver) {
     // These options will apply to all the points:
     const appendOptions = {
       database: this.namespace, 
     };
     
-    const points: Array<IPoint> = []; 
+    const points = []; 
 
     // Loop through all batch requests and convert each row into an IPoint 
     // structure. 
@@ -60,7 +55,7 @@ class NamespaceBatch {
     return conn.writePoints(points, appendOptions);
     
     // Converts a single `Row` of data into an IPoint structure. 
-    function toIPoint(eventId: string, row: Row, measurementName: string): IPoint {
+    function toIPoint(eventId, row, measurementName) {
       const struct = row.toStruct(); 
       // FLOW This cannot fail, but somehow flow things we access the deltaTime. 
       delete struct.deltaTime; 

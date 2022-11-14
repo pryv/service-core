@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 // Tests the heap package as far as we need it. 
 
@@ -16,7 +16,7 @@ const assert = chai.assert;
 const Heap = require('heap');
 
 describe('Heap', () => {
-  let heap: Heap<number>; 
+  let heap; 
   beforeEach(() => {
     heap = new Heap(); 
   });

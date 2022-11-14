@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 /* eslint-disable no-console */
-// @flow
+// 
 
 const EventEmitter = require('events');
 
@@ -23,19 +23,19 @@ const PORT = 6123;
  * No logger available here. Using console.debug
  */
 class HttpServer extends EventEmitter {
-  app: express$Application;
-  server: HttpServer;
-  responseStatus: number;
-  lastReport: Object;
+  app;
+  server;
+  responseStatus;
+  lastReport;
 
-  constructor (path: string, statusCode: number, responseBody: Object) {
+  constructor (path, statusCode, responseBody) {
     super();
 
     const app = express();
     this.responseStatus = statusCode || 200;
     app.use(bodyParser.json());
 
-    app.all(path, (req, res: express$Response) => {
+    app.all(path, (req, res) => {
       res.status(this.responseStatus).json(responseBody || { ok: '1' });
       if(req.method === 'POST') {
         this.lastReport = req.body;
@@ -46,7 +46,7 @@ class HttpServer extends EventEmitter {
     this.app = app;
   }
 
-  async listen (port: number) {
+  async listen (port) {
     this.server = await this.app.listen(port || PORT);
   }
 
@@ -56,7 +56,7 @@ class HttpServer extends EventEmitter {
     });
   }
 
-  getLastReport(): Object {
+  getLastReport() {
     return this.lastReport;
   }
 }

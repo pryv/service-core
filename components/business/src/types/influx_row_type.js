@@ -4,29 +4,28 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const logger = require('@pryv/boiler').getLogger('influx_row_type');
 
-import type {EventType, PropertyType, Validator, Content}  from './interfaces';
 
 const FIELD_DELTATIME = 'deltaTime';
 const FIELD_TIMESTAMP = 'timestamp';
 
 // Represents the type of the deltaTime column in influx input data.
 //
-class InfluxDateType implements PropertyType {
-  deltaTo: number;
-  constructor(eventTime: number) {
+class InfluxDateType {
+  deltaTo;
+  constructor(eventTime) {
     this.deltaTo = eventTime;
   }
 
-  secondsToNanos(secs: number): number {
+  secondsToNanos(secs) {
     if (secs < 0) throw new Error(`Deltatime must be greater than 0`);
     return Math.trunc(secs * 1000 * 1000 * 1000);
   }
 
-  coerce(value: any): any {
+  coerce(value) {
     switch (typeof value) {
       case 'number':
         return this.secondsToNanos(value - this.deltaTo);
@@ -41,17 +40,17 @@ class InfluxDateType implements PropertyType {
 
 // Represents the type of a row in influx input data.
 //
-class InfluxRowType implements EventType {
-  eventType: EventType;
-  seriesMeta: SeriesMetadata;
-  applyDeltaTimeToSerie: Number;
+class InfluxRowType {
+  eventType;
+  seriesMeta;
+  applyDeltaTimeToSerie;
 
-  constructor(eventType: EventType) {
+  constructor(eventType) {
     this.eventType = eventType;
     this.applyDeltaTimeToSerie = 0;
   }
 
-  setSeriesMeta(seriesMeta: SeriesMetadata) {
+  setSeriesMeta(seriesMeta) {
     this.seriesMeta = seriesMeta;
   }
 
@@ -67,7 +66,7 @@ class InfluxRowType implements EventType {
    * and next coerce will convert timestamps to deltaTime relatively to the
    * Event time.
    */
-  validateColumns(columnNames: Array<string>): boolean {
+  validateColumns(columnNames) {
     const underlyingType = this.eventType;
 
     // ** do we need to transformation timestamp into deltatime
@@ -124,7 +123,7 @@ class InfluxRowType implements EventType {
   /** Returns true if all the rows in the given row array are valid for this
    * type.
    */
-  validateAllRows(rows: Array<any>, columnNames: Array<string>) {
+  validateAllRows(rows, columnNames) {
     for (let row of rows) {
       if (! this.isRowValid(row, columnNames)) {
         logger.debug('Invalid row: ', row, columnNames.length);
@@ -151,7 +150,7 @@ class InfluxRowType implements EventType {
    * @param columnNames {Array<string>} A list of column names the client
    *  provided. Check these first using `validateColumns`.
    */
-  isRowValid(row: any, columnNames: Array<string>) {
+  isRowValid(row, columnNames) {
     // A valid row is an array of cells.
     if (!Array.isArray(row)) return false;
 
@@ -170,7 +169,7 @@ class InfluxRowType implements EventType {
 
   /** Returns the type of a single cell with column name `name`.
    */
-  forField(name: string): PropertyType  {
+  forField(name)  {
     if (name === FIELD_DELTATIME) {
       return new InfluxDateType(this.applyDeltaTimeToSerie);
     } else {
@@ -181,34 +180,34 @@ class InfluxRowType implements EventType {
   // What fields may be present? See `requiredFields` for a list of mandatory
   // fields.
   //
-  optionalFields(): Array<string> {
+  optionalFields() {
     return this.eventType.optionalFields();
   }
 
   // check if a field is required
-  isOptionalField(name: string): Boolean {
+  isOptionalField(name) {
     return this.optionalFields().includes(name);
   }
 
   // What fields MUST be present?
   //
-  requiredFields(): Array<string> {
+  requiredFields() {
     return [FIELD_DELTATIME].concat(
       this.eventType.requiredFields());
   }
-  fields(): Array<string> {
+  fields() {
     return [FIELD_DELTATIME].concat(
       this.eventType.fields());
   }
 
-  isSeries(): true {
+  isSeries() {
     return true;
   }
 
   callValidator(
-    validator: Validator,
-    content: Content // eslint-disable-line no-unused-vars
-  ): Promise<Content> {
+    validator,
+    content // eslint-disable-line no-unused-vars
+  ) {
     return Promise.reject(
       new Error('No validation for influx row types.'));
   }

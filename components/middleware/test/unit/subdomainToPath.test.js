@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const supertest = require('supertest');
 const express = require('express');
@@ -20,11 +20,11 @@ describe('subdomainToPath middleware', function() {
     const request = supertest(app);
     
     app.use(subdomainToPath);
-    app.get('*', (req: express$Request, res) => {
+    app.get('*', (req, res) => {
       res.json({path: req.path});
     });
     
-    function ok(host: string, path: string): Promise<any> {
+    function ok(host, path) {
       return request
         .get('/path')
         .set('Host', host)

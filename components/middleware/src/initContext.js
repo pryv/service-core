@@ -4,11 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const { MethodContext } = require('business');
-import type { CustomAuthFunction,  ContextSource} from 'business';
-import type { StorageLayer } from 'storage';
 
 
 // Returns a middleware function that initializes the method context into
@@ -19,14 +17,14 @@ import type { StorageLayer } from 'storage';
 // responsibility to load the access when needed. 
 // 
 module.exports = function initContext(
-  storageLayer: StorageLayer, customAuthStepFn: ?CustomAuthFunction
+  storageLayer, customAuthStepFn
 ) {
   return function (
-    req: express$Request, res: express$Response, next: express$NextFunction
+    req, res, next
   ) {
     const authorizationHeader = req.headers['authorization'];
 
-    const contextSource: ContextSource = {
+    const contextSource = {
       name: 'http',
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
     };

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 // A test for the updater service. 
 
@@ -18,7 +18,6 @@ const helpers = require('./test-helpers');
 const rpc = require('tprpc');
 const metadata = require('metadata');
 
-import type { IMetadataUpdaterService }  from '../../src/metadata_updater/interface';
 
 describe('Metadata Updater', () => {  
   // Set up the server end
@@ -31,7 +30,7 @@ describe('Metadata Updater', () => {
   });
   
   // Set up the client end of the service. 
-  let service : IMetadataUpdaterService; 
+  let service; 
   before(async () => {
     const definition = await metadata.updater.definition;
     const client = new rpc.Client(definition);
@@ -40,7 +39,7 @@ describe('Metadata Updater', () => {
   });
   
   it('[POMC] allows scheduling an update', async () => {
-    const now: number = new Date() / 1e3; // now in seconds
+    const now = new Date() / 1e3; // now in seconds
     
     await service.scheduleUpdate({ entries: [{
       userId: 'userName', 

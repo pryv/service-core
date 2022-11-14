@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 
 const async = require('async');
 const slugify = require('utils').slugify;
@@ -36,29 +36,11 @@ const { changeStreamIdsInPermissions } = require('./helpers/backwardCompatibilit
 
 const { integrity } = require('business');
 
-import type { StorageLayer } from 'storage';
-import type { MethodContext } from 'business';
 
-import type API  from '../API';
-import type { ApiCallback }  from '../API';
-import type Result  from '../Result';
 
-type Permission = {
-  streamId: string,
-  level: 'manage' | 'contribute' | 'read' | 'create-only' | 'none',
-};
-type Access = {
-  type: 'personal' | 'app' | 'shared',
-  permissions: Array<Permission>,
-  expires: ?number,
-  clientData: ?{},
-};
 
-type UpdatesSettingsHolder = {
-  ignoreProtectedFields: boolean,
-}
 
-module.exports = async function produceAccessesApiMethods(api: API)
+module.exports = async function produceAccessesApiMethods(api)
 {
   const config = await getConfig();
   const logger = getLogger('methods:accesses');
@@ -67,11 +49,11 @@ module.exports = async function produceAccessesApiMethods(api: API)
     { calls: 0, deleted: 0 } };
   const mall = await getMall();
   const storageLayer = await getStorageLayer();
-  const updatesSettings: UpdatesSettingsHolder = {
+  const updatesSettings = {
     ignoreProtectedFields: config.get('updates:ignoreProtectedFields'),
   }
 
-  const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
+  const isStreamIdPrefixBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
   // RETRIEVAL
   api.register('accesses.get',
@@ -82,7 +64,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
   );
 
   async function findAccessibleAccesses(context, params, result, next) {
-    const currentAccess: Access = context.access;
+    const currentAccess = context.access;
     const accessesRepository = storageLayer.accesses;
     const query = {};
 
@@ -95,7 +77,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
     }
 
     try {
-      let accesses: Array<Access> = await bluebird.fromCallback(cb => accessesRepository.find(context.user, query, dbFindOptions, cb));
+      let accesses = await bluebird.fromCallback(cb => accessesRepository.find(context.user, query, dbFindOptions, cb));
 
       if (excludeExpired(params)) {
         accesses = accesses.filter(a => ! isAccessExpired(a));
@@ -118,7 +100,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
       return next(errors.unexpectedError(err));
     }
 
-    function excludeExpired(params: mixed): boolean {
+    function excludeExpired(params) {
       return ! params.includeExpired;
     }
   }
@@ -126,7 +108,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
   async function includeDeletionsIfRequested(context, params, result, next) {
     if (params.includeDeletions == null) { return next(); }
 
-    const currentAccess: Access = context.access;
+    const currentAccess = context.access;
     const accessesRepository = storageLayer.accesses;
 
     const query = {};
@@ -136,7 +118,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
     }
 
     try {
-      const deletions: Array<Access> = await bluebird.fromCallback(cb => accessesRepository.findDeletions(context.user, query,  { projection: { calls: 0 } }, cb));
+      const deletions = await bluebird.fromCallback(cb => accessesRepository.findDeletions(context.user, query,  { projection: { calls: 0 } }, cb));
 
       if (isStreamIdPrefixBackwardCompatibilityActive && ! context.disableBackwardCompatibility) {
         for (let access of deletions) {
@@ -262,11 +244,11 @@ module.exports = async function produceAccessesApiMethods(api: API)
       }
     }
 
-    function isStreamBasedPermission(permission): boolean {
+    function isStreamBasedPermission(permission) {
       return permission.streamId != null;
     }
 
-    function isUnknownSystemStream(streamId: string): boolean {
+    function isUnknownSystemStream(streamId) {
       return SystemStreamsSerializer.hasSystemStreamPrefix(streamId) && (SystemStreamsSerializer.removePrefixFromStreamId(streamId) === streamId);
     }
 
@@ -461,7 +443,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
   async function deleteAccesses(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
 
-    let idsToDelete: Array<{id: string}> = [{ id: params.id }];
+    let idsToDelete = [{ id: params.id }];
     if (result.relatedDeletions != null) {
       idsToDelete = idsToDelete.concat(result.relatedDeletions);
     }
@@ -534,7 +516,7 @@ module.exports = async function produceAccessesApiMethods(api: API)
 
   // Returns true if the given access' permissions match the `requestedPermissions`.
   //
-  function accessMatches(access: Access, requestedPermissions, clientData): boolean {
+  function accessMatches(access, requestedPermissions, clientData) {
     if (access == null ||
         access.type !== 'app' ||
         access.permissions.length !== requestedPermissions.length) {
@@ -671,13 +653,13 @@ module.exports = async function produceAccessesApiMethods(api: API)
   // business model about accesses. There is one more such check in MethodContext,
   // called `checkAccessValid`.
   //
-  function isAccessExpired(access: Access, nowParam?: number): boolean {
+  function isAccessExpired(access, nowParam) {
     const now = nowParam || timestamp.now();
     return access.expires != null && now > access.expires;
   }
 
 
-  function addIntegrityToContext(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  function addIntegrityToContext(context, params, result, next) {
     if(result?.access?.integrity != null ) {
       context.auditIntegrityPayload = {
         key: integrity.accesses.key(result.access),

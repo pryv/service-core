@@ -4,23 +4,22 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
+// 
 // 
 
 const Series = require('./series');
 const NamespaceBatch = require('./namespace_batch');
-import type InfluxConnection  from './influx_connection';
 
 /** Repository of all series in this Pryv instance. 
  */
 class Repository {
-  connection: InfluxConnection;
+  connection;
 
   /** Constructs a series repository based on a connection to InfluxDB. 
    * 
    * @param influxConnection {InfluxDB} handle to the database instance
    */
-  constructor(influxConnection: InfluxConnection) {
+  constructor(influxConnection) {
     this.connection = influxConnection;
   }
   
@@ -34,7 +33,7 @@ class Repository {
    *    
    *    seriesRepo.get(...seriesMeta.namespace())
    */
-  async get(namespace: string, name: string): Promise<Series> {
+  async get(namespace, name) {
     // TODO Cache all the setup checks we do here in an LRU cache. 
     
     // Make sure that the database exists:
@@ -52,7 +51,7 @@ class Repository {
   //    // ... as many times as you like
   //    await batch.store(); 
   //    
-  async makeBatch(namespace: string): Promise<NamespaceBatch> {
+  async makeBatch(namespace) {
     // TODO Cache all the setup checks we do here in an LRU cache. 
     
     // Make sure that the database exists:
