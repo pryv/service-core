@@ -21,8 +21,8 @@ module.exports = {
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('sqlite-storage-migration');
 
-async function checkAllUsers (storage, forceUsersBaseDirectory) {
-  const usersBaseDirectory = forceUsersBaseDirectory || userLocalDirectory.getBasePath();
+async function checkAllUsers (storage) {
+  const usersBaseDirectory = userLocalDirectory.getBasePath();
 
   const auditDBVersionFile = path.join(usersBaseDirectory, 'audit-db-version-' + storage.getVersion() + '.txt');
   if (fs.existsSync(auditDBVersionFile)) {
@@ -70,7 +70,6 @@ async function checkAllUsers (storage, forceUsersBaseDirectory) {
     }
   }
 }
-
 
 /**
  * @param {Function} asyncCallBack(uid, path)
