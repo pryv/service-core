@@ -30,6 +30,7 @@ describe('MethodContext', () => {
       assert.strictEqual(mc.callerId, 'CALLERID');
     });
   });
+
   describe('#retrieveAccessFromId', () => {
     const username = 'USERNAME';
     const customAuthStep = null;
@@ -52,7 +53,7 @@ describe('MethodContext', () => {
       access.expires = timestamp.now('-1d');
       let caught = false;
       try {
-        // FLOW storage is a fake
+        // storage is a fake
         await mc.retrieveAccessFromId(storage, 'accessId');
       } catch (err) {
         caught = true;

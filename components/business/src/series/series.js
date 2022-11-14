@@ -45,7 +45,9 @@ class Series {
     // is done via toStruct in DataMatrix.Row.
     const toMeasurement = (row) => {
       const struct = row.toStruct();
-      // FLOW This cannot fail, but somehow flow thinks we access the deltaTime.
+
+      // TODO review this now that flow is gone:
+      // This cannot fail, but somehow flow thinks we access the deltaTime.
       delete struct.deltaTime;
       const deltaTime = row.get('deltaTime');
       return {

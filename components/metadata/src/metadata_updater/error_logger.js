@@ -30,9 +30,9 @@ class ErrorLogger {
   static wrap (target, logger) {
     // #get is expected to be invariant, but is covariant (because we're using
     // the 'class' syntax here).
-    // FLOW
     const handler = new ErrorLogger(target, logger);
     const proxy = new Proxy(target, handler);
+
     return proxy;
   }
 
@@ -48,10 +48,13 @@ class ErrorLogger {
        */
   get (target, propKey) {
     assert(target === this.target);
-    // FLOW Whatever this results in, it will be what we want.
+
+    // Whatever this results in, it will be what we want.
     const origValue = target[propKey];
+
     // If this is not a function, return it to the caller.
-    if (typeof origValue !== 'function') { return origValue; }
+    if (typeof origValue !== 'function') return origValue;
+
     // Otherwise: Wrap the function with our exception handler.
     const origMethod = origValue;
     const wrapper = this;

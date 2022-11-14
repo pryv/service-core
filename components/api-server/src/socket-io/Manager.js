@@ -226,7 +226,8 @@ class NamespaceContext {
     const io = this.socketServer;
     const namespaceName = socket.nsp.name;
     logger.info(`New client connected on namespace '${namespaceName}' (context ${this.socketNs.name})`);
-    // FLOW This is attached to the socket by our initUsersNameSpaces.
+
+    // This is attached to the socket by our initUsersNameSpaces.
     const methodContext = socket.methodContext;
     if (methodContext == null) {
       logger.warn('AF: onNsConnect received handshake w/o method context.');
@@ -320,7 +321,7 @@ class Connection {
     callback = callback || callData.data[2];
     // if (callback == null) callback = function (err: any, res: any) { }; // eslint-disable-line no-unused-vars
     methodContext.methodId = apiMethod;
-    // FLOW MethodContext will need to be rewritten as a class...
+
     const userName = methodContext.user.username;
     // Accept streamQueries in JSON format for socket.io
     methodContext.acceptStreamsQueryNonStringified = true;

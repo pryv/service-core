@@ -282,6 +282,8 @@ class SeriesMetadataImpl {
        */
   produceRowType (repo) {
     const type = repo.lookup(this.eventType);
+
+    // TODO review this now that flow is gone:
     // NOTE The instanceof check here serves to make flow-type happy about the
     //  value we'll return from this function. If duck-typing via 'isSeries' is
     //  ever needed, you'll need to find a different way of providing the same

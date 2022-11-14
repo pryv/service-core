@@ -9,7 +9,8 @@ const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
 const { getConfig } = require('@pryv/boiler');
-const testServiceInfo = require('../../../../../test/service-info.json');
+const testServiceInfo = require('../../../../test/service-info.json');
+
 describe('config: serviceInfo', () => {
   let config;
   let isOpenSource;

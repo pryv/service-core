@@ -44,17 +44,26 @@ describe('Authentication', function () {
     const { hasProperties } = authMod(express(), { settings });
     const obj = { a: 1, b: 2 };
     const keys = ['a', 'b'];
+
     it('[IKAI] returns true if all properties exist', function () {
-      should(hasProperties(obj, keys)).be.ok();
+      should(
+        hasProperties(obj, keys)
+      ).be.ok();
     });
     it('[K2PZ] returns false if not all properties exist', function () {
-      should(hasProperties(obj, ['a', 'c'])).be.false();
+      should(
+        hasProperties(obj, ['a', 'c'])
+      ).be.false();
     });
     it('[U2NA] returns false if null is given', function () {
-      should(hasProperties(null, ['a', 'c'])).be.false();
+      should(
+        hasProperties(null, ['a', 'c'])
+      ).be.false();
     });
     it('[WJ7J] returns false if a string is given', function () {
-      should(hasProperties('a string', ['a', 'c'])).be.false();
+      should(
+        hasProperties('a string', ['a', 'c'])
+      ).be.false();
     });
   });
 });

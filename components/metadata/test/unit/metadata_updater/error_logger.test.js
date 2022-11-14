@@ -24,23 +24,30 @@ describe('ErrorLogger', () => {
   });
   it('[9UOR] forwards calls', () => {
     target.foo = sinon.spy();
-    // FLOW
+
     subject.foo('a', 'b', 'c');
+
     sinon.assert.calledOnce(target.foo);
     sinon.assert.calledWith(target.foo, 'a', 'b', 'c');
   });
   it('[5AVE] catches and logs all exceptions, rethrowing afterwards', () => {
     target.foo = sinon.stub();
+
     target.foo.throws('foobar');
-    // FLOW
-    assert.throws(() => subject.foo('a', 'b', 'c'));
+
+    assert.throws(
+      () => subject.foo('a', 'b', 'c')
+    );
+
     sinon.assert.threw(target.foo);
     sinon.assert.calledOnce(logger.error);
     sinon.assert.calledWith(logger.error, "Uncaught error: 'foobar' during call to Object#foo.");
   });
   it('[9J9U] also works for async methods, waiting for the eventual result', async () => {
     target.foo = sinon.stub();
+
     target.foo.rejects('foobar');
+
     const ret = subject.foo('a', 'b', 'c');
     assert.instanceOf(ret, Promise);
     await ret

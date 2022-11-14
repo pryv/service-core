@@ -24,7 +24,9 @@ module.exports = function produceErrorHandlingMiddleware (logger) {
       // FLOW Assume that we can toString the mistery object
       safeError = new APIError(error.toString());
     }
+
     errorHandling.logError(safeError, req, logger);
+
     const status = safeError.httpStatus || 500;
     res.status(status).json({
       error: errorHandling.getPublicErrorData(safeError)

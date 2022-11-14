@@ -21,7 +21,6 @@ describe('Metadata Updater/Controller', () => {
   beforeEach(() => {
     // Replace the database connection here with a dummy. We're testing the
     // controller, not the database access.
-    // FLOW
     const db = {
       events: {
         getCollectionInfoWithoutUserId: () => { }
@@ -33,21 +32,27 @@ describe('Metadata Updater/Controller', () => {
   afterEach(() => {
     controller.stop();
   });
+
   describe('#runEach(ms)', () => {
     it('[9TJ0] starts a timer and runs #act every n ms', (done) => {
       const now = Number(new Date());
       const callTimestamps = [];
+
       const stub = sinon.stub(controller, 'act');
       stub.callsFake(() => {
         callTimestamps.push(Number(new Date()));
+
         if (callTimestamps.length >= 2) {
           // First call happens immediately.
           assert.approximately(now, callTimestamps[0], 50);
+
           // And the second call 10 ms afterwards
           assert.approximately(callTimestamps[0], callTimestamps[1], 20);
+
           done();
         }
       });
+
       controller.runEach(10);
     });
   });
@@ -56,26 +61,33 @@ describe('Metadata Updater/Controller', () => {
     const update = makeUpdate(now, {});
     it('[2W9C] constructs an Flush operation for the update and returns it', () => {
       const flush = controller.flushOp(update);
+
       assert.instanceOf(flush, Flush);
     });
   });
   describe('#act', () => {
     const now = new Date() / 1e3;
+
     // Stores two 'update's in the `map`.
     beforeEach(() => {
       map.merge(makeUpdate(now - 10 * 60, { eventId: 'event1' }));
       map.merge(makeUpdate(now - 10 * 60, { eventId: 'event2' }));
     });
+
     it('[CIPH] pulls elapsed updates and flushes them to MongoDB', async () => {
       const flushOps = [];
+
       // Stub out the flushOp producer
       const flushOp = sinon.stub(controller, 'flushOp');
       flushOp.callsFake(() => {
         const op = sinon.spy();
         flushOps.push(op);
+
         return { run: op };
       });
+
       controller.act();
+
       assert.strictEqual(flushOps.length, 2);
       for (const op of flushOps) {
         await sinon.assert.calledOnce(op);
@@ -99,6 +111,7 @@ function makeUpdate (now, attrs = {}) {
       to: attrs.to || now
     }
   };
+
   return PendingUpdate.fromUpdateRequest(now, myAttrs);
 }
 

@@ -489,7 +489,7 @@ module.exports = async function (api) {
     'events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'),
-    updatesSettings.ignoreProtectedFields, logger),
+      updatesSettings.ignoreProtectedFields, logger),
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
     createStreamsForTagsIfNeeded,

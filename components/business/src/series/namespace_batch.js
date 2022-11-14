@@ -47,11 +47,14 @@ class NamespaceBatch {
     }
     const conn = this.connection;
     return conn.writePoints(points, appendOptions);
+
     // Converts a single `Row` of data into an IPoint structure.
     function toIPoint (eventId, row, measurementName) {
       const struct = row.toStruct();
-      // FLOW This cannot fail, but somehow flow things we access the deltaTime.
+      // TODO review this now that flow is gone:
+      // This cannot fail, but somehow flow things we access the deltaTime.
       delete struct.deltaTime;
+
       const timestamp = row.get('deltaTime');
       return {
         tags: [],

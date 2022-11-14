@@ -19,7 +19,7 @@ module.exports = function initContext (storageLayer, customAuthStepFn) {
       name: 'http',
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
     };
-    // FLOW We should not do this, but we're doing it.
+    // We should not do this, but we're doing it.
     req.context = new MethodContext(contextSource, req.params.username, authorizationHeader, customAuthStepFn, req.headers, req.query, req.tracing);
     // Convert the above promise into a callback.
     return req.context

@@ -326,8 +326,9 @@ describe('Storing BATCH data in a HF series', function () {
           format: 'seriesBatch',
           data: [data1, data2]
         };
+
         let updaterCalled = false;
-        // FLOW This is ok, we're replacing the stub with something compatible.
+        // This is ok, we're replacing the stub with something compatible.
         stub.scheduleUpdate = (req) => {
           updaterCalled = true;
           assert.strictEqual(req.entries.length, 2);

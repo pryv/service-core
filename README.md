@@ -27,7 +27,6 @@ Prerequisites:
 Then:
 1. `just setup-dev-env` to setup local file structure and install MongoDB
 2. `just install [--no-optional]` to install node modules
-3. `just compile-dev` for the initial code compilation into `dist`
 
 
 ## Dev environment basics
@@ -46,17 +45,6 @@ Notes:
 Everything should be accessible from the project root, including running commands on a particular component (typically via `just <command> <component> ...`). We keep things consistent across components, with as much as possible defined just once at the root level; in particular:
 - All NPM dependencies are kept in the root `package.json`
 - Only basic properties are kept in each component's `package.json`
-
-
-## Flowtype transpilation
-
-```
-just compile-(release|dev|watch)
-```
-at least once before running the servers or tests, to transpile the source code from Flowtype to pure JS (the compiled code is in `dist/`).
-- `just compile-release` by default
-- `just compile-dev` to include source maps
-- `just compile-watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
 
 
 ## Running service dependencies
@@ -116,14 +104,11 @@ Test results are kept in the [dev-test-results](https://github.com/pryv/dev-test
 
 ## Debugging
 
-Add your breakpoints _in the compiled code_ (i.e. in `dist/`), then `just test-debug` to run tests in debug mode.
+Add your breakpoints, then `just test-debug` to run tests in debug mode.
 
 For debugging by hand, old-school:
 - Print server 500 errors: uncomment the line containing `uncomment to log 500 errors on test running using InstanceManager` in `…/errorHandling.js`
 - Print server `console.log`: uncomment the line with `stdio: 'inherit'` in `…/InstanceManager.js`
-
-Miscellaneous tools:
-- VSCode extension [Source maps navigator](https://marketplace.visualstudio.com/items?itemName=vlkoti.vscode-sourcemaps-navigator) helps navigate to the original source code from the compiled one. Use `Ctrl/Cmd+click` on links.
 
 
 ## Tracing
@@ -204,7 +189,7 @@ to fetch them from the "reference" version published online. (The API server als
 
 If you're running into a lot of test failures, it may be because your Mongo database is empty, so try to `just test storage` first.
 
-If you are getting multiple seemingly unrelated errors following a branch switch, try to `just clean` then `just compile-release`.
+If you are getting multiple seemingly unrelated errors following a branch switch, try to `just clean`.
 
 ### Docker installation on Linux
 

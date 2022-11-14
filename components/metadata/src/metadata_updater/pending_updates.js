@@ -7,12 +7,15 @@
 const logger = require('@pryv/boiler').getLogger('PUM');
 const Heap = require('heap');
 
+// Code related to bookkeeping for pending updates. Will probably move.
+
+// time from epoch, in seconds
+
 class PendingUpdatesMap {
   // Currently pending updates.
-
   map;
-
   heap;
+
   constructor () {
     this.map = new Map();
     this.heap = new Heap(comparePendingUpdates);
@@ -32,6 +35,7 @@ class PendingUpdatesMap {
   merge (update) {
     const map = this.map;
     const heap = this.heap;
+
     const key = update.key();
     if (map.has(key)) {
       const existing = map.get(key);
@@ -79,20 +83,25 @@ class PendingUpdatesMap {
     const heap = this.heap;
     const map = this.map;
     const elapsed = [];
+
     logger.debug(`getElapsed, heap is ${heap.size()} items.`);
+
     while (heap.size() > 0) {
       const head = heap.peek();
       if (head == null) { throw new Error('AF: Heap is not empty, head must be an element'); }
       logger.debug('Peek head has deadline', head.deadline, `(and it is now ${now} o'clock)`);
       if (head.flushAt() > now) { break; }
       // assert: head has elapsed and the heap is not empty
+
       // Remove the element from both the map and the heap
       const elapsedUpdate = heap.pop();
       if (elapsedUpdate == null) { throw new Error('AF: Heap is not empty, head must be an element'); }
       map.delete(elapsedUpdate.key());
+
       // And prepare to return it to the caller.
       elapsed.push(elapsedUpdate);
     }
+
     return elapsed;
   }
 }
@@ -101,9 +110,10 @@ const COOLDOWN_TIME = 10; // how long do we wait before flushing in general?
 
 class PendingUpdate {
   request;
-  // When should we flush this update at the latest?
 
+  // When should we flush this update at the latest?
   deadline;
+
   // Flush at the earliest; awaiting more updates with the same key
 
   cooldown;
@@ -125,9 +135,10 @@ class PendingUpdate {
   }
 
   constructor (now, req) {
-    this.request = req; // flow has got our back here...
+    this.request = req;
     this.deadline = now + STALE_LIMIT;
     this.cooldown = now + COOLDOWN_TIME;
+
     const { from, to } = req.dataExtent;
     if (from > to) { throw new Error('Invalid update, from > to.'); }
   }
@@ -157,13 +168,16 @@ class PendingUpdate {
     const latReq = later.request;
     request.author = latReq.author;
     request.timestamp = ts(later);
+
     // Take the union of the two dataExtents.
     const dataExtent = request.dataExtent;
     const otherExtent = other.request.dataExtent;
     dataExtent.from = Math.min(dataExtent.from, otherExtent.from);
     dataExtent.to = Math.max(dataExtent.to, otherExtent.to);
+
     // Earliest deadline wins.
     this.deadline = Math.min(this.deadline, other.deadline);
+
     // Since we just touched this object, start a new cooldown period
     this.cooldown = request.timestamp + COOLDOWN_TIME;
   }
@@ -193,6 +207,7 @@ function key (a, b) {
 function comparePendingUpdates (a, b) {
   // For now, just use the deadline property.
   const ts = (e) => e.flushAt();
+
   return ts(a) - ts(b);
 }
 module.exports = {

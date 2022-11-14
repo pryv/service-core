@@ -40,7 +40,7 @@ function unhandledRejection (reason, promise) {
     'Unhandled promise rejection:', promise, 'reason:', reason.stack || reason);
 }
 const storage = require('storage');
-// FLOW __dirname can be undefined when node is run outside of file.
+// __dirname can be undefined when node is run outside of file.
 // Produces and returns a connection to MongoDB.
 //
 /**

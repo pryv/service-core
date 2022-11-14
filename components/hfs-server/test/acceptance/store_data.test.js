@@ -541,7 +541,7 @@ describe('Storing data in a HF series', function () {
           });
           it('[GU3L] should schedule a metadata update on every store', async () => {
             let updaterCalled = false;
-            // FLOW This is ok, we're replacing the stub with something compatible.
+            // This is ok, we're replacing the stub with something compatible.
             stub.scheduleUpdate = () => {
               updaterCalled = true;
               return Promise.resolve({});

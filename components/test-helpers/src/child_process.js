@@ -9,8 +9,10 @@ const msgpack = require('msgpack5')();
 
 class ChildProcess {
   launcher;
+
   constructor (launcher) {
     this.launcher = launcher;
+
     // This bit is useful to trace down promise rejections that aren't caught.
     //
     process.on('unhandledRejection', (...a) => this.unhandledRejection(...a));
@@ -39,10 +41,13 @@ class ChildProcess {
        */
   async handleParentMessage (wireMessage) {
     const message = msgpack.decode(wireMessage);
+
     const [msgId, cmd, ...args] = message;
     logger.debug('handleParentMessage/received ', msgId, cmd, args);
+
     try {
       let ret = await this.dispatchParentMessage(cmd, ...args);
+
       // msgpack cannot encode undefined.
       if (ret === undefined) { ret = null; }
       this.respondToParent(['ok', msgId, cmd, ret]);
@@ -56,6 +61,7 @@ class ChildProcess {
         JSON.stringify({ message: err.message, stack: err.stack })
       ]);
     }
+
     logger.debug('handleParentMessage/done', cmd);
   }
 
@@ -65,7 +71,7 @@ class ChildProcess {
        */
   respondToParent (msg) {
     logger.debug('respondToParent', msg);
-    // FLOW Somehow flow-type doesn't know about process here.
+
     process.send(msgpack.encode(msg));
   }
 
@@ -83,7 +89,7 @@ class ChildProcess {
     // assert: cmd.startsWith('int_')
     switch (cmd) {
       case 'int_startServer':
-        // FLOW Assume this is happening...
+        // Assume this is happening...
         return this.intStartServer(args[0]);
       default:
         throw new Error(`Unknown/unhandled internal message ${cmd}`);
@@ -91,6 +97,7 @@ class ChildProcess {
   }
 
   // ----------------------------------------------------------- parent messages
+
   // Tells the launcher to launch the application, injecting the given
   // `injectSettings`.
   //
@@ -100,6 +107,7 @@ class ChildProcess {
        */
   async intStartServer (injectSettings) {
     const launcher = this.launcher;
+
     return launcher.launch(injectSettings);
   }
 

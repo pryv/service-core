@@ -23,25 +23,31 @@ function tracingMiddleware (ctx, req, res, next // eslint-disable-line no-unused
   const tracer = ctx.tracer;
   const pathname = url.parse(req.url).pathname;
   const span = tracer.startSpan(`${req.method} ${pathname || '(n/a)'}`);
+
   span.setTag(Tags.HTTP_METHOD, req.method);
   span.setTag(Tags.HTTP_URL, req.url);
   // include trace ID in headers so that we can debug slow requests we see in
   // the browser by looking up the trace ID found in response headers
   const responseHeaders = {};
   tracer.inject(span, opentracing.FORMAT_TEXT_MAP, responseHeaders);
-  Object.keys(responseHeaders).forEach((key) => res.setHeader(key, responseHeaders[key]));
+  Object.keys(responseHeaders).forEach(key => res.setHeader(key, responseHeaders[key]));
+
   // Use cls to store the root span for code in this trace to use.
   cls.setRootSpan(span);
+
   // Hook the response 'end' function and install our handler to finish traces.
   const originalEnd = res.end;
-  // FLOW (see above)
+  // (see above)
   res.end = function (...a) {
-    // FLOW (see above)
+    // (see above)
     res.end = originalEnd;
     const returned = res.end.call(this, ...a);
+
     requestDone(span, res);
+
     return returned;
   };
+
   // Start request
   return next();
 }
@@ -51,10 +57,12 @@ function tracingMiddleware (ctx, req, res, next // eslint-disable-line no-unused
 function requestDone (span, res) {
   const Tags = opentracing.Tags;
   span.setTag(Tags.HTTP_STATUS_CODE, res.statusCode);
+
   if (res.statusCode >= 400) {
     span.setTag(Tags.ERROR, true);
     span.setTag('sampling.priority', 1);
   }
+
   span.finish();
 }
 /**

@@ -11,6 +11,7 @@ const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const getAuth = require('middleware/src/getAuth');
 const { setMethodId } = require('middleware');
+
 (async () => {
   await commonMeta.loadSettings();
 })();
@@ -23,6 +24,7 @@ const { setMethodId } = require('middleware');
  */
 function root (expressApp, app) {
   const api = app.api;
+
   const customAuthStepFn = app.getCustomAuthFunction('root.js');
   const initContextMiddleware = middleware.initContext(app.storageLayer, customAuthStepFn);
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
@@ -33,17 +35,27 @@ function root (expressApp, app) {
   expressApp.all(Paths.UserRoot + '/*', getAuth);
   expressApp.all(Paths.UserRoot + '/*', initContextMiddleware);
   // Current access information.
-  expressApp.get(Paths.UserRoot + '/access-info', setMethodId('getAccessInfo'), loadAccessMiddleware, function (req, res, next) {
-    // FLOW More request.context...
-    api.call(req.context, req.query, methodCallback(res, next, 200));
-  });
+  expressApp.get(Paths.UserRoot + '/access-info',
+    setMethodId('getAccessInfo'),
+    loadAccessMiddleware,
+    function (req, res, next) {
+      api.call(req.context, req.query,
+        methodCallback(res, next, 200));
+    });
+
   // Batch request of multiple API method calls.
-  expressApp.post(Paths.UserRoot, initContextMiddleware, setMethodId('callBatch'), loadAccessMiddleware, function (req, res, next) {
-    // FLOW More request.context...
-    api.call(req.context, req.body, methodCallback(res, next, 200));
-  });
+  expressApp.post(Paths.UserRoot,
+    initContextMiddleware,
+    setMethodId('callBatch'),
+    loadAccessMiddleware,
+    function (req, res, next) {
+      api.call(req.context, req.body,
+        methodCallback(res, next, 200));
+    }
+  );
 }
 module.exports = root;
+
 // Renders a greeting message; this route is displayed on the various forms
 // of roots ('/', 'foo.pryv.me/')
 //
@@ -54,6 +66,7 @@ module.exports = root;
 function rootIndex (req, res) {
   const devSiteURL = 'https://api.pryv.com/';
   const result = commonMeta.setCommonMeta({});
+
   if (req.accepts('application/json')) {
     res.json(_.extend(result, {
       cheersFrom: 'Pryv API',

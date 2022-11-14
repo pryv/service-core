@@ -4,6 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+//
+
 const url = require('url');
 const child_process = require('child_process');
 const net = require('net');
@@ -17,10 +19,13 @@ const _ = require('lodash');
 const { ConditionVariable, Fuse } = require('./condition_variable');
 // Set DEBUG=spawner to see these messages.
 const logger = require('@pryv/boiler').getLogger('spawner');
+
 const PRESPAWN_LIMIT = 2;
+
 let basePort = 3001;
 let debugPortCount = 1;
 let spawnCounter = 0;
+
 // Spawns instances of api-server for tests. Listening port is chosen at random;
 // settings are either default or what you pass into the #spawn function.
 //
@@ -29,27 +34,30 @@ class SpawnContext {
   childPath;
 
   basePort; // used for HTTP server and Axon server
-
   shuttingDown;
 
   pool;
 
   allocated;
+
   // Construct a spawn context. `childPath` should be a module require path to
   // the module that will be launched in the child process. Please see
   // components/api-server/test/helpers/child_process for an example of such
   // a module.
   //
-  constructor (childPath = __dirname +
-        '/../../api-server/test/helpers/child_process') {
+
+  constructor (childPath = __dirname + '/../../api-server/test/helpers/child_process') {
     this.childPath = childPath;
     this.basePort = basePort;
     basePort += 10;
+
     this.shuttingDown = false;
     this.pool = [];
+
     // All the processes that we've created and given to someone using
     // getProcess.
     this.allocated = [];
+
     this.prespawn();
   }
 
@@ -60,6 +68,7 @@ class SpawnContext {
  */
   prespawn () {
     const childPath = this.childPath;
+
     while (this.pool.length < PRESPAWN_LIMIT) {
       logger.debug('prespawn process');
       const newArgv = process.execArgv.map((arg) => {
@@ -78,6 +87,7 @@ class SpawnContext {
       });
       const proxy = new ProcessProxy(childProcess, this);
       logger.debug(`prespawned child pid ${childProcess.pid}`);
+
       this.pool.push(proxy);
     }
   }
@@ -95,9 +105,12 @@ class SpawnContext {
     // Find a port to use
     // TODO Free ports once done.
     const port = await this.allocatePort();
+
     const axonPort = await this.allocatePort();
+
     // Obtain a process proxy
     const process = this.getProcess();
+
     // Create settings for this new instance.
     customSettings = customSettings || {};
     const settings = _.merge({
@@ -114,9 +127,12 @@ class SpawnContext {
         host: 'localhost'
       }
     }, customSettings);
+
     // Specialize the server we've started using the settings above.
     await process.startServer(settings);
+
     logger.debug(`spawned a child on port ${port}`);
+
     // Return to our caller - server should be up and answering at this point.
     return new Server(port, process, axonPort);
   }
@@ -140,7 +156,6 @@ class SpawnContext {
       // process.
       if (await tryBindPort(nextPort)) { return nextPort; }
     }
-    // Tell flow not to worry about returns from this execution path.
     throw new Error('AF: NOT REACHED'); // eslint-disable-line no-unreachable
     // Returns true if this process can bind a listener to the `port` given.
     // Closes the port immediately after calling `listen()` so that a child
@@ -148,6 +163,7 @@ class SpawnContext {
     //
     async function tryBindPort (port) {
       const server = net.createServer();
+
       logger.debug('Trying future child port', port);
       return new bluebird((res, rej) => {
         try {
@@ -156,6 +172,7 @@ class SpawnContext {
             server.close();
             res(false);
           });
+
           const host = '0.0.0.0';
           const backlog = 511; // default
           server.listen(port, host, backlog, () => {
@@ -214,9 +231,11 @@ class SpawnContext {
   async shutdown () {
     logger.debug('shutting down the context', this.pool.length);
     this.shuttingDown = true;
+
     for (const child of this.pool) {
       await child.terminate();
     }
+
     for (const child of this.allocated) {
       await child.terminate();
     }
@@ -226,23 +245,24 @@ class SpawnContext {
 // processes and manage their lifecycle. It also provides a type-safe interface
 // to messages that can be sent to the process.
 //
-
 class ProcessProxy {
   childProcess;
-
   pool;
 
   started;
-
   exited;
 
   pendingMessages;
+
   constructor (childProcess, pool) {
     this.childProcess = childProcess;
     this.pool = pool;
+
     this.started = new Fuse();
     this.exited = new Fuse();
+
     this.pendingMessages = new Map();
+
     this.registerEvents();
   }
 
@@ -292,6 +312,7 @@ class ProcessProxy {
   onChildExit () {
     logger.debug('child exited');
     this.exited.burn();
+
     this.pool.onChildExit();
   }
 
@@ -304,6 +325,7 @@ class ProcessProxy {
   async startServer (settings) {
     if (this.exited.isBurnt()) { throw new Error('Child exited prematurely; please check your setup code.'); }
     await this.sendToChild('int_startServer', settings);
+
     logger.debug('child started');
     this.started.burn();
   }
@@ -323,6 +345,7 @@ class ProcessProxy {
     } catch (err) {
       logger.debug('sending SIGKILL');
       child.kill('SIGKILL');
+
       try {
         await this.exited.wait(1000);
       } catch (err) {
@@ -358,19 +381,24 @@ class ProcessProxy {
       resolve: res,
       reject: rej
     };
+
     while (remainingTries > 0) {
       const candId = Math.floor(Math.random() * 1e9);
       if (!pendingMessages.has(candId)) {
         pendingMessages.set(candId, resolver);
+
         // Success return.
         return candId;
       }
+
       remainingTries -= 1;
     }
+
     // assert: We haven't found a free message id in 1000 tries.. give up.
     throw new Error('AF: Could not find a free message id.');
   }
 }
+
 // Public facade to the servers we spawn.
 //
 /** @extends EventEmitter */
@@ -378,14 +406,13 @@ class Server extends EventEmitter {
   port;
 
   axonPort;
-
   baseUrl;
-
   process;
 
   messagingSocket;
 
   host;
+
   constructor (port, proxy, axonPort) {
     super();
     this.port = port;
@@ -404,6 +431,7 @@ class Server extends EventEmitter {
     this.messagingSocket = axon.socket('sub-emitter');
     const mSocket = this.messagingSocket;
     mSocket.connect(+this.axonPort, host);
+
     mSocket.on('*', function (message, data) {
       this.emit(message, data);
     }.bind(this));
