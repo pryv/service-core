@@ -58,7 +58,7 @@ async function start() {
   // load config settings
   var config = await getConfig();
   await SystemStreamsSerializer.init();
-  
+
   const customAuthStepExt = loadCustomAuthStepFn(config.get('customExtensions'));
 
   const logger = getLogger('server');
@@ -75,15 +75,15 @@ async function start() {
     storageLayer);
 
   const { expressApp, routesDefined } = require('./expressApp')(
-    await middleware.commonHeaders(), 
-    require('./middleware/errors')(logger), 
+    await middleware.commonHeaders(),
+    require('./middleware/errors')(logger),
     middleware.requestTrace(null, logger));
 
   // setup routes
   require('./routes/index')(expressApp);
   await require('./routes/event-previews')(expressApp, initContextMiddleware, loadAccessMiddleware, storageLayer.eventFiles, logger);
 
-  // Finalize middleware stack: 
+  // Finalize middleware stack:
   routesDefined();
 
   // setup HTTP
@@ -94,21 +94,21 @@ async function start() {
   // Go
   const testNotifier = await axonMessaging.getTestNotifier();
 
-  database.waitForConnection(function () {
+  await database.waitForConnection();
+
     const backlog = 512;
     server.listen(config.get('http:port'), config.get('http:ip'), backlog, function () {
       var address = server.address();
       var protocol = server.key ? 'https' : 'http';
       server.url = protocol + '://' + address.address + ':' + address.port;
-      const infostr =  'Preview server v' + require('../package.json').version +
+    const infostr = 'Preview server v' + require('../package.json').version +
       ' [' + expressApp.settings.env + '] listening on ' + server.url;
       logger.info(infostr);
 
       // all right
-      logger.debug(infostr)
+    logger.debug(infostr);
       logger.info('Server ready');
       testNotifier.emit('axon-server-ready');
-    });
   });
 
   process.on('exit', function () {
@@ -128,4 +128,3 @@ start()
   .catch(err => {
     loggerLaunch.error(err, err); // eslint-disable-line no-console
   });
-

@@ -6,9 +6,7 @@
  */
 // @flow
 
-// Gathers all the repositories into one big object for convenience. 
-
-const bluebird = require('bluebird');
+// Gathers all the repositories into one big object for convenience.
 
 import type Database  from './Database';
 
@@ -23,8 +21,8 @@ const Streams = require('./user/Streams');
 const Webhooks = require('./user/Webhooks');
 
 class StorageLayer {
-  connection: Database; 
-  
+  connection: Database;
+
   versions: Versions;
   passwordResetRequests: PasswordResetRequests;
   sessions: Sessions;
@@ -34,45 +32,44 @@ class StorageLayer {
   profile: Profile;
   streams: Streams;
   webhooks: Webhooks;
-  
+
   constructor(
-    connection: Database, 
-    logger, 
+    connection: Database,
+    logger,
     attachmentsDirPath: string,
     previewsDirPath: string,
     passwordResetRequestMaxAge: number,
     sessionMaxAge: number,
   ) {
     this.connection = connection;
-    
+
     this.versions = new Versions(
-      connection, 
-      attachmentsDirPath, 
+      connection,
+      attachmentsDirPath,
       logger);
     this.passwordResetRequests = new PasswordResetRequests(
       connection,
       { maxAge: passwordResetRequestMaxAge });
     this.sessions = new Sessions(
-      connection, 
+      connection,
       { maxAge: sessionMaxAge });
     this.accesses = new Accesses(connection);
     this.eventFiles = new EventFiles(
-      { 
-        attachmentsDirPath: attachmentsDirPath, 
+      {
+        attachmentsDirPath: attachmentsDirPath,
         previewsDirPath: previewsDirPath,
-      }, 
-      logger);  
+      },
+      logger);
     this.followedSlices = new FollowedSlices(connection);
     this.profile = new Profile(connection);
     this.streams = new Streams(connection);
     this.webhooks = new Webhooks(connection);
   }
-  
+
   async waitForConnection() {
     const database = this.connection;
-    
-    return bluebird.fromCallback(
-      (cb) => database.waitForConnection(cb));
+
+    return await database.waitForConnection();
   }
 }
 module.exports = StorageLayer;
