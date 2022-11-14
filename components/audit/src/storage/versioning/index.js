@@ -31,7 +31,7 @@ async function checkAllUsers (storage, forceUsersBaseDirectory) {
   }
   const counts = { done: 0, skip: 0 };
 
-  await userLocalDirectory.foreachUserDirectory(checkUserDir, usersBaseDirectory, logger);
+  await foreachUserDirectory(checkUserDir, usersBaseDirectory, logger);
   logger.info('Done with migration for ' + storage.getVersion() + ': ' + counts.done + ' done, ' + counts.skip + ' skipped');
 
   await fs.writeFileSync(auditDBVersionFile, 'DO NOT DELETE THIS FILE - IT IS USED TO DETECT MIGRATION SUCESS');
@@ -67,6 +67,34 @@ async function checkAllUsers (storage, forceUsersBaseDirectory) {
       logger.error(err);
       await fs.promises.unlink(v1dbPath);
       process.exit(1);
+    }
+  }
+}
+
+
+/**
+ * @param {Function} asyncCallBack(uid, path)
+ * @param {string} [userDataPath] -- Optional, user data path
+ * @param {string} [logger] -- Optional, logger
+ */
+async function foreachUserDirectory (asyncCallBack, userDataPath, logger) {
+  await loop(userDataPath, '');
+
+  async function loop (loopPath, tail) {
+    const fileNames = fs.readdirSync(loopPath);
+
+    for (const fileName of fileNames) {
+      if (tail.length < 3 && fileName.length !== 1) { logger.warn('Skipping no 1 char' + fileName); continue; }
+      const myDirPath = path.join(loopPath, fileName);
+      if (!fs.statSync(myDirPath).isDirectory()) { logger.warn('Skipping File' + fileName); continue; }
+      const myTail = fileName + tail;
+
+      if (tail.length < 3) {
+        await loop(myDirPath, myTail);
+      } else {
+        if (!fileName.endsWith(tail)) { logger.warn('Skipping not valid userDir' + myDirPath); continue; }
+        await asyncCallBack(fileName, myDirPath);
+      }
     }
   }
 }

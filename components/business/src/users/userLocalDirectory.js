@@ -25,9 +25,9 @@ module.exports = {
   pathForAttachment,
   deleteUserDirectory,
   getBasePath,
-  foreachUserDirectory,
   setBasePathTestOnly
 };
+
 let config;
 let basePath;
 let attachmentsBasePath;
@@ -118,30 +118,3 @@ function getBasePath () {
   return basePath;
 }
 
-/**
- * @param {Function} asyncCallBack(uid, path)
- * @param {string} [userDataPath] -- Optional, user data path
- * @param {string} [logger] -- Optional, logger
- */
-async function foreachUserDirectory (asyncCallBack, userDataPath, logger) {
-  logger = logger || getLogger('user-local-directory:foreachUserDirectory');
-  await loop(userDataPath || basePath, '');
-
-  async function loop (loopPath, tail) {
-    const fileNames = fs.readdirSync(loopPath);
-
-    for (const fileName of fileNames) {
-      if (tail.length < 3 && fileName.length !== 1) { logger.warn('Skipping no 1 char' + fileName); continue; }
-      const myDirPath = path.join(loopPath, fileName);
-      if (!fs.statSync(myDirPath).isDirectory()) { logger.warn('Skipping File' + fileName); continue; }
-      const myTail = fileName + tail;
-
-      if (tail.length < 3) {
-        await loop(myDirPath, myTail);
-      } else {
-        if (!fileName.endsWith(tail)) { logger.warn('Skipping not valid userDir' + myDirPath); continue; }
-        await asyncCallBack(fileName, myDirPath);
-      }
-    }
-  }
-}

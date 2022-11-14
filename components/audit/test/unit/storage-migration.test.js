@@ -45,7 +45,7 @@ describe('Audit Storage Migration', () => {
   });
 
   it('[RXVF] check userDir and perform migration when needed', async function () {
-    this.timeout(10000);
+    this.timeout(30000);
     const srcDir = path.join(__dirname, '../support/migration-userDirV0');
     const tempUserDir = path.join(os.tmpdir(), 'pryv.io-test-userdir-' + Math.random().toString(36).substring(2, 8));
     await copy(srcDir, tempUserDir);
