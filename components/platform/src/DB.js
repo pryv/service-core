@@ -6,7 +6,7 @@
  */
 
 const mkdirp = require('mkdirp');
-const sqlite3 = require('better-sqlite3');
+const SQLite3 = require('better-sqlite3');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform:db');
@@ -22,7 +22,7 @@ class DB {
     const basePath = config.get('userFiles:path');
     mkdirp.sync(basePath);
 
-    this.db = new sqlite3(basePath + '/platform-wide.db');
+    this.db = new SQLite3(basePath + '/platform-wide.db');
     this.db.pragma('journal_mode = WAL');
 
     this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();

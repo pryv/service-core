@@ -98,7 +98,7 @@ exports.resetEvents = function (done, user) {
   })
   let mall;
   async.series([
-    async function removeAccountEvents() {
+    async function removeNonAccountEvents() {
       mall = await getMall();
       await mall.events.delete(user.id, {state: 'all', withDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
     },

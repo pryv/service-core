@@ -29,13 +29,13 @@ let initTestsDone = false;
 /**
  * To be call in before()
  */
-async function initTests() {
+async function initTests () {
   if (initTestsDone) return;
   initTestsDone = true;
-  await audit.init();
-  global.audit = audit;
   global.config = await getConfig();
   await userLocalDirectory.init();
+  await audit.init();
+  global.audit = audit;
 }
 
 

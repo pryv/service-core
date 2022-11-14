@@ -60,7 +60,7 @@ describe('Audit Storage concurent Writes', () => {
       await userStorage.concurentSafeWriteStatement(statement, 5);
       assert.isTrue(false, 'should not be reached');
     } catch (err) {
-      assert.equal(err.message, 'Failed write action on Audit after 5 rertries');
+      assert.equal(err.message, 'Failed write action on Audit after 5 retries');
     }
 
   });

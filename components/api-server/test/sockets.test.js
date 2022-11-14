@@ -141,7 +141,7 @@ describe('Socket.IO', function () {
     assert.equal(res.headers['access-control-allow-credentials'], 'true');
   });
 
-  it('[VGKX] must connect with twice user name in the path (DnsLess)', function (done) {
+  it('[VGKX] must connect with twice user name in the path (DnsLess)', function (done) {
     var dashUser = testData.users[4],
       dashRequest = null;
 
@@ -164,7 +164,7 @@ describe('Socket.IO', function () {
       }
     ], done);
   });
-  it('[VGKH] must connect to a user with a dash in the username', function (done) {
+  it('[VGKH] must connect to a user with a dash in the username', function (done) {
     var dashUser = testData.users[4],
         dashRequest = null;
 

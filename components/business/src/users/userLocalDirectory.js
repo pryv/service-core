@@ -13,6 +13,7 @@ const path = require('path');
 const rimraf = require('rimraf');
 const bluebird = require('bluebird');
 const mkdirp = require('mkdirp');
+const fs = require('fs');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('user-local-directory');
@@ -22,11 +23,20 @@ module.exports = {
   ensureUserDirectory,
   pathForuserId,
   pathForAttachment,
-  deleteUserDirectory
+  deleteUserDirectory,
+  getBasePath,
+  setBasePathTestOnly
 };
 
+let config;
 let basePath;
 let attachmentsBasePath;
+
+// temporarly set baseBath for tests;
+function setBasePathTestOnly(path) {
+  basePath = path || config.get('userFiles:path');
+}
+
 
 /**
  * Load config and make sure baseUserDirectory exists
@@ -34,7 +44,7 @@ let attachmentsBasePath;
  */
 async function init () {
   if (basePath) return;
-  const config = await getConfig();
+  config = await getConfig();
   const candidateBasePath = config.get('userFiles:path');
   mkdirp.sync(candidateBasePath);
   basePath = candidateBasePath;
@@ -100,3 +110,11 @@ async function deleteUserDirectory (userId) {
   const userFolder = pathForuserId(userId);
   await bluebird.fromCallback(cb => rimraf(userFolder, { disableGlob: true }, cb));
 }
+
+function getBasePath () {
+  if (basePath == null) {
+    throw new Error('Initialize UserLocalDirectory first');
+  }
+  return basePath;
+}
+

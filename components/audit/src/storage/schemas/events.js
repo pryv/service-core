@@ -5,84 +5,87 @@
  * Proprietary and confidential
  */
 
-const cuid = require('cuid');
-const _ = require('lodash');
-const { STORE_PREFIX } = require('../../Constants');
-
+const ALL_EVENTS_TAG = '..';
 
 const dbSchema = { 
-  eventid : {type: 'TEXT UNIQUE', index: true},
-  streamIds: {type: 'TEXT NOT NULL'},
-  time: {type: 'REAL NOT NULL', index: true},
-  duration: {type: 'REAL'},
-  type: {type: 'TEXT NOT NULL', index: true},
-  content: {type: 'TEXT'},
-  description: {type: 'TEXT'},
-  clientData: {type: 'TEXT'},
-  trashed: {type: 'INTEGER DEFAULT 0', index: true},
-  created: {type: 'REAL NOT NULL', index: true},
-  createdBy: {type: 'TEXT NOT NULL', index: true},
-  modified: {type: 'READ NOT NULL', index: true},
-  modifiedBy: {type: 'TEXT NOT NULL', index: true}
+  eventid : {type: 'TEXT UNIQUE', index: true, coerce: 'txt'},
+  headId : {type: 'TEXT DEFAULT NULL', coerce: 'txt'},
+  streamIds: {type: 'TEXT', coerce: 'txt'},
+  time: {type: 'REAL', index: true, coerce: 'num'},
+  deleted: {type: 'REAL DEFAULT NULL', index: true, coerce: 'num'},
+  endTime: {type: 'REAL', index: true, coerce: 'num'},
+  type: {type: 'TEXT', index: true, coerce: 'txt'},
+  content: {type: 'TEXT', coerce: 'txt'},
+  description: {type: 'TEXT', coerce: 'txt'},
+  clientData: {type: 'TEXT', coerce: 'txt'},
+  integrity: {type: 'TEXT', coerce: 'txt'},
+  attachments: {type: 'TEXT', coerce: 'txt'},
+  trashed: {type: 'INTEGER DEFAULT 0', index: true, coerce: 'bool'},
+  created: {type: 'REAL', index: true, coerce: 'num'},
+  createdBy: {type: 'TEXT', index: true, coerce: 'txt'},
+  modified: {type: 'REAL', index: true, coerce: 'num'},
+  modifiedBy: {type: 'TEXT', index: true, coerce: 'txt'}
 }
 
 /**
- * 
  * @param {Object} event -- An event object
- * @param {Number} defaulTime -- The defaut time to use for 'time, created and modified'
  */
-function eventToDB(sourceEvent, defaulTime) {
+function eventToDB (sourceEvent) {
   const event = {};
-  defaulTime = setTimeIfNot(defaulTime, now());
-  event.eventid = sourceEvent.id || cuid();
+  event.eventid = sourceEvent.id;
 
-  if (! sourceEvent.streamIds) throw('StreamIds is required');
-  if (! Array.isArray(sourceEvent.streamIds)) throw('StreamIds must be an Array');
-  event.streamIds = sourceEvent.streamIds.join(' ');
+  if (sourceEvent.streamIds == null) {
+    event.streamIds = ALL_EVENTS_TAG;
+  } else {
+    if (! Array.isArray(sourceEvent.streamIds)) throw('StreamIds must be an Array');
+    event.streamIds = sourceEvent.streamIds.join(' ') + ' ' + ALL_EVENTS_TAG;
+  }
 
-  event.time = setTimeIfNot(sourceEvent.time, defaulTime);
+  event.time = nullIfUndefined(sourceEvent.time);
 
-  event.duration = 0; // Anyway no duration for audit setTimeIfNot(sourceEvent.endTime);
+  event.endTime = nullIfUndefined(sourceEvent.endTime);
+  event.deleted = nullIfUndefined(sourceEvent.deleted);
+  event.integrity = nullIfUndefined(sourceEvent.integrity);
+  event.headId = nullIfUndefined(sourceEvent.headId);
 
-  if (! sourceEvent.type) throw('Type is required');
-  event.type = sourceEvent.type;
+  event.type = nullIfUndefined(sourceEvent.type);
   
-  event.content = (typeof sourceEvent.content != 'undefined') ? JSON.stringify(sourceEvent.content) : null;
+  event.content = nullOrJSON(sourceEvent.content);
   
   event.description = nullIfUndefined(sourceEvent.description);
-  event.created = defaulTime;
-  event.clientData = nullIfUndefined(sourceEvent.clientData);
-  event.trashed = (sourceEvent.trashed) ? 1 : 0;
-
-  if (! sourceEvent.createdBy) throw('CreatedBy is required');
-  event.createdBy = sourceEvent.createdBy;
-
-  event.modified = defaulTime;
-  if (! sourceEvent.modifiedBy) event.modifiedBy = sourceEvent.createdBy;
+  event.created = nullIfUndefined(sourceEvent.created);
+  event.clientData = nullOrJSON(sourceEvent.clientData);
+  event.attachments = nullOrJSON(sourceEvent.attachments);
+  if (sourceEvent.deleted && null || sourceEvent.trashed != null) {
+    event.trashed = (sourceEvent.trashed) ? 1 : 0;
+  } else {
+    event.trashed = null;
+  }
+  
+  event.createdBy = nullIfUndefined(sourceEvent.createdBy);
+  event.modifiedBy = nullIfUndefined(sourceEvent.modifiedBy);
+  event.modified = nullIfUndefined(sourceEvent.modified);
   return event;
 };
 
-function nullIfUndefined(value) {
-  return  (typeof value != 'undefined') ? value : null ;
+function nullIfUndefined (value) {
+  return (typeof value != 'undefined') ? value : null;
 }
 
-
-function addStorePrefixToId(streamId) {
-  return STORE_PREFIX + streamId;
+function nullOrJSON (value) {
+  if (typeof value === 'undefined' || value === null) return null;
+  return JSON.stringify(value);
 }
 
 /**
  * transform events out of db
  */
-function eventFromDB(event, addStorePrefix) {
+function eventFromDB(event, addStorePrefix = false) {
   event.streamIds = event.streamIds.split(' ');
-
-  if (addStorePrefix) {
-    event.id = addStorePrefixToId(event.eventid);
-    event.streamIds = event.streamIds.map(addStorePrefixToId);
-  } else {
-    event.id = event.eventid;
-  }
+  event.streamIds.pop(); // pop removes the last element whihc is set on all events ALL_EVENTS_TAG
+  if (event.streamIds.length === 0) delete event.streamIds; // it was a "deleted" event
+  
+  event.id = event.eventid;
   delete event.eventid;
   
   if (event.trashed === 1) {
@@ -91,36 +94,47 @@ function eventFromDB(event, addStorePrefix) {
     delete event.trashed; // don't return it to API if false
   }
 
-  if (event.content) {
+  if (event.content != null) {
     event.content = JSON.parse(event.content);
   }
 
-  for (key of Object.keys(event)) {
-    if (event[key] == null) delete event[key];
+  if (event.attachments != null) {
+    event.attachments = JSON.parse(event.attachments);
+  } 
+
+  if (event.clientData != null) {
+    event.clientData = JSON.parse(event.clientData);
+  } 
+
+  for (const key of Object.keys(event)) {
+    // delete all "null" fields but "duration" which mean "running".
+    if (key !== 'endTime' && event[key] == null) delete event[key];
   }
-
-  // duration endTime hack 
-  delete event.duration;
-  event.endTime = event.time;
-
   return event;
 }
 
+/**
+ * - Add eventual '' to values that are not of type "REAL" and escape eventual '
+ * - Transform booleans to 0/1
+ * - Check that numbers are numbers
+ * Does not handle "null" values
+ * @param {*} column
+ * @param {*} value
+ */
+function coerceSelectValueForCollumn (column, value) {
+  return coerces[dbSchema[column].coerce](value);
+}
+
+const coerces = {
+  'txt': (value) => {return "'" + (value + '').replaceAll("'", "\\'") + "'"},
+  'num': (value) => {return (typeof value === 'number') ? value : parseFloat(value)},
+  'bool': (value) => {return value ? 1 : 0}
+};
 
 module.exports = {
-  eventToDB : eventToDB,
+  eventToDB: eventToDB,
   eventFromDB: eventFromDB,
-  dbSchema: dbSchema
-}
-
-
-function setTimeIfNot(time, defaultNow) {
-  if (typeof time === 'undefined' ||time === null) {
-    return defaultNow;
-  }
-  return time;
-}
-
-function now() {
-  return Date.now() / 1000;
-}
+  dbSchema: dbSchema,
+  coerceSelectValueForCollumn,
+  ALL_EVENTS_TAG
+};

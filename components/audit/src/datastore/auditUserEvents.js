@@ -11,6 +11,6 @@ const audit = require('audit');
 module.exports = ds.createUserEvents({
   async getStreamed (userId, params) {
     const userStorage = await audit.storage.forUser(userId);
-    return userStorage.getLogsStream(params);
+    return userStorage.getEventsStream(params);
   }
 });

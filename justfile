@@ -83,6 +83,11 @@ test component *params:
     NODE_ENV=test COMPONENT={{component}} scripts/components-run \
         npx mocha -- {{params}}
 
+# Run tests with sqlite poc storage
+test-sqlite component *params:
+    database__engine=sqlite NODE_ENV=test COMPONENT={{component}} scripts/components-run  \
+        npx mocha -- {{params}}
+
 # Run tests with detailed output
 test-detailed component *params:
     NODE_ENV=test COMPONENT={{component}} scripts/components-run \

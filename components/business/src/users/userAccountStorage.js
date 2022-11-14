@@ -17,7 +17,7 @@
  */
 
 const path = require('path');
-const Sqlite3 = require('better-sqlite3');
+const SQLite3 = require('better-sqlite3');
 const LRU = require('lru-cache');
 const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
@@ -113,7 +113,7 @@ async function getUserDB (userId) {
 async function openUserDB (userId) {
   const userPath = await userLocalDirectory.ensureUserDirectory(userId);
   const dbPath = path.join(userPath, `account-${VERSION}.sqlite`);
-  const db = new Sqlite3(dbPath, DB_OPTIONS);
+  const db = new SQLite3(dbPath, DB_OPTIONS);
   db.pragma('journal_mode = WAL');
   // db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go below the second
   db.unsafeMode(true);
