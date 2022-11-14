@@ -330,6 +330,7 @@ async function getUsersRepository() {
     await setTimeout(100);
   }
   if (!usersRepository) {
+    await SystemStreamsSerializer.init();
     usersRepositoryInitializing = true;
     usersRepository = new UsersRepository();
     await usersRepository.init();

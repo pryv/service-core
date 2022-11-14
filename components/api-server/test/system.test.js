@@ -148,8 +148,10 @@ describe('system (ex-register)', function () {
   // keep test code simple, test order is important. The first test configures
   // the mock service in order to test email sending, the second one
   // reconfigures it so that it just replies OK for subsequent tests.
-  describe('POST /create-user', function () {
-    function path () {
+  // DEPRECATED: remove (along with all other references to `create-user`) after all reg servers updated
+  describe('POST /create-user (DEPRECATED)', function () {
+
+    function path() {
       return basePath() + '/create-user';
     }
     function post (data, callback) {

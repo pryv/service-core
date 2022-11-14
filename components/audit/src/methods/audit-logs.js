@@ -20,6 +20,8 @@ import type { StreamQuery } from 'business/src/events';
 const audit = require('audit');
 const auditStorage = audit.storage;
 
+const { ConvertEventFromStoreStream } = require('mall/src/helpers/eventsUtils');
+
 /**
 * @param api
 */
@@ -106,7 +108,7 @@ async function getAuditLogs(context, params, result, next) {
     const userStorage = await auditStorage.forUser(context.user.id);
     params.streams = params.arrayOfStreamQueries;
     const query = getStoreQueryFromParams(params);
-    result.addStream('auditLogs', userStorage.getLogsStream(query, true));
+    result.addStream('auditLogs', userStorage.getEventsStream(query).pipe(new ConvertEventFromStoreStream('_audit')));
   } catch (err) {
     return next(err);
   }

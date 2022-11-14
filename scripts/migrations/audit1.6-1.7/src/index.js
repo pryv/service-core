@@ -293,9 +293,9 @@ function eventFromLine(line, username) {
 // -----------  Anchor --------- //
 
 function getLastSynchedItem(username) {
-  const res = userStorageByUsername[username].getLogs({limit: 1, sortAscending: false, createdBy: 'migration'});
-  if (res[0] && res[0].time) {
-    userAnchor[username].lastSync = res[0].time;
+  const res = userStorageByUsername[username].getEvents({limit: 1, sortAscending: false, createdBy: 'migration'});
+  if (res[0] && res[0].time) { 
+    userAnchor[username].lastSync = res[0].time; 
   }
 }
 

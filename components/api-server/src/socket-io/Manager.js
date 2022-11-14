@@ -107,7 +107,7 @@ class Manager {
 
     return candidate;
 
-      /**
+    /**
      * Takes the last field of the NS path
      *
      * @param {*} namespace
@@ -335,8 +335,8 @@ class Connection {
     const api = this.api;
     const logger = this.logger;
 
-    if (! callData || ! callData.data || callData.data.length != 3) {
-      if (callback) { 
+    if (! callData || ! callData.data || callData.data.length != 3) {
+      if (callback) {
         callback(new Error("invalid data"));
       }
       return;

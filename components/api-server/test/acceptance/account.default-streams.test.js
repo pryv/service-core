@@ -141,13 +141,12 @@ describe('[ACCO] Account with system streams', function () {
           await createAdditionalEvent(editableStreamsId);
         }
 
-        allVisibleAccountEvents = await mall.events.get(user.attrs.id,
-          {
-            streams: [
-              { any: visibleStreamsIds },
-              { and: [{ any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }] }
-            ]
-          });
+        allVisibleAccountEvents = await mall.events.get(user.attrs.id, 
+          {streams: [
+            {any: visibleStreamsIds}, 
+            {and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]},
+          ]});
+
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
       });
@@ -167,7 +166,6 @@ describe('[ACCO] Account with system streams', function () {
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
         const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
-
         assert.equal(res.body.account.email, emailAccountEvent.content);
         assert.equal(res.body.account.language, languageAccountEvent.content);
         assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
