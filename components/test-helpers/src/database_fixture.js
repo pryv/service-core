@@ -519,7 +519,7 @@ class Sessions {
   collectionInfo: {
     name: string,
     indexes: Array<IndexDefinition>,
-  }
+  };
   databaseConn: storage.Database;
 
   constructor(databaseConn: storage.Database) {
