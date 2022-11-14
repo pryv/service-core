@@ -5,12 +5,12 @@
  * Proprietary and confidential
  */
 
- const setUserBasePathTestOnly = require('business').users.userLocalDirectory.setBasePathTestOnly;
+/* global describe, it, before, after, assert, initTests */
 
-/* global describe, assert, cuid, audit, config, initTests*/
+const setUserBasePathTestOnly = require('business').users.userLocalDirectory.setBasePathTestOnly;
 
 const path = require('path');
-const { copy, remove, pathExists } = require('fs-extra');
+const { copy, pathExists } = require('fs-extra');
 const cuid = require('cuid');
 const versioning = require('../../src/storage/versioning');
 const UserDatabase = require('../../src/storage/UserDatabase');
@@ -26,7 +26,7 @@ describe('Audit Storage Migration', () => {
   });
 
   after(() => {
-    // reset userDirectory base path to original 
+    // reset userDirectory base path to original
     setUserBasePathTestOnly();
   });
 
@@ -37,14 +37,12 @@ describe('Audit Storage Migration', () => {
     const v1dbPath = path.join(os.tmpdir(), userid + '-v1.sqlite');
     await copy(srcPath, v0dbPath);
 
-    const v1user = new UserDatabase(logger, {dbPath: v1dbPath});
+    const v1user = new UserDatabase(logger, { dbPath: v1dbPath });
     await v1user.init();
 
     const resMigrate = await versioning.migrate0to1(v0dbPath, v1user, logger);
     assert.equal(resMigrate.count, 298);
   });
-
-
 
   it('[RXVF] check userDir and perform migration when needed', async function () {
     this.timeout(10000);
@@ -58,5 +56,4 @@ describe('Audit Storage Migration', () => {
     assert.isTrue(await pathExists(path.join(tempUserDir, 'audit-db-version-1.0.0.txt')));
     storage.close();
   });
-
 });

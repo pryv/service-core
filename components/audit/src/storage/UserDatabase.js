@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const sqlite3 = require('better-sqlite3');
+const SQLite3 = require('better-sqlite3');
 const eventSchemas = require('./schemas/events')
 const {createFTSFor } = require('./FullTextSearchDataBase');
 const events = require('./schemas/events');
@@ -43,7 +43,7 @@ class UserDatabase {
    */
   constructor(logger, params) {
     this.logger = logger.getLogger('user-database');
-    this.db = new sqlite3(params.dbPath, DB_OPTIONS);
+    this.db = new SQLite3(params.dbPath, DB_OPTIONS);
   }
 
   async init() {

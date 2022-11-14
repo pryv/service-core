@@ -9,7 +9,7 @@
  */
 
 const mkdirp = require('mkdirp');
-const sqlite3 = require('better-sqlite3');
+const SQLite3 = require('better-sqlite3');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const cache = require('cache');
@@ -137,7 +137,7 @@ class DBIndex {
     const basePath = config.get('userFiles:path');
     mkdirp.sync(basePath);
 
-    this.db = new sqlite3(basePath + '/user-index.db');
+    this.db = new SQLite3(basePath + '/user-index.db');
     this.db.pragma('journal_mode = WAL');
 
     this.db.prepare('CREATE TABLE IF NOT EXISTS id4name (username TEXT PRIMARY KEY, userId TEXT NOT NULL);').run();

@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 const path = require('path');
-const unlinkFilePromise = require('fs/promises').unlink;
+const fs = require('fs/promises');
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
@@ -78,7 +78,7 @@ class Storage {
     this.userDBsCache.delete(userId);
     const dbPath = await this.dbPathForUserid(userId);
     try {
-      await unlinkFilePromise(dbPath);
+      await fs.unlink(dbPath);
     } catch (err) {
       this.logger.debug('deleteUser: Error' + err);
       throw err;
