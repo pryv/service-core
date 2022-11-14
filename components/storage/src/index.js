@@ -12,27 +12,26 @@ const Database =  require('./Database');
 const StorageLayer = require('./storage_layer');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const  { dataBaseTracer } = require('tracing');
-const bluebird = require('bluebird');
 
 let database;
 function _getDatabase(config) {
   if (! database) {
-    database = new Database(config.get('database')); 
+    database = new Database(config.get('database'));
     dataBaseTracer(database);
   }
-  return database; 
+  return database;
 }
 
 let storageLayer;
 function _getStorageLayer(config) {
   if (storageLayer) return storageLayer;
   // 'StorageLayer' is a component that contains all the vertical registries
-  // for various database models. 
-  storageLayer = new StorageLayer(_getDatabase(config), 
+  // for various database models.
+  storageLayer = new StorageLayer(_getDatabase(config),
     getLogger('storage'),
-    config.get('eventFiles:attachmentsDirPath'), 
-    config.get('eventFiles:previewsDirPath'), 
-    config.get('auth:passwordResetRequestMaxAge'), 
+    config.get('eventFiles:attachmentsDirPath'),
+    config.get('eventFiles:previewsDirPath'),
+    config.get('auth:passwordResetRequestMaxAge'),
     config.get('auth:sessionMaxAge')
   );
   return storageLayer;
@@ -46,17 +45,15 @@ function getStorageLayerSync(warnOnly) {
   return _getStorageLayer(getConfigUnsafe(warnOnly));
 }
 
-
 async function getDatabase() {
   const db = _getDatabase(await getConfig());
-  await bluebird.fromCallback(cb => db.ensureConnect(cb));
+  await db.ensureConnect();
   return db;
 }
 
 async function getStorageLayer() {
   return _getStorageLayer(await getConfig());
 }
-
 
 module.exports = {
   Database: require('./Database'),
@@ -72,8 +69,8 @@ module.exports = {
     Profile: require('./user/Profile'),
     Streams: Stream,
     Webhooks: require('./user/Webhooks'),
-  }, 
-  
+  },
+
   StorageLayer,
   getDatabase,
   getStorageLayer,
@@ -84,5 +81,5 @@ module.exports = {
 import type { IndexDefinition }  from './Database';
 export type { IndexDefinition };
 
-export type {  
+export type {
   Access, Stream };
