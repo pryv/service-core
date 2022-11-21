@@ -32,6 +32,9 @@ ignore:
 - .git
 - .vscode
 - coverage
+- dist
+- flow-coverage
+- flow-typed
 - nats-server
 - node_modules
 - test-results

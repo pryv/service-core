@@ -4,62 +4,63 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-//
+// 
 
 const path = require('path');
 const fs = require('fs');
 
 
-// An extension is configured by entering a path to a nodejs module into the
+// An extension is configured by entering a path to a nodejs module into the 
 // configuration file. It is then loaded by the server and executed in place
-// when the extension functionality is needed. See customAuthStepFn for an
-// example of an extension.
+// when the extension functionality is needed. See customAuthStepFn for an 
+// example of an extension. 
 //
 class Extension {
-  path;
+  path; 
   fn;
-
+  
   constructor(path, fn) {
-    this.path = path;
-    this.fn = fn;
+    this.path = path; 
+    this.fn = fn; 
   }
 }
 
-// Loads extensions from a `defaultFolder` or from the path indicated in
-// the configuration file.
+// Loads extensions from a `defaultFolder` or from the path indicated in 
+// the configuration file. 
 //
 class ExtensionLoader {
-  defaultFolder;
-
+  defaultFolder; 
+  
   constructor(defaultFolder) {
     this.defaultFolder = defaultFolder;
   }
-
+  
   // Tries loading the extension identified by name. This will try to load from
-  // below `defaultFolder` first, by appending '.js' to `name`.
+  // below `defaultFolder` first, by appending '.js' to `name`. 
   //
   load(name) {
     // not explicitly specified —> try to load from default folder
     const defaultModulePath = path.join(
-      this.defaultFolder,
+      this.defaultFolder, 
       name + '.js');
-
-    // If default location doesn't contain a module, give up.
-    if (! fs.existsSync(defaultModulePath)) return null;
+      
+    // If default location doesn't contain a module, give up. 
+    if (! fs.existsSync(defaultModulePath)) return null; 
 
     // assert: file `defaultModulePath` has existed just before
     return this.loadFrom(defaultModulePath);
   }
-
+  
   // Tries loading an extension from path. Throws an error if not successful.
   //
   loadFrom(path) {
     try {
+      // FLOW This cannot be statically typed, so ignore the dynamic require.
       const fn = require(path);
-
+      
       if (typeof fn !== 'function')
         throw new Error(`Not a function (${typeof fn})`);
-
+      
       return new Extension(path, fn);
     }
     catch(err) {
@@ -68,6 +69,6 @@ class ExtensionLoader {
   }
 }
 module.exports = {
-  ExtensionLoader: ExtensionLoader,
+  ExtensionLoader: ExtensionLoader, 
   Extension: Extension
 };

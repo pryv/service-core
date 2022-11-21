@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-//
+// 
 
 // Tests pertaining to storing data in a hf series.
 
@@ -679,7 +679,7 @@ describe('Storing data in a HF series', function() {
 
           it('[GU3L] should schedule a metadata update on every store', async () => {
             let updaterCalled = false;
-            // This is ok, we're replacing the stub with something compatible.
+            // FLOW This is ok, we're replacing the stub with something compatible.
             stub.scheduleUpdate = () => {
               updaterCalled = true;
               return Promise.resolve({ });

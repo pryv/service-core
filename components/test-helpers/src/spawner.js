@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-//
+// 
 
 const url = require('url');
 const child_process = require('child_process');
@@ -23,7 +23,7 @@ const { ConditionVariable, Fuse } = require('./condition_variable');
 // Set DEBUG=spawner to see these messages.
 const logger = require('@pryv/boiler').getLogger('spawner');
 
-const PRESPAWN_LIMIT = 2;
+const PRESPAWN_LIMIT = 2; 
 
 let basePort = 3001;
 
@@ -31,44 +31,44 @@ let debugPortCount = 1;
 
 let spawnCounter = 0;
 
-// Spawns instances of api-server for tests. Listening port is chosen at random;
-// settings are either default or what you pass into the #spawn function.
+// Spawns instances of api-server for tests. Listening port is chosen at random; 
+// settings are either default or what you pass into the #spawn function. 
 //
 class SpawnContext {
-  childPath;
-
+  childPath; 
+  
   basePort; // used for HTTP server and Axon server
-  shuttingDown;
-
+  shuttingDown; 
+  
   pool;
   allocated;
-
-  // Construct a spawn context. `childPath` should be a module require path to
-  // the module that will be launched in the child process. Please see
-  // components/api-server/test/helpers/child_process for an example of such
-  // a module.
-  //
+  
+  // Construct a spawn context. `childPath` should be a module require path to 
+  // the module that will be launched in the child process. Please see 
+  // components/api-server/test/helpers/child_process for an example of such 
+  // a module. 
+  // 
 
   constructor(childPath = __dirname + '/../../api-server/test/helpers/child_process') {
     this.childPath = childPath;
     this.basePort = basePort;
     basePort += 10;
 
-    this.shuttingDown = false;
-    this.pool = [];
-
+    this.shuttingDown = false; 
+    this.pool = []; 
+    
     // All the processes that we've created and given to someone using
     // getProcess.
     this.allocated = [];
-
-    this.prespawn();
+    
+    this.prespawn(); 
   }
-
+  
   // Prespawns processes up to PRESPAWN_LIMIT.
   //
   prespawn() {
     const childPath = this.childPath;
-
+    
     while (this.pool.length < PRESPAWN_LIMIT) {
       logger.debug('prespawn process');
       const newArgv = process.execArgv.map((arg) => {
@@ -83,28 +83,28 @@ class SpawnContext {
       const proxy = new ProcessProxy(childProcess, this);
 
       logger.debug(`prespawned child pid ${childProcess.pid}`);
-
+      
       this.pool.push(proxy);
     }
   }
-
-  // Spawns a server instance.
+  
+  // Spawns a server instance. 
   //
   async spawn (customSettings) {
-    // If by any chance we exhausted our processes really quickly, make
-    // sure to spawn a few now.
+    // If by any chance we exhausted our processes really quickly, make 
+    // sure to spawn a few now. 
     if (this.pool.length <= 0)
       this.prespawn();
-
+    
     // Find a port to use
     // TODO Free ports once done.
-    const port = await this.allocatePort();
+    const port = await this.allocatePort(); 
 
     const axonPort = await this.allocatePort();
-
+    
     // Obtain a process proxy
-    const process = this.getProcess();
-
+    const process = this.getProcess(); 
+    
     // Create settings for this new instance.
     customSettings = customSettings || {};
     const settings = _.merge({
@@ -121,29 +121,29 @@ class SpawnContext {
         host: 'localhost'
       }
     }, customSettings);
-
+    
     // Specialize the server we've started using the settings above.
     await process.startServer(settings);
-
+    
     logger.debug(`spawned a child on port ${port}`);
-
-    // Return to our caller - server should be up and answering at this point.
+    
+    // Return to our caller - server should be up and answering at this point. 
     return new Server(port, process, axonPort);
   }
-
-  // Returns the next free port to use for testing.
+  
+  // Returns the next free port to use for testing. 
   //
   async allocatePort() {
-
-    // Infinite loop, see below for exits.
+    
+    // Infinite loop, see below for exits. 
     while (true) { // eslint-disable-line no-constant-condition
-      // Simple strategy: Keep increasing port numbers.
-      const nextPort = this.basePort;
-      this.basePort += 1;
+      // Simple strategy: Keep increasing port numbers. 
+      const nextPort = this.basePort; 
+      this.basePort += 1; 
 
       // Exit 1: If this fires, we might reconsider the simple implementation
-      // here.
-      if (this.basePort > 9000)
+      // here. 
+      if (this.basePort > 9000) 
         throw new Error('AF: port numbers are <= 9000');
 
       // Exit 2: If we can bind to the port, return it for our next child
@@ -151,32 +151,33 @@ class SpawnContext {
       if (await tryBindPort(nextPort))
         return nextPort;
     }
-
+    
+    // Tell flow not to worry about returns from this execution path. 
     throw new Error('AF: NOT REACHED'); // eslint-disable-line no-unreachable
-
-    // Returns true if this process can bind a listener to the `port` given.
+        
+    // Returns true if this process can bind a listener to the `port` given. 
     // Closes the port immediately after calling `listen()` so that a child
-    // can reuse the port number.
-    //
+    // can reuse the port number. 
+    // 
     async function tryBindPort(port) {
       const server = net.createServer();
-
+      
       logger.debug('Trying future child port', port);
       return new bluebird((res, rej) => {
         try {
           server.on('error', (err) => {
             logger.debug('Future child port unavailable: ', err);
-            server.close();
+            server.close(); 
             res(false);
           });
-
-          const host = '0.0.0.0';
-          const backlog = 511; // default
+          
+          const host = '0.0.0.0'; 
+          const backlog = 511; // default 
           server.listen(port, host, backlog, () => {
-            server.close();
-            res(true);
+            server.close(); 
+            res(true); 
           });
-        }
+        } 
         catch(err) {
           logger.debug('Synchronous exception while looking for a future child port: ', err);
           rej(err);
@@ -184,48 +185,48 @@ class SpawnContext {
       });
     }
   }
-
+  
   // Spawns and returns a process to use for testing. This will probably spawn
-  // processes ahead of time in the background and return the next process from
-  // the internal prespawn pool.
-  //
+  // processes ahead of time in the background and return the next process from 
+  // the internal prespawn pool. 
+  // 
   getProcess() {
     this.prespawn();
-
+    
     if (this.pool.length <= 0) throw new Error('AF: pool is not empty');
-
-    const proxy = this.pool.shift();
+    
+    const proxy = this.pool.shift(); 
     this.allocated.push(proxy);
-
-    return proxy;
+    
+    return proxy; 
   }
-
+  
   // Spawns `n` instances at different listening ports. See #spawn.
-  //
+  // 
   spawn_multi(n) {
     if (n <= 0) throw new Error('AF: n expected to be > 0');
-
+    
     return lodash.times(n, () => this.spawn());
   }
-
-  // Called by the ProcessProxy when the child it is connected to exits. This
-  // exists to allow prespawning to catch up.
+  
+  // Called by the ProcessProxy when the child it is connected to exits. This 
+  // exists to allow prespawning to catch up. 
   //
   onChildExit() {
-    if (! this.shuttingDown)
+    if (! this.shuttingDown) 
       this.prespawn();
   }
-
-  // Call this when you want to stop all children at the end of the test suite.
+  
+  // Call this when you want to stop all children at the end of the test suite. 
   //
   async shutdown() {
     logger.debug('shutting down the context', this.pool.length);
-    this.shuttingDown = true;
-
+    this.shuttingDown = true; 
+    
     for (const child of this.pool) {
       await child.terminate();
     }
-
+    
     for (const child of this.allocated) {
       await child.terminate();
     }
@@ -235,91 +236,91 @@ class SpawnContext {
 
 // A proxy to the processes we launch. This class will care for the child
 // processes and manage their lifecycle. It also provides a type-safe interface
-// to messages that can be sent to the process.
-//
+// to messages that can be sent to the process. 
+// 
 class ProcessProxy {
-  childProcess;
-  pool;
-
-  started;
-  exited;
-
+  childProcess; 
+  pool; 
+  
+  started; 
+  exited; 
+  
   pendingMessages;
-
+  
   constructor(childProcess, pool) {
     this.childProcess = childProcess;
-    this.pool = pool;
-
-    this.started = new Fuse();
-    this.exited = new Fuse();
-
-    this.pendingMessages = new Map();
-
-    this.registerEvents();
+    this.pool = pool; 
+    
+    this.started = new Fuse(); 
+    this.exited = new Fuse(); 
+    
+    this.pendingMessages = new Map(); 
+    
+    this.registerEvents(); 
   }
-
+  
   registerEvents() {
     const child = this.childProcess;
-
+    
     child.on('error', (err) => this.onChildError(err));
     child.on('exit', () => this.onChildExit());
-
+    
     child.on('message', (wire) => this.dispatchChildMessage(wire));
   }
-
+  
   dispatchChildMessage(wireMsg) {
     const pendingMessages = this.pendingMessages;
     const [status, msgId, cmd, retOrErr] = msgpack.decode(wireMsg);
 
     logger.debug('dispatchChildMessage/msg', status, msgId, cmd, retOrErr);
-
+    
     if (! pendingMessages.has(msgId))
       throw new Error(`Received client process message (${msgId}/${cmd}) without counterpart.`);
-
+      
     const resolver = pendingMessages.get(msgId);
     if (resolver == null) throw new Error('AF: No pending message exists');
-
+    
     switch (status) {
-      case 'ok':
+      case 'ok': 
         resolver.resolve(retOrErr);
         break;
-
-      case 'err':
+        
+      case 'err': 
         resolver.reject(new Error(`Remote exception: ${retOrErr}`));
         break;
-
-      default:
+        
+      default: 
         throw new Error(`Invalid status value '${status}'`);
     }
   }
-
+  
   onChildError(err) {
     logger.debug(err);
   }
   onChildExit() {
     logger.debug('child exited');
     this.exited.burn();
-
+    
     this.pool.onChildExit();
   }
-
-  // Starts the express/socket.io server with the settings given.
-  //
+  
+  // Starts the express/socket.io server with the settings given. 
+  // 
   async startServer(settings) {
     if (this.exited.isBurnt())
       throw new Error('Child exited prematurely; please check your setup code.');
-
+    
     await this.sendToChild('int_startServer', settings);
-
+    
     logger.debug('child started');
-    this.started.burn();
+    this.started.burn(); 
   }
-
-  // Terminates the associated child process; progressing from SIGTERM to SIGKILL.
-  //
+  
+  // Terminates the associated child process; progressing from SIGTERM to SIGKILL. 
+  // 
   async terminate() {
-    if (this.exited.isBurnt()) return;
-
+    if (this.exited.isBurnt()) return; 
+    
     const child = this.childProcess;
 
     logger.debug('sending SIGTERM');
@@ -330,7 +331,7 @@ class ProcessProxy {
     catch(err) {
       logger.debug('sending SIGKILL');
       child.kill('SIGKILL');
-
+      
       try {
         await this.exited.wait(1000);
       }
@@ -339,11 +340,11 @@ class ProcessProxy {
       }
     }
   }
-
+  
   sendToChild(msg, ...args) {
     return new bluebird((resolve, reject) => {
-      const child = this.childProcess;
-
+      const child = this.childProcess; 
+      
       const msgId = this.createPendingMessage(resolve, reject);
 
       // This is where things get async - the child will answer whenever it
@@ -353,44 +354,44 @@ class ProcessProxy {
     });
   }
   createPendingMessage(res, rej) {
-    let remainingTries = 1000;
+    let remainingTries = 1000; 
     const pendingMessages = this.pendingMessages;
     const resolver = {
-      resolve: res,
-      reject: rej,
+      resolve: res, 
+      reject: rej, 
     };
-
+    
     while (remainingTries > 0) {
-      const candId = Math.floor(Math.random() * 1e9);
-
+      const candId = Math.floor(Math.random() * 1e9); 
+      
       if (! pendingMessages.has(candId)) {
         pendingMessages.set(candId, resolver);
-
+        
         // Success return.
         return candId;
       }
-
-      remainingTries -= 1;
+      
+      remainingTries -= 1; 
     }
-
-    // assert: We haven't found a free message id in 1000 tries.. give up.
+    
+    // assert: We haven't found a free message id in 1000 tries.. give up. 
     throw new Error('AF: Could not find a free message id.');
   }
 }
 
-// Public facade to the servers we spawn.
+// Public facade to the servers we spawn. 
 //
 class Server extends EventEmitter {
   port;
   axonPort;
-  baseUrl;
+  baseUrl; 
   process;
   messagingSocket;
   host;
-
+  
   constructor(port, proxy, axonPort) {
     super();
-    this.port = port;
+    this.port = port; 
     this.axonPort = axonPort;
     this.host = 'localhost';
     this.baseUrl = `http://${this.host}:${port}`;
@@ -403,30 +404,30 @@ class Server extends EventEmitter {
     this.messagingSocket = axon.socket('sub-emitter');
     const mSocket = this.messagingSocket;
     mSocket.connect(+this.axonPort, host);
-
+    
     mSocket.on('*', function (message, data) {
       this.emit(message, data);
     }.bind(this));
   }
-
+  
   // Stops the server as soon as possible. Eventually returns either `true` (for
   // when the process could be stopped) or `false` for when the child could not
-  // be terminated.
-  //
+  // be terminated. 
+  // 
   async stop() {
     logger.debug('stop called');
     try {
       logger.debug('stopping child...');
-      await this.process.terminate();
+      await this.process.terminate(); 
       logger.debug('child stopped.');
-
-      return true;
+      
+      return true; 
     }
     catch (err) {
-      return false;
+      return false; 
     }
   }
-
+  
   url(path) {
     return new url.URL(path || '', this.baseUrl).toString();
   }
@@ -438,6 +439,6 @@ class Server extends EventEmitter {
 
 module.exports = {
   SpawnContext: SpawnContext,
-  Server: Server,
+  Server: Server, 
   ConditionVariable: ConditionVariable,
 };

@@ -4,9 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-//
+// 
 
-// Middleware that will perform request tracing via opentacing.
+// Middleware that will perform request tracing via opentacing. 
 // Heavily inspired by express-opentracing.
 
 const lodash = require('lodash');
@@ -24,7 +24,7 @@ function tracingMiddleware(
   const tracer = ctx.tracer;
   const pathname = url.parse(req.url).pathname;
   const span = tracer.startSpan(`${req.method} ${pathname || '(n/a)'}`);
-
+    
   span.setTag(Tags.HTTP_METHOD, req.method);
   span.setTag(Tags.HTTP_URL, req.url);
 
@@ -34,36 +34,36 @@ function tracingMiddleware(
   tracer.inject(span, opentracing.FORMAT_TEXT_MAP, responseHeaders);
   Object.keys(responseHeaders).forEach(key => res.setHeader(key, responseHeaders[key]));
 
-  // Use cls to store the root span for code in this trace to use.
+  // Use cls to store the root span for code in this trace to use. 
   cls.setRootSpan(span);
-
-  // Hook the response 'end' function and install our handler to finish traces.
+    
+  // Hook the response 'end' function and install our handler to finish traces. 
   const originalEnd = res.end;
-  // (see above)
+  // FLOW (see above)
   res.end = function(...a) {
-    // (see above)
+    // FLOW (see above)
     res.end = originalEnd;
     const returned = res.end.call(this, ...a);
-
+    
     requestDone(span, res);
-
+    
     return returned;
   };
-
+  
   // Start request
-  return next();
+  return next(); 
 }
 
 function requestDone(span, res) {
   const Tags = opentracing.Tags;
 
   span.setTag(Tags.HTTP_STATUS_CODE, res.statusCode);
-
+  
   if (res.statusCode >= 400) {
     span.setTag(Tags.ERROR, true);
     span.setTag('sampling.priority', 1);
   }
-
+  
   span.finish();
 }
 

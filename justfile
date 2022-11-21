@@ -17,14 +17,33 @@ setup-dev-env:
 install *params: clean
     npm install {{params}}
 
-# Clean up node modules
+# Clean up dist and node modules
 clean:
+    rm -rf dist
     rm -rf node_modules
     rm -rf components/**/node_modules
 
 # Install node modules strictly as specified (typically for CI)
 install-stable:
     npm ci
+
+# Compile code to dist for dev (with source maps)
+compile-dev: _prepare-dist
+    babel ./components --out-dir=dist/components --copy-files --include-dotfiles --source-maps both
+
+# Compile code to dist for dev, then watch and recompile on changes
+compile-watch: _prepare-dist
+    babel ./components --verbose --watch --out-dir=dist/components --copy-files --include-dotfiles --source-maps both
+
+# Compile code to dist for release
+compile-release: _prepare-dist
+    babel ./components --verbose --out-dir=dist/components --copy-files --include-dotfiles
+
+# Prepare dist and copy installed packages there
+_prepare-dist:
+    mkdir -p dist
+    rsync -a --delete node_modules/ dist/node_modules/
+
 
 # –––––––––––––----------------------------------------------------------------
 # Run
@@ -36,19 +55,19 @@ start-deps:
         --prefix-colors "cyan,green,magenta" \
         nats-server scripts/start-mongo influxd
 
-# Start the given server component for dev (expects '{component}/bin/server')
+# Start the given server component for dev (expects 'dist/{component}/bin/server')
 start component *params:
-    cd components/{{component}} && \
+    cd dist/components/{{component}} && \
     NODE_ENV=development bin/server {{params}}
 
 # Start the given server component for dev, automatically restarting on file changes (requires nodemon)
 start-mon component:
-    cd components/{{component}} && \
+    cd dist/components/{{component}} && \
     NODE_ENV=development nodemon bin/server
 
-# Run the given component binary for dev (expects '{component}/bin/{bin}')
+# Run the given component binary for dev (expects 'dist/{component}/bin/{bin}')
 run component bin:
-    cd components/{{component}} && \
+    cd dist/components/{{component}} && \
     NODE_ENV=development bin/{{bin}}
 
 # –––––––––––––----------------------------------------------------------------
@@ -110,7 +129,7 @@ trace:
 
 # Dump/restore MongoDB test data; command must be 'dump' or 'restore'
 test-data command version:
-    NODE_ENV=development node components/test-helpers/scripts/{{command}}-test-data {{version}}
+    NODE_ENV=development node dist/components/test-helpers/scripts/{{command}}-test-data {{version}}
 
 # Cleanup users data and MongoDB data in `var-pryv/`
 clean-data:
@@ -123,6 +142,10 @@ clean-data:
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
 # –––––––––––––----------------------------------------------------------------
+
+# Generate Flow.js coverage report
+flow-cover:
+    flow-coverage-report -i 'components/**/*.js' -t html
 
 # Update default event types from online reference
 update-event-types:

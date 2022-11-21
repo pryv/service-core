@@ -11,8 +11,10 @@ components/*/node_modules/
 !node_modules/components
 proxy/nginx.conf
 service-core.iml
+/flow-coverage/
 /out
 .nyc_output/
+dist
 build_tag
 build/core/release.tar
 build/hfs/release.tar

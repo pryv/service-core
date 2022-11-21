@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-//
+// 
 
 
 const _ = require('lodash');
@@ -52,8 +52,7 @@ class Series {
     const toMeasurement = (row) => {
       const struct = row.toStruct();
 
-      // TODO review this now that flow is gone:
-      // This cannot fail, but somehow flow thinks we access the deltaTime.
+      // FLOW This cannot fail, but somehow flow thinks we access the deltaTime.
       delete struct.deltaTime;
 
       const deltaTime = row.get('deltaTime');

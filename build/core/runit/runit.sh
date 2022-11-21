@@ -19,10 +19,10 @@ else
 fi
 
 export NODE_ENV=production
-export NODE_PATH=/app/bin/
+export NODE_PATH=/app/bin/dist/
 
 migrate_db() {
-	pushd /app/bin/components/api-server
+	pushd /app/bin/dist/components/api-server
 	chpst -u app ./bin/migrate --config /app/conf/core.yml
 	popd
 }

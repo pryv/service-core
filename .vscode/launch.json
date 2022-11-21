@@ -1,6 +1,6 @@
 {
 
-    // some Hints here:
+    // some Hints here: 
     // Debugging ES6 in VS Code
     // https://gist.github.com/dchowitz/83bdd807b5fa016775f98065b381ca4e
     //
@@ -16,8 +16,8 @@
             "name": "TEST api-server",
             "type": "node",
             "request": "launch",
-
-            "program": "${workspaceFolder}/node_modules/.bin/mocha",
+        
+            "program": "${workspaceFolder}/dist/node_modules/.bin/mocha",
             "env": {
                 "NODE_ENV": "test"
             },
@@ -27,7 +27,7 @@
                 "--reporter=dot",
                 "test/**/*.test.js"
             ],
-            "cwd": "${workspaceRoot}/components/api-server/",
+            "cwd": "${workspaceRoot}/dist/components/api-server/",
             "preLaunchTask": "build-dev",
             "runtimeExecutable": null,
             "runtimeArgs": [
@@ -36,7 +36,7 @@
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "sourceMaps": true,
-            "outDir": "${workspaceRoot}"
+            "outDir": "${workspaceRoot}/dist"
         },
         {
             "type": "node",
@@ -49,7 +49,7 @@
                 // "--timeout 10000",
                 "--colors",
                 "--reporter=dot",
-                "${workspaceFolder}/components/api-server/test/service-info.test.js"
+                "${workspaceFolder}/dist/components/api-server/test/service-info.test.js"
             ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
@@ -64,7 +64,7 @@
                 "--no-timeouts",
                 "--colors",
                 "--reporter=dot",
-                "${workspaceFolder}/components/api-server/test/permissions.test.js"
+                "${workspaceFolder}/dist/components/api-server/test/permissions.test.js"
             ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
@@ -73,9 +73,9 @@
             "type": "node",
             "request": "launch",
             "name": "START api-server",
-            "program": "${workspaceFolder}/components/api-server/bin/server",
+            "program": "${workspaceFolder}/dist/components/api-server/bin/server",
             "env": {"NODE_ENV":"development", "NODE_TLS_REJECT_UNAUTHORIZED":"0"},
-            "outFiles": ["${workspaceFolder}/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "runtimeArgs": ["--nolazy"],
@@ -85,9 +85,9 @@
             "type": "node",
             "request": "launch",
             "name": "START api-server with service-reporting nock",
-            "program": "${workspaceFolder}/components/api-server/bin/server",
+            "program": "${workspaceFolder}/dist/components/api-server/bin/server",
             "env": {"NODE_ENV":"development", "NODE_TLS_REJECT_UNAUTHORIZED":"0", "SERVICE_REPORTING_NOCK": "1"},
-            "outFiles": ["${workspaceFolder}/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "runtimeArgs": ["--nolazy"],
@@ -97,13 +97,13 @@
             "type": "node",
             "request": "launch",
             "name": "START hfs-server",
-            "program": "${workspaceFolder}/components/hfs-server/bin/server",
+            "program": "${workspaceFolder}/dist/components/hfs-server/bin/server",
             "env": {"NODE_ENV":"development", "NODE_TLS_REJECT_UNAUTHORIZED":"0"},
             "args": [
                 "--config",
-                "components/hfs-server/config/local.json"
+                "dist/components/hfs-server/config/local.json"
             ],
-            "outFiles": ["${workspaceFolder}/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "runtimeArgs": ["--nolazy"],

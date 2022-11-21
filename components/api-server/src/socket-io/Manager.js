@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-//
+// 
 
 const errorHandling = require('errors').errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
@@ -221,7 +221,7 @@ class NamespaceContext {
 
     logger.info(`New client connected on namespace '${namespaceName}' (context ${this.socketNs.name})`);
 
-    // This is attached to the socket by our initUsersNameSpaces.
+    // FLOW This is attached to the socket by our initUsersNameSpaces.
     const methodContext = socket.methodContext;
 
     if (methodContext == null) {
@@ -317,6 +317,7 @@ class Connection {
 
     methodContext.methodId = apiMethod;
 
+    // FLOW MethodContext will need to be rewritten as a class...
     const userName = methodContext.user.username;
 
     // Accept streamQueries in JSON format for socket.io

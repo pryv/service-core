@@ -4,10 +4,10 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const MongoClient = require('../../../../node_modules/mongodb').MongoClient;
+const MongoClient = require('../../../../dist/node_modules/mongodb').MongoClient;
 
 
-const Router = require('../../../../node_modules/express').Router;
+const Router = require('../../../../dist/node_modules/express').Router;
 /// Load all Routes in a fake Express
 const ROUTES = require('./routes');
 
@@ -15,30 +15,30 @@ const fs = require('fs');
 const path = require('path');
 const lineReader = require('line-reader');
 
-const rootPath = '../../../../';
+const DistPath = '../../../../dist/';
 
 
 // ---------------- CONFIG ----------//
 
-const { getConfig, getLogger } = require(rootPath + 'node_modules/@pryv/boiler').init({
+const { getConfig, getLogger } = require(DistPath + 'node_modules/@pryv/boiler').init({
   appName: 'audit-migration',
-  baseConfigDir: path.resolve(__dirname, rootPath + 'components/api-server/config'),
+  baseConfigDir: path.resolve(__dirname, DistPath + 'components/api-server/config'),
   extraConfigs: [{
     scope: 'default-paths',
-    file: path.resolve(__dirname, rootPath + 'components/api-server/config/paths-config.js')
+    file: path.resolve(__dirname, DistPath + 'components/api-server/config/paths-config.js')
   },{
     scope: 'default-audit',
-    file: path.resolve(__dirname, rootPath + 'components/audit/config/default-config.yml')
+    file: path.resolve(__dirname, DistPath + 'components/audit/config/default-config.yml')
   }, {
     scope: 'default-audit-path',
-    file: path.resolve(__dirname, rootPath + 'components/audit/config/default-path.js')
+    file: path.resolve(__dirname,  DistPath + 'components/audit/config/default-path.js')
   }]
 });
 
 const logger = getLogger();
 
-const audit = require( rootPath + 'components/audit');
-const userLocalDirectory = require(rootPath + 'components/business/src/users/userLocalDirectory');
+const audit = require( DistPath + 'components/audit');
+const userLocalDirectory = require(DistPath + 'components/business/src/users/userLocalDirectory');
 
 // ---------------- username => ID ---------------//
 
@@ -294,8 +294,8 @@ function eventFromLine(line, username) {
 
 function getLastSynchedItem(username) {
   const res = userStorageByUsername[username].getEvents({limit: 1, sortAscending: false, createdBy: 'migration'});
-  if (res[0] && res[0].time) {
-    userAnchor[username].lastSync = res[0].time;
+  if (res[0] && res[0].time) { 
+    userAnchor[username].lastSync = res[0].time; 
   }
 }
 
@@ -316,6 +316,9 @@ async function getAuditLogDir() {
   };
   return path;
 }
+
+
+// --- FLOW
 
 
 let db, config, audiLogsDirs, userIdMap = {}, userStorageByUsername = {}, userAnchor = {};

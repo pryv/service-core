@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-//
+// 
 
 /*global describe, before, beforeEach, it */
 require('./test-helpers');
@@ -252,7 +252,7 @@ describe('accesses (personal)', function () {
             const stream = streams[0];
             validation.checkStoredItem(stream, 'stream');
             stream.name.should.eql(data.permissions[1].defaultName);
-
+     
           },
           async function verifyRestoredStream() {
             const streams = await mall.streams.get(user.id, {id: data.permissions[2].streamId})
@@ -288,8 +288,8 @@ describe('accesses (personal)', function () {
 
     it('[4Y3Y] must ignore erroneous requests to create new streams', function (done) {
       const data = {
-        id: undefined,
-        token: undefined,
+        id: undefined,          // declare property for flow
+        token: undefined,       // declare property for flow
         name: 'my-sweet-app-id',
         type: 'app',
         permissions: [
