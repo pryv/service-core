@@ -55,10 +55,6 @@ run component bin:
 # Test & related
 # –––––––––––––----------------------------------------------------------------
 
-# Run code linting
-lint *params:
-    semistandard {{params}}
-
 # Tag each test with a unique id if missing
 tag-tests:
     scripts/tag-tests
