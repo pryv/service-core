@@ -7,9 +7,3 @@ ARG TARGET_DIR="/app/bin"
 # copy all code to the target dir except files mentioned in .dockerignore
 COPY . $TARGET_DIR
 WORKDIR $TARGET_DIR
-
-# Perform a release build of the source code. (-> dist)
-RUN just compile-release > /dev/null
-
-# Remove copy as we only need transpiled code from dist/
-RUN rm -rf components && rm -rf node_modules

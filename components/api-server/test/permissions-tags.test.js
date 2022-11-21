@@ -15,9 +15,8 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 describe('Access permissions - Tags', function () {
-
   let mongoFixtures;
-  before(async function() {
+  before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   });
   after(async () => {
@@ -33,9 +32,9 @@ describe('Access permissions - Tags', function () {
   });
 
   let username,
-      streamId,
-      basePath,
-      token;
+    streamId,
+    basePath,
+    token;
 
   before(async () => {
     username = cuid();
@@ -45,7 +44,7 @@ describe('Access permissions - Tags', function () {
     token = cuid();
     await user.access({
       type: 'personal',
-      token,
+      token
     });
     await user.session(token);
   });
@@ -55,10 +54,9 @@ describe('Access permissions - Tags', function () {
       name: charlatan.Lorem.word(10),
       permissions: [{
         tag: charlatan.Lorem.word(10),
-        level: 'read',
-      }],
+        level: 'read'
+      }]
     });
     assert.equal(res.status, 400);
   });
-
 });

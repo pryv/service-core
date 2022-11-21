@@ -4,179 +4,140 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const async = require('async');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 const LRU = require('lru-cache');
 const logger = require('@pryv/boiler').getLogger('metadata_cache');
-
 const storage = require('storage');
 const MethodContext = require('business').MethodContext;
-import type {ContextSource} from 'business';
-
 const errors = require('errors').factory;
 const { InfluxRowType } = require('business').types;
-
 const { pubsub } = require('messages');
-
 const { getMall } = require('mall');
-
-import type { LRUCache }  from 'lru-cache';
-
-import type { TypeRepository, Repository } from 'business';
-
-type UsernameEvent = {
-  username: string,
-  event: {
-    id: string
-  },
-};
-
-/** A repository for meta data on series.
- */
-export interface MetadataRepository {
-  forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata>;
-}
-
-/** Meta data on series.
- */
-export interface SeriesMetadata {
-  // Returns true if write access to the series is allowed.
-  canWrite(): boolean;
-
-  // Returns true if read access to the series is allowed.
-  canRead(): boolean;
-
-  // Returns a namespace/database name and a series name for use with InfluxDB.
-  namespaceAndName(): [string, string];
-
-  // Return the InfluxDB row type for the given event.
-  produceRowType(repo: TypeRepository): InfluxRowType;
-
-  // Retur true if item is trashed or deleted
-  isTrashedOrDeleted(): boolean;
-}
-
 // A single HFS server will keep at maximum this many credentials in cache.
 const LRU_CACHE_SIZE = 10000;
-
 // Credentials will be cached for at most this many ms.
-const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
-
+const LRU_CACHE_MAX_AGE_MS = 1000 * 60 * 5; // 5 mins
 /** Holds metadata related to series for some time so that we don't have to
  * compile it every time we store data in the server.
  *
  * Caches data about a series first by `accessToken`, then by `eventId`.
  * */
-class MetadataCache implements MetadataRepository {
-  loader: MetadataRepository;
-
+class MetadataCache {
+  loader;
   /**
-   * Stores:
-   *  - username/eventId -> [accessTokens]
-   *  - accessToken -> username/eventID/accessToken
-   *  - username/eventId/accessToken -> SeriesMetadataImpl (metadata_cache.js)
-   */
-  cache: LRUCache<string, mixed>;
-  series: Repository;
-  mall: any;
-  config: any;
+     * Stores:
+     *  - username/eventId -> [accessTokens]
+     *  - accessToken -> username/eventID/accessToken
+     *  - username/eventId/accessToken -> SeriesMetadataImpl (metadata_cache.js)
+     */
+  cache;
 
-  constructor(series: Repository, metadataLoader: MetadataRepository, config: any) {
+  series;
 
+  mall;
+
+  config;
+  constructor (series, metadataLoader, config) {
     this.loader = metadataLoader;
     this.series = series;
     this.config = config;
-
     const options = {
       max: LRU_CACHE_SIZE,
-      ttl: LRU_CACHE_MAX_AGE_MS,
+      ttl: LRU_CACHE_MAX_AGE_MS
     };
     this.cache = new LRU(options);
-
     // messages
     this.subscribeToNotifications();
   }
 
-  async init() {
+  /**
+ * @returns {Promise<void>}
+ */
+  async init () {
     this.mall = await getMall();
   }
 
   // nats messages
-
-  dropSeries(usernameEvent: UsernameEvent): Promise {
-    return this.series.connection.dropMeasurement(
-      'event.' + usernameEvent.event.id,
-      'user.' + usernameEvent.username
-    );
+  /**
+ * @param {UsernameEvent} usernameEvent
+       * @returns {any}
+       */
+  dropSeries (usernameEvent) {
+    return this.series.connection.dropMeasurement('event.' + usernameEvent.event.id, 'user.' + usernameEvent.username);
   }
 
-  invalidateEvent(usernameEvent: UsernameEvent): void {
+  /**
+ * @param {UsernameEvent} usernameEvent
+       * @returns {void}
+       */
+  invalidateEvent (usernameEvent) {
     const cache = this.cache;
     const eventKey = usernameEvent.username + '/' + usernameEvent.event.id;
-    const cachedTokenListForEvent: Array<string> = cache.get(eventKey);
-    if (cachedTokenListForEvent != null) { // what does this return
+    const cachedTokenListForEvent = cache.get(eventKey);
+    if (cachedTokenListForEvent != null) {
+      // what does this return
       cachedTokenListForEvent.map((token) => {
         cache.delete(eventKey + '/' + token);
       });
     }
   }
 
-  subscribeToNotifications() {
-    pubsub.series.on(pubsub.SERIES_UPDATE_EVENTID_USERNAME, this.invalidateEvent.bind(this) );
-    pubsub.series.on(pubsub.SERIES_DELETE_EVENTID_USERNAME, this.dropSeries.bind(this) );
+  /**
+ * @returns {void}
+ */
+  subscribeToNotifications () {
+    pubsub.series.on(pubsub.SERIES_UPDATE_EVENTID_USERNAME, this.invalidateEvent.bind(this));
+    pubsub.series.on(pubsub.SERIES_DELETE_EVENTID_USERNAME, this.dropSeries.bind(this));
   }
 
   // cache logic
-  async forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
-    const cache: LRUCache<string, Array<string>> = this.cache;
-
-    const key: string = [userName, eventId, accessToken].join('/');
-
+  /**
+ * @param {string} userName
+       * @param {string} eventId
+       * @param {string} accessToken
+       * @returns {Promise<import("/Users/sim/Code/Pryv/dev/service-core/metadata_cache.ts-to-jsdoc").SeriesMetadata>}
+       */
+  async forSeries (userName, eventId, accessToken) {
+    const cache = this.cache;
+    const key = [userName, eventId, accessToken].join('/');
     // to make sure we update the tokenList "recently used info" cache we also get eventKey
-    const eventKey: string = [userName, eventId].join('/');
-    const cachedTokenListForEvent: Array<string> = cache.get(eventKey);
-
+    const eventKey = [userName, eventId].join('/');
+    const cachedTokenListForEvent = cache.get(eventKey);
     // also keep a list of used Token to invalidate them
-    const cachedEventListForTokens: Array<string> = cache.get(accessToken);
-
+    const cachedEventListForTokens = cache.get(accessToken);
     const cachedValue = cache.get(key);
-    if ( cachedValue != null) {
+    if (cachedValue != null) {
       logger.debug(`Using cached credentials for ${userName} / ${eventId}.`);
       return cachedValue;
     }
     const newValue = await this.loader.forSeries(userName, eventId, accessToken);
-
     // new event we add it to the list
     if (cachedTokenListForEvent != null) {
       cache.set(eventKey, cachedTokenListForEvent.concat(accessToken));
     } else {
       cache.set(eventKey, [accessToken]);
     }
-
     // new token we add it to the list
     if (cachedEventListForTokens != null) {
       cache.set(accessToken, cachedEventListForTokens.concat(key));
     } else {
       cache.set(accessToken, [key]);
     }
-
     cache.set(key, newValue);
-
     return newValue;
   }
 }
-
 /** Loads metadata related to a series from the main database.
  */
 class MetadataLoader {
-  databaseConn: storage.Database;
-  storage: storage.StorageLayer;
-  mall: any;
+  databaseConn;
 
-  constructor(databaseConn: storage.Database, mall: any, logger) {
+  storage;
+
+  mall;
+  constructor (databaseConn, mall, logger) {
     this.databaseConn = databaseConn;
     this.mall = mall;
     // NOTE We pass bogus values to the last few arguments of StorageLayer -
@@ -184,117 +145,91 @@ class MetadataLoader {
     // should be abstracted away from the storage. Also - this is currently
     // a prototype, so we are allowed to do this.
     const sessionMaxAge = 3600 * 1000;
-    this.storage = new storage.StorageLayer(
-      databaseConn, logger,
-      'attachmentsDirPath', 'previewsDirPath', 10, sessionMaxAge);
+    this.storage = new storage.StorageLayer(databaseConn, logger, 'attachmentsDirPath', 'previewsDirPath', 10, sessionMaxAge);
   }
 
-  forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
+  /**
+ * @param {string} userName
+       * @param {string} eventId
+       * @param {string} accessToken
+       * @returns {Promise<import("/Users/sim/Code/Pryv/dev/service-core/metadata_cache.ts-to-jsdoc").SeriesMetadata>}
+       */
+  forSeries (userName, eventId, accessToken) {
     const storage = this.storage;
     const mall = this.mall;
-
     // Retrieve Access (including accessLogic)
-    const contextSource: ContextSource = {
+    const contextSource = {
       name: 'hf',
       ip: 'TODO'
     };
     const customAuthStep = null;
-    const methodContext = new MethodContext(
-      contextSource,
-      userName,
-      accessToken,
-      customAuthStep,
-    );
-
+    const methodContext = new MethodContext(contextSource, userName, accessToken, customAuthStep);
     return bluebird.fromCallback((returnValueCallback) => {
-      async.series(
-        [
-          (next) => toCallback(methodContext.init(), next),
-          (next) => toCallback(methodContext.retrieveExpandedAccess(storage), next),
-          function loadEvent(done) { // result is used in success handler!
-            const user = methodContext.user;
-
-            mall.events.getOne(user.id, eventId).then((event) => {done(null, event);}, (err) => {done(err);});
-
-          },
-        ],
-        (err, results) => {
-          if (err != null) return returnValueCallback(
-            mapErrors(err));
-
-          const access = methodContext.access;
+      async.series([
+        (next) => toCallback(methodContext.init(), next),
+        (next) => toCallback(methodContext.retrieveExpandedAccess(storage), next),
+        function loadEvent (done) {
+          // result is used in success handler!
           const user = methodContext.user;
-          const event = _.last(results);
-
-          // Because we called retrieveExpandedAccess above.
-          if (access == null) throw new Error('AF: access != null');
-          // Because we called retrieveUser above.
-          if (user == null) throw new Error('AF: user != null');
-
-          if (event === null) return returnValueCallback(errors.unknownResource('event', eventId));
-
-          const serieMetadata = new SeriesMetadataImpl(access, user, event);
-          serieMetadata.init().then(
-            () => { returnValueCallback(null,serieMetadata); },
-            (error) => { returnValueCallback(error,serieMetadata); });
+          mall.events.getOne(user.id, eventId).then((event) => {
+            done(null, event);
+          }, (err) => {
+            done(err);
+          });
         }
-      );
+      ], (err, results) => {
+        if (err != null) { return returnValueCallback(mapErrors(err)); }
+        const access = methodContext.access;
+        const user = methodContext.user;
+        const event = _.last(results);
+        // Because we called retrieveExpandedAccess above.
+        if (access == null) { throw new Error('AF: access != null'); }
+        // Because we called retrieveUser above.
+        if (user == null) { throw new Error('AF: user != null'); }
+        if (event === null) { return returnValueCallback(errors.unknownResource('event', eventId)); }
+        const serieMetadata = new SeriesMetadataImpl(access, user, event);
+        serieMetadata.init().then(() => {
+          returnValueCallback(null, serieMetadata);
+        }, (error) => {
+          returnValueCallback(error, serieMetadata);
+        });
+      });
     });
-
-    function mapErrors(err: mixed): Error {
-      if (! (err instanceof Error))
-        return new Error(err);
-
+    function mapErrors (err) {
+      if (!(err instanceof Error)) { return new Error(err); }
       // else
       return err;
     }
-
-    function toCallback(promise, next) {
+    function toCallback (promise, next) {
       return bluebird.resolve(promise).asCallback(next);
     }
   }
 }
-
-type AccessModel = {
-  canCreateEventsOnStream(streamId: string): boolean;
-  canGetEventsOnStream(streamId: string, storeId: string): boolean;
-};
-type EventModel = {
-  id: string,
-  streamIds: string,
-  type: string,
-  time: number,
-  trashed: boolean,
-  deleted: number,
-};
-type UserModel = {
-  id: string,
-  username: string,
-};
-
-
 /** Metadata on a series, obtained from querying the main database.
  *
  * NOTE Instances of this class get stored in RAM for some time. This is the
  *  reason why we don't store everything about the event and the user here,
  *  only things that we subsequently need for our operations.
  */
-class SeriesMetadataImpl implements SeriesMetadata {
-  permissions: {
-    write: boolean,
-    read: boolean,
-  }
+class SeriesMetadataImpl {
+  permissions;
 
-  userName: string;
-  eventId: string;
-  eventType: string;
-  time: number;
-  trashed: boolean;
-  deleted: number;
-  _access: AccessModel;
-  _event: EventModel;
+  userName;
 
-  constructor(access: AccessModel, user: UserModel, event: EventModel) {
+  eventId;
+
+  eventType;
+
+  time;
+
+  trashed;
+
+  deleted;
+
+  _access;
+
+  _event;
+  constructor (access, user, event) {
     this._access = access;
     this._event = event;
     this.userName = user.username;
@@ -305,64 +240,123 @@ class SeriesMetadataImpl implements SeriesMetadata {
     this.deleted = event.deleted;
   }
 
-  async init() {
+  /**
+ * @returns {Promise<void>}
+ */
+  async init () {
     this.permissions = await definePermissions(this._access, this._event);
   }
 
-  isTrashedOrDeleted(): boolean {
+  /**
+ * @returns {boolean}
+ */
+  isTrashedOrDeleted () {
     return this.trashed || this.deleted != null;
   }
 
-  canWrite(): boolean {
+  /**
+ * @returns {boolean}
+ */
+  canWrite () {
     return this.permissions.write;
   }
-  canRead(): boolean {
+
+  /**
+ * @returns {boolean}
+ */
+  canRead () {
     return this.permissions.read;
   }
 
-  namespaceAndName(): [string, string] {
-    return [
-      `user.${this.userName}`,
-      `event.${this.eventId}`,
-    ];
+  /**
+ * @returns {[string, string]}
+ */
+  namespaceAndName () {
+    return [`user.${this.userName}`, `event.${this.eventId}`];
   }
 
   // Return the InfluxDB row type for the given event.
-  produceRowType(repo: TypeRepository): InfluxRowType {
+  /**
+ * @param {TypeRepository} repo
+       * @returns {any}
+       */
+  produceRowType (repo) {
     const type = repo.lookup(this.eventType);
 
+    // TODO review this now that flow is gone:
     // NOTE The instanceof check here serves to make flow-type happy about the
     //  value we'll return from this function. If duck-typing via 'isSeries' is
     //  ever needed, you'll need to find a different way of providing the same
     //  static guarantee (think interfaces...).
-    if (! type.isSeries() || !(type instanceof InfluxRowType))
-      throw errors.invalidOperation(
-        "High Frequency data can only be stored in events whose type starts with 'series:'.");
-
+    if (!type.isSeries() || !(type instanceof InfluxRowType)) { throw errors.invalidOperation("High Frequency data can only be stored in events whose type starts with 'series:'."); }
     type.setSeriesMeta(this);
     return type;
   }
 }
-
-async function definePermissions(access: AccessModel, event: EventModel): {write: boolean, read: boolean} {
+/**
+ * @param {AccessModel} access
+ * @param {EventModel} event
+ * @returns {{ write: boolean; read: boolean; }}
+ */
+async function definePermissions (access, event) {
   const streamIds = event.streamIds;
   const permissions = {
     write: false,
-    read: false,
+    read: false
   };
   const streamIdsLength = streamIds.length;
-  for(let i=0; i<streamIdsLength && ! readAndWriteTrue(permissions); i++) {
-    if (await access.canCreateEventsOnStream(streamIds[i])) permissions.write = true;
-    if (await access.canGetEventsOnStream(streamIds[i], 'local')) permissions.read = true;
+  for (let i = 0; i < streamIdsLength && !readAndWriteTrue(permissions); i++) {
+    if (await access.canCreateEventsOnStream(streamIds[i])) { permissions.write = true; }
+    if (await access.canGetEventsOnStream(streamIds[i], 'local')) { permissions.read = true; }
   }
   return permissions;
-
-  function readAndWriteTrue(permissions) {
+  function readAndWriteTrue (permissions) {
     return permissions.write === true && permissions.read === true;
   }
 }
-
 module.exports = {
-  MetadataLoader: MetadataLoader,
-  MetadataCache: MetadataCache,
+  MetadataLoader,
+  MetadataCache
 };
+
+/**
+ * @typedef {{
+ *   username: string;
+ *   event: {
+ *     id: string;
+ *   };
+ * }} UsernameEvent
+ */
+
+/**
+ * @typedef {{
+ *   canCreateEventsOnStream(streamId: string): boolean;
+ *   canGetEventsOnStream(streamId: string, storeId: string): boolean;
+ * }} AccessModel
+ */
+
+/**
+ * @typedef {{
+ *   id: string;
+ *   streamIds: string;
+ *   type: string;
+ *   time: number;
+ *   trashed: boolean;
+ *   deleted: number;
+ * }} EventModel
+ */
+
+/**
+ * @typedef {{
+ *   id: string;
+ *   username: string;
+ * }} UserModel
+ */
+
+/** A repository for meta data on series.
+ * @typedef {Object} MetadataRepository
+ */
+
+/** Meta data on series.
+ * @typedef {Object} SeriesMetadata
+ */

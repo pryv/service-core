@@ -4,12 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-// @flow
-
 module.exports = {
   axonMessaging: require('./axon_messaging'),
-  pubsub: require('./pubsub'),
-}
-
+  pubsub: require('./pubsub')
+};
 Object.assign(module.exports, require('./constants'));

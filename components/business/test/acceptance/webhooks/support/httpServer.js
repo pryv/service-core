@@ -4,40 +4,40 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const EventEmitter = require('events');
 const bluebird = require('bluebird');
 const PORT = 6123;
-
+/** @extends EventEmitter */
 class HttpServer extends EventEmitter {
+  app;
 
-  app: express$Application;
-  server: ?HttpServer;
-  messages: Array<string>;
-  metas: Array<string>;
-  messageReceived: boolean;
-  messageCount: number;
-  responseStatus: number;
-  responseDelay: ?number;
+  server;
 
-  constructor(path: string, statusCode: number, responseBody: {}, delay: number) {
+  messages;
+
+  metas;
+
+  messageReceived;
+
+  messageCount;
+
+  responseStatus;
+
+  responseDelay;
+  constructor (path, statusCode, responseBody, delay) {
     super();
     const app = express();
-
     this.messages = [];
     this.metas = [];
     this.messageReceived = false;
     this.messageCount = 0;
     this.responseStatus = statusCode || 200;
     this.responseDelay = delay || null;
-
     const that = this;
     app.use(bodyParser.json());
-    app.post(path, (req: express$Request, res: express$Response) => {
-
+    app.post(path, (req, res) => {
       this.emit('received');
       if (that.responseDelay == null) {
         processMessage.call(that, req, res);
@@ -47,59 +47,84 @@ class HttpServer extends EventEmitter {
         }, that.responseDelay);
       }
     });
-
-    function processMessage(req, res) {
+    function processMessage (req, res) {
       this.messages = this.messages.concat(req.body.messages);
       this.metas = this.metas.concat(req.body.meta);
       this.messageReceived = true;
       this.messageCount++;
       this.emit('responding');
-      res.status(this.responseStatus)
-        .json(responseBody || { ok: '1'});
+      res.status(this.responseStatus).json(responseBody || { ok: '1' });
     }
-
     this.app = app;
   }
 
-  async listen(port: number) {
+  /**
+ * @param {number} port
+       * @returns {Promise<void>}
+       */
+  async listen (port) {
     this.server = await this.app.listen(port || PORT);
   }
 
-  getMessages() {
+  /**
+ * @returns {string[]}
+ */
+  getMessages () {
     return this.messages;
   }
 
-  getMetas() {
+  /**
+ * @returns {string[]}
+ */
+  getMetas () {
     return this.metas;
   }
 
-  isMessageReceived() {
+  /**
+ * @returns {boolean}
+ */
+  isMessageReceived () {
     return this.messageReceived;
   }
 
-  resetMessageReceived() {
+  /**
+ * @returns {void}
+ */
+  resetMessageReceived () {
     this.messageReceived = false;
   }
 
-  getMessageCount() {
+  /**
+ * @returns {number}
+ */
+  getMessageCount () {
     return this.messageCount;
   }
 
-  setResponseStatus(newStatus: number) {
+  /**
+ * @param {number} newStatus
+       * @returns {void}
+       */
+  setResponseStatus (newStatus) {
     this.responseStatus = newStatus;
   }
 
-  setResponseDelay(delay: number) {
+  /**
+ * @param {number} delay
+       * @returns {void}
+       */
+  setResponseDelay (delay) {
     this.responseDelay = delay;
   }
 
-  close() {
-    return bluebird.fromCallback(
-      (cb) => { 
-        if (this.server == null) return cb();
-        this.server.close(cb); 
-      });
+  /**
+ * @returns {any}
+ */
+  close () {
+    return bluebird.fromCallback((cb) => {
+      if (this.server == null) { return cb(); }
+      this.server.close(cb);
+    });
   }
 }
 module.exports = HttpServer;
-

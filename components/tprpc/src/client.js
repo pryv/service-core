@@ -4,88 +4,98 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const TChannel = require('tchannel');
 
 const Definition = require('./definition');
 const { RemoteError } = require('./errors');
 
-// An rpc client connection; use this as a factory for 'proxy' objects that 
-// you can use to make calls on. 
-// 
+// An rpc client connection; use this as a factory for 'proxy' objects that
+// you can use to make calls on.
+//
 class Client {
-  channel: TChannel;      // Main channel
-  root: Definition; 
-  
-  constructor(root: Definition) {
-    this.channel = new TChannel(); 
-    
-    this.root = root; 
+  channel; // Main channel
+  root;
+
+  constructor (root) {
+    this.channel = new TChannel();
+    this.root = root;
   }
-  
-  proxy<T>(serviceName: string, endpoint: string): T {
-    const channel = this.channel; 
-    const root = this.root; 
-    
+
+  /**
+   * @param {string} serviceName
+   * @param {string} endpoint
+   * @returns {T}
+   */
+  proxy (serviceName, endpoint) {
+    const channel = this.channel;
+    const root = this.root;
     const serviceChannel = channel.makeSubChannel({
-      peers: [ endpoint ], 
-      serviceName: serviceName, 
+      peers: [endpoint],
+      serviceName,
       requestDefaults: {
-        hasNoParent: true, 
+        hasNoParent: true,
         headers: {
           as: 'raw',
           cn: 'tprpc-client'
         }
       }
     });
-    
     const service = root.lookup(serviceName);
-    const proxy = service.create(
-      (...args) => this.onCall(serviceChannel, serviceName, ...args), 
-      false,  // delimit query
+    const proxy = service.create((...args) => this.onCall(serviceChannel, serviceName, ...args), false, // delimit query
       false); // delimit response
-    
     return proxy;
   }
-  
-  onCall(
-    channel: TChannel, serviceName: string, 
-    method: MethodDescriptor, requestData: Buffer, cb: ForwarderCallback) 
-  {
-    const methodName = method.name; 
-    const responseType = method.resolvedResponseType;
-    
-    channel
-      .request({ 
-        serviceName: serviceName, 
-        timeout: 1000})
-      .send(
-        methodName, 'arg1', requestData,
-        (...args) => this.onResponse(responseType, cb, ...args));
-  }
-  
-  onResponse(
-    responseType: Type, cb: ForwarderCallback, 
-    err: ?Error, res: any, arg2: Buffer, arg3: Buffer) 
-  {
-    if (err != null) return cb(err);
 
-    if (arg2.toString() === 'error') 
-      return cb(new RemoteError(arg3.toString()));
-      
+  /**
+   * @param {TChannel} channel
+   * @param {string} serviceName
+   * @param {MethodDescriptor} method
+   * @param {Buffer} requestData
+   * @param {ForwarderCallback} cb
+   * @returns {void}
+   */
+  onCall (channel, serviceName, method, requestData, cb) {
+    const methodName = method.name;
+    const responseType = method.resolvedResponseType;
+    channel
+      .request({
+        serviceName,
+        timeout: 1000
+      })
+      .send(methodName, 'arg1', requestData, (...args) => this.onResponse(responseType, cb, ...args));
+  }
+
+  /**
+   * @param {Type} responseType
+   * @param {ForwarderCallback} cb
+   * @param {Error | undefined | null} err
+   * @param {any} res
+   * @param {Buffer} arg2
+   * @param {Buffer} arg3
+   * @returns {unknown}
+   */
+  onResponse (responseType, cb, err, res, arg2, arg3) {
+    if (err != null) { return cb(err); }
+    if (arg2.toString() === 'error') { return cb(new RemoteError(arg3.toString())); }
     const answer = responseType.decode(arg3);
     cb(null, answer);
   }
 }
-
-type Type = {
-  decode: (string | Buffer) => mixed,
-}
-type MethodDescriptor = {
-  name: string, 
-  resolvedResponseType: Type, 
-}
-type ForwarderCallback = (err: ?Error, res: any) => mixed;
-
 module.exports = Client;
+
+/**
+ * @typedef {{
+ *   decode: (a: string | Buffer) => unknown;
+ * }} Type
+ */
+
+/**
+ * @typedef {{
+ *   name: string;
+ *   resolvedResponseType: Type;
+ * }} MethodDescriptor
+ */
+
+/**
+ * @typedef {(err: Error | undefined | null, res: any) => unknown} ForwarderCallback
+ */

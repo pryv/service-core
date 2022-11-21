@@ -4,21 +4,20 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
-// Thrown when the request parsing fails. 
-// 
+// Thrown when the request parsing fails.
+//
 class ParseFailure extends Error {
 }
-
-function error(msg: string): Error {
+/**
+ * @param {string} msg
+ * @returns {Error}
+ */
+function error (msg) {
   return new ParseFailure(msg);
 }
-
 module.exports = {
   // error class
-  ParseFailure, 
-  
+  ParseFailure,
   // error factories
   error
 };

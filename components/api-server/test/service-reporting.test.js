@@ -36,12 +36,10 @@ const monitorToken = cuid();
 const Promise = require('bluebird');
 
 describe('service-reporting', () => {
-
   let mongoFixtures;
-  before(async function() {
+  before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     if ((await getConfig()).get('openSource:isActive')) this.skip();
-
   });
   after(async () => {
     await mongoFixtures.clean();
@@ -50,7 +48,7 @@ describe('service-reporting', () => {
   before(async () => {
     const user = await mongoFixtures.user(monitoringUsername);
     user.access({
-      type: 'app', token: monitorToken,
+      type: 'app', token: monitorToken
     });
     await mongoFixtures.user(cuid());
   });
@@ -90,12 +88,11 @@ describe('service-reporting', () => {
       assert.exists(lastReport.clientData.serviceInfoUrl, 'missing serviceInfourl');
     });
   });
-
 });
 
-async function assertServerStarted() {
+async function assertServerStarted () {
   // throws if the server is off
   await server.request()
-        .get(`/${monitoringUsername}/events`)
-        .set('Authorizaiton', monitorToken);
+    .get(`/${monitoringUsername}/events`)
+    .set('Authorizaiton', monitorToken);
 }

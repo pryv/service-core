@@ -4,13 +4,10 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
 const storeDataUtils = require('./helpers/storeDataUtils');
-
 const MallUserStreams = require('./MallUserStreams');
 const MallUserEvents = require('./MallUserEvents');
 const MallTransaction = require('./MallTransaction');
-
 /**
  * Storage for streams and events.
  * Under the hood, manages the different data stores (built-in and custom),
@@ -18,47 +15,55 @@ const MallTransaction = require('./MallTransaction');
  */
 class Mall {
   /**
-   * @type {Map<string, DataStore>}
-   */
+     * @type {Map<string, DataStore>}
+     */
   stores;
-  initialized: boolean;
-  _streams: MallUserStreams;
-  _events: MallUserEvents;
 
-  constructor() {
+  initialized;
+
+  _streams;
+
+  _events;
+  constructor () {
     this.stores = new Map();
     this.initialized = false;
   }
 
-  get streams() { return this._streams; }
-  get events() { return this._events; }
+  get streams () {
+    return this._streams;
+  }
+
+  get events () {
+    return this._events;
+  }
 
   /**
-   * Register a new DataStore
-   * @param {DataStore} store
-   */
-  addStore(store) {
-    if (this.initialized) throw(new Error('Sources cannot be added after init()'));
+     * Register a new DataStore
+     * @param {DataStore} store
+       * @returns {void}
+       */
+  addStore (store) {
+    if (this.initialized) { throw new Error('Sources cannot be added after init()'); }
     this.stores.set(store.id, store);
   }
 
   /**
-   * @returns {Promise<Mall>}
-   */
+     * @returns {Promise<this>}
+     */
   async init () {
-    if (this.initialized) throw(new Error('init() can only be called once.'));
+    if (this.initialized) { throw new Error('init() can only be called once.'); }
     this.initialized = true;
-
     for (const store of this.stores.values()) {
       await store.init();
     }
-
     this._streams = new MallUserStreams(this.stores.values());
     this._events = new MallUserEvents(this.stores.values());
-
     return this;
   }
 
+  /**
+ * @returns {Promise<void>}
+ */
   async deleteUser (userId) {
     for (const store of this.stores.values()) {
       try {
@@ -70,10 +75,11 @@ class Mall {
   }
 
   /**
-   * Return the quantity of storage used by the user in bytes.
-   * @param {string} userId
-   */
-  async getUserStorageSize(userId) {
+     * Return the quantity of storage used by the user in bytes.
+     * @param {string} userId
+       * @returns {Promise<number>}
+       */
+  async getUserStorageSize (userId) {
     let storageUsed = 0;
     for (const store of this.stores.values()) {
       try {
@@ -86,12 +92,11 @@ class Mall {
   }
 
   /**
-   * @param {string} storeId
-   * @returns {Promise<MallTransaction>}
-   */
-  async newTransaction() {
+     * @param {string} storeId
+     * @returns {Promise<any>}
+     */
+  async newTransaction () {
     return new MallTransaction(this);
   }
 }
-
 module.exports = Mall;

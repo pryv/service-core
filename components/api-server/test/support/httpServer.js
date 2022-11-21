@@ -5,16 +5,11 @@
  * Proprietary and confidential
  */
 /* eslint-disable no-console */
-// @flow
-
 const EventEmitter = require('events');
-
 const bluebird = require('bluebird');
 const express = require('express');
 const bodyParser = require('body-parser');
-
 const PORT = 6123;
-
 /*
  * Create a local HTTP server for the purpose of answering
  * query on localhost:PORT/service/info or localhost:PORT/reports
@@ -22,41 +17,51 @@ const PORT = 6123;
  *
  * No logger available here. Using console.debug
  */
+/** @extends EventEmitter */
 class HttpServer extends EventEmitter {
-  app: express$Application;
-  server: HttpServer;
-  responseStatus: number;
-  lastReport: Object;
+  app;
 
-  constructor (path: string, statusCode: number, responseBody: Object) {
+  server;
+
+  responseStatus;
+
+  lastReport;
+  constructor (path, statusCode, responseBody) {
     super();
-
     const app = express();
     this.responseStatus = statusCode || 200;
     app.use(bodyParser.json());
-
-    app.all(path, (req, res: express$Response) => {
+    app.all(path, (req, res) => {
       res.status(this.responseStatus).json(responseBody || { ok: '1' });
-      if(req.method === 'POST') {
+      if (req.method === 'POST') {
         this.lastReport = req.body;
         this.emit('report_received');
       }
     });
-
     this.app = app;
   }
 
-  async listen (port: number) {
+  /**
+ * @param {number} port
+       * @returns {Promise<void>}
+       */
+  async listen (port) {
     this.server = await this.app.listen(port || PORT);
   }
 
+  /**
+ * @returns {any}
+ */
   close () {
     return bluebird.fromCallback(() => {
       this.server.close();
     });
   }
 
-  getLastReport(): Object {
+  /**
+ * @returns {any}
+ */
+  getLastReport () {
     return this.lastReport;
   }
 }

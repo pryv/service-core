@@ -4,17 +4,15 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-'use strict'; 
-// @flow
-
+'use strict';
 const morgan = require('morgan');
 const { getLogger } = require('@pryv/boiler');
-
-module.exports = function (express: any) {
+module.exports = function (express) {
   const logger = getLogger('request-trace');
-  const morganLoggerStreamWrite = (msg: string) => logger.info(msg);
-  
-  return morgan('combined', {stream: {
-    write: morganLoggerStreamWrite
-  }});
+  const morganLoggerStreamWrite = (msg) => logger.info(msg);
+  return morgan('combined', {
+    stream: {
+      write: morganLoggerStreamWrite
+    }
+  });
 };

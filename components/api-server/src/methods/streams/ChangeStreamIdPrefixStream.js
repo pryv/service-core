@@ -15,8 +15,8 @@ module.exports = ChangeStreamIdPrefixStream;
  * This needs to be run before "SetSingleStreamIdStream.js"
  * @constructor
  */
-function ChangeStreamIdPrefixStream() {
-  Transform.call(this, {objectMode: true});
+function ChangeStreamIdPrefixStream () {
+  Transform.call(this, { objectMode: true });
 }
 
 inherits(ChangeStreamIdPrefixStream, Transform);

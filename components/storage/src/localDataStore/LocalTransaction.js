@@ -4,44 +4,52 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-// @flow
-
 const { getDatabase } = require('../index');
-
 const defaultOptions = {
   readPreference: 'primary',
   readConcern: { level: 'local' },
-  writeConcern: { w: 'majority' },
+  writeConcern: { w: 'majority' }
 };
-
 /**
  * Per-user events data
  */
 class LocalTransaction {
-  transactionSession: any;
-  transactionOptions: any;
+  transactionSession;
 
-  constructor(transactionOptions: any) {
+  transactionOptions;
+  constructor (transactionOptions) {
     this.transactionOptions = transactionOptions || defaultOptions;
   }
 
-  async init() {
+  /**
+ * @returns {Promise<void>}
+ */
+  async init () {
     const database = await getDatabase();
     this.transactionSession = await database.startSession();
   }
 
   /**
-   *
-   * @param {Function} func
-   */
-  async exec(func: Function) {
+     *
+     * @param {Function} func  undefined
+       * @returns {Promise<void>}
+       */
+  async exec (func) {
     await this.transactionSession.withTransaction(func, this.transactionOptions);
   }
 
-  async commit(): Promise<void> { throw(new Error('not implemented')); }
+  /**
+ * @returns {Promise<void>}
+ */
+  async commit () {
+    throw new Error('not implemented');
+  }
 
-  async rollback(): Promise<void> { throw(new Error('not implemented')); }
+  /**
+ * @returns {Promise<void>}
+ */
+  async rollback () {
+    throw new Error('not implemented');
+  }
 }
-
 module.exports = LocalTransaction;

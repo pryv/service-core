@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, it*/
+/* global describe, it */
 'use strict';
 
 const ArrayStream = require('../../../src/methods/streams/ArrayStream');
@@ -14,27 +14,24 @@ const should = require('should');
 const Source = require('../../helpers').SourceStream;
 
 describe('ArrayStream', function () {
-  
   const arraySize = new ArrayStream('getSize', true).size;
-  
-  describe('testing around the array size limit', function () {
 
+  describe('testing around the array size limit', function () {
     const testIDs = ['U21Z', 'MKNL', 'MUPF', 'CM4Q', 'F8S9', '6T4V', 'QBOS', 'BY67', 'JNVS', 'N9HG'];
 
     for (let i = -3; i <= 3; i++) {
       const sign = i < 0 ? '' : '+';
-      it(`[${testIDs[i+3]}] must return a valid array when receiving limit` + sign + i +' items',
+      it(`[${testIDs[i + 3]}] must return a valid array when receiving limit` + sign + i + ' items',
         function (done) {
-          const n = arraySize+i;
+          const n = arraySize + i;
           n.should.be.above(0);
           pipeAndCheck(n, true, null, done);
         }
       );
     }
   });
-  
-  describe('testing with small number of items', function () {
 
+  describe('testing with small number of items', function () {
     const testIDs = ['69F6', 'BJRT', 'YJI0', 'EKQQ', '5SUK', 'FPL8', 'ZMO9', 'WFSL', '1YQS', '25IQ'];
 
     for (let i = 0; i <= 3; i++) {
@@ -56,11 +53,11 @@ describe('ArrayStream', function () {
       }, done);
     }
   );
-    
-  function pipeAndCheck(itemNumber, isFirst, resultMapping, done) {
+
+  function pipeAndCheck (itemNumber, isFirst, resultMapping, done) {
     const name = 'name';
-    
-    let items = [];
+
+    const items = [];
     for (let i = 0; i < itemNumber; i++) {
       items.push({
         a: 'a',
@@ -73,7 +70,7 @@ describe('ArrayStream', function () {
       .pipe(new DestinationStream(isFirst, (err, res) => {
         should.not.exist(err);
         should.exist(res);
-        if(typeof(resultMapping) == 'function') {
+        if (typeof (resultMapping) === 'function') {
           res = resultMapping(res);
         }
         res = JSON.parse(res);
@@ -83,7 +80,6 @@ describe('ArrayStream', function () {
       }));
   }
 });
-
 
 /**
  * Writable stream that concatenates the strings it receives in a buffer.
@@ -95,7 +91,7 @@ describe('ArrayStream', function () {
  * @param callback
  * @constructor
  */
-function DestinationStream(asObject, callback) {
+function DestinationStream (asObject, callback) {
   Writable.call(this);
 
   this.result = '';

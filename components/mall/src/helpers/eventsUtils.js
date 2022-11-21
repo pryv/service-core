@@ -4,33 +4,41 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
 const _ = require('lodash');
 const Transform = require('stream').Transform;
 const storeDataUtils = require('./storeDataUtils');
 const errorFactory = require('errors').factory;
-
 // ------------  Duration -----------//
-
+/**
+ * @returns {any}
+ */
 function durationToStoreEndTime (eventData) {
-  if (eventData.time == null) {delete eventData.duration; return eventData; }// deleted event
-
-  if (eventData.duration === null) { // exactly null
+  if (eventData.time == null) {
+    delete eventData.duration;
+    return eventData;
+  } // deleted event
+  if (eventData.duration === null) {
+    // exactly null
     eventData.endTime = null;
-  } else if (eventData.duration === undefined) { // (no undefined)
+  } else if (eventData.duration === undefined) {
+    // (no undefined)
     // event.time is not defined for deleted events
     eventData.endTime = eventData.time;
-  } else { // defined
-
+  } else {
+    // defined
     eventData.endTime = eventData.time + eventData.duration;
   }
   delete eventData.duration;
   return eventData;
 }
-
+/**
+ * @returns {any}
+ */
 function endTimeFromStoreToDuration (eventData) {
-  if (eventData.time == null) { delete eventData.endTime; return eventData; }// deleted event
-
+  if (eventData.time == null) {
+    delete eventData.endTime;
+    return eventData;
+  } // deleted event
   if (eventData.endTime === null) {
     eventData.duration = null;
   } else if (eventData.endTime !== undefined) {
@@ -42,53 +50,72 @@ function endTimeFromStoreToDuration (eventData) {
   }
   delete eventData.endTime;
   // force duration property undefined if 0
-  if (eventData.duration === 0) { delete eventData.duration; }
+  if (eventData.duration === 0) {
+    delete eventData.duration;
+  }
   return eventData;
 }
-
 // state
-
-function stateToStore(eventData) {
-    eventData.trashed = (eventData.trashed === true);
+/**
+ * @returns {any}
+ */
+function stateToStore (eventData) {
+  eventData.trashed = eventData.trashed === true;
   return eventData;
-};
-
-function stateFromStore(eventData) {
-  if (eventData.trashed !== true) delete eventData.trashed;
+}
+/**
+ * @returns {any}
+ */
+function stateFromStore (eventData) {
+  if (eventData.trashed !== true) { delete eventData.trashed; }
   return eventData;
-};
-
+}
 // ---------  deletion ------ //
-
+/**
+ * @returns {any}
+ */
 function deletionToStore (eventData) {
-  if (eventData.deleted === undefined) { // undefined => null
+  if (eventData.deleted === undefined) {
+    // undefined => null
     eventData.deleted = null;
   }
   return eventData;
-};
-
+}
+/**
+ * @returns {any}
+ */
 function deletionFromStore (eventData) {
-  if (eventData == null) { return eventData; }
-
-  if (eventData.deleted == null) { // undefined or null
+  if (eventData == null) {
+    return eventData;
+  }
+  if (eventData.deleted == null) {
+    // undefined or null
     delete eventData.deleted;
   }
   return eventData;
-};
-
+}
 // ----------- All events fields ------- //
-const ALL_FIELDS =
-  ['streamIds', 'time',
+const ALL_FIELDS = [
+  'streamIds',
+  'time',
   'endTime',
-  'type', 'content',
-  'description', 'attachments',
-  'clientData', 'trashed',
-  'created', 'createdBy',
-  'modified', 'modifiedBy',
-  'integrity'];
-
-/** set to null all undefined fields */
-function nullifyToStore(eventData) {
+  'type',
+  'content',
+  'description',
+  'attachments',
+  'clientData',
+  'trashed',
+  'created',
+  'createdBy',
+  'modified',
+  'modifiedBy',
+  'integrity'
+];
+/**
+ * set to null all undefined fields
+ * @returns {any}
+ */
+function nullifyToStore (eventData) {
   for (const field of ALL_FIELDS) {
     if (eventData[field] === undefined) {
       eventData[field] = null;
@@ -96,8 +123,10 @@ function nullifyToStore(eventData) {
   }
   return eventData;
 }
-
-function nullifyFromStore(eventData) {
+/**
+ * @returns {any}
+ */
+function nullifyFromStore (eventData) {
   for (const field of ALL_FIELDS) {
     if (eventData[field] === null && field !== 'endTime') {
       delete eventData[field];
@@ -105,24 +134,25 @@ function nullifyFromStore(eventData) {
   }
   return eventData;
 }
-
 // ------------ storeId ------------- //
-
-
-function removeStoreIds(storeId, eventData) {
+/**
+ * @returns {any}
+ */
+function removeStoreIds (storeId, eventData) {
   const [eventStoreId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
   if (eventStoreId !== storeId) {
     throw errorFactory.invalidRequestStructure('Cannot create event with id and streamIds belonging to different stores', eventData);
   }
   eventData.id = storeEventId;
-
   // cleanup storeId from streamId
-  if (eventData.streamIds != null) { // it might happen that deleted is set but streamIds is not when loading test data
+  if (eventData.streamIds != null) {
+    // it might happen that deleted is set but streamIds is not when loading test data
     for (let i = 0; i < eventData.streamIds.length; i++) {
       // check that the event belongs to a single store.
       const [testStoreId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.streamIds[i]);
-      if (storeId == null) { storeId = testStoreId; }
-      else if (testStoreId !== storeId) {
+      if (storeId == null) {
+        storeId = testStoreId;
+      } else if (testStoreId !== storeId) {
         throw errorFactory.invalidRequestStructure('Cannot create event with id and streamIds belonging to different stores', eventData);
       }
       eventData.streamIds[i] = storeStreamId;
@@ -130,26 +160,30 @@ function removeStoreIds(storeId, eventData) {
   }
   return eventData;
 }
-
-function addStoreId(storeId, eventData) {
+/**
+ * @returns {any}
+ */
+function addStoreId (storeId, eventData) {
   eventData.id = storeDataUtils.getFullItemId(storeId, eventData.id);
   if (eventData.streamIds) {
     eventData.streamIds = eventData.streamIds.map(storeDataUtils.getFullItemId.bind(null, storeId));
   }
   return eventData;
 }
-
-function removeEmptyAttachments(eventData) {
+/**
+ * @returns {any}
+ */
+function removeEmptyAttachments (eventData) {
   if (eventData?.attachments != null && eventData.attachments.length == 0) {
     delete eventData.attachments;
   }
   return eventData;
 }
-
-
 // ------------- pack ----------------//
-
-function convertEventToStore(storeId, eventData) {
+/**
+ * @returns {any}
+ */
+function convertEventToStore (storeId, eventData) {
   const event = _.cloneDeep(eventData);
   removeStoreIds(storeId, event);
   durationToStoreEndTime(event);
@@ -158,8 +192,10 @@ function convertEventToStore(storeId, eventData) {
   nullifyToStore(event);
   return event;
 }
-
-function convertEventFromStore(storeId, eventData) {
+/**
+ * @returns {any}
+ */
+function convertEventFromStore (storeId, eventData) {
   const event = _.cloneDeep(eventData);
   endTimeFromStoreToDuration(event);
   stateFromStore(event);
@@ -169,23 +205,27 @@ function convertEventFromStore(storeId, eventData) {
   nullifyFromStore(event);
   return event;
 }
-
-
-
+/** @extends Transform */
 class ConvertEventFromStoreStream extends Transform {
-  storeId : string;
-  constructor(storeId) {
-    super({objectMode: true});
+  storeId;
+  constructor (storeId) {
+    super({ objectMode: true });
     this.storeId = storeId;
   }
+
+  /**
+       * @default function (event, encoding, callback) {
+       *     this.push(convertEventFromStore(this.storeId, event));
+       *     callback();
+       *   }
+       */
   _transform = function (event, encoding, callback) {
     this.push(convertEventFromStore(this.storeId, event));
     callback();
   };
 }
-
 module.exports = {
   convertEventToStore,
   convertEventFromStore,
-  ConvertEventFromStoreStream,
-}
+  ConvertEventFromStoreStream
+};

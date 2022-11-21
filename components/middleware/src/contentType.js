@@ -9,21 +9,21 @@
  * 415 error.
  */
 
-var errors = require('errors').factory;
+const errors = require('errors').factory;
 
 /**
  * Accepts a variable number of content types as arguments.
  */
-function checkContentType(/* arguments */) {
-  var acceptedTypes = arguments,
-      count = acceptedTypes.length;
+function checkContentType (/* arguments */) {
+  const acceptedTypes = arguments;
+  const count = acceptedTypes.length;
   return function (req, res, next) {
     if (count < 1) { return next(); }
 
-    var contentType = req.headers['content-type'];
-    if (! contentType) { return next(errors.missingHeader('Content-Type')); }
+    const contentType = req.headers['content-type'];
+    if (!contentType) { return next(errors.missingHeader('Content-Type')); }
 
-    for (var i = 0; i < count; i++) {
+    for (let i = 0; i < count; i++) {
       if (req.is(acceptedTypes[i])) {
         return next();
       }

@@ -4,10 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-// @flow
-
 module.exports = {
   AUTH_HEADER: 'authorization',
-  FORMAT_FLAT_JSON: 'flatJSON',
+  FORMAT_FLAT_JSON: 'flatJSON'
 };

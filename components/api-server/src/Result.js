@@ -4,58 +4,19 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const commonMeta = require('./methods/helpers/setCommonMeta');
 const MultiStream = require('multistream');
 const DrainStream = require('./methods/streams/DrainStream');
 const ArrayStream = require('./methods/streams/ArrayStream');
 const async = require('async');
 
-const { Transform, Readable} = require('stream');
+const { Transform, Readable } = require('stream');
 
 const { DummyTracing } = require('tracing');
-
-import type { Webhook } from 'business/webhooks';
-
-type ResultOptions = {
-  arrayLimit?: number,
-  tracing?: object
-}
-type StreamDescriptor = {
-  name: string,
-  stream: stream$Readable,
-}
-type APIResult =
-  {[string]: Object} |
-  {[string]: Array<Object>};
-
-type ToObjectCallback = (err: ?Error, res: ?APIResult) => mixed;
-
-type doneCallBack = () => mixed;
-
-type itemDeletion = {
-  id: string,
-  deleted: number,
-};
-
-type PermissionLevel = 'read' | 'contribute' | 'manage';
-type Setting = 'forbidden';
-
-type Permission = {
-  streamId: string,
-  level: PermissionLevel,
-} | {
-  feature: string,
-  setting: Setting,
-};
 
 (async () => {
   await commonMeta.loadSettings();
 })();
-
-
-
 // Result object used to store API call response body while it is processed.
 // In case of events.get call, it stores multiple streams in this.streamsArray.
 // ie.: each Stream of data will be sent one after the other
@@ -64,51 +25,56 @@ type Permission = {
 // The result can be sent back to the caller using writeToHttpResponse or
 // recovered as a JS object through the toObject() function.
 //
-class Result {
-  _private: {
-    init: boolean, first: boolean,
-    arrayLimit: number,
-    isStreamResult: boolean,
-    streamsArray: Array<StreamDescriptor>,
-    onEndCallback: ?doneCallBack,
-    streamsConcatArrays: Object,
-    tracing: Object,
-  };
-  meta: ?Object;
 
+class Result {
+  _private;
+
+  meta;
   // These are used by the various methods to store the result objects.
   // Never assume these are filled in...
   // Exercise to the reader: How can we get rid of this mixed bag of things?
-  accesses: ?Array<any>;
-  access: mixed;
-  accessDeletion: mixed;
-  accessDeletions: mixed;
-  relatedDeletions: ?Array<any>;
-  matchingAccess: mixed;
-  mismatchingAccess: mixed;
-  checkedPermissions: mixed;
-  error: mixed;
 
-  event: ?Event;
-  events: ?Array<Event>;
+  accesses;
 
-  type: string;
-  name: string;
-  permissions: Array<Permission>
+  access;
 
-  results: Array<Result>;
+  accessDeletion;
 
-  webhook: Webhook;
-  webhooks: Array<Webhook>;
+  accessDeletions;
 
-  webhookDeletion: itemDeletion;
+  relatedDeletions;
 
-  auditLogs: ?Array<{}>;
+  matchingAccess;
 
+  mismatchingAccess;
 
-  constructor(params?: ResultOptions) {
+  checkedPermissions;
+
+  error;
+
+  event;
+
+  events;
+
+  type;
+
+  name;
+
+  permissions;
+
+  results;
+
+  webhook;
+
+  webhooks;
+
+  webhookDeletion;
+
+  auditLogs;
+  constructor (params) {
     this._private = {
-      init: false, first: true,
+      init: false,
+      first: true,
       arrayLimit: 10000,
       isStreamResult: false,
       streamsArray: [],
@@ -118,19 +84,26 @@ class Result {
       tracingId: null
     };
     this._private.tracingId = this._private.tracing.startSpan('apiResult');
-
     if (params && params.arrayLimit != null && params.arrayLimit > 0) {
       this._private.arrayLimit = params.arrayLimit;
     }
   }
 
-  closeTracing() {
+  /**
+ * @returns {void}
+ */
+  closeTracing () {
     this._private.tracing.finishSpan(this._private.tracingId);
   }
 
   // Array concat stream
-  addToConcatArrayStream(arrayName: string, stream: stream$Readable) {
-    if (! this._private.streamsConcatArrays[arrayName]) {
+  /**
+ * @param {string} arrayName
+     * @param {Readable} stream
+     * @returns {void}
+     */
+  addToConcatArrayStream (arrayName, stream) {
+    if (!this._private.streamsConcatArrays[arrayName]) {
       this._private.streamsConcatArrays[arrayName] = new StreamConcatArray(this._private.tracing, this._private.tracingId);
     }
     this._private.streamsConcatArrays[arrayName].add(stream);
@@ -138,8 +111,12 @@ class Result {
   }
 
   // Close
-  closeConcatArrayStream(arrayName: string) {
-    if (! this._private.streamsConcatArrays[arrayName]) {
+  /**
+ * @param {string} arrayName
+     * @returns {void}
+     */
+  closeConcatArrayStream (arrayName) {
+    if (!this._private.streamsConcatArrays[arrayName]) {
       return;
     }
     this._private.tracing.finishSpan('addToConcatArrayStream:' + arrayName);
@@ -149,55 +126,71 @@ class Result {
 
   // Pushes stream on the streamsArray stack, FIFO.
   //
-  addStream(arrayName: string, stream: stream$Readable) {
+  /**
+ * @param {string} arrayName
+     * @param {Readable} stream
+     * @returns {void}
+     */
+  addStream (arrayName, stream) {
     this._private.isStreamResult = true;
-    this._private.streamsArray.push({name: arrayName, stream: stream});
+    this._private.streamsArray.push({ name: arrayName, stream });
   }
 
   // Returns true if the Result holds any streams, false otherwise.
   //
-  isStreamResult() {
+  /**
+ * @returns {boolean}
+ */
+  isStreamResult () {
     return this._private.isStreamResult;
   }
 
   // Execute the following when result has been fully sent
   // If already sent callback is called right away
-  onEnd(callback: doneCallBack) {
+  /**
+ * @param {doneCallBack} callback
+     * @returns {void}
+     */
+  onEnd (callback) {
     this._private.onEndCallback = callback;
   }
 
   // Sends the content of Result to the HttpResponse stream passed in parameters.
   //
-  writeToHttpResponse(res: express$Response, successCode: number) {
-
+  /**
+ * @param {express$Response} res
+     * @param {number} successCode
+     * @returns {void}
+     */
+  writeToHttpResponse (res, successCode) {
     const onEndCallBack = this._private.onEndCallback;
     if (this.isStreamResult()) {
       const writeTracingId = this._private.tracing.startSpan('writeToHttpResponse', {}, this._private.tracingId);
-      const stream: Readable = this.writeStreams(res, successCode);
-      stream.on('close', function() {
-        if (onEndCallBack) onEndCallBack();
+      const stream = this.writeStreams(res, successCode);
+      stream.on('close', function () {
+        if (onEndCallBack) { onEndCallBack(); }
         this._private.tracing.finishSpan(writeTracingId);
         this.closeTracing();
       }.bind(this));
     } else {
       this.closeTracing();
       this.writeSingle(res, successCode);
-      if (onEndCallBack) onEndCallBack();
+      if (onEndCallBack) { onEndCallBack(); }
     }
   }
 
-  writeStreams(res: express$Response, successCode: number): Readable {
+  /**
+ * @param {express$Response} res
+     * @param {number} successCode
+     * @returns {any}
+     */
+  writeStreams (res, successCode) {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
     res.statusCode = successCode;
-
     const streamsArray = this._private.streamsArray;
-
-    if (! this._private.isStreamResult)
-      throw new Error('AF: not a stream result.');
-    if (streamsArray.length < 1)
-      throw new Error('streams array empty');
-
+    if (!this._private.isStreamResult) { throw new Error('AF: not a stream result.'); }
+    if (streamsArray.length < 1) { throw new Error('streams array empty'); }
     // Are we handling a single stream?
     if (streamsArray.length === 1) {
       const first = streamsArray[0];
@@ -206,28 +199,35 @@ class Result {
         .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
         .pipe(res);
     }
-
     // assert: streamsArray.length > 1
     const streams = [];
-    for (let i=0; i<streamsArray.length; i++) {
+    for (let i = 0; i < streamsArray.length; i++) {
       const s = streamsArray[i];
       streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
     }
-
-    return new MultiStream(streams).pipe(new ResultStream(this._private.tracing, this._private.tracingId)).pipe(res);
+    return new MultiStream(streams)
+      .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
+      .pipe(res);
   }
 
-  writeSingle(res: express$Response, successCode: number) {
+  /**
+ * @param {express$Response} res
+     * @param {number} successCode
+     * @returns {void}
+     */
+  writeSingle (res, successCode) {
     delete this._private;
-    res
-      .status(successCode)
-      .json(commonMeta.setCommonMeta(this));
+    res.status(successCode).json(commonMeta.setCommonMeta(this));
   }
 
   // Returns the content of the Result object in a JS object.
   // In case the Result contains a streamsArray, it will drain them in arrays.
   //
-  toObject(callback: ToObjectCallback) {
+  /**
+ * @param {ToObjectCallback} callback
+     * @returns {void}
+     */
+  toObject (callback) {
     this.closeTracing();
     if (this.isStreamResult()) {
       this.toObjectStream(callback);
@@ -236,13 +236,16 @@ class Result {
     }
   }
 
-  toObjectStream(callback: ToObjectCallback) {
+  /**
+ * @param {ToObjectCallback} callback
+     * @returns {void}
+     */
+  toObjectStream (callback) {
     const _private = this._private;
     const streamsArray = _private.streamsArray;
-
     const resultObj = {};
     async.forEachOfSeries(streamsArray, (elementDef, i, done) => {
-      const drain = new DrainStream({limit: _private.arrayLimit}, (err, list) => {
+      const drain = new DrainStream({ limit: _private.arrayLimit }, (err, list) => {
         if (err) {
           return done(err);
         }
@@ -258,58 +261,70 @@ class Result {
     });
   }
 
-  toObjectSingle(callback: ToObjectCallback) {
+  /**
+ * @param {ToObjectCallback} callback
+     * @returns {void}
+     */
+  toObjectSingle (callback) {
     delete this._private;
     callback(null, this);
   }
 }
-
 // Stream that wraps the whole result in JSON curly braces before being sent to
 // Http.response
+/** @extends Transform */
 class ResultStream extends Transform {
-  isStart: boolean;
-  tracing: object;
-  tracingId: string;
+  isStart;
 
-  constructor(tracing, parentTracingId) {
-    super({objectMode: true});
+  tracing;
 
+  tracingId;
+  constructor (tracing, parentTracingId) {
+    super({ objectMode: true });
     this.isStart = true;
     this.tracing = tracing;
     this.tracingId = this.tracing.startSpan('resultStream', {}, parentTracingId);
   }
 
-  _transform(data, encoding, callback) {
+  /**
+ * @returns {void}
+ */
+  _transform (data, encoding, callback) {
     if (this.isStart) {
       this.push('{');
       this.isStart = false;
-      this.tracing.logForSpan(this.tracingId, {event: 'start'});
+      this.tracing.logForSpan(this.tracingId, { event: 'start' });
     }
     this.push(data);
-    this.tracing.logForSpan(this.tracingId, {event: 'push'});
+    this.tracing.logForSpan(this.tracingId, { event: 'push' });
     callback();
   }
 
-  _flush(callback) {
+  /**
+ * @returns {void}
+ */
+  _flush (callback) {
     const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
     this.push(thing + '}');
     this.tracing.finishSpan('resultStream');
     callback();
   }
 }
-
 module.exports = Result;
 
-
 class StreamConcatArray {
-  streamsToAdd: Array<stream$Readable>;
-  nextFactoryCallBack: Function;
-  multistream: MultiStream;
-  isClosed: boolean;
-  tracing: ?Object;
-  tracingName: string;
+  streamsToAdd;
 
-  constructor(tracing, parentTracingId) {
+  nextFactoryCallBack;
+
+  multistream;
+
+  isClosed;
+
+  tracing;
+
+  tracingName;
+  constructor (tracing, parentTracingId) {
     // holds pending stream not yet taken by
     this.streamsToAdd = [];
     this.nextFactoryCallBack = null;
@@ -317,21 +332,22 @@ class StreamConcatArray {
     this.tracing = tracing;
     this.tracingName = this.tracing.startSpan('streamConcat', {}, parentTracingId);
     const streamConcact = this;
-    function factory(callback) {
+    function factory (callback) {
       streamConcact.nextFactoryCallBack = callback;
       streamConcact._next();
     }
-    this.multistream = new MultiStream(factory, {objectMode: true});
+    this.multistream = new MultiStream(factory, { objectMode: true });
   }
 
   /**
    * @private
-   */
-  _next() {
-    if (! this.nextFactoryCallBack) return;
+     * @returns {void}
+     */
+  _next () {
+    if (!this.nextFactoryCallBack) { return; }
     if (this.streamsToAdd.length > 0) {
       const nextStream = this.streamsToAdd.shift();
-      this.tracing.logForSpan(this.tracingName, {event: 'shiftStream'});
+      this.tracing.logForSpan(this.tracingName, { event: 'shiftStream' });
       this.nextFactoryCallBack(null, nextStream);
       this.nextFactoryCallBack = null;
       return;
@@ -343,17 +359,76 @@ class StreamConcatArray {
     }
   }
 
-  getStream() {
+  /**
+ * @returns {any}
+ */
+  getStream () {
     return this.multistream;
   }
 
-  add(readableStream: Readable) {
-    this.tracing.logForSpan(this.tracingName, {event: 'addStream'});
+  /**
+ * @param {Readable} readableStream
+     * @returns {void}
+     */
+  add (readableStream) {
+    this.tracing.logForSpan(this.tracingName, { event: 'addStream' });
     this.streamsToAdd.push(readableStream);
   }
 
-  close() {
+  /**
+ * @returns {void}
+ */
+  close () {
     this.isClosed = true;
     this._next();
   }
 }
+
+/**
+ * @typedef {{
+ *   arrayLimit?: number;
+ *   tracing?: object;
+ * }} ResultOptions
+ */
+
+/**
+ * @typedef {{
+ *   name: string;
+ *   stream: Readable;
+ * }} StreamDescriptor
+ */
+
+/**
+ * @typedef {| {
+ *       [x: string]: any;
+ *     }
+ *   | {
+ *       [x: string]: Array<any>;
+ *     }} APIResult
+ */
+
+/** @typedef {(err?: Error | null, res?: APIResult | null) => unknown} ToObjectCallback */
+
+/** @typedef {() => unknown} doneCallBack */
+
+/**
+ * @typedef {{
+ *   id: string;
+ *   deleted: number;
+ * }} itemDeletion
+ */
+
+/** @typedef {'read' | 'contribute' | 'manage'} PermissionLevel */
+
+/** @typedef {'forbidden'} Setting */
+
+/**
+ * @typedef {| {
+ *       streamId: string;
+ *       level: PermissionLevel;
+ *     }
+ *   | {
+ *       feature: string;
+ *       setting: Setting;
+ *     }} Permission
+ */

@@ -4,17 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 /**
  * Helper functions for error handling.
  */
-
 const APIError = require('./APIError');
 const ErrorIds = require('./ErrorIds');
-
-const errorHandling = module.exports = {};
-
+const errorHandling = (module.exports = {});
 /**
  * Logs the given error.
  *
@@ -22,9 +17,9 @@ const errorHandling = module.exports = {};
  * @param {Object} req The request context; expected properties: url, method, body
  * @param {Object} logger The logger object (expected methods: debug, info, warn, error)
  */
-errorHandling.logError = function (error: Error, req: express$Request | Object, logger: {}) {
-  //console.log('XXXXXX', error); // uncomment to log 500 errors on test running using InstanceManager  
-  var metadata = {};
+errorHandling.logError = function (error, req, logger) {
+  // console.log('XXXXXX', error); // uncomment to log 500 errors on test running using InstanceManager
+  const metadata = {};
   if (req) {
     metadata.context = {
       location: req.url,
@@ -33,15 +28,20 @@ errorHandling.logError = function (error: Error, req: express$Request | Object, 
     };
   }
   if (error instanceof APIError) {
-    var logMsg = error.id + ' error (' + (error.httpStatus || 'n/a') + '): ' + error.message;
+    const logMsg = error.id +
+            ' error (' +
+            (error.httpStatus || 'n/a') +
+            '): ' +
+            error.message;
     if (error.data) {
       metadata.errorData = error.data;
     }
     if (error.innerError) {
-      metadata.innerError = error.id === ErrorIds.UnexpectedError ?
-        (error.innerError.stack || error.innerError.message) : error.innerError.message;
+      metadata.innerError =
+                error.id === ErrorIds.UnexpectedError
+                  ? error.innerError.stack || error.innerError.message
+                  : error.innerError.message;
     }
-
     if (error.id === ErrorIds.UnexpectedError) {
       logger.error(logMsg, metadata);
     } else {
@@ -49,22 +49,23 @@ errorHandling.logError = function (error: Error, req: express$Request | Object, 
     }
   } else {
     // Assumes that error is in fact instanceof Error...
-    logger.error(
-      'Unhandled API error (' + error.name + '): ' +
-      error.message + '\n' + error.stack,
-      metadata);
+    logger.error('Unhandled API error (' +
+            error.name +
+            '): ' +
+            error.message +
+            '\n' +
+            error.stack, metadata);
   }
 };
-
 /**
  * Returns a public-safe error object from the given API error.
  */
-errorHandling.getPublicErrorData = function (error: Error) {
+errorHandling.getPublicErrorData = function (error) {
   if (error instanceof APIError) {
-    let publicError = {
+    const publicError = {
       id: error.id,
-      message: error.message, 
-      data: undefined, 
+      message: error.message,
+      data: undefined
     };
     if (error.data) {
       publicError.data = error.data;
@@ -74,7 +75,7 @@ errorHandling.getPublicErrorData = function (error: Error) {
     return {
       id: ErrorIds.UnexpectedError,
       message: 'An unexpected error occurred. Our bad! Please accept our humble apologies and ' +
-          'notify us if it happens repeatedly. Thank you.'
+                'notify us if it happens repeatedly. Thank you.'
     };
   }
 };

@@ -245,7 +245,7 @@ module.exports = [
         modified: 1632320812.196,
         modifiedBy: 'test',
         children: []
-      },
+      }
     ]
-  },
+  }
 ];

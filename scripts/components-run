@@ -11,7 +11,7 @@ const fs = require('fs'),
       childProcess = require('child_process'),
       chalk = require('chalk');
 
-const componentsPath = path.resolve(__dirname, '../dist/components'),
+const componentsPath = path.resolve(__dirname, '../components'),
       args = process.argv.slice(2);
 
 if (args.length === 0) {
@@ -20,7 +20,7 @@ if (args.length === 0) {
 }
 
 if (!fs.existsSync(componentsPath)) {
-  logError('"dist/components" folder is missing. Compile your code first (e.g. `just compile-dev`)');
+  logError('"components" folder is missing');
   process.exit(1);
 }
 

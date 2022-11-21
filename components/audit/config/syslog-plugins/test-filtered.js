@@ -16,12 +16,12 @@
  * @param {PryvEvent} event
  * @returns {Object} - {level: .. , message: ... }  or null to skip
  */
-module.exports = function(userId, event) {
+module.exports = function (userId, event) {
   if (event.content.skip) {
     return null;
   }
   return {
     level: 'notice',
     message: userId + ' TEST FILTERED ' + event.content.message
-  }
-}
+  };
+};

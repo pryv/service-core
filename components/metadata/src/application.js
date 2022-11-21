@@ -4,10 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
-// Main application class. Does all the work. 
-
+// Main application class. Does all the work.
 const path = require('path');
 require('@pryv/boiler').init({
   appName: 'metadata',
@@ -28,65 +25,63 @@ require('@pryv/boiler').init({
   ]
 });
 const { getConfig, getLogger } = require('@pryv/boiler');
-
 const storage = require('storage');
-
 const services = {
-  MetadataUpdater: require('./metadata_updater/service'),
+  MetadataUpdater: require('./metadata_updater/service')
 };
 
 class Application {
-  logger; 
+  logger;
+
   config;
-  
-  metadataUpdaterService: ?services.MetadataUpdater;
-  
-  async setup(overrideSettings: ?Object) {
-    this.config = await getConfig(); 
+
+  metadataUpdaterService;
+  /**
+ * @param {any | null} overrideSettings
+       * @returns {Promise<void>}
+       */
+  async setup (overrideSettings) {
+    this.config = await getConfig();
     this.logger = getLogger('application');
-
-    if (overrideSettings != null) 
-      this.config.injectTestConfig(overrideSettings);
-
+    if (overrideSettings != null) { this.config.injectTestConfig(overrideSettings); }
   }
-    
-  
-  // Runs the application. This method only ever exits once the service is 
-  // killed. 
-  // 
-  async run() {    
-    const logger = this.logger; 
-        
+
+  // Runs the application. This method only ever exits once the service is
+  // killed.
+  //
+  /**
+ * @returns {Promise<void>}
+ */
+  async run () {
+    const logger = this.logger;
     logger.info('Metadata service is mounting services:');
-    await this.startMetadataUpdater(); 
+    await this.startMetadataUpdater();
   }
-  
+
   // Initializes and starts the metadata updater service. The `endpoint`
   // parameter should contain an endpoint the service binds to in the form of
-  // HOST:PORT.  
-  // 
-  async startMetadataUpdater() {
-   
+  // HOST:PORT.
+  //
+  /**
+ * @returns {Promise<void>}
+ */
+  async startMetadataUpdater () {
     // Connect to MongoDB
-    const storageLayer = produceStorageLayer(
-      this.config.get('database'),
-      this.logger.getLogger('mongodb')
-    );
-    
+    const storageLayer = produceStorageLayer(this.config.get('database'), this.logger.getLogger('mongodb'));
     // Construct the service
-    const service = new services.MetadataUpdater(storageLayer, this.logger.getLogger('metadata-updater')); 
-    this.metadataUpdaterService = service; 
-    
-    const host = this.config.get('metadataUpdater:host'); 
-    const port = this.config.get('metadataUpdater:port'); 
+    const service = new services.MetadataUpdater(storageLayer, this.logger.getLogger('metadata-updater'));
+    this.metadataUpdaterService = service;
+    const host = this.config.get('metadataUpdater:host');
+    const port = this.config.get('metadataUpdater:port');
     const endpoint = `${host}:${port}`;
-
     // And start it.
     await service.start(endpoint);
   }
 }
 module.exports = Application;
-
-function produceStorageLayer(settings, logger) {
+/**
+ * @returns {any}
+ */
+function produceStorageLayer (settings, logger) {
   return storage.getStorageLayerSync();
 }

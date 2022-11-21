@@ -24,7 +24,7 @@ class UsersLocalIndex {
     this.initialized = false;
   }
 
-  async init() {
+  async init () {
     if (this.initialized) { return; }
     this.initialized = true;
 
@@ -38,7 +38,7 @@ class UsersLocalIndex {
    * Check the integrity of the userIndex compared to the username events in SystemStreams
    * @returns {Object} With `errors` an array of error messages if discrepencies are found
    */
-  async checkIntegrity() {
+  async checkIntegrity () {
     const errors = [];
     const infos = {};
     const checkedMap = {};
@@ -64,18 +64,18 @@ class UsersLocalIndex {
     };
   }
 
-  async addUser(username, userId) {
+  async addUser (username, userId) {
     this.db.addUser(username, userId);
     logger.debug('addUser', username, userId);
   }
 
-  async usernameExists(username) {
-    const res = (await this.getUserId(username) != null);
+  async usernameExists (username) {
+    const res = ((await this.getUserId(username)) != null);
     logger.debug('usernameExists', username, res);
     return res;
   }
 
-  async getUserId(username) {
+  async getUserId (username) {
     let userId = cache.getUserId(username);
     if (userId == null) {
       userId = this.db.getIdForName(username);
@@ -87,13 +87,13 @@ class UsersLocalIndex {
     return userId;
   }
 
-  async getUsername(userId) {
+  async getUsername (userId) {
     const res = this.db.getNameForId(userId);
     logger.debug('nameForId', userId, res);
     return res;
   }
 
-  async getAllByUsername() {
+  async getAllByUsername () {
     logger.debug('getAllByUsername');
     return this.db.getAllByUsername();
   }
@@ -101,13 +101,13 @@ class UsersLocalIndex {
   /**
    * Reset everything – used by tests only
    */
-  async deleteAll() {
+  async deleteAll () {
     logger.debug('deleteAll');
     cache.clear();
     return this.db.deleteAll();
   }
 
-  async deleteById(userId) {
+  async deleteById (userId) {
     logger.debug('deleteById', userId);
     return this.db.deleteById(userId);
   }
@@ -130,9 +130,9 @@ class DBIndex {
   queryDeleteAll;
   queryDeleteById;
 
-  constructor() { }
+  constructor () { }
 
-  async init() {
+  async init () {
     const config = await getConfig();
     const basePath = config.get('userFiles:path');
     mkdirp.sync(basePath);
@@ -151,23 +151,23 @@ class DBIndex {
     this.queryDeleteAll = this.db.prepare('DELETE FROM id4name');
   }
 
-  getIdForName(username) {
+  getIdForName (username) {
     return this.queryGetIdForName.get(username)?.userId;
   }
 
-  getNameForId(userId) {
+  getNameForId (userId) {
     return this.queryGetNameForId.get(userId)?.username;
   }
 
-  addUser(username, userId) {
-    return this.queryInsert.run({username, userId});
+  addUser (username, userId) {
+    return this.queryInsert.run({ username, userId });
   }
 
-  deleteById(userId) {
-    return this.queryDeleteById.run({userId});
+  deleteById (userId) {
+    return this.queryDeleteById.run({ userId });
   }
 
-  getAllByUsername() {
+  getAllByUsername () {
     const users = {};
     for (const user of this.queryGetAll.iterate()) {
       users[user.username] = user.userId;
@@ -175,7 +175,7 @@ class DBIndex {
     return users;
   }
 
-  deleteAll() {
+  deleteAll () {
     return this.queryDeleteAll.run();
   }
 }

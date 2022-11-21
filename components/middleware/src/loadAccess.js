@@ -4,19 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
-import type { StorageLayer } from 'storage';
-
 // Returns a middleware function that loads the access into `req.context.access`.
 // The access is loaded from the token previously extracted by the `initContext` middleware.
 // Also, it adds the corresponding access id as a specific response header.
-// 
-module.exports = function loadAccess(storageLayer: StorageLayer) {
-  return async function (
-    req: express$Request, res: express$Response, next: express$NextFunction
-  ) {
-
+//
+module.exports = function loadAccess (storageLayer) {
+  return async function (req, res, next) {
     try {
       await req.context.retrieveExpandedAccess(storageLayer);
       // Add access id header
@@ -29,22 +22,21 @@ module.exports = function loadAccess(storageLayer: StorageLayer) {
     }
   };
 };
-
 /**
  * Adds the id of the access (if any was used during API call)
  * within the `Pryv-Access-Id` header of the given result.
  * It is extracted from the request context.
  *
- * @param req {express$Request} Current express request.
- * @param res {express$Response} Current express response. MODIFIED IN PLACE.
+ * @param {express$Request} req  Current express request.
+ * @param {express$Response} res  Current express response. MODIFIED IN PLACE.
+ * @returns {any}
  */
-function setAccessIdHeader (req: express$Request, res: express$Response): express$Response {
+function setAccessIdHeader (req, res) {
   if (req != null) {
     const requestCtx = req.context;
     if (requestCtx != null && requestCtx.access != null) {
       res.header('Pryv-Access-Id', requestCtx.access.id);
     }
   }
-
   return res;
 }

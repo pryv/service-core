@@ -4,43 +4,34 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const bluebird = require('bluebird');
 const _ = require('lodash');
-
 const Webhook = require('./Webhook');
 const { getUsersRepository } = require('business/src/users');
-
-/** 
- * Repository of all Webhooks in this Pryv.io instance. 
+/**
+ * Repository of all Webhooks in this Pryv.io instance.
  */
 class Repository {
-  storage: WebhooksStorage;
-
-  constructor (webhooksStorage: WebhooksStorage) {
+  storage;
+  constructor (webhooksStorage) {
     this.storage = webhooksStorage;
   }
 
   /**
-   * Returns all webhooks in a map <username, Arrra<webhooks>>
-   */
-  async getAll(): Promise<Map<string, Array<Webhook>>> {
+     * Returns all webhooks in a map <username, Arrra<webhooks>>
+       * @returns {Promise<Map<string, any[]>>}
+       */
+  async getAll () {
     let users;
-    const usersRepository = await getUsersRepository(); 
+    const usersRepository = await getUsersRepository();
     users = await usersRepository.getAllUsernames();
     const allWebhooks = new Map();
-    
     await bluebird.all(users.map(retrieveWebhooks, this));
     return allWebhooks;
-
-    async function retrieveWebhooks(user): Promise<void> {
+    async function retrieveWebhooks (user) {
       const webhooksQuery = {};
       const webhooksOptions = {};
-
-      const webhooks = await bluebird.fromCallback(
-        (cb) => this.storage.find(user, webhooksQuery, webhooksOptions, cb)
-      );
+      const webhooks = await bluebird.fromCallback((cb) => this.storage.find(user, webhooksQuery, webhooksOptions, cb));
       const userWebhooks = [];
       webhooks.forEach((w) => {
         userWebhooks.push(initWebhook(user, this, w));
@@ -51,94 +42,96 @@ class Repository {
     }
   }
 
-  /** 
-   * Return webhooks for a given User and Access.
-   * Personal access: returns all webhooks
-   * App access: all those created by the access
-   */
-  async get(user: any, access: any): Promise<Array<Webhook>> {
-
-    let query = {};
+  /**
+     * Return webhooks for a given User and Access.
+     * Personal access: returns all webhooks
+     * App access: all those created by the access
+       * @param {any} user
+       * @param {any} access
+       * @returns {Promise<any[]>}
+       */
+  async get (user, access) {
+    const query = {};
     const options = {};
-
     if (access.isApp()) {
       query.accessId = { $eq: access.id };
     }
-    
-    const webhooks = await bluebird.fromCallback(
-      (cb) => this.storage.find(user, query, options, cb)
-    );
-
+    const webhooks = await bluebird.fromCallback((cb) => this.storage.find(user, query, options, cb));
     const webhookObjects = [];
     webhooks.forEach((w) => {
       const webhook = initWebhook(user, this, w);
       webhookObjects.push(webhook);
     });
-
     return webhookObjects;
   }
 
   /**
-   * Returns a webhook for a user, fetched by its id
-   */
-  async getById(user: any, webhookId: string): Promise<?Webhook> {
+     * Returns a webhook for a user, fetched by its id
+       * @param {any} user
+       * @param {string} webhookId
+       * @returns {Promise<any>}
+       */
+  async getById (user, webhookId) {
     const query = {
       id: { $eq: webhookId }
     };
     const options = {};
-
-    const webhook = await bluebird.fromCallback(
-      cb => this.storage.findOne(user, query, options, cb)
-    );
-
-    if (webhook == null) return null;
-
+    const webhook = await bluebird.fromCallback((cb) => this.storage.findOne(user, query, options, cb));
+    if (webhook == null) { return null; }
     return initWebhook(user, this, webhook);
   }
 
   /**
-   * Inserts a webhook for a user
-   */
-  async insertOne(user: {}, webhook: Webhook): Promise<void> {
-    await bluebird.fromCallback(cb =>
-      this.storage.insertOne(user, webhook.forStorage(), cb)
-    );
+     * Inserts a webhook for a user
+       * @param {{}} user
+       * @param {Webhook} webhook
+       * @returns {Promise<void>}
+       */
+  async insertOne (user, webhook) {
+    await bluebird.fromCallback((cb) => this.storage.insertOne(user, webhook.forStorage(), cb));
   }
 
   /**
-   * Updates certain fields of a webhook for a user
-   */
-  async updateOne(user: {}, update: {}, webhookId: string): Promise<void> {
+     * Updates certain fields of a webhook for a user
+       * @param {{}} user
+       * @param {{}} update
+       * @param {string} webhookId
+       * @returns {Promise<void>}
+       */
+  async updateOne (user, update, webhookId) {
     const query = { id: webhookId };
-    await bluebird.fromCallback(cb =>
-      this.storage.updateOne(user, query, update, cb)
-    );
+    await bluebird.fromCallback((cb) => this.storage.updateOne(user, query, update, cb));
   }
 
   /**
-   * Deletes a webhook for a user, given the webhook's id
-   */
-  async deleteOne(user: {}, webhookId: string): Promise<void> {
-    await bluebird.fromCallback(cb =>
-      this.storage.delete(user, { id: webhookId }, cb)
-    );
+     * Deletes a webhook for a user, given the webhook's id
+       * @param {{}} user
+       * @param {string} webhookId
+       * @returns {Promise<void>}
+       */
+  async deleteOne (user, webhookId) {
+    await bluebird.fromCallback((cb) => this.storage.delete(user, { id: webhookId }, cb));
   }
 
   /**
-   * Deletes all webhooks for a user.
-   */
-  async deleteForUser(user: {}): Promise<void> {
-    await bluebird.fromCallback(cb =>
-      this.storage.delete(user, {}, cb)
-    );
+     * Deletes all webhooks for a user.
+       * @param {{}} user
+       * @returns {Promise<void>}
+       */
+  async deleteForUser (user) {
+    await bluebird.fromCallback((cb) => this.storage.delete(user, {}, cb));
   }
-
 }
 module.exports = Repository;
-
-function initWebhook (user: {}, repository: Repository, webhook: {}): Webhook {
+/**
+ * @param {{}} user
+ * @param {Repository} repository
+ * @param {{}} webhook
+ * @returns {any}
+ */
+function initWebhook (user, repository, webhook) {
   return new Webhook(_.merge({
     webhooksRepository: repository,
-    user: user,
+    user
   }, webhook));
 }

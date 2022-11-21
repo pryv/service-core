@@ -4,9 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var Writable = require('stream').Writable,
-    inherits = require('util').inherits,
-    errors = require('errors').factory;
+const Writable = require('stream').Writable;
+const inherits = require('util').inherits;
+const errors = require('errors').factory;
 
 module.exports = DrainStream;
 
@@ -20,7 +20,7 @@ module.exports = DrainStream;
  *                            or the limit was reached, generating an error
  * @constructor
  */
-function DrainStream(params, callback) {
+function DrainStream (params, callback) {
   Writable.call(this, { objectMode: true });
 
   this.limit = 100000;
@@ -43,7 +43,7 @@ function DrainStream(params, callback) {
 
 inherits(DrainStream, Writable);
 
-DrainStream.prototype._write = function(object, enc, next) {
+DrainStream.prototype._write = function (object, enc, next) {
   this.size++;
 
   if (this.size > this.limit) {

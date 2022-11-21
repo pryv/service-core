@@ -10,7 +10,7 @@ const CONSTANTS = {
   ACCESS_STREAM_ID_PREFIX: 'access-',
   ACTION_STREAM_ID_PREFIX: 'action-',
   EVENT_TYPE_VALID: 'audit-log/pryv-api',
-  EVENT_TYPE_ERROR: 'audit-log/pryv-api-error',
+  EVENT_TYPE_ERROR: 'audit-log/pryv-api-error'
 };
 
 Object.freeze(CONSTANTS);

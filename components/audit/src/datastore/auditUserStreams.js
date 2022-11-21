@@ -91,7 +91,7 @@ module.exports = ds.createUserStreams({
       return [{
         id: params.id,
         name: params.id,
-        parentId: parentId,
+        parentId,
         children: [],
         trashed: false
       }];

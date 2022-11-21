@@ -16,12 +16,12 @@ module.exports = Webhooks;
  * @param {Database} database
  * @constructor
  */
-function Webhooks(database) {
+function Webhooks (database) {
   Webhooks.super_.call(this, database);
 
   _.extend(this.converters, {
     itemDefaults: [
-      converters.createIdIfMissing,
+      converters.createIdIfMissing
     ],
     itemToDB: [converters.deletionToDB],
     itemFromDB: [converters.deletionFromDB]
@@ -49,7 +49,7 @@ Webhooks.prototype.getCollectionInfo = function (userOrUserId) {
   const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'webhooks',
-    indexes: indexes,
+    indexes,
     useUserId: userId
   };
 };
@@ -74,8 +74,8 @@ Webhooks.prototype.delete = function (userOrUserId, query, callback) {
       created: 1,
       createdBy: 1,
       modified: 1,
-      modifiedBy: 1,
-    },
+      modifiedBy: 1
+    }
   };
   this.database.updateMany(this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query), update, callback);
@@ -83,13 +83,13 @@ Webhooks.prototype.delete = function (userOrUserId, query, callback) {
 
 /**
  * Override base method to set deleted:null
- * 
- * @param {*} user 
- * @param {*} item 
- * @param {*} callback 
+ *
+ * @param {*} user
+ * @param {*} item
+ * @param {*} callback
  */
 Webhooks.prototype.insertOne = function (userOrUserId, webhook, callback) {
-  let webhookToCreate = _.clone(webhook);
+  const webhookToCreate = _.clone(webhook);
   if (webhookToCreate.deleted === undefined) webhookToCreate.deleted = null;
   this.database.insertOne(
     this.getCollectionInfo(userOrUserId),

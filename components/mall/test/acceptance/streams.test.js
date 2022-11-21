@@ -7,7 +7,7 @@
 require('test-helpers/src/api-server-tests-config');
 const { getConfig } = require('@pryv/boiler');
 
-describe('Stores Streams', function() {
+describe('Stores Streams', function () {
   let user, username, password, access, appAccessDummy, appAccessMaster;
   let personalToken;
   let mongoFixtures;
@@ -17,44 +17,43 @@ describe('Stores Streams', function() {
     isOpenSource = (await getConfig()).get('openSource:isActive');
   });
 
-  
   const streamId = 'yo';
-  before(async function() {
+  before(async function () {
     await initTests();
     await initCore();
     mongoFixtures = getNewFixture();
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
-      password: password,
+      password
     });
 
     username = user.attrs.username;
-    await user.stream({id: streamId, name: 'YO'});
-    await user.stream({id: 'sonOfYo', name: 'Son of YO', parentId: streamId});
+    await user.stream({ id: streamId, name: 'YO' });
+    await user.stream({ id: 'sonOfYo', name: 'Son of YO', parentId: streamId });
     access = await user.access({
       type: 'personal',
-      token: cuid(),
+      token: cuid()
     });
     personalToken = access.attrs.token;
     await user.session(personalToken);
     user = user.attrs;
     accessesPath = '/' + username + '/accesses/';
     eventsPath = '/' + username + '/events/';
-    streamsPath =  '/' + username + '/streams/';
-    
+    streamsPath = '/' + username + '/streams/';
+
     const res = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)
-      .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: streamId, level: 'manage'}, { streamId: ':dummy:', level: 'manage'}]});
+      .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId, level: 'manage' }, { streamId: ':dummy:', level: 'manage' }] });
     appAccessDummy = res.body.access;
     assert.exists(appAccessDummy);
 
     const res2 = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)
-      .send({ type: 'app', name: 'app access master', token: 'app-token-master', permissions: [{ streamId: '*', level: 'manage'}]});
+      .send({ type: 'app', name: 'app access master', token: 'app-token-master', permissions: [{ streamId: '*', level: 'manage' }] });
     appAccessMaster = res2.body.access;
     assert.exists(appAccessMaster);
   });
 
-  after(async function() {
+  after(async function () {
     await mongoFixtures.clean();
   });
 
@@ -62,13 +61,13 @@ describe('Stores Streams', function() {
     const res = await coreRequest
       .get(streamsPath)
       .set('Authorization', appAccessDummy.token)
-      .query({parentId: ':dummy:'});
+      .query({ parentId: ':dummy:' });
     const streams = res.body.streams;
     assert.exists(streams);
-    assert.equal(streams.length,1);
-    assert.equal(streams[0].children.length,2);
-    assert.equal(streams[0].name,user.username);
-    assert.equal(streams[0].parentId,':dummy:');
+    assert.equal(streams.length, 1);
+    assert.equal(streams[0].children.length, 2);
+    assert.equal(streams[0].name, user.username);
+    assert.equal(streams[0].parentId, ':dummy:');
   });
 
   it('[UVQ2] Must retrieve "yo" streams and ":dummy:" when requesting "*"', async () => {
@@ -78,12 +77,11 @@ describe('Stores Streams', function() {
       .query({});
     const streams = res.body.streams;
     assert.exists(streams);
-    assert.equal(streams.length,isOpenSource ? 2 : 3);
-    assert.equal(streams[0].id,streamId);
-    assert.equal(streams[0].children.length,1);
-    assert.equal(streams[1].id,':dummy:');
-    if (! isOpenSource)
-      assert.equal(streams[2].id,':_audit:access-' + appAccessDummy.id);
+    assert.equal(streams.length, isOpenSource ? 2 : 3);
+    assert.equal(streams[0].id, streamId);
+    assert.equal(streams[0].children.length, 1);
+    assert.equal(streams[1].id, ':dummy:');
+    if (!isOpenSource) { assert.equal(streams[2].id, ':_audit:access-' + appAccessDummy.id); }
   });
 
   it('[XC20] Must retrieve "yo" streams and all stores when requesting "*"', async () => {
@@ -94,19 +92,18 @@ describe('Stores Streams', function() {
     const streams = res.body.streams;
     assert.exists(streams);
     // we also get helpers here, because with the current implementation, it is returned.
-    assert.equal(streams.length,isOpenSource ? 4 : 5);
-    assert.equal(streams[0].id,':dummy:');
-    assert.equal(streams[1].id,':faulty:');
-    if (! isOpenSource) {
-      assert.equal(streams[2].id,':_audit:');
-      assert.equal(streams[3].id,streamId);
-      assert.equal(streams[3].children.length,1);
+    assert.equal(streams.length, isOpenSource ? 4 : 5);
+    assert.equal(streams[0].id, ':dummy:');
+    assert.equal(streams[1].id, ':faulty:');
+    if (!isOpenSource) {
+      assert.equal(streams[2].id, ':_audit:');
+      assert.equal(streams[3].id, streamId);
+      assert.equal(streams[3].children.length, 1);
     } else {
-      assert.equal(streams[2].id,streamId);
-      assert.equal(streams[2].children.length,1);
+      assert.equal(streams[2].id, streamId);
+      assert.equal(streams[2].children.length, 1);
     }
   });
-
 
   it('[3ZTM] Root streams must have null parentIds "*"', async () => {
     const res = await coreRequest
@@ -118,5 +115,4 @@ describe('Stores Streams', function() {
       assert.notExists(stream.parentId);
     }
   });
-
 });

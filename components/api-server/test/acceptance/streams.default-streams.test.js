@@ -22,7 +22,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { defaults: dataStoreDefaults } = require('pryv-datastore');
 const treeUtils = require('utils/src/treeUtils');
 
-describe("System streams", function () {
+describe('System streams', function () {
   let app;
   let request;
   let res;
@@ -39,7 +39,7 @@ describe("System streams", function () {
     basePath = '/' + user.attrs.username + '/streams';
     access = await user.access({
       type: 'personal',
-      token: cuid(),
+      token: cuid()
     });
     access = access.attrs;
     await user.session(access.token);
@@ -53,14 +53,14 @@ describe("System streams", function () {
     await app.initiate();
 
     // Initialize notifications dependency
-    let axonMsgs = [];
+    const axonMsgs = [];
     const axonSocket = {
-      emit: (...args) => axonMsgs.push(args),
+      emit: (...args) => axonMsgs.push(args)
     };
     pubsub.setTestNotifier(axonSocket);
 
     pubsub.status.emit(pubsub.SERVER_READY);
-    require("api-server/src/methods/streams")(app.api);
+    require('api-server/src/methods/streams')(app.api);
 
     request = supertest(app.expressApp);
   });
@@ -69,7 +69,7 @@ describe("System streams", function () {
     describe('When using a personal access', () => {
       it('[9CGO] Should return all streams - including system ones', async () => {
         const expectedRes = [];
-        validation.addStoreStreams(expectedRes)
+        validation.addStoreStreams(expectedRes);
         let readableStreams = [
           {
             name: 'Account',
@@ -118,7 +118,7 @@ describe("System streams", function () {
                 id: SystemStreamsSerializer.addCustomerPrefixToStreamId('email'),
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
                 children: []
-              },
+              }
             ]
           },
           {
@@ -131,14 +131,13 @@ describe("System streams", function () {
                 name: 'Active',
                 parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
                 children: []
-              },
+              }
 
             ]
           }
         ];
 
-
-        const { DataStore } = require('pryv-datastore')
+        const { DataStore } = require('pryv-datastore');
 
         readableStreams = treeUtils.cloneAndApply(readableStreams, (s) => {
           s.createdBy = dataStoreDefaults.SystemAccessId;
@@ -166,7 +165,7 @@ describe("System streams", function () {
           res = await request.post(basePath)
             .send({
               name: charlatan.Lorem.characters(7),
-              parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('language'),
+              parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('language')
             })
             .set('authorization', access.token);
         });

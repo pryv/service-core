@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var accesses = require('./accesses');
+const accesses = require('./accesses');
 module.exports = [
   {
     id: 'public',

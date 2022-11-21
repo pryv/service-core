@@ -107,7 +107,7 @@ async function clearHistory (userId) {
 }
 
 async function getUserDB (userId) {
-  return dbCache.get(userId) || await openUserDB(userId);
+  return dbCache.get(userId) || (await openUserDB(userId));
 }
 
 async function openUserDB (userId) {

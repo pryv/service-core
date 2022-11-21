@@ -5,26 +5,26 @@
  * Proprietary and confidential
  */
 
-/* global assert, cuid, audit, config, initTests, sinon*/
+/* global assert, cuid, audit, config, initTests, sinon */
 
 describe('Audit Storage concurent Writes', () => {
-  let userId = cuid();
-  let createdBy = cuid();
+  const userId = cuid();
+  const createdBy = cuid();
   let userStorage;
 
   before(async () => {
     await initTests();
   });
 
-  async function sendAndWait(event) {
+  async function sendAndWait (event) {
     const e = Object.assign(
       {
         type: 'log/test',
-        createdBy: createdBy,
+        createdBy,
         streamIds: [':_audit:test'],
         content: {
           action: 'events.get',
-          message: 'hello',
+          message: 'hello'
         }
       }, event);
     await audit.eventForUser(userId, e);
@@ -38,23 +38,22 @@ describe('Audit Storage concurent Writes', () => {
   it('[69AH] should retry when SQLITE_BUSY', async () => {
     let callCount = 0;
     // function that throws at first call only
-    function statement() {
+    function statement () {
       callCount++;
       if (callCount > 20) return true;
-      throw {code: 'SQLITE_BUSY'};
+      throw { code: 'SQLITE_BUSY' };
     }
     await userStorage.concurentSafeWriteStatement(statement, 21);
     assert.equal(callCount, 21);
   });
 
-
   it('[9H7P] should fail when max retries is reached when SQLITE_BUSY', async () => {
     let callCount = 0;
     // function that throws at first call only
-    function statement() {
+    function statement () {
       callCount++;
       if (callCount > 20) return true;
-      throw {code: 'SQLITE_BUSY'};
+      throw { code: 'SQLITE_BUSY' };
     }
     try {
       await userStorage.concurentSafeWriteStatement(statement, 5);
@@ -62,7 +61,5 @@ describe('Audit Storage concurent Writes', () => {
     } catch (err) {
       assert.equal(err.message, 'Failed write action on Audit after 5 retries');
     }
-
   });
-
 });

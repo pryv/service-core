@@ -32,12 +32,12 @@ describe('permissions selfRevoke', function () {
     mongoFixtures = databaseFixture((await produceMongoConnection()));
   });
 
-  describe('POST /accesses', function ( ) {
+  describe('POST /accesses', function () {
     let username,
-        personalToken,
-        appToken,
-        streamId,
-        basePathAccess;
+      personalToken,
+      appToken,
+      streamId,
+      basePathAccess;
 
     beforeEach(async function () {
       username = cuid();
@@ -48,7 +48,8 @@ describe('permissions selfRevoke', function () {
       const user = await mongoFixtures.user(username, {});
       await user.access({
         type: 'personal',
-        token: personalToken});
+        token: personalToken
+      });
       await user.session(personalToken);
       await user.stream({
         id: streamId,
@@ -59,9 +60,9 @@ describe('permissions selfRevoke', function () {
         token: appToken,
         permissions: [
           {
-            streamId: streamId,
+            streamId,
             level: 'manage'
-          },
+          }
         ]
       });
     });
@@ -107,7 +108,6 @@ describe('permissions selfRevoke', function () {
       assert.isTrue(featureFound);
     });
 
-
     it('[JYU5] must forbid creating accesses with selfRevoke different than forbidden ', async () => {
       const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
         type: 'app',
@@ -133,9 +133,9 @@ describe('permissions selfRevoke', function () {
           type: 'shared',
           name: 'whatever',
           permissions: [{
-            streamId: streamId,
-            level: 'manage',
-          },{
+            streamId,
+            level: 'manage'
+          }, {
             feature: 'selfRevoke',
             setting: 'forbidden'
           }]
@@ -144,14 +144,13 @@ describe('permissions selfRevoke', function () {
       const access = res.body.access;
       assert.exists(access);
     });
-
   });
 
   describe('DELETE /accesses', function () {
     let username,
-        accesses,
-        basePathAccess,
-        accessKeys;
+      accesses,
+      basePathAccess,
+      accessKeys;
 
     const accessDefs = {};
     accessDefs['must allow app accesses to self revoke by default'] = { testCode: 'AHS6', selfRevoke: true };
@@ -167,7 +166,7 @@ describe('permissions selfRevoke', function () {
       accesses = _.clone(accessDefs);
       const user = await mongoFixtures.user(username, {});
 
-      for (let i = 0; i < accessKeys.length; i++ ) {
+      for (let i = 0; i < accessKeys.length; i++) {
         const access = accesses[accessKeys[i]];
         access.token = cuid();
         const data = {
@@ -178,7 +177,7 @@ describe('permissions selfRevoke', function () {
             level: 'contribute'
           }]
         };
-        if (! access.selfRevoke) {
+        if (!access.selfRevoke) {
           data.permissions.push({
             feature: 'selfRevoke',
             setting: 'forbidden'
@@ -193,7 +192,7 @@ describe('permissions selfRevoke', function () {
 
     for (let i = 0; i < accessKeys.length; i++) {
       const access = accessDefs[accessKeys[i]];
-      it(`[${ access.testCode}] ` + accessKeys[i], async function () {
+      it(`[${access.testCode}] ` + accessKeys[i], async function () {
         const res = await server.request().delete(basePathAccess + access.id).set('Authorization', access.token);
 
         if (access.selfRevoke) {
@@ -205,6 +204,5 @@ describe('permissions selfRevoke', function () {
         }
       });
     }
-
   });
 });

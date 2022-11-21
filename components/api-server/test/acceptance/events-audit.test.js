@@ -15,7 +15,6 @@ const assert = require('chai').assert;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('Audit logs events', () => {
-
   let config;
   let mongoFixtures;
   let server;
@@ -35,34 +34,34 @@ describe('Audit logs events', () => {
     personalToken = cuid();
     streamId = cuid();
     const user = await mongoFixtures.user(username);
-    const stream = await user.stream({ id: streamId, name: charlatan.Lorem.word()});
+    const stream = await user.stream({ id: streamId, name: charlatan.Lorem.word() });
     const event = await stream.event({
       type: 'language/iso-639-1',
-      content: charlatan.Lorem.characters(2),
+      content: charlatan.Lorem.characters(2)
     });
     await user.access({
       permissions: [
         {
-          streamId: '*', level: 'manage',
+          streamId: '*', level: 'manage'
         },
         {
-          streamId: ':_system:account', level: 'read',
+          streamId: ':_system:account', level: 'read'
         }
-        ],
+      ],
       token: actionsToken,
-      type: 'app',
-    })
+      type: 'app'
+    });
     await user.access({
       permissions: [{
         streamId: ':_audit:',
-        level: 'read',
+        level: 'read'
       }],
       token: auditToken,
-      type: 'app',
+      type: 'app'
     });
     await user.access({
       type: 'personal',
-      token: personalToken,
+      token: personalToken
     });
     await user.session(personalToken);
 
@@ -83,13 +82,13 @@ describe('Audit logs events', () => {
         filter: {
           methods: {
             exclude: ['all'],
-            include: [],
+            include: []
           }
         }
-      },
+      }
     });
 
-    await post('/events', { streamIds: [stream.attrs.id], type: 'note/txt', content: charlatan.Lorem.text()}, {}, actionsToken);
+    await post('/events', { streamIds: [stream.attrs.id], type: 'note/txt', content: charlatan.Lorem.text() }, {}, actionsToken);
     await get('/events', { trashed: false }, actionsToken);
   });
 
@@ -100,47 +99,46 @@ describe('Audit logs events', () => {
     config.injectTestConfig({});
   });
 
-  async function post(path, payload, query, token = auditToken) {
+  async function post (path, payload, query, token = auditToken) {
     return await server.request()
       .post('/' + username + path)
       .set('Authorization', token)
       .set('Content-Type', 'application/json')
       .send(payload);
   }
-  async function get(path, query, token = auditToken) {
+  async function get (path, query, token = auditToken) {
     if (token != null) {
       return await server.request()
-      .get('/' + username + path)
-      .set('Authorization', token)
-      .query(query);
+        .get('/' + username + path)
+        .set('Authorization', token)
+        .query(query);
     } else { // to allow passing token in query
       return await server.request()
-      .get('/' + username + path)
-      .query(query);
+        .get('/' + username + path)
+        .query(query);
     }
   }
-  async function put(path, payload, query) {
+  async function put (path, payload, query) {
     return await server.request()
       .put(path)
       .set('Authorization', token)
       .query(query)
       .send(payload);
   }
-  async function del(path, query) {
+  async function del (path, query) {
     return await server.request()
       .del(path)
       .set('Authorization', token)
       .query(query);
   }
 
-  function toSystem(streamId) {
+  function toSystem (streamId) {
     return SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
   }
 
   describe('GET /events', () => {
-
     it('[0BK7] must not return null values or trashed=false', async () => {
-      const res = await get('/events', { streams: [':_audit:action-events.get']}, personalToken);
+      const res = await get('/events', { streams: [':_audit:action-events.get'] }, personalToken);
       const events = res.body.events;
       assert.isNotNull(events[0]);
       const event = events[0];
@@ -151,13 +149,13 @@ describe('Audit logs events', () => {
     });
     it('[VBV0] must not return "auth" in "content:query"', async () => {
       await get('/events', { auth: actionsToken }, null);
-      const res = await get('/events', { streams: [':_audit:action-events.get']}, personalToken);
+      const res = await get('/events', { streams: [':_audit:action-events.get'] }, personalToken);
       const event = res.body.events[0];
       assert.notProperty(event.content.query, 'auth', 'token provided in query is present.');
     });
     it('[R8MS] must escape special characters', async () => {
       // it made the server crash
-      const res = await get('/events', { streams: [':_system:username"']}, personalToken); // trailing " (quote) in streamId parameter
+      const res = await get('/events', { streams: [':_system:username"'] }, personalToken); // trailing " (quote) in streamId parameter
       assert.equal(res.status, 400, 'status should be 400');
     });
   });
@@ -170,5 +168,5 @@ describe('Audit logs events', () => {
         assert.notEqual(log.id.substring(':_audit:'.length), 'undefined');
       }
     });
-  })
+  });
 });

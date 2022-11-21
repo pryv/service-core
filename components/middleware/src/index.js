@@ -4,8 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 module.exports = {
   commonHeaders: require('./commonHeaders'),
   contentType: require('./contentType'),

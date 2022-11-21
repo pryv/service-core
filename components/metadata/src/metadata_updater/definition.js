@@ -4,11 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-// @flow
-
 const rpc = require('tprpc');
-
 module.exports = {
-  produce: () => rpc.load(__dirname + '/interface.proto'),
+  produce: () => rpc.load(__dirname + '/interface.proto')
 };

@@ -4,99 +4,91 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 // Tests pertaining to storing data in a hf series.
-
 /* global describe, it, before, after */
 const timestamp = require('unix-timestamp');
 const { ErrorIds } = require('errors');
 const cuid = require('cuid');
 const chai = require('chai');
-const assert = chai.assert; 
+const assert = chai.assert;
 const URL = require('url');
 const superagent = require('superagent');
-
-const { spawnContext, produceMongoConnection } = 
-  require('./test-helpers');
+const { spawnContext, produceMongoConnection } = require('./test-helpers');
 const testHelpers = require('test-helpers');
 const databaseFixture = testHelpers.databaseFixture;
-
-describe('Querying data from a HF series', function() {
-
+describe('Querying data from a HF series', function () {
   let database, pryv;
   before(async function () {
     database = await produceMongoConnection();
     pryv = databaseFixture(database);
   });
-
   after(function () {
     pryv.clean();
   });
-
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
-  let userId, streamId, streamId2, eventId, accessToken, createOnlyToken, secondStreamToken; 
+  let userId, streamId, streamId2, eventId, accessToken, createOnlyToken, secondStreamToken;
   before(() => {
-    userId = cuid(); 
+    userId = cuid();
     streamId = cuid();
-    streamId2 = cuid(); 
-    eventId = cuid(); 
-    accessToken = cuid(); 
-    createOnlyToken = cuid(); 
+    streamId2 = cuid();
+    eventId = cuid();
+    accessToken = cuid();
+    createOnlyToken = cuid();
     secondStreamToken = cuid();
   });
-
   // Build the fixture
   before(async () => {
     const user = await pryv.user(userId, {});
-    await user.stream({id: streamId});
-    await user.stream({id: streamId2});
+    await user.stream({ id: streamId });
+    await user.stream({ id: streamId2 });
     await user.event({
       id: eventId,
       type: 'series:mass/kg',
       streamIds: [streamId, streamId2]
     });
-
-    await user.access({token: accessToken, type: 'personal'});
+    await user.access({ token: accessToken, type: 'personal' });
     await user.session(accessToken);
     await user.access({
       token: createOnlyToken,
       type: 'app',
-      permissions: [{
-        streamId: streamId,
-        level: 'create-only'
-      }]
+      permissions: [
+        {
+          streamId,
+          level: 'create-only'
+        }
+      ]
     });
     await user.access({
       token: secondStreamToken,
       type: 'app',
-      permissions: [{
-        streamId: streamId2,
-        level: 'read',
-      }]
+      permissions: [
+        {
+          streamId: streamId2,
+          level: 'read'
+        }
+      ]
     });
   });
-  
   // Now start a HFS server.
-  let server; 
+  let server;
   before(async () => {
-    server = await spawnContext.spawn(); 
+    server = await spawnContext.spawn();
   });
   after(() => {
-    server.stop(); 
+    server.stop();
   });
-
   it('[Q1X1] should should accept a query with authentication token header', function () {
-    return server.request()
+    return server
+      .request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', accessToken)
       .expect(200);
   });
-
   // Fixes #210
   it('[Q1X2] should accept a query with authentication token in url parameter', function () {
-    return server.request()
+    return server
+      .request()
       .get(`/${userId}/events/${eventId}/series?auth=` + accessToken)
       .expect(200);
   });
@@ -107,27 +99,25 @@ describe('Querying data from a HF series', function() {
     const res = await superagent.get(apiEndPointUrl);
     assert.equal(res.status, 200);
   });
-
   // Fixes #212
   it('[RAIJ] should return core-metadata in every call', async function () {
-    const res = await server.request()
+    const res = await server
+      .request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', accessToken);
-
     chai.expect(res).to.have.property('status').that.eql(200);
     chai.expect(res.body).to.have.property('meta');
   });
-
-  it('[XAI2] should accept a query when the authorized permission is on the event\'s 2nd streamId', async function () {
-    const res = await server.request()
+  it("[XAI2] should accept a query when the authorized permission is on the event's 2nd streamId", async function () {
+    const res = await server
+      .request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', secondStreamToken);
-
     chai.expect(res).to.have.property('status').that.eql(200);
   });
-  
   it('[I2ZH] should refuse a query for an unknown user', function () {
-    return server.request()
+    return server
+      .request()
       .get('/some-user/events/some-eventId/series')
       .set('authorization', 'someToken')
       .expect(404)
@@ -137,7 +127,8 @@ describe('Querying data from a HF series', function() {
       });
   });
   it('[EYCA] should refuse a query missing the authorization token', function () {
-    return server.request()
+    return server
+      .request()
       .get(`/${userId}/events/${eventId}/series`)
       .expect(401)
       .then((res) => {
@@ -146,7 +137,8 @@ describe('Querying data from a HF series', function() {
       });
   });
   it('[OINY] should refuse a query containing an unauthorized token', function () {
-    return server.request()
+    return server
+      .request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', 'invalid-auth')
       .expect(403)
@@ -156,10 +148,10 @@ describe('Querying data from a HF series', function() {
       });
   });
   it('[Q991] should return an unknown resource error when querying data ' +
-    'for an nonexistent event id', function () {
+        'for an nonexistent event id', function () {
     const nonexistentEventId = 'nonexistent-event-id';
-
-    return server.request()
+    return server
+      .request()
       .get(`/${userId}/events/` + nonexistentEventId + '/series')
       .set('authorization', accessToken)
       .expect(404)
@@ -170,9 +162,9 @@ describe('Querying data from a HF series', function() {
         assert.match(error.message, /Unknown event/);
       });
   });
-
   it('[QMC7] should refuse a query containing parameters with the wrong format', function () {
-    return server.request()
+    return server
+      .request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', accessToken)
       .query({
@@ -186,12 +178,13 @@ describe('Querying data from a HF series', function() {
       });
   });
   it('[HGVV] should refuse a query when toTime is before fromTime', function () {
-    return server.request()
+    return server
+      .request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', accessToken)
       .query({
         fromDeltaTime: 1000,
-        toDeltaTime: 200,
+        toDeltaTime: 200
       })
       .expect(400)
       .then((res) => {
@@ -199,7 +192,6 @@ describe('Querying data from a HF series', function() {
         assert.strictEqual(err.id, ErrorIds.InvalidParametersFormat);
       });
   });
-
   it('[XI4M] should refuse a query with a "create-only" token', async function () {
     const res = await server
       .request()
@@ -207,9 +199,8 @@ describe('Querying data from a HF series', function() {
       .set('authorization', createOnlyToken)
       .query({
         fromDeltaTime: 0,
-        toDeltaTime: 100,
+        toDeltaTime: 100
       });
     assert.equal(res.status, 403);
   });
-
 });

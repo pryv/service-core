@@ -7,29 +7,29 @@
 
 /* global cache, describe, before, after, it, assert, cuid, config, initTests, initCore, coreRequest, getNewFixture */
 
-const STREAMS = { 
-  A: {}, 
-    A1: { parentId: 'A' },
-    A2: { parentId: 'A' },
-  B: {}, 
-    B1: { parentId: 'B' }, 
-    B2: { parentId: 'B' }, 
-  T: { }, 
+const STREAMS = {
+  A: {},
+  A1: { parentId: 'A' },
+  A2: { parentId: 'A' },
+  B: {},
+  B1: { parentId: 'B' },
+  B2: { parentId: 'B' },
+  T: { }
 };
 
-describe('Cache', function() {
+describe('Cache', function () {
   let user, username, password, access, appAccess;
   let personalToken;
   let mongoFixtures;
-  
+
   const streamId = 'yo';
-  before(async function() {
+  before(async function () {
     await initTests();
     await initCore();
     password = cuid();
     mongoFixtures = getNewFixture();
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
-      password: password,
+      password
     });
 
     username = user.attrs.username;
@@ -39,13 +39,13 @@ describe('Cache', function() {
         id: streamId,
         name: 'stream ' + streamId,
         parentId: streamData.parentId
-      }
+      };
       await user.stream(stream);
-    };
+    }
 
     access = await user.access({
       type: 'personal',
-      token: cuid(),
+      token: cuid()
     });
     personalToken = access.attrs.token;
     await user.session(personalToken);
@@ -53,32 +53,32 @@ describe('Cache', function() {
     accessesPath = '/' + username + '/accesses/';
     eventsPath = '/' + username + '/events/';
     streamsPath = '/' + username + '/streams/';
-    
+
     const res = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)
-      .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: 'A', level: 'manage'}]});
+      .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: 'A', level: 'manage' }] });
     appAccess = res.body.access;
     assert.exists(appAccess);
   });
 
-  after(async function() {
+  after(async function () {
     await mongoFixtures.clean();
   });
 
-  function validGet(path) { return coreRequest.get(path).set('Authorization', appAccess.token);}
-  function validPost(path) { return coreRequest.post(path).set('Authorization', appAccess.token);}
-  function forbiddenGet(path) {return coreRequest.get(path).set('Authorization', 'whatever');}
+  function validGet (path) { return coreRequest.get(path).set('Authorization', appAccess.token); }
+  function validPost (path) { return coreRequest.post(path).set('Authorization', appAccess.token); }
+  function forbiddenGet (path) { return coreRequest.get(path).set('Authorization', 'whatever'); }
 
   let start, stop;
   before(async () => {
     start = Date.now() / 1000;
     await validGet(eventsPath);
     await validPost(eventsPath)
-      .send({ streamIds: [streamId], type: 'count/generic', content: 2});
+      .send({ streamIds: [streamId], type: 'count/generic', content: 2 });
     stop = Date.now() / 1000;
     await validGet(eventsPath);
     await validGet(eventsPath)
-      .query({streams: ['other']});
+      .query({ streams: ['other'] });
   });
 
   this.beforeEach(() => {
@@ -88,14 +88,14 @@ describe('Cache', function() {
   });
 
   it('[FELT] Second get stream must be faster that first one', async () => {
-    function isEmpty() {
+    function isEmpty () {
       assert.notExists(cache.getStreams(username, 'local'));
       assert.notExists(cache.getAccessLogicForToken(username, appAccess.token));
       assert.notExists(cache.getAccessLogicForId(username, appAccess.id));
       assert.notExists(cache.getUserId(username));
     }
 
-    function isFull() {
+    function isFull () {
       assert.exists(cache.getStreams(username, 'local'));
       assert.exists(cache.getAccessLogicForToken(username, appAccess.token));
       assert.exists(cache.getAccessLogicForId(username, appAccess.id));
@@ -111,55 +111,53 @@ describe('Cache', function() {
       isEmpty();
       const st1 = hrtime();
       const res1 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
-      t1 += hrtime(st1)/loop;
+      t1 += hrtime(st1) / loop;
       assert.equal(res1.status, 200);
 
       isFull();
       const st2 = hrtime();
       const res2 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
-      t2 += hrtime(st2)/loop;
+      t2 += hrtime(st2) / loop;
       assert.equal(res2.status, 200);
     }
-    config.injectTestConfig({caching: {isActive : false }}); // deactivate cache
+    config.injectTestConfig({ caching: { isActive: false } }); // deactivate cache
     cache.clear(); // reset cache fully
 
     let t3 = 0;
     for (let i = 0; i < loop; i++) {
       const st3 = hrtime();
       const res3 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
-      t3 +=  hrtime(st3)/loop;
+      t3 += hrtime(st3) / loop;
       assert.equal(res3.status, 200);
       isEmpty();
     }
-  
+
     const data = `first-with-cache: ${t1}, second-with-cache: ${t2}, no-cache: ${t3}  => `;
-    assert.isBelow(t2,t1, 'second-with-cache streams.get should be faster than first-with-cache' + data);
-    assert.isAbove(t3,t2 * 1.4, 'cache streams.get should be at least 40% longer than second-with-cache ' + data);
+    assert.isBelow(t2, t1, 'second-with-cache streams.get should be faster than first-with-cache' + data);
+    assert.isAbove(t3, t2 * 1.4, 'cache streams.get should be at least 40% longer than second-with-cache ' + data);
   });
 
   it('[XDP6] Cache should reset permissions on stream structure change when moving a stream in and out ', async () => {
-    const res1 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
+    const res1 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({ streams: ['T'] });
     assert.equal(res1.status, 403, 'should fail accessing forbiddden stream');
 
     // move stream T as child of A
-    const res2 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).send({parentId: 'A'});
+    const res2 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).send({ parentId: 'A' });
     assert.equal(res2.status, 200);
 
-    const res3 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
+    const res3 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({ streams: ['T'] });
     assert.equal(res3.status, 200, 'should have access to stream once moved into authorized scope');
 
     // move stream T out of A
-    const res4 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).send({parentId: null});
+    const res4 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).send({ parentId: null });
     assert.equal(res4.status, 200);
 
-    const res5 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({streams: ['T']});
+    const res5 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({ streams: ['T'] });
     assert.equal(res5.status, 403, 'should not have acces once move out of authorized scope');
   });
-
-
 });
 
-function hrtime(hrTime) {
+function hrtime (hrTime) {
   const time = process.hrtime(hrTime);
   if (hrTime == null) return time;
   return time[0] * 1000000000 + time[1];

@@ -5,8 +5,8 @@
  * Proprietary and confidential
  */
 const SQLite3 = require('better-sqlite3');
-const eventSchemas = require('./schemas/events')
-const {createFTSFor } = require('./FullTextSearchDataBase');
+const eventSchemas = require('./schemas/events');
+const { createFTSFor } = require('./FullTextSearchDataBase');
 const events = require('./schemas/events');
 const { Readable } = require('stream');
 
@@ -18,11 +18,11 @@ const DB_OPTIONS = {
 
 const tables = {
   events: events.dbSchema
-}
+};
 
 const ALL_EVENTS_TAG = events.ALL_EVENTS_TAG;
 
-const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25,  25,  50,  50, 100];
+const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25, 25, 50, 50, 100];
 class UserDatabase {
   /**
    * sqlite3 instance
@@ -41,12 +41,12 @@ class UserDatabase {
    * @param {Object} params
    * @param {string} params.dbPath // the file to use as database
    */
-  constructor(logger, params) {
+  constructor (logger, params) {
     this.logger = logger.getLogger('user-database');
     this.db = new SQLite3(params.dbPath, DB_OPTIONS);
   }
 
-  async init() {
+  async init () {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
     this.db.unsafeMode(true);
@@ -85,14 +85,12 @@ class UserDatabase {
     });
 
     // -- create FTS for streamIds on events
-    createFTSFor(this.db, 'events', tables['events'], ['streamIds']);
+    createFTSFor(this.db, 'events', tables.events, ['streamIds']);
 
     this.queryGetTerms = this.db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
-
-
   }
 
-  async updateEvent(eventId, eventData) {
+  async updateEvent (eventId, eventData) {
     const eventForDb = eventSchemas.eventToDB(eventData);
 
     if (eventForDb.streamIds == null) { eventForDb.streamIds = ALL_EVENTS_TAG; }
@@ -110,23 +108,21 @@ class UserDatabase {
       }
     }, 10000);
 
-
     const resultEvent = eventSchemas.eventFromDB(eventForDb);
     return resultEvent;
   }
-
 
   /**
    * Use only during tests or migration
    * Not safe within a multi-process environement
    */
-  createEventSync(event) {
+  createEventSync (event) {
     const eventForDb = eventSchemas.eventToDB(event);
     this.create.events.run(eventForDb);
     this.logger.debug('(sync) CREATE event:' + JSON.stringify(eventForDb));
   }
 
-  async createEvent(event) {
+  async createEvent (event) {
     const eventForDb = eventSchemas.eventToDB(event);
     await this.concurentSafeWriteStatement(() => {
       this.create.events.run(eventForDb);
@@ -134,17 +130,17 @@ class UserDatabase {
     }, 10000);
   }
 
-  getAllActions() {
+  getAllActions () {
     return this.queryGetTerms.all('action-%');
   }
 
-  getAllAccesses() {
+  getAllAccesses () {
     return this.queryGetTerms.all('access-%');
   }
 
-  deleteEvents(params) {
+  deleteEvents (params) {
     const queryString = prepareEventsDeleteQuery(params);
-    this.logger.debug('DELETE events: ' +queryString);
+    this.logger.debug('DELETE events: ' + queryString);
     if (queryString.indexOf('MATCH') > 0) {
       // SQLite does not know how to delete with "MATCH" statement
       // going by the doddgy task of getting events that matches the query and deleteing them one by one
@@ -159,7 +155,7 @@ class UserDatabase {
     return res;
   }
 
-  getEvents(params) {
+  getEvents (params) {
     const queryString = prepareEventsGetQuery(params);
 
     this.logger.debug('GET Events:' + queryString);
@@ -172,14 +168,14 @@ class UserDatabase {
 
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
 
-  getEventsStream(params) {
+  getEventsStream (params) {
     const queryString = prepareEventsGetQuery(params);
     this.logger.debug('GET Events Stream:' + queryString);
 
     const iterateSource = this.db.prepare(queryString).iterate();
 
     const iterateTransform = {
-      next: function() {
+      next: function () {
         const res = iterateSource.next();
         if (res && res.value) {
           res.value = eventSchemas.eventFromDB(res.value);
@@ -188,20 +184,19 @@ class UserDatabase {
       }
     };
 
-    iterateTransform[Symbol.iterator] = function() {
+    iterateTransform[Symbol.iterator] = function () {
       return iterateTransform;
-    }
+    };
 
     return Readable.from(iterateTransform);
   }
 
-  eventsCount() {
+  eventsCount () {
     const res = this.db.prepare('SELECT count(*) as count FROM events').get();
     return res?.count || 0;
   }
 
-
-  close() {
+  close () {
     this.db.close();
   }
 
@@ -209,7 +204,7 @@ class UserDatabase {
    * Will look "retries" times, in case of "SQLITE_BUSY".
    * This is CPU intensive, but tests have shown this solution to be efficient
    */
-  async concurentSafeWriteStatement(statement, retries) {
+  async concurentSafeWriteStatement (statement, retries) {
     for (let i = 0; i < retries; i++) {
       try {
         statement();
@@ -227,13 +222,12 @@ class UserDatabase {
   }
 }
 
-function prepareEventsDeleteQuery(params) {
+function prepareEventsDeleteQuery (params) {
   if (params.streams) { throw new Error('events DELETE with stream query not supported yet: ' + JSON.stringify(params)); }
   return 'DELETE FROM events ' + prepareQuery(params, true);
 }
 
-
-function prepareEventsGetQuery(params) {
+function prepareEventsGetQuery (params) {
   return 'SELECT * FROM events_fts ' + prepareQuery(params);
 }
 
@@ -270,19 +264,18 @@ const converters = {
         const classOnly = typeCorced.substring(0, starPos);
         return `type LIKE ${classOnly}%'`;
       }
-      return `type = ${typeCorced}`
+      return `type = ${typeCorced}`;
     });
-    return '('+ lt.join(' OR ') + ')';
+    return '(' + lt.join(' OR ') + ')';
   },
   streamsQuery: (content) => {
     const str = toSQLiteQuery(content);
     if (str === null) return null;
     return 'streamIds MATCH \'' + str + '\'';
   }
-}
+};
 
-
-function prepareQuery(params = {}, isDelete = false) {
+function prepareQuery (params = {}, isDelete = false) {
   const ands = [];
 
   for (const item of params.query) {
@@ -294,10 +287,10 @@ function prepareQuery(params = {}, isDelete = false) {
 
   let queryString = '';
   if (ands.length > 0) {
-    queryString += ' WHERE ' + ands.join(' AND ') ;
+    queryString += ' WHERE ' + ands.join(' AND ');
   }
 
-  if (! isDelete) {
+  if (!isDelete) {
     if (params.options?.sort) {
       const sorts = [];
       for (const [field, order] of Object.entries(params.options.sort)) {
@@ -317,6 +310,5 @@ function prepareQuery(params = {}, isDelete = false) {
   }
   return queryString;
 }
-
 
 module.exports = UserDatabase;

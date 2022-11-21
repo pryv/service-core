@@ -4,71 +4,86 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const influx = require('influx');
 const { getLogger } = require('@pryv/boiler');
-
-import type {IPoint}  from 'influx';
-
 /** Connection to the influx database. Adds error handling and logging on top
- * of our database driver. 
+ * of our database driver.
  */
 class InfluxConnection {
-  conn: influx.InfluxDB; 
-  logger; 
-  
-  constructor(connectionSettings: ISingleHostConfig) {
+  conn;
+
+  logger;
+  constructor (connectionSettings) {
     this.conn = new influx.InfluxDB(connectionSettings);
-    this.logger = getLogger('influx'); 
+    this.logger = getLogger('influx');
   }
-  
-  createDatabase(name: string): Promise<*> {
+
+  /**
+ * @param {string} name
+       * @returns {Promise<any>}
+       */
+  createDatabase (name) {
     this.logger.debug(`Creating database ${name}.`);
     return this.conn.createDatabase(name);
   }
-  
-  dropDatabase(name: string): Promise<void> {
+
+  /**
+ * @param {string} name
+       * @returns {Promise<void>}
+       */
+  dropDatabase (name) {
     this.logger.debug(`Dropping database ${name}.`);
     return this.conn.dropDatabase(name);
   }
-  
-  writeMeasurement(
-    name: string, 
-    points: Array<IPoint>, 
-    options?: IWriteOptions
-  ): Promise<void> 
-  {
+
+  /**
+ * @param {string} name
+       * @param {Array<IPoint>} points
+       * @param {IWriteOptions} options
+       * @returns {Promise<void>}
+       */
+  writeMeasurement (name, points, options) {
     this.logger.debug(`Write -> ${name}: ${points.length} points.`);
     return this.conn.writeMeasurement(name, points, options);
   }
 
-  dropMeasurement(
-    name: string,
-    dbName: string
-  ): Promise<void> {
+  /**
+ * @param {string} name
+       * @param {string} dbName
+       * @returns {Promise<void>}
+       */
+  dropMeasurement (name, dbName) {
     this.logger.debug(`Drop -> measurement: ${name} on dbName ${dbName}`, this.logger);
     return this.conn.dropMeasurement(name, dbName);
   }
-  
-  writePoints(points: Array<IPoint>, options?: IWriteOptions): Promise<void> {
+
+  /**
+ * @param {Array<IPoint>} points
+       * @param {IWriteOptions} options
+       * @returns {Promise<void>}
+       */
+  writePoints (points, options) {
     this.logger.debug(`Write -> (multiple): ${points.length} points.`);
     return this.conn.writePoints(points, options);
   }
-  
-  query(query: string, options?: IQueryOptions): Promise<IResults> {
+
+  /**
+ * @param {string} query
+       * @param {IQueryOptions} options
+       * @returns {Promise<any>}
+       */
+  query (query, options) {
     const singleLine = query.replace(/\s+/g, ' ');
-    this.logger.debug(`Query: ${singleLine}`); 
-    
-    return this.conn.query(query, options); 
+    this.logger.debug(`Query: ${singleLine}`);
+    return this.conn.query(query, options);
   }
 
   /**
-   * used for tests, Returns an array of database names
-   */
-  getDatabases(): Promise<Array<string>> {
+     * used for tests, Returns an array of database names
+       * @returns {Promise<string[]>}
+       */
+  getDatabases () {
     return this.conn.getDatabaseNames();
   }
 }
-
-module.exports = InfluxConnection; 
+module.exports = InfluxConnection;

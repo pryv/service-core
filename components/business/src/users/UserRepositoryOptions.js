@@ -5,8 +5,7 @@
  * Proprietary and confidential
  */
 
-
 module.exports = {
   SYSTEM_USER_ACCESS_ID: 'system',
-  ACCESS_TYPE_PERSONAL: 'personal',
+  ACCESS_TYPE_PERSONAL: 'personal'
 };

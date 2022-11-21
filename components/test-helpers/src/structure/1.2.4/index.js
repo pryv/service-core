@@ -10,24 +10,24 @@ module.exports = {
   indexes: {
     events: [
       {
-        index: {time: 1},
+        index: { time: 1 },
         options: {}
       },
       {
-        index: {streamId: 1},
+        index: { streamId: 1 },
         options: {}
       },
       {
-        index: {tags: 1},
+        index: { tags: 1 },
         options: {}
       },
       // no index by content until we have more actual usage feedback
       {
-        index: {trashed: 1},
+        index: { trashed: 1 },
         options: {}
       },
       {
-        index: {modified: 1},
+        index: { modified: 1 },
         options: {}
       }
     ]

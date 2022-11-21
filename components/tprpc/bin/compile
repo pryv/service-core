@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
-// @flow
-
-// Compiles the protobuf code in the file referenced and outputs a series of 
-// interfaces that describe the messages to a .js file in the same directory. 
-// 
-// Usage: 
+// Compiles the protobuf code in the file referenced and outputs a series of
+// interfaces that describe the messages to a .js file in the same directory.
+//
+// Usage:
 //    bin/compile FILE
 
 const path = require('path');
@@ -13,13 +11,13 @@ const rpc = require('tprpc');
 
 async function compile(sourcePath) {
   const source = path.parse(sourcePath);
-  
+
   const definition = await rpc.load(sourcePath);
-    
+
   definition.writeTypeSignature(source.name + '.js', source.dir);
 }
 
 compile(process.argv[2])
   .catch(err => {
     console.error(err);
-  }); 
+  });

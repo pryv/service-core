@@ -26,13 +26,13 @@ const subResourceCodeToDigestMap = {
   sha512: 'SHA-512',
   sha1: 'SHA',
   md5: 'MD5'
-}
+};
 
 /**
  * @param {string} subResourceIntegrity in the form of `<algo>-<hash>` example `sha256-uZKmWZ+CQ7UY3GUqFWD4sNPPEUKm8OPcAWr4780Acnk=`
  * @returns {string} An HTTP Digest header value in the form of `<algo>=<hash>` example `SHA-256=uZKmWZ+CQ7UY3GUqFWD4sNPPEUKm8OPcAWr4780Acnk=`
  */
-function getHTTPDigestHeaderForAttachment(subResourceIntegrity) {
+function getHTTPDigestHeaderForAttachment (subResourceIntegrity) {
   const splitAt = subResourceIntegrity.indexOf('-');
   const algo = subResourceIntegrity.substr(0, splitAt);
   const sum = subResourceIntegrity.substr(splitAt + 1);
@@ -51,8 +51,7 @@ const attachments = {
   isActive: attachmentsIsActive,
   getHTTPDigestHeaderForAttachment,
   MulterIntegrityDiskStorage: require('./MulterIntegrityDiskStorage')
-}
-
+};
 
 // ----------------- standard db Items -------------- //
 
@@ -97,21 +96,21 @@ const attachments = {
 
 // ------------- events ------------------ //
 
-function computeEvent(event) {
+function computeEvent (event) {
   return stableRepresentation.event.compute(event, algorithm);
 }
 
-function keyEvent(event) {
+function keyEvent (event) {
   return stableRepresentation.event.key(event);
 }
 
-function hashEvent(event) {
+function hashEvent (event) {
   return stableRepresentation.event.hash(event, algorithm);
 }
 
-function setOnEvent(event) {
+function setOnEvent (event) {
   delete event.integrity;
-  if (! eventsIsActive) return;
+  if (!eventsIsActive) return;
   event.integrity = hashEvent(event);
   return event;
 }
@@ -125,24 +124,24 @@ const events = {
   key: keyEvent,
   hash: hashEvent,
   set: setOnEvent
-}
+};
 
 // ------------- accesses ------------------ //
 
-function computeAccess(access) {
+function computeAccess (access) {
   return stableRepresentation.access.compute(access, algorithm);
 }
 
-function keyAccess(access) {
+function keyAccess (access) {
   return stableRepresentation.access.key(access);
 }
 
-function hashAccess(access) {
+function hashAccess (access) {
   return stableRepresentation.access.hash(access, algorithm);
 }
 
-function setOnAccess(access) {
-  if (! accessesIsActive) return;
+function setOnAccess (access) {
+  if (!accessesIsActive) return;
   access.integrity = hashAccess(access);
   return access;
 }
@@ -156,7 +155,7 @@ const accesses = {
   key: keyAccess,
   hash: hashAccess,
   set: setOnAccess
-}
+};
 
 // ------- Exports ---------- //
 
@@ -170,9 +169,8 @@ const integrity = {
   events,
   accesses,
   attachments,
-  algorithm,
-}
-
+  algorithm
+};
 
 // config check
 // output message and crash if algorythm is not supported

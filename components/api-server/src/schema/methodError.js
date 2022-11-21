@@ -14,21 +14,21 @@ module.exports = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    'id': {
+    id: {
       type: 'string'
     },
-    'message': {
+    message: {
       type: 'string'
     },
-    'data': {
+    data: {
       type: ['string', 'object', 'array']
     },
-    'subErrors': {
+    subErrors: {
       type: 'array',
       items: {
-        '$ref': '#error'
+        $ref: '#error'
       }
     }
   },
-  required: [ 'id', 'message' ]
+  required: ['id', 'message']
 };

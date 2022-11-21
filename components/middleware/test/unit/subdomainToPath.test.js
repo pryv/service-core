@@ -4,27 +4,20 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const supertest = require('supertest');
 const express = require('express');
 const should = require('should');
-
-const subdomainToPath = require('middleware/src/subdomainToPath')([]); 
-
+const subdomainToPath = require('middleware/src/subdomainToPath')([]);
 /* globals describe, it */
-
-describe('subdomainToPath middleware', function() {
+describe('subdomainToPath middleware', function () {
   describe('using a minimal application', function () {
-    const app = express(); 
+    const app = express();
     const request = supertest(app);
-    
     app.use(subdomainToPath);
-    app.get('*', (req: express$Request, res) => {
-      res.json({path: req.path});
+    app.get('*', (req, res) => {
+      res.json({ path: req.path });
     });
-    
-    function ok(host: string, path: string): Promise<any> {
+    function ok (host, path) {
       return request
         .get('/path')
         .set('Host', host)
@@ -33,7 +26,6 @@ describe('subdomainToPath middleware', function() {
           should(res.body.path).be.eql(path + '/path');
         });
     }
-    
     it('[V0R9] should not transform illegal usernames', function () {
       return ok('user/name.pryv.li', '');
     });

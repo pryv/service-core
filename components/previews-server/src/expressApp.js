@@ -4,44 +4,34 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const express = require('express');
 const middleware = require('middleware');
 const bodyParser = require('body-parser');
-
-type AppAndEndWare = {
-  expressApp: express$Application, 
-  routesDefined: () => mixed, 
-}
-
 /**
  * The Express app definition.
  */
-module.exports = function expressApp(
-  commonHeadersMiddleware: express$Middleware,
-  errorsMiddleware: express$Middleware,
-  requestTraceMiddleware: express$Middleware
-): AppAndEndWare {
+module.exports = function expressApp (commonHeadersMiddleware, errorsMiddleware, requestTraceMiddleware) {
   const app = express();
-
   /** Called once routes are defined on app, allows finalizing middleware stack
-   * with things like error handling.
-   **/
+     * with things like error handling.
+     **/
   function routesDefined () {
     app.use(errorsMiddleware);
   }
-
   app.disable('x-powered-by');
-
   app.use(middleware.subdomainToPath([]));
-
   app.use(requestTraceMiddleware);
   app.use(bodyParser.json());
   app.use(commonHeadersMiddleware);
-
   return {
     expressApp: app,
-    routesDefined: routesDefined,
+    routesDefined
   };
 };
+
+/**
+ * @typedef {{
+ *   expressApp: express$Application;
+ *   routesDefined: () => unknown;
+ * }} AppAndEndWare
+ */

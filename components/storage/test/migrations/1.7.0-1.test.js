@@ -8,7 +8,7 @@
  * Tests data migration between versions.
  */
 
-/*global describe, it, assert */
+/* global describe, it, assert */
 
 const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');
@@ -21,12 +21,11 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getLogger } = require('@pryv/boiler');
 const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 
-const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
+const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 
 const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
 
-
-describe('Migration - 1.7.x',function () {
+describe('Migration - 1.7.x', function () {
   this.timeout(20000);
 
   let eventsCollection;
@@ -35,7 +34,7 @@ describe('Migration - 1.7.x',function () {
   let accessesCollection;
   let webhooksCollection;
 
-  before(async function() {
+  before(async function () {
     eventsCollection = await database.getCollection({ name: 'events' });
     usersCollection = await database.getCollection({ name: 'users' });
     streamsCollection = await database.getCollection({ name: 'streams' });
@@ -43,7 +42,7 @@ describe('Migration - 1.7.x',function () {
     webhooksCollection = await database.getCollection({ name: 'webhooks' });
   });
 
-  after(async function() {
+  after(async function () {
     // erase all
     await eventsCollection.deleteMany({});
     await accessesCollection.deleteMany({});
@@ -95,15 +94,13 @@ describe('Migration - 1.7.x',function () {
           assert.isFalse(streamId.startsWith(DOT), `streamId ${streamId} of event ${event} starts with a dot when it should not.`);
         }
         for (const uniqueProp of uniqueProperties) {
-          assert.notExists(event[uniqueProp + UNIQUE_SUFFIX], `unique property `)
+          assert.notExists(event[uniqueProp + UNIQUE_SUFFIX], 'unique property ');
         }
       }
-
     }
 
     const migratedIndexes = await bluebird.fromCallback(cb => eventsCollection.listIndexes({}).toArray(cb));
     compareIndexes(newIndexes.events, migratedIndexes);
-
 
     // ----------------- tag migrations
     const eventsWithTags = await eventsCollection.find({ tags: { $exists: true, $ne: [] } }).toArray();
@@ -115,34 +112,31 @@ describe('Migration - 1.7.x',function () {
         assert.include(newEvent.streamIds, TAG_PREFIX + tag);
       }
       // check if stream exists for this user
-      const stream = await streamsCollection.findOne({userId: event.userId, streamId: TAG_PREFIX + tag});
+      const stream = await streamsCollection.findOne({ userId: event.userId, streamId: TAG_PREFIX + tag });
       assert.exists(stream);
       assert.equal(stream.parentId, TAG_ROOT_STREAMID);
     }
 
-    //-- permissions
+    // -- permissions
     const permissionsWithTags = await accessesCollection.find({ 'permissions.tag': { $exists: true } }).toArray();
     assert.equal(permissionsWithTags.length, 0);
 
     for (const previousAccess of previousAccessesWithTags) {
-
       const newAccess = await accessesCollection.findOne({ _id: previousAccess._id });
-      const forcedStreamsPerms = newAccess.permissions.filter(p => ( p.feature && p.feature == 'forcedStreams'));
+      const forcedStreamsPerms = newAccess.permissions.filter(p => (p.feature && p.feature == 'forcedStreams'));
       assert.equal(forcedStreamsPerms.length, 1);
       const forcedStreams = forcedStreamsPerms[0].streams;
       assert.isAbove(forcedStreams.length, 0);
       for (const permission of previousAccess.permissions) {
-        if (permission.tag)
-          assert.include(forcedStreams, TAG_PREFIX + permission.tag);
+        if (permission.tag) { assert.include(forcedStreams, TAG_PREFIX + permission.tag); }
       }
     }
-
 
     // -----------------  deleted  migrations
 
     for (const collection of collectionsWithDelete) {
       const newItems = await collection.find({ deleted: { $type: 'date' } }).toArray();
-      assert.equal(newItems.length, 0, collection.namespace + ' should have no item with deleted dates' );
+      assert.equal(newItems.length, 0, collection.namespace + ' should have no item with deleted dates');
 
       for (const previousItem of previousItemsWithDelete[collection.namespace]) {
         const newItem = await collection.findOne({ _id: previousItem._id });
@@ -150,5 +144,4 @@ describe('Migration - 1.7.x',function () {
       }
     }
   });
-
 });

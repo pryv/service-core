@@ -21,23 +21,23 @@ const boolean = helpers.boolean;
  */
 exports = module.exports = function (action) {
   // read items === stored items
-  if (action === Action.STORE){
+  if (action === Action.STORE) {
     action = Action.READ;
   }
 
   const schema = object({
-    'id': string(),
-    'time': number(),
-    'duration': number({nullable: true}),
-    'streamId': string(),
-    'streamIds': array(string(), { nullable: false, minItems: 1 }),
-    'tags': array(string(), {nullable: true}),
-    'type': string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
-    'content': {},
-    'description': string({nullable: true}),
-    'clientData': object({}, {nullable: true}),
-    'trashed': boolean({nullable: true}),
-    'integrity': string({nullable: true}),
+    id: string(),
+    time: number(),
+    duration: number({ nullable: true }),
+    streamId: string(),
+    streamIds: array(string(), { nullable: false, minItems: 1 }),
+    tags: array(string(), { nullable: true }),
+    type: string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
+    content: {},
+    description: string({ nullable: true }),
+    clientData: object({}, { nullable: true }),
+    trashed: boolean({ nullable: true }),
+    integrity: string({ nullable: true })
   }, {
     id: helpers.getTypeURI('event', action),
     additionalProperties: false
@@ -55,7 +55,7 @@ exports = module.exports = function (action) {
     schema.properties.id.pattern = '^c[a-z0-9-]{24}$';
     // only allow "files" (raw file data) on create; no further checks as it's
     // created internally
-    schema.properties.files = array(object({})); 
+    schema.properties.files = array(object({}));
   }
 
   // forbid attachments except on read and update (ignored for the latter)
@@ -71,11 +71,11 @@ exports = module.exports = function (action) {
   switch (action) {
     case Action.READ:
       schema.required = ['id', 'streamId', 'streamIds', 'time', 'type',
-        'created', 'createdBy', 'modified', 'modifiedBy' ];
+        'created', 'createdBy', 'modified', 'modifiedBy'];
       break;
     case Action.CREATE:
-      schema.required = [ 'type' ];
-      schema.anyOf = [{required: ['streamId']}, {required: ['streamIds']}];
+      schema.required = ['type'];
+      schema.anyOf = [{ required: ['streamId'] }, { required: ['streamIds'] }];
       break;
   }
 
@@ -90,6 +90,6 @@ exports.attachments = array(object({
   readToken: string(),
   integrity: string()
 }, {
-  required: [ 'id', 'fileName', 'type', 'size', 'readToken' ],
+  required: ['id', 'fileName', 'type', 'size', 'readToken'],
   additionalProperties: false
 }));

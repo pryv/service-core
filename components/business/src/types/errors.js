@@ -4,15 +4,15 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
-/** Error thrown when the coercion of a value into a type fails. 
+/** Error thrown when the coercion of a value into a type fails.
  */
-class InputTypeError extends Error { }
-module.exports.InputTypeError = InputTypeError; 
-
+class InputTypeError extends Error {
+}
+module.exports.InputTypeError = InputTypeError;
 /** Error thrown when you try to `TypeRepository#lookup` a type that doesn't
- * exist in Pryv. 
+ * exist in Pryv.
+ * @extends Error
  */
-class TypeDoesNotExistError extends Error { } 
-module.exports.TypeDoesNotExistError = TypeDoesNotExistError; 
+class TypeDoesNotExistError extends Error {
+}
+module.exports.TypeDoesNotExistError = TypeDoesNotExistError;

@@ -5,15 +5,13 @@
  * Proprietary and confidential
  */
 
- const platform = require('./Platform');
+const platform = require('./Platform');
 
- async function getPlatform () {
-   return await platform.init();
- }
- 
- module.exports = { 
+async function getPlatform () {
+  return await platform.init();
+}
+
+module.exports = {
   platform,
   getPlatform
- }
-
-
+};

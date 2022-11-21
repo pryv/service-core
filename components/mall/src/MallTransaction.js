@@ -16,12 +16,12 @@ class MallTransaction {
    */
   storeTransactions;
 
-  constructor(mall) {
+  constructor (mall) {
     this.mall = mall;
     this.storeTransactions = new Map();
   }
 
-  async getStoreTransaction(storeId) {
+  async getStoreTransaction (storeId) {
     if (this.storeTransactions.has(storeId)) {
       return this.storeTransactions.get(storeId);
     }

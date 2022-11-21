@@ -4,70 +4,75 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const path = require('path');
 require('@pryv/boiler').init({
   appName: 'webhooks',
   baseConfigDir: path.resolve(__dirname, '../config/'),
-  extraConfigs: [{
-    scope: 'serviceInfo',
-    key: 'service',
-    urlFromKey: 'serviceInfoUrl'
-  },{
-    plugin: require('api-server/config/components/systemStreams')
-  }]
+  extraConfigs: [
+    {
+      scope: 'serviceInfo',
+      key: 'service',
+      urlFromKey: 'serviceInfoUrl'
+    },
+    {
+      plugin: require('api-server/config/components/systemStreams')
+    }
+  ]
 });
-
-const {getConfig, getLogger} = require('@pryv/boiler');
-
+const { getConfig, getLogger } = require('@pryv/boiler');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-
 const assert = require('assert');
-
 const storage = require('storage');
-
 const services = {
-  WebhooksService: require('./service'),
+  WebhooksService: require('./service')
 };
 
 class Application {
   logger;
+
   settings;
 
-  webhooksService: services.WebhooksService;
-
-  async setup() {
+  webhooksService;
+  /**
+ * @returns {Promise<void>}
+ */
+  async setup () {
     await this.initSettings();
     this.initLogger();
-
     assert(this.logger != null);
     assert(this.settings != null);
     this.logger.debug('setup done');
   }
 
-  async initSettings() {
+  /**
+ * @returns {Promise<void>}
+ */
+  async initSettings () {
     this.settings = await getConfig();
     await SystemStreamsSerializer.init();
   }
-  initLogger() {
+
+  /**
+ * @returns {void}
+ */
+  initLogger () {
     this.logger = getLogger('application');
   }
 
-  async run() {
+  /**
+ * @returns {Promise<void>}
+ */
+  async run () {
     const logger = this.logger;
-
     logger.info('Webhooks service is mounting services');
     const settings = this.settings;
-
     // Connect to MongoDB
-    const storageLayer = await storage.getStorageLayer()
-
+    const storageLayer = await storage.getStorageLayer();
     // Construct the service
     const service = new services.WebhooksService({
       storage: storageLayer,
       logger: getLogger('webhooks_service'),
-      settings: settings
+      settings
     });
     this.webhooksService = service;
     logger.info('run() done');
@@ -75,9 +80,11 @@ class Application {
     await service.start();
   }
 
-  stop(): void {
+  /**
+ * @returns {void}
+ */
+  stop () {
     return this.webhooksService.stop();
   }
-
 }
 module.exports = Application;

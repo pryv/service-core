@@ -8,11 +8,11 @@
  * JSON Schema specification of methods data for user information.
  */
 
-var Action = require('./Action'),
-    helpers = require('./helpers'),
-    user = require('./user')(Action.READ);
+const Action = require('./Action');
+const helpers = require('./helpers');
+const user = require('./user')(Action.READ);
 
-var accountDetails = helpers.object({
+const accountDetails = helpers.object({
   username: user.properties.username,
   email: user.properties.email,
   language: user.properties.language,
@@ -41,7 +41,7 @@ module.exports = {
       update: helpers.object({
         email: helpers.email,
         language: helpers.language
-      }, {additionalProperties: false})
+      }, { additionalProperties: false })
     }, {
       required: ['update']
     }),
@@ -60,10 +60,10 @@ module.exports = {
         maxLength: 100
       })
     }, {
-      required: [ 'oldPassword', 'newPassword' ],
+      required: ['oldPassword', 'newPassword'],
       additionalProperties: false
     }),
-    result: helpers.object({}, {additionalProperties: false})
+    result: helpers.object({}, { additionalProperties: false })
   },
 
   requestPasswordReset: {
@@ -73,7 +73,7 @@ module.exports = {
     }, {
       required: ['appId']
     }),
-    result: helpers.object({}, {additionalProperties: false})
+    result: helpers.object({}, { additionalProperties: false })
   },
 
   resetPassword: {
@@ -86,8 +86,8 @@ module.exports = {
         maxLength: 100
       })
     }, {
-      required: [ 'appId', 'resetToken', 'newPassword' ]
+      required: ['appId', 'resetToken', 'newPassword']
     }),
-    result: helpers.object({}, {additionalProperties: false})
+    result: helpers.object({}, { additionalProperties: false })
   }
 };

@@ -64,44 +64,44 @@ const NOT_AUDITED_METHODS = [
   'system.getUserInfo',
   'auth.usernameCheck',
   'auth.emailCheck',
-  'system.checkPlatformIntegrity',
+  'system.checkPlatformIntegrity'
 ];
 
-const AUDITED_METHODS = ALL_METHODS.filter(m => ! NOT_AUDITED_METHODS.includes(m));
+const AUDITED_METHODS = ALL_METHODS.filter(m => !NOT_AUDITED_METHODS.includes(m));
 
 // doesnt include non-audited ones
 const WITHOUT_USER_METHODS = [
   'auth.register',
   'system.createUser',
-  'system.deactivateMfa',
+  'system.deactivateMfa'
 ];
 
-const WITH_USER_METHODS = AUDITED_METHODS.filter(m => ! WITHOUT_USER_METHODS.includes(m));
+const WITH_USER_METHODS = AUDITED_METHODS.filter(m => !WITHOUT_USER_METHODS.includes(m));
 
 const allMethodsMap = buildMap(ALL_METHODS);
 
-function throwIfMethodIsNotDeclared(methodId) {
+function throwIfMethodIsNotDeclared (methodId) {
   if (methodId.includes('*')) return; // including to register for wildcards such as "followedSlices.*", or "*"
   if (allMethodsMap[methodId]) return;
-  throw new Error('Attempting to add a method not declared in audit, methodId: "' + methodId + '". Please add it to components/audit/src/ApiMethods.js#ALL_METHODS')
+  throw new Error('Attempting to add a method not declared in audit, methodId: "' + methodId + '". Please add it to components/audit/src/ApiMethods.js#ALL_METHODS');
 }
 
 module.exports = {
-  AUDITED_METHODS: AUDITED_METHODS,
+  AUDITED_METHODS,
   AUDITED_METHODS_MAP: buildMap(AUDITED_METHODS),
-  ALL_METHODS: ALL_METHODS,
+  ALL_METHODS,
   ALL_METHODS_MAP: allMethodsMap,
-  WITHOUT_USER_METHODS: WITHOUT_USER_METHODS,
+  WITHOUT_USER_METHODS,
   WITHOUT_USER_METHODS_MAP: buildMap(WITHOUT_USER_METHODS),
-  WITH_USER_METHODS: WITH_USER_METHODS,
-  throwIfMethodIsNotDeclared,
+  WITH_USER_METHODS,
+  throwIfMethodIsNotDeclared
 };
 
 /**
  * Builds a map with an { i => true } entry for each array element
- * @param {Array<*>} array 
+ * @param {Array<*>} array
  */
-function buildMap(array) {
+function buildMap (array) {
   const map = {};
   array.forEach(i => {
     map[i] = true;

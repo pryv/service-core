@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, beforeEach, after, it */
+/* global describe, before, beforeEach, after, it */
 
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
@@ -36,7 +36,7 @@ describe('Versioning', function () {
   const user = Object.assign({}, testData.users[0]);
   let request = null;
 
-  function pathToEvent(eventId) {
+  function pathToEvent (eventId) {
     let resPath = '/' + user.username + '/events';
     if (eventId) {
       resPath += '/' + eventId;
@@ -44,7 +44,7 @@ describe('Versioning', function () {
     return resPath;
   }
 
-  function pathToStream(streamId) {
+  function pathToStream (streamId) {
     let resPath = '/' + user.username + '/streams';
     if (streamId) {
       resPath += '/' + streamId;
@@ -90,10 +90,8 @@ describe('Versioning', function () {
   const childStream = normalStream.children[0];
 
   describe('Events', function () {
-
     it('[RWIA] must not return history when calling events.get', function (done) {
-
-      const queryParams = {limit: 100};
+      const queryParams = { limit: 100 };
 
       request.get(pathToEvent(null)).query(queryParams).end(function (res) {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
@@ -112,7 +110,6 @@ describe('Versioning', function () {
     });
 
     describe('deletionMode', function () {
-
       beforeEach(testData.resetEvents);
 
       it('[FLLW] must delete the event\'s history when deleting it with deletionMode=keep-nothing',
@@ -122,7 +119,7 @@ describe('Versioning', function () {
 
           async.series([
             server.ensureStarted.bind(server, settings),
-            function deleteEvent(stepDone) {
+            function deleteEvent (stepDone) {
               request.del(pathToEvent(trashedEventWithHistory.id)).end(function (res) {
                 validation.check(res, {
                   status: 200,
@@ -132,8 +129,8 @@ describe('Versioning', function () {
                 stepDone();
               });
             },
-            async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
-              const events = await mall.events.get(user.id, {id: trashedEventWithHistory.id, state: 'all', withDeletions: true, includeHistory: true})
+            async function findDeletionInStorageAndCheckThatHistoryIsDeleted () {
+              const events = await mall.events.get(user.id, { id: trashedEventWithHistory.id, state: 'all', withDeletions: true, includeHistory: true });
               events.length.should.be.eql(1); // only the event itself not the history
               events[0].id.should.eql(trashedEventWithHistory.id);
               should.exist(events[0].deleted);
@@ -148,7 +145,7 @@ describe('Versioning', function () {
 
           async.series([
             server.ensureStarted.bind(server, settings),
-            function deleteEvent(stepDone) {
+            function deleteEvent (stepDone) {
               request.del(pathToEvent(trashedEventWithHistory.id)).end(function (res) {
                 validation.check(res, {
                   status: 200,
@@ -157,9 +154,9 @@ describe('Versioning', function () {
                 stepDone();
               });
             },
-            async function findDeletionInStorageAndCheckThatHistoryIsDeleted() {
-              const events = await mall.events.get(user.id,{id: trashedEventWithHistory.id, state: 'all', withDeletions: true});
-              const eventHistory = await mall.events.get(user.id,{headId: trashedEventWithHistory.id, state: 'all', withDeletions: true})
+            async function findDeletionInStorageAndCheckThatHistoryIsDeleted () {
+              const events = await mall.events.get(user.id, { id: trashedEventWithHistory.id, state: 'all', withDeletions: true });
+              const eventHistory = await mall.events.get(user.id, { headId: trashedEventWithHistory.id, state: 'all', withDeletions: true });
               events.push(...eventHistory);
 
               events.length.should.be.eql(3);
@@ -192,63 +189,61 @@ describe('Versioning', function () {
 
       it('[1DBC] must not modify the event\'s history when deleting it with ' +
         'deletionMode=keep-everything',
-        function (done) {
-          const settings = _.cloneDeep(helpers.dependencies.settings);
-          settings.versioning.deletionMode = 'keep-everything';
+      function (done) {
+        const settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.versioning.deletionMode = 'keep-everything';
 
-          async.series([
-            server.ensureStarted.bind(server, settings),
-            function deleteEvent(stepDone) {
-              request.del(pathToEvent(trashedEventWithHistory.id)).end(function (res) {
-                validation.check(res, {
-                  status: 200,
-                  schema: eventsMethodsSchema.del.result
-                });
-                stepDone();
+        async.series([
+          server.ensureStarted.bind(server, settings),
+          function deleteEvent (stepDone) {
+            request.del(pathToEvent(trashedEventWithHistory.id)).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: eventsMethodsSchema.del.result
               });
-            },
-            async function verifyDeletedHeadInStory() {
-              const  event = await mall.events.getOne(user.id, trashedEventWithHistory.id);
-              should.exist(event);
-              const expected = _.cloneDeep(trashedEventWithHistory);
-              delete expected.streamId;
-              // this comes from the storage .. no need to test tags
-              delete expected.tags;
-              expected.deleted = event.deleted;
-              integrity.events.set(expected);
-              event.should.eql(expected);
+              stepDone();
+            });
+          },
+          async function verifyDeletedHeadInStory () {
+            const event = await mall.events.getOne(user.id, trashedEventWithHistory.id);
+            should.exist(event);
+            const expected = _.cloneDeep(trashedEventWithHistory);
+            delete expected.streamId;
+            // this comes from the storage .. no need to test tags
+            delete expected.tags;
+            expected.deleted = event.deleted;
+            integrity.events.set(expected);
+            event.should.eql(expected);
+          },
+          async function checkThatHistoryIsUnchanged () {
+            const eventHistory = await mall.events.get(user.id, { headId: trashedEventWithHistory.id, state: 'all', withDeletions: true });
 
-            },
-            async function checkThatHistoryIsUnchanged() {
-              let eventHistory = await mall.events.get(user.id, {headId: trashedEventWithHistory.id, state: 'all', withDeletions: true});
-
-              // TODO clean this test
-              const checked = {first: false, second: false};
-              (eventHistory.length).should.eql(2);
-              eventHistory.forEach(function (event) {
-                if (event.id === testData.events[20].id) {
-                  const expected = _.cloneDeep(testData.events[20]);
-                  delete expected.tags;// this comes from the storage .. no need to test tags
-                  event.should.eql(expected);
-                  checked.first = true;
-                } else if (event.id === testData.events[21].id) {
-                  const expected = _.cloneDeep(testData.events[21]);
-                  delete expected.tags;// this comes from the storage .. no need to test tags
-                  event.should.eql(expected);
-                  checked.second = true;
-                }
-              });
-              checked.should.eql({first: true, second: true});
-            }
-          ], done);
-        });
+            // TODO clean this test
+            const checked = { first: false, second: false };
+            (eventHistory.length).should.eql(2);
+            eventHistory.forEach(function (event) {
+              if (event.id === testData.events[20].id) {
+                const expected = _.cloneDeep(testData.events[20]);
+                delete expected.tags;// this comes from the storage .. no need to test tags
+                event.should.eql(expected);
+                checked.first = true;
+              } else if (event.id === testData.events[21].id) {
+                const expected = _.cloneDeep(testData.events[21]);
+                delete expected.tags;// this comes from the storage .. no need to test tags
+                event.should.eql(expected);
+                checked.second = true;
+              }
+            });
+            checked.should.eql({ first: true, second: true });
+          }
+        ], done);
+      });
     });
 
     describe('events.getOne', function () {
-
       it('[YRI7] must not return an event\'s history when calling getOne with includeHistory flag off',
         function (done) {
-          request.get(pathToEvent(eventWithHistory.id)).query({includeHistory: false}).end(
+          request.get(pathToEvent(eventWithHistory.id)).query({ includeHistory: false }).end(
             function (res) {
               validation.check(res, {
                 status: 200,
@@ -262,7 +257,7 @@ describe('Versioning', function () {
 
       it('[KPQZ] must return an event\'s history when calling getOne with includeHistory flag on',
         function (done) {
-          request.get(pathToEvent(eventWithHistory.id)).query({includeHistory: true}).end(
+          request.get(pathToEvent(eventWithHistory.id)).query({ includeHistory: true }).end(
             function (res) {
               validation.check(res, {
                 status: 200,
@@ -277,7 +272,6 @@ describe('Versioning', function () {
     });
 
     describe('forceKeepHistory is OFF', function () {
-
       before(function (done) {
         const settings = _.cloneDeep(helpers.dependencies.settings);
         settings.versioning.forceKeepHistory = false;
@@ -300,8 +294,8 @@ describe('Versioning', function () {
               stepDone();
             });
           },
-          function callGetOne(stepDone) {
-            request.get(pathToEvent(eventWithNoHistory.id)).query({includeHistory: true}).end(
+          function callGetOne (stepDone) {
+            request.get(pathToEvent(eventWithNoHistory.id)).query({ includeHistory: true }).end(
               function (res) {
                 validation.check(res, {
                   status: 200,
@@ -317,7 +311,6 @@ describe('Versioning', function () {
     });
 
     describe('forceKeepHistory is ON', function () {
-
       beforeEach(testData.resetEvents);
 
       before(function (done) {
@@ -333,7 +326,7 @@ describe('Versioning', function () {
           content: 'first updated content'
         };
         async.series([
-          function updateEventOnce(stepDone) {
+          function updateEventOnce (stepDone) {
             request.put(pathToEvent(eventWithNoHistory.id)).send(updateData).end(function (res) {
               validation.check(res, {
                 status: 200,
@@ -342,7 +335,7 @@ describe('Versioning', function () {
               stepDone();
             });
           },
-          function updateEventTwice(stepDone) {
+          function updateEventTwice (stepDone) {
             updateData.content = 'second updated content';
             request.put(pathToEvent(eventWithNoHistory.id)).send(updateData).end(function (res) {
               validation.check(res, {
@@ -352,40 +345,40 @@ describe('Versioning', function () {
               stepDone();
             });
           },
-          function verifyThatHistoryIsIncludedAndSorted(stepDone) {
+          function verifyThatHistoryIsIncludedAndSorted (stepDone) {
             request.get(pathToEvent(eventWithNoHistory.id))
-              .query({includeHistory: true}).end(
-              function (res) {
-                validation.check(res, {
-                  status: 200,
-                  schema: eventsMethodsSchema.getOne.result
+              .query({ includeHistory: true }).end(
+                function (res) {
+                  validation.check(res, {
+                    status: 200,
+                    schema: eventsMethodsSchema.getOne.result
+                  });
+                  should.exist(res.body);
+                  should.exist(res.body.history);
+                  (res.body.history.length).should.eql(2);
+                  const history = res.body.history;
+                  let time = 0;
+                  history.forEach(function (previousVersion) {
+                    delete previousVersion.streamId;
+                    (previousVersion.headId).should.eql(eventWithNoHistory.id);
+                    // check sorted by modified field
+                    if (time !== 0) {
+                      (previousVersion.modified).should.be.above(time);
+                    }
+                    time = previousVersion.modified;
+                    (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags', 'integrity']))
+                      .should.eql(_.omit(eventWithNoHistory,
+                        ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags', 'integrity']));
+                  });
+                  stepDone();
                 });
-                should.exist(res.body);
-                should.exist(res.body.history);
-                (res.body.history.length).should.eql(2);
-                const history = res.body.history;
-                let time = 0;
-                history.forEach(function (previousVersion) {
-                  delete previousVersion.streamId;
-                  (previousVersion.headId).should.eql(eventWithNoHistory.id);
-                  // check sorted by modified field
-                  if (time !== 0) {
-                    (previousVersion.modified).should.be.above(time);
-                  }
-                  time = previousVersion.modified;
-                  (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags', 'integrity']))
-                    .should.eql(_.omit(eventWithNoHistory,
-                      ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags', 'integrity']));
-                });
-                stepDone();
-              });
           }
         ], done);
       });
 
       it('[NZQB] must generate history when trashing an event', function (done) {
         async.series([
-          function trashEvent(stepDone) {
+          function trashEvent (stepDone) {
             request.del(pathToEvent(eventWithNoHistory.id)).end(function (res) {
               validation.check(res, {
                 status: 200,
@@ -394,35 +387,32 @@ describe('Versioning', function () {
               stepDone();
             });
           },
-          function verifyThatHistoryIsIncluded(stepDone) {
+          function verifyThatHistoryIsIncluded (stepDone) {
             request.get(pathToEvent(eventWithNoHistory.id))
-              .query({includeHistory: true}).end(
-              function (res) {
-                validation.check(res, {
-                  status: 200,
-                  schema: eventsMethodsSchema.getOne.result
+              .query({ includeHistory: true }).end(
+                function (res) {
+                  validation.check(res, {
+                    status: 200,
+                    schema: eventsMethodsSchema.getOne.result
+                  });
+                  should.exist(res.body);
+                  should.exist(res.body.history);
+                  (res.body.history.length).should.eql(1);
+                  const previousVersion = res.body.history[0];
+                  delete previousVersion.streamId;
+                  (previousVersion.headId).should.eql(eventWithNoHistory.id);
+                  (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'trashed', 'integrity', 'tags']))
+                    .should.eql(_.omit(eventWithNoHistory,
+                      ['id', 'headId', 'modified', 'modifiedBy', 'integrity', 'tags']));
+                  stepDone();
                 });
-                should.exist(res.body);
-                should.exist(res.body.history);
-                (res.body.history.length).should.eql(1);
-                const previousVersion = res.body.history[0];
-                delete previousVersion.streamId;
-                (previousVersion.headId).should.eql(eventWithNoHistory.id);
-                (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'trashed', 'integrity', 'tags']))
-                  .should.eql(_.omit(eventWithNoHistory,
-                    ['id', 'headId', 'modified', 'modifiedBy', 'integrity', 'tags']));
-                stepDone();
-              });
           }
         ], done);
       });
-
     });
-
   });
 
   describe('Streams', function () {
-
     before(function (done) {
       const settings = _.cloneDeep(helpers.dependencies.settings);
       settings.versioning = {
@@ -441,9 +431,9 @@ describe('Versioning', function () {
     it('[H1PK] must generate events\' history when their stream is deleted with ' +
     ' mergeEventsWithParents=true since their streamId is modified', function (done) {
       async.series([
-        function deleteStream(stepDone) {
+        function deleteStream (stepDone) {
           request.del(pathToStream(childStream.id))
-            .query({mergeEventsWithParent: true}).end(function (res) {
+            .query({ mergeEventsWithParent: true }).end(function (res) {
               validation.check(res, {
                 status: 200,
                 schema: streamsMethodsSchema.del.result
@@ -452,8 +442,8 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        function verifyHistory(stepDone) {
-          request.get(pathToEvent(eventOnChildStream.id)).query({includeHistory: true})
+        function verifyHistory (stepDone) {
+          request.get(pathToEvent(eventOnChildStream.id)).query({ includeHistory: true })
             .end(function (res) {
               validation.check(res, {
                 status: 200,
@@ -482,8 +472,8 @@ describe('Versioning', function () {
       };
       async.series([
         server.ensureStarted.bind(server, settings),
-        function deleteStream(stepDone) {
-          request.del(pathToStream(childStream.id)).query({mergeEventsWithParent: false})
+        function deleteStream (stepDone) {
+          request.del(pathToStream(childStream.id)).query({ mergeEventsWithParent: false })
             .end(function (res) {
               validation.check(res, {
                 status: 200,
@@ -493,14 +483,14 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        async function findDeletionInStorage() {
-          const  event = await mall.events.getOne(user.id, eventOnChildStream.id);
+        async function findDeletionInStorage () {
+          const event = await mall.events.getOne(user.id, eventOnChildStream.id);
           should.exist(event);
           event.id.should.eql(eventOnChildStream.id);
           should.exist(event.deleted);
         },
-        async function checkThatHistoryIsDeleted() {
-          let events = await mall.events.get(user.id, {id: eventOnChildStream.id, state: 'all', includeHistory: true});
+        async function checkThatHistoryIsDeleted () {
+          let events = await mall.events.get(user.id, { id: eventOnChildStream.id, state: 'all', includeHistory: true });
           events = events.filter(e => e.headId); // only the history
           events.length.should.be.eql(0);
         }
@@ -515,8 +505,8 @@ describe('Versioning', function () {
       };
       async.series([
         server.ensureStarted.bind(server, settings),
-        function deleteStream(stepDone) {
-          request.del(pathToStream(childStream.id)).query({mergeEventsWithParent: false})
+        function deleteStream (stepDone) {
+          request.del(pathToStream(childStream.id)).query({ mergeEventsWithParent: false })
             .end(function (res) {
               validation.check(res, {
                 status: 200,
@@ -526,7 +516,7 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        async function verifyDeletedHeadInStorage() {
+        async function verifyDeletedHeadInStorage () {
           const event = await mall.events.getOne(user.id, eventOnChildStream.id);
 
           should.exist(event);
@@ -537,8 +527,8 @@ describe('Versioning', function () {
           should.exist(event.modifiedBy);
           if (integrity.events.isActive) should.exist(event.integrity);
         },
-        async function verifyDeletedHistoryInStorage() {
-          let events = await mall.events.get(user.id, {headId: eventOnChildStream.id, state: 'all'});
+        async function verifyDeletedHistoryInStorage () {
+          const events = await mall.events.get(user.id, { headId: eventOnChildStream.id, state: 'all' });
 
           events.length.should.be.eql(1);
           events.forEach(function (event) {
@@ -561,8 +551,8 @@ describe('Versioning', function () {
       };
       async.series([
         server.ensureStarted.bind(server, settings),
-        function deleteStream(stepDone) {
-          request.del(pathToStream(childStream.id)).query({mergeEventsWithParent: false})
+        function deleteStream (stepDone) {
+          request.del(pathToStream(childStream.id)).query({ mergeEventsWithParent: false })
             .end(function (res) {
               validation.check(res, {
                 status: 200,
@@ -572,7 +562,7 @@ describe('Versioning', function () {
               stepDone();
             });
         },
-        async function verifyDeletedHeadInStory() {
+        async function verifyDeletedHeadInStory () {
           const event = await mall.events.getOne(user.id, eventOnChildStream.id);
 
           should.exist(event);
@@ -584,16 +574,16 @@ describe('Versioning', function () {
           integrity.events.set(expected);
           event.should.eql(expected);
         },
-        async function checkThatHistoryIsUnchanged() {
-          let events = await mall.events.get(user.id, {headId: eventOnChildStream.id, state: 'all', withDeletions: true});
+        async function checkThatHistoryIsUnchanged () {
+          const events = await mall.events.get(user.id, { headId: eventOnChildStream.id, state: 'all', withDeletions: true });
 
           let checked = false;
           (events.length).should.eql(1);
           events.forEach(function (event) {
             event.headId.should.eql(eventOnChildStream.id);
             if (event.id === testData.events[26].id) {
-                // we can remove tags as it comes from the db
-                const expected = _.cloneDeep(testData.events[26])
+              // we can remove tags as it comes from the db
+              const expected = _.cloneDeep(testData.events[26]);
               delete expected.tags;
               event.should.eql(expected);
               checked = true;
@@ -609,26 +599,26 @@ describe('Versioning', function () {
     before(async function () {
       const settings = _.cloneDeep(helpers.dependencies.settings);
       settings.versioning = {
-        forceKeepHistory: true,
+        forceKeepHistory: true
       };
       settings.dnsLess = { isActive: true };
       await bluebird.fromCallback(cb => server.ensureStarted.call(server, settings, cb));
     });
 
-    function buildPath(path) {
+    function buildPath (path) {
       return url.resolve(server.url, path);
     }
-    function generateRegisterBody() {
+    function generateRegisterBody () {
       return {
         username: charlatan.Lorem.characters(7),
         password: charlatan.Lorem.characters(7),
         email: charlatan.Internet.email(),
         appId: charlatan.Lorem.characters(7),
         insurancenumber: charlatan.Number.number(3),
-        phoneNumber: charlatan.Number.number(3),
+        phoneNumber: charlatan.Number.number(3)
       };
     }
-    function extractToken(apiEndpoint) {
+    function extractToken (apiEndpoint) {
       const hostname = apiEndpoint.split('//')[1];
       return hostname.split('@')[0];
     }
@@ -649,22 +639,22 @@ describe('Versioning', function () {
       const token = extractToken(res.body.apiEndpoint);
       const resEvents = await req
         .get(buildPath(`/${user1.username}/events`))
-        .set('Authorization',token)
-        .query({streams: [SystemStreamSerializer.addCustomerPrefixToStreamId('email')]});
+        .set('Authorization', token)
+        .query({ streams: [SystemStreamSerializer.addCustomerPrefixToStreamId('email')] });
       const oldEmailEvent = resEvents.body.events[0];
 
       // 2.
       const resUpdate = await req
         .put(buildPath(`/${user1.username}/events/${oldEmailEvent.id}`))
-        .set('Authorization',token)
+        .set('Authorization', token)
         .send({
-          content: charlatan.Internet.email(),
+          content: charlatan.Internet.email()
         });
 
       // 3.
       const resGet = await req
         .get(buildPath(`/${user1.username}/events/${oldEmailEvent.id}`))
-        .set('Authorization',token)
+        .set('Authorization', token)
         .query({ includeHistory: true });
       assert.equal(resGet.body.history[0].content, oldEmailEvent.content);
 
@@ -676,11 +666,10 @@ describe('Versioning', function () {
       const token2 = extractToken(res2.body.apiEndpoint);
       const resEvents2 = await req
         .get(buildPath(`/${user2.username}/events`))
-        .set('Authorization',token2)
-        .query({streams: [SystemStreamSerializer.addCustomerPrefixToStreamId('email')]});
+        .set('Authorization', token2)
+        .query({ streams: [SystemStreamSerializer.addCustomerPrefixToStreamId('email')] });
       const emailEvent = resEvents2.body.events[0];
       assert.equal(emailEvent.content, oldEmailEvent.content);
     });
   });
-
 });

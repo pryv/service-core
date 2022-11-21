@@ -4,8 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const commonFns = require('./../helpers/commonFunctions');
 const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
@@ -16,12 +14,6 @@ const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
 const usersIndex = require('business/src/users/UsersLocalIndex');
 const { getPasswordRules } = require('business').users;
-
-
-import type { MethodContext } from 'business';
-import type Result  from '../Result';
-import type { ApiCallback }  from '../API';
-
 /**
  * Auth API methods implementations.
  *
@@ -35,35 +27,24 @@ module.exports = async function (api) {
   const isDnsLess = config.get('dnsLess:isActive');
   await usersIndex.init();
   const passwordRules = await getPasswordRules();
-
   // REGISTER
-  const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
+  const registration = new Registration(logging, storageLayer, servicesSettings);
   await registration.init();
   const platform = await getPlatform();
-
-  function skip(context, params, result, next) { next(); }
-  function ifDnsLess(ifTrue, ifFalse) {
+  function skip (context, params, result, next) {
+    next();
+  }
+  function ifDnsLess (ifTrue, ifFalse) {
     if (isDnsLess) {
       return ifTrue || skip;
     }
     return ifFalse || skip;
   }
-
-  api.register('auth.register',
-    setAuditAccessId(AuditAccessIds.PUBLIC),
+  api.register('auth.register', setAuditAccessId(AuditAccessIds.PUBLIC),
     // data validation methods
-    commonFns.getParamsValidation(methodsSchema.register.params),
-    enforcePasswordRules,
-    registration.prepareUserData,
-    ifDnsLess(skip, registration.createUserStep1_ValidateUserOnPlatform.bind(registration)),
-    //user registration methods
-    ifDnsLess(skip, registration.deletePartiallySavedUserIfAny.bind(registration)),
-    ifDnsLess(skip, registration.createUserStep2_CreateUserOnPlatform.bind(registration)),
-    registration.createUser.bind(registration),
-    registration.buildResponse.bind(registration),
-    registration.sendWelcomeMail.bind(registration),
-  );
-
+    commonFns.getParamsValidation(methodsSchema.register.params), enforcePasswordRules, registration.prepareUserData, ifDnsLess(skip, registration.createUserStep1_ValidateUserOnPlatform.bind(registration)),
+    // user registration methods
+    ifDnsLess(skip, registration.deletePartiallySavedUserIfAny.bind(registration)), ifDnsLess(skip, registration.createUserStep2_CreateUserOnPlatform.bind(registration)), registration.createUser.bind(registration), registration.buildResponse.bind(registration), registration.sendWelcomeMail.bind(registration));
   async function enforcePasswordRules (context, params, result, next) {
     try {
       await passwordRules.checkNewPassword(null, params.password);
@@ -72,63 +53,49 @@ module.exports = async function (api) {
       return next(err);
     }
   }
-
   // Username check
   /**
-   * Seem to be use only in dnsLess..
-   */
-  api.register('auth.usernameCheck',
-    setAuditAccessId(AuditAccessIds.PUBLIC),
-    commonFns.getParamsValidation(methodsSchema.usernameCheck.params),
-    ifDnsLess(checkLocalUsersUniqueField, checkUsername)
-  );
-
+     * Seem to be use only in dnsLess..
+     */
+  api.register('auth.usernameCheck', setAuditAccessId(AuditAccessIds.PUBLIC), commonFns.getParamsValidation(methodsSchema.usernameCheck.params), ifDnsLess(checkLocalUsersUniqueField, checkUsername));
   /**
-   * ⚠️ DNS-less only
-   */
-  api.register('auth.emailCheck',
-    setAuditAccessId(AuditAccessIds.PUBLIC),
-    commonFns.getParamsValidation(methodsSchema.emailCheck.params),
-    checkLocalUsersUniqueField
-  );
-
+     * ⚠️ DNS-less only
+     */
+  api.register('auth.emailCheck', setAuditAccessId(AuditAccessIds.PUBLIC), commonFns.getParamsValidation(methodsSchema.emailCheck.params), checkLocalUsersUniqueField);
   /**
-   * Check in service-register if user id is reserved
-   * ⚠️ DNS-less only
-   * @param {*} context
-   * @param {*} params
-   * @param {*} result
-   * @param {*} next
-   */
-  async function checkLocalUsersUniqueField(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+     * Check in service-register if user id is reserved
+     * ⚠️ DNS-less only
+     * @param {*} context
+     * @param {*} params
+     * @param {*} result
+     * @param {*} next
+     */
+  async function checkLocalUsersUniqueField (context, params, result, next) {
     result.reserved = false;
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
-
     // username
     if (field == 'username') {
       if (await usersIndex.usernameExists(params[field])) {
-        return next(errors.itemAlreadyExists( 'user', {'username': params[field]}));
+        return next(errors.itemAlreadyExists('user', { username: params[field] }));
       }
     }
-
     // other unique fields
     const value = await platform.getLocalUsersUniqueField(field, params[field]);
     if (value != null) {
-      return next(errors.itemAlreadyExists('user', {[field]: params[field]}));
+      return next(errors.itemAlreadyExists('user', { [field]: params[field] }));
     }
     next();
   }
-
   /**
-   * Check with register service whether username is reserved
-   * ⚠️ to be used only if dnsLess is NOT active.
-   * @param {*} context
-   * @param {*} params
-   * @param {*} result
-   * @param {*} next
-   */
-  async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+     * Check with register service whether username is reserved
+     * ⚠️ to be used only if dnsLess is NOT active.
+     * @param {*} context
+     * @param {*} params
+     * @param {*} result
+     * @param {*} next
+     */
+  async function checkUsername (context, params, result, next) {
     result.reserved = false;
     try {
       result.reserved = await platform.isUsernameReserved(params.username);

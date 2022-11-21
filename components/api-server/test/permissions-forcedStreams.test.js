@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, beforeEach, after, afterEach, it */
+/* global describe, before, beforeEach, after, afterEach, it */
 
 const cuid = require('cuid');
 const { assert } = require('chai');
@@ -20,8 +20,8 @@ const { produceMongoConnection, context } = require('./test-helpers');
  *  |-C--bc-ac-c
  */
 
-const STREAMS = { 
-  A: {}, B: { parentId: 'A' }, C: { parentId: 'A' }, E: {parentId: 'B'}
+const STREAMS = {
+  A: {}, B: { parentId: 'A' }, C: { parentId: 'A' }, E: { parentId: 'B' }
 };
 const EVENTS = {
   ab: { streamIds: ['A', 'B'] },
@@ -30,12 +30,11 @@ const EVENTS = {
   ea: { streamIds: ['E', 'A'] },
   a: { streamIds: ['A'] },
   b: { streamIds: ['B'] },
-  c: { streamIds: ['C'] },
-}
+  c: { streamIds: ['C'] }
+};
 const EVENT4ID = {}; // will be filled by fixtures
 
 describe('permissions forcedStreams', function () {
-
   describe('GET /events with forcedStreams', function () {
     let server;
     before(async () => {
@@ -70,9 +69,9 @@ describe('permissions forcedStreams', function () {
           name: 'stream ' + streamId,
           parentId: streamData.parentId,
           trashed: streamData.trashed
-        }
+        };
         await user.stream(stream);
-      };
+      }
 
       await user.access({
         type: 'app',
@@ -90,12 +89,11 @@ describe('permissions forcedStreams', function () {
       });
       for (const [key, event] of Object.entries(EVENTS)) {
         event.type = 'note/txt',
-          event.content = key,
-          event.id = cuid(),
-          EVENT4ID[event.id] = key;
+        event.content = key,
+        event.id = cuid(),
+        EVENT4ID[event.id] = key;
         await user.event(event);
-      };
-
+      }
     });
     after(async () => {
       await mongoFixtures.clean();
@@ -106,10 +104,10 @@ describe('permissions forcedStreams', function () {
         .get(basePathEvent)
         .set('Authorization', tokenForcedB)
         .query({ });
-      assert.exists(res.body.events)
+      assert.exists(res.body.events);
       const events = res.body.events;
       events.forEach(e => {
-        let ebFound = false; 
+        let ebFound = false;
         for (const eb of ['E', 'B']) {
           if (e.streamIds.includes(eb)) ebFound = true;
         }
@@ -122,17 +120,16 @@ describe('permissions forcedStreams', function () {
         .get(basePathEvent)
         .set('Authorization', tokenForcedB)
         .query({ streams: ['C'] });
-      assert.exists(res.body.events)
+      assert.exists(res.body.events);
       const events = res.body.events;
       events.forEach(e => {
-        assert.include(e.streamIds,'C');
-        let ebFound = false; 
+        assert.include(e.streamIds, 'C');
+        let ebFound = false;
         for (const eb of ['E', 'B']) {
           if (e.streamIds.includes(eb)) ebFound = true;
         }
         assert.isFalse(ebFound);
       });
     });
-
   });
 });

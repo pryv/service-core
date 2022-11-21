@@ -10,16 +10,16 @@
  */
 module.exports = Sessions;
 
-var generateId = require('cuid'),
-    _ = require('lodash');
+const generateId = require('cuid');
+const _ = require('lodash');
 
-var collectionInfo = {
+const collectionInfo = {
   name: 'sessions',
   indexes: [
     // set TTL index for auto cleanup of expired sessions
     {
-      index: {expires: 1},
-      options: {expireAfterSeconds: 0}
+      index: { expires: 1 },
+      options: { expireAfterSeconds: 0 }
     }
   ]
 };
@@ -31,7 +31,7 @@ var collectionInfo = {
  * @param {Object} options Possible options: `maxAge` (in milliseconds)
  * @constructor
  */
-function Sessions(database, options) {
+function Sessions (database, options) {
   this.database = database;
   this.options = _.merge({
     maxAge: 1000 * 60 * 60 * 24 * 14 // two weeks
@@ -45,19 +45,19 @@ function Sessions(database, options) {
  * @param {Function} callback Args: err, data
  */
 Sessions.prototype.get = function (id, callback) {
-  this.database.findOne(collectionInfo, {_id: id}, null, function (err, session) {
+  this.database.findOne(collectionInfo, { _id: id }, null, function (err, session) {
     if (err) {
       return callback(err);
     }
 
-    if (! session) {
+    if (!session) {
       return callback(null, null);
     }
 
-    if (! session.expires || new Date() < session.expires) {
+    if (!session.expires || new Date() < session.expires) {
       callback(null, session.data);
     } else {
-      this.destroy(id, function (err, res) { 
+      this.destroy(id, function (err, res) {
         // the this.destroy() callback returns the op result, we must replace it with null
         callback(err, null);
       });
@@ -72,16 +72,16 @@ Sessions.prototype.get = function (id, callback) {
  * @param {Function} callback Args: err, id
  */
 Sessions.prototype.getMatching = function (data, callback) {
-  this.database.findOne(collectionInfo, {data: data}, null, function (err, session) {
+  this.database.findOne(collectionInfo, { data }, null, function (err, session) {
     if (err) {
       return callback(err);
     }
 
-    if (! session) {
+    if (!session) {
       return callback(null, null);
     }
 
-    if (! session.expires || new Date() < session.expires) {
+    if (!session.expires || new Date() < session.expires) {
       callback(null, session._id);
     } else {
       this.destroy(session._id, (err, res) => {
@@ -99,7 +99,7 @@ Sessions.prototype.getMatching = function (data, callback) {
  * @param {Function} callback Args: err, id
  */
 Sessions.prototype.generate = function (data, options, callback) {
-  var session = {
+  const session = {
     _id: generateId(),
     data: typeof data === 'object' ? data : {},
     expires: this.getNewExpirationDate()
@@ -108,7 +108,7 @@ Sessions.prototype.generate = function (data, options, callback) {
     if (err) { return callback(err); }
     callback(null, session._id);
   },
-    options);
+  options);
 };
 
 /**
@@ -118,12 +118,12 @@ Sessions.prototype.generate = function (data, options, callback) {
  * @param {Function} callback
  */
 Sessions.prototype.touch = function (id, callback) {
-  var update = {$set: {expires: this.getNewExpirationDate()}};
-  this.database.updateOne(collectionInfo, {_id: id}, update, callback);
+  const update = { $set: { expires: this.getNewExpirationDate() } };
+  this.database.updateOne(collectionInfo, { _id: id }, update, callback);
 };
 
 /**
- * Used for tests ony. 
+ * Used for tests ony.
  * Updates 'expires' to now, so that the session will be destroyed the next time Sessions.get()
  * or Sessions.getMatching() is called.
  *
@@ -131,8 +131,8 @@ Sessions.prototype.touch = function (id, callback) {
  * @param {Function} callback
  */
 Sessions.prototype.expireNow = function (id, callback) {
-  var update = {$set: {expires: new Date()}};
-  this.database.updateOne(collectionInfo, {_id: id}, update, callback);
+  const update = { $set: { expires: new Date() } };
+  this.database.updateOne(collectionInfo, { _id: id }, update, callback);
 };
 
 /**
@@ -142,7 +142,7 @@ Sessions.prototype.expireNow = function (id, callback) {
  * @param {Function} callback
  */
 Sessions.prototype.destroy = function (id, callback) {
-  this.database.deleteOne(collectionInfo, {_id: id}, callback);
+  this.database.deleteOne(collectionInfo, { _id: id }, callback);
 };
 
 /**
@@ -168,4 +168,3 @@ Sessions.prototype.remove = function (query, callback) {
     callback
   );
 };
-

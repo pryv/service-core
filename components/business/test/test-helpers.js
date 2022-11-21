@@ -5,20 +5,13 @@
  * Proprietary and confidential
  */
 'use strict';
-// @flow
-
-// Helper methods and setup for all unit tests. 
-
-
+// Helper methods and setup for all unit tests.
 const should = require('should');
 const superagent = require('superagent');
 const request = require('supertest');
-
 require('test-helpers/src/api-server-tests-config');
-
 module.exports = {
-  should: should, 
-  superagent: superagent, 
-  request: request, 
+  should,
+  superagent,
+  request
 };
-

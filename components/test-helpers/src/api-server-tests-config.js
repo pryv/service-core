@@ -13,7 +13,7 @@ const boiler = require('@pryv/boiler').init({
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
-  },{
+  }, {
     scope: 'defaults-paths',
     file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
   }, {
@@ -25,7 +25,7 @@ const boiler = require('@pryv/boiler').init({
   }, {
     scope: 'default-audit-path',
     file: path.resolve(__dirname, '../../audit/config/default-path.js')
-  },{
+  }, {
     plugin: require('api-server/config/components/systemStreams')
   }]
 });

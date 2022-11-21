@@ -4,16 +4,17 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var testHelpers = require('test-helpers'),
-    InstanceManager = testHelpers.InstanceManager;
+const testHelpers = require('test-helpers');
+const InstanceManager = testHelpers.InstanceManager;
 
 const { getConfigUnsafe } = require('@pryv/boiler');
 
 /**
  * Overrides common test dependencies with server-specific config settings.
  */
-var deps = module.exports = testHelpers.dependencies;
+const deps = module.exports = testHelpers.dependencies;
 deps.settings = getConfigUnsafe(true).get();
 deps.instanceManager = new InstanceManager({
   serverFilePath: __dirname + '/../../bin/server',
-  axonMessaging: deps.settings.axonMessaging});
+  axonMessaging: deps.settings.axonMessaging
+});

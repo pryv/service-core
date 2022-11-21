@@ -4,8 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const Charlatan = require('charlatan');
@@ -13,100 +11,106 @@ const generateId = require('cuid');
 const logger = require('@pryv/boiler').getLogger('databaseFixture');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-
 const storage = require('storage');
-
 const Webhook = require('business').webhooks.Webhook;
 const { getUsersRepository, User } = require('business/src/users');
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
-
 const { getMall } = require('mall');
 let mall;
-
-async function initMall() {
+/**
+ * @returns {Promise<void>}
+ */
+async function initMall () {
   if (mall == null) {
     mall = await getMall();
   }
 }
 
 class Context {
-  databaseConn: storage.Database;
-
-  constructor(databaseConn) {
+  databaseConn;
+  constructor (databaseConn) {
     this.databaseConn = databaseConn;
   }
 
-  forUser(user: string) {
+  /**
+ * @param {string} user
+       * @returns {UserContext}
+       */
+  forUser (user) {
     return new UserContext(this, user);
   }
 
-  async cleanEverything (): Promise<mixed> {
-    const collectionNames = ['accesses', 'sessions', 'followedSlices', 'webhooks', 'versions'];
-    collectionNames.forEach(collectionName => {
-      bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb));
+  /**
+ * @returns {Promise<unknown>}
+ */
+  async cleanEverything () {
+    const collectionNames = [
+      'accesses',
+      'sessions',
+      'followedSlices',
+      'webhooks',
+      'versions'
+    ];
+    collectionNames.forEach((collectionName) => {
+      bluebird.fromCallback((cb) => this.databaseConn.deleteMany({ name: collectionName }, {}, cb));
     });
     const usersRepository = await getUsersRepository();
     await usersRepository.deleteAll();
     await initMall();
-
     // await Promise.all(collections);
     // console.log(await bluebird.fromCallback(cb =>
     //   this.databaseConn.find({ name: 'accesses' }, {},null, cb)));
   }
 }
 
-type DatabaseShortcuts = {
-  sessions: Sessions,
-
-  streams: storage.user.Streams,
-  accesses: storage.user.Accesses,
-  webhooks: storage.user.Webhooks,
-}
 class UserContext {
-  userName: string;
-  context: Context;
-  user: {
-    id: string,
-  };
+  userName;
 
-  constructor(context, userName: string) {
+  context;
+
+  user;
+  constructor (context, userName) {
     this.context = context;
     this.userName = userName;
-
     // NOTE For simplicity of debugging, we'll assume that user.id ===
     // user.username.
     this.user = { id: userName };
   }
 
-  produceDb() {
+  /**
+ * @returns {{ sessions: Sessions; accesses: any; webhooks: any; }}
+ */
+  produceDb () {
     const conn = this.context.databaseConn;
     return {
       sessions: new Sessions(conn),
       accesses: new storage.user.Accesses(conn),
-      webhooks: new storage.user.Webhooks(conn),
+      webhooks: new storage.user.Webhooks(conn)
     };
   }
 }
 
-interface ChildResource {
-  create(): Promise<mixed>;
-  childs: ChildHolder;
-  attrs: Attributes;
-}
-class GenericChildHolder<T: ChildResource> {
-  childs: Array<T>;
-  pending: Array<Promise<*>>;
+class GenericChildHolder {
+  childs;
 
-  constructor() {
+  pending;
+  constructor () {
     this.childs = [];
     this.pending = [];
   }
 
-  push(child: T) {
+  /**
+ * @param {T} child
+       * @returns {void}
+       */
+  push (child) {
     this.childs.push(child);
   }
 
-  hasChilds(): boolean {
+  /**
+ * @returns {boolean}
+ */
+  hasChilds () {
     return this.childs.length > 0;
   }
 
@@ -118,15 +122,18 @@ class GenericChildHolder<T: ChildResource> {
   // Child needs to be any subclass of T. The first parameter of the callback
   // (if given) needs to be of the same type, subclass of T.
   //
-  create<U: T>(resource: U, cb?: (U) => mixed): Promise<U> {
+  /**
+ * @param {U} resource
+       * @param {(a: U) => unknown} cb
+       * @returns {Promise<U>}
+       */
+  create (resource, cb) {
     const createdResource = resource.create();
     this.pending.push(createdResource);
-
     return createdResource
       .then(() => {
         this.push(resource);
-        if (cb) cb(resource);
-
+        if (cb) { cb(resource); }
         return bluebird.all(resource.childs.pending);
       })
       .then(() => resource);
@@ -136,82 +143,84 @@ class GenericChildHolder<T: ChildResource> {
   // then returns a promise that only resolves once all individual promises
   // resolve (aka Promise.all).
   //
-  all<U>(fun: (T) => Promise<U>): Promise<Array<U>> {
+  /**
+ * @param {(a: T) => Promise<U>} fun
+       * @returns {Promise<U[]>}
+       */
+  all (fun) {
     return bluebird.map(this.childs, fun);
   }
 }
-type ChildHolder = GenericChildHolder<ChildResource>;
-type Attributes = {
-  id: string,
-  _id: string,
-}
-class FixtureTreeNode {
-  childs: ChildHolder;
-  context: UserContext;
-  db: DatabaseShortcuts;
-  attrs: Attributes;
 
-  constructor(context: UserContext, attrs: {}) {
+class FixtureTreeNode {
+  childs;
+
+  context;
+
+  db;
+
+  attrs;
+  constructor (context, attrs) {
     this.childs = new GenericChildHolder();
     this.context = context;
-
     this.db = this.context.produceDb();
-
     this.attrs = this.attributes(attrs);
   }
 
-  hasChilds(): boolean {
+  /**
+ * @returns {boolean}
+ */
+  hasChilds () {
     return this.childs.hasChilds();
   }
 
   /** Merges attributes given with generated attributes and returns the
-   * resulting attribute set.
-   */
-  attributes(attrs: {}): Attributes {
-    return lodash.merge(
-      {
-        id: generateId(),
-        created: timestamp.now(),
-        createdBy: this.context.user.id,
-        modified: timestamp.now(),
-        modifiedBy: this.context.user.id,
-      },
-      this.fakeAttributes(),
-      attrs,
-    );
+     * resulting attribute set.
+       * @param {{}} attrs
+       * @returns {Attributes}
+       */
+  attributes (attrs) {
+    return lodash.merge({
+      id: generateId(),
+      created: timestamp.now(),
+      createdBy: this.context.user.id,
+      modified: timestamp.now(),
+      modifiedBy: this.context.user.id
+    }, this.fakeAttributes(), attrs);
   }
 
   /** Override this to provide default attributes via Charlatan generation.
-   */
-  fakeAttributes() {
+       * @returns {{}}
+       */
+  fakeAttributes () {
     return {};
   }
 }
 
 class Fixture {
-  childs: GenericChildHolder<FixtureUser>;
-  context: Context;
+  childs;
 
-  constructor(context: Context) {
+  context;
+  constructor (context) {
     this.context = context;
-
     this.childs = new GenericChildHolder();
   }
 
   // ----------------------------------------------------------------------- dsl
-
   // Creates a Pryv user. If a block is given (`cb`), it is called after
   // the user is really created.
   //
-  async user(name: string, attrs: {}={}, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
+  /**
+ * @param {string} name
+       * @param {{}} attrs
+       * @param {(a: FixtureUser) => unknown} cb
+       * @returns {Promise<FixtureUser>}
+       */
+  async user (name, attrs = {}, cb) {
     await initMall();
     return bluebird.try(() => {
-      const u = new FixtureUser(
-        this.context.forUser(name),
-        name, attrs);
-
-      return u.remove()
-        .then(() => this.childs.create(u, cb));
+      const u = new FixtureUser(this.context.forUser(name), name, attrs);
+      return u.remove().then(() => this.childs.create(u, cb));
     });
   }
 
@@ -219,7 +228,10 @@ class Fixture {
   // this in an afterEach function to ensure that the database is clean after
   // running tests.
   //
-  async clean(): Promise<mixed> {
+  /**
+ * @returns {Promise<unknown>}
+ */
+  async clean () {
     let errorIntegrity;
     try {
       // check integrity before reset--- This could trigger error related to previous test
@@ -227,128 +239,147 @@ class Fixture {
     } catch (e) {
       errorIntegrity = e; // keep it for later
     }
-
     // clean data anyway
-    const done = await this.childs.all(
-      (child) => {
-        return child.remove();
-      });
-
+    const done = await this.childs.all((child) => {
+      return child.remove();
+    });
     if (errorIntegrity) {
       console.log(errorIntegrity);
-      //throw(errorIntegrity);
+      // throw(errorIntegrity);
     }
     return done;
   }
 }
-
-class FixtureUser extends FixtureTreeNode implements ChildResource {
+/** @extends FixtureTreeNode */
+class FixtureUser extends FixtureTreeNode {
   /** Internal constructor for a user fixture. */
-  constructor (context: UserContext, name: string, attrs: {}) {
-    super(
-      context,
-      lodash.merge({
-        id: name,
-        username: name,
-        storageUsed: 0,
-        insurancenumber: Charlatan.Number.number(5),
-        phoneNumber: Charlatan.Number.number(5)
-      }, attrs));
+  constructor (context, name, attrs) {
+    super(context, lodash.merge({
+      id: name,
+      username: name,
+      storageUsed: 0,
+      insurancenumber: Charlatan.Number.number(5),
+      phoneNumber: Charlatan.Number.number(5)
+    }, attrs));
   }
 
-  stream(attrs: {}={}, cb: (FixtureStream) => void): Promise<mixed> {
+  /**
+ * @param {{}} attrs
+       * @param {(a: FixtureStream) => void} cb
+       * @returns {Promise<unknown>}
+       */
+  stream (attrs = {}, cb) {
     const s = new FixtureStream(this.context, attrs);
-
     return this.childs.create(s, cb);
   }
 
-  event(attrs: {}): Promise<FixtureEvent> {
+  /**
+ * @param {{}} attrs
+       * @returns {Promise<FixtureEvent>}
+       */
+  event (attrs) {
     logger.debug('event', attrs);
     const e = new FixtureEvent(this.context, attrs);
-
     return this.childs.create(e);
   }
 
-  access(attrs: {}={}): Promise<mixed> {
+  /**
+ * @param {{}} attrs
+       * @returns {Promise<unknown>}
+       */
+  access (attrs = {}) {
     const a = new FixtureAccess(this.context, attrs);
-
     return this.childs.create(a);
   }
-  session(token?: string): Promise<mixed> {
-    const s = new FixtureSession(this.context, token);
 
+  /**
+ * @param {string} token
+       * @returns {Promise<unknown>}
+       */
+  session (token) {
+    const s = new FixtureSession(this.context, token);
     return this.childs.create(s);
   }
-  webhook(attrs: {}={}, accessId: string): Promise<mixed> {
+
+  /**
+ * @param {{}} attrs
+       * @param {string} accessId
+       * @returns {Promise<unknown>}
+       */
+  webhook (attrs = {}, accessId) {
     const w = new FixtureWebhook(this.context, attrs, accessId);
     return this.childs.create(w);
   }
 
   /** Removes all resources belonging to the user, then creates them again,
-   * according to the spec stored here.
-   */
-  create (): Promise<mixed> {
+     * according to the spec stored here.
+       * @returns {Promise<unknown>}
+       */
+  create () {
     return this.createUser();
   }
 
-  async createUser (): Object<mixed> {
+  /**
+ * @returns {any}
+ */
+  async createUser () {
     const attributes = this.attrs;
     const usersRepository = await getUsersRepository();
-    const userObj: User = new User(attributes);
+    const userObj = new User(attributes);
     await usersRepository.insertOne(userObj, false, true);
     return this.attrs;
   }
 
-  async remove(): Promise<mixed> {
+  /**
+ * @returns {Promise<unknown>}
+ */
+  async remove () {
     const db = this.db;
     const username = this.context.userName;
-    const collections = [
-      db.accesses,
-      db.webhooks,
-    ];
-
+    const collections = [db.accesses, db.webhooks];
     // NOTE username in context will be the same as the one stored in
     // this.attrs.
-    //const removeUser = bluebird.fromCallback((cb) =>
+    // const removeUser = bluebird.fromCallback((cb) =>
     //  db.users.removeOne(user, {username: username}, cb));
     // get streams ids from the config that should be deleted
     // const accountStreams = SystemStreamsSerializer.getAccountMap();
-
     const usersRepository = await getUsersRepository();
     await usersRepository.deleteOne(this.context.user.id, username, true);
-
-    const removeSessions = bluebird.fromCallback((cb) =>
-      db.sessions.removeForUser(username, cb));
-
+    const removeSessions = bluebird.fromCallback((cb) => db.sessions.removeForUser(username, cb));
     return bluebird
       .all([removeSessions])
-      .then(() =>
-        bluebird.map(collections, (coll) => this.safeRemoveColl(coll)) );
+      .then(() => bluebird.map(collections, (coll) => this.safeRemoveColl(coll)));
   }
-  safeRemoveColl(col): Promise<*> {
+
+  /**
+ * @returns {Promise<any>}
+ */
+  safeRemoveColl (col) {
     const user = this.context.user;
     // const colName = col.getCollectionInfo(user).name;
-
-    return bluebird
+    return (bluebird
       .fromCallback((cb) => col.dropCollection(user, cb))
-      // .then(() => console.log('dropped', colName))
+    // .then(() => console.log('dropped', colName))
       .catch((err) => {
-        if (! /ns not found/.test(err.message)) throw err;
-      });
+        if (!/ns not found/.test(err.message)) { throw err; }
+      }));
   }
 
-  fakeAttributes() {
+  /**
+ * @returns {{ email: any; password: any; language: string; }}
+ */
+  fakeAttributes () {
     return {
       email: Charlatan.Internet.email(),
       password: Charlatan.Lorem.characters(10),
-      language: 'fr',
+      language: 'fr'
     };
   }
 }
-class FixtureStream extends FixtureTreeNode implements ChildResource {
-  parentId: ?string;
-
-  constructor(context: UserContext, attrs: {}, parentId: ?string) {
+/** @extends FixtureTreeNode */
+class FixtureStream extends FixtureTreeNode {
+  parentId;
+  constructor (context, attrs, parentId) {
     if (parentId) {
       attrs.parentId = parentId;
     }
@@ -356,59 +387,79 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
     this.parentId = attrs.parentId;
   }
 
-  stream(attrs: {}={}, cb: (FixtureStream) => void) {
+  /**
+ * @param {{}} attrs
+       * @param {(a: FixtureStream) => void} cb
+       * @returns {Promise<FixtureStream>}
+       */
+  stream (attrs = {}, cb) {
     const s = new FixtureStream(this.context, attrs, this.attrs.id);
-
     return this.childs.create(s, cb);
   }
-  event(attrs: {}): Promise<FixtureEvent> {
+
+  /**
+ * @param {{}} attrs
+       * @returns {Promise<FixtureEvent>}
+       */
+  event (attrs) {
     logger.debug('event', attrs);
     const e = new FixtureEvent(this.context, attrs, this.attrs.id);
-
     return this.childs.create(e);
   }
 
   /**
-   * @returns {Promise<mixed>}
-   */
-  create() {
+     * @returns {any}
+     */
+  create () {
     const user = this.context.user;
     const attributes = this.attrs;
-
     return mall.streams.create(user.id, attributes);
   }
 
-  fakeAttributes() {
+  /**
+ * @returns {{ id: string; name: any; parentId: string; }}
+ */
+  fakeAttributes () {
     return {
       id: `c${Charlatan.Number.number(15)}`,
       name: Charlatan.Lorem.characters(10),
-      parentId: this.parentId,
+      parentId: this.parentId
     };
   }
 }
-class FixtureEvent extends FixtureTreeNode implements ChildResource {
-  constructor(context: UserContext, attrs: {}, streamId: string) {
+/** @extends FixtureTreeNode */
+class FixtureEvent extends FixtureTreeNode {
+  constructor (context, attrs, streamId) {
     if (streamId) {
       // used by stream.event()
-      super(context, {...attrs, streamIds: [streamId]});
+      super(context, { ...attrs, streamIds: [streamId] });
     } else {
       // streamIds must be provided by user.event()
       super(context, attrs);
     }
   }
 
-  create() {
-    return bluebird
-      .try(async () => await this.createEvent());
+  /**
+ * @returns {any}
+ */
+  create () {
+    return bluebird.try(async () => await this.createEvent());
   }
-  async createEvent() {
+
+  /**
+ * @returns {Promise<any>}
+ */
+  async createEvent () {
     const user = this.context.user;
     const attributes = this.attrs;
-    if (mall == null) mall = await getMall();
+    if (mall == null) { mall = await getMall(); }
     return await mall.events.create(user.id, attributes);
   }
 
-  fakeAttributes() {
+  /**
+ * @returns {{ id: string; time: number; duration: number; type: any; tags: any[]; content: number; }}
+ */
+  fakeAttributes () {
     // NOTE no need to worry about streamId, this is enforced by the
     // constructor.
     return {
@@ -417,149 +468,186 @@ class FixtureEvent extends FixtureTreeNode implements ChildResource {
       duration: 0,
       type: Charlatan.Helpers.sample(['mass/kg']),
       tags: [],
-      content: 90,
+      content: 90
     };
   }
 }
-class FixtureAccess extends FixtureTreeNode implements ChildResource {
-  constructor(context: UserContext, attrs: {}) {
+/** @extends FixtureTreeNode */
+class FixtureAccess extends FixtureTreeNode {
+  constructor (context, attrs) {
     super(context, attrs);
   }
 
-  create() {
+  /**
+ * @returns {any}
+ */
+  create () {
     const db = this.db;
     const user = this.context.user;
     const attributes = _.merge(this.fakeAttributes(), this.attrs);
-    return bluebird.fromCallback((cb) =>
-      db.accesses.insertOne(user, attributes, cb));
+    return bluebird.fromCallback((cb) => db.accesses.insertOne(user, attributes, cb));
   }
 
-  fakeAttributes() {
+  /**
+ * @returns {{ id: string; token: any; name: any; type: any; }}
+ */
+  fakeAttributes () {
     return {
       id: `c${Charlatan.Number.number(15)}`,
       token: Charlatan.Internet.deviceToken(),
       name: Charlatan.Internet.userName(),
-      type: Charlatan.Helpers.sample(['personal', 'shared']),
+      type: Charlatan.Helpers.sample(['personal', 'shared'])
     };
   }
 }
-
-class FixtureWebhook extends FixtureTreeNode implements ChildResource {
-  constructor(context: UserContext, attrs: {}, accessId: string) {
-    super(context, {...attrs, accessId: accessId});
+/** @extends FixtureTreeNode */
+class FixtureWebhook extends FixtureTreeNode {
+  constructor (context, attrs, accessId) {
+    super(context, { ...attrs, accessId });
   }
 
-  create() {
+  /**
+ * @returns {any}
+ */
+  create () {
     const db = this.db;
     const user = this.context.user;
     const attributes = this.attrs;
     const webhook = new Webhook(attributes).forStorage();
-    return bluebird.fromCallback(
-      (cb) => db.webhooks.insertOne(user, webhook, cb)
-    );
+    return bluebird.fromCallback((cb) => db.webhooks.insertOne(user, webhook, cb));
   }
 
-  fakeAttributes() {
+  /**
+ * @returns {{ id: any; url: string; }}
+ */
+  fakeAttributes () {
     return {
       id: generateId(),
-      url: `https://${Charlatan.Internet.domainName()}/notifications`,
+      url: `https://${Charlatan.Internet.domainName()}/notifications`
     };
   }
 }
-
 /** A hack that allows session creation. The storage.Sessions interface
  * will not really allow fixture creation, so we're cloning some of the code
  * here.
+ * @extends FixtureTreeNode
  */
-class FixtureSession extends FixtureTreeNode implements ChildResource {
-  session: storage.Sessions;
-
-  constructor(context: UserContext, token?: string) {
+class FixtureSession extends FixtureTreeNode {
+  session;
+  constructor (context, token) {
     const attrs = {};
-    if (token != null) attrs.id = token;
-
+    if (token != null) { attrs.id = token; }
     super(context, attrs);
   }
 
-  create() {
-    return bluebird
-      .try(() => this.createSession());
+  /**
+ * @returns {any}
+ */
+  create () {
+    return bluebird.try(() => this.createSession());
   }
-  createSession() {
+
+  /**
+ * @returns {any}
+ */
+  createSession () {
     const db = this.db;
     const user = this.context.user;
     const attributes = this.attrs;
-
-    return bluebird.fromCallback((cb) =>
-      db.sessions.insertOne(user, attributes, cb));
+    return bluebird.fromCallback((cb) => db.sessions.insertOne(user, attributes, cb));
   }
 
-  fakeAttributes() {
-    const getNewExpirationDate = storage.Sessions.prototype.getNewExpirationDate
-      .bind({
-        options: {
-          maxAge: 1000 * 60 * 60 * 24 * 14, // two weeks
-        },
-      });
-
+  /**
+ * @returns {{ _id: any; expires: any; data: { username: any; appId: any; }; }}
+ */
+  fakeAttributes () {
+    const getNewExpirationDate = storage.Sessions.prototype.getNewExpirationDate.bind({
+      options: {
+        maxAge: 1000 * 60 * 60 * 24 * 14 // two weeks
+      }
+    });
     return {
       _id: generateId(),
       expires: getNewExpirationDate(),
       data: {
         username: this.context.user.username,
-        appId: Charlatan.App.name(),
-      },
+        appId: Charlatan.App.name()
+      }
     };
   }
 }
 
-import type { IndexDefinition } from 'storage';
-
 class Sessions {
-  collectionInfo: {
-    name: string,
-    indexes: Array<IndexDefinition>,
-  };
-  databaseConn: storage.Database;
+  collectionInfo;
 
-  constructor(databaseConn: storage.Database) {
+  databaseConn;
+  constructor (databaseConn) {
     this.databaseConn = databaseConn;
-
     this.collectionInfo = {
       name: 'sessions',
       indexes: [
         // set TTL index for auto cleanup of expired sessions
         {
-          index: {expires: 1},
-          options: {expireAfterSeconds: 0}
+          index: { expires: 1 },
+          options: { expireAfterSeconds: 0 }
         }
       ]
     };
   }
 
-  insertOne(user: {id: string}, attributes: Attributes, cb: () => void) {
+  /**
+       * @param {{
+       *       id: string;
+       *     }} user
+       * @param {Attributes} attributes
+       * @param {() => void} cb
+       * @returns {void}
+       */
+  insertOne (user, attributes, cb) {
     const id = attributes.id;
     delete attributes.id;
-    attributes['_id'] = id;
-
-    this.databaseConn.insertOne(
-      this.collectionInfo,
-      attributes,
-      cb);
+    attributes._id = id;
+    this.databaseConn.insertOne(this.collectionInfo, attributes, cb);
   }
 
-  removeForUser (userName: string, cb: () => void) {
-    this.databaseConn.deleteMany(
-      this.collectionInfo,
-      {'data.username': userName},
-      cb);
+  /**
+ * @param {string} userName
+       * @param {() => void} cb
+       * @returns {void}
+       */
+  removeForUser (userName, cb) {
+    this.databaseConn.deleteMany(this.collectionInfo, { 'data.username': userName }, cb);
   }
 }
-
-function databaseFixture (database: storage.Database) {
+/**
+ * @param {storage.Database} database
+ * @returns {Fixture}
+ */
+function databaseFixture (database) {
   const context = new Context(database);
-
   return new Fixture(context);
 }
-
 module.exports = databaseFixture;
+
+/**
+ * @typedef {{
+ *   sessions: Sessions;
+ *   streams: storage.user.Streams;
+ *   accesses: storage.user.Accesses;
+ *   webhooks: storage.user.Webhooks;
+ * }} DatabaseShortcuts
+ */
+
+/** @typedef {GenericChildHolder<ChildResource>} ChildHolder */
+
+/**
+ * @typedef {{
+ *   id: string;
+ *   _id: string;
+ * }} Attributes
+ */
+
+/** @typedef {Object} ChildResource
+ * @property {ChildHolder} childs
+ * @property {Attributes} attrs
+ */

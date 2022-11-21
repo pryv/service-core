@@ -10,13 +10,13 @@ const { getConfig } = require('@pryv/boiler');
 const syslogWatch = require('./SyslogWatch');
 const { getSyslog } = require('../../src/syslog');
 
-function lookFor(str) {
+function lookFor (str) {
   syslogWatch(str)(
-    function read() {
+    function read () {
       console.log('Ready');
-  }, function(err) {
-    console.log('done', err);
-  });
+    }, function (err) {
+      console.log('done', err);
+    });
 }
 
 (async () => {
@@ -25,4 +25,3 @@ function lookFor(str) {
   lookFor('toto');
   const res = syslog.syslogger.log('info', 'toto');
 })();
-

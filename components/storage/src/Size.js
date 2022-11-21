@@ -22,7 +22,7 @@ class Size {
  * @param {Array} attachedFilesItems
  * @constructor
  */
-  constructor(dbDocumentsItems, attachedFilesItems) {
+  constructor (dbDocumentsItems, attachedFilesItems) {
     this.dbDocumentsItems = dbDocumentsItems;
     this.attachedFilesItems = attachedFilesItems;
   }
@@ -32,14 +32,14 @@ class Size {
    *
    * @param {Object} user
    */
-  async computeForUser(user) {
+  async computeForUser (user) {
     const mall = await getMall();
     const mallSize = await mall.getUserStorageSize(user.id);
     const storageUsed = {
-      dbDocuments: mallSize + await computeCategory(this.dbDocumentsItems),
-      attachedFiles: await computeCategory(this.attachedFilesItems),
+      dbDocuments: mallSize + (await computeCategory(this.dbDocumentsItems)),
+      attachedFiles: await computeCategory(this.attachedFilesItems)
     };
-    let userObject = new User(user);
+    const userObject = new User(user);
     const usersRepository = await getUsersRepository();
     await usersRepository.updateOne(
       userObject,
@@ -49,9 +49,9 @@ class Size {
 
     return storageUsed;
 
-    async function computeCategory(storageItems) {
+    async function computeCategory (storageItems) {
       let total = 0;
-      for (let i=0; i<storageItems.length; i++) {
+      for (let i = 0; i < storageItems.length; i++) {
         if (typeof storageItems[i].getTotalSize !== 'function') { return; }
         const size = await bluebird.fromCallback(cb => storageItems[i].getTotalSize(user, cb));
         total += size;

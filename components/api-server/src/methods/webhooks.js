@@ -4,8 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
@@ -18,80 +16,74 @@ const methodsSchema = require('../schema/webhooksMethods');
 const Webhook = require('business').webhooks.Webhook;
 const WebhooksRepository = require('business').webhooks.Repository;
 
-const { pubsub } = require('messages');
-const { getLogger, getConfig} = require('@pryv/boiler');
+const { pubsub } = require('messages');
+const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
 
-import type { StorageLayer } from 'storage';
-import type { MethodContext } from 'business';
+/**
+ * @typedef {{
+ *   minIntervalMs: number;
+ *   maxRetries: number;
+ *   runsSize: number;
+ * }} WebhooksSettingsHolder
+ */
 
-import type API  from '../API';
-import type { ApiCallback }  from '../API';
-import type Result  from '../Result';
+/**
+ * @typedef {{
+ *   id: string;
+ *   isApp(): Boolean;
+ * }} Access
+ */
 
-import type { WebhookUpdate } from 'business/src/webhooks/Webhook';
-
-export type WebhooksSettingsHolder = {
-  minIntervalMs: number,
-  maxRetries: number,
-  runsSize: number,
-};
-
-type Access = {
-  id: string,
-  isApp(): Boolean
-};
-
-module.exports = async function produceWebhooksApiMethods(api: API)
-{
+module.exports = async function produceWebhooksApiMethods (api) {
   const config = await getConfig();
   const wehbooksSettings = config.get('webhooks');
   const storageLayer = await getStorageLayer();
   const logger = getLogger('methods:webhooks');
 
-  const webhooksRepository: WebhooksRepository = new WebhooksRepository(storageLayer.webhooks, storageLayer.events);
-  
+  const webhooksRepository = new WebhooksRepository(storageLayer.webhooks, storageLayer.events);
+
   // RETRIEVAL
 
-  api.register('webhooks.get',
+  api.register(
+    'webhooks.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    findAccessibleWebhooks,
+    findAccessibleWebhooks
   );
 
-  async function findAccessibleWebhooks(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function findAccessibleWebhooks (context, params, result, next) {
     const currentAccess = context.access;
     try {
-      const webhooks: Array<Webhook> = await webhooksRepository.get(context.user, currentAccess);
+      const webhooks = await webhooksRepository.get(context.user, currentAccess);
       result.webhooks = webhooks.map(forApi);
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
     next();
 
-    function forApi(webhook: Webhook): {} {
+    function forApi (webhook) {
       return webhook.forApi();
     }
   }
 
-  api.register('webhooks.getOne',
+  api.register(
+    'webhooks.getOne',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    findWebhook,
+    findWebhook
   );
 
-  async function findWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
-    const user: {} = context.user;
-    const currentAccess: Access = context.access;
-    const webhookId: string = params.id;
+  async function findWebhook (context, params, result, next) {
+    const user = context.user;
+    const currentAccess = context.access;
+    const webhookId = params.id;
     try {
-      const webhook: Webhook = await webhooksRepository.getById(user, webhookId);
-
+      const webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
       }
       if (!isWebhookInScope(webhook, currentAccess)) {
         return next(errors.forbidden('The webhook was not created by this access.'));
       }
-
       result.webhook = webhook.forApi();
     } catch (error) {
       return next(errors.unexpectedError(error));
@@ -101,22 +93,22 @@ module.exports = async function produceWebhooksApiMethods(api: API)
 
   // CREATION
 
-  api.register('webhooks.create',
+  api.register(
+    'webhooks.create',
     commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.create.params),
     createWebhook,
-    bootWebhook,
+    bootWebhook
   );
 
-  async function createWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
+  async function createWebhook (context, params, result, next) {
     context.initTrackingProperties(params);
-
     const webhook = new Webhook(_.extend({
       user: context.user,
       accessId: context.access.id,
-      webhooksRepository: webhooksRepository,
+      webhooksRepository,
       runsSize: wehbooksSettings.runsSize,
-      minIntervalMs: wehbooksSettings.minIntervalMs,
+      minIntervalMs: wehbooksSettings.minIntervalMs
     }, params));
 
     try {
@@ -125,8 +117,7 @@ module.exports = async function produceWebhooksApiMethods(api: API)
     } catch (error) {
       // Expecting a duplicate error
       if (error.isDuplicateIndex('url')) {
-        return next(errors.itemAlreadyExists('webhook',
-          { url: params.url }));
+        return next(errors.itemAlreadyExists('webhook', { url: params.url }));
       }
       return next(errors.unexpectedError(error));
     }
@@ -134,53 +125,43 @@ module.exports = async function produceWebhooksApiMethods(api: API)
     return next();
   }
 
-  async function bootWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
-    pubsub.webhooks.emit(pubsub.WEBHOOKS_CREATE, _.extend(
-      { username: context.user.username }, 
-      { webhook: result.webhook })
-    );
+  async function bootWebhook (context, params, result, next) {
+    pubsub.webhooks.emit(pubsub.WEBHOOKS_CREATE, _.extend({ username: context.user.username }, { webhook: result.webhook }));
     return next();
   }
 
   // UPDATE
 
-  api.register('webhooks.update',
+  api.register(
+    'webhooks.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(webhookSchema('update'), false, logger),
     applyPrerequisitesForUpdate,
     updateWebhook,
-    reactivateWebhook,
+    reactivateWebhook
   );
 
-  function applyPrerequisitesForUpdate(context: MethodContext, 
-    params: { update: {} }, 
-    result: Result, next: ApiCallback) {
+  function applyPrerequisitesForUpdate (context, params, result, next) {
     context.updateTrackingProperties(params.update);
     next();
   }
 
-  async function updateWebhook(context: MethodContext, 
-    params: { update: {}, id: string }, 
-    result: Result, next: ApiCallback) {
-    
-    const user: {} = context.user;
-    const currentAccess: Access = context.access;
-    const update: WebhookUpdate = params.update;
-    const webhookId: string = params.id;
-
+  async function updateWebhook (context, params, result, next) {
+    const user = context.user;
+    const currentAccess = context.access;
+    const update = params.update;
+    const webhookId = params.id;
     if (update.state === 'active') {
       update.currentRetries = 0;
     }
-
     try {
-      const webhook: Webhook = await webhooksRepository.getById(user, webhookId);
+      const webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
       }
       if (!isWebhookInScope(webhook, currentAccess)) {
         return next(errors.forbidden('The webhook was not created by this app access.'));
       }
-
       await webhook.update(update);
       result.webhook = webhook.forApi();
     } catch (e) {
@@ -189,43 +170,36 @@ module.exports = async function produceWebhooksApiMethods(api: API)
     next();
   }
 
-  async function reactivateWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
-    pubsub.webhooks.emit(pubsub.WEBHOOKS_ACTIVATE, _.extend(
-      { username: context.user.username }, 
-      { webhook: result.webhook })
-    );
+  async function reactivateWebhook (context, params, result, next) {
+    pubsub.webhooks.emit(pubsub.WEBHOOKS_ACTIVATE, _.extend({ username: context.user.username }, { webhook: result.webhook }));
     return next();
   }
 
   // DELETION
 
-  api.register('webhooks.delete',
+  api.register(
+    'webhooks.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
     deleteAccess,
-    turnOffWebhook,
+    turnOffWebhook
   );
 
-  async function deleteAccess(context: MethodContext, 
-    params: { id: string }, 
-    result: Result, next: ApiCallback) {
-    
-    const user: {} = context.user;
-    const currentAccess: Access = context.access;
-    const webhookId: string = params.id;
-
+  async function deleteAccess (context, params, result, next) {
+    const user = context.user;
+    const currentAccess = context.access;
+    const webhookId = params.id;
     try {
-      const webhook: Webhook = await webhooksRepository.getById(user, webhookId);
+      const webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
       }
       if (!isWebhookInScope(webhook, currentAccess)) {
         return next(errors.forbidden('The webhook was not created by this app access.'));
       }
-
       await webhook.delete();
       result.webhookDeletion = {
         id: webhook.id,
-        deleted: timestamp.now(),
+        deleted: timestamp.now()
       };
     } catch (e) {
       return next(errors.unexpectedError(e));
@@ -233,34 +207,32 @@ module.exports = async function produceWebhooksApiMethods(api: API)
     next();
   }
 
-  async function turnOffWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
-    const username: string = context.user.username;
-    const webhookId: string = params.id;
+  async function turnOffWebhook (context, params, result, next) {
+    const username = context.user.username;
+    const webhookId = params.id;
     pubsub.webhooks.emit(pubsub.WEBHOOKS_DELETE, {
-      username: username,
+      username,
       webhook: {
-        id: webhookId,
+        id: webhookId
       }
     });
     return next();
   }
 
-
   // TEST
 
-  api.register('webhooks.test',
+  api.register(
+    'webhooks.test',
     commonFns.getParamsValidation(methodsSchema.test.params),
-    testWebhook,
+    testWebhook
   );
 
-  async function testWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
-
-    const TEST_MESSAGE: string = 'test';
-
-    const user: {} = context.user;
-    const currentAccess: Access = context.access;
-    const webhookId: string = params.id;
-    let webhook: ?Webhook;
+  async function testWebhook (context, params, result, next) {
+    const TEST_MESSAGE = 'test';
+    const user = context.user;
+    const currentAccess = context.access;
+    const webhookId = params.id;
+    let webhook;
     try {
       webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
@@ -272,7 +244,6 @@ module.exports = async function produceWebhooksApiMethods(api: API)
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
-
     try {
       await webhook.makeCall([TEST_MESSAGE]);
     } catch (e) {
@@ -283,13 +254,12 @@ module.exports = async function produceWebhooksApiMethods(api: API)
   }
 
   /**
-   * checks if the webhook is allowed to be handled by the access
-   * If Personnal: yes
-   * If App: only if it was used to create the webhook
-   */
-  function isWebhookInScope(webhook: Webhook, access: Access): boolean {
-    if (access.isPersonal()) return true;
+     * checks if the webhook is allowed to be handled by the access
+     * If Personnal: yes
+     * If App: only if it was used to create the webhook
+     */
+  function isWebhookInScope (webhook, access) {
+    if (access.isPersonal()) { return true; }
     return access.id === webhook.accessId;
   }
-  
 };

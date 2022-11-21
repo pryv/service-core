@@ -4,38 +4,26 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const urllib = require('url');
 const superagent = require('superagent');
 const ErrorIds = require('errors').ErrorIds;
 const errors = require('errors').factory;
 const ErrorMessages = require('errors/src/ErrorMessages');
-
-type OperationType = 'update' | 'delete';
-type AccountProperty = string;
-type Value = string;
-type Operation = {
-  [OperationType]: {
-    key: AccountProperty,
-    value: Value,
-    isUnique: ?boolean,
-    isActive: ?boolean,
-    isCreation: ?boolean,
-  },
-};
-
 const { getLogger, getConfig, notifyAirbrake } = require('@pryv/boiler');
-class ServiceRegister {
-  settings: null;
-  logger: {};
 
-  constructor() {
+class ServiceRegister {
+  settings;
+
+  logger;
+  constructor () {
     this.logger = getLogger('service-register');
     this.settings = null;
   }
 
-  async init() {
+  /**
+ * @returns {Promise<this>}
+ */
+  async init () {
     if (this.settings == null) {
       this.settings = (await getConfig()).get('services:register');
       this.logger.debug('created with setttings:', this.settings);
@@ -43,27 +31,27 @@ class ServiceRegister {
     return this;
   }
 
-  async validateUser (
-    username: String,
-    invitationToken: String,
-    uniqueFields: Object,
-    core: String,
-  ): Promise<void> {
+  /**
+ * @param {String} username
+       * @param {String} invitationToken
+       * @param {any} uniqueFields
+       * @param {String} core
+       * @returns {Promise<void>}
+       */
+  async validateUser (username, invitationToken, uniqueFields, core) {
     const url = buildUrl('/users/validate', this.settings.url);
     // log fact about the event
     this.logger.info(`POST ${url} for username: ${username}`);
     try {
-      await superagent
-        .post(url)
-        .set('Authorization', this.settings.key)
-        .send({
-          username: username,
-          invitationToken: invitationToken,
-          uniqueFields: uniqueFields,
-          core: core
-        });
+      await superagent.post(url).set('Authorization', this.settings.key).send({
+        username,
+        invitationToken,
+        uniqueFields,
+        core
+      });
     } catch (err) {
-      if(((err.status == 409) || (err.status == 400)) && err?.response?.body?.error){
+      if ((err.status == 409 || err.status == 400) &&
+                err?.response?.body?.error) {
         if (err.response.body.error != null) {
           if (err.response.body.error.id === ErrorIds.InvalidInvitationToken) {
             throw errors.invalidOperation(ErrorMessages.InvalidInvitationToken);
@@ -81,13 +69,16 @@ class ServiceRegister {
     }
   }
 
-  async checkUsername(username: string): Promise<any> {
+  /**
+ * @param {string} username
+       * @returns {Promise<any>}
+       */
+  async checkUsername (username) {
     const url = buildUrl(`/${username}/check_username`, this.settings.url);
     // log fact about the event
     this.logger.info(`GET ${url} for username: ${username}`);
     try {
-      const res = await superagent
-        .get(url);
+      const res = await superagent.get(url);
       return res.body;
     } catch (err) {
       if (err?.response?.body?.reserved === true) {
@@ -98,7 +89,10 @@ class ServiceRegister {
     }
   }
 
-  async createUser(user): Promise<void> {
+  /**
+ * @returns {Promise<void>}
+ */
+  async createUser (user) {
     const url = buildUrl('/users', this.settings.url);
     // log fact about the event
     this.logger.info(`POST ${url} for username:${user.user.username}`);
@@ -114,7 +108,10 @@ class ServiceRegister {
     }
   }
 
-  async deleteUser(username): Promise<void> {
+  /**
+ * @returns {Promise<void>}
+ */
+  async deleteUser (username) {
     const url = buildUrl('/users/' + username + '?onlyReg=true', this.settings.url);
     // log fact about the event
     this.logger.info(`DELETE ${url} for username:${username}`);
@@ -130,65 +127,66 @@ class ServiceRegister {
   }
 
   /**
-   * After indexed fields are updated, service-register is notified to update
-   * the information
-   */
-  async updateUserInServiceRegister (
-    username: string,
-    operations: Array<Operation>,
-  ): Promise<void> {
+     * After indexed fields are updated, service-register is notified to update
+     * the information
+       * @param {string} username
+       * @param {Array<Operation>} operations
+       * @returns {Promise<void>}
+       */
+  async updateUserInServiceRegister (username, operations) {
     const url = buildUrl('/users', this.settings.url);
     this.logger.info(`PUT ${url} for username:${username}`);
-
     // otherwise deletion
-    const isUpdate: boolean = operations[0].update != null;
-    const operationType: OperationType = isUpdate ? 'update' : 'delete';
-
-    const fieldsForUpdate: {} = {}; // sent as user in payload
-    const fieldsToDelete: {} = {};
-    const updateParams: {} = {};
-
+    const isUpdate = operations[0].update != null;
+    const operationType = isUpdate ? 'update' : 'delete';
+    const fieldsForUpdate = {}; // sent as user in payload
+    const fieldsToDelete = {};
+    const updateParams = {};
     if (isUpdate) {
-      operations.forEach(operation => {
-        const streamIdWithoutPrefix: string = operation.update.key;
+      operations.forEach((operation) => {
+        const streamIdWithoutPrefix = operation.update.key;
         fieldsForUpdate[streamIdWithoutPrefix] = [
           {
             value: operation.update.value,
             isUnique: operation.update.isUnique,
             isActive: operation.update.isActive || false,
-            creation: operation.update.isCreation,
+            creation: operation.update.isCreation
           }
         ];
-        updateParams[operation[operationType].key] = operation[operationType].value;
+        updateParams[operation[operationType].key] =
+                    operation[operationType].value;
       });
-    } else { // isDelete
-      operations.forEach(operation => {
-        const streamIdWithoutPrefix: string = operation.delete.key;
+    } else {
+      // isDelete
+      operations.forEach((operation) => {
+        const streamIdWithoutPrefix = operation.delete.key;
         fieldsToDelete[streamIdWithoutPrefix] = operation.delete.value;
-        updateParams[operation[operationType].key] = operation[operationType].value;
+        updateParams[operation[operationType].key] =
+                    operation[operationType].value;
       });
     }
-
-    const payload: {} = {
+    const payload = {
       username,
       user: fieldsForUpdate,
-      fieldsToDelete,
+      fieldsToDelete
     };
-
     try {
-      const res = await superagent.put(url)
+      const res = await superagent
+        .put(url)
         .send(payload)
         .set('Authorization', this.settings.key);
       return res.body;
     } catch (err) {
-      if (((err.status == 400) || (err.status == 409)) && err.response.body.error != null) {
+      if ((err.status == 400 || err.status == 409) &&
+                err.response.body.error != null) {
         if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
           throw errors.itemAlreadyExists('user', safetyCleanDuplicate(err.response.body.error.data, username, updateParams));
         } else {
           this.logger.error(err.response.body.error, err);
           throw errors.unexpectedError(err.response.body.error);
         }
-      } if (err.status == 400 && err.response.body?.user === null) {
+      }
+      if (err.status == 400 && err.response.body?.user === null) {
         // do not throw any error if no data was updated (double click for updating the event)
         this.logger.error('No data was updated');
       } else {
@@ -199,52 +197,70 @@ class ServiceRegister {
     }
   }
 }
-
-function buildUrl(path: string, url): URL {
+/**
+ * @param {string} path
+ * @returns {URL}
+ */
+function buildUrl (path, url) {
   return new urllib.URL(path, url);
 }
-
 let serviceRegisterConn = null;
 /**
- * @returns {ServiceRegister}
+ * @returns {Promise<any>}
  */
-async function getServiceRegisterConn() {
-  if (! serviceRegisterConn) {
+async function getServiceRegisterConn () {
+  if (!serviceRegisterConn) {
     serviceRegisterConn = new ServiceRegister();
     await serviceRegisterConn.init();
   }
   return serviceRegisterConn;
 }
-
 /**
  * Temporary solution to patch a nasty bug, where "random" emails are exposed during account creations
  * @param {object} foundDuplicates the duplicates to check
  * @param {string} username
- * @param {object} params
+ * @param {{}} params  undefined
+ * @returns {{}}
  */
-function safetyCleanDuplicate(foundDuplicates, username, params: {}): {} {
-  if (foundDuplicates == null) return foundDuplicates;
-  const res: {} = {};
-  const newParams: {} = Object.assign({}, params);
-  if (username != null) newParams.username = username;
+function safetyCleanDuplicate (foundDuplicates, username, params) {
+  if (foundDuplicates == null) { return foundDuplicates; }
+  const res = {};
+  const newParams = Object.assign({}, params);
+  if (username != null) { newParams.username = username; }
   for (const key of Object.keys(foundDuplicates)) {
     if (foundDuplicates[key] === newParams[key]) {
-      res[key] = foundDuplicates[key] ;
+      res[key] = foundDuplicates[key];
     } else {
       notify(key + ' "' + foundDuplicates[key] + '" <> "' + newParams[key] + '"');
     }
   }
   return res;
-
-  function notify(key) {
+  function notify (key) {
     const logger = getLogger('service-register');
     const error = new Error('Found unmatching duplicate key: ' + key);
     logger.error('To be investigated >> ', error);
     notifyAirbrake(error);
   }
 }
-
 module.exports = {
   getServiceRegisterConn,
-  safetyCleanDuplicate,
+  safetyCleanDuplicate
 };
+
+/** @typedef {'update' | 'delete'} OperationType */
+
+/** @typedef {string} AccountProperty */
+
+/** @typedef {string} Value */
+
+/**
+ * @typedef {{
+ *   [k in OperationType]: {
+ *     key: AccountProperty;
+ *     value: Value;
+ *     isUnique: boolean | undefined | null;
+ *     isActive: boolean | undefined | null;
+ *     isCreation: boolean | undefined | null;
+ *   };
+ * }} Operation
+ */

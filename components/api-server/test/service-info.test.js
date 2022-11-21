@@ -23,14 +23,13 @@ let infoHttpServer;
 let mockInfo;
 const infoHttpServerPort = 5123;
 describe('Service', () => {
-
   before(async () => {
     const config = await getConfig();
     mockInfo = config.get('service');
 
     infoHttpServer = new httpServer('/service/info', 200, mockInfo);
     await infoHttpServer.listen(infoHttpServerPort);
-    mongoFixtures =  databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.user(username, {});
     server = await context.spawn();
   });
@@ -43,7 +42,7 @@ describe('Service', () => {
 
   describe('GET /service/info', () => {
     it('[FR4K] must return all service info', async () => {
-      let path = '/' + username + '/service/info';
+      const path = '/' + username + '/service/info';
       const res = await server.request().get(path);
       validation.check(res, {
         status: 200,

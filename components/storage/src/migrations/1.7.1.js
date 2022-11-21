@@ -13,7 +13,6 @@ const { getLogger } = require('@pryv/boiler');
  * - change delete date from numbers to daate
  */
 module.exports = async function (context, callback) {
-
   const logger = getLogger('migration-1.7.1');
   logger.info('V1.7.0 => v1.7.1 Migration started');
 
@@ -30,9 +29,9 @@ module.exports = async function (context, callback) {
   logger.info('V1.7.0 => v1.7.1 Migration finished');
   callback();
 
-  //----------------- DELETED Dates to Number
+  // ----------------- DELETED Dates to Number
 
-  async function migrateDeletedDates(collection) {
+  async function migrateDeletedDates (collection) {
     const cursor = collection.find({ deleted: { $type: 'date' } });
     let requests = [];
     let document;
@@ -41,16 +40,16 @@ module.exports = async function (context, callback) {
       document = await cursor.next();
       eventsMigrated++;
       requests.push({
-        'updateOne': {
-          'filter': { '_id': document._id },
-          'update': {
-            '$set': { deleted: document.deleted.getTime() / 1000 },
+        updateOne: {
+          filter: { _id: document._id },
+          update: {
+            $set: { deleted: document.deleted.getTime() / 1000 }
           }
         }
       });
 
       if (requests.length === 1000) {
-        //Execute per 1000 operations and re-init
+        // Execute per 1000 operations and re-init
         await collection.bulkWrite(requests);
         console.log('Updated date for ' + eventsMigrated + ' ' + collection.namespace);
         requests = [];
@@ -63,5 +62,4 @@ module.exports = async function (context, callback) {
     }
     console.log('Finalizing date update for ' + collection.namespace);
   }
-
 };

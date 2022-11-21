@@ -8,14 +8,14 @@
  * JSON Schema specification for users.
  */
 
-var Action = require('./Action'),
-    helpers = require('./helpers');
+const Action = require('./Action');
+const helpers = require('./helpers');
 
 /**
  * @param {Action} action
  */
 module.exports = function (action) {
-  var schema = {
+  const schema = {
     id: helpers.getTypeURI('user', action),
     type: 'object',
     additionalProperties: false,
@@ -24,12 +24,12 @@ module.exports = function (action) {
       email: helpers.email,
       language: helpers.language,
       appId: helpers.string(),
-      referer: helpers.string({ nullable: true }), 
-      invitationToken: helpers.string({ nullable: true }), 
+      referer: helpers.string({ nullable: true }),
+      invitationToken: helpers.string({ nullable: true }),
       storageUsed: helpers.object({
         dbDocuments: helpers.number(),
         attachedFiles: helpers.number()
-      }, {required: [ 'dbDocuments', 'attachedFiles' ]})
+      }, { required: ['dbDocuments', 'attachedFiles'] })
     }
   };
 
@@ -44,17 +44,17 @@ module.exports = function (action) {
   }
 
   switch (action) {
-  case Action.READ:
-    schema.required = [ 'id', 'username', 'email', 'language' ];
-    break;
+    case Action.READ:
+      schema.required = ['id', 'username', 'email', 'language'];
+      break;
     case Action.STORE:
-    schema.required = ['id', 'username', 'email', 'language', 'storageUsed' ];
-    // TODO ILIA - load custom streams correctly here as is done in schema/authMethods
-    schema.additionalProperties = true;
-    break;
-  case Action.CREATE:
-    schema.required = [ 'username', 'passwordHash', 'email', 'language' ];
-    break;
+      schema.required = ['id', 'username', 'email', 'language', 'storageUsed'];
+      // TODO ILIA - load custom streams correctly here as is done in schema/authMethods
+      schema.additionalProperties = true;
+      break;
+    case Action.CREATE:
+      schema.required = ['username', 'passwordHash', 'email', 'language'];
+      break;
   }
 
   return schema;
