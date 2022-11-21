@@ -8,7 +8,7 @@
  * Lists the possible object actions affecting schema definitions.
  */
 
-var Action = module.exports = {
+const Action = module.exports = {
   CREATE: 'create',
   /**
    * To describe what is actually stored in the DB.

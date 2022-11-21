@@ -5,21 +5,20 @@
  * Proprietary and confidential
  */
 
+const util = require('util');
 
-const util = require("util");
-
-function log() {
-  for(let i = 0; i < arguments.length; i++) {
-    console.log(util.inspect(arguments[i], {depth: 12, colors: true}));
+function log () {
+  for (let i = 0; i < arguments.length; i++) {
+    console.log(util.inspect(arguments[i], { depth: 12, colors: true }));
   }
 }
 
-function stack(start = 0, length = 100) {
+function stack (start = 0, length = 100) {
   const e = new Error();
-  return e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 ).slice(start + 1, start + length + 1);
+  return e.stack.split('\n').filter(l => l.indexOf('node_modules') < 0).slice(start + 1, start + length + 1);
 }
 
-function logstack() {
+function logstack () {
   log(...arguments, stack(2, 4));
 }
 

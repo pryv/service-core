@@ -5,19 +5,18 @@
  * Proprietary and confidential
  */
 /**
- * Utility to read syslog 
+ * Utility to read syslog
  * For now only tested on OSX
  */
 const { spawn } = require('child_process');
 
-function SyslogWatch(stringToMatch) {
-
+function SyslogWatch (stringToMatch) {
   return syslogWatch;
 
-  function syslogWatch(readyCallBack, done) {
-    const child = process.platform === 'darwin' ? 
-        spawn('syslog',['-w', '0']):
-        spawn('sudo',['tail', '-f', '/var/log/syslog', '-n', '0']);
+  function syslogWatch (readyCallBack, done) {
+    const child = process.platform === 'darwin'
+      ? spawn('syslog', ['-w', '0'])
+      : spawn('sudo', ['tail', '-f', '/var/log/syslog', '-n', '0']);
     let killed = false;
     let buffer = '';
     let result = null;
@@ -26,19 +25,18 @@ function SyslogWatch(stringToMatch) {
 
     setTimeout(notFound, 5000); // close and throw notFound Error
 
-    function notFound() {
+    function notFound () {
       if (killed) return;
-      close("Not Found");
+      close('Not Found');
     }
 
-
-    function handleData(from, data) {
+    function handleData (from, data) {
       buffer += data;
       const pos = buffer.indexOf(stringToMatch);
       if (pos >= 0) {
         // extract the line for stringToMatch
         let end = buffer.indexOf('\n', pos);
-        if (end <= 0) { 
+        if (end <= 0) {
           end = buffer.length;
         }
         result = buffer.substring(pos, end);
@@ -50,16 +48,15 @@ function SyslogWatch(stringToMatch) {
       handleData('stderr', data);
     });
 
-
     child.stdout.on('data', (data) => {
       handleData('stdout', data);
     });
-    
+
     child.on('exit', function (code, signal) {
       close('child process exited with ' + `code ${code} and signal ${signal}`);
     });
 
-    function close(msg) {
+    function close (msg) {
       if (killed) return;
       killed = true;
       try {
@@ -71,6 +68,5 @@ function SyslogWatch(stringToMatch) {
       done(new Error(msg));
     }
   }
-
 }
 module.exports = SyslogWatch;

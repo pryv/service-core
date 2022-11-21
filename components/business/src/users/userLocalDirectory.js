@@ -33,10 +33,9 @@ let basePath;
 let attachmentsBasePath;
 
 // temporarly set baseBath for tests;
-function setBasePathTestOnly(path) {
+function setBasePathTestOnly (path) {
   basePath = path || config.get('userFiles:path');
 }
-
 
 /**
  * Load config and make sure baseUserDirectory exists
@@ -117,4 +116,3 @@ function getBasePath () {
   }
   return basePath;
 }
-

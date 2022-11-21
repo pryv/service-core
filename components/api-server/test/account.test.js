@@ -610,8 +610,8 @@ describe('[ACCO] account', function () {
         },
         function doReset (stepDone) {
           const data = _.defaults({
-            resetToken: resetToken,
-            newPassword: newPassword
+            resetToken,
+            newPassword
           }, authData);
           request.post(resetPath).send(data)
             .unset('authorization')
@@ -700,8 +700,8 @@ describe('[ACCO] account', function () {
         },
         function doReset (stepDone) {
           const data = _.defaults({
-            resetToken: resetToken,
-            newPassword: newPassword
+            resetToken,
+            newPassword
           }, authData);
           // use user1's resetToken to reset user0's password
           request.post(resetPath).send(data)
@@ -875,7 +875,7 @@ describe('[ACCO] account', function () {
           },
           function doReset (stepDone) {
             const data = _.defaults({
-              resetToken: resetToken,
+              resetToken,
               newPassword: badPassword
             }, authData);
             request.post(resetPath).send(data)

@@ -28,39 +28,37 @@ let initTestsDone = false;
 /**
  * To be call in before()
  */
-async function initTests() {
+async function initTests () {
   if (initTestsDone) return;
   initTestsDone = true;
   global.config = await getConfig();
 }
 
-
 let initCoreDone = false;
 /**
  * requires initTests()
  */
-async function initCore() {
+async function initCore () {
   if (initCoreDone) return;
   initCoreDone = true;
   config.injectTestConfig({
     dnsLess: {
-      isActive: true,
-    },
+      isActive: true
+    }
   });
-  const database = await storage.getDatabase();  
-  
+  const database = await storage.getDatabase();
 
-  global.getNewFixture = function() {
+  global.getNewFixture = function () {
     return databaseFixture(database);
-  }
+  };
 
   global.app = getApplication();
   await global.app.initiate();
 
   // Initialize notifications dependency
-  let axonMsgs = [];
+  const axonMsgs = [];
   const axonSocket = {
-    emit: (...args) => axonMsgs.push(args),
+    emit: (...args) => axonMsgs.push(args)
   };
   pubsub.setTestNotifier(axonSocket);
   pubsub.status.emit(pubsub.SERVER_READY);
@@ -74,18 +72,15 @@ async function initCore() {
   global.coreRequest = supertest(app.expressApp);
 }
 
-
 Object.assign(global, {
-  initCore: initCore,
-  initTests: initTests,
-  cache: cache,
+  initCore,
+  initTests,
+  cache,
   assert: require('chai').assert,
   cuid: require('cuid'),
   charlatan: require('charlatan'),
   bluebird: require('bluebird'),
   sinon: require('sinon'),
   path: require('path'),
-  _: require('lodash'),
+  _: require('lodash')
 });
-
-

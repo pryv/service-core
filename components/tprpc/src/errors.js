@@ -1,0 +1,16 @@
+/**
+ * @license
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
+// Thrown when the remote code throws an error.
+//
+class RemoteError extends Error {
+  constructor (message) {
+    super(`(remote error) ${message}`);
+  }
+}
+module.exports = {
+  RemoteError
+};

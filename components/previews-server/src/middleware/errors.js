@@ -9,7 +9,7 @@ const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const { getLogger } = require('@pryv/boiler');
 
-/*jshint -W098*/
+/* jshint -W098 */
 
 /**
  * Error route handling.
@@ -18,8 +18,8 @@ const { getLogger } = require('@pryv/boiler');
 module.exports = function (logging) {
   const logger = getLogger('routes');
 
-  /*eslint-disable no-unused-vars*/
-  return function handleError(error, req, res, next) {
+  /* eslint-disable no-unused-vars */
+  return function handleError (error, req, res, next) {
     if (!(error instanceof APIError)) {
       error = errors.unexpectedError(error);
     }

@@ -172,7 +172,7 @@ class AccessLogic {
         const storePermissions = this._streamByStorePermissionsMap[storeId];
         for (const perm of Object.values(storePermissions)) {
           if ((perm.streamId != null) && isHigherOrEqualLevel(perm.level, 'read')) {
-            res.push({ streamId: perm.streamId, storeId: storeId });
+            res.push({ streamId: perm.streamId, storeId });
           }
         }
       }
@@ -238,7 +238,7 @@ class AccessLogic {
   _registerFeaturePermission (perm) {
     this.featurePermissionsMap[perm.feature] = perm;
     if (perm.feature === 'forcedStreams') { // load them by store
-      const [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(perm.streams);
+      const [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(perm.streams);
       if (this._streamByStoreForced[storeId] == null) this._streamByStoreForced[storeId] = [];
       this._streamByStoreForced[storeId].push(...perm.streams);
     }
@@ -346,7 +346,7 @@ class AccessLogic {
         if (!myLevel || isLowerLevel(myLevel, perm.level)) return false;
       } else if (perm.feature != null) {
         const allow = this._canCreateAccessWithFeaturePermission(perm);
-        if (! allow) return false;
+        if (!allow) return false;
       }
     }
     // can only manage shared accesses with permissions
@@ -538,7 +538,7 @@ class AccessLogic {
   /**
    * return true is this access can create an access with this feature
    */
-  _canCreateAccessWithFeaturePermission(featurePermission) {
+  _canCreateAccessWithFeaturePermission (featurePermission) {
     if (featurePermission.feature == 'selfRevoke') {
       // true if this acces canSelfRevoke or if requested setting is identical to this access
       return this._canSelfRevoke() || featurePermission.setting == this.featurePermissionsMap.selfRevoke.setting;

@@ -5,6 +5,4 @@
  * Proprietary and confidential
  */
 
-
-
 module.exports = require('./integrity');

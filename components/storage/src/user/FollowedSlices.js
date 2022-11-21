@@ -4,10 +4,10 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var BaseStorage = require('./BaseStorage'),
-    converters = require('./../converters'),
-    util = require('util'),
-    _ = require('lodash');
+const BaseStorage = require('./BaseStorage');
+const converters = require('./../converters');
+const util = require('util');
+const _ = require('lodash');
 
 module.exports = FollowedSlices;
 /**
@@ -16,27 +16,27 @@ module.exports = FollowedSlices;
  * @param {Database} database
  * @constructor
  */
-function FollowedSlices(database) {
+function FollowedSlices (database) {
   FollowedSlices.super_.call(this, database);
 
   _.extend(this.converters, {
-    itemDefaults: [converters.createIdIfMissing],
+    itemDefaults: [converters.createIdIfMissing]
   });
 
   this.defaultOptions = {
-    sort: {name: 1}
+    sort: { name: 1 }
   };
 }
 util.inherits(FollowedSlices, BaseStorage);
 
-var indexes = [
+const indexes = [
   {
-    index: {name: 1},
-    options: {unique: true}
+    index: { name: 1 },
+    options: { unique: true }
   },
   {
     index: { username: 1, accessToken: 1 },
-    options: {unique: true}
+    options: { unique: true }
   }
 ];
 
@@ -47,7 +47,7 @@ FollowedSlices.prototype.getCollectionInfo = function (userOrUserId) {
   const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'followedSlices',
-    indexes: indexes,
+    indexes,
     useUserId: userId
   };
 };

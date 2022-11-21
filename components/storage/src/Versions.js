@@ -45,7 +45,7 @@ function Versions (database, attachmentsDirPath, logger, migrationsOverride) {
 
 Versions.prototype.getCurrent = async function () {
   return await bluebird.fromCallback(function (cb) {
-    this.database.findOne(collectionInfo, {}, { sort: { migrationCompleted: -1 } }, cb)
+    this.database.findOne(collectionInfo, {}, { sort: { migrationCompleted: -1 } }, cb);
   }.bind(this));
 };
 

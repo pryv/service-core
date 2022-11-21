@@ -8,7 +8,7 @@ module.exports = {
   indexes: {
     accesses: [
       {
-        index: {token: 1},
+        index: { token: 1 },
         options: { unique: true, sparse: true }
       },
       {

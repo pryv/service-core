@@ -8,10 +8,10 @@
  * Regroups acceptance tests reused in different places.
  */
 
-var validation = require('./validation'),
-    ErrorIds = require('errors').ErrorIds,
-    request = require('superagent'),
-    url = require('url');
+const validation = require('./validation');
+const ErrorIds = require('errors').ErrorIds;
+const request = require('superagent');
+const url = require('url');
 
 /**
  * @param {String} serverURL

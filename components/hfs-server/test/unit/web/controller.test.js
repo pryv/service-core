@@ -14,9 +14,7 @@ const APIError = require('errors/src/APIError');
 const ErrorIds = require('errors/src/ErrorIds');
 
 describe('Controller', () => {
-
   describe('storeSeriesData', () => {
-
     it('[3BYC] should reject queries if the authorization header is missing', (done) => {
       const req = {
         params: {},
@@ -35,7 +33,7 @@ describe('Controller', () => {
     it('[U0WB] should reject queries if the eventId is missing', (done) => {
       const req = {
         params: {},
-        headers: {authorization: 'token'}
+        headers: { authorization: 'token' }
       };
 
       controller.storeSeriesData(req, {}, (err, res) => {
@@ -46,6 +44,5 @@ describe('Controller', () => {
         done();
       });
     });
-
   });
 });

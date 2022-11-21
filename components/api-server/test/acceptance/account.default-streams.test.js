@@ -141,11 +141,13 @@ describe('[ACCO] Account with system streams', function () {
           await createAdditionalEvent(editableStreamsId);
         }
 
-        allVisibleAccountEvents = await mall.events.get(user.attrs.id, 
-          {streams: [
-            {any: visibleStreamsIds}, 
-            {and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]},
-          ]});
+        allVisibleAccountEvents = await mall.events.get(user.attrs.id,
+          {
+            streams: [
+              { any: visibleStreamsIds },
+              { and: [{ any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }] }
+            ]
+          });
 
         // get account info
         res = await request.get(basePath).set('authorization', access.token);

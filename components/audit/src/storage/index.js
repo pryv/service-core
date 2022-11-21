@@ -10,15 +10,15 @@ let storage;
 /**
  *@returns {Storage}
  */
-async function getStorage() {
-  if (! storage) {
+async function getStorage () {
+  if (!storage) {
     storage = new Storage('audit');
     await storage.init();
   }
   return storage;
 }
 
-function closeStorage() {
+function closeStorage () {
   if (storage) {
     storage.close();
     storage = null;
@@ -26,6 +26,6 @@ function closeStorage() {
 }
 
 module.exports = {
-  getStorage: getStorage,
-  closeStorage: closeStorage
-}
+  getStorage,
+  closeStorage
+};

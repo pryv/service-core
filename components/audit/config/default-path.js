@@ -8,8 +8,8 @@ module.exports = {
   audit: {
     syslog: {
       options: {
-        path: process.platform === 'darwin' ? '/var/run/syslog': '/dev/log'
+        path: process.platform === 'darwin' ? '/var/run/syslog' : '/dev/log'
       }
     }
   }
-}
+};

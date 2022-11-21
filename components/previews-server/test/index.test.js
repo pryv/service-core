@@ -4,16 +4,15 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, it */
+/* global describe, before, it */
 
-var helpers = require('./helpers'),
-    server = helpers.dependencies.instanceManager,
-    request = require('superagent'),
-    url = require('url');
+const helpers = require('./helpers');
+const server = helpers.dependencies.instanceManager;
+const request = require('superagent');
+const url = require('url');
 
 describe('(index)', function () {
-
-  function path(a) {
+  function path (a) {
     return url.resolve(server.url, a || '/');
   }
 
@@ -26,7 +25,5 @@ describe('(index)', function () {
         done();
       });
     });
-
   });
-
 });

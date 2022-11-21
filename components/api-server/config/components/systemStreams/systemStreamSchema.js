@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const helpers = require('api-server/src/schema/helpers');
 const string = helpers.string;
 const boolean = helpers.boolean;
@@ -21,10 +22,10 @@ module.exports = {
     isShown: boolean({ nullable: false }),
     isEditable: boolean({ nullable: false }),
     isRequiredInValidation: boolean({ nullable: false }),
-    type: string({ pattern: '^[a-z0-9-]+\/[a-z0-9-]+$' }),
+    type: string({ pattern: '^[a-z0-9-]+\/[a-z0-9-]+$' }), /* eslint-disable-line no-useless-escape */
     parentId: string({ minLength: 2, nullable: true }),
     default: {},
-    children: array({'$ref': 'systemStreamsSchema'}, {nullable: true}),
+    children: array({ $ref: 'systemStreamsSchema' }, { nullable: true })
   },
-  required: [ 'id', 'type' ]
+  required: ['id', 'type']
 };

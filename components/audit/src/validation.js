@@ -18,31 +18,31 @@ const { ALL_METHODS, ALL_METHODS_MAP } = require('./ApiMethods');
 
 const filterSchema = helpers.object({
   methods: helpers.object({
-      include: helpers.array(helpers.string(), { nullable: false }),
-      exclude: helpers.array(helpers.string(), { nullable: false }),
-    },
-    {
-      id: 'Audit Filter: methods',
-      required: ['include', 'exclude'],
-      additionalProperties: false,
-  }),
+    include: helpers.array(helpers.string(), { nullable: false }),
+    exclude: helpers.array(helpers.string(), { nullable: false })
   },
   {
-    id: 'Audit Filter',  
-    additionalProperties: false,
+    id: 'Audit Filter: methods',
+    required: ['include', 'exclude'],
+    additionalProperties: false
+  })
+},
+{
+  id: 'Audit Filter',
+  additionalProperties: false
 });
 
 /**
-  * @param {identifier} userId 
-  * @param {PryvEvent} event 
+  * @param {identifier} userId
+  * @param {PryvEvent} event
   */
-function eventForUser(userId, event) {
+function eventForUser (userId, event) {
   // validate uiserid
   if (!userId) return 'missing userId passed in validation';
   return eventWithoutUser(event);
 }
 
-function eventWithoutUser(event) {
+function eventWithoutUser (event) {
   if (!event) return 'event is null';
   if (!event.type) return 'event.type is missisng';
   if (!event.createdBy) return 'event.createBy is missing';
@@ -56,44 +56,44 @@ function eventWithoutUser(event) {
   return true;
 }
 
-function filter(filter) {
+function filter (filter) {
   const isValid = validator.validate(filter, filterSchema);
-  if (! isValid) {
-    throw new Error('Invalid "audit:filter" configuration parameter: \n'
-    + JSON.stringify(filter, null, 2)
-    + '\n'
-    + JSON.stringify(validator.getLastError(), null, 2));
+  if (!isValid) {
+    throw new Error('Invalid "audit:filter" configuration parameter: \n' +
+    JSON.stringify(filter, null, 2) +
+    '\n' +
+    JSON.stringify(validator.getLastError(), null, 2));
   }
   validateFunctions(filter.methods.include);
   validateFunctions(filter.methods.exclude);
-  function validateFunctions(methods) {
+  function validateFunctions (methods) {
     methods.forEach(m => {
       if (isMethodAggregate(m)) return isValidAggregate(m);
       return ALL_METHODS_MAP[m];
-    })
+    });
 
-    function isMethodAggregate(m) {
+    function isMethodAggregate (m) {
       const parts = m.split('.');
       if (parts.length !== 2) return false;
       if (parts[1] !== 'all') return false;
       return true;
     }
 
-    function isValidAggregate(m) {
+    function isValidAggregate (m) {
       const parts = m.split('.');
-      for (let i=0; i<ALL_METHODS.length; i++) {
+      for (let i = 0; i < ALL_METHODS.length; i++) {
         if (ALL_METHODS[i].startsWith(parts[0])) return true;
       }
-      throw new Error('Invalid "audit:filter" configuration parameter: \n'
-        + 'invalid aggregate method provided: "' + m + '".\n'
-        + JSON.stringify(filter, null, 2)
+      throw new Error('Invalid "audit:filter" configuration parameter: \n' +
+        'invalid aggregate method provided: "' + m + '".\n' +
+        JSON.stringify(filter, null, 2)
       );
     }
   }
 }
 
 module.exports = {
-  eventForUser: eventForUser,
-  eventWithoutUser: eventWithoutUser,
-  filter: filter,
+  eventForUser,
+  eventWithoutUser,
+  filter
 };

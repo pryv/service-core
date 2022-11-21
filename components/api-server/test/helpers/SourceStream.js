@@ -4,9 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const Readable = require('stream').Readable,
-      inherits = require('util').inherits,
-      _ = require('lodash');
+const Readable = require('stream').Readable;
+const inherits = require('util').inherits;
+const _ = require('lodash');
 
 module.exports = Source;
 
@@ -16,8 +16,8 @@ module.exports = Source;
  * @param array
  * @constructor
  */
-function Source(array) {
-  Readable.call(this, {objectMode: true});
+function Source (array) {
+  Readable.call(this, { objectMode: true });
   this.array = _.cloneDeep(array); // shift changes in place
 }
 
@@ -26,9 +26,8 @@ inherits(Source, Readable);
 Source.prototype._read = function () {
   if (!this.array || this.array.length === 0) {
     this.push(null);
-  }
-  else {
-    var reading = this.array.shift();
+  } else {
+    const reading = this.array.shift();
     this.push(reading);
   }
 };

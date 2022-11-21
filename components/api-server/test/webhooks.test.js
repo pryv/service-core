@@ -25,7 +25,6 @@ const storage = require('test-helpers').dependencies.storage.user.webhooks;
 const { Webhook } = require('business').webhooks;
 
 describe('webhooks', () => {
-
   let mongoFixtures;
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -35,11 +34,11 @@ describe('webhooks', () => {
   });
 
   let username, personalAccessToken,
-      appAccessToken1, appAccessToken2,
-      appAccessId1, appAccessId2,
-      sharedAccessToken,
-      sharedAccessId,
-      webhookId1, webhookId2, webhookId3, webhookId4;
+    appAccessToken1, appAccessToken2,
+    appAccessId1, appAccessId2,
+    sharedAccessToken,
+    sharedAccessId,
+    webhookId1, webhookId2, webhookId3, webhookId4;
   before(() => {
     username = cuid();
     personalAccessToken = cuid();
@@ -59,23 +58,24 @@ describe('webhooks', () => {
   });
 
   describe('GET /', () => {
-
     before(() => {
       username = cuid();
       return mongoFixtures.user(username, {}, (user) => {
         user.access({
-          type: 'personal', token: personalAccessToken,
+          type: 'personal', token: personalAccessToken
         });
         user.access({
           id: appAccessId1,
-          type: 'app', token: appAccessToken1,
+          type: 'app',
+          token: appAccessToken1
         });
         user.access({
           id: appAccessId2,
-          type: 'app', token: appAccessToken2,
+          type: 'app',
+          token: appAccessToken2
         });
         user.access({
-          type: 'shared', token: sharedAccessToken,
+          type: 'shared', token: sharedAccessToken
         });
 
         user.session(personalAccessToken);
@@ -89,7 +89,6 @@ describe('webhooks', () => {
     });
 
     describe('when using an app token', () => {
-
       let webhooks, response;
       before(async () => {
         const res = await server.request()
@@ -102,7 +101,7 @@ describe('webhooks', () => {
       it('[R5KD] should return a status 200 with a webhooks object which is an array', () => {
         validation.check(response, {
           schema: methodsSchema.get.result,
-          status: 200,
+          status: 200
         });
       });
       it('[67CX] should fetch all webhooks reachable by an app token', () => {
@@ -118,7 +117,6 @@ describe('webhooks', () => {
     });
 
     describe('when using a personal token', () => {
-
       let webhooks, response;
       before(async () => {
         const res = await server.request()
@@ -131,7 +129,7 @@ describe('webhooks', () => {
       it('[6MNC] should return a status 200 with a webhooks object which is an array', () => {
         validation.check(response, {
           schema: methodsSchema.get.result,
-          status: 200,
+          status: 200
         });
       });
 
@@ -152,7 +150,6 @@ describe('webhooks', () => {
     });
 
     describe('when using a shared token', () => {
-
       let response;
       before(async () => {
         const res = await server.request()
@@ -164,14 +161,13 @@ describe('webhooks', () => {
       it('[RIZV] should return a status 200 with a webhooks object which is an array', () => {
         validation.check(response, {
           schema: methodsSchema.get.result,
-          status: 200,
+          status: 200
         });
       });
     });
   });
 
   describe('GET /:webhookId', () => {
-
     const url = 'yololo';
     const minIntervalMs = 10000;
     const maxRetries = 5;
@@ -191,28 +187,30 @@ describe('webhooks', () => {
       username = cuid();
       return mongoFixtures.user(username, {}, async (user) => {
         user.access({
-          type: 'personal', token: personalAccessToken,
+          type: 'personal', token: personalAccessToken
         });
         user.access({
           id: appAccessId1,
-          type: 'app', token: appAccessToken1,
+          type: 'app',
+          token: appAccessToken1
         });
         user.access({
           id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
+          type: 'shared',
+          token: sharedAccessToken
         });
         user.session(personalAccessToken);
         user.webhook({
           id: webhookId1,
-          url: url,
-          minIntervalMs: minIntervalMs,
-          maxRetries: maxRetries,
+          url,
+          minIntervalMs,
+          maxRetries
         }, appAccessId1);
         user.webhook({
-          id: webhookId2,
+          id: webhookId2
         }, appAccessId2);
         user.webhook({
-          id: webhookId3,
+          id: webhookId3
         }, sharedAccessId);
       });
     });
@@ -222,9 +220,7 @@ describe('webhooks', () => {
     });
 
     describe('when using an app token', () => {
-
       describe('when fetching an existing webhook inside its scope', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -236,13 +232,12 @@ describe('webhooks', () => {
         it('[XMB7] should return a status 200 with a webhook object', () => {
           validation.check(response, {
             schema: methodsSchema.getOne.result,
-            status: 200,
+            status: 200
           });
         });
       });
 
       describe('when fetching an existing webhook outside of its scope', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -257,7 +252,6 @@ describe('webhooks', () => {
       });
 
       describe('when fetching an unexistant webhook', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -270,7 +264,6 @@ describe('webhooks', () => {
           validation.checkErrorUnknown(response);
         });
       });
-
     });
 
     describe('when using a personal token', () => {
@@ -285,13 +278,12 @@ describe('webhooks', () => {
       it('[D8YQ] should return a status 200 with a webhook object', () => {
         validation.check(response, {
           schema: methodsSchema.getOne.result,
-          status: 200,
+          status: 200
         });
       });
     });
 
     describe('when using a shared token', () => {
-
       let response;
       before(async () => {
         const res = await server.request()
@@ -303,16 +295,14 @@ describe('webhooks', () => {
       it('[604H] should return a status 200 with a webhook object', () => {
         validation.check(response, {
           schema: methodsSchema.getOne.result,
-          status: 200,
+          status: 200
         });
       });
     });
-
   });
 
   describe('POST /', () => {
-
-    let usedUrl = 'https://existing.com/notifications';
+    const usedUrl = 'https://existing.com/notifications';
 
     before(async () => {
       await mongoFixtures.clean();
@@ -327,26 +317,27 @@ describe('webhooks', () => {
     before(() => {
       return mongoFixtures.user(username, {}, async (user) => {
         user.access({
-          type: 'personal', token: personalAccessToken,
+          type: 'personal', token: personalAccessToken
         });
         user.session(personalAccessToken);
         user.access({
           id: appAccessId1,
-          type: 'app', token: appAccessToken1,
-          permissions: [{streamId: charlatan.Lorem.word(), level: 'read'}],
+          type: 'app',
+          token: appAccessToken1,
+          permissions: [{ streamId: charlatan.Lorem.word(), level: 'read' }]
         });
         user.access({
           id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
+          type: 'shared',
+          token: sharedAccessToken
         });
         user.webhook({
-          url: usedUrl,
+          url: usedUrl
         }, appAccessId1);
       });
     });
 
     describe('when using an app token', () => {
-
       describe('when providing a valid webhook', () => {
         const url = 'https://somecompany.com/notifications';
         let webhook, response;
@@ -354,12 +345,12 @@ describe('webhooks', () => {
           const res = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', appAccessToken1)
-            .send({ url: url });
+            .send({ url });
           response = res;
           webhook = new Webhook({
             accessId: appAccessId1,
-            url: url,
-            id: res.body.webhook.id,
+            url,
+            id: res.body.webhook.id
           }).forApi();
         });
 
@@ -369,7 +360,7 @@ describe('webhooks', () => {
             schema: methodsSchema.create.result,
             data: webhook,
             sanitizeFn: validation.removeTrackingPropertiesForOne,
-            sanitizeTarget: 'webhook',
+            sanitizeTarget: 'webhook'
           });
         });
         it('[XKLU] should save it to the storage', async () => {
@@ -382,7 +373,6 @@ describe('webhooks', () => {
       });
 
       describe('when providing an existing url', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -401,9 +391,7 @@ describe('webhooks', () => {
       });
 
       describe('when providing invalid parameters', () => {
-
         describe('when url is not a string', () => {
-
           const url = 123;
 
           let response;
@@ -411,7 +399,7 @@ describe('webhooks', () => {
             const res = await server.request()
               .post(`/${username}/webhooks`)
               .set('Authorization', appAccessToken1)
-              .send({ url: url });
+              .send({ url });
             response = res;
           });
 
@@ -419,13 +407,10 @@ describe('webhooks', () => {
             validation.checkErrorInvalidParams(response);
           });
         });
-
       });
     });
 
-
     describe('when using a shared token', () => {
-
       describe('when providing a valid webhook', () => {
         const url = `https://${charlatan.Internet.domainName()}/something`;
         let webhook, response;
@@ -433,11 +418,11 @@ describe('webhooks', () => {
           response = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', sharedAccessToken)
-            .send({ url: url });
+            .send({ url });
           webhook = new Webhook({
             accessId: sharedAccessId,
-            url: url,
-            id: response.body.webhook.id,
+            url,
+            id: response.body.webhook.id
           }).forApi();
         });
 
@@ -447,7 +432,7 @@ describe('webhooks', () => {
             schema: methodsSchema.create.result,
             data: webhook,
             sanitizeFn: validation.removeTrackingPropertiesForOne,
-            sanitizeTarget: 'webhook',
+            sanitizeTarget: 'webhook'
           });
         });
         it('[UC6J] should save it to the storage', async () => {
@@ -457,12 +442,10 @@ describe('webhooks', () => {
           assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
             validation.removeTrackingPropertiesForOne(webhook));
         });
-
       });
     });
 
     describe('when using a personal token', () => {
-
       describe('when providing a valid webhook', () => {
         let response;
         before(async () => {
@@ -478,13 +461,9 @@ describe('webhooks', () => {
         });
       });
     });
-
-
-
   });
 
   describe('PUT /:webhookId', () => {
-
     const url = 'yololo';
     const minIntervalMs = 10000;
     const maxRetries = 5;
@@ -506,34 +485,37 @@ describe('webhooks', () => {
       username = cuid();
       return mongoFixtures.user(username, {}, async (user) => {
         user.access({
-          type: 'personal', token: personalAccessToken,
+          type: 'personal', token: personalAccessToken
         });
         user.session(personalAccessToken);
         user.access({
           id: appAccessId1,
-          type: 'app', token: appAccessToken1,
+          type: 'app',
+          token: appAccessToken1
         });
         user.access({
           id: appAccessId2,
-          type: 'app', token: appAccessToken2,
+          type: 'app',
+          token: appAccessToken2
         });
         user.access({
           id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
+          type: 'shared',
+          token: sharedAccessToken
         });
         user.webhook({
           id: webhookId1,
-          url: url,
-          minIntervalMs: minIntervalMs,
-          maxRetries: maxRetries,
+          url,
+          minIntervalMs,
+          maxRetries,
           currentRetries: 5,
-          state: 'inactive',
+          state: 'inactive'
         }, appAccessId1);
         user.webhook({
-          id: webhookId2,
+          id: webhookId2
         }, appAccessId2);
         user.webhook({
-          id: webhookId3,
+          id: webhookId3
         }, sharedAccessId);
       });
     });
@@ -543,26 +525,23 @@ describe('webhooks', () => {
     });
 
     describe('when using an app token', () => {
-
       describe('when updating an existing webhook', () => {
-
         describe('when changing a valid parameter', () => {
-
           let response, webhook;
           before(async () => {
             const res = await server.request()
               .put(`/${username}/webhooks/${webhookId1}`)
               .set('Authorization', appAccessToken1)
               .send({
-                state: 'active',
+                state: 'active'
               });
             response = res;
             webhook = new Webhook({
               accessId: appAccessId1,
-              url: url,
+              url,
               id: webhookId1,
-              minIntervalMs: minIntervalMs,
-              maxRetries: maxRetries,
+              minIntervalMs,
+              maxRetries,
               state: 'active',
               currentRetries: 0
             }).forApi();
@@ -574,7 +553,7 @@ describe('webhooks', () => {
               schema: methodsSchema.update.result,
               data: webhook,
               sanitizeFn: validation.removeTrackingPropertiesForOne,
-              sanitizeTarget: 'webhook',
+              sanitizeTarget: 'webhook'
             });
           });
           it('[JSOH] should apply the changes to the storage', async () => {
@@ -587,7 +566,6 @@ describe('webhooks', () => {
         });
 
         describe('when changing a readonly parameter', () => {
-
           let response;
           before(async () => {
             const res = await server.request()
@@ -596,7 +574,7 @@ describe('webhooks', () => {
               .send({
                 lastRun: {
                   status: 201,
-                  timestamp: timestamp.now(),
+                  timestamp: timestamp.now()
                 }
               });
             response = res;
@@ -606,18 +584,16 @@ describe('webhooks', () => {
             validation.checkErrorForbidden(response);
           });
         });
-
       });
 
       describe('when updating a webhook outside its scope', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
             .put(`/${username}/webhooks/${webhookId2}`)
             .set('Authorization', appAccessToken1)
             .send({
-              state: 'inactive',
+              state: 'inactive'
             });
           response = res;
         });
@@ -634,7 +610,7 @@ describe('webhooks', () => {
             .put(`/${username}/webhooks/doesnotexist`)
             .set('Authorization', appAccessToken1)
             .send({
-              state: 'active',
+              state: 'active'
             });
           response = res;
         });
@@ -642,21 +618,18 @@ describe('webhooks', () => {
         it('[AR5R] should return a status 404 with an unknown resource error', () => {
           validation.checkErrorUnknown(response);
         });
-
       });
     });
 
     describe('when using a personal token', () => {
-
       describe('when providing valid parameters', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
             .put(`/${username}/webhooks/${webhookId1}`)
             .set('Authorization', personalAccessToken)
             .send({
-              state: 'inactive',
+              state: 'inactive'
             });
           response = res;
         });
@@ -664,24 +637,21 @@ describe('webhooks', () => {
         it('[LCKN] should return a status 200 with the updated webhook', () => {
           validation.check(response, {
             status: 200,
-            schema: methodsSchema.update.result,
+            schema: methodsSchema.update.result
           });
         });
       });
-
     });
 
     describe('when using a shared token', () => {
-
       describe('when providing valid parameters', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
             .put(`/${username}/webhooks/${webhookId3}`)
             .set('Authorization', sharedAccessToken)
             .send({
-              state: 'inactive',
+              state: 'inactive'
             });
           response = res;
         });
@@ -689,17 +659,14 @@ describe('webhooks', () => {
         it('[TMIZ] should return a status 200 with the updated webhook', () => {
           validation.check(response, {
             status: 200,
-            schema: methodsSchema.update.result,
+            schema: methodsSchema.update.result
           });
         });
       });
-
     });
-
   });
 
   describe('DELETE /:webhookId', () => {
-
     before(() => {
       personalAccessToken = cuid();
       appAccessId1 = cuid();
@@ -718,32 +685,35 @@ describe('webhooks', () => {
       username = cuid();
       return mongoFixtures.user(username, {}, async (user) => {
         user.access({
-          type: 'personal', token: personalAccessToken,
+          type: 'personal', token: personalAccessToken
         });
         user.session(personalAccessToken);
         user.access({
           id: appAccessId1,
-          type: 'app', token: appAccessToken1,
+          type: 'app',
+          token: appAccessToken1
         });
         user.access({
           id: appAccessId2,
-          type: 'app', token: appAccessToken2,
+          type: 'app',
+          token: appAccessToken2
         });
         user.access({
           id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
+          type: 'shared',
+          token: sharedAccessToken
         });
         user.webhook({
-          id: webhookId1,
+          id: webhookId1
         }, appAccessId1);
         user.webhook({
-          id: webhookId2,
+          id: webhookId2
         }, appAccessId2);
         user.webhook({
-          id: webhookId3,
+          id: webhookId3
         }, appAccessId1);
         user.webhook({
-          id: webhookId4,
+          id: webhookId4
         }, sharedAccessId);
       });
     });
@@ -754,7 +724,6 @@ describe('webhooks', () => {
 
     describe('when using an app token', () => {
       describe('when deleting an existing webhook', () => {
-
         let response, deletion;
         before(async () => {
           const res = await server.request()
@@ -763,7 +732,7 @@ describe('webhooks', () => {
           response = res;
           deletion = {
             id: response.body.id,
-            timestamp: response.body.timestamp,
+            timestamp: response.body.timestamp
           };
         });
 
@@ -771,7 +740,7 @@ describe('webhooks', () => {
           validation.check(response, {
             status: 200,
             schema: methodsSchema.del.result,
-            data: deletion,
+            data: deletion
           });
         });
 
@@ -784,7 +753,6 @@ describe('webhooks', () => {
       });
 
       describe('when deleting an unexistant webhook', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -799,7 +767,6 @@ describe('webhooks', () => {
       });
 
       describe('when deleting an already deleted webhook', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -814,7 +781,6 @@ describe('webhooks', () => {
       });
 
       describe('when deleting a webhook outside of its scope', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -831,7 +797,6 @@ describe('webhooks', () => {
 
     describe('when using a personal token', () => {
       describe('when deleting an existing webhook', () => {
-
         let response, deletion;
         before(async () => {
           const res = await server.request()
@@ -840,7 +805,7 @@ describe('webhooks', () => {
           response = res;
           deletion = {
             id: response.body.id,
-            timestamp: response.body.timestamp,
+            timestamp: response.body.timestamp
           };
         });
 
@@ -848,7 +813,7 @@ describe('webhooks', () => {
           validation.check(response, {
             status: 200,
             schema: methodsSchema.del.result,
-            data: deletion,
+            data: deletion
           });
         });
       });
@@ -856,7 +821,6 @@ describe('webhooks', () => {
 
     describe('when using a shared token', () => {
       describe('when deleting an existing webhook', () => {
-
         let response, deletion;
         before(async () => {
           const res = await server.request()
@@ -865,7 +829,7 @@ describe('webhooks', () => {
           response = res;
           deletion = {
             id: response.body.id,
-            timestamp: response.body.timestamp,
+            timestamp: response.body.timestamp
           };
         });
 
@@ -873,16 +837,14 @@ describe('webhooks', () => {
           validation.check(response, {
             status: 200,
             schema: methodsSchema.del.result,
-            data: deletion,
+            data: deletion
           });
         });
-
       });
     });
   });
 
   describe('POST /:webhookId/test', () => {
-
     const port = 5553;
     const postPath = '/notifications';
 
@@ -909,31 +871,34 @@ describe('webhooks', () => {
       username = cuid();
       return mongoFixtures.user(username, {}, async (user) => {
         user.access({
-          type: 'personal', token: personalAccessToken,
+          type: 'personal', token: personalAccessToken
         });
         user.session(personalAccessToken);
         user.access({
           id: appAccessId1,
-          type: 'app', token: appAccessToken1,
+          type: 'app',
+          token: appAccessToken1
         });
         user.access({
           id: appAccessId2,
-          type: 'app', token: appAccessToken2,
+          type: 'app',
+          token: appAccessToken2
         });
         user.access({
           id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
+          type: 'shared',
+          token: sharedAccessToken
         });
         user.webhook({
           url: 'http://localhost:' + port + postPath,
-          id: webhookId1,
+          id: webhookId1
         }, appAccessId1);
         user.webhook({
-          id: webhookId2,
+          id: webhookId2
         }, appAccessId2);
         user.webhook({
           url: 'http://localhost:' + port + postPath,
-          id: webhookId3,
+          id: webhookId3
         }, sharedAccessId);
       });
     });
@@ -944,11 +909,8 @@ describe('webhooks', () => {
     });
 
     describe('when using an app token', () => {
-
       describe('when the webhook exists', () => {
-
         describe('when the URL is valid', () => {
-
           let response;
           before(async () => {
             response = await server.request()
@@ -959,7 +921,7 @@ describe('webhooks', () => {
           it('[ZM2B] should return a status 200 with a webhook object', () => {
             validation.check(response, {
               schema: methodsSchema.test.result,
-              status: 200,
+              status: 200
             });
           });
 
@@ -969,7 +931,6 @@ describe('webhooks', () => {
         });
 
         describe('when the URL is invalid', () => {
-
           let response;
           before(async () => {
             notificationsServer.setResponseStatus(404);
@@ -982,11 +943,10 @@ describe('webhooks', () => {
           it('[KLRO] should return a status 400 with an error object', () => {
             validation.check(response, {
               status: 400,
-              id: ErrorIds.UnknownReferencedResource,
+              id: ErrorIds.UnknownReferencedResource
             });
           });
         });
-
       });
 
       describe('when the webhook does not exist', () => {
@@ -1019,9 +979,7 @@ describe('webhooks', () => {
     });
 
     describe('when using a personal token', () => {
-
       describe('when the webhook exists', () => {
-
         let response;
         before(async () => {
           notificationsServer.resetMessageReceived();
@@ -1035,7 +993,7 @@ describe('webhooks', () => {
         it('[HYZZ] should return a status 200 with a webhook object', () => {
           validation.check(response, {
             schema: methodsSchema.test.result,
-            status: 200,
+            status: 200
           });
         });
 
@@ -1046,7 +1004,6 @@ describe('webhooks', () => {
     });
 
     describe('when using a shared token', () => {
-
       describe('when the webhook exists', () => {
         let response;
         before(async () => {
@@ -1061,7 +1018,7 @@ describe('webhooks', () => {
         it('[O8PB] should return a status 200 with a webhook object', () => {
           validation.check(response, {
             schema: methodsSchema.test.result,
-            status: 200,
+            status: 200
           });
         });
 

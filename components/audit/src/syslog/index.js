@@ -11,8 +11,8 @@ let syslog;
 /**
  *@returns {Syslog}
  */
-async function getSyslog() {
-  if (! syslog) {
+async function getSyslog () {
+  if (!syslog) {
     syslog = new Syslog();
     await syslog.init();
   }
@@ -20,5 +20,5 @@ async function getSyslog() {
 }
 
 module.exports = {
-  getSyslog: getSyslog,
-}
+  getSyslog
+};

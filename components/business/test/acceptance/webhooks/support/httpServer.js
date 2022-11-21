@@ -1,0 +1,130 @@
+/**
+ * @license
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
+const express = require('express');
+const bodyParser = require('body-parser');
+const EventEmitter = require('events');
+const bluebird = require('bluebird');
+const PORT = 6123;
+/** @extends EventEmitter */
+class HttpServer extends EventEmitter {
+  app;
+
+  server;
+
+  messages;
+
+  metas;
+
+  messageReceived;
+
+  messageCount;
+
+  responseStatus;
+
+  responseDelay;
+  constructor (path, statusCode, responseBody, delay) {
+    super();
+    const app = express();
+    this.messages = [];
+    this.metas = [];
+    this.messageReceived = false;
+    this.messageCount = 0;
+    this.responseStatus = statusCode || 200;
+    this.responseDelay = delay || null;
+    const that = this;
+    app.use(bodyParser.json());
+    app.post(path, (req, res) => {
+      this.emit('received');
+      if (that.responseDelay == null) {
+        processMessage.call(that, req, res);
+      } else {
+        setTimeout(() => {
+          processMessage.call(that, req, res);
+        }, that.responseDelay);
+      }
+    });
+    function processMessage (req, res) {
+      this.messages = this.messages.concat(req.body.messages);
+      this.metas = this.metas.concat(req.body.meta);
+      this.messageReceived = true;
+      this.messageCount++;
+      this.emit('responding');
+      res.status(this.responseStatus).json(responseBody || { ok: '1' });
+    }
+    this.app = app;
+  }
+
+  /**
+ * @param {number} port
+       * @returns {Promise<void>}
+       */
+  async listen (port) {
+    this.server = await this.app.listen(port || PORT);
+  }
+
+  /**
+ * @returns {string[]}
+ */
+  getMessages () {
+    return this.messages;
+  }
+
+  /**
+ * @returns {string[]}
+ */
+  getMetas () {
+    return this.metas;
+  }
+
+  /**
+ * @returns {boolean}
+ */
+  isMessageReceived () {
+    return this.messageReceived;
+  }
+
+  /**
+ * @returns {void}
+ */
+  resetMessageReceived () {
+    this.messageReceived = false;
+  }
+
+  /**
+ * @returns {number}
+ */
+  getMessageCount () {
+    return this.messageCount;
+  }
+
+  /**
+ * @param {number} newStatus
+       * @returns {void}
+       */
+  setResponseStatus (newStatus) {
+    this.responseStatus = newStatus;
+  }
+
+  /**
+ * @param {number} delay
+       * @returns {void}
+       */
+  setResponseDelay (delay) {
+    this.responseDelay = delay;
+  }
+
+  /**
+ * @returns {any}
+ */
+  close () {
+    return bluebird.fromCallback((cb) => {
+      if (this.server == null) { return cb(); }
+      this.server.close(cb);
+    });
+  }
+}
+module.exports = HttpServer;

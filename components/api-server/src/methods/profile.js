@@ -4,10 +4,10 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var errors = require('errors').factory,
-    async = require('async'),
-    commonFns = require('./helpers/commonFunctions'),
-    methodsSchema = require('../schema/profileMethods');
+const errors = require('errors').factory;
+const async = require('async');
+const commonFns = require('./helpers/commonFunctions');
+const methodsSchema = require('../schema/profileMethods');
 
 const { getStorageLayer } = require('storage');
 
@@ -27,7 +27,7 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.get.params),
     getProfile);
 
-  function setPublicProfile(context, params, result, next) {
+  function setPublicProfile (context, params, result, next) {
     params.id = 'public';
     next();
   }
@@ -42,8 +42,8 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.get.params),
     getProfile);
 
-  function getProfile(context, params, result, next) {
-    userProfileStorage.findOne(context.user, {id: params.id}, null, function (err, profileSet) {
+  function getProfile (context, params, result, next) {
+    userProfileStorage.findOne(context.user, { id: params.id }, null, function (err, profileSet) {
       if (err) { return next(errors.unexpectedError(err)); }
       result.profile = profileSet ? profileSet.data : {};
       next();
@@ -62,37 +62,36 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.update.params),
     updateProfile);
 
-  function updateProfile(context, params, result, next) {
+  function updateProfile (context, params, result, next) {
     async.series([
-      function checkExisting(stepDone) {
-        userProfileStorage.findOne(context.user, {id: params.id}, null, function (err, profileSet) {
+      function checkExisting (stepDone) {
+        userProfileStorage.findOne(context.user, { id: params.id }, null, function (err, profileSet) {
           if (err) { return stepDone(errors.unexpectedError(err)); }
 
           if (profileSet) { return stepDone(); }
 
           // item missing -> create it
           userProfileStorage.insertOne(context.user, { id: params.id, data: {} }, stepDone);
-        }.bind(this));
-      }.bind(this),
-      function update(stepDone) {
-        userProfileStorage.updateOne(context.user, {id: params.id}, {data: params.update},
+        });
+      },
+      function update (stepDone) {
+        userProfileStorage.updateOne(context.user, { id: params.id }, { data: params.update },
           function (err, updatedProfile) {
             if (err) { return stepDone(errors.unexpectedError(err)); }
 
             result.profile = updatedProfile.data;
             stepDone();
           });
-      }.bind(this)
+      }
     ], next);
   }
 
-  function setAppProfile(context, params, result, next) {
-    if (! context.access.isApp()) {
+  function setAppProfile (context, params, result, next) {
+    if (!context.access.isApp()) {
       return next(errors.invalidOperation(
         'This resource is only available to app accesses.'));
     }
     params.id = context.access.name;
     next();
   }
-
 };

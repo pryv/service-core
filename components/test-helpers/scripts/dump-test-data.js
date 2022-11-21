@@ -18,7 +18,7 @@ require('@pryv/boiler').init({
       scope: 'serviceInfo',
       key: 'service',
       urlFromKey: 'serviceInfoUrl'
-    }, 
+    },
     {
       scope: 'defaults-paths',
       file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
@@ -48,8 +48,6 @@ if (version == null) {
   process.exit(1);
 }
 
-
-
 (async () => {
   let hasErr = false;
   await getConfig();
@@ -62,5 +60,3 @@ if (version == null) {
   }
   process.exit(hasErr ? 1 : 0);
 })();
-
-

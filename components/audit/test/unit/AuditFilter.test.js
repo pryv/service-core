@@ -5,15 +5,13 @@
  * Proprietary and confidential
  */
 
-
 describe('AuditFilter', () => {
-
-  function buildFilter(include = ['all'], exclude = []) {
+  function buildFilter (include = ['all'], exclude = []) {
     return {
       methods: {
         include,
-        exclude,
-      },
+        exclude
+      }
     };
   }
   describe('validation', () => {
@@ -21,40 +19,40 @@ describe('AuditFilter', () => {
       const method = 'events.get';
       assert.isTrue(apiMethods.AUDITED_METHODS_MAP[method]);
       try {
-        validation.filter(buildFilter([method]));  
-      } catch (e) {assert.isNull(e);}
+        validation.filter(buildFilter([method]));
+      } catch (e) { assert.isNull(e); }
     });
     it('[YIDZ] must accept a valid method aggregator', () => {
       const method = 'events.all';
       const parts = method.split('.');
-      let found = false;
+      const found = false;
       assert.isAbove(apiMethods.AUDITED_METHODS.filter(m => m.startsWith(parts[0])).length, 0);
       try {
-        validation.filter(buildFilter([method]));  
-      } catch (e) {assert.isNull(e);}
+        validation.filter(buildFilter([method]));
+      } catch (e) { assert.isNull(e); }
     });
     it('[74RS] must accept "all"', () => {
       const method = 'all';
       try {
-        validation.filter(buildFilter([method]));  
-      } catch (e) {assert.isNull(e);}
+        validation.filter(buildFilter([method]));
+      } catch (e) { assert.isNull(e); }
     });
     it('[P6WW] must throw an error when providing a malformed filter', () => {
-      try { validation.filter({notMethods: { include: [], exclude: [] }}); assert.fail('must throw') } catch(e) {};
-      try { validation.filter({methods: { somethign: [], exclude: [] }}); assert.fail('must throw') } catch(e) {};
-      try { validation.filter({methods: { include: [12], exclude: [] }}); assert.fail('must throw') } catch(e) {};
+      try { validation.filter({ notMethods: { include: [], exclude: [] } }); assert.fail('must throw'); } catch (e) {}
+      try { validation.filter({ methods: { somethign: [], exclude: [] } }); assert.fail('must throw'); } catch (e) {}
+      try { validation.filter({ methods: { include: [12], exclude: [] } }); assert.fail('must throw'); } catch (e) {}
     });
     it('[GFCE] must throw an error when providing an unexisting method', () => {
       try {
         validation.filter(buildFilter(['doesntexist']));
         assert.fail('must refuse an unexisting method');
-      } catch(e) {assert.exists(e);}
+      } catch (e) { assert.exists(e); }
     });
     it('[GY6E] must throw an error when providing an invalid aggregate method', () => {
       try {
         validation.filter(buildFilter(['something.all']));
-        assert.fail('must throw an error')
-      } catch(e) {assert.exists(e);}
+        assert.fail('must throw an error');
+      } catch (e) { assert.exists(e); }
     });
   });
 
@@ -66,7 +64,6 @@ describe('AuditFilter', () => {
         assert.isTrue(auditChannels.syslog);
         if (m.startsWith('events.')) assert.isTrue(auditChannels.storage);
       });
-    })
+    });
   });
-
 });

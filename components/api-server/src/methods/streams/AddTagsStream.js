@@ -15,8 +15,8 @@ module.exports = AddTagsStream;
  * This needs to be run before "SetSingleStreamIdStream.js"
  * @constructor
  */
-function AddTagsStream() {
-  Transform.call(this, {objectMode: true});
+function AddTagsStream () {
+  Transform.call(this, { objectMode: true });
 }
 
 inherits(AddTagsStream, Transform);

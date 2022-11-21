@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var streams = require('./streams.js');
+const streams = require('./streams.js');
 
 module.exports = [
   {

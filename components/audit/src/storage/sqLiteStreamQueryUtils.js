@@ -20,7 +20,7 @@ exports.toSQLiteQuery = function toSQLiteQuery (streamQuery) {
     return '(' + streamQuery.map(processBlock).join(') OR (') + ')';
   }
 
-  function processBlock(block) {
+  function processBlock (block) {
     if (typeof block === 'string') return '"' + block + '"';
     let res = ''; // A OR B
     const anyExists = block.any && block.any.length > 0 && block.any[0] !== '*';

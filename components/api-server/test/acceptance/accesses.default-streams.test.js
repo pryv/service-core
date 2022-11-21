@@ -27,7 +27,7 @@ const { produceMongoConnection } = require('api-server/test/test-helpers');
 
 const { getConfig } = require('@pryv/boiler');
 
-describe("Accesses with account streams", function () {
+describe('Accesses with account streams', function () {
   let config;
   let app;
   let request;
@@ -50,7 +50,7 @@ describe("Accesses with account streams", function () {
     eventsBasePath = '/' + user.attrs.username + '/events';
     access = await user.access({
       type: 'personal',
-      token: cuid(),
+      token: cuid()
     });
     access = access.attrs;
     await user.session(access.token);
@@ -64,7 +64,7 @@ describe("Accesses with account streams", function () {
         name: charlatan.Lorem.characters(7),
         permissions: [
           {
-            streamId: streamId,
+            streamId,
             level: permissionLevel
           }
         ]
@@ -75,7 +75,7 @@ describe("Accesses with account streams", function () {
 
   async function getAccessInDb (id) {
     return await bluebird.fromCallback(
-      (cb) => user.db.accesses.findOne({ id: user.attrs.id }, { _id: id}, null, cb));
+      (cb) => user.db.accesses.findOne({ id: user.attrs.id }, { _id: id }, null, cb));
   }
 
   before(async function () {
@@ -88,15 +88,15 @@ describe("Accesses with account streams", function () {
     await app.initiate();
 
     // Initialize notifyTests dependency
-    let axonMsgs = [];
+    const axonMsgs = [];
     const axonSocket = {
-      emit: (...args) => axonMsgs.push(args),
+      emit: (...args) => axonMsgs.push(args)
     };
     pubsub.setTestNotifier(axonSocket);
     pubsub.status.emit(pubsub.SERVER_READY);
     await require('api-server/src/methods/accesses')(app.api);
-    
-    await require("api-server/src/methods/events")(app.api);
+
+    await require('api-server/src/methods/events')(app.api);
     request = supertest(app.expressApp);
   });
 
@@ -133,7 +133,7 @@ describe("Accesses with account streams", function () {
               assert.equal(createAccessResponse.status, 201);
             });
             it('[65I4] should create access in the database', async () => {
-              assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+              assert.deepEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
             });
             it('[L99L] should allow to access visible events in storageUsed', async () => {
               res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
@@ -152,7 +152,7 @@ describe("Accesses with account streams", function () {
               assert.equal(createAccessResponse.status, 201);
             });
             it('[U3UM] should create access in the database', async () => {
-              assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+              assert.deepEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
             });
             it('[A4UP] should allow to access visible events in storageUsed', async () => {
               res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
@@ -179,7 +179,7 @@ describe("Accesses with account streams", function () {
             assert.equal(createAccessResponse.status, 201);
           });
           it('[APYN] should create access in the database', async () => {
-            assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+            assert.deepEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
           });
         });
         describe('with a contribute-level permission', () => {
@@ -193,7 +193,7 @@ describe("Accesses with account streams", function () {
             assert.equal(createAccessResponse.status, 201);
           });
           it('[Q8R8] should create access in the database', async () => {
-            assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+            assert.deepEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
           });
           it('[TI1X] should allow to create visible stream events', async () => {
             scope = nock(config.get('services:register:url'));
@@ -202,7 +202,7 @@ describe("Accesses with account streams", function () {
                 serviceRegisterRequest = body;
                 return true;
               }).reply(200, { errors: [] });
-  
+
             const response = await request.post(eventsBasePath)
               .send({
                 streamIds: [streamId],
@@ -210,7 +210,7 @@ describe("Accesses with account streams", function () {
                 type: 'string/pryv'
               })
               .set('authorization', accountAccessData.token);
-  
+
             assert.equal(response.status, 201);
             assert.exists(response.body.event);
             assert.equal(response.body.event.streamId, streamId);
@@ -253,7 +253,6 @@ describe("Accesses with account streams", function () {
         });
       });
       describe('to create an access for unexisting system streams', () => {
-        
         before(async function () {
           const streamId = ':system:' + charlatan.Lorem.characters(10);
           await createUserAndAccess('read', streamId);
@@ -262,7 +261,7 @@ describe("Accesses with account streams", function () {
           assert.equal(createAccessResponse.status, 403);
           assert.equal(createAccessResponse.body.error.id, ErrorIds.Forbidden);
         });
-      })
+      });
     });
   });
 

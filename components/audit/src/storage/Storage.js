@@ -22,9 +22,9 @@ class Storage {
   options = null;
   id = null;
 
-  async init() {
+  async init () {
     if (this.initialized) {
-      throw('Database already initalized');
+      throw ('Database already initalized');
     }
     this.initialized = true;
     this.config = await getConfig();
@@ -34,7 +34,7 @@ class Storage {
     return this;
   }
 
-  constructor(id, options) {
+  constructor (id, options) {
     this.id = id;
     this.logger = getLogger(this.id + ':storage');
     this.options = options || {};
@@ -44,15 +44,15 @@ class Storage {
     });
   }
 
-  getVersion() {
+  getVersion () {
     return VERSION;
   }
 
   /**
    * @throws if not initalized
    */
-  checkInititalized() {
-    if (! this.initialized) throw('Initialize db component before using it');
+  checkInititalized () {
+    if (!this.initialized) throw ('Initialize db component before using it');
   }
 
   /**
@@ -60,7 +60,7 @@ class Storage {
    * @param {string} userId
    * @returns {UserDatabase}
    */
-  async forUser(userId) {
+  async forUser (userId) {
     this.logger.debug('forUser: ' + userId);
     this.checkInititalized();
     return this.userDBsCache.get(userId) || (await open(this, userId, this.logger));
@@ -71,7 +71,7 @@ class Storage {
    * @param {string} userId
    * @returns {void}
    */
-  async deleteUser(userId) {
+  async deleteUser (userId) {
     this.logger.info('deleteUser: ' + userId);
     const userDb = await this.forUser(userId);
     await userDb.close();
@@ -85,20 +85,20 @@ class Storage {
     }
   }
 
-  close() {
+  close () {
     this.checkInititalized();
     this.userDBsCache.clear();
   }
 
-  async dbPathForUserId(userId) {
+  async dbPathForUserId (userId) {
     const userPath = await ensureUserDirectory(userId);
     return path.join(userPath, this.id + '-' + this.getVersion() + '.sqlite');
   }
 }
 
-async function open(storage, userId, logger) {
+async function open (storage, userId, logger) {
   logger.debug('open: ' + userId);
-  const db = new UserDatabase(logger, {dbPath: await storage.dbPathForUserId(userId)});
+  const db = new UserDatabase(logger, { dbPath: await storage.dbPathForUserId(userId) });
   await db.init();
   storage.userDBsCache.set(userId, db);
   return db;

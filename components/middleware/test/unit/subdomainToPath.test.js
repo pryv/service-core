@@ -1,0 +1,39 @@
+/**
+ * @license
+ * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
+const supertest = require('supertest');
+const express = require('express');
+const should = require('should');
+const subdomainToPath = require('middleware/src/subdomainToPath')([]);
+/* globals describe, it */
+describe('subdomainToPath middleware', function () {
+  describe('using a minimal application', function () {
+    const app = express();
+    const request = supertest(app);
+    app.use(subdomainToPath);
+    app.get('*', (req, res) => {
+      res.json({ path: req.path });
+    });
+    function ok (host, path) {
+      return request
+        .get('/path')
+        .set('Host', host)
+        .expect(200)
+        .then((res) => {
+          should(res.body.path).be.eql(path + '/path');
+        });
+    }
+    it('[V0R9] should not transform illegal usernames', function () {
+      return ok('user/name.pryv.li', '');
+    });
+    it('[Q5A5] should transform username into a path segment', function () {
+      return ok('username.pryv.li', '/username');
+    });
+    it('[IDDE] should accept dashes', function () {
+      return ok('a---0.pryv.li', '/a---0');
+    });
+  });
+});

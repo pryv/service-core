@@ -146,7 +146,7 @@ function getStoreQueryFromParams (params) {
     options.sort = { deleted: -1 };
   } else {
     // all deletions (tests only)
-    if (! params.withDeletions) {
+    if (!params.withDeletions) {
       query.push({ type: 'equal', content: { field: 'deleted', value: null } }); // <<== actual default value
     }
   }

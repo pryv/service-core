@@ -54,7 +54,7 @@ async function checkAllUsers (storage) {
       process.exit(1);
     }
 
-    const v1user = new UserDatabase(logger, {dbPath: v1dbPath});
+    const v1user = new UserDatabase(logger, { dbPath: v1dbPath });
 
     try {
       await v1user.init();

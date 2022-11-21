@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const path = require('path');
 
 module.exports = {
@@ -17,4 +18,4 @@ module.exports = {
   customExtensions: {
     defaultFolder: path.join(__dirname, '../../../../custom-extensions')
   }
-}
+};

@@ -18,12 +18,12 @@ const mkdirp = require('mkdirp');
 
 function getFilename (req, file, cb) {
   crypto.randomBytes(16, function (err, raw) {
-    cb(err, err ? undefined : raw.toString('hex'))
-  })
+    cb(err, err ? undefined : raw.toString('hex'));
+  });
 }
 
 function getDestination (req, file, cb) {
-  cb(null, os.tmpdir())
+  cb(null, os.tmpdir());
 }
 
 /**
@@ -31,63 +31,63 @@ function getDestination (req, file, cb) {
  * @param {*} opts
  */
 function MulterIntegrityDiskStorage (opts) {
-  this.getFilename = (opts.filename || getFilename)
+  this.getFilename = (opts.filename || getFilename);
 
   if (typeof opts.destination === 'string') {
-    mkdirp.sync(opts.destination)
-    this.getDestination = function ($0, $1, cb) { cb(null, opts.destination) }
+    mkdirp.sync(opts.destination);
+    this.getDestination = function ($0, $1, cb) { cb(null, opts.destination); };
   } else {
-    this.getDestination = (opts.destination || getDestination)
+    this.getDestination = (opts.destination || getDestination);
   }
 }
 
-let count = 0;
+const count = 0;
 
 MulterIntegrityDiskStorage.prototype._handleFile = function _handleFile (req, file, cb) {
-  var that = this
+  const that = this;
 
   that.getDestination(req, file, function (err, destination) {
-    if (err) return cb(err)
+    if (err) return cb(err);
 
     that.getFilename(req, file, function (err, filename) {
-      if (err) return cb(err)
+      if (err) return cb(err);
 
-      var finalPath = path.join(destination, filename)
-      var outStream = fs.createWriteStream(finalPath)
-      var integrityStream = new IntegrityStream('sha256');
+      const finalPath = path.join(destination, filename);
+      const outStream = fs.createWriteStream(finalPath);
+      const integrityStream = new IntegrityStream('sha256');
 
-      file.stream.pipe(integrityStream).pipe(outStream)
-      outStream.on('error', cb)
+      file.stream.pipe(integrityStream).pipe(outStream);
+      outStream.on('error', cb);
       outStream.on('finish', function () {
         cb(null, {
-          destination: destination,
-          filename: filename,
+          destination,
+          filename,
           path: finalPath,
           size: outStream.bytesWritten,
           integrity: integrityStream.getDigest()
-        })
-      })
-    })
-  })
-}
+        });
+      });
+    });
+  });
+};
 
 MulterIntegrityDiskStorage.prototype._removeFile = function _removeFile (req, file, cb) {
-  var path = file.path
+  const path = file.path;
 
-  delete file.destination
-  delete file.filename
-  delete file.path
+  delete file.destination;
+  delete file.filename;
+  delete file.path;
 
-  fs.unlink(path, cb)
-}
+  fs.unlink(path, cb);
+};
 
 /**
  * Multer disk storage
  * @module IntegrityMulterIntegrityDiskStorage
  */
 module.exports = function (opts) {
-  return new MulterIntegrityDiskStorage(opts)
-}
+  return new MulterIntegrityDiskStorage(opts);
+};
 
 // -- CHECKSUM STREAM
 
@@ -98,26 +98,26 @@ class IntegrityStream extends PassThrough {
   digest;
   hashOptionsAlgorythm;
 
-  constructor(hashOptionsAlgorythm, hashOptions) {
+  constructor (hashOptionsAlgorythm, hashOptions) {
     super();
     this.hashOptionsAlgorythm = hashOptionsAlgorythm;
     this.checksum = crypto.createHash(hashOptionsAlgorythm, hashOptions);
     this.on('finish', () => {
-      this.digest = this.checksum.digest('base64')
+      this.digest = this.checksum.digest('base64');
     });
   }
 
-  _transform(chunk, encoding, done) {
+  _transform (chunk, encoding, done) {
     try {
-      this.checksum.update(chunk)
-      this.push(chunk)
-      done()
-    } catch(e){
-      done(e)
+      this.checksum.update(chunk);
+      this.push(chunk);
+      done();
+    } catch (e) {
+      done(e);
     }
   }
 
-  getDigest() {
+  getDigest () {
     if (this.digest == null) throw new Error('Failed computing checksum on event');
     return this.hashOptionsAlgorythm + '-' + this.digest;
   }

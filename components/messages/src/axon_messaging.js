@@ -8,24 +8,24 @@
  * Helper for opening inter-process TCP axonMessaging sockets.
  */
 
-var axon = require('axon');
+const axon = require('axon');
 const { getConfig, getLogger } = require('@pryv/boiler');
 
 let axonSocket = null;
-let initalizing = false;
-exports.getTestNotifier = async function() {
-  while (initalizing) { await new Promise((r) => setTimeout(r, 50))}
+const initalizing = false;
+exports.getTestNotifier = async function () {
+  while (initalizing) { await new Promise((r) => setTimeout(r, 50)); }
   if (axonSocket != null) return axonSocket;
-  const logger = getLogger('test-messaging')
+  const logger = getLogger('test-messaging');
   initializing = true;
   const config = await getConfig();
   const axonSettings = config.get('axonMessaging');
 
-  if (! axonSettings.enabled) return { emit: () => {}};
+  if (!axonSettings.enabled) return { emit: () => {} };
 
-  try { 
+  try {
     axonSocket = await openPubSocket(axonSettings);
-  } catch(e) {
+  } catch (e) {
     logger.error('Error setting up TCP pub socket: ' + err);
     process.exit(1);
   }
@@ -34,24 +34,23 @@ exports.getTestNotifier = async function() {
 
   initializing = false;
   return axonSocket;
-}
-
+};
 
 /**
  * @param {{host: String, port: Number, pubConnectInsteadOfBind: Boolean}} settings
  */
-function openPubSocket(settings) {
+function openPubSocket (settings) {
   return new Promise((resolve, reject) => {
-    var socket = axon.socket('pub-emitter');
+    const socket = axon.socket('pub-emitter');
     if (settings.pubConnectInsteadOfBind) {
       socket.connect(+settings.port, settings.host, onSocketOpened);
     } else {
       socket.bind(+settings.port, settings.host, onSocketOpened);
     }
 
-    function onSocketOpened(err) {
+    function onSocketOpened (err) {
       if (err) { return reject(err); }
       resolve(socket);
     }
   });
-};
+}

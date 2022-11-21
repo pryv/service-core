@@ -8,7 +8,7 @@
  * Tests data migration between versions.
  */
 
-/*global describe, it, assert */
+/* global describe, it, assert */
 
 const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');
@@ -17,21 +17,20 @@ const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
 
-const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
+const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin';
 
 const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
 
-
-describe('Migration - 1.7.5',function () {
+describe('Migration - 1.7.5', function () {
   this.timeout(20000);
 
   let accessesCollection;
 
-  before(async function() {
+  before(async function () {
     accessesCollection = await database.getCollection({ name: 'accesses' });
   });
 
-  after(async function() {
+  after(async function () {
     // erase all
     await accessesCollection.deleteMany({});
   });
@@ -40,11 +39,10 @@ describe('Migration - 1.7.5',function () {
     const newVersion = getVersions('1.7.5');
     const accessesStorage = storage.user.accesses;
 
-
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.7.1', mongoFolder, cb));
 
     // verify accesses afterwards
-    const previousAccessesWithSystemStreamPermissions = await accessesCollection.find({"permissions.streamId": { $regex : /^\./ }}).toArray();
+    const previousAccessesWithSystemStreamPermissions = await accessesCollection.find({ 'permissions.streamId': { $regex: /^\./ } }).toArray();
     const accessToCheck = previousAccessesWithSystemStreamPermissions[0];
     // perform migration
     await newVersion.migrateIfNeeded();
@@ -55,7 +53,7 @@ describe('Migration - 1.7.5',function () {
     const accesses = await accessesCollection.find({}).toArray();
     for (const access of accesses) {
       if (access.type === 'personal') continue;
-      if ( access._id === accessToCheck._id) isAccessToCheckProcessed = true;
+      if (access._id === accessToCheck._id) isAccessToCheckProcessed = true;
       for (const permission of access.permissions) {
         if (permission.streamId != null) {
           assert.isFalse(hasDotStreamId(permission.streamId));
@@ -64,9 +62,8 @@ describe('Migration - 1.7.5',function () {
     }
     assert.isTrue(isAccessToCheckProcessed);
 
-    function hasDotStreamId(streamId) {
+    function hasDotStreamId (streamId) {
       return streamId.indexOf('.') > -1;
     }
   });
-
 });

@@ -18,26 +18,27 @@ const string = helpers.string;
 module.exports = {
   get: {
     params: object({}, {
-      id: 'webhooks.get',
+      id: 'webhooks.get'
     }),
     result: object({
       webhooks: {
         type: 'array',
         items: webhook(Action.READ)
-      },}, { required: ['webhooks'] })
+      }
+    }, { required: ['webhooks'] })
   },
 
   getOne: {
     params: object({
       // in path for HTTP requests
-      id: string(),
+      id: string()
     }, {
       id: 'webhooks.getOne',
-      required: ['id'],
+      required: ['id']
     }),
     result: object({
-      webhook: webhook(Action.READ),
-    }, { required: [ 'webhook' ] })
+      webhook: webhook(Action.READ)
+    }, { required: ['webhook'] })
   },
 
   create: {
@@ -67,11 +68,11 @@ module.exports = {
   del: {
     params: object({
       // in path for HTTP requests
-      id: string(),
+      id: string()
     }, {
-        id: 'webhooks.delete',
-        required: ['id']
-      }),
+      id: 'webhooks.delete',
+      required: ['id']
+    }),
     result: object({ webhookDeletion: itemDeletion }, {
       required: ['webhookDeletion'],
       additionalProperties: false
@@ -81,13 +82,13 @@ module.exports = {
   test: {
     params: object({
       // in path for HTTP requests
-      id: string(),
+      id: string()
     }, {
-        id: 'webhooks.test',
-        required: ['id'],
-      }),
+      id: 'webhooks.test',
+      required: ['id']
+    }),
     result: object({
-      webhook: webhook(Action.READ),
+      webhook: webhook(Action.READ)
     }, { required: ['webhook'] })
-  },
+  }
 };

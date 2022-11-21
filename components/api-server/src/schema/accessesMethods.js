@@ -22,44 +22,44 @@ module.exports = {
     params: object({}, {
       id: 'accesses.get',
       includeDeletions: boolean(),
-      includeExpired: boolean(),
+      includeExpired: boolean()
     }),
     result: object({
-      'accesses': {
+      accesses: {
         type: 'array',
         items: access(Action.READ)
       },
-      'accessDeletions': {
+      accessDeletions: {
         type: 'array',
         items: access(Action.READ)
-      },
+      }
     }, {
-      required: [ 'accesses' ]
+      required: ['accesses']
     })
   },
 
   create: {
     params: access(Action.CREATE),
     result: object({
-      'access': access(Action.READ)
+      access: access(Action.READ)
     }, {
-      required: [ 'access' ]
+      required: ['access']
     })
   },
 
   del: {
     params: object({
       // in path for HTTP requests
-      'id': string()
+      id: string()
     }, {
       id: 'accesses.delete',
-      required: [ 'id' ]
+      required: ['id']
     }),
     result: object({
       accessDeletion: itemDeletion,
       relatedDeletions: {
         type: 'array',
-        items: itemDeletion,
+        items: itemDeletion
       }
     }, {
       required: ['accessDeletion'],
@@ -72,34 +72,34 @@ module.exports = {
       id: 'accesses.getInfo'
     }),
     result: object({
-      'type': string({enum: ['personal', 'app', 'shared']}),
-      'name': string(),
-      'permissions': access.permissions(Action.READ),
-      'user': object({
-        'username': string(),
-      }),
+      type: string({ enum: ['personal', 'app', 'shared'] }),
+      name: string(),
+      permissions: access.permissions(Action.READ),
+      user: object({
+        username: string()
+      })
     }, {
-      required: [ 'type', 'name', 'permissions' ],
+      required: ['type', 'name', 'permissions'],
       additionalProperties: false
     })
   },
 
   checkApp: {
     params: object({
-      'requestingAppId': string(),
-      'deviceName': string(),
-      'requestedPermissions': access.permissions(Action.CREATE),
-      'clientData': object({}),
+      requestingAppId: string(),
+      deviceName: string(),
+      requestedPermissions: access.permissions(Action.CREATE),
+      clientData: object({})
     }, {
       id: 'accesses.checkApp',
-      required: [ 'requestingAppId', 'requestedPermissions' ],
-      additionalProperties: false,
+      required: ['requestingAppId', 'requestedPermissions'],
+      additionalProperties: false
     }),
     result: object({
-      'matchingAccess': access(Action.READ),
-      'mismatchingAccess': access(Action.READ),
-      'checkedPermissions': access.permissions(Action.CREATE),
-      'error': error
+      matchingAccess: access(Action.READ),
+      mismatchingAccess: access(Action.READ),
+      checkedPermissions: access.permissions(Action.CREATE),
+      error
     }, {
       additionalProperties: false
     })

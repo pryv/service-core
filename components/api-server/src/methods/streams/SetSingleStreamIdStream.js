@@ -13,8 +13,8 @@ module.exports = SetSingleStreamIdStream;
  * For backwardCompatibility set single StreamId to Event
  * @constructor
  */
-function SetSingleStreamIdStream() {
-  Transform.call(this, {objectMode: true});
+function SetSingleStreamIdStream () {
+  Transform.call(this, { objectMode: true });
 }
 
 inherits(SetSingleStreamIdStream, Transform);
@@ -24,4 +24,3 @@ SetSingleStreamIdStream.prototype._transform = function (event, encoding, callba
   this.push(event);
   callback();
 };
-

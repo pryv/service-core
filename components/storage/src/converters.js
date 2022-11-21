@@ -21,7 +21,7 @@ exports.createIdIfMissing = function (item) {
 
 exports.getRenamePropertyFn = function (oldName, newName) {
   return function (item) {
-    if (! item || ! item.hasOwnProperty(oldName)) {
+    if (!item || !item.hasOwnProperty(oldName)) {
       return item;
     }
 
@@ -46,7 +46,7 @@ exports.stateToDB = function (item) {
 };
 
 exports.stateUpdate = function (update) {
-  if (update.$set.hasOwnProperty('trashed') && ! update.$set.trashed) {
+  if (update.$set.hasOwnProperty('trashed') && !update.$set.trashed) {
     update.$unset.trashed = 1;
     delete update.$set.trashed;
   }
@@ -56,7 +56,7 @@ exports.stateUpdate = function (update) {
 exports.getKeyValueSetUpdateFn = function (propertyName) {
   propertyName = propertyName || 'clientData';
   return function (update) {
-    var keyValueSet = update.$set[propertyName];
+    const keyValueSet = update.$set[propertyName];
     if (keyValueSet) {
       Object.keys(keyValueSet).forEach(function (key) {
         if (keyValueSet[key] !== null) {
@@ -71,9 +71,8 @@ exports.getKeyValueSetUpdateFn = function (propertyName) {
   };
 };
 
-
 exports.deletionToDB = function (item) {
-  if (item.deleted === undefined) { // undefined => null 
+  if (item.deleted === undefined) { // undefined => null
     item.deleted = null;
   }
   return item;
@@ -90,16 +89,16 @@ exports.deletionFromDB = function (dbItem) {
 
 /**
  * Inside $or clauses, converts "id" to "_id"
- * @param {*} query 
+ * @param {*} query
  */
 exports.idInOrClause = function (query) {
-  if (query == null || query['$or'] == null) return query;
-  const convertedOrClause = query['$or'].map(field => {
+  if (query == null || query.$or == null) return query;
+  const convertedOrClause = query.$or.map(field => {
     if (field.id != null) {
       return { _id: field.id };
     }
     return field;
   });
-  query['$or'] = convertedOrClause;
+  query.$or = convertedOrClause;
   return query;
-}
+};

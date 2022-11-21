@@ -15,9 +15,9 @@ class DB {
   db;
   queries;
 
-  constructor() { }
+  constructor () { }
 
-  async init() {
+  async init () {
     const config = await getConfig();
     const basePath = config.get('userFiles:path');
     mkdirp.sync(basePath);
@@ -36,19 +36,19 @@ class DB {
     this.queries.getAllWithValue = this.db.prepare('SELECT key, value FROM keyValue WHERE value = ?');
   }
 
-  getOne(key) {
+  getOne (key) {
     const value = this.queries.getValueWithKey.all(key);
     const res = (value.length === 0) ? null : value[0].value;
     logger.debug('getOne', key, res);
     return res;
   }
 
-  getAllWithPrefix(prefix) {
+  getAllWithPrefix (prefix) {
     logger.debug('getAllWithPrefix', prefix);
     return this.queries.getAllWithKeyStartsWith.all(prefix).map(parseEntry);
   }
 
-  getAllWithValue(value) {
+  getAllWithValue (value) {
     logger.debug('getAllWithValue', value);
     return this.queries.getAllWithKeyStartsWith.all(value).map(parseEntry);
   }
@@ -59,54 +59,54 @@ class DB {
    * @param {string} value
    * @returns
    */
-  set(key, value) {
+  set (key, value) {
     logger.debug('set', key, value);
     return this.queries.upsertUniqueKeyValue.run({ key, value });
   }
 
-  delete(key) {
+  delete (key) {
     logger.debug('delete', key);
     return this.queries.deleteWithKey.run(key);
   }
 
-  deleteAll() {
+  deleteAll () {
     logger.debug('deleteAll');
     this.queries.deleteAll.run();
   }
 
   // ----- utilities ------- //
 
-  async setUserUniqueField(username, field, value) {
+  async setUserUniqueField (username, field, value) {
     const key = getUserUniqueKey(field, value);
     this.set(key, username);
   }
 
-  async deleteUserUniqueField(field, value) {
+  async deleteUserUniqueField (field, value) {
     const key = getUserUniqueKey(field, value);
     this.delete(key);
   }
 
-  async setUserIndexedField(username, field, value) {
+  async setUserIndexedField (username, field, value) {
     const key = getUserIndexedKey(username, field);
     this.set(key, value);
   }
 
-  async deleteUserIndexedField(username, field) {
+  async deleteUserIndexedField (username, field) {
     const key = getUserIndexedKey(username, field);
     this.delete(key);
   }
 
-  async getUserIndexedField(username, field) {
+  async getUserIndexedField (username, field) {
     const key = getUserIndexedKey(username, field);
     return this.getOne(key);
   }
 
-  async getUsersUniqueField(field, value) {
+  async getUsersUniqueField (field, value) {
     const key = getUserUniqueKey(field, value);
     return this.getOne(key);
   }
 
-  async close() {
+  async close () {
     this.db.close();
   }
 }
@@ -117,21 +117,21 @@ class DB {
  * @param {string} entry.key
  * @param {string} entry.value
  */
-function parseEntry(entry) {
+function parseEntry (entry) {
   const [type, field, userNameOrValue] = entry.key.split('/');
   const isUnique = (type == 'user-unique');
   return {
-    isUnique: isUnique,
-    field: field,
+    isUnique,
+    field,
     username: isUnique ? entry.value : userNameOrValue,
     value: isUnique ? userNameOrValue : entry.value
   };
 }
 
-function getUserUniqueKey(field, value) {
+function getUserUniqueKey (field, value) {
   return 'user-unique/' + field + '/' + value;
 }
-function getUserIndexedKey(username, field) {
+function getUserIndexedKey (username, field) {
   return 'user-indexed/' + field + '/' + username;
 }
 

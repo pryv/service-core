@@ -6,5 +6,5 @@
  */
 
 module.exports = {
-  BOOT_MESSAGE: 'webhooksServiceBoot',
+  BOOT_MESSAGE: 'webhooksServiceBoot'
 };

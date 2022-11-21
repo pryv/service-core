@@ -16,8 +16,7 @@ describe('Pubsub removers', function () {
     let titiReceived = false;
     pubsub.notifications.emit('toto', 'titi');
 
-
-    function messageReceived(msg) {
+    function messageReceived (msg) {
       assert.equal(msg, 'titi');
       titiReceived = true;
       removable();

@@ -4,8 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var storage = require('storage'),
-    _ = require('lodash');
+const storage = require('storage');
+const _ = require('lodash');
 
 const { getConfigUnsafe, getLogger } = require('@pryv/boiler');
 const config = getConfigUnsafe(true);
@@ -15,12 +15,12 @@ const database = storage.getDatabaseSync(true);
 /**
  * Test process dependencies.
  */
-var deps = module.exports = {
+const deps = module.exports = {
   settings: config.get(),
   storage: {
-    database: database,
+    database,
     versions: new storage.Versions(database, config.get('eventFiles:attachmentsDirPath'),
-    getLogger('versions')),
+      getLogger('versions')),
     passwordResetRequests: new storage.PasswordResetRequests(database),
     sessions: new storage.Sessions(database),
     user: {
@@ -30,12 +30,12 @@ var deps = module.exports = {
       followedSlices: new storage.user.FollowedSlices(database),
       streams: new storage.user.Streams(database), // TODO: reomove when mall is fully implemented for streams
       profile: new storage.user.Profile(database),
-      webhooks: new storage.user.Webhooks(database),
+      webhooks: new storage.user.Webhooks(database)
     }
   }
 };
 
-const dbDocumentsItems = _.values(_.pick(deps.storage.user, 
+const dbDocumentsItems = _.values(_.pick(deps.storage.user,
   'accesses', 'followedSlices', 'profile'));
 const attFilesItems = _.values(_.pick(deps.storage.user, 'eventFiles'));
 deps.storage.size = new storage.Size(dbDocumentsItems, attFilesItems);

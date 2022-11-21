@@ -7,7 +7,6 @@
 
 /* global describe, before, beforeEach, after, it */
 
-
 const async = require('async');
 const should = require('should');
 const request = require('superagent');
@@ -92,7 +91,7 @@ describe('system route', function () {
       const user = await mongoFixtures.user(username);
       await user.access({
         type: 'personal',
-        token: token
+        token
       });
       await user.session(token);
       const res = await server.request()
@@ -150,8 +149,7 @@ describe('system (ex-register)', function () {
   // reconfigures it so that it just replies OK for subsequent tests.
   // DEPRECATED: remove (along with all other references to `create-user`) after all reg servers updated
   describe('POST /create-user (DEPRECATED)', function () {
-
-    function path() {
+    function path () {
       return basePath() + '/create-user';
     }
     function post (data, callback) {

@@ -9,7 +9,7 @@ const { ApiEndpoint } = require('utils');
 const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
-const { getUsersRepository, UserRepositoryOptions, getPasswordRules  } = require('business/src/users');
+const { getUsersRepository, UserRepositoryOptions, getPasswordRules } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
 const { getStorageLayer } = require('storage');
 const { getLogger, getConfig } = require('@pryv/boiler');
@@ -41,8 +41,8 @@ module.exports = async function (api) {
     setAuditAccessId(AuditAccessIds.VALID_PASSWORD),
     setAdditionalInfo);
 
-  function applyPrerequisitesForLogin(context, params, result, next) {
-    var fixedUsername = params.username.toLowerCase();
+  function applyPrerequisitesForLogin (context, params, result, next) {
+    const fixedUsername = params.username.toLowerCase();
     if (context.user.username !== fixedUsername) {
       return next(errors.invalidOperation('The username in the path does not match that of ' +
           'the credentials.'));
@@ -71,7 +71,7 @@ module.exports = async function (api) {
     }
   }
 
-  function openSession(context, params, result, next) {
+  function openSession (context, params, result, next) {
     context.sessionData = {
       username: context.user.username,
       appId: params.appId
@@ -91,12 +91,12 @@ module.exports = async function (api) {
     });
   }
 
-  function updateOrCreatePersonalAccess(context, params, result, next) {
+  function updateOrCreatePersonalAccess (context, params, result, next) {
     context.accessQuery = { name: params.appId, type: 'personal' };
     // a
     findAccess(context, (err, access) => {
       if (err) { return next(errors.unexpectedError(err)); }
-      var accessData = {token: result.token};
+      const accessData = { token: result.token };
       // Access is already existing, updating it with new token (as we have updated the sessions with it earlier).
       if (access != null) {
         updatePersonalAccess(accessData, context, next);
@@ -126,34 +126,34 @@ module.exports = async function (api) {
       }
     });
 
-    function findAccess(context, callback) {
+    function findAccess (context, callback) {
       userAccessesStorage.findOne(context.user, context.accessQuery, null, callback);
     }
 
-    function createAccess(access, context, callback) {
+    function createAccess (access, context, callback) {
       _.extend(access, context.accessQuery);
       context.initTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.insertOne(context.user, access, callback);
     }
 
-    function updatePersonalAccess(access, context, callback) {
+    function updatePersonalAccess (access, context, callback) {
       context.updateTrackingProperties(access, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);
     }
   }
 
-  function addApiEndpoint(context, params, result, next) {
+  function addApiEndpoint (context, params, result, next) {
     if (result.token) {
       result.apiEndpoint = ApiEndpoint.build(context.user.username, result.token);
     }
     next();
   }
 
-  async function setAdditionalInfo(context, params, result, next) {
+  async function setAdditionalInfo (context, params, result, next) {
     // get user details
     const usersRepository = await getUsersRepository();
     const userBusiness = await usersRepository.getUserByUsername(context.user.username);
-    if (! userBusiness) return next(errors.unknownResource('user', context.user.username));
+    if (!userBusiness) return next(errors.unknownResource('user', context.user.username));
     result.preferredLanguage = userBusiness.language;
     next();
   }
@@ -164,10 +164,9 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.logout.params),
     destroySession);
 
-  function destroySession(context, params, result, next) {
+  function destroySession (context, params, result, next) {
     sessionsStorage.destroy(context.accessToken, function (err) {
       next(err ? errors.unexpectedError(err) : null);
     });
   }
-
 };

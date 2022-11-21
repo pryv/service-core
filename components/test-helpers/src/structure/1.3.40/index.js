@@ -9,28 +9,28 @@ module.exports = {
     events: [
       {
         index: { time: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { streamId: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { tags: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { trashed: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { modified: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { endTime: 1 },
-        options: { partialFilterExpression: { endTime: { $exists: true } } },
-      },
+        options: { partialFilterExpression: { endTime: { $exists: true } } }
+      }
     ],
     accesses: [
       {

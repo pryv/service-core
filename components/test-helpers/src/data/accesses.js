@@ -139,8 +139,8 @@ module.exports = [
     modifiedBy: 'test',
     lastUsed: 0,
     calls: {}
-  },
-  /*{ // used to generate dump 1.7.1 - to remove when finished
+  }
+  /* { // used to generate dump 1.7.1 - to remove when finished
     id: 'a_6',
     token: 'a_6_token',
     apiEndpoint: 'htpps://a_6_token@user-system-perms.pryv.me/',
@@ -163,5 +163,5 @@ module.exports = [
     lastUsed: timestamp.now('-1m'),
     calls: {},
     deleted: timestamp.now('-1m')
-  }*/
+  } */
 ];

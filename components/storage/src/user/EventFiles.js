@@ -4,13 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var async = require('async'),
-    cuid = require('cuid'),
-    fs = require('fs'),
-    mkdirp = require('mkdirp'),
-    path = require('path'),
-    rimraf = require('rimraf'),
-    toString = require('utils').toString;
+const async = require('async');
+const cuid = require('cuid');
+const fs = require('fs');
+const mkdirp = require('mkdirp');
+const path = require('path');
+const rimraf = require('rimraf');
+const toString = require('utils').toString;
 
 const bluebird = require('bluebird');
 const { pipeline } = require('stream/promises');
@@ -20,7 +20,7 @@ module.exports = EventFiles;
  * Manages files storage for events (attachments & previews).
  *
  */
-function EventFiles(settings, logger) {
+function EventFiles (settings, logger) {
   this.settings = settings;
   this.logger = logger;
 }
@@ -32,9 +32,9 @@ function EventFiles(settings, logger) {
  * @param {Function} callback
  */
 EventFiles.prototype.getTotalSize = function (user, callback) {
-  var userPath = this.getAttachmentPath(user.id);
+  const userPath = this.getAttachmentPath(user.id);
   fs.exists(userPath, function (exists) {
-    if (! exists) {
+    if (!exists) {
       this.logger.debug('No attachments dir for user ' + toString.user(user));
       return callback(null, 0);
     }
@@ -45,17 +45,17 @@ EventFiles.prototype.getTotalSize = function (user, callback) {
 /**
  * Gets all files sizes assyncronously using generators
  */
-async function* recursiveReadDirAsync(dir) {
-  const dirents = await fs.promises.readdir(dir, {withFileTypes: true});
+async function * recursiveReadDirAsync (dir) {
+  const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
   for (const dirent of dirents) {
     const res = path.resolve(dir, dirent.name);
     if (dirent.isDirectory()) {
       yield * recursiveReadDirAsync(res);
     } else {
-      try{
+      try {
         const fileStats = await fs.promises.stat(res);
         yield fileStats.size;
-      } catch(err){
+      } catch (err) {
         this.logger.error('Data corrupted; expected ' + toString.path(filePath) + ' to exist');
         yield 0;
       }
@@ -68,15 +68,14 @@ async function* recursiveReadDirAsync(dir) {
  * @param callback
  * @this {EventFiles}
  */
-function getSizeRecursive(filePath, callback) {
-
+function getSizeRecursive (filePath, callback) {
   (async () => {
     let total = 0;
     for await (const f of recursiveReadDirAsync(filePath)) {
       total += f;
     }
     callback(null, total);
-  })()
+  })();
 }
 
 /**
@@ -105,13 +104,13 @@ EventFiles.prototype.getAttachedFileStream = function (userId, eventId, fileId) 
 };
 
 EventFiles.prototype.removeAttachedFile = async function (userId, eventId, fileId) {
-  var filePath = this.getAttachmentPath(userId, eventId, fileId);
+  const filePath = this.getAttachmentPath(userId, eventId, fileId);
   await fs.promises.unlink(filePath);
   await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(filePath), cb));
 };
 
 EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
-  var dirPath = this.getAttachmentPath(userId, eventId);
+  const dirPath = this.getAttachmentPath(userId, eventId);
   await bluebird.fromCallback((cb) => rimraf(dirPath, cb));
   await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(dirPath), cb));
 };
@@ -135,8 +134,8 @@ EventFiles.prototype.removeAll = function (callback) {
  * @param {String} fileId Optional
  * @returns {String}
  */
-EventFiles.prototype.getAttachedFilePath = function (user /*, eventId, fileId*/) {
-  var args = [].slice.call(arguments);
+EventFiles.prototype.getAttachedFilePath = function (user /*, eventId, fileId */) {
+  const args = [].slice.call(arguments);
   args[0] = user.id;
   return this.getAttachmentPath.apply(this, args);
 };
@@ -144,8 +143,8 @@ EventFiles.prototype.getAttachedFilePath = function (user /*, eventId, fileId*/)
 /**
  * @private
  */
-EventFiles.prototype.getAttachmentPath = function (/*userId, eventId, fileId*/) {
-  var args = [].slice.call(arguments);
+EventFiles.prototype.getAttachmentPath = function (/* userId, eventId, fileId */) {
+  const args = [].slice.call(arguments);
   args.unshift(this.settings.attachmentsDirPath);
   return path.join.apply(null, args);
 };
@@ -160,7 +159,7 @@ EventFiles.prototype.getAttachmentPath = function (/*userId, eventId, fileId*/) 
  * @param {Function} callback (error, previewPath)
  */
 EventFiles.prototype.ensurePreviewPath = function (user, eventId, dimension, callback) {
-  var dirPath = path.join(this.settings.previewsDirPath, user.id, eventId);
+  const dirPath = path.join(this.settings.previewsDirPath, user.id, eventId);
   mkdirp(dirPath).then(function (res, err) {
     if (err) { return callback(err); }
     callback(null, path.join(dirPath, getPreviewFileName(dimension)));
@@ -177,7 +176,7 @@ EventFiles.prototype.getPreviewFilePath = function (user, eventId, dimension) {
   return path.join(this.settings.previewsDirPath, user.id, eventId, getPreviewFileName(dimension));
 };
 
-function getPreviewFileName(dimension) {
+function getPreviewFileName (dimension) {
   return dimension + '.jpg';
 }
 
@@ -187,7 +186,7 @@ function getPreviewFileName(dimension) {
  *
  * @private
  */
-EventFiles.prototype.cleanupStructure = function cleanupStructure(dirPath, callback) {
+EventFiles.prototype.cleanupStructure = function cleanupStructure (dirPath, callback) {
   if (dirPath === this.settings.attachmentsDirPath) {
     return callback();
   }

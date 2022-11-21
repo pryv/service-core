@@ -6,12 +6,12 @@
  */
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:syslog:templates');
-var path = require('path');
+const path = require('path');
 
 class SyslogTransform {
   key;
-  constructor(key) {  this.key = key; }
-  transform(userId, event) { throw('Transform must be implemented'); }
+  constructor (key) { this.key = key; }
+  transform (userId, event) { throw ('Transform must be implemented'); }
 }
 
 /**
@@ -21,7 +21,7 @@ class SyslogTransform {
 class Plugin extends SyslogTransform {
   plugin;
 
-  constructor(key, format) {
+  constructor (key, format) {
     super(key);
     const rootPath = path.resolve(__dirname, '../../');
     this.plugin = require(path.resolve(rootPath, format.plugin));
@@ -33,7 +33,7 @@ class Plugin extends SyslogTransform {
    * @param {PryvEvent} event
    * @returns {LogItem|null} {level: .. , message: ... }  or null to skip
    */
-  transform(userId, event) {
+  transform (userId, event) {
     logger.debug('Using plugin ' + this.key);
     return this.plugin(userId, event);
   }
@@ -47,23 +47,23 @@ class Template extends SyslogTransform {
   template;
   level;
 
-  constructor(key, format) {
+  constructor (key, format) {
     super(key);
     this.template = format.template;
     this.level = format.level;
     logger.debug('Loaded template for [' + key + ']: ' + format.template);
   }
+
   /**
    * @returns {LogItem|null}
    */
-  transform(userId, event) {
+  transform (userId, event) {
     logger.debug('Using template ' + this.key);
     return {
       level: this.level,
       message: transformFromTemplate(this.template, userId, event)
-    }
+    };
   }
-
 }
 
 /**
@@ -78,7 +78,7 @@ class Template extends SyslogTransform {
  * @param {PryvEvent} event
  * @returns {LogItem|null}
  */
-function logForEvent(userId, event) {
+function logForEvent (userId, event) {
   if (event.type in templates) {
     return templates[event.type].transform(userId, event);
   }
@@ -86,24 +86,23 @@ function logForEvent(userId, event) {
 }
 
 const templates = {};
-function loadTemplates(templatesFromConfig) {
-  for (let key of Object.keys(templatesFromConfig)) {
+function loadTemplates (templatesFromConfig) {
+  for (const key of Object.keys(templatesFromConfig)) {
     const format = templatesFromConfig[key];
     if (format.template) {
       templates['log/' + key] = new Template(key, format);
     } else if (format.plugin) {
       templates['log/' + key] = new Plugin(key, format);
     } else {
-      throw('Error: Invalid syslog fromat [' + key +'] ' + format);
+      throw ('Error: Invalid syslog fromat [' + key + '] ' + format);
     }
   }
 }
 
 module.exports = {
-  loadTemplates: loadTemplates,
-  logForEvent: logForEvent
+  loadTemplates,
+  logForEvent
 };
-
 
 // ---- utils
 
@@ -113,7 +112,7 @@ module.exports = {
  * @param {string} userId  - the userid
  * @param {PryvEvent} event
  */
-function transformFromTemplate(template, userId, event) {
+function transformFromTemplate (template, userId, event) {
   logger.debug('transformFromTemplate', template);
   const result = template.replace('{userid}', userId);
   return result.replace(/{([^}]*)}/g, function (match, key) {
@@ -130,8 +129,8 @@ function transformFromTemplate(template, userId, event) {
  * @param {string} key
  * @param {*} obj
  */
-function getKey(key, obj) {
-  return key.split('.').reduce(function(a,b){
+function getKey (key, obj) {
+  return key.split('.').reduce(function (a, b) {
     return a && a[b];
   }, obj);
 }

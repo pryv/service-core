@@ -19,12 +19,12 @@ const templates = require('./templating');
  * - warning: Warning
  * - notice: Notice
  */
-class Syslog { 
+class Syslog {
   syslogger;
 
-  async init() { 
+  async init () {
     if (this.syslogger) {
-      throw("Syslog Logger was already initialized");
+      throw ('Syslog Logger was already initialized');
     }
 
     const config = await getConfig();
@@ -36,7 +36,7 @@ class Syslog { 
     // console
     const syslogger = winston.createLogger({
       levels: winston.config.syslog.levels,
-      format:  generateFormat(options.format)
+      format: generateFormat(options.format)
     });
     // uncomment the following line to get syslog output to console
     // syslogger.add(new winston.transports.Console());
@@ -44,18 +44,18 @@ class Syslog { 
 
     this.syslogger = syslogger;
     logger.debug('Initialized');
-  };
+  }
 
   /**
    * send an new event for syslog
    * @param {string} userId
    * @param {PryvEvent} event
    */
-  eventForUser(userId, event) {
+  eventForUser (userId, event) {
     logger.debug('eventForUser', userId);
     const logItem = templates.logForEvent(userId, event);
     if (logItem != null) {
-      this.syslogger.log(logItem)
+      this.syslogger.log(logItem);
     }
   }
 }
@@ -69,9 +69,9 @@ module.exports = Syslog;
  * @param {boolean} options.time - set to true to for timestamp
  * @param {boolean} options.align - set to true to allign logs items
  */
-function generateFormat(options) {
+function generateFormat (options) {
   const formats = [];
-  function printf(info) {
+  function printf (info) {
     return info.message;
   }
   formats.push(winston.format.printf(printf));

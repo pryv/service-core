@@ -12,7 +12,7 @@ module.exports = MigrationContext;
  * @param {Object} settings
  * @constructor
  */
-function MigrationContext(settings) {
+function MigrationContext (settings) {
   this.database = settings.database;
   this.attachmentsDirPath = settings.attachmentsDirPath;
   this.logger = settings.logger;
