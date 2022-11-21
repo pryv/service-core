@@ -15,17 +15,16 @@ const errors = require('errors').factory;
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors').ErrorMessages;
 
-const { ApiEndpoint, treeUtils } = require('utils');
+const { ApiEndpoint } = require('utils');
 
 const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/accessesMethods');
-const accessSchema = require('../schema/access');
 const string = require('./helpers/string');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const cache = require('cache');
 
-const { getLogger, getConfig } = require('@pryv/boiler');
+const { getConfig } = require('@pryv/boiler');
 const { getMall, storeDataUtils } = require('mall');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
@@ -57,14 +56,10 @@ const { integrity } = require('business');
 
 module.exports = async function produceAccessesApiMethods (api) {
   const config = await getConfig();
-  const logger = getLogger('methods:accesses');
   const isOpenSource = config.get('openSource:isActive');
   const dbFindOptions = { projection: { calls: 0, deleted: 0 } };
   const mall = await getMall();
   const storageLayer = await getStorageLayer();
-  const updatesSettings = {
-    ignoreProtectedFields: config.get('updates:ignoreProtectedFields')
-  };
 
   const isStreamIdPrefixBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
@@ -563,19 +558,6 @@ module.exports = async function produceAccessesApiMethods (api) {
                     'with valid alternative proposals.'
       };
     }
-
-    /**
-     * Returns an alternative name proposal from the given base name, by adding a suffix based on
-     * the given suffix number. If suffixNum is 0, the base name is left as-is.
-     *
-     * @param {string} name
-     * @param {number} suffixNum
-     * @return {string}
-     */
-    function getAlternativeName (name, suffixNum) {
-      if (suffixNum === 0) { return name; }
-      return `${name} (${suffixNum})`;
-    }
   }
 
   // Centralises the check for access expiry; yes, this should be part of some
@@ -597,7 +579,7 @@ module.exports = async function produceAccessesApiMethods (api) {
                 !isOpenSource &&
                 integrity.accesses.isActive) {
         // double check integrity when running tests only
-        if (result.access.integrity != integrity.accesses.hash(result.access)) {
+        if (result.access.integrity !== integrity.accesses.hash(result.access)) {
           return next(new Error('integrity mismatch ' + JSON.stringify(result.access)));
         }
       }

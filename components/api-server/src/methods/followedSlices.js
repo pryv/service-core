@@ -19,7 +19,7 @@ const { getStorageLayer } = require('storage');
  */
 module.exports = async function (api) {
   const storageLayer = await getStorageLayer();
-  userFollowedSlicesStorage = storageLayer.followedSlices;
+  const userFollowedSlicesStorage = storageLayer.followedSlices;
 
   // RETRIEVAL
 

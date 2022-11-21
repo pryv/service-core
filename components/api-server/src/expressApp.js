@@ -9,7 +9,6 @@ const _ = require('lodash');
 const bodyParser = require('body-parser');
 const middleware = require('middleware');
 const Paths = require('./routes/Paths');
-const { getAPIVersion } = require('middleware/src/project_version');
 const { getConfig } = require('@pryv/boiler');
 // ------------------------------------------------------------ express app init
 // Creates and returns an express application with a standard set of middleware.
@@ -19,7 +18,6 @@ const { getConfig } = require('@pryv/boiler');
  * @returns {Promise<any>}
  */
 async function expressAppInit (logging) {
-  const version = await getAPIVersion();
   const config = await getConfig();
   const app = express(); // register common middleware
   const commonHeadersMiddleware = await middleware.commonHeaders();

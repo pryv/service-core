@@ -75,7 +75,7 @@ module.exports = async function (api) {
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
     // username
-    if (field == 'username') {
+    if (field === 'username') {
       if (await usersIndex.usernameExists(params[field])) {
         return next(errors.itemAlreadyExists('user', { username: params[field] }));
       }

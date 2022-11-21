@@ -6,13 +6,14 @@
  */
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfigUnsafe } = require('@pryv/boiler');
+
 const OLD_PREFIX = '.';
 // loaded lazily from config using loadTagConfigIfNeeded()
 let TAG_ROOT_STREAMID;
 let TAG_PREFIX;
 let TAG_PREFIX_LENGTH;
-let isTagBackwardCompatibilityActive;
 loadTagConfigIfNeeded();
+
 /**
  * @returns {void}
  */
@@ -22,27 +23,43 @@ function loadTagConfigIfNeeded () {
   TAG_PREFIX = config.get('backwardCompatibility:tags:streamIdPrefix');
   TAG_ROOT_STREAMID = config.get('backwardCompatibility:tags:rootStreamId');
   TAG_PREFIX_LENGTH = TAG_PREFIX.length;
-  isTagBackwardCompatibilityActive = config.get('backwardCompatibility:tags:isActive');
 }
+
+module.exports = {
+  changeMultipleStreamIdsPrefix,
+  changeStreamIdsPrefixInStreamQuery,
+  changePrefixIdForStreams,
+  replaceWithNewPrefix,
+  changeStreamIdsInPermissions,
+  TAG_ROOT_STREAMID,
+  TAG_PREFIX,
+  replaceTagsWithStreamIds,
+  putOldTags,
+  convertStreamIdsToOldPrefixOnResult
+};
+
 /**
  * @param {Event} event
  * @returns {void}
  */
 function convertStreamIdsToOldPrefixOnResult (event) {
-  let count = 0;
   if (event.streamIds == null) { return; }
+
+  let modified = false;
   const newStreamIds = event.streamIds.map((streamId) => {
     if (SystemStreamsSerializer.isSystemStreamId(streamId)) {
-      count++;
+      modified = true;
       return changeToOldPrefix(streamId);
     }
+    return streamId;
   });
-  if (count > 0) {
+  if (modified) {
     // we cannot ensure integrity
     delete event.integrity;
     event.streamIds = newStreamIds;
   }
 }
+
 /**
  * @param {Array<string>} streamIds
  * @param {boolean} toOldPrefix
@@ -58,6 +75,7 @@ function changeMultipleStreamIdsPrefix (streamIds, toOldPrefix = true) {
   }
   return oldStyleStreamIds;
 }
+
 /**
  * @param {Array<Stream>} streams
  * @param {boolean} toOldPrefix
@@ -74,6 +92,7 @@ function changePrefixIdForStreams (streams, toOldPrefix = true) {
   }
   return streams;
 }
+
 /**
  * @param {string} streamId
  * @returns {string}
@@ -85,6 +104,7 @@ function replaceWithOldPrefix (streamId) {
     return streamId;
   }
 }
+
 /**
  * @param {string} streamId
  * @returns {string}
@@ -92,6 +112,7 @@ function replaceWithOldPrefix (streamId) {
 function changeToOldPrefix (streamId) {
   return (OLD_PREFIX + SystemStreamsSerializer.removePrefixFromStreamId(streamId));
 }
+
 /**
  * @param {string} streamId
  * @returns {string}
@@ -107,6 +128,7 @@ function replaceWithNewPrefix (streamId) {
     return streamId;
   }
 }
+
 /**
  * @param {boolean} isStreamIdPrefixBackwardCompatibilityActive
  * @param {MethodContext} context
@@ -134,6 +156,7 @@ function changeStreamIdsPrefixInStreamQuery (isStreamIdPrefixBackwardCompatibili
   params.arrayOfStreamQueriesWithStoreId = oldStyleStreamsQueries;
   next();
 }
+
 /**
  * @param {Array<Permission>} permissions
  * @param {boolean} toOldPrefix
@@ -153,6 +176,7 @@ function changeStreamIdsInPermissions (permissions, toOldPrefix = true) {
   }
   return oldStylePermissions;
 }
+
 /**
  * Replaces the tags in an event with streamIds with the corresponding prefix
  * Deletes the tags.
@@ -167,6 +191,7 @@ function replaceTagsWithStreamIds (event) {
   delete event.tags;
   return event;
 }
+
 /**
  * put back tags in events, taken from its streamIds
  * @param {Event} event
@@ -181,6 +206,7 @@ function putOldTags (event) {
   }
   return event;
 }
+
 /**
  * @param {string} streamId
  * @returns {string}
@@ -188,6 +214,7 @@ function putOldTags (event) {
 function removeTagPrefix (streamId) {
   return streamId.slice(TAG_PREFIX_LENGTH);
 }
+
 /**
  * @param {string} streamId
  * @returns {boolean}
@@ -195,15 +222,3 @@ function removeTagPrefix (streamId) {
 function isTagStreamId (streamId) {
   return streamId.startsWith(TAG_PREFIX);
 }
-module.exports = {
-  changeMultipleStreamIdsPrefix,
-  changeStreamIdsPrefixInStreamQuery,
-  changePrefixIdForStreams,
-  replaceWithNewPrefix,
-  changeStreamIdsInPermissions,
-  TAG_ROOT_STREAMID,
-  TAG_PREFIX,
-  replaceTagsWithStreamIds,
-  putOldTags,
-  convertStreamIdsToOldPrefixOnResult
-};

@@ -9,6 +9,8 @@
 // to your code to give it access to app setup.
 
 const path = require('path');
+const { setTimeout } = require('timers/promises');
+
 require('@pryv/boiler').init({
   appName: 'api-server',
   baseConfigDir: path.resolve(__dirname, '../config/'),
@@ -120,7 +122,7 @@ class Application {
    */
   async initiate () {
     while (this.initializing) {
-      await new Promise((r) => setTimeout(r, 50));
+      await setTimeout(50);
     }
     if (this.initalized) {
       logger.debug('App was already initialized, skipping');

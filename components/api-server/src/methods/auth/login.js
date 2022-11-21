@@ -10,9 +10,8 @@ const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
 const _ = require('lodash');
 const { getUsersRepository, UserRepositoryOptions, getPasswordRules } = require('business/src/users');
-const ErrorIds = require('errors/src/ErrorIds');
 const { getStorageLayer } = require('storage');
-const { getLogger, getConfig } = require('@pryv/boiler');
+const { getConfig } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 const timestamp = require('unix-timestamp');
 
@@ -93,17 +92,14 @@ module.exports = async function (api) {
 
   function updateOrCreatePersonalAccess (context, params, result, next) {
     context.accessQuery = { name: params.appId, type: 'personal' };
-    // a
     findAccess(context, (err, access) => {
       if (err) { return next(errors.unexpectedError(err)); }
       const accessData = { token: result.token };
-      // Access is already existing, updating it with new token (as we have updated the sessions with it earlier).
       if (access != null) {
+        // Access is already existing, updating it with new token (as we have updated the sessions with it earlier).
         updatePersonalAccess(accessData, context, next);
-      }
-      // Access not found, creating it
-      else {
-        // b
+      } else {
+        // Access not found, creating it
         createAccess(accessData, context, (err) => {
           if (err != null) {
             // Concurrency issue, the access is already created

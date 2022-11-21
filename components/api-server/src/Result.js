@@ -10,7 +10,7 @@ const DrainStream = require('./methods/streams/DrainStream');
 const ArrayStream = require('./methods/streams/ArrayStream');
 const async = require('async');
 
-const { Transform, Readable } = require('stream');
+const { Transform } = require('stream');
 
 const { DummyTracing } = require('tracing');
 

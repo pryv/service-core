@@ -200,7 +200,6 @@ module.exports = async function (api) {
     if (!params.includeHistory) {
       return next();
     }
-    const options = { sort: { modified: 1 } };
     // history is fetched in an extra step due to initial implementation,
     // now that mall.events.get return all in a single call, it coul be implement all at once
     try {
@@ -435,8 +434,7 @@ module.exports = async function (api) {
     next();
   }
   function _applyBackwardCompatibilityOnEvent (event, context) {
-    if (isStreamIdPrefixBackwardCompatibilityActive &&
-            !context.disableBackwardCompatibility) {
+    if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
       convertStreamIdsToOldPrefixOnResult(event);
     }
     if (isTagsBackwardCompatibilityActive) { event = putOldTags(event); }
@@ -475,7 +473,7 @@ module.exports = async function (api) {
                 !openSourceSettings.isActive &&
                 integrity.events.isActive) {
         // double check integrity when running tests only
-        if (result.event.integrity != integrity.events.hash(result.event)) {
+        if (result.event.integrity !== integrity.events.hash(result.event)) {
           return next(new Error('integrity mismatch' + JSON.stringify(result.event)));
         }
       }
@@ -683,7 +681,7 @@ module.exports = async function (api) {
       ]
     };
     const filter = function (eventData) {
-      return eventData.id != result.event.id;
+      return eventData.id !== result.event.id;
     };
     await mall.events.updateMany(context.user.id, query, {
       filter,
@@ -844,7 +842,7 @@ module.exports = async function (api) {
   async function createStreamsForTagsIfNeeded (context, params, result, next) {
     if (!isTagsBackwardCompatibilityActive) { return next(); }
     const tags = context.newEvent.tags;
-    if (tags == null || tags.length == 0) { return next(); }
+    if (tags == null || tags.length === 0) { return next(); }
     const streamsToTest = [
       { id: TAG_ROOT_STREAMID, name: 'Migrated tags', parentId: null }
     ];
@@ -1013,7 +1011,7 @@ module.exports = async function (api) {
         await mall.events.updateMinimizeEventHistory(context.user.id, params.id);
       },
       async function deleteEvent () {
-        const res = await mall.events.updateDeleteByMode(context.user.id, auditSettings.deletionMode, { id: params.id, state: 'all' });
+        await mall.events.updateDeleteByMode(context.user.id, auditSettings.deletionMode, { id: params.id, state: 'all' });
         result.eventDeletion = { id: params.id };
       },
       async function () {
