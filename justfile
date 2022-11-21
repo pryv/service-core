@@ -55,6 +55,10 @@ run component bin:
 # Test & related
 # –––––––––––––----------------------------------------------------------------
 
+# Run code linting on the entire repo
+lint *options:
+    eslint {{options}} .
+
 # Tag each test with a unique id if missing
 tag-tests:
     scripts/tag-tests

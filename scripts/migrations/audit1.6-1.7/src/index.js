@@ -6,7 +6,6 @@
  */
 const MongoClient = require('../../../../node_modules/mongodb').MongoClient;
 
-
 const Router = require('../../../../node_modules/express').Router;
 /// Load all Routes in a fake Express
 const ROUTES = require('./routes');
@@ -25,7 +24,7 @@ const { getConfig, getLogger } = require(rootPath + 'node_modules/@pryv/boiler')
   extraConfigs: [{
     scope: 'default-paths',
     file: path.resolve(__dirname, rootPath + 'components/api-server/config/paths-config.js')
-  },{
+  }, {
     scope: 'default-audit',
     file: path.resolve(__dirname, rootPath + 'components/audit/config/default-config.yml')
   }, {
@@ -36,7 +35,7 @@ const { getConfig, getLogger } = require(rootPath + 'node_modules/@pryv/boiler')
 
 const logger = getLogger();
 
-const audit = require( rootPath + 'components/audit');
+const audit = require(rootPath + 'components/audit');
 const userLocalDirectory = require(rootPath + 'components/business/src/users/userLocalDirectory');
 
 // ---------------- username => ID ---------------//
@@ -257,7 +256,7 @@ function eventFromLine (line, username) {
     createdBy: 'migration',
     streamIds: [audit.CONSTANTS.ACTION_STREAM_ID_PREFIX + methodId],
     type: audit.CONSTANTS.EVENT_TYPE_VALID,
-    time: time,
+    time,
     content: {
       source: {
         name: 'http',
@@ -283,8 +282,8 @@ function eventFromLine (line, username) {
 
 // -----------  Anchor --------- //
 
-function getLastSynchedItem(username) {
-  const res = userStorageByUsername[username].getEvents({limit: 1, sortAscending: false, createdBy: 'migration'});
+function getLastSynchedItem (username) {
+  const res = userStorageByUsername[username].getEvents({ limit: 1, sortAscending: false, createdBy: 'migration' });
   if (res[0] && res[0].time) {
     userAnchor[username].lastSync = res[0].time;
   }
@@ -306,9 +305,8 @@ async function getAuditLogDir () {
   return path;
 }
 
-
-let db, config, audiLogsDirs, userIdMap = {}, userStorageByUsername = {}, userAnchor = {};
-async function start() {
+let db; let config; let audiLogsDirs; const userIdMap = {}; const userStorageByUsername = {}; const userAnchor = {};
+async function start () {
   config = await getConfig();
   if (config.get('openSource:isActive') || (!config.get('audit:active'))) {
     logger.info('Skipping Migration Audit is not active');
