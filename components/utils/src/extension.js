@@ -4,11 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const path = require('path');
 const fs = require('fs');
 
+type ExtensionFunction = () => void; 
 
 // An extension is configured by entering a path to a nodejs module into the 
 // configuration file. It is then loaded by the server and executed in place
@@ -16,10 +17,10 @@ const fs = require('fs');
 // example of an extension. 
 //
 class Extension {
-  path; 
-  fn;
+  path: string; 
+  fn: ExtensionFunction;
   
-  constructor(path, fn) {
+  constructor(path: string, fn: ExtensionFunction) {
     this.path = path; 
     this.fn = fn; 
   }
@@ -29,16 +30,16 @@ class Extension {
 // the configuration file. 
 //
 class ExtensionLoader {
-  defaultFolder; 
+  defaultFolder: string; 
   
-  constructor(defaultFolder) {
+  constructor(defaultFolder: string) {
     this.defaultFolder = defaultFolder;
   }
   
   // Tries loading the extension identified by name. This will try to load from
   // below `defaultFolder` first, by appending '.js' to `name`. 
   //
-  load(name) {
+  load(name: string): ?Extension {
     // not explicitly specified —> try to load from default folder
     const defaultModulePath = path.join(
       this.defaultFolder, 
@@ -53,7 +54,7 @@ class ExtensionLoader {
   
   // Tries loading an extension from path. Throws an error if not successful.
   //
-  loadFrom(path) {
+  loadFrom(path: string): Extension {
     try {
       // FLOW This cannot be statically typed, so ignore the dynamic require.
       const fn = require(path);

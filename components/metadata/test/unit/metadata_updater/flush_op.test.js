@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // A test for the flush operation that flushes updates to disk. 
 
@@ -88,7 +88,7 @@ describe('Flush', () => {
 
   describe('event with no existing metadata', () => {
     // Constructs a flush op from a fake update
-    let op; 
+    let op: Flush; 
     beforeEach(() => {
       const update = makeUpdate(now, { 
         userId: userId, eventId: eventId, 
@@ -109,7 +109,7 @@ describe('Flush', () => {
   });
   describe('event with existing metadata', () => {
     // Constructs a flush op from a fake update
-    let op; 
+    let op: Flush; 
     beforeEach(() => {
       const update = makeUpdate(now, { 
         userId: userId, eventId: eventWithContentId, 
@@ -154,7 +154,7 @@ describe('Flush', () => {
   });
 });
 
-function makeUpdate(now, attrs={}) {
+function makeUpdate(now: number, attrs: UpdateAttrs={}): PendingUpdate {
   const myAttrs = {
     userId: attrs.userId || 'user', 
     eventId: attrs.eventId || 'event', 
@@ -169,15 +169,23 @@ function makeUpdate(now, attrs={}) {
   
   return PendingUpdate.fromUpdateRequest(now, myAttrs);
 }
+type UpdateAttrs = {
+  from?: number, 
+  to?: number, 
+  timestamp?: number, 
+  author?: string, 
+  userId?: string, 
+  eventId?: string, 
+};
 
 // Produces and returns a connection to MongoDB. 
 // 
-function produceMongoConnection() {
+function produceMongoConnection(): storage.Database {
   return storage.getDatabaseSync(); 
 }
 
 // Produces a StorageLayer instance
 // 
-function produceStorageLayer(connection) {
+function produceStorageLayer(connection: storage.Database): storage.StorageLayer {
   return storage.getStorageLayerSync();
 }

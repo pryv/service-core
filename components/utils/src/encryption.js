@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 /**
  * Encryption helper functions (wraps bcrypt functionality for hashing).
@@ -19,14 +19,14 @@ const salt = bcrypt.genSaltSync(process.env.NODE_ENV === 'development' ? 1 : 10)
  * @param {String} value The value to be hashed.
  * @returns {String} The hash
  */
-exports.hash = async function (value) {
+exports.hash = async function (value: string) {
   return await bcrypt.hash(value, salt);
 };
 
 /**
  * For tests only.
  */
-exports.hashSync = function (value) {
+exports.hashSync = function (value: string): string {
   return bcrypt.hashSync(value, salt);
 };
 
@@ -35,7 +35,7 @@ exports.hashSync = function (value) {
  * @param {String} hash The hash to check the value against
  * @return {Boolean} True if the value matches the hash
  */
-exports.compare = async function (value, hash) {
+exports.compare = async function (value: string, hash: string) {
   return await bcrypt.compare(value, hash);
 };
 
@@ -47,7 +47,7 @@ exports.compare = async function (value, hash) {
  * @param {String} secret
  * @returns {String}
  */
-exports.fileReadToken = function(fileId, accessId, accessToken, secret) {
+exports.fileReadToken = function(fileId: string, accessId: string, accessToken: string, secret: string) {
   return accessId + '-' + getFileHMAC(fileId, accessToken, secret);
 };
 
@@ -57,7 +57,7 @@ exports.fileReadToken = function(fileId, accessId, accessToken, secret) {
  * @param {String} fileReadToken
  * @returns {Object} Contains `accessId` and `hmac` parts if successful; empty otherwise.
  */
-exports.parseFileReadToken = function (fileReadToken) {
+exports.parseFileReadToken = function (fileReadToken: string) {
   var sepIndex = fileReadToken.indexOf('-');
   if (sepIndex <= 0) { return {}; }
   return {
@@ -67,13 +67,13 @@ exports.parseFileReadToken = function (fileReadToken) {
 };
 
 exports.isFileReadTokenHMACValid = function (
-  hmac, fileId, token,
-  secret)
+  hmac: string, fileId: string, token: string,
+  secret: string)
 {
   return hmac === getFileHMAC(fileId, token, secret);
 };
 
-function getFileHMAC(fileId, token, secret) {
+function getFileHMAC(fileId, token, secret): string {
   var hmac = crypto.createHmac('sha1', secret);
   hmac.setEncoding('base64');
   hmac.write(fileId + '-' + token);

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 require('test-helpers/src/api-server-tests-config');
 require('api-server/test/unit/test-helper');
 
@@ -27,7 +27,7 @@ describe('NatsSubscriber', () => {
     await natsPubsub.init();
   });
   
-  async function subscriber(username, msgs) {
+  async function subscriber(username: string, msgs: any): Promise<any> {
     const stub = {
       _emit : function(eventName, payload) {
         msgs.push(eventName);

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const Access = require('./user/Accesses');
 const Stream = require('./user/Streams');
@@ -78,4 +78,8 @@ module.exports = {
   getStorageLayerSync
 };
 
+import type { IndexDefinition }  from './Database';
+export type { IndexDefinition };
 
+export type {
+  Access, Stream };

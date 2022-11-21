@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 const { getDatabase } = require('../index');
 
@@ -19,10 +19,10 @@ const defaultOptions = {
  * Per-user events data
  */
 class LocalTransaction {
-  transactionSession;
-  transactionOptions;
+  transactionSession: any;
+  transactionOptions: any;
 
-  constructor(transactionOptions) {
+  constructor(transactionOptions: any) {
     this.transactionOptions = transactionOptions || defaultOptions;
   }
 
@@ -35,13 +35,13 @@ class LocalTransaction {
    *
    * @param {Function} func
    */
-  async exec(func) {
+  async exec(func: Function) {
     await this.transactionSession.withTransaction(func, this.transactionOptions);
   }
 
-  async commit() { throw(new Error('not implemented')); }
+  async commit(): Promise<void> { throw(new Error('not implemented')); }
 
-  async rollback() { throw(new Error('not implemented')); }
+  async rollback(): Promise<void> { throw(new Error('not implemented')); }
 }
 
 module.exports = LocalTransaction;

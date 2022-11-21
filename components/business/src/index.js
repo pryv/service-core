@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 module.exports = {
   accesses: require('./accesses'),
@@ -20,6 +20,13 @@ module.exports = {
 };
 
 
+import type { CustomAuthFunction, ContextSource, ContextSourceName }  from './MethodContext';
+export type { CustomAuthFunction, ContextSource, ContextSourceName };
 
 
+import type { Query }  from './series/series';
+import type Repository  from './series/repository';
+export type { Query, Repository };
 
+import type { TypeRepository, InfluxRowType }  from './types';
+export type { TypeRepository, InfluxRowType };

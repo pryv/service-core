@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const errorHandling = require('errors').errorHandling;
 const { APIError } = require('errors');
@@ -23,12 +23,12 @@ const { APIError } = require('errors');
 module.exports = function produceErrorHandlingMiddleware(logger) {
   /*eslint-disable no-unused-vars*/
   return function handleError(
-    error, 
-    req, 
-    res, 
-    next) 
+    error: mixed, 
+    req: express$Request, 
+    res: express$Response, 
+    next: express$NextFunction) 
   {
-    let safeError; 
+    let safeError: APIError; 
     if (error != null && error instanceof APIError) 
       safeError = error; 
     else  {
@@ -38,7 +38,7 @@ module.exports = function produceErrorHandlingMiddleware(logger) {
     
     errorHandling.logError(safeError, req, logger);
     
-    const status = safeError.httpStatus || 500;
+    const status: number = safeError.httpStatus || 500;
     res
       .status(status)
       .json({

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const async = require('async');
 const _ = require('lodash');
@@ -14,6 +14,7 @@ const logger = require('@pryv/boiler').getLogger('metadata_cache');
 
 const storage = require('storage');
 const MethodContext = require('business').MethodContext;
+import type {ContextSource} from 'business';
 
 const errors = require('errors').factory;
 const { InfluxRowType } = require('business').types;
@@ -22,14 +23,41 @@ const { pubsub } = require('messages');
 
 const { getMall } = require('mall');
 
+import type { LRUCache }  from 'lru-cache';
 
+import type { TypeRepository, Repository } from 'business';
 
+type UsernameEvent = {
+  username: string,
+  event: {
+    id: string
+  },
+};
 
 /** A repository for meta data on series.
  */
+export interface MetadataRepository {
+  forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata>;
+}
 
 /** Meta data on series.
  */
+export interface SeriesMetadata {
+  // Returns true if write access to the series is allowed.
+  canWrite(): boolean;
+
+  // Returns true if read access to the series is allowed.
+  canRead(): boolean;
+
+  // Returns a namespace/database name and a series name for use with InfluxDB.
+  namespaceAndName(): [string, string];
+
+  // Return the InfluxDB row type for the given event.
+  produceRowType(repo: TypeRepository): InfluxRowType;
+
+  // Retur true if item is trashed or deleted
+  isTrashedOrDeleted(): boolean;
+}
 
 // A single HFS server will keep at maximum this many credentials in cache.
 const LRU_CACHE_SIZE = 10000;
@@ -42,8 +70,8 @@ const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
  *
  * Caches data about a series first by `accessToken`, then by `eventId`.
  * */
-class MetadataCache {
-  loader;
+class MetadataCache implements MetadataRepository {
+  loader: MetadataRepository;
 
   /**
    * Stores:
@@ -51,12 +79,12 @@ class MetadataCache {
    *  - accessToken -> username/eventID/accessToken
    *  - username/eventId/accessToken -> SeriesMetadataImpl (metadata_cache.js)
    */
-  cache;
-  series;
-  mall;
-  config;
+  cache: LRUCache<string, mixed>;
+  series: Repository;
+  mall: any;
+  config: any;
 
-  constructor(series, metadataLoader, config) {
+  constructor(series: Repository, metadataLoader: MetadataRepository, config: any) {
 
     this.loader = metadataLoader;
     this.series = series;
@@ -78,17 +106,17 @@ class MetadataCache {
 
   // nats messages
 
-  dropSeries(usernameEvent) {
+  dropSeries(usernameEvent: UsernameEvent): Promise {
     return this.series.connection.dropMeasurement(
       'event.' + usernameEvent.event.id,
       'user.' + usernameEvent.username
     );
   }
 
-  invalidateEvent(usernameEvent) {
+  invalidateEvent(usernameEvent: UsernameEvent): void {
     const cache = this.cache;
     const eventKey = usernameEvent.username + '/' + usernameEvent.event.id;
-    const cachedTokenListForEvent = cache.get(eventKey);
+    const cachedTokenListForEvent: Array<string> = cache.get(eventKey);
     if (cachedTokenListForEvent != null) { // what does this return
       cachedTokenListForEvent.map((token) => {
         cache.delete(eventKey + '/' + token);
@@ -102,17 +130,17 @@ class MetadataCache {
   }
 
   // cache logic
-  async forSeries(userName, eventId, accessToken) {
-    const cache = this.cache;
+  async forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
+    const cache: LRUCache<string, Array<string>> = this.cache;
 
-    const key = [userName, eventId, accessToken].join('/');
+    const key: string = [userName, eventId, accessToken].join('/');
 
     // to make sure we update the tokenList "recently used info" cache we also get eventKey
-    const eventKey = [userName, eventId].join('/');
-    const cachedTokenListForEvent = cache.get(eventKey);
+    const eventKey: string = [userName, eventId].join('/');
+    const cachedTokenListForEvent: Array<string> = cache.get(eventKey);
 
     // also keep a list of used Token to invalidate them
-    const cachedEventListForTokens = cache.get(accessToken);
+    const cachedEventListForTokens: Array<string> = cache.get(accessToken);
 
     const cachedValue = cache.get(key);
     if ( cachedValue != null) {
@@ -144,11 +172,11 @@ class MetadataCache {
 /** Loads metadata related to a series from the main database.
  */
 class MetadataLoader {
-  databaseConn;
-  storage;
-  mall;
+  databaseConn: storage.Database;
+  storage: storage.StorageLayer;
+  mall: any;
 
-  constructor(databaseConn, mall, logger) {
+  constructor(databaseConn: storage.Database, mall: any, logger) {
     this.databaseConn = databaseConn;
     this.mall = mall;
     // NOTE We pass bogus values to the last few arguments of StorageLayer -
@@ -161,12 +189,12 @@ class MetadataLoader {
       'attachmentsDirPath', 'previewsDirPath', 10, sessionMaxAge);
   }
 
-  forSeries(userName, eventId, accessToken) {
+  forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
     const storage = this.storage;
     const mall = this.mall;
 
     // Retrieve Access (including accessLogic)
-    const contextSource = {
+    const contextSource: ContextSource = {
       name: 'hf',
       ip: 'TODO'
     };
@@ -213,7 +241,7 @@ class MetadataLoader {
       );
     });
 
-    function mapErrors(err) {
+    function mapErrors(err: mixed): Error {
       if (! (err instanceof Error))
         return new Error(err);
 
@@ -227,6 +255,22 @@ class MetadataLoader {
   }
 }
 
+type AccessModel = {
+  canCreateEventsOnStream(streamId: string): boolean;
+  canGetEventsOnStream(streamId: string, storeId: string): boolean;
+};
+type EventModel = {
+  id: string,
+  streamIds: string,
+  type: string,
+  time: number,
+  trashed: boolean,
+  deleted: number,
+};
+type UserModel = {
+  id: string,
+  username: string,
+};
 
 
 /** Metadata on a series, obtained from querying the main database.
@@ -235,18 +279,22 @@ class MetadataLoader {
  *  reason why we don't store everything about the event and the user here,
  *  only things that we subsequently need for our operations.
  */
-class SeriesMetadataImpl {
-  permissions
-  userName;
-  eventId;
-  eventType;
-  time;
-  trashed;
-  deleted;
-  _access;
-  _event;
+class SeriesMetadataImpl implements SeriesMetadata {
+  permissions: {
+    write: boolean,
+    read: boolean,
+  }
 
-  constructor(access, user, event) {
+  userName: string;
+  eventId: string;
+  eventType: string;
+  time: number;
+  trashed: boolean;
+  deleted: number;
+  _access: AccessModel;
+  _event: EventModel;
+
+  constructor(access: AccessModel, user: UserModel, event: EventModel) {
     this._access = access;
     this._event = event;
     this.userName = user.username;
@@ -261,18 +309,18 @@ class SeriesMetadataImpl {
     this.permissions = await definePermissions(this._access, this._event);
   }
 
-  isTrashedOrDeleted() {
+  isTrashedOrDeleted(): boolean {
     return this.trashed || this.deleted != null;
   }
 
-  canWrite() {
+  canWrite(): boolean {
     return this.permissions.write;
   }
-  canRead() {
+  canRead(): boolean {
     return this.permissions.read;
   }
 
-  namespaceAndName() {
+  namespaceAndName(): [string, string] {
     return [
       `user.${this.userName}`,
       `event.${this.eventId}`,
@@ -280,7 +328,7 @@ class SeriesMetadataImpl {
   }
 
   // Return the InfluxDB row type for the given event.
-  produceRowType(repo) {
+  produceRowType(repo: TypeRepository): InfluxRowType {
     const type = repo.lookup(this.eventType);
 
     // NOTE The instanceof check here serves to make flow-type happy about the
@@ -296,7 +344,7 @@ class SeriesMetadataImpl {
   }
 }
 
-async function definePermissions(access, event) {
+async function definePermissions(access: AccessModel, event: EventModel): {write: boolean, read: boolean} {
   const streamIds = event.streamIds;
   const permissions = {
     write: false,

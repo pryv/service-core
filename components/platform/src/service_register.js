@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const urllib = require('url');
 const superagent = require('superagent');
@@ -12,11 +12,23 @@ const ErrorIds = require('errors').ErrorIds;
 const errors = require('errors').factory;
 const ErrorMessages = require('errors/src/ErrorMessages');
 
+type OperationType = 'update' | 'delete';
+type AccountProperty = string;
+type Value = string;
+type Operation = {
+  [OperationType]: {
+    key: AccountProperty,
+    value: Value,
+    isUnique: ?boolean,
+    isActive: ?boolean,
+    isCreation: ?boolean,
+  },
+};
 
 const { getLogger, getConfig, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
-  settings;
-  logger;
+  settings: null;
+  logger: {};
 
   constructor() {
     this.logger = getLogger('service-register');
@@ -32,11 +44,11 @@ class ServiceRegister {
   }
 
   async validateUser (
-    username,
-    invitationToken,
-    uniqueFields,
-    core,
-  ) {
+    username: String,
+    invitationToken: String,
+    uniqueFields: Object,
+    core: String,
+  ): Promise<void> {
     const url = buildUrl('/users/validate', this.settings.url);
     // log fact about the event
     this.logger.info(`POST ${url} for username: ${username}`);
@@ -69,7 +81,7 @@ class ServiceRegister {
     }
   }
 
-  async checkUsername(username) {
+  async checkUsername(username: string): Promise<any> {
     const url = buildUrl(`/${username}/check_username`, this.settings.url);
     // log fact about the event
     this.logger.info(`GET ${url} for username: ${username}`);
@@ -86,7 +98,7 @@ class ServiceRegister {
     }
   }
 
-  async createUser(user) {
+  async createUser(user): Promise<void> {
     const url = buildUrl('/users', this.settings.url);
     // log fact about the event
     this.logger.info(`POST ${url} for username:${user.user.username}`);
@@ -102,7 +114,7 @@ class ServiceRegister {
     }
   }
 
-  async deleteUser(username) {
+  async deleteUser(username): Promise<void> {
     const url = buildUrl('/users/' + username + '?onlyReg=true', this.settings.url);
     // log fact about the event
     this.logger.info(`DELETE ${url} for username:${username}`);
@@ -122,23 +134,23 @@ class ServiceRegister {
    * the information
    */
   async updateUserInServiceRegister (
-    username,
-    operations,
-  ) {
+    username: string,
+    operations: Array<Operation>,
+  ): Promise<void> {
     const url = buildUrl('/users', this.settings.url);
     this.logger.info(`PUT ${url} for username:${username}`);
 
     // otherwise deletion
-    const isUpdate = operations[0].update != null;
-    const operationType = isUpdate ? 'update' : 'delete';
+    const isUpdate: boolean = operations[0].update != null;
+    const operationType: OperationType = isUpdate ? 'update' : 'delete';
 
-    const fieldsForUpdate = {}; // sent as user in payload
-    const fieldsToDelete = {};
-    const updateParams = {};
+    const fieldsForUpdate: {} = {}; // sent as user in payload
+    const fieldsToDelete: {} = {};
+    const updateParams: {} = {};
 
     if (isUpdate) {
       operations.forEach(operation => {
-        const streamIdWithoutPrefix = operation.update.key;
+        const streamIdWithoutPrefix: string = operation.update.key;
         fieldsForUpdate[streamIdWithoutPrefix] = [
           {
             value: operation.update.value,
@@ -151,13 +163,13 @@ class ServiceRegister {
       });
     } else { // isDelete
       operations.forEach(operation => {
-        const streamIdWithoutPrefix = operation.delete.key;
+        const streamIdWithoutPrefix: string = operation.delete.key;
         fieldsToDelete[streamIdWithoutPrefix] = operation.delete.value;
         updateParams[operation[operationType].key] = operation[operationType].value;
       });
     }
 
-    const payload = {
+    const payload: {} = {
       username,
       user: fieldsForUpdate,
       fieldsToDelete,
@@ -188,7 +200,7 @@ class ServiceRegister {
   }
 }
 
-function buildUrl(path, url) {
+function buildUrl(path: string, url): URL {
   return new urllib.URL(path, url);
 }
 
@@ -210,10 +222,10 @@ async function getServiceRegisterConn() {
  * @param {string} username
  * @param {object} params
  */
-function safetyCleanDuplicate(foundDuplicates, username, params) {
+function safetyCleanDuplicate(foundDuplicates, username, params: {}): {} {
   if (foundDuplicates == null) return foundDuplicates;
-  const res = {};
-  const newParams = Object.assign({}, params);
+  const res: {} = {};
+  const newParams: {} = Object.assign({}, params);
   if (username != null) newParams.username = username;
   for (const key of Object.keys(foundDuplicates)) {
     if (foundDuplicates[key] === newParams[key]) {

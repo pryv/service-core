@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const errors = require('errors');
 const errorsFactory = errors.factory;
@@ -22,7 +22,7 @@ const { getConfigUnsafe } = require('@pryv/boiler');
 
 /** Error route handling.
  */
-function produceHandleErrorMiddleware(logging) {
+function produceHandleErrorMiddleware(logging: any) {
   const logger = logging.getLogger('error-middleware');
 
   const config = getConfigUnsafe();
@@ -35,7 +35,7 @@ function produceHandleErrorMiddleware(logging) {
 
   // NOTE next is not used, since the request is terminated on all errors. 
   /*eslint-disable no-unused-vars*/
-  return async function handleError(error, req, res, next) {
+  return async function handleError(error, req: express$Request, res: express$Response, next: () => void) {
     if (! (error instanceof APIError) && error.status) {
       // it should be coming from Express' bodyParser: just wrap the error
       error = errorsFactory.invalidRequestStructure(error.message);

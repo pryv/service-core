@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // Main application class. Does all the work. 
 
@@ -39,9 +39,9 @@ class Application {
   logger; 
   config;
   
-  metadataUpdaterService;
+  metadataUpdaterService: ?services.MetadataUpdater;
   
-  async setup(overrideSettings) {
+  async setup(overrideSettings: ?Object) {
     this.config = await getConfig(); 
     this.logger = getLogger('application');
 

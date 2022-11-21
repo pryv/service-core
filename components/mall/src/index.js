@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 /**
  * Data Store aggregator.
@@ -15,27 +15,28 @@
 const { getConfig, getLogger } = require('@pryv/boiler');
 const Mall = require('./Mall');
 
+import typeof DataStore from 'pryv-datastore';
 
-let mall;
-let initializing = false;
+let mall: Mall;
+let initializing: boolean = false;
 
-async function getMall() {
+async function getMall(): Promise<Mall> {
   while (initializing) {
     await new Promise((r) => setTimeout(r, 5));
   }
   if (mall != null) return mall;
   initializing = true;
 
-  const config = await getConfig();
-  const logger = getLogger('mall');
+  const config: {} = await getConfig();
+  const logger: {} = getLogger('mall');
   mall = new Mall();
 
   // load external stores from config (Imported After to avoid cycles);
-  const customStoresDef = config.get('custom:dataStores');
+  const customStoresDef: Array<{}> = config.get('custom:dataStores');
   if (customStoresDef) {
     for (const storeDef of customStoresDef) {
       logger.info(`Loading store "${storeDef.name}" with id "${storeDef.id}" from ${storeDef.path}`);
-      const newStore = require(storeDef.path);
+      const newStore: DataStore = require(storeDef.path);
       newStore.id = storeDef.id;
       newStore.name = storeDef.name;
       newStore.settings = storeDef.config;
@@ -46,11 +47,11 @@ async function getMall() {
   // Load built-in stores
 
   if (config.get('database:engine') === 'sqlite') {
-    const LocalStore  = require('storage/src/LocalDataStoreSQLite'); // change to LocalDataStoreSQLite for SQLite PoC
+    const LocalStore: DataStore  = require('storage/src/LocalDataStoreSQLite'); // change to LocalDataStoreSQLite for SQLite PoC
     mall.addStore(LocalStore);
     logger.info('Using SQLite PoC Datastore');
   } else {
-    const localStore = require('storage/src/localDataStore');
+    const localStore: DataStore = require('storage/src/localDataStore');
     mall.addStore(localStore);
   }
 

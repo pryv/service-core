@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 const bluebird = require('bluebird');
 const LRU = require('lru-cache');
@@ -20,18 +20,21 @@ const TracedOperations = require('./traced_operations');
 
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
 
+import type Context  from '../../context';
+import type { InfluxRowType } from 'business'; 
+import type { SeriesMetadata }  from '../../metadata_cache';
 
 // POST /:user_name/series/batch
 // 
-async function storeSeriesBatch(ctx, 
-  req, res)
+async function storeSeriesBatch(ctx: Context, 
+  req: express$Request, res: express$Response)
 {
   const trace = new TracedOperations(ctx);
   const seriesRepository = ctx.series; 
   
   const userName = req.params.user_name;
-  const accessToken = req.headers[ApiConstants.AUTH_HEADER];
-  const body = req.body;
+  const accessToken: ?string = req.headers[ApiConstants.AUTH_HEADER];
+  const body: Object = req.body;
   
   // If params are not there, abort. 
   if (accessToken == null) throw errors.missingHeader(ApiConstants.AUTH_HEADER);
@@ -84,7 +87,7 @@ async function storeSeriesBatch(ctx,
 // BatchRequest format. 
 // 
 function parseData(
-  batchRequestBody, resolver) 
+  batchRequestBody: mixed, resolver: EventMetaDataCache): Promise<BatchRequest> 
 {
   return BatchRequest.parse(
     batchRequestBody, 
@@ -107,12 +110,12 @@ const METADATA_CACHE_SIZE = 100;
 // requirements here (SOP).
 // 
 class EventMetaDataCache {
-  userName; 
-  accessToken; 
+  userName: string; 
+  accessToken: string; 
   
-  ctx;
+  ctx: Context;
   
-  cache; 
+  cache: LRU<string, SeriesMetadata>; 
   
   constructor(userName, accessToken, ctx) {
     this.userName = userName;
@@ -125,7 +128,7 @@ class EventMetaDataCache {
   // Loads an event, checks access rights for the current token, then looks 
   // up the type of the event and returns it as an InfluxRowType.
   // 
-  async getRowType(eventId) {
+  async getRowType(eventId: string): Promise<InfluxRowType> {
     const ctx = this.ctx; 
     const repo = ctx.typeRepository;
     
@@ -144,7 +147,7 @@ class EventMetaDataCache {
     return seriesMeta.produceRowType(repo);
   }
   
-  async getMeasurementName(eventId) {
+  async getMeasurementName(eventId: string): Promise<string> {
     const seriesMeta = await this.getSeriesMeta(eventId);
     const [namespace, name] = seriesMeta.namespaceAndName(); // eslint-disable-line no-unused-vars
     
@@ -153,7 +156,7 @@ class EventMetaDataCache {
   
   // Returns the SeriesMetadata for the event designated by `eventId`.
   // 
-  async getSeriesMeta(eventId) {
+  async getSeriesMeta(eventId): Promise<SeriesMetadata> {
     const ctx = this.ctx; 
     const loader = ctx.metadata;
     
@@ -163,7 +166,7 @@ class EventMetaDataCache {
   
   // Handles memoisation through the cache in `this.cache`.
   // 
-  async fromCacheOrProduce(key, factory) {
+  async fromCacheOrProduce(key: string, factory: () => Promise<SeriesMetadata>) {
     const cache = this.cache; 
 
     // From Cache
@@ -192,6 +195,7 @@ class EventMetaDataCache {
 // same namespace. This maps namespace strings to the data that needs to be
 // stored. 
 // 
+type NamespacedBatchRequests = Map<string, BatchRequest>; 
 
 // Introduces another level into the data structure `batchRequest` - grouping 
 // requests by series namespace. This will allow then creating one batch
@@ -202,8 +206,8 @@ class EventMetaDataCache {
 //  currently always return a map with one entry. This doesn't make the 
 //  code harder to write; but it is more correct, since SOP.
 // 
-async function groupByNamespace(batchRequest, resolver) {
-  const nsToBatch = new Map(); 
+async function groupByNamespace(batchRequest, resolver): Promise<NamespacedBatchRequests> {
+  const nsToBatch: NamespacedBatchRequests = new Map(); 
   
   for (const element of batchRequest.elements()) {
     const eventId = element.eventId;

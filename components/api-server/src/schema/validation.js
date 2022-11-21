@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 var Validator = require('z-schema'),
   validator = new Validator({
@@ -58,8 +58,8 @@ exports.getLastError = validator.getLastError.bind(validator);
 //   }
 //
 function tryCoerceStringValues(
-  object, 
-  settings
+  object: { [string]: mixed }, 
+  settings: { [string]: string }
 ) {
   for (const key of Object.keys(settings)) {
     const type = settings[key];
@@ -73,7 +73,7 @@ function tryCoerceStringValues(
     object[key] = tryCoerceValue(value, type);
   }
   
-  function tryCoerceValue(value, type) {
+  function tryCoerceValue(value: mixed, type: string): mixed {
     // Cannot declare these inside the case, because javascript. 
     let newNumber;
     

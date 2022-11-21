@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 
 
@@ -26,7 +26,7 @@ module.exports.getHookerTracer = getHookerTracer;
 /**
  * Starts a root span. For socket.io usage.
  */
-function initRootSpan (name, tags = {}) {
+function initRootSpan (name: string, tags: ?{} = {}): Tracing {
   if (! isTracingEnabled) return new DummyTracing();
   const myTags = Object.assign(Object.assign({}, launchTags), tags);
   const tracing = new Tracing();
@@ -42,8 +42,8 @@ module.exports.initRootSpan = initRootSpan;
 /**
  * Returns an ExpressJS middleware that starts a span and attaches the "tracing" object to the request parameter.
  */
-module.exports.tracingMiddleware = (name = 'express1', tags) => {
-  return function (req, res, next) {
+module.exports.tracingMiddleware = (name: string = 'express1', tags: ?{}): Function => {
+  return function (req: express$Request, res: express$Response, next: express$NextFunction): void {
     if (req.tracing != null) { console.log('XXXXX tracing already set', new Error()); return next();}
     const tracing = initRootSpan (name, tags);
     res.on('close', () => { 

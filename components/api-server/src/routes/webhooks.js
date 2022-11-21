@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
@@ -13,6 +13,7 @@ const middleware = require('middleware');
 const { setMethodId } = require('middleware');
 
 const API = require('../API');
+import type Application  from '../application';
 
 /**
  * Webhooks route handling.
@@ -20,23 +21,23 @@ const API = require('../API');
  * @param {App} expressApp
  * @param {Object} api The API object for registering methods
  */
-module.exports = function (expressApp, app) {
+module.exports = function (expressApp: express$Application, app: Application) {
 
-  const api = app.api;
+  const api: API = app.api;
 
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
   expressApp.get(Paths.Webhooks, 
     loadAccessMiddleware,
     setMethodId('webhooks.get'),
-    function (req, res, next) {
+    function (req: express$Request, res: express$Response, next: express$NextFunction) {
       api.call(req.context, req.query, methodCallback(res, next, 200));
   });
 
   expressApp.get(Paths.Webhooks + '/:id', 
     loadAccessMiddleware,
     setMethodId('webhooks.getOne'),
-    function (req, res, next) {
+    function (req: express$Request, res: express$Response, next: express$NextFunction) {
       const params = _.extend({ id: req.params.id }, req.query);
       api.call(req.context, params, methodCallback(res, next, 200));
   });
@@ -44,14 +45,14 @@ module.exports = function (expressApp, app) {
   expressApp.post(Paths.Webhooks, 
     loadAccessMiddleware,
     setMethodId('webhooks.create'),
-    function (req, res, next) {
+    function (req: express$Request, res: express$Response, next: express$NextFunction) {
       api.call(req.context, req.body, methodCallback(res, next, 201));
   });
 
   expressApp.put(Paths.Webhooks + '/:id', 
     loadAccessMiddleware,
     setMethodId('webhooks.update'),
-    function (req, res, next) {
+    function (req: express$Request, res: express$Response, next: express$NextFunction) {
       const params = { id: req.params.id, update: req.body };
       api.call(req.context, params, methodCallback(res, next, 200));
   });
@@ -59,7 +60,7 @@ module.exports = function (expressApp, app) {
   expressApp.delete(Paths.Webhooks + '/:id', 
     loadAccessMiddleware,
     setMethodId('webhooks.delete'),
-    function (req, res, next) {
+    function (req: express$Request, res: express$Response, next: express$NextFunction) {
       const params = _.extend({ id: req.params.id }, req.query);
       api.call(req.context, params, methodCallback(res, next, 200));
   });
@@ -67,7 +68,7 @@ module.exports = function (expressApp, app) {
   expressApp.post(Paths.Webhooks + '/:id/test', 
     loadAccessMiddleware,
     setMethodId('webhooks.test'),
-    function (req, res, next) {
+    function (req: express$Request, res: express$Response, next: express$NextFunction) {
       const params = _.extend({ id: req.params.id }, req.query);
       api.call(req.context, params, methodCallback(res, next, 200));
   });

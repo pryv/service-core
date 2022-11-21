@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 const { DataStore } = require('pryv-datastore');
 const _ = require('lodash');
@@ -80,7 +80,7 @@ class MallUserEvents {
     if (!eventsStore) return null;
     try {
       const paramsForStore = eventsQueryUtils.getStoreQueryFromParams({ id: storeEventId, state: 'all', limit: 1, withDeletions: true });
-      const events = await eventsStore.get(userId, paramsForStore);
+      const events: Array<Events> = await eventsStore.get(userId, paramsForStore);
       if (events?.length === 1) return eventsUtils.convertEventFromStore(storeId, events[0]);
     } catch (e) {
       storeDataUtils.throwAPIError(e, storeId);
@@ -176,36 +176,36 @@ class MallUserEvents {
 
   // ----------------- ATTACHMENTS ----------------- //
 
-  async saveAttachedFiles(userId, eventDataWithoutAttachments, isExistingEvent, attachmentsItems, mallTransaction) {
+  async saveAttachedFiles(userId: string, eventDataWithoutAttachments: any, isExistingEvent: boolean, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction) {
     const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventDataWithoutAttachments, mallTransaction);
     return await eventsStore.saveAttachedFiles(userId, storeEvent.id, attachmentsItems, storeTransaction);
   }
 
-  async getAttachedFile(userId, eventData, fileId) {
+  async getAttachedFile(userId: string, eventData, fileId: string) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     const eventsStore = this.eventsStores.get(storeId);
     if (!eventsStore) return null;
     return await eventsStore.getAttachedFile(userId, storeEventId, fileId);
   }
 
-  async deleteAttachedFile(userId, eventData, fileId, mallTransaction) {
+  async deleteAttachedFile(userId: string, eventData: any, fileId: string, mallTransaction?: MallTransaction) {
     const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, mallTransaction);
     return await eventsStore.deleteAttachedFile(userId, storeEvent.id, fileId, storeTransaction);
   }
 
-  async createWithAttachments(userId, eventDataWithoutAttachments, attachmentsItems, mallTransaction) {
+  async createWithAttachments(userId: string, eventDataWithoutAttachments: any, attachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
     const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
     const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutAttachments, attachmentsResponse, attachmentsItems);
     return await this.create(userId, eventDataWithNewAttachments, mallTransaction);
   }
 
-  async updateWithAttachments(userId, eventDataWithoutNewAttachments, newAttachmentsItems, mallTransaction) {
+  async updateWithAttachments(userId: string, eventDataWithoutNewAttachments: any, newAttachmentsItems: Array<AttachmentItem>, mallTransaction?: MallTransaction): Promise<void> {
     const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
     const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, newAttachmentsItems);
     return await this.update(userId, eventDataWithNewAttachments, mallTransaction);
   }
 
-  async updateDeleteAttachment(userId, eventData, attachmentId, mallTransaction) {
+  async updateDeleteAttachment(userId: string, eventData: any, attachmentId: string, mallTransaction?: MallTransaction): Promise<void> {
     await this.deleteAttachedFile(userId, eventData, attachmentId, mallTransaction);
     const newEventData = _.cloneDeep(eventData);
     newEventData.attachments = newEventData.attachments.filter((attachment) => { return attachment.id !== attachmentId; });
@@ -262,7 +262,7 @@ class MallUserEvents {
    * @param {MallTransaction} mallTransaction
    * @returns Array of updated events
    */
-  async updateMany(userId, query, update, mallTransaction) {
+  async updateMany(userId, query, update, mallTransaction): Array {
     const streamedUpdate = await this.updateStreamedMany(userId, query, update, mallTransaction);
     const result = [];
     for await (let event of streamedUpdate) {
@@ -284,7 +284,7 @@ class MallUserEvents {
    * @param {MallTransaction} mallTransaction
    * @returns Streams of updated events
    */
-  async updateStreamedMany(userId, query, update = {}, mallTransaction) {
+  async updateStreamedMany(userId, query, update = {}, mallTransaction): Readable {
     const paramsByStore = eventsQueryUtils.getParamsByStore(query);
 
     // fetch events to be updated

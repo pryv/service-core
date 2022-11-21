@@ -4,11 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
+import type { Access, Stream } from 'storage';
 
 const AccessLogic = require('./accesses/AccessLogic');
 const APIError = require('errors').APIError;
@@ -16,6 +17,7 @@ const errors = require('errors').factory;
 const treeUtils = require('utils').treeUtils;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository } = require('business/src/users');
+import type { StorageLayer } from 'storage';
 
 const storage = require('storage');
 const { getMall, streamsUtils } = require('mall');
@@ -24,9 +26,24 @@ const cache = require('cache');
 
 const { DummyTracing } = require('tracing');
 
+export type CustomAuthFunctionCallback = (err: any) => void;
+export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void;
 
+export type ContextSourceName = 'http' | 'socket.io' | 'hf' | 'test';
+export type ContextSource = {
+  name: ContextSourceName,
+  ip?: string
+}
 
+type UserDef = {
+  id: ?string, 
+  username: string,
+}
 
+export type AuthenticationData = {
+  accessToken: string,
+  callerId?: string,
+}
 
 
 const AUTH_SEPARATOR = ' ';
@@ -34,44 +51,44 @@ const ACCESS_TYPE_PERSONAL = 'personal';
 
 class MethodContext {
   
-  source;
+  source: ContextSource;
 
-  user;
-  access;
-  streams;
+  user: UserDef;
+  access: ?Access;
+  streams: ?Array<Stream>;
 
-  accessToken;
-  callerId;
-  headers; // used in custom auth function
+  accessToken: ?string;
+  callerId: ?string;
+  headers: ?{}; // used in custom auth function
 
-  methodId; // API method id. Ex.: 'events.get'
+  methodId: ?string; // API method id. Ex.: 'events.get'
 
-  originalQuery;
+  originalQuery: ?{};
 
   // Custom auth function, if one was configured. 
-  customAuthStepFn;
+  customAuthStepFn: ?CustomAuthFunction;
 
-  methodId;
-  mall;
+  methodId: ?string;
+  mall: Mall;
 
-  _tracing;
+  _tracing: ?Tracing;
 
   // events get
-  acceptStreamsQueryNonStringified;
+  acceptStreamsQueryNonStringified: ?boolean;
 
   /**
    * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
    */
-  disableBackwardCompatibility;
+  disableBackwardCompatibility: boolean;
 
   constructor(
-    source,
-    username,
-    auth,
-    customAuthStepFn,
-    headers,
-    query,
-    tracing,
+    source: ContextSource,
+    username: string,
+    auth: ?string,
+    customAuthStepFn: ?CustomAuthFunction,
+    headers: Map<string, any>,
+    query: ?{},
+    tracing: ?Tracing,
   ) {
     this.source = source;
 
@@ -111,7 +128,7 @@ class MethodContext {
   // Extracts access token and optional caller id from the given auth string, 
   // assigning to `this.accessToken` and `this.callerId`.
   // 
-  parseAuth(auth) {
+  parseAuth(auth: string) {
     this.accessToken = auth;
 
     // Sometimes, the auth string will look like this: 
@@ -158,7 +175,7 @@ class MethodContext {
   // This function throws/rejects for various reasons; but it will always throw
   // a subclass of APIError.
   // 
-  async retrieveExpandedAccess (storage) {
+  async retrieveExpandedAccess (storage: StorageLayer) {
     try {
       if (this.access == null)
         await this.retrieveAccessFromToken(storage);
@@ -190,7 +207,7 @@ class MethodContext {
   }
 
   // generic retrieve access
-  async _retrieveAccess(storage, query) {
+  async _retrieveAccess(storage: StorageLayer, query) {
     const access = await bluebird.fromCallback(
       cb => storage.accesses.findOne(this.user, query, null, cb));
 
@@ -204,7 +221,7 @@ class MethodContext {
 
   // Internal: Loads `this.access`. 
   // 
-  async retrieveAccessFromToken(storage) {
+  async retrieveAccessFromToken(storage: StorageLayer) {
     const token = this.accessToken;
 
     if (token == null)
@@ -226,7 +243,7 @@ class MethodContext {
   // 
   // Returns nothing but throws if an error is detected.
   // 
-  checkAccessValid(access) {
+  checkAccessValid(access: Access) {
     const now = timestamp.now();
     if (access.expires != null && now > access.expires)
       throw errors.forbidden(
@@ -236,7 +253,7 @@ class MethodContext {
   // Loads an access by id or throw an error. On success, assigns to
   // `this.access` and `this.accessToken`. 
   // 
-  async retrieveAccessFromId(storage, accessId) {
+  async retrieveAccessFromId(storage: StorageLayer, accessId: string): Promise<Access> {
 
     this.access = cache.getAccessLogicForId(this.user.id, accessId);
 
@@ -250,7 +267,7 @@ class MethodContext {
   }
 
   // Loads session and touches it (personal sessions only)
-  async checkSessionValid(storage) {
+  async checkSessionValid(storage: StorageLayer) {
     const access = this.access;
 
     if (access == null)
@@ -273,7 +290,7 @@ class MethodContext {
   }
 
   // Perform custom auth step `customAuthStep`. Errors are caught and rethrown. 
-  performCustomAuthStep(customAuthStep) {
+  performCustomAuthStep(customAuthStep: CustomAuthFunction): Promise<void> {
     return new bluebird((res, rej) => {
       try {
         customAuthStep(this, (err) => {
@@ -297,18 +314,18 @@ class MethodContext {
    * @param {identifier} [storeId] - If storeId is null streamId should be fully scoped 
    * @returns 
    */
-  async streamForStreamId(streamId, storeId) {
+  async streamForStreamId(streamId: string, storeId: string) {
     return await this.mall.streams.getOne(this.user.id, streamId, storeId);
   }
 
-  initTrackingProperties(item, authorOverride) {
+  initTrackingProperties(item: any, authorOverride: ?string) {
     item.created = timestamp.now();
     item.createdBy = authorOverride || this.getTrackingAuthorId();
 
     return this.updateTrackingProperties(item, authorOverride);
   }
 
-  updateTrackingProperties(updatedData, authorOverride) {
+  updateTrackingProperties(updatedData: any, authorOverride: ?string) {
     updatedData.modified = timestamp.now();
     updatedData.modifiedBy = authorOverride || this.getTrackingAuthorId();
     return updatedData;
@@ -316,7 +333,7 @@ class MethodContext {
 
   // Returns the authorId, formed by the access id and the callerId. 
   // 
-  getTrackingAuthorId() {
+  getTrackingAuthorId(): string {
     const access = this.access;
     if (access == null)
       throw new Error('Access needs to be retrieved first.');

@@ -5,18 +5,19 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 const LRU = require('lru-cache');
 
+import type { Stream } from 'business/src/streams';
 
 const _caches = {};
-const MAX_PER_CACHE_SIZE = 2000; // maximum elements for each cache (namespace)
+const MAX_PER_CACHE_SIZE: number = 2000; // maximum elements for each cache (namespace)
 
 let synchro = null;
 
-let isActive = false;
-let isSynchroActive = false
+let isActive: boolean = false;
+let isSynchroActive: boolean = false
 
 const logger = getLogger('cache');
 const debug = {};
@@ -32,16 +33,16 @@ const config = getConfigUnsafe(true);
 /**
  * username -> userId
  */
-const userIdForUsername = new Map();
+const userIdForUsername: Map<string, string> = new Map();
 
-function getNameSpace(namespace) {
+function getNameSpace(namespace: string) {
   if (namespace == null) console.log('XXXX', new Error('Null namespace'));
   return _caches[namespace] || ( _caches[namespace] = new LRU({
     max: MAX_PER_CACHE_SIZE
   }));
 }
 
-function set(namespace, key, value) {
+function set(namespace: string, key: string, value: string) {
   if (! isActive) return;
   if (key == null) throw new Error('Null key for' + namespace);
   getNameSpace(namespace).set(key, value);
@@ -49,21 +50,21 @@ function set(namespace, key, value) {
   return value;
 }
 
-function unset(namespace, key) {
+function unset(namespace: string, key: string) {
   if (! isActive) return;
   if (key == null) throw new Error('Null key for' + namespace);
   getNameSpace(namespace).delete(key);
   debug.unset(namespace, key);
 }
 
-function get(namespace, key) {
+function get(namespace: string, key: string) {
   if (! isActive) return null;
   if (key == null) throw new Error('Null key for' + namespace);
   debug.get(namespace, key);
   return getNameSpace(namespace).get(key);
 }
 
-function clear(namespace) {
+function clear(namespace: string) {
   if (namespace == null) { // clear all
     for (const ns of Object.keys(_caches)) {
       debug.clear(ns);
@@ -80,19 +81,19 @@ function clear(namespace) {
 
 //--------------- Users ---------------//
 
-function getUserId(username) {
+function getUserId(username: string) {
   if (! isActive) return;
   debug.get('user-id', username);
   return userIdForUsername.get(username);
 }
 
-function setUserId(username, userId) {
+function setUserId(username: string, userId: string) {
   if (! isActive) return;
   debug.set('user-id', username, userId);
   userIdForUsername.set(username, userId);
 }
 
-function unsetUser(username, notifyOtherProcesses = true) {
+function unsetUser(username: string, notifyOtherProcesses: boolean = true) {
   if (! isActive) return;
   debug.unset('user-id', username);
   const userId = getUserId(username);
@@ -104,7 +105,7 @@ function unsetUser(username, notifyOtherProcesses = true) {
   userIdForUsername.delete(username);
 }
 
-function unsetUserData(userId, notifyOtherProcesses = true) {
+function unsetUserData(userId: string, notifyOtherProcesses: boolean = true) {
   if (! isActive) return;
   if (isSynchroActive) {
     synchro.removeListenerForUserId(userId);
@@ -118,35 +119,35 @@ function unsetUserData(userId, notifyOtherProcesses = true) {
 }
 
 //--------------- Streams ---------------//
-function getStreams(userId, storeId = 'local') {
+function getStreams(userId: string, storeId: string = 'local'): ?Array<Stream> {
   return get(NS.STREAMS_FOR_USERID + storeId, userId);
 }
 
-function setStreams(userId, storeId = 'local', streams) {
+function setStreams(userId: string, storeId: string = 'local', streams: Array<Stream>): void {
   if (! isActive) return;
   if (isSynchroActive) synchro.registerListenerForUserId(userId); // follow this user
   set(NS.STREAMS_FOR_USERID + storeId, userId, streams);
 }
 
-function _unsetStreams(userId, storeId = 'local') {
+function _unsetStreams(userId: string, storeId: string = 'local'): void {
   unset(NS.STREAMS_FOR_USERID + storeId, userId);
 }
 
-function unsetStreams(userId, storeId = 'local') {
+function unsetStreams(userId: string, storeId: string = 'local'): void {
   unsetUserData(userId);
 }
 
 
 //--------------- Access Logic -----------//
 
-function getAccessLogicForToken(userId, token) {
+function getAccessLogicForToken(userId: string, token: string) {
   if (! isActive) return null;
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return null;
   return accessLogics.tokens[token];
 }
 
-function getAccessLogicForId(userId, accessId) {
+function getAccessLogicForId(userId: string, accessId: string) {
   if (! isActive) return null;
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) return null;
@@ -154,7 +155,7 @@ function getAccessLogicForId(userId, accessId) {
 }
 
 
-function unsetAccessLogic(userId, accessLogic, notifyOtherProcesses = true) {
+function unsetAccessLogic(userId: string, accessLogic: string, notifyOtherProcesses: boolean = true): void {
   if (! isActive) return;
   // notify others to unsed
   if (notifyOtherProcesses && isSynchroActive) synchro.unsetAccessLogic(userId, accessLogic);
@@ -165,11 +166,11 @@ function unsetAccessLogic(userId, accessLogic, notifyOtherProcesses = true) {
   delete accessLogics.ids[accessLogic.id];
 }
 
-function _clearAccessLogics(userId) {
+function _clearAccessLogics(userId: string): void {
   unset(NS.ACCESS_LOGICS_FOR_USERID, userId);
 }
 
-function setAccessLogic(userId, accessLogic) {
+function setAccessLogic(userId: string, accessLogic: {}): void {
   if (! isActive) return;
   if (synchro != null) synchro.registerListenerForUserId(userId);
   let accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);

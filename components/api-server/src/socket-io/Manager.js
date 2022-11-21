@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const errorHandling = require('errors').errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
@@ -20,27 +20,58 @@ const { getAPIVersion } = require('middleware/src/project_version');
 const { initRootSpan } = require('tracing');
 
 const MethodContext = require('business').MethodContext;
+import type API  from '../API';
 
+import type { StorageLayer } from 'storage';
 
+type SocketIO$SocketId = string;
+export type SocketIO$Handshake = {
+  methodContext: MethodContext,
+  query: {
+    resource: string,
+    auth: string,
+  }
+};
+type SocketIO$CallData = {
+  name: string,
+  args: Array<mixed>,
+};
+type SocketIO$Socket = {
+  id: SocketIO$SocketId;
+  on(string, ...a: Array<mixed>): mixed;
+  once(string, ...a: Array<mixed>): mixed;
+  namespace: SocketIO$Namespace;
+};
+type SocketIO$Namespace = {
+  // Here's a bad interface.
+  on(string, ...a: Array<mixed>): mixed;
+  emit(string, ...a: Array<mixed>): void;
+  name: string;
+  sockets: {[socketId: SocketIO$SocketId]: SocketIO$Socket};
+}
+type SocketIO$Server = {
+  of: (string) => SocketIO$Namespace;
+  handshaken: {[id: SocketIO$SocketId]: SocketIO$Handshake};
+};
 
 // Manages contexts for socket-io. NamespaceContext's are created when the first
 // client connects to a namespace and are then kept forever.
 //
 class Manager {
-  contexts;
+  contexts: Map<string, NamespaceContext>;
 
   logger;
-  io;
-  api;
-  storageLayer;
-  customAuthStepFn;
-  isOpenSource;
-  apiVersion;
-  hostname;
+  io: SocketIO$Server;
+  api: API;
+  storageLayer: StorageLayer;
+  customAuthStepFn: Object;
+  isOpenSource: boolean;
+  apiVersion: string;
+  hostname: string;
 
   constructor(
-    logger, io, api, storageLayer, customAuthStepFn,
-    isOpenSource,
+    logger, io: SocketIO$Server, api: API, storageLayer: StorageLayer, customAuthStepFn: Object,
+    isOpenSource: boolean,
   ) {
     this.logger = logger;
     this.io = io;
@@ -54,7 +85,7 @@ class Manager {
 
   // Returns true if the `candidate` could be a username on a lexical level.
   //
-  looksLikeUsername(candidate) {
+  looksLikeUsername(candidate: string): boolean {
     const reUsername = new RegExp(USERNAME_REGEXP_STR);
     const lowercasedUsername = candidate.toLowerCase(); // for retro-compatibility
     return reUsername.test(lowercasedUsername);
@@ -65,8 +96,8 @@ class Manager {
   //
   //    manager.getUsername('/foobar') // => 'foobar'
   //
-  extractUsername(namespaceName) {
-    const ns = cleanNS(namespaceName);
+  extractUsername(namespaceName: string): ?string {
+    const ns: string = cleanNS(namespaceName);
     if (!ns.startsWith('/')) return null;
 
     // assert: namespaceName[0] === '/'
@@ -81,7 +112,7 @@ class Manager {
      *
      * @param {*} namespace
      */
-    function cleanNS(namespace) {
+    function cleanNS(namespace: string): string {
       let cleaned = '' + namespace;
       // remove eventual trailing "/"
       if (cleaned.slice(-1) === '/') cleaned = cleaned.slice(0, -1);
@@ -94,7 +125,7 @@ class Manager {
     }
   }
 
-  async ensureInitNamespace(namespaceName) {
+  async ensureInitNamespace(namespaceName: string): Promise<NamespaceContext> {
     await initAsyncProps.call(this);
 
     let username = this.extractUsername(namespaceName);
@@ -128,25 +159,25 @@ class Manager {
 }
 
 class NamespaceContext {
-  namespaceName;
-  username;
-  socketNs;
-  api;
+  namespaceName: string;
+  username: string;
+  socketNs: SocketIO$Namespace;
+  api: API;
   logger;
-  apiVersion;
-  hostname;
+  apiVersion: string;
+  hostname: string;
 
-  connections;
-  pubsubRemover;
+  connections: Map<SocketIO$SocketId, Connection>;
+  pubsubRemover: ?function;
 
   constructor(
-    username,
-    socketNs,
-    api,
+    username: string,
+    socketNs: SocketIO$Namespace,
+    api: API,
     logger,
-    isOpenSource,
-    apiVersion,
-    hostname,
+    isOpenSource: Boolean,
+    apiVersion: string,
+    hostname: string,
   ) {
     this.username = username;
     this.socketNs = socketNs;
@@ -163,7 +194,7 @@ class NamespaceContext {
   // Adds a connection to the namespace. This produces a `Connection` instance
   // and stores it in (our) namespace.
   //
-  addConnection(socket) {
+  addConnection(socket: SocketIO$Socket) {
     // This will represent state that we keep for every connection.
     const connection = new Connection(
       this.logger, socket, this, socket.methodContext, this.api,
@@ -177,11 +208,11 @@ class NamespaceContext {
 
     connection.init();
   }
-  storeConnection(conn) {
+  storeConnection(conn: Connection) {
     const connMap = this.connections;
     connMap.set(conn.key(), conn);
   }
-  deleteConnection(conn) {
+  deleteConnection(conn: Connection) {
     const connMap = this.connections;
     connMap.delete(conn.key());
   }
@@ -213,7 +244,7 @@ class NamespaceContext {
 
   // Called when a new socket connects to the namespace `socketNs`.
   //
-  onConnect(socket) {
+  onConnect(socket: SocketIO$Socket) {
     const logger = this.logger;
     const io = this.socketServer;
 
@@ -234,7 +265,7 @@ class NamespaceContext {
 
   // Called when the underlying socket-io socket disconnects.
   //
-  async onDisconnect(conn) {
+  async onDisconnect(conn: Connection) {
     const logger = this.logger;
     const namespace = this.socketNs;
 
@@ -257,19 +288,19 @@ class NamespaceContext {
 
 
 class Connection {
-  socket;
-  methodContext;
-  api;
+  socket: SocketIO$Socket;
+  methodContext: MethodContext;
+  api: API;
   logger;
-  apiVersion;
-  hostname;
+  apiVersion: string;
+  hostname: string;
 
   constructor(
     logger,
-    socket,
-    namespaceContext,
-    methodContext, api,
-    apiVersion, hostname,
+    socket: SocketIO$Socket,
+    namespaceContext: NamespaceContext,
+    methodContext: MethodContext, api: API,
+    apiVersion: string, hostname: string,
   ) {
     this.socket = socket;
     this.methodContext = methodContext;
@@ -280,7 +311,7 @@ class Connection {
   }
 
   // This should be used as a key when storing the connection inside a Map.
-  key() {
+  key(): string {
     return this.socket.id;
   }
 
@@ -292,7 +323,7 @@ class Connection {
 
   // Called when the socket wants to call a Pryv IO method.
   //
-  async onMethodCall(callData, callback) {
+  async onMethodCall(callData: SocketIO$CallData, callback: (err: mixed, res: any) => mixed) {
 
     const methodContext = this.methodContext;
 

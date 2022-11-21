@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const commonFns = require('./helpers/commonFunctions');
 const errorHandling = require('errors').errorHandling;
@@ -15,18 +15,26 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getPasswordRules } = require('business/src/users');
 
+import type API  from '../API';
+import type { MethodContext } from 'business';
+import type Result  from '../Result';
+import type { ApiCallback }  from '../API';
 
 const { Permission } = require('business/src/accesses');
 
 const updateAccessUsageStats = require('./helpers/updateAccessUsageStats');
 
+type ApiCall = {
+  method: string,
+  params: mixed,
+};
 
 /**
  * Utility API methods implementations.
  *
  * @param api
  */
-module.exports = async function (api) {
+module.exports = async function (api: API) {
 
   const logger = getLogger('methods:batch');
   const config = await getConfig();
@@ -46,12 +54,12 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
     getAccessInfoApiFn);
 
-  async function getAccessInfoApiFn(context, params, result, next) {
-    const accessInfoProps = ['id', 'token', 'type', 'name', 'deviceName', 'permissions',
+  async function getAccessInfoApiFn(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    const accessInfoProps: Array<string> = ['id', 'token', 'type', 'name', 'deviceName', 'permissions',
       'lastUsed', 'expires', 'deleted', 'clientData',
       'created', 'createdBy', 'modified', 'modifiedBy', 'calls'
     ];
-    const userProps = ['username'];
+    const userProps: Array<string> = ['username'];
 
     for (const prop of accessInfoProps) {
       const accessProp = context.access[prop];
@@ -76,8 +84,8 @@ module.exports = async function (api) {
     /**
      * Remove permissions with level="none" of system streams from given array
      */
-    function filterNonePermissionsOnSystemStreams(permissions) {
-      const filteredPermissions = [];
+    function filterNonePermissionsOnSystemStreams(permissions: Array<Permission>): Array<Permission> {
+      const filteredPermissions: Array<Permission> = [];
       for (const perm of permissions) {
         if (! (perm.level === 'none' && SystemStreamsSerializer.isSystemStreamId(perm.streamId))) filteredPermissions.push(perm);
       }
@@ -90,7 +98,7 @@ module.exports = async function (api) {
     callBatchApiFn,
     updateAccessUsage);
 
-  async function callBatchApiFn(context, calls, result, next) {
+  async function callBatchApiFn(context: MethodContext, calls: Array<ApiCall>, result: Result, next: ApiCallback) {
     // allow non stringified stream queries in batch calls
     context.acceptStreamsQueryNonStringified = true;
     context.disableAccessUsageStats = true;
@@ -106,13 +114,13 @@ module.exports = async function (api) {
     context.disableAccessUsageStats = false; // to allow tracking functions
     next();
 
-    async function executeCall(call) {
+    async function executeCall(call: ApiCall) {
       try {
         countCall(call.method);
         // update methodId to match the call todo
         context.methodId = call.method;
         // Perform API call
-        const result = await bluebird.fromCallback(
+        const result: Result = await bluebird.fromCallback(
           (cb) => api.call(context, call.params, cb));
 
         if (isAuditActive) await audit.validApiCall(context, result);

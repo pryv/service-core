@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // Tests for the PendingUpdatesMap and its helper classes. 
 
@@ -17,17 +17,25 @@ const sinon = require('sinon');
 const { PendingUpdatesMap, PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
 
+type UpdateAttrs = {
+  from?: number, 
+  to?: number, 
+  timestamp?: number, 
+  author?: string, 
+  userId?: string, 
+  eventId?: string, 
+};
 
 describe('PendingUpdatesMap', () => {  
   describe('#merge and #get', () => {
-    let map;
+    let map: PendingUpdatesMap;
     beforeEach(() => {
       map = new PendingUpdatesMap(); 
     });
     
     const now = new Date() / 1e3; 
-    const update1 = makeUpdate(now);
-    const update2 = makeUpdate(now, {
+    const update1: PendingUpdate = makeUpdate(now);
+    const update2: PendingUpdate = makeUpdate(now, {
       author: 'token2', 
       timestamp: now + 10, 
       from: now - 200, 
@@ -54,7 +62,7 @@ describe('PendingUpdatesMap', () => {
     });
   });
   describe('#elapsed', () => {
-    let map;
+    let map: PendingUpdatesMap;
     beforeEach(() => {
       map = new PendingUpdatesMap(); 
     });
@@ -63,7 +71,7 @@ describe('PendingUpdatesMap', () => {
     
     // Populate the map with 10 updates, starting 10 minutes ago and entering an
     // update every minute. 
-    let updates;
+    let updates: Array<PendingUpdate>;
     beforeEach(() => {
       updates = [];
       
@@ -108,7 +116,7 @@ describe('PendingUpdate', () => {
   describe('#merge', () => {
     const now = new Date() / 1e3; 
     
-    let update1;
+    let update1: PendingUpdate;
     beforeEach(() => {
       update1 = PendingUpdate.fromUpdateRequest(now, {
         userId: 'user', 
@@ -122,7 +130,7 @@ describe('PendingUpdate', () => {
         }
       });
     });
-    let update2;
+    let update2: PendingUpdate;
     beforeEach(() => {
       update2 = PendingUpdate.fromUpdateRequest(now, {
         userId: 'user', 
@@ -177,7 +185,7 @@ describe('PendingUpdate', () => {
   describe('#flushAt()', () => {
     const now = new Date() / 1e3; 
 
-    let update;
+    let update: PendingUpdate;
     beforeEach(() => {
       update = PendingUpdate.fromUpdateRequest(now, {
         userId: 'user', 
@@ -207,7 +215,7 @@ describe('PendingUpdate', () => {
   });
 });
 
-function makeUpdate(now, attrs={}) {
+function makeUpdate(now: number, attrs: UpdateAttrs={}): PendingUpdate {
   const myAttrs = {
     userId: attrs.userId || 'user', 
     eventId: attrs.eventId || 'event', 

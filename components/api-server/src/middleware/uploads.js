@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 'use strict';
-// 
+// @flow
 
 // A middleware that allows checking uploads and that will at the same time
 // allow uploads for the route.
@@ -47,7 +47,7 @@ module.exports = {
  * Enables file uploads on a route. file uploads are checked in their global
  * form (MUST have only a JSON body).
  */
-function hasFileUpload(req, res, next) {
+function hasFileUpload(req: express$Request, res: express$Response, next: express$NextFunction) {
   const uploadMiddleware = uploadMiddlewareFactory.any();
 
   uploadMiddleware(req, res, (err) => {

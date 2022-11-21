@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // Main service class for the Metadata Updater Service. 
 
@@ -16,27 +16,30 @@ const { Controller } = require('./controller');
 const { ErrorLogger } = require('./error_logger');
 
 
+import type { IMetadataUpdaterService, IUpdateRequests, IUpdateResponse, 
+  IUpdateId, IPendingUpdate } from './interface';
   
+import type { StorageLayer } from 'storage';
 
 // The metadata updater service receives 'scheduleUpdate' rpc messages on the
 // tchannel/protobuf3 interface (from the network). It then flushes these
 // updates every N ms to MongoDB.   
 // 
-class Service {
-  db;
+class Service implements IMetadataUpdaterService {
+  db: StorageLayer;
   logger;
   
   // Underlying transport and RPC dispatcher
-  server;
+  server: rpc.Server;
   
   // Where we store incoming work, this is shared between this class and the
   // controller.
-  pending; 
+  pending: PendingUpdatesMap; 
   
   // Controller for work done in this service. 
-  controller;
+  controller: Controller;
   
-  constructor(db, logger) {
+  constructor(db: StorageLayer, logger) {
     this.db = db;
     this.logger = logger.getLogger('service'); 
     this.logger.debug('instanciated');
@@ -48,7 +51,7 @@ class Service {
   
   // Starts the service, including all subprocesses.
   // 
-  async start(endpoint) {
+  async start(endpoint: string) {
     const logger = this.logger; 
     const server = this.server; 
     const controller = this.controller;
@@ -69,17 +72,17 @@ class Service {
     controller.runEach(runEachMs);
   }
   
-  produceServiceImpl() {
+  produceServiceImpl(): IMetadataUpdaterService {
     const logger = this.logger; 
 
     return ErrorLogger.wrap(
-      (this), 
+      (this: IMetadataUpdaterService), 
       logger);
   }
   
   // --------------------------------------------------- IMetadataUpdaterService
   
-  async scheduleUpdate(req) {
+  async scheduleUpdate(req: IUpdateRequests): Promise<IUpdateResponse> {
     const pending = this.pending; 
     const logger = this.logger; 
         
@@ -96,7 +99,7 @@ class Service {
     
     return {};
   }
-  async getPendingUpdate(req) {
+  async getPendingUpdate(req: IUpdateId): Promise<IPendingUpdate> {
     const pending = this.pending; 
     
     const update = pending.get(PendingUpdate.key(req));

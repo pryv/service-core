@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 /**
  * JSON Schema specification of methods data for auth.
@@ -217,9 +217,9 @@ function loadCustomValidationSettings (validationSchema) {
   // iterate account stream settings and APPEND validation with relevant properties
   // etc additional required fields or regex validation
   const accountStreamsSettings = SystemStreamsSerializer.getAccountMap()
-  for (const [streamIdWithPrefix, systemStream] of Object.entries(accountStreamsSettings)) {
+  for (const [streamIdWithPrefix: string, systemStream] of Object.entries(accountStreamsSettings)) {
     // if streamIdWithPrefix is set as required - add required validation
-    const streamId = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
+    const streamId: string = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
     if (
       systemStream[features.IS_REQUIRED_IN_VALIDATION] &&
       ! validationSchema.required.includes(streamIdWithPrefix)

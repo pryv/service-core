@@ -4,9 +4,15 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
+import type {EventType, PropertyType, Validator, Content}  from './interfaces';
 
+type JSONSchema = {
+  type: string,
+  properties?: {},
+  required?: Array<string>,
+}
 
 const assert = require('assert');
 const _ = require('lodash');
@@ -15,11 +21,11 @@ const value_types = require('./value_types');
 
 // A complex type like 'position/wgs84' that has several subfields.
 //
-class ComplexType {
-  _schema;
-  _outerType;
+class ComplexType implements EventType {
+  _schema: JSONSchema;
+  _outerType: string;
 
-  constructor(outerType, schema) {
+  constructor(outerType: string, schema: JSONSchema) {
     // We only handle this kind of schema
     assert.ok(schema.type === 'object');
 
@@ -50,13 +56,13 @@ class ComplexType {
 
     return _.reject(allKeys, el => requiredKeys.indexOf(el) >= 0);
   }
-  fields() {
+  fields(): Array<string> {
     if (this._schema.properties == null)
       throw new Error('Type Schema must have a properties object.');
     return Object.keys(this._schema.properties);
   }
 
-  forField(name) {
+  forField(name: string): PropertyType {
     const PATH_SEPARATOR = '.';
     const parts = name.split(PATH_SEPARATOR);
 
@@ -105,14 +111,14 @@ class ComplexType {
     throw new Error('Field names must encode the full path up to a value type.');
   }
 
-  isSeries() {
+  isSeries(): false {
     return false;
   }
 
   callValidator(
-    validator,
-    content
-  ) {
+    validator: Validator,
+    content: Content
+  ): Promise<Content> {
     // NOTE We don't currently perform coercion on leaf types of complex
     // named types. We could though - and this is where we would do it.
     return validator.validateWithSchema(content, this._schema);

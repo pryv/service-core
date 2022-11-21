@@ -4,19 +4,19 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const bluebird = require('bluebird');
 
 class Waiter {
-  promise;
-  resolve; 
-  reject; 
-  timeout;
+  promise: Promise<void>;
+  resolve: () => void; 
+  reject: (err: Error) => void; 
+  timeout: ?TimeoutID;
   
-  done; 
+  done: boolean; 
   
-  constructor(timeout) {
+  constructor(timeout?: number) {
     this.done = false; 
     
     this.promise = new bluebird((res, rej) => {
@@ -42,13 +42,13 @@ class Waiter {
   }
 }
 class ConditionVariable {
-  waiters;
+  waiters: Array<Waiter>;
   
   constructor() {
     this.waiters = []; 
   }
   
-  wait(timeout) {
+  wait(timeout?: number): Promise<void> {
     const waiter = new Waiter(timeout);
       
     this.waiters.push(waiter);
@@ -74,15 +74,15 @@ class ConditionVariable {
 // immediately. Like a combination of a boolean and a ConditionVariable.
 //
 class Fuse {
-  cv; 
-  burnt; 
+  cv: ConditionVariable; 
+  burnt: boolean; 
   
   constructor() {
     this.burnt = false; 
     this.cv = new ConditionVariable(); 
   }
   
-  async wait(timeout) {
+  async wait(timeout?: number): Promise<void> {
     if (this.burnt) return; 
     
     await this.cv.wait(timeout); 
@@ -94,7 +94,7 @@ class Fuse {
     this.cv.broadcast();
   }
   
-  isBurnt() {
+  isBurnt(): boolean {
     return this.burnt;
   }
 }

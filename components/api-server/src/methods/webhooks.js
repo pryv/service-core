@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
@@ -22,19 +22,34 @@ const { pubsub } = require('messages');
 const { getLogger, getConfig} = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
 
+import type { StorageLayer } from 'storage';
+import type { MethodContext } from 'business';
 
+import type API  from '../API';
+import type { ApiCallback }  from '../API';
+import type Result  from '../Result';
 
+import type { WebhookUpdate } from 'business/src/webhooks/Webhook';
 
+export type WebhooksSettingsHolder = {
+  minIntervalMs: number,
+  maxRetries: number,
+  runsSize: number,
+};
 
+type Access = {
+  id: string,
+  isApp(): Boolean
+};
 
-module.exports = async function produceWebhooksApiMethods(api)
+module.exports = async function produceWebhooksApiMethods(api: API)
 {
   const config = await getConfig();
   const wehbooksSettings = config.get('webhooks');
   const storageLayer = await getStorageLayer();
   const logger = getLogger('methods:webhooks');
 
-  const webhooksRepository = new WebhooksRepository(storageLayer.webhooks, storageLayer.events);
+  const webhooksRepository: WebhooksRepository = new WebhooksRepository(storageLayer.webhooks, storageLayer.events);
   
   // RETRIEVAL
 
@@ -43,17 +58,17 @@ module.exports = async function produceWebhooksApiMethods(api)
     findAccessibleWebhooks,
   );
 
-  async function findAccessibleWebhooks(context, params, result, next) {
+  async function findAccessibleWebhooks(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const currentAccess = context.access;
     try {
-      const webhooks = await webhooksRepository.get(context.user, currentAccess);
+      const webhooks: Array<Webhook> = await webhooksRepository.get(context.user, currentAccess);
       result.webhooks = webhooks.map(forApi);
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
     next();
 
-    function forApi(webhook) {
+    function forApi(webhook: Webhook): {} {
       return webhook.forApi();
     }
   }
@@ -63,12 +78,12 @@ module.exports = async function produceWebhooksApiMethods(api)
     findWebhook,
   );
 
-  async function findWebhook(context, params, result, next) {
-    const user = context.user;
-    const currentAccess = context.access;
-    const webhookId = params.id;
+  async function findWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
+    const user: {} = context.user;
+    const currentAccess: Access = context.access;
+    const webhookId: string = params.id;
     try {
-      const webhook = await webhooksRepository.getById(user, webhookId);
+      const webhook: Webhook = await webhooksRepository.getById(user, webhookId);
 
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
@@ -93,7 +108,7 @@ module.exports = async function produceWebhooksApiMethods(api)
     bootWebhook,
   );
 
-  async function createWebhook(context, params, result, next) {
+  async function createWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
     context.initTrackingProperties(params);
 
     const webhook = new Webhook(_.extend({
@@ -119,7 +134,7 @@ module.exports = async function produceWebhooksApiMethods(api)
     return next();
   }
 
-  async function bootWebhook(context, params, result, next) {
+  async function bootWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
     pubsub.webhooks.emit(pubsub.WEBHOOKS_CREATE, _.extend(
       { username: context.user.username }, 
       { webhook: result.webhook })
@@ -137,28 +152,28 @@ module.exports = async function produceWebhooksApiMethods(api)
     reactivateWebhook,
   );
 
-  function applyPrerequisitesForUpdate(context, 
-    params, 
-    result, next) {
+  function applyPrerequisitesForUpdate(context: MethodContext, 
+    params: { update: {} }, 
+    result: Result, next: ApiCallback) {
     context.updateTrackingProperties(params.update);
     next();
   }
 
-  async function updateWebhook(context, 
-    params, 
-    result, next) {
+  async function updateWebhook(context: MethodContext, 
+    params: { update: {}, id: string }, 
+    result: Result, next: ApiCallback) {
     
-    const user = context.user;
-    const currentAccess = context.access;
-    const update = params.update;
-    const webhookId = params.id;
+    const user: {} = context.user;
+    const currentAccess: Access = context.access;
+    const update: WebhookUpdate = params.update;
+    const webhookId: string = params.id;
 
     if (update.state === 'active') {
       update.currentRetries = 0;
     }
 
     try {
-      const webhook = await webhooksRepository.getById(user, webhookId);
+      const webhook: Webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
       }
@@ -174,7 +189,7 @@ module.exports = async function produceWebhooksApiMethods(api)
     next();
   }
 
-  async function reactivateWebhook(context, params, result, next) {
+  async function reactivateWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
     pubsub.webhooks.emit(pubsub.WEBHOOKS_ACTIVATE, _.extend(
       { username: context.user.username }, 
       { webhook: result.webhook })
@@ -190,16 +205,16 @@ module.exports = async function produceWebhooksApiMethods(api)
     turnOffWebhook,
   );
 
-  async function deleteAccess(context, 
-    params, 
-    result, next) {
+  async function deleteAccess(context: MethodContext, 
+    params: { id: string }, 
+    result: Result, next: ApiCallback) {
     
-    const user = context.user;
-    const currentAccess = context.access;
-    const webhookId = params.id;
+    const user: {} = context.user;
+    const currentAccess: Access = context.access;
+    const webhookId: string = params.id;
 
     try {
-      const webhook = await webhooksRepository.getById(user, webhookId);
+      const webhook: Webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
       }
@@ -218,9 +233,9 @@ module.exports = async function produceWebhooksApiMethods(api)
     next();
   }
 
-  async function turnOffWebhook(context, params, result, next) {
-    const username = context.user.username;
-    const webhookId = params.id;
+  async function turnOffWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
+    const username: string = context.user.username;
+    const webhookId: string = params.id;
     pubsub.webhooks.emit(pubsub.WEBHOOKS_DELETE, {
       username: username,
       webhook: {
@@ -238,14 +253,14 @@ module.exports = async function produceWebhooksApiMethods(api)
     testWebhook,
   );
 
-  async function testWebhook(context, params, result, next) {
+  async function testWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
 
-    const TEST_MESSAGE = 'test';
+    const TEST_MESSAGE: string = 'test';
 
-    const user = context.user;
-    const currentAccess = context.access;
-    const webhookId = params.id;
-    let webhook;
+    const user: {} = context.user;
+    const currentAccess: Access = context.access;
+    const webhookId: string = params.id;
+    let webhook: ?Webhook;
     try {
       webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
@@ -272,7 +287,7 @@ module.exports = async function produceWebhooksApiMethods(api)
    * If Personnal: yes
    * If App: only if it was used to create the webhook
    */
-  function isWebhookInScope(webhook, access) {
+  function isWebhookInScope(webhook: Webhook, access: Access): boolean {
     if (access.isPersonal()) return true;
     return access.id === webhook.accessId;
   }

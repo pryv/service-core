@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 const path = require('path');
 const { getConfig, getLogger } = require('@pryv/boiler').init({
   appName: 'hfs-server',
@@ -39,7 +39,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const opentracing = require('opentracing');
 const initTracer = require('jaeger-client').initTracer;
 
-async function createContext(config) {
+async function createContext(config): Promise<Context> {
   const logger = getLogger('setup');
 
   const host = config.get('influxdb:host');
@@ -97,9 +97,9 @@ function produceTracer(config, logger) {
 //
 class Application {
   logger;
-  context;
+  context: Context;
 
-  server;
+  server: Server;
   config;
 
   async init() {
@@ -114,7 +114,7 @@ class Application {
     this.server = new Server(this.config, this.context);
   }
 
-  async start() {
+  async start(): Promise<Application> {
     await this.server.start();
 
     return this;

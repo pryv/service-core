@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const path = require('path');
 const { getLogger } = require('@pryv/boiler').init({
@@ -33,7 +33,7 @@ const business = require('business');
 
 // Produces and returns a connection to InfluxDB. 
 // 
-function produceInfluxConnection() {
+function produceInfluxConnection(): business.series.InfluxConnection {
   
   return new business.series.InfluxConnection({host: 'localhost'}); 
 }
@@ -41,14 +41,14 @@ exports.produceInfluxConnection = produceInfluxConnection;
 
 // Produces and returns a connection to MongoDB. 
 // 
-async function produceMongoConnection() {
+async function produceMongoConnection(): storage.Database {
   return await storage.getDatabase();;
 }
 exports.produceMongoConnection = produceMongoConnection;
 
 // Produces a StorageLayer instance
 // 
-function produceStorageLayer(connection) {
+function produceStorageLayer(connection: storage.Database): storage.StorageLayer {
   const passwordResetRequestMaxAge = 60*1000;
   const sessionMaxAge = 60*1000;
   

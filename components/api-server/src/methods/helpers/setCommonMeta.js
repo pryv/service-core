@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
@@ -12,6 +12,13 @@ const { getAPIVersion } = require('middleware/src/project_version');
 // cnan be overriden;
 const { getConfig } = require('@pryv/boiler');
 
+type MetaInfo = {
+  meta: {
+    apiVersion: string, 
+    serverTime: number, 
+    serial: string
+  }
+}
 
 // NOTE There's really no good way to wait for an asynchronous process in a 
 //  synchronous method. But we don't want to modify all the code that uses
@@ -20,15 +27,15 @@ const { getConfig } = require('@pryv/boiler');
 //  and store it forever. This (init and memoise) is the next best thing. 
 
 // Memoised copy of the current project version. 
-let version = 'n/a';
-let serial = null;
+let version: string = 'n/a';
+let serial: ?string = null;
 let config = null;
 
 /**
  * 
  * If no parameter is provided, loads the configuration. Otherwise takes the provided loaded settings.
  */
-module.exports.loadSettings = async function () {
+module.exports.loadSettings = async function (): Promise<void> {
   config = await getConfig();
   version = await getAPIVersion();
 };
@@ -43,7 +50,7 @@ module.exports.loadSettings = async function () {
  *
  * @param result {Object} Current result. MODIFIED IN PLACE. 
  */
-module.exports.setCommonMeta = function(result) {
+module.exports.setCommonMeta = function <T: Object>(result: T): T & MetaInfo {
   if (result.meta == null) {
     result.meta = {};
   }

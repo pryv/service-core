@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const errors = require('errors').factory;
 const { USERNAME_REGEXP_STR } = require('api-server/src/schema/helpers'); 
@@ -20,8 +20,8 @@ const { USERNAME_REGEXP_STR } = require('api-server/src/schema/helpers');
  * @param {Array} ignoredPaths Paths for which no translation is needed
  * @return {Function}
  */
-module.exports = function (ignoredPaths) {
-  return function (req, res, next) {
+module.exports = function (ignoredPaths: Array<string>) {
+  return function (req: express$Request, res: express$Response, next: express$NextFunction) {
     if (isIgnoredPath(req.url)) { return next(); }
 
     if (! req.headers.host) { return next(errors.missingHeader('Host')); }
@@ -48,7 +48,7 @@ module.exports = function (ignoredPaths) {
   }
 };
 
-function looksLikeUsername(candidate) {
+function looksLikeUsername(candidate: string): boolean {
   const reUsername = new RegExp(USERNAME_REGEXP_STR); 
   const lowercasedUsername = candidate.toLowerCase(); // for retro-compatibility
   return reUsername.test(lowercasedUsername);

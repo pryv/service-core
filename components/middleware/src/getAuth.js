@@ -4,16 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // Middleware that verifies the presence of an authorization token
 // 
-module.exports = (req, res, next) => {
+module.exports = (req: express$Request, res: express$Response, next: express$NextFunction) => {
   req.headers['authorization'] = getAuth(req);
   next();
 };
 
-function getAuth(req) {
+function getAuth(req): ?string {
   let authorizationHeader = req.header('authorization');
 
   if (authorizationHeader != null) {

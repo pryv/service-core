@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const errors = require('errors').factory;
 const business = require('business');
@@ -12,16 +12,20 @@ const business = require('business');
 const opentracing = require('opentracing');
 const cls = require('../tracing/cls');
 
+import type Context  from '../context';
 
 // ----------------------------------------------- (sync) express error handling
 
-function mount(ctx, handler) {
+type ControllerMethod = (ctx: Context, 
+  req: express$Request, res: express$Response, next: express$NextFunction) => mixed; 
+type ExpressHandler = (req: express$Request, res: express$Response, next: express$NextFunction) => mixed; 
+function mount(ctx: Context, handler: ControllerMethod): express$Middleware {
   return catchAndNext(
     handler.bind(null, ctx)); 
 }
 
-function catchAndNext(handler) {
-  return async (req, res, next) => {
+function catchAndNext(handler: ExpressHandler): express$Middleware {
+  return async (req: express$Request, res, next) => {
     try {
       return await handler(req, res, next);
     }
@@ -48,7 +52,7 @@ const TAG_ERROR_MESSAGE = 'error.message';
 // 
 // NOTE This method should not throw an error!
 // 
-function storeErrorInTrace(err) {
+function storeErrorInTrace(err: any) {
   try {
     const Tags = opentracing.Tags;
 
@@ -66,7 +70,7 @@ function storeErrorInTrace(err) {
 
 // --------------------------------------------------------------------- factory
 
-module.exports = function (ctx) {
+module.exports = function (ctx: Context) {
   return {
     storeSeriesData: mount(ctx, require('./op/store_series_data')),
     querySeriesData: mount(ctx, require('./op/query_series_data')),

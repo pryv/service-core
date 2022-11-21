@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
@@ -13,9 +13,10 @@ const middleware = require('middleware');
 const { setMethodId } = require('middleware');
 const tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues;
 
+import type Application  from '../application';
 
 // Shared accesses route handling.
-module.exports = function (expressApp, app) {
+module.exports = function (expressApp: express$Application, app: Application) {
 
   const api = app.api;
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
@@ -23,7 +24,7 @@ module.exports = function (expressApp, app) {
   expressApp.get(Paths.Accesses, 
     setMethodId('accesses.get'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       const params = _.extend({}, req.query);
       tryCoerceStringValues(params, {
         includeExpired: 'boolean',
@@ -35,14 +36,14 @@ module.exports = function (expressApp, app) {
   expressApp.post(Paths.Accesses, 
     setMethodId('accesses.create'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       api.call(req.context, req.body, methodCallback(res, next, 201));
   });
 
   expressApp.put(Paths.Accesses + '/:id', 
     setMethodId('accesses.update'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       const params = { id: req.params.id, update: req.body };
       api.call(req.context, params, methodCallback(res, next, 200));
   });
@@ -50,7 +51,7 @@ module.exports = function (expressApp, app) {
   expressApp.delete(Paths.Accesses + '/:id',
     setMethodId('accesses.delete'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       const params = _.extend({id: req.params.id}, req.query);
       api.call(req.context, params, methodCallback(res, next, 200));
   });
@@ -58,7 +59,7 @@ module.exports = function (expressApp, app) {
   expressApp.post(Paths.Accesses + '/check-app',
     setMethodId('accesses.checkApp'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       api.call(req.context, req.body, methodCallback(res, next, 200));
   });
 

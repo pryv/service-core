@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 /* global describe, it */
 
@@ -20,7 +20,7 @@ const InfluxRowType = require('../../../src/types/influx_row_type');
 describe('BatchRequest', () => {
   describe('.parse', () => {
     const typeRepo = new TypeRepository(); 
-    const type = (typeRepo.lookup('series:position/wgs84'));
+    const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     const resolver = () => Promise.resolve(type);
 
     it('[QJ6L] should parse the happy case', async () => {
@@ -74,7 +74,7 @@ describe('BatchRequest', () => {
       }, errorMessage);
     });
     
-    async function bad(obj, errorMessage) {
+    async function bad(obj: mixed, errorMessage: string) {
       try {
         await BatchRequest.parse(obj, resolver);
       } catch (err) {
@@ -83,7 +83,7 @@ describe('BatchRequest', () => {
       }
     }
 
-    async function good(obj) {
+    async function good(obj: mixed) {
       try {
         await BatchRequest.parse(obj, resolver);
       } catch (err) {
@@ -96,7 +96,7 @@ describe('BatchRequest', () => {
 describe('BatchRequestElement', () => {
   describe('.parse(obj)', () => {
     const typeRepo = new TypeRepository(); 
-    const type = (typeRepo.lookup('series:position/wgs84'));
+    const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     const resolver = () => Promise.resolve(type);
     
     it('[AGQK] should parse a good looking object', async () => {
@@ -125,7 +125,7 @@ describe('BatchRequestElement', () => {
       await bad({ eventId: 42 }, errorMessage);
     });
 
-    async function bad(obj, errorMessage) {
+    async function bad(obj: mixed, errorMessage: string) {
       try {
         await BatchRequestElement.parse(obj, resolver);
       } catch (err) {
@@ -134,7 +134,7 @@ describe('BatchRequestElement', () => {
       }
     }
 
-    async function good(obj) {
+    async function good(obj: mixed) {
       try {
         await BatchRequestElement.parse(obj, resolver);
       } catch (err) {

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const bluebird = require('bluebird');
 const _ = require('lodash');
@@ -16,16 +16,16 @@ const { getUsersRepository } = require('business/src/users');
  * Repository of all Webhooks in this Pryv.io instance. 
  */
 class Repository {
-  storage;
+  storage: WebhooksStorage;
 
-  constructor (webhooksStorage) {
+  constructor (webhooksStorage: WebhooksStorage) {
     this.storage = webhooksStorage;
   }
 
   /**
    * Returns all webhooks in a map <username, Arrra<webhooks>>
    */
-  async getAll() {
+  async getAll(): Promise<Map<string, Array<Webhook>>> {
     let users;
     const usersRepository = await getUsersRepository(); 
     users = await usersRepository.getAllUsernames();
@@ -34,7 +34,7 @@ class Repository {
     await bluebird.all(users.map(retrieveWebhooks, this));
     return allWebhooks;
 
-    async function retrieveWebhooks(user) {
+    async function retrieveWebhooks(user): Promise<void> {
       const webhooksQuery = {};
       const webhooksOptions = {};
 
@@ -56,7 +56,7 @@ class Repository {
    * Personal access: returns all webhooks
    * App access: all those created by the access
    */
-  async get(user, access) {
+  async get(user: any, access: any): Promise<Array<Webhook>> {
 
     let query = {};
     const options = {};
@@ -81,7 +81,7 @@ class Repository {
   /**
    * Returns a webhook for a user, fetched by its id
    */
-  async getById(user, webhookId) {
+  async getById(user: any, webhookId: string): Promise<?Webhook> {
     const query = {
       id: { $eq: webhookId }
     };
@@ -99,7 +99,7 @@ class Repository {
   /**
    * Inserts a webhook for a user
    */
-  async insertOne(user, webhook) {
+  async insertOne(user: {}, webhook: Webhook): Promise<void> {
     await bluebird.fromCallback(cb =>
       this.storage.insertOne(user, webhook.forStorage(), cb)
     );
@@ -108,7 +108,7 @@ class Repository {
   /**
    * Updates certain fields of a webhook for a user
    */
-  async updateOne(user, update, webhookId) {
+  async updateOne(user: {}, update: {}, webhookId: string): Promise<void> {
     const query = { id: webhookId };
     await bluebird.fromCallback(cb =>
       this.storage.updateOne(user, query, update, cb)
@@ -118,7 +118,7 @@ class Repository {
   /**
    * Deletes a webhook for a user, given the webhook's id
    */
-  async deleteOne(user, webhookId) {
+  async deleteOne(user: {}, webhookId: string): Promise<void> {
     await bluebird.fromCallback(cb =>
       this.storage.delete(user, { id: webhookId }, cb)
     );
@@ -127,7 +127,7 @@ class Repository {
   /**
    * Deletes all webhooks for a user.
    */
-  async deleteForUser(user) {
+  async deleteForUser(user: {}): Promise<void> {
     await bluebird.fromCallback(cb =>
       this.storage.delete(user, {}, cb)
     );
@@ -136,7 +136,7 @@ class Repository {
 }
 module.exports = Repository;
 
-function initWebhook (user, repository, webhook) {
+function initWebhook (user: {}, repository: Repository, webhook: {}): Webhook {
   return new Webhook(_.merge({
     webhooksRepository: repository,
     user: user,

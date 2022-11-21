@@ -4,16 +4,17 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
+import type { StorageLayer } from 'storage';
 
 // Returns a middleware function that loads the access into `req.context.access`.
 // The access is loaded from the token previously extracted by the `initContext` middleware.
 // Also, it adds the corresponding access id as a specific response header.
 // 
-module.exports = function loadAccess(storageLayer) {
+module.exports = function loadAccess(storageLayer: StorageLayer) {
   return async function (
-    req, res, next
+    req: express$Request, res: express$Response, next: express$NextFunction
   ) {
 
     try {
@@ -37,7 +38,7 @@ module.exports = function loadAccess(storageLayer) {
  * @param req {express$Request} Current express request.
  * @param res {express$Response} Current express response. MODIFIED IN PLACE.
  */
-function setAccessIdHeader (req, res) {
+function setAccessIdHeader (req: express$Request, res: express$Response): express$Response {
   if (req != null) {
     const requestCtx = req.context;
     if (requestCtx != null && requestCtx.access != null) {

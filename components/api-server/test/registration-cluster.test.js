@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 /* global describe, it, before, after */
-// 
+// @flow
 
 const assert = require('chai').assert;
 const _ = require('lodash');

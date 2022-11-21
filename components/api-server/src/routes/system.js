@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const errors = require('errors').factory;
 const Paths = require('./Paths');
@@ -14,10 +14,12 @@ const _ = require('lodash');
 const { getLogger } = require('@pryv/boiler');
 const { setMinimalMethodContext, setMethodId } = require('middleware');
 
+import type { ContextSource } from 'business';
 
+import type Application  from '../application';
 
 // System (e.g. registration server) calls route handling.
-module.exports = function system(expressApp, app) {
+module.exports = function system(expressApp: express$Application, app: Application) {
 
   const systemAPI = app.systemAPI;
   const config = app.config;
@@ -42,14 +44,14 @@ module.exports = function system(expressApp, app) {
     setMethodId('system.createUser'),
     createUser);
 
-  function createUser(req, res, next) {
+  function createUser(req: express$Request, res, next) {
     const params = _.extend({}, req.body); 
     systemAPI.call(req.context, params, methodCallback(res, next, 201));
   }
 
   expressApp.get(Paths.System + '/user-info/:username',
     setMethodId('system.getUserInfo'),
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       const params = {
         username: req.params.username
       };
@@ -58,14 +60,14 @@ module.exports = function system(expressApp, app) {
 
   expressApp.delete(Paths.System + '/users/:username/mfa', 
     setMethodId('system.deactivateMfa'),
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       systemAPI.call(req.context, { username: req.params.username }, methodCallback(res, next, 204));
   });
 
   // --------------------- health checks ----------------- //
   expressApp.get(Paths.System + '/check-platform-integrity',
     setMethodId('system.checkPlatformIntegrity'),
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       systemAPI.call(req.context, {}, methodCallback(res, next, 200));
   }); 
 
@@ -74,7 +76,7 @@ module.exports = function system(expressApp, app) {
 
   // Checks if `req` contains valid authorization to access the system routes. 
   // 
-  function checkAuth(req, res, next) {
+  function checkAuth(req: express$Request, res, next) {
     const secret = req.headers.authorization;
     if (secret==null || secret !== adminAccessKey) {
       logger.warn('Unauthorized attempt to access system route', {

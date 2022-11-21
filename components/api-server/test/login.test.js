@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 /* global describe, before, beforeEach, after, afterEach it */
-// 
+// @flow
 
 const chai = require('chai');
 const assert = chai.assert;

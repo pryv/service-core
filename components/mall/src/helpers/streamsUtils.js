@@ -5,9 +5,10 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 const { defaults: dataStoreDefaults } = require('pryv-datastore');
+import type { Stream } from 'business/src/streams';
 const { getFullItemId } = require('./storeDataUtils');
 
 module.exports = {
@@ -20,7 +21,7 @@ module.exports = {
  * @param {{id: string, name: string}} storeInfo - Data store or similar object
  * @param {Object} extraProperties
  */
-function createStoreRootStream(storeInfo, extraProperties) {
+function createStoreRootStream(storeInfo, extraProperties): Stream {
   return Object.assign({
     id: ':' + storeInfo.id + ':',
     name: storeInfo.name,
@@ -38,8 +39,8 @@ function createStoreRootStream(storeInfo, extraProperties) {
  * @param {identifier} storeId
  * @param {Array<Streams>} streams
  */
-function addStoreIdPrefixToStreams(storeId, streams) {
-  for (const stream of streams) {
+function addStoreIdPrefixToStreams(storeId: string, streams: Array<Stream>): void {
+  for (const stream: Stream of streams) {
     stream.id = getFullItemId(storeId, stream.id);
     if (stream.parentId != null) {
       stream.parentId = getFullItemId(storeId, stream.parentId);

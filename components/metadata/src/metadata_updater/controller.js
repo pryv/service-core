@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const storage = require('storage');
 
@@ -18,16 +18,16 @@ class Controller {
   logger;
   
   // The timer set by #runEach.
-  timer; 
+  timer: ?IntervalID; 
   
   // Reference to the updates map. This is where work comes from. 
-  map;
+  map: PendingUpdatesMap;
   
   // Database connection
-  db;
+  db: storage.StorageLayer;
     
   constructor(
-    db, map, logger) 
+    db: storage.StorageLayer, map: PendingUpdatesMap, logger) 
   {
     this.logger = logger; 
     this.db = db;
@@ -39,7 +39,7 @@ class Controller {
   // Runs the #act method every `frequency` miliseconds; act will perform the main
   // controller action.
   // 
-  runEach(frequency) {
+  runEach(frequency: number) {
     if (frequency <= 0) throw new Error('Precondition failure: frequency cannot be negative.');
     
     const timer = setInterval(
@@ -65,7 +65,7 @@ class Controller {
   // requests to MongoDB. To optimise this, you might want to add batch calls
   // at this point. 
   // 
-  async act(fixedNow) {
+  async act(fixedNow?: EpochTime): Promise<*> {
     const map = this.map; 
     
     let now = new Date() / 1e3;
@@ -88,16 +88,19 @@ class Controller {
   
   // Returns a Flush operation for the update `update`. Acts as a producer. 
   // 
-  flushOp(update) {
+  flushOp(update: PendingUpdate): Operation {
     return new Flush(update);
   }
 }
 
- // time in seconds since epoch
+type EpochTime = number; // time in seconds since epoch
 
 // A generalisation of something that executes and takes some time. FP people
 // would use a function here. 
 // 
+export interface Operation {
+  run(): Promise<*>;
+}
 
 module.exports = {
   Controller

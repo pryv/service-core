@@ -4,14 +4,21 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
+import type {IResults}  from 'influx';
+import type InfluxConnection  from './influx_connection';
 
 const _ = require('lodash');
 const {isoOrTimeToDate, formatDate} = require('influx/lib/src/grammar/times');
 
 const DataMatrix = require('./data_matrix');
 
+export type Timestamp = (number);
+export type Query = {
+  from?: Timestamp,
+  to?: Timestamp,
+}
 
 /** Represents a single data series in influxDB.
  *
@@ -19,14 +26,14 @@ const DataMatrix = require('./data_matrix');
  * manipulated through this interface.
  */
 class Series {
-  namespace;
-  name;
-  connection;
+  namespace: string;
+  name: string;
+  connection: InfluxConnection;
 
   /** Internal constructor, creates a series with a given name in the namespace
    * given.
    */
-  constructor(conn, namespace, name) {
+  constructor(conn: InfluxConnection, namespace: string, name: string) {
     this.connection = conn;
     this.namespace = namespace;
     this.name = name;
@@ -41,7 +48,7 @@ class Series {
    * @param data {DataMatrix} - data to store to the series
    * @return {Promise<*>} - promise that resolves once the data is stored
    */
-  append(data) {
+  append(data: DataMatrix): Promise<*> {
     const appendOptions = {
       database: this.namespace,
     };
@@ -75,7 +82,7 @@ class Series {
 
   /** Queries the given series, returning a data matrix.
    */
-  query(query) {
+  query(query: Query): Promise<DataMatrix> {
     const queryOptions = { database: this.namespace };
 
     // TODO worry about limit, offset
@@ -97,7 +104,7 @@ class Series {
 
   /** Transforms an IResult object into a data matrix.
    */
-  transformResult(result) {
+  transformResult(result: IResults): DataMatrix {
     if (result.length <= 0) return DataMatrix.empty();
 
     // assert: result.length > 0
@@ -118,7 +125,7 @@ class Series {
 
   /** Builds an expression that can be used within `WHERE` from a query.
    */
-  buildExpression(query) {
+  buildExpression(query: Query): Array<string> {
     let subConditions = [];
 
     // Replace double quotes with single quotes, since the influx library gets

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 /**
  * Note: Debug tests with: DEBUG=engine,socket.io* npm test --grep="Socket"
@@ -20,20 +20,25 @@ const socketIO = require('socket.io')({
 });
 
 const MethodContext = require('business').MethodContext;
+import type {ContextSource} from 'business';
 
 const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
 
+import type { StorageLayer } from 'storage';
+import type { CustomAuthFunction } from 'business';
 
+import type API  from '../API';
+import type { SocketIO$Handshake }  from './Manager';
 
 // Initializes the SocketIO subsystem.
 //
 async function setupSocketIO(
-  server,
-  api,
-  customAuthStepFn,
+  server: net$Server,
+  api: API,
+  customAuthStepFn: ?CustomAuthFunction,
 ) {
   const config = await getConfig();
   const logger = getLogger('socketIO');
@@ -46,7 +51,7 @@ async function setupSocketIO(
   });
 
   // Manages socket.io connections and delivers method calls to the api.
-  const manager = new Manager(logger, io, api, storageLayer, customAuthStepFn, isOpenSource);
+  const manager: Manager = new Manager(logger, io, api, storageLayer, customAuthStepFn, isOpenSource);
 
   // dynamicNamspaces allow to "auto" create namespaces
   // when connected pass the socket to Manager
@@ -64,7 +69,7 @@ async function setupSocketIO(
       const userName = manager.extractUsername(nsName);
       if (userName == null) throw new Error(`Invalid resource "${nsName}".`);
       if (query.auth == null) throw new Error("Missing 'auth' parameter with a valid access token.");
-      const contextSource = {
+      const contextSource: ContextSource = {
         name: 'socket.io',
         ip:  socket.handshake.headers['x-forwarded-for'] || socket.request.connection.remoteAddress
       }

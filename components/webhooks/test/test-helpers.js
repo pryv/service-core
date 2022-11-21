@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 process.env.NODE_ENV = 'test';
 
@@ -47,7 +47,7 @@ const storage = require('storage');
 
 // Produces and returns a connection to MongoDB. 
 // 
-function produceMongoConnection() {
+function produceMongoConnection(): Database {
   return storage.getDatabaseSync(true);
 }
 

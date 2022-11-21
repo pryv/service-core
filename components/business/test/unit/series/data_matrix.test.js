@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // Tests pertaining to storing data in a hf series. 
 
@@ -22,7 +22,7 @@ const InfluxRowType = require('../../../src/types/influx_row_type');
 describe('DataMatrix', function () {
   describe('.parse(obj)', () => {
     const typeRepo = new TypeRepository(); 
-    const type = (typeRepo.lookup('series:position/wgs84'));
+    const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     
     it('[576J] should accept the happy path', () => {
       good({
@@ -81,12 +81,12 @@ describe('DataMatrix', function () {
       });
     });
 
-    function good(obj) {
+    function good(obj: mixed) {
       assert.doesNotThrow(() => {
         DataMatrix.parse(obj, type);
       });
     }
-    function bad(obj) {
+    function bad(obj: mixed) {
       assert.throws(() => {
         DataMatrix.parse(obj, type);
       }, ParseFailure);

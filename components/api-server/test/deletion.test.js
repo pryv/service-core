@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 const nock = require('nock');
 const cuid = require('cuid');
 const fs = require('fs');
@@ -395,7 +395,7 @@ describe('[PGTD] DELETE /users/:username', () => {
 
 });
 
-async function initiateUserWithData(username) {
+async function initiateUserWithData(username: string) {
   const user = await mongoFixtures.user(username);
 
   const stream = await user.stream({ id: charlatan.Lorem.word() });

@@ -4,15 +4,15 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 const { initRootSpan } = require('tracing');
 
 /**
  * Sets the methodId to the Request.context object of the Express stack
  */
-module.exports = function (methodId) {
+module.exports = function (methodId: string) {
   return function setMethodId(
-    req, res, next
+    req: express$Request, res: express$Response, next: express$NextFunction
   ) {
     if (req.context == null) {
       const tracing = initRootSpan('express2');

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const assert = require('assert');
 
@@ -13,25 +13,28 @@ const { error } = require('./errors');
 // 'series' layer depends on the 'types' layer.
 const InfluxRowType = require('../types/influx_row_type');
 
+export type Element = string | number; 
+export type RawRow = Array<Element>;
 
- // in seconds since epoch
+type EpochTime = number; // in seconds since epoch
+export type DataExtent = { from: EpochTime, to: EpochTime };
 
 const Row = require('./row');
 
 /** Data in matrix form. Columns have names, rows have numbers, starting at 0. 
  */
 class DataMatrix {
-  columns; 
-  data; 
+  columns: Array<string>; 
+  data: Array<RawRow>; 
   
   // @return {number} number of rows this data matrix has. 
-  length; 
+  length: number; 
   
   // Parses a data matrix given a javascript object of the right form
   // ('flatJSON'). This method will throw a ParseFailure if the internal
   // structure of the object is not correct.   
   // 
-  static parse(obj, type) {
+  static parse(obj: mixed, type: InfluxRowType): DataMatrix {
     const out = this.empty(); 
     const parser = new Parser(out); 
     
@@ -42,7 +45,7 @@ class DataMatrix {
   
   /** Constructs an empty matrix. 
    */
-  static empty() {
+  static empty(): DataMatrix {
     return new DataMatrix([], []);
   }
   
@@ -61,14 +64,14 @@ class DataMatrix {
    * @param data {Array<Array<Element>} data
    * @return {void}
    */
-  constructor(columns, data) {
+  constructor(columns: Array<string>, data: Array<Array<Element>>) {
     this.columns = columns;
     this.setData(data);
   }
   
   /** Updates the data attribute internally, keeping length === data.length. 
    */
-  setData(data) {
+  setData(data: Array<*>) {
     this.data = data; 
     this.length = data.length; 
   }
@@ -76,7 +79,7 @@ class DataMatrix {
   /** Accesses the nth element of the array. If the index is out of bounds, 
    * an error is thrown. 
    */
-  at(idx) {
+  at(idx: number): Array<Element> {
     assert.ok(idx >= 0);
     assert.ok(idx < this.length);
     
@@ -85,14 +88,14 @@ class DataMatrix {
   
   // Returns the row at index `idx`. 
   // 
-  atRow(idx) {
+  atRow(idx: number): Row {
     const raw = this.at(idx);
     return new Row(raw, this.columns);
   }
   
   /** Iterates over each row of the data matrix. 
    */
-  eachRow(fn) {
+  eachRow(fn: (row: Row, idx: number) => void) {
     this.data.forEach((row, idx) => {
       const rowObj = new Row(row, this.columns); 
       fn(rowObj, idx);
@@ -102,7 +105,7 @@ class DataMatrix {
   // Transforms this matrix in place by calling `fn` for each cell, replacing
   // its value with what fn returns. 
   // 
-  transform(fn) {
+  transform(fn: (colName: string, cellVal: Element) => Element) {
     for (let row of this.data) {
       row.forEach((cell, idx) => 
         row[idx] = fn(this.columns[idx], cell));
@@ -114,7 +117,7 @@ class DataMatrix {
   // No assumptions are made about the order of the data. If the matrix is 
   // empty, this method throws an error. 
   // 
-  minmax() {
+  minmax(): DataExtent {
     if (this.length <= 0) throw new Error('Precondition error: matrix is empty.');
     
     // assert: length > 0 => at least one row is available
@@ -139,13 +142,13 @@ class DataMatrix {
 const FLAT_JSON = 'flatJSON';
 
 class Parser {
-  out;
+  out: DataMatrix;
   
-  constructor(out) {
+  constructor(out: DataMatrix) {
     this.out = out; 
   }
   
-  parse(obj, type) {
+  parse(obj: mixed, type: InfluxRowType) {
     const out = this.out; 
     
     if (obj == null || typeof obj !== 'object') 
@@ -185,7 +188,7 @@ class Parser {
     });
   }
   
-  checkFields(val) {
+  checkFields(val: any): Array<string> {
     if (val == null) throw error('Field names must be a list.');
     if (! (Array.isArray(val))) throw error('Field names must be a list.');
     

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const errorHandling = require('errors').errorHandling;
 const errors = require('errors').factory;
@@ -13,7 +13,11 @@ const timestamp = require('unix-timestamp');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
 
+import type { StorageLayer } from 'storage';
+import type { MethodContext } from 'business';
+import type Result  from '../../Result';
 
+import type { ApiCallback }  from '../../API';
 
 let singleton = null;
 
@@ -30,7 +34,7 @@ module.exports = async function getUpdateAccessUsageStats() {
   singleton = updateAccessUsageStats;
   return singleton;
 
-  function updateAccessUsageStats(context, params, result, next) {
+  function updateAccessUsageStats(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     // don't make callers wait on this to get their reply
     next();
     if (! isActive || context.disableAccessUsageStats) return; //callBatch will flush all stats at the end

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 /* global describe, before, beforeEach, afterEach, it */
 
@@ -437,7 +437,7 @@ describe('Socket.IO', function () {
 
   describe('when spawning 2 api-server processes, A and B', () => {
     // Servers A and B, length will be 2
-    let servers = [];
+    let servers: Array<Server> = [];
 
     before(function () {
       if (! process.env.PRYV_NATS) this.skip();
@@ -506,7 +506,7 @@ describe('Socket.IO', function () {
     });
 
     // Connect to `server` using `user` as credentials.
-    function connectTo(server, user) {
+    function connectTo(server: Server, user: User): SocketIO$Client {
       const namespace = `/${user.username}`;
       const params = { auth: user.token, resource: namespace };
 
@@ -522,7 +522,7 @@ describe('Socket.IO', function () {
     }
 
     // Creates an event, using socket connection `conn`.
-    function addEvent(conn) {
+    function addEvent(conn): Promise<void> {
       const stream = testData.streams[0];
       const attributes = {
         type: 'mass/kg',
@@ -536,10 +536,18 @@ describe('Socket.IO', function () {
   });
 });
 
+type User = {
+  name: string,
+  token: string,
+};
+type SocketIO$Client = {
+  on: (event: string, cb: () => void) => void;
+  emit: (event: string, params: any, cb: () => void) => void;
+};
 
 // Returns a tuple of a (promise, callback). The promise fulfills when the
 // callback is called `n` times.
-function expectNCalls(n) {
+function expectNCalls(n: number): [Promise<void>, () => void] {
   let callCount = 0;
   let deferred;
 

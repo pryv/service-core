@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 /**
  * Helper functions for serializing/deserializing setup instructions for tests.
@@ -23,21 +23,21 @@ const logger = require('@pryv/boiler').getLogger('instance-test-setup');
  *                       A `messagingSocket` property will be injected into `context` at execution
  *                       time to allow passing messages back to the test process.
  */
-exports.set = function (settings, setup) {
+exports.set = function (settings: any, setup: any) {
   if (!settings || !setup) {
     throw new Error('Expected config and setup object arguments');
   }
   settings.instanceTestSetup = stringify(setup);
 };
 
-exports.clear = function (settings) {
+exports.clear = function (settings: any) {
   delete settings.instanceTestSetup;
 };
 
 /**
  * @throws Any error encountered deserializing or calling the setup function
  */
-exports.execute = function (testSetup, testNotifier) {
+exports.execute = function (testSetup: string, testNotifier: any) {
   var obj = parse(testSetup);
   
   if (obj.context != null) {

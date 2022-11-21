@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const methodCallback = require('./methodCallback');
 const encryption = require('utils').encryption;
@@ -20,9 +20,10 @@ const hasFileUpload = require('../middleware/uploads').hasFileUpload;
 const attachmentsAccessMiddlewareFactory = require('../middleware/attachment-access');
 
 
+import type Application  from '../application';
 
 // Set up events route handling.
-module.exports = async function(expressApp, app) {
+module.exports = async function(expressApp: express$Application, app: Application) {
   const api = app.api;
   const config = app.config;
   const storage = app.storageLayer;
@@ -34,7 +35,7 @@ module.exports = async function(expressApp, app) {
   expressApp.get(Paths.Events + '/',
     setMethodId('events.get'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       const params = _.extend({}, req.query);
       tryCoerceStringValues(params, {
         fromTime: 'number',
@@ -55,7 +56,7 @@ module.exports = async function(expressApp, app) {
   expressApp.get(Paths.Events + '/:id',
     setMethodId('events.getOne'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       const params = _.extend({id: req.params.id}, req.query);
       tryCoerceStringValues(params, {
         includeHistory: 'boolean'
@@ -82,7 +83,7 @@ module.exports = async function(expressApp, app) {
   // Parses the 'readToken' and verifies that the access referred to by id in 
   // the token corresponds to a real access and that the signature is valid. 
   // 
-  function retrieveAccessFromReadToken(req, res, next) {
+  function retrieveAccessFromReadToken(req: express$Request, res, next) {
     // forbid using access tokens in the URL
     if (req.query.auth != null)
       return next(errors.invalidAccessToken(
@@ -125,7 +126,7 @@ module.exports = async function(expressApp, app) {
     setMethodId('events.create'),
     loadAccessMiddleware,
     hasFileUpload,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       const params = req.body;
       if (req.files) {
         params.files = req.files;
@@ -136,19 +137,19 @@ module.exports = async function(expressApp, app) {
     });
 
   expressApp.post(Paths.Events + '/start',
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       return next(errors.goneResource());
     });
 
   expressApp.put(Paths.Events + '/:id',
     setMethodId('events.update'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       api.call(req.context, { id: req.params.id, update: req.body }, methodCallback(res, next, 200));
     });
 
   expressApp.post(Paths.Events + '/stop',
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       return next(errors.goneResource());
     });
   
@@ -157,7 +158,7 @@ module.exports = async function(expressApp, app) {
     setMethodId('events.update'),
     loadAccessMiddleware,
     hasFileUpload,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       const params = {
         id: req.params.id,
         update: {}
@@ -173,14 +174,14 @@ module.exports = async function(expressApp, app) {
   expressApp.delete(Paths.Events + '/:id',
     setMethodId('events.delete'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       api.call(req.context, {id: req.params.id}, methodCallback(res, next, 200));
     });
 
   expressApp.delete(Paths.Events + '/:id/:fileId',
     setMethodId('events.deleteAttachment'),
     loadAccessMiddleware,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       api.call(req.context, {id: req.params.id, fileId: req.params.fileId}, methodCallback(res, next, 200));
     });
 

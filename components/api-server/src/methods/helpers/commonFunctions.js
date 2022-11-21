@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const APIError = require('errors/src/APIError');
 
@@ -119,12 +119,12 @@ exports.getParamsValidation = function getParamsValidation (paramsSchema) {
   };
 };
 
-exports.isValidStreamIdForQuery = function isValidStreamIdForQuery(streamId, parameter, parameterName) {
-  const forbiddenChar = findForbiddenChar(streamId);
+exports.isValidStreamIdForQuery = function isValidStreamIdForQuery(streamId: string, parameter: {}, parameterName: string): void {
+  const forbiddenChar: ?string = findForbiddenChar(streamId);
   if (forbiddenChar != null) throw (new Error(`Error in '${parameterName}' parameter: ${JSON.stringify(parameter)}, forbidden chartacter(s) in streamId '${streamId}'.`));
 }
 
-exports.isValidStreamIdForCreation = function isValidStreamIdForCreation(streamId) {
+exports.isValidStreamIdForCreation = function isValidStreamIdForCreation(streamId: string): boolean {
   return isStreamIdValidForCreation(streamId);
 }
 

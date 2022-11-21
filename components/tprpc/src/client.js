@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const TChannel = require('tchannel');
 
@@ -15,16 +15,16 @@ const { RemoteError } = require('./errors');
 // you can use to make calls on. 
 // 
 class Client {
-  channel;      // Main channel
-  root; 
+  channel: TChannel;      // Main channel
+  root: Definition; 
   
-  constructor(root) {
+  constructor(root: Definition) {
     this.channel = new TChannel(); 
     
     this.root = root; 
   }
   
-  proxy(serviceName, endpoint) {
+  proxy<T>(serviceName: string, endpoint: string): T {
     const channel = this.channel; 
     const root = this.root; 
     
@@ -50,8 +50,8 @@ class Client {
   }
   
   onCall(
-    channel, serviceName, 
-    method, requestData, cb) 
+    channel: TChannel, serviceName: string, 
+    method: MethodDescriptor, requestData: Buffer, cb: ForwarderCallback) 
   {
     const methodName = method.name; 
     const responseType = method.resolvedResponseType;
@@ -66,8 +66,8 @@ class Client {
   }
   
   onResponse(
-    responseType, cb, 
-    err, res, arg2, arg3) 
+    responseType: Type, cb: ForwarderCallback, 
+    err: ?Error, res: any, arg2: Buffer, arg3: Buffer) 
   {
     if (err != null) return cb(err);
 
@@ -79,5 +79,13 @@ class Client {
   }
 }
 
+type Type = {
+  decode: (string | Buffer) => mixed,
+}
+type MethodDescriptor = {
+  name: string, 
+  resolvedResponseType: Type, 
+}
+type ForwarderCallback = (err: ?Error, res: any) => mixed;
 
 module.exports = Client;

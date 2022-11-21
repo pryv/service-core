@@ -4,16 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const { getAPIVersion } =  require('middleware/src/project_version');
 
 // Middleware to handle OPTIONS requests and to add CORS headers to all other 
 // requests. 
 
-module.exports = async function () {
+module.exports = async function (): Promise<Function> {
   const version = await getAPIVersion();
-  return function (req, res, next) {
+  return function (req: express$Request, res: express$Response, next: express$NextFunction) {
     // allow cross-domain requests (CORS)
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
     // *

@@ -40,7 +40,7 @@ module.exports = async function (api) {
   const updatesSettings = config.get('updates');
   const mall = await getMall();
 
-  const isStreamIdPrefixBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
+  const isStreamIdPrefixBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
   // RETRIEVAL
   api.register('streams.get',

@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const bluebird = require('bluebird');
 
@@ -14,11 +14,12 @@ const ChildProcess = require('test-helpers').child_process;
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('child_process');
+import type {MetadataRepository}  from '../../src/metadata_cache';
 
 const typeRepo = new TypeRepository(); 
 
 class ApplicationLauncher {
-  app; 
+  app: ?Application; 
   
   constructor() {
     this.app = null; 
@@ -27,7 +28,7 @@ class ApplicationLauncher {
   // Gets called by the test process to mock out authentication and allow everyone
   // access. 
   // 
-  mockAuthentication(allowAll) {
+  mockAuthentication(allowAll: boolean) {
     const app = this.app; 
     if (app == null) throw new Error('AF: app should not be null anymore');
     
@@ -35,7 +36,7 @@ class ApplicationLauncher {
     
     context.metadata = this.produceMetadataLoader(allowAll);
   }
-  produceMetadataLoader(authTokenValid=true) {
+  produceMetadataLoader(authTokenValid=true): MetadataRepository {
     const seriesMeta = {
       canWrite: () => authTokenValid,
       canRead: () => authTokenValid, 

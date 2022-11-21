@@ -5,12 +5,13 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 const logger = require('@pryv/boiler').getLogger('cls');
 
 const { createNamespace } = require('cls-hooked');
 
+import type { Span }  from 'opentracing';
 
 const CLS_TRACE_SPAN = 'rootSpan';
 const session = createNamespace('tracing/cls');
@@ -20,7 +21,7 @@ const session = createNamespace('tracing/cls');
 // technique opaque to our code.    
 // 
 class Cls {
-  setRootSpan(span) {
+  setRootSpan(span: Span) {
     if (session.active == null) return;
     
     let roots = session.get(CLS_TRACE_SPAN); 
@@ -37,7 +38,7 @@ class Cls {
     hookSpanFinish(roots, span);
   }
   
-  getRootSpan() {
+  getRootSpan(): ?Span {
     if (session.active == null) return null; 
     
     const roots = session.get(CLS_TRACE_SPAN);
@@ -50,7 +51,7 @@ class Cls {
     return lastSpan;
   }
     
-  startExpressContext(req, res, next) {
+  startExpressContext(req: express$Request, res: express$Response, next: express$NextFunction) {
     return session.runAndReturn(() => {
       session.bindEmitter(req);
       session.bindEmitter(res);
@@ -62,7 +63,7 @@ class Cls {
 
 // Monkey patchs `span`#finish with poppingFinish.
 // 
-function hookSpanFinish(roots, span) {
+function hookSpanFinish(roots: Array<Span>, span: Span) {
   const oldMethod = span.finish; 
   
   span.finish = poppingFinish;

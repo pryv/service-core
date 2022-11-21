@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 'use strict';
 const _ = require('lodash');
@@ -14,13 +14,14 @@ const treeUtils = require('utils/src/treeUtils');
 const validation = require('api-server/src/schema/validation');
 const string = require('api-server/src/methods/helpers/string');
 const systemStreamSchema = require('./systemStreamSchema');
+import type { SystemStream } from 'business/src/system-streams';
 
-const IS_SHOWN = 'isShown';
-const IS_INDEXED = 'isIndexed';
-const IS_EDITABLE = 'isEditable';
-const IS_UNIQUE = 'isUnique';
-const IS_REQUIRED_IN_VALIDATION = 'isRequiredInValidation';
-const REGEX_VALIDATION = 'regexValidation';
+const IS_SHOWN: string = 'isShown';
+const IS_INDEXED: string = 'isIndexed';
+const IS_EDITABLE: string = 'isEditable';
+const IS_UNIQUE: string = 'isUnique';
+const IS_REQUIRED_IN_VALIDATION: string = 'isRequiredInValidation';
+const REGEX_VALIDATION: string = 'regexValidation';
 
 const { defaults: dataStoreDefaults } = require('pryv-datastore');
 
@@ -33,12 +34,12 @@ module.exports.features = {
   REGEX_VALIDATION,
 };
 
-const DEFAULT = 'default';
+const DEFAULT: string = 'default';
 
-const PRYV_PREFIX = ':_system:';
-const CUSTOMER_PREFIX = ':system:';
+const PRYV_PREFIX: string = ':_system:';
+const CUSTOMER_PREFIX: string = ':system:';
 
-const DEFAULT_VALUES_FOR_FIELDS = {
+const DEFAULT_VALUES_FOR_FIELDS: {} = {
   [IS_INDEXED]: false, // if true will be sent to service-register to be able to query across the platform
   [IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
   [IS_SHOWN]: true, // if true, will be returned in events.get
@@ -58,9 +59,9 @@ const DEFAULT_VALUES_FOR_FIELDS = {
  * - children and parentId values
  * Stores the result in "systemStreams"
  */
-function load(config) {
+function load(config: {}): {} {
   // default system streams that should be not changed
-  let defaultAccountStreams =
+  let defaultAccountStreams: Array<SystemStream> =
     [{
       id: 'account',
       name: 'Account',
@@ -127,7 +128,7 @@ function load(config) {
   defaultAccountStreams = extendSystemStreamsWithDefaultValues(defaultAccountStreams);
   defaultAccountStreams = ensurePrefixForStreamIds(defaultAccountStreams)
 
-  let helpers = [{
+  let helpers: Array<SystemStream> = [{
     id: 'helpers',
     name: 'Helpers',
     type: 'none/none',
@@ -148,15 +149,15 @@ function load(config) {
   helpers = extendSystemStreamsWithDefaultValues(helpers);
   helpers = ensurePrefixForStreamIds(helpers);
 
-  let customAccountStreams = config.get('custom:systemStreams:account');
+  let customAccountStreams: Array<SystemStream> = config.get('custom:systemStreams:account');
   if (customAccountStreams == null) customAccountStreams = [];
   customAccountStreams = extendSystemStreamsWithDefaultValues(customAccountStreams);
   customAccountStreams = ensurePrefixForStreamIds(customAccountStreams, CUSTOMER_PREFIX);
 
   defaultAccountStreams[0].children = defaultAccountStreams[0].children.concat(customAccountStreams);
-  const fullAccountStreams = defaultAccountStreams; // for readability
+  const fullAccountStreams: Array<SystemStream> = defaultAccountStreams; // for readability
 
-  let otherCustomStreams = config.get('custom:systemStreams:other');
+  let otherCustomStreams: Array<SystemStream> = config.get('custom:systemStreams:other');
   if (otherCustomStreams == null) otherCustomStreams = [];
   otherCustomStreams = extendSystemStreamsWithDefaultValues(otherCustomStreams);
   otherCustomStreams = ensurePrefixForStreamIds(otherCustomStreams, CUSTOMER_PREFIX);
@@ -165,12 +166,12 @@ function load(config) {
     return s;
   });
 
-  let systemStreams = fullAccountStreams.concat(otherCustomStreams).concat(helpers);
+  let systemStreams: Array<SystemStream> = fullAccountStreams.concat(otherCustomStreams).concat(helpers);
   systemStreams = addParentIdAndChildren(systemStreams);
 
-  let seen = new Map();
-  let seenWithPrefix = new Map();
-  const isBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
+  let seen: Map<string, boolean> = new Map();
+  let seenWithPrefix: Map<string, boolean> = new Map();
+  const isBackwardCompatibilityActive: boolean = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
   treeUtils.cloneAndApply(systemStreams, s => { // ugly reuse of treeUtils.cloneAndApply() because we don't modify the array
     validateSystemStreamWithSchema(s);
@@ -184,14 +185,14 @@ function load(config) {
 }
 module.exports.load = load;
 
-function addParentIdAndChildren(streams) {
+function addParentIdAndChildren(streams: Array<SystemStream>): Array<SystemStream> {
   for(let stream of streams) {
     stream = addParentIdToChildren(stream);
     stream.parentId = null;
   }
   return streams;
 
-  function addParentIdToChildren(stream) {
+  function addParentIdToChildren(stream: SystemStream): SystemStream {
     if (stream.children == null) {
       stream.children = [];
       return stream;
@@ -209,8 +210,8 @@ function addParentIdAndChildren(streams) {
  * @param {*} streams
  */
 function extendSystemStreamsWithDefaultValues (
-  streams
-){
+  streams: Array<SystemStream>
+): Array<SystemStream>{
   return treeUtils.cloneAndApply(streams, s => {
     const stream = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, s);
     if (stream.name == null) {
@@ -226,16 +227,16 @@ function extendSystemStreamsWithDefaultValues (
  * @param {Array<systemStream>} systemStreams array of system streams
  * @param {string} prefix the prefix to add
  */
-function ensurePrefixForStreamIds(systemStreams, prefix = PRYV_PREFIX) {
+function ensurePrefixForStreamIds(systemStreams: Array<SystemStream>, prefix: string = PRYV_PREFIX): Array<SystemStream> {
   return treeUtils.cloneAndApply(systemStreams, s => _.extend({}, s, { id: _addPrefixToStreamId(s.id, prefix)}));
 
-  function _addPrefixToStreamId(streamId, prefix) {
+  function _addPrefixToStreamId(streamId: string, prefix: string): string {
     if (streamId.startsWith(prefix)) return streamId;
     return prefix + streamId;
   }
 }
 
-function validateSystemStreamWithSchema(systemStream) {
+function validateSystemStreamWithSchema(systemStream: SystemStream): void {
   validation.validate(systemStream, systemStreamSchema, function (err) {
     if (err) {
       throw err;
@@ -244,47 +245,47 @@ function validateSystemStreamWithSchema(systemStream) {
 
   throwIfUniqueAndNotIndexed(systemStream);
 
-  function throwIfUniqueAndNotIndexed(systemStream) {
+  function throwIfUniqueAndNotIndexed(systemStream: SystemStream): void {
     if (systemStream[IS_UNIQUE] && ! systemStream[IS_INDEXED]) throw new Error('Config error: custom system stream cannot be unique and not indexed. Stream: ' + JSON.stringify(systemStream, null, 2));
   }
 }
 
-function validateOtherStreams(systemStream) {
+function validateOtherStreams(systemStream: SystemStream): void {
   throwIfUnique(systemStream);
   throwIfIndexed(systemStream);
   throwIfNonEditable(systemStream);
   throwIfRequiredAtRegistration(systemStream);
   throwIfNonVisible(systemStream);
 
-  function throwIfUnique(systemStream) {
+  function throwIfUnique(systemStream: SystemStream): void {
     if (systemStream[IS_UNIQUE]) throw new Error('Config error: custom "other" system stream cannot be unique. Only "account" streams can be unique. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
-  function throwIfIndexed(systemStream) {
+  function throwIfIndexed(systemStream: SystemStream): void {
     if (systemStream[IS_INDEXED]) throw new Error('Config error: custom "other" system stream cannot be indexed. Only "account" streams can be indexed. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
-  function throwIfNonEditable(systemStream) {
+  function throwIfNonEditable(systemStream: SystemStream): void {
     if (! systemStream[IS_EDITABLE]) throw new Error('Config error: custom "other" system stream cannot be non-editable. Only "account" streams can be non-editable. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
-  function throwIfRequiredAtRegistration(systemStream) {
+  function throwIfRequiredAtRegistration(systemStream: SystemStream): void {
     if (systemStream[IS_REQUIRED_IN_VALIDATION]) throw new Error('Config error: custom "other" system stream cannot be required at registration. Only "account" streams can be required at registration. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
-  function throwIfNonVisible(systemStream) {
+  function throwIfNonVisible(systemStream: SystemStream): void {
     if (! systemStream[IS_SHOWN]) throw new Error('Config error: custom "other" system stream cannot be non visible. Only "account" streams can non visible. Stream: ' +
     JSON.stringify(systemStream, null, 2));
   }
 }
 
 function throwIfNotUnique(
-  seen,
-  seenWithPrefix,
-  streamId,
-  isBackwardCompatible = false
-) {
-  const streamIdWithoutPrefix = _removePrefixFromStreamId(streamId);
+  seen: Map<string, boolean>,
+  seenWithPrefix: Map<string, boolean>,
+  streamId: string,
+  isBackwardCompatible: boolean = false
+): Array<Map<string, boolean>> {
+  const streamIdWithoutPrefix: string = _removePrefixFromStreamId(streamId);
 
   if (seenWithPrefix[streamId]) {
     throw new Error(`Config error: Custom system stream id duplicate. Remove duplicate custom system stream with streamId: "${streamIdWithoutPrefix}".`);
@@ -296,7 +297,7 @@ function throwIfNotUnique(
     return [seen, seenWithPrefix];
   }
 
-  function _removePrefixFromStreamId(streamIdWithPrefix) {
+  function _removePrefixFromStreamId(streamIdWithPrefix: string): string {
     if (streamIdWithPrefix.startsWith(PRYV_PREFIX)) return streamIdWithPrefix.substr(PRYV_PREFIX.length);
     if (streamIdWithPrefix.startsWith(CUSTOMER_PREFIX)) return streamIdWithPrefix.substr(CUSTOMER_PREFIX.length);
     throw new Error('Config error: should not crash here');

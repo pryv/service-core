@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 const chai = require('chai');
 const nconf = require('nconf');
 const assert = chai.assert;
@@ -21,7 +21,7 @@ describe('XXXSystemStreams config', () => {
   let store;
   let customRootStreamId = 'myNewStream';
 
-  const DEFAULT_VALUES_FOR_FIELDS = {
+  const DEFAULT_VALUES_FOR_FIELDS: {} = {
     [systemStreamsConfig.features.IS_INDEXED]: false, // if true will be sent to service-register to be able to query across the platform
     [systemStreamsConfig.features.IS_UNIQUE]: false, // if true will be sent to service-register and enforced uniqueness on mongodb
     [systemStreamsConfig.features.IS_SHOWN]: true, // if true, will be returned in events.get

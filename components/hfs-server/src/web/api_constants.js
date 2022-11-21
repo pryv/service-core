@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 module.exports = {
   AUTH_HEADER: 'authorization',

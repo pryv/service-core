@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const bluebird = require('bluebird');
 const rimraf = require('rimraf');
@@ -13,6 +13,8 @@ const path = require('path');
 const { getUsersRepository } = require('business/src/users');
 const errors = require('errors').factory;
 
+import type { MethodContext } from 'business';
+import type { ApiCallback } from 'api-server/src/API';
 
 
 
@@ -23,11 +25,11 @@ const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUti
 
 const setAdminAuditAccessId = setAuditAccessId(AuditAccessIds.ADMIN_TOKEN);
 class Deletion {
-  logger;
-  storageLayer;
-  config;
+  logger: any;
+  storageLayer: any;
+  config: any;
 
-  constructor(logging, storageLayer, config) {
+  constructor(logging: any, storageLayer: any, config: any) {
     this.logger = getLogger('business:deletion');
     this.storageLayer = storageLayer;
     this.config = config;
@@ -41,10 +43,10 @@ class Deletion {
    * 2- is a valid personalToken
    */
   checkIfAuthorized(
-    context,
-    params,
-    result,
-    next
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
   ) {
     const canDelete = this.config.get('user-account:delete');
     if (canDelete.includes('adminToken')) {
@@ -64,10 +66,10 @@ class Deletion {
   }
 
   async validateUserExists(
-    context,
-    params,
-    result,
-    next
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
   ) {
     const usersRepository = await getUsersRepository();
     const user = await usersRepository.getUserByUsername(params.username);
@@ -80,10 +82,10 @@ class Deletion {
   }
 
   async validateUserFilepaths(
-    context,
-    params,
-    result,
-    next
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
   ) {
     const paths = [
       this.config.get('eventFiles:attachmentsDirPath'),
@@ -112,10 +114,10 @@ class Deletion {
   }
 
   async deleteUserFiles(
-    context,
-    params,
-    result,
-    next
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
   ) {
     const paths = [
       this.config.get('eventFiles:attachmentsDirPath'),
@@ -135,10 +137,10 @@ class Deletion {
   }
 
   async deleteHFData (
-    context,
-    params,
-    result,
-    next
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
   ) {
     if (this.config.get('openSource:isActive')) return next();
     // dynamic loading , because series functionality does not exist in opensource
@@ -152,10 +154,10 @@ class Deletion {
   }
 
   async deleteAuditData (
-    context,
-    params,
-    result,
-    next
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
   ) {
     if (this.config.get('openSource:isActive')) return next();
     // dynamic loading , because series functionality does not exist in opensource
@@ -165,10 +167,10 @@ class Deletion {
   }
 
   async deleteUser(
-    context,
-    params,
-    result,
-    next
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
   ) {
     try {
       const dbCollections = [
@@ -209,7 +211,7 @@ class Deletion {
   }
 }
 
-function findNotExistingDir(paths) {
+function findNotExistingDir(paths: Array<string>): string {
   let notExistingDir = '';
   for (let path of paths) {
     if (!fs.existsSync(path)) {
@@ -220,7 +222,7 @@ function findNotExistingDir(paths) {
   return notExistingDir;
 }
 
-function findNotAccessibleDir(paths) {
+function findNotAccessibleDir(paths: Array<string>): string {
   let notAccessibleDir = '';
   for (let path of paths) {
     let stat;

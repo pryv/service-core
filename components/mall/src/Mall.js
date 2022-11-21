@@ -21,9 +21,9 @@ class Mall {
    * @type {Map<string, DataStore>}
    */
   stores;
-  initialized;
-  _streams;
-  _events;
+  initialized: boolean;
+  _streams: MallUserStreams;
+  _events: MallUserEvents;
 
   constructor() {
     this.stores = new Map();

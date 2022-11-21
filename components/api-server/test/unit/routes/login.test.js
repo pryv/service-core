@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 'use strict';
-// 
+// @flow
 
 // Unit tests for auth.js
 

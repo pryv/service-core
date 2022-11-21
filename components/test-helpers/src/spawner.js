@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const url = require('url');
 const child_process = require('child_process');
@@ -35,13 +35,13 @@ let spawnCounter = 0;
 // settings are either default or what you pass into the #spawn function. 
 //
 class SpawnContext {
-  childPath; 
+  childPath: string; 
   
-  basePort; // used for HTTP server and Axon server
-  shuttingDown; 
+  basePort: number; // used for HTTP server and Axon server
+  shuttingDown: boolean; 
   
-  pool;
-  allocated;
+  pool: Array<ProcessProxy>;
+  allocated: Array<ProcessProxy>;
   
   // Construct a spawn context. `childPath` should be a module require path to 
   // the module that will be launched in the child process. Please see 
@@ -49,7 +49,7 @@ class SpawnContext {
   // a module. 
   // 
 
-  constructor(childPath = __dirname + '/../../api-server/test/helpers/child_process') {
+  constructor(childPath: string = __dirname + '/../../api-server/test/helpers/child_process') {
     this.childPath = childPath;
     this.basePort = basePort;
     basePort += 10;
@@ -90,7 +90,7 @@ class SpawnContext {
   
   // Spawns a server instance. 
   //
-  async spawn (customSettings) {
+  async spawn (customSettings: Object): Promise<Server> {
     // If by any chance we exhausted our processes really quickly, make 
     // sure to spawn a few now. 
     if (this.pool.length <= 0)
@@ -133,7 +133,7 @@ class SpawnContext {
   
   // Returns the next free port to use for testing. 
   //
-  async allocatePort() {
+  async allocatePort(): Promise<number> {
     
     // Infinite loop, see below for exits. 
     while (true) { // eslint-disable-line no-constant-condition
@@ -159,7 +159,7 @@ class SpawnContext {
     // Closes the port immediately after calling `listen()` so that a child
     // can reuse the port number. 
     // 
-    async function tryBindPort(port) {
+    async function tryBindPort(port: number): Promise<boolean> {
       const server = net.createServer();
       
       logger.debug('Trying future child port', port);
@@ -190,7 +190,7 @@ class SpawnContext {
   // processes ahead of time in the background and return the next process from 
   // the internal prespawn pool. 
   // 
-  getProcess() {
+  getProcess(): ProcessProxy {
     this.prespawn();
     
     if (this.pool.length <= 0) throw new Error('AF: pool is not empty');
@@ -203,7 +203,7 @@ class SpawnContext {
   
   // Spawns `n` instances at different listening ports. See #spawn.
   // 
-  spawn_multi(n) {
+  spawn_multi(n: number): Array<Promise<Server>> {
     if (n <= 0) throw new Error('AF: n expected to be > 0');
     
     return lodash.times(n, () => this.spawn());
@@ -233,21 +233,28 @@ class SpawnContext {
   }
 }
 
+opaque type MessageId = number; 
+type ResolveFun = (val: mixed) => void;
+type RejectFun = (err: Error) => void;
+opaque type Resolver = {
+  resolve: ResolveFun, 
+  reject: RejectFun, 
+};
 
 // A proxy to the processes we launch. This class will care for the child
 // processes and manage their lifecycle. It also provides a type-safe interface
 // to messages that can be sent to the process. 
 // 
 class ProcessProxy {
-  childProcess; 
-  pool; 
+  childProcess: child_process.ChildProcess; 
+  pool: SpawnContext; 
   
-  started; 
-  exited; 
+  started: Fuse; 
+  exited: Fuse; 
   
-  pendingMessages;
+  pendingMessages: Map<MessageId, Resolver>;
   
-  constructor(childProcess, pool) {
+  constructor(childProcess: child_process.ChildProcess, pool: SpawnContext) {
     this.childProcess = childProcess;
     this.pool = pool; 
     
@@ -294,7 +301,7 @@ class ProcessProxy {
     }
   }
   
-  onChildError(err) {
+  onChildError(err: mixed) {
     logger.debug(err);
   }
   onChildExit() {
@@ -306,7 +313,7 @@ class ProcessProxy {
   
   // Starts the express/socket.io server with the settings given. 
   // 
-  async startServer(settings) {
+  async startServer(settings: mixed): Promise<void> {
     if (this.exited.isBurnt())
       throw new Error('Child exited prematurely; please check your setup code.');
     
@@ -318,7 +325,7 @@ class ProcessProxy {
   
   // Terminates the associated child process; progressing from SIGTERM to SIGKILL. 
   // 
-  async terminate() {
+  async terminate(): Promise<mixed> {
     if (this.exited.isBurnt()) return; 
     
     const child = this.childProcess;
@@ -341,7 +348,7 @@ class ProcessProxy {
     }
   }
   
-  sendToChild(msg, ...args) {
+  sendToChild(msg: string, ...args: any): Promise<mixed> {
     return new bluebird((resolve, reject) => {
       const child = this.childProcess; 
       
@@ -353,7 +360,7 @@ class ProcessProxy {
         msgpack.encode([msgId, msg, ...args]));
     });
   }
-  createPendingMessage(res, rej) {
+  createPendingMessage(res: ResolveFun, rej: RejectFun): MessageId {
     let remainingTries = 1000; 
     const pendingMessages = this.pendingMessages;
     const resolver = {
@@ -362,7 +369,7 @@ class ProcessProxy {
     };
     
     while (remainingTries > 0) {
-      const candId = Math.floor(Math.random() * 1e9); 
+      const candId: MessageId = Math.floor(Math.random() * 1e9); 
       
       if (! pendingMessages.has(candId)) {
         pendingMessages.set(candId, resolver);
@@ -382,14 +389,14 @@ class ProcessProxy {
 // Public facade to the servers we spawn. 
 //
 class Server extends EventEmitter {
-  port;
-  axonPort;
-  baseUrl; 
-  process;
-  messagingSocket;
-  host;
+  port: number;
+  axonPort: number;
+  baseUrl: string; 
+  process: ProcessProxy;
+  messagingSocket: mixed;
+  host: string;
   
-  constructor(port, proxy, axonPort) {
+  constructor(port: number, proxy: ProcessProxy, axonPort: number) {
     super();
     this.port = port; 
     this.axonPort = axonPort;
@@ -399,7 +406,7 @@ class Server extends EventEmitter {
     this.listen();
   }
 
-  listen() {
+  listen(): void {
     const host = this.host;
     this.messagingSocket = axon.socket('sub-emitter');
     const mSocket = this.messagingSocket;
@@ -414,7 +421,7 @@ class Server extends EventEmitter {
   // when the process could be stopped) or `false` for when the child could not
   // be terminated. 
   // 
-  async stop() {
+  async stop(): Promise<boolean> {
     logger.debug('stop called');
     try {
       logger.debug('stopping child...');
@@ -428,11 +435,11 @@ class Server extends EventEmitter {
     }
   }
   
-  url(path) {
+  url(path?: string): string {
     return new url.URL(path || '', this.baseUrl).toString();
   }
 
-  request(newUrl) {
+  request(newUrl?: string) {
     return supertest(newUrl || this.baseUrl);
   }
 }

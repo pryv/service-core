@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // Tests the Metadata Updater Controller. 
 
@@ -22,17 +22,18 @@ const { Controller } = require('../../../src/metadata_updater/controller');
 const { Flush } = require('../../../src/metadata_updater/flush');
 
 const { getLogger } = require('@pryv/boiler');
+import type { StorageLayer } from 'storage';
 
 describe('Metadata Updater/Controller', () => {
   const logger = getLogger('metadata'); 
   
-  let map;
-  let controller; 
+  let map: PendingUpdatesMap;
+  let controller: Controller; 
   beforeEach(() => {
     // Replace the database connection here with a dummy. We're testing the 
     // controller, not the database access. 
     // FLOW
-    const db = { events: {
+    const db: StorageLayer = { events: {
       getCollectionInfoWithoutUserId: () => {},
     }};
     
@@ -107,7 +108,7 @@ describe('Metadata Updater/Controller', () => {
   });
 });
 
-function makeUpdate(now, attrs={}) {
+function makeUpdate(now: number, attrs: UpdateAttrs={}): PendingUpdate {
   const myAttrs = {
     userId: attrs.userId || 'user', 
     eventId: attrs.eventId || 'event', 
@@ -122,4 +123,12 @@ function makeUpdate(now, attrs={}) {
   
   return PendingUpdate.fromUpdateRequest(now, myAttrs);
 }
+type UpdateAttrs = {
+  from?: number, 
+  to?: number, 
+  timestamp?: number, 
+  author?: string, 
+  userId?: string, 
+  eventId?: string, 
+};
 

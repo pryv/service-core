@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
@@ -49,7 +49,7 @@ describe('Users repository', () => {
     it('[7C22] must throw an item already exists error when username field is not unique', async () => {
       try {
         const usersRepository = await getUsersRepository();
-        const userObj = new User({
+        const userObj: User = new User({
           id: charlatan.Lorem.characters(10),
           username,
           password: charlatan.Lorem.characters(10),
@@ -67,7 +67,7 @@ describe('Users repository', () => {
     it('[6CFE] must throw an item already exists error when email field is not unique', async () => {
       try {
         const usersRepository = await getUsersRepository();
-        const userObj = new User({
+        const userObj: User = new User({
           id: charlatan.Lorem.characters(10),
           username: charlatan.Lorem.characters(10),
           email,

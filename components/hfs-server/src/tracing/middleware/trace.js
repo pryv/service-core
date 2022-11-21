@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // Middleware that will perform request tracing via opentacing. 
 // Heavily inspired by express-opentracing.
@@ -15,10 +15,11 @@ const opentracing = require('opentracing');
 
 const cls = require('../cls');
 
+import type Context  from '../../context';
 
 function tracingMiddleware(
-  ctx,
-  req, res, next) // eslint-disable-line no-unused-vars
+  ctx: Context,
+  req: express$Request, res: express$Response, next: express$NextFunction): mixed // eslint-disable-line no-unused-vars
 {
   const Tags = opentracing.Tags;
   const tracer = ctx.tracer;
@@ -67,7 +68,7 @@ function requestDone(span, res) {
   span.finish();
 }
 
-function factory(ctx) {
+function factory(ctx: Context): express$Middleware {
   return lodash.partial(tracingMiddleware, ctx);
 }
 module.exports = factory;

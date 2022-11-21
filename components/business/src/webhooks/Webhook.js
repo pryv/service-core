@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const request = require('superagent');
 const _ = require('lodash');
@@ -12,47 +12,78 @@ const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
 const { pubsub } = require('messages');
+import type { MessageSink } from 'messages';
+import type Repository  from './repository';
 
+export type Run = {
+  status: number,
+  timestamp: number
+};
 
+export type WebhookState = 'active' | 'inactive';
 
+export type WebhookUpdate = {
+  state: WebhookState,
+  currentRetries: number,
+};
 
-class Webhook {
-  id;
-  accessId;
-  url;
-  state;
+class Webhook implements MessageSink {
+  id: string;
+  accessId: string;
+  url: string;
+  state: WebhookState;
 
-  runs;
-  lastRun;
+  runs: Array<Run>;
+  lastRun: Run;
 
-  runsSize;
-  runCount;
-  failCount;
+  runsSize: number;
+  runCount: number;
+  failCount: number;
 
-  currentRetries;
-  maxRetries;
-  minIntervalMs;
+  currentRetries: number;
+  maxRetries: number;
+  minIntervalMs: number;
 
-  created;
-  createdBy;
-  modified;
-  modifiedBy;
+  created: ?number;
+  createdBy: ?string;
+  modified: ?number;
+  modifiedBy: ?string;
 
-  messageBuffer;
-  timeout;
-  isSending;
+  messageBuffer: Set<string>;
+  timeout: ?TimeoutID;
+  isSending: boolean;
 
-  user;
-  repository;
+  user: ?{};
+  repository: ?Repository;
 
-  apiVersion;
-  serial;
+  apiVersion: string;
+  serial: string;
 
   logger;
 
-  pubsubTurnOffListener;
+  pubsubTurnOffListener: ?function;
 
-  constructor(params) {
+  constructor(params: {
+    id?: string,
+    accessId: string,
+    url: string,
+    runCount?: number,
+    failCount?: number,
+    runs?: Array<Run>,
+    runsSize?: number,
+    lastRun: Run,
+    state?: WebhookState,
+    currentRetries?: number,
+    minIntervalMs?: number,
+    maxRetries?: number,
+    created?: number,
+    createdBy?: string,
+    modified?: number,
+    modifiedBy?: string,
+    user?: {},
+    webhooksRepository?: Repository,
+    messageBuffer?: Set<string>
+  }) {
     this.id = params.id || cuid();
     this.accessId = params.accessId;
     this.url = params.url;
@@ -76,7 +107,7 @@ class Webhook {
     this.runsSize = params.runsSize || 50;
   }
 
- startListenting(username) {
+ startListenting(username: string) {
     if (this.pubsubTurnOffListener != null) { throw new Error('Cannot listen twice'); }
     this.pubsubTurnOffListener = pubsub.notifications.onAndGetRemovable(username,
       function named(payload) { this.send(payload.eventName); }.bind(this)
@@ -86,7 +117,7 @@ class Webhook {
   /**
    * Send the message with the throttling and retry mechanics - to use in webhooks service
    */
-  async send(message, isRescheduled) {
+  async send(message: string, isRescheduled?: boolean): Promise<void> {
     if (this.state == 'inactive') return;
 
     if (isRescheduled != null && isRescheduled == true) {
@@ -98,8 +129,8 @@ class Webhook {
       return reschedule.call(this, message);
     this.isSending = true;
 
-    let status;
-    const sentBuffer = Array.from(this.messageBuffer);
+    let status: ?number;
+    const sentBuffer: Array<string> = Array.from(this.messageBuffer);
     this.messageBuffer.clear();
     try {
       const res = await this.makeCall(sentBuffer);
@@ -144,14 +175,14 @@ class Webhook {
       return status < 200 || status >= 300;
     }
 
-    function handleRetry(message) {
+    function handleRetry(message): void {
       if (this.state == 'inactive') {
         return;
       }
       reschedule.call(this, message);
     }
 
-    function reschedule(message) {
+    function reschedule(message: string): void {
       if (this.timeout != null) return;
       const delay = this.minIntervalMs * (this.currentRetries || 1);
       this.timeout = setTimeout(() => {
@@ -159,7 +190,7 @@ class Webhook {
       }, delay);
     }
 
-    function tooSoon() {
+    function tooSoon(): boolean {
       const now = timestamp.now();
       if ((now - this.lastRun.timestamp) * 1000 < this.minIntervalMs) {
         return true;
@@ -172,7 +203,7 @@ class Webhook {
   /**
    * Only make the HTTP call - used for webhook.test API method
    */
-  async makeCall(messages) {
+  async makeCall(messages: Array<string>): Promise<Http$Response> {
     const res = await request.post(this.url).send({
       messages: messages,
       meta: {
@@ -184,7 +215,7 @@ class Webhook {
     return res;
   }
 
-  stop() {
+  stop(): void {
     if (this.timeout != null) {
       clearTimeout(this.timeout);
     }
@@ -194,14 +225,14 @@ class Webhook {
     };
   }
 
-  addRun(run) {
+  addRun(run: Run): void {
     if (this.runCount > this.runsSize) {
       this.runs.splice(-1, 1);
     } 
     this.runs.unshift(run);
   }
 
-  async save() {
+  async save(): Promise<void> {
     if (this.repository == null) {
       throw new Error('repository not set for Webhook object.');
     }
@@ -209,24 +240,24 @@ class Webhook {
     await this.repository.insertOne(this.user, this);
   }
 
-  async update(fieldsToUpdate) {
+  async update(fieldsToUpdate: {}): Promise<void> {
     const fields = Object.keys(fieldsToUpdate);
     _.merge(this, fieldsToUpdate);
     await makeUpdate(fields, this);
   }
   
-  async delete() {
+  async delete(): Promise<void> {
     if (this.repository == null) {
       throw new Error('repository not set for Webhook object.');
     }
     await this.repository.deleteOne(this.user, this.id);
   }
 
-  getMessageBuffer() {
+  getMessageBuffer(): Array<string> {
     return Array.from(this.messageBuffer);
   }
 
-  forStorage() {
+  forStorage(): {} {
     return _.pick(this, [
       'id',
       'accessId',
@@ -246,7 +277,7 @@ class Webhook {
     ]);
   }
 
-  forApi() {
+  forApi(): {} {
     return _.pick(this, [
       'id',
       'accessId',
@@ -266,26 +297,26 @@ class Webhook {
     ]);
   }
 
-  setApiVersion(version) {
+  setApiVersion(version: string): void {
     this.apiVersion = version;
   }
 
-  setSerial(serial) {
+  setSerial(serial: string): void {
     this.serial = serial;
   }
 
-  setLogger(logger) {
+  setLogger(logger): void {
     this.logger = logger;
   }
 }
 module.exports = Webhook;
 
-function log(webhook, msg) {
+function log(webhook: Webhook, msg: string): void {
   if (webhook.logger == null) return;
   webhook.logger.info(msg);
 }
 
-async function makeUpdate(fields, webhook) {
+async function makeUpdate(fields?: Array<string>, webhook: Webhook): Promise<void> {
   if (webhook.repository == null) {
     throw new Error('repository not set for Webhook object.');
   }

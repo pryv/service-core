@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const loadAccessMiddleware = require('../../src/loadAccess');
 const should = require('should');

@@ -4,10 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // Gathers all the repositories into one big object for convenience.
 
+import type Database  from './Database';
 
 const Versions = require('./Versions');
 const PasswordResetRequests = require('./PasswordResetRequests');
@@ -20,25 +21,25 @@ const Streams = require('./user/Streams');
 const Webhooks = require('./user/Webhooks');
 
 class StorageLayer {
-  connection;
+  connection: Database;
 
-  versions;
-  passwordResetRequests;
-  sessions;
-  accesses;
-  eventFiles;
-  followedSlices;
-  profile;
-  streams;
-  webhooks;
+  versions: Versions;
+  passwordResetRequests: PasswordResetRequests;
+  sessions: Sessions;
+  accesses: Accesses;
+  eventFiles: EventFiles;
+  followedSlices: FollowedSlices;
+  profile: Profile;
+  streams: Streams;
+  webhooks: Webhooks;
 
   constructor(
-    connection,
+    connection: Database,
     logger,
-    attachmentsDirPath,
-    previewsDirPath,
-    passwordResetRequestMaxAge,
-    sessionMaxAge,
+    attachmentsDirPath: string,
+    previewsDirPath: string,
+    passwordResetRequestMaxAge: number,
+    sessionMaxAge: number,
   ) {
     this.connection = connection;
 

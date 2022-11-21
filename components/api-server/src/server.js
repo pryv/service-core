@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // Always require application first to be sure boiler is initialized
 const { getApplication } = require('api-server/src/application');
@@ -32,7 +32,7 @@ let apiVersion;
 //    server.start(); 
 // 
 class Server {
-  isOpenSource;
+  isOpenSource: boolean;
   logger; 
   config;
     
@@ -69,7 +69,7 @@ class Server {
     await this.registerApiMethods();
 
     // Setup HTTP and register server; setup Socket.IO.
-    const server = http.createServer(app.expressApp);
+    const server: net$Server = http.createServer(app.expressApp);
     await this.setupSocketIO(server); 
     await this.startListen(server);
 
@@ -82,8 +82,8 @@ class Server {
     this.logger.debug('start completed');
   }
 
-  findDefaultParam() {
-    const DEFAULT_VALUES = ['REPLACE_ME'];
+  findDefaultParam(): ?string {
+    const DEFAULT_VALUES: Array<string> = ['REPLACE_ME'];
     if (DEFAULT_VALUES.includes(this.config.get('auth:adminAccessKey')))  return 'auth:adminAccessKey';
     return null;
   }
@@ -117,7 +117,7 @@ class Server {
     this.logger.debug('api methods registered');
   }
   
-  async setupSocketIO(server) { 
+  async setupSocketIO(server: net$Server) { 
     const api = app.api; 
     const customAuthStepFn = app.getCustomAuthFunction('server.js');
     const socketIOsetup = require('./socket-io');
@@ -127,7 +127,7 @@ class Server {
   
   // Open http port and listen to incoming connections. 
   //
-  async startListen(server) {
+  async startListen(server: net$Server) {
     const config = this.config; 
     const logger = this.logger; 
     
@@ -203,7 +203,7 @@ class Server {
     new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), mylog, reportingUrl);
   }
 
-  async getUserCount() {
+  async getUserCount(): Promise<Number> {
     let numUsers;
     try{
       let usersRepository = await getUsersRepository(); 

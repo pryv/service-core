@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 /**
  * List of characters that are forbbidden in streamIds
@@ -30,14 +30,14 @@ const existingStoresMap = {
   ':_audit:': true,
 }
 
-const COLUMN = ':';
+const COLUMN: string = ':';
 
-const STREAMID_AT_CREATION_REGEXP_STR = '^[a-z0-9-]{1,100}';
+const STREAMID_AT_CREATION_REGEXP_STR: string = '^[a-z0-9-]{1,100}';
 
 /**
  * Find forbidden character for 'streams' or 'permission.streamId'
  */
-function findForbiddenChar(streamId) {
+function findForbiddenChar(streamId: string): ?string {
   for (let i=0; i<streamId.length; i++) {
     const char = streamId[i];
     if (forbiddenCharsMap[char]) return char;
@@ -48,8 +48,8 @@ function findForbiddenChar(streamId) {
 /**
  * Tests stream id for validity at creation
  */
-function isStreamIdValidForCreation(streamId) {
-  const regexp = new RegExp(STREAMID_AT_CREATION_REGEXP_STR); 
+function isStreamIdValidForCreation(streamId: string): boolean {
+  const regexp: RegExp = new RegExp(STREAMID_AT_CREATION_REGEXP_STR); 
   return regexp.test(streamId);
 }
 

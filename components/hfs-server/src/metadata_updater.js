@@ -4,15 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // A client for the MetadataUpdater service in the metadata component. 
 
 const rpc = require('tprpc');
 const metadata = require('metadata');
 
+import type { IMetadataUpdaterService, IUpdateResponse, IPendingUpdate } from 'metadata';
 
-async function produceMetadataUpdater(endpoint) {
+async function produceMetadataUpdater(endpoint: string): Promise<IMetadataUpdaterService> {
   const definition = await metadata.updater.definition;
   const client = new rpc.Client(definition);
   return client.proxy('MetadataUpdaterService', endpoint);
@@ -22,14 +23,14 @@ async function produceMetadataUpdater(endpoint) {
 // connection to an updater is configured in the configuration file, this will
 // be used - and no updates will be made. 
 // 
-class MetadataForgetter {
+class MetadataForgetter implements IMetadataUpdaterService {
   logger; 
   
   constructor(logger) {
     this.logger = logger; 
   }
   
-  async scheduleUpdate(/* req: IUpdateRequest */) {
+  async scheduleUpdate(/* req: IUpdateRequest */): Promise<IUpdateResponse> {
     const logger = this.logger; 
     
     logger.info('Metadata of events will NOT be updated; please configure the metadata update service.');
@@ -41,7 +42,7 @@ class MetadataForgetter {
     };
   }
   
-  async getPendingUpdate(/* req: IUpdateId */) {
+  async getPendingUpdate(/* req: IUpdateId */): Promise<IPendingUpdate> {
     return {
       found: false, 
       deadline: new Date() / 1e3,

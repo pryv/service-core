@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
@@ -12,6 +12,8 @@ const { setTimeout } = require('timers/promises');
 
 const User = require('./User');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
+import type { Event } from 'business/src/events';
+import type { Access } from 'business/src/accesses';
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
@@ -27,11 +29,11 @@ const cache = require('cache');
  * Repository of the users
  */
 class UsersRepository {
-  storageLayer;
-  sessionsStorage;
-  accessStorage;
-  mall;
-  platform;
+  storageLayer: {};
+  sessionsStorage: {};
+  accessStorage: {};
+  mall: {};
+  platform: null;
 
   constructor() {
   }
@@ -49,10 +51,10 @@ class UsersRepository {
   }
 
   // only for testing
-  async getAll() {
+  async getAll(): Promise<Array<User>> {
     const usersMap = await usersIndex.getAllByUsername();
 
-    const users = [];
+    const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
       const user = await this.getUserById(userId);
       if (user == null) {
@@ -64,7 +66,7 @@ class UsersRepository {
   }
 
   // only for test data to reset all users Dbs.
-  async deleteAll() {
+  async deleteAll(): Promise<void> {
     const usersMap = await usersIndex.getAllByUsername();
     for (const [, userId] of Object.entries(usersMap)) {
       await this.mall.deleteUser(userId);
@@ -73,24 +75,24 @@ class UsersRepository {
     await this.platform.deleteAll();
   }
 
-  async getAllUsernames() {
+  async getAllUsernames(): Promise<Array<User>> {
     const usersMap = await usersIndex.getAllByUsername();
 
-    const users = [];
+    const users: Array<User> = [];
     for (const [username, userId] of Object.entries(usersMap)) {
       users.push({id: userId, username: username});
     }
     return users;
   }
 
-  async getUserIdForUsername(username) {
+  async getUserIdForUsername(username: string) {
     return await usersIndex.getUserId(username);
   }
 
-  async getUserById(userId) {
+  async getUserById(userId: string): Promise<?User> {
     const userAccountStreamsIds =  Object.keys(SystemStreamsSerializer.getAccountMap());
     const query = {state: 'all', streams: [{any: userAccountStreamsIds, and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]}]};
-    const userAccountEvents  = await this.mall.events.get(userId, query);
+    const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
     const username = await usersIndex.getUsername(userId);
     // convert events to the account info structure
     if (
@@ -106,7 +108,7 @@ class UsersRepository {
     return user;
   }
 
-  async getUserByUsername(username) {
+  async getUserByUsername(username: string): Promise<?User> {
     let userId = await this.getUserIdForUsername(username);
     if (userId) {
       const user = await this.getUserById(userId);
@@ -115,25 +117,25 @@ class UsersRepository {
     return null;
   }
 
-  async getStorageUsedByUserId(userId)  {
+  async getStorageUsedByUserId(userId: string): Promise<?any>  {
     return {
       dbDocuments: await this.getOnePropertyValue(userId, 'dbDocuments') || 0,
       attachedFiles: await this.getOnePropertyValue(userId, 'attachedFiles') || 0
     };
   }
 
-  async getOnePropertyValue(userId, propertyKey) {
+  async getOnePropertyValue(userId: string, propertyKey: string) {
     const query = {limit: 1, state: 'all', streams: [{any: [SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(propertyKey)]}]};
-    const userAccountEvents  = await this.mall.events.get(userId, query);
+    const userAccountEvents: Array<Event>  = await this.mall.events.get(userId, query);
     if (! userAccountEvents || ! userAccountEvents[0]) return null;
     return userAccountEvents[0].content;
   }
 
   async createSessionForUser(
-    username,
-    appId,
-    transactionSession,
-  ) {
+    username: string,
+    appId: string,
+    transactionSession: any,
+  ): Promise<string> {
     return await bluebird.fromCallback(
       cb => this.sessionsStorage.generate(
         { username, appId },
@@ -144,11 +146,11 @@ class UsersRepository {
   }
 
   async createPersonalAccessForUser(
-    userId,
-    token,
-    appId,
+    userId: string,
+    token: string,
+    appId: string,
     transactionSession,
-  ) {
+  ): Access {
     const accessData = {
       token: token,
       name: appId,
@@ -169,14 +171,14 @@ class UsersRepository {
     );
   }
 
-  validateAllStorageObjectsInitialized() {
+  validateAllStorageObjectsInitialized(): boolean {
     if (this.accessStorage == null || this.sessionsStorage == null) {
       throw new Error('Please initialize the user repository with all dependencies.');
     }
     return true;
   }
 
-  async insertOne(user, withSession = false, skipFowardToRegister = false) {
+  async insertOne(user: User, withSession: ?boolean = false, skipFowardToRegister: ?boolean = false): Promise<User> {
     // Create the User at a Platfrom Level..
     const operations = [];
     for (const key of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
@@ -214,7 +216,7 @@ class UsersRepository {
         withSession && this.validateAllStorageObjectsInitialized() &&
         user.appId != null
       ) {
-        const token = await this.createSessionForUser(
+        const token: string = await this.createSessionForUser(
           user.username,
           user.appId,
           localTransaction.transactionSession,
@@ -230,7 +232,7 @@ class UsersRepository {
       }
       user.accessId = accessId;
 
-      const events = await user.getEvents();
+      const events: Array<Event> = await user.getEvents();
 
       // add the user to local index
       await usersIndex.addUser(user.username, user.id);
@@ -249,7 +251,7 @@ class UsersRepository {
     return user;
   }
 
-  async updateOne(user, update, accessId) {
+  async updateOne(user: User, update: {}, accessId: string): Promise<void> {
     // change password into hash if it exists
     if (update.password) {
       await this.setUserPassword(user.id, update.password, accessId);
@@ -280,7 +282,7 @@ class UsersRepository {
     });
   }
 
-  async deleteOne(userId, username, skipFowardToRegister) {
+  async deleteOne(userId: string, username: ?string, skipFowardToRegister: ?boolean): Promise<number> {
     const user = await this.getUserById(userId);
     if (username == null) {
       username = user?.username;
@@ -297,9 +299,9 @@ class UsersRepository {
     await this.mall.deleteUser(userId);
   }
 
-  async checkUserPassword(userId, password) {
+  async checkUserPassword(userId: string, password: string): Promise<boolean> {
     const currentPass = await userAccountStorage.getPasswordHash(userId);
-    let isValid = false;
+    let isValid: boolean = false;
     if (currentPass != null) {
       isValid = await encryption.compare(password, currentPass);
     }
@@ -310,12 +312,12 @@ class UsersRepository {
    * @param {string} userId
    * @param {string} password
    */
-  async setUserPassword(userId, password, accessId = 'system', modifiedTime) {
+  async setUserPassword(userId: String, password: String, accessId = 'system', modifiedTime): Promise {
     const passwordHash = await encryption.hash(password);
     await userAccountStorage.addPasswordHash(userId, passwordHash, accessId, modifiedTime);
   }
 
-  async count() {
+  async count(): Promise<number> {
     const users = await usersIndex.getAllByUsername();
     return Object.keys(users).length;
   }

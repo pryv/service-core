@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 /*global describe, before, beforeEach, it */
 require('./test-helpers');
@@ -40,7 +40,7 @@ describe('accesses (personal)', function () {
     return basePath + '/' + id;
   }
 
-  function req() {
+  function req(): typeof helpers.request {
     if (request == null) { throw Error('request was null'); }
     return request;
   }

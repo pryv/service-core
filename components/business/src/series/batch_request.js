@@ -5,25 +5,27 @@
  * Proprietary and confidential
  */
 
-// 
+// @flow
 
 const DataMatrix = require('./data_matrix');
 const { error, ParseFailure } = require('./errors');
 
+import type InfluxRowType  from '../types/influx_row_type';
 
+type TypeResolveFunction = (eventId: string) => Promise<InfluxRowType>;
 
 // A `BatchRequest` is a collection of batch elements. Each of those in turn 
 // will contain a series meta data descriptor and a data matrix to input into
 // that series. 
 // 
 class BatchRequest {
-  list; 
+  list: Array<BatchRequestElement>; 
   
   // Parses an object and verifies that its structure corresponds to a series 
   // batch, as described in the documentation ('seriesBatch'). If the input
   // object contains an error, it is thrown as a `ParseFailure`. 
   // 
-  static parse(jsonObj, resolver) {
+  static parse(jsonObj: mixed, resolver: TypeResolveFunction): Promise<BatchRequest> {
     const parser = new Parser(resolver);
     
     return parser.parse(jsonObj);
@@ -35,17 +37,17 @@ class BatchRequest {
   
   // Append an element to the list of elements in this BatchRequest.
   // 
-  append(element) {
+  append(element: BatchRequestElement) {
     this.list.push(element);
   }
   
   // Returns the amount of batch elements stored here. 
   // 
-  length() {
+  length(): number {
     return this.list.length;
   }
 
-  *elements() {
+  *elements(): Iterator<BatchRequestElement> {
     // No arr.values() in node yet...
     for (const el of this.list) {
       yield el; 
@@ -57,15 +59,15 @@ class BatchRequest {
 // meta data for the series and the actual data points. 
 // 
 class BatchRequestElement {
-  eventId;
-  data;
+  eventId: string;
+  data: DataMatrix;
   
-  static parse(obj, resolver) {
+  static parse(obj: mixed, resolver: TypeResolveFunction): Promise<BatchRequestElement> {
     const parser = new ElementParser(); 
     return parser.parse(obj, resolver);
   }
 
-  constructor(eventId, data) {
+  constructor(eventId: string, data: DataMatrix) {
     this.eventId = eventId;
     this.data = data; 
   }
@@ -77,19 +79,19 @@ const SERIES_BATCH = 'seriesBatch';
 // `data` array are then parsed by `ElementParser`.
 // 
 class Parser {
-  resolver;
+  resolver: TypeResolveFunction;
     
-  constructor(resolver) {
+  constructor(resolver: TypeResolveFunction) {
     this.resolver = resolver;
   }
   
-  parse(jsonObj) {
+  parse(jsonObj: mixed): Promise<BatchRequest> {
     if (jsonObj == null || typeof jsonObj !== 'object') 
       throw error('Request body needs to be in JSON format.');
     
     return this.parseSeriesBatch(jsonObj);
   }
-  async parseSeriesBatch(obj) {
+  async parseSeriesBatch(obj: Object): Promise<BatchRequest> {
     const resolver = this.resolver;
     const out = new BatchRequest(); 
     
@@ -109,7 +111,7 @@ class Parser {
 }
 
 class ElementParser {
-  async parse(obj, resolver) {
+  async parse(obj: mixed, resolver: TypeResolveFunction): Promise<BatchRequestElement> {
     if (obj == null || typeof obj !== 'object')
       throw error('Batch element must be an object with properties.');
       

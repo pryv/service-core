@@ -4,39 +4,40 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const APIError = require('./APIError');
 const ErrorIds = require('./ErrorIds');
 const ErrorMessages = require('./ErrorMessages');
 const _ = require('lodash');
 
+import type { APIErrorOptions }  from './APIError';
 
 /**
  * Helper "factory" methods for API errors (see error ids).
  */
 const factory = module.exports = {};
 
-factory.unsupportedOperation = (message) => {
+factory.unsupportedOperation = (message: string) => {
   return new APIError(ErrorIds.ApiUnavailable, message, {
     httpStatus: 501
   });
 };
 
-factory.apiUnavailable = (message) => {
+factory.apiUnavailable = (message: string) => {
   return new APIError(ErrorIds.ApiUnavailable, message, {
     httpStatus: 503
   });
 };
 
-factory.corruptedData = function (message, innerError) {
+factory.corruptedData = function (message: string, innerError: Error) {
   return new APIError(ErrorIds.CorruptedData, message, {
     httpStatus: 422,
     innerError: innerError
   });
 };
 
-factory.forbidden = function (message) {
+factory.forbidden = function (message?: string): Error {
   if (message == null) {
     message = 'The given token\'s access permissions do not allow this operation.';
   }
@@ -46,14 +47,14 @@ factory.forbidden = function (message) {
   });
 };
 
-factory.invalidAccessToken = function (message, status) {
+factory.invalidAccessToken = function (message: string, status: ?number) {
   return new APIError(ErrorIds.InvalidAccessToken, message, {
     httpStatus: status || 401,
     dontNotifyAirbrake: true
   });
 };
 
-factory.invalidCredentials = function (message) {
+factory.invalidCredentials = function (message?: string) {
   return new APIError(ErrorIds.InvalidCredentials,
     message || 'The given username/password pair is invalid.', {
       httpStatus: 401,
@@ -61,7 +62,7 @@ factory.invalidCredentials = function (message) {
     });
 };
 
-factory.invalidEventType = function (type) {
+factory.invalidEventType = function (type: string) {
   return new APIError(
     ErrorIds.InvalidEventType, 
     'Event type \'' + type + '\' not allowed ' +
@@ -69,14 +70,14 @@ factory.invalidEventType = function (type) {
     {type: type, httpStatus: 400});
 };
 
-factory.invalidItemId = function (message) {
+factory.invalidItemId = function (message?: string) {
   return new APIError(ErrorIds.InvalidItemId, message || '', {
     httpStatus: 400,
     dontNotifyAirbrake: true
   });
 };
 
-factory.invalidMethod = function (methodId) {
+factory.invalidMethod = function (methodId: string): APIError {
   return new APIError(
     ErrorIds.InvalidMethod, 
     'Invalid method id "' + methodId + '"',
@@ -84,7 +85,7 @@ factory.invalidMethod = function (methodId) {
   );
 };
 
-factory.invalidOperation = function (message, data, innerError) {
+factory.invalidOperation = function (message: string, data?: Object, innerError?: Error): APIError {
   return new APIError(ErrorIds.InvalidOperation, message, {
     httpStatus: 400,
     data: data,
@@ -93,7 +94,7 @@ factory.invalidOperation = function (message, data, innerError) {
   });
 };
 
-factory.invalidParametersFormat = function (message, data, innerError) {
+factory.invalidParametersFormat = function (message: string, data?: Object, innerError?: Error) {
   return new APIError(ErrorIds.InvalidParametersFormat, message, {
     httpStatus: 400,
     data: data,
@@ -102,7 +103,7 @@ factory.invalidParametersFormat = function (message, data, innerError) {
   });
 };
 
-factory.invalidRequestStructure = function (message, data, innerError) {
+factory.invalidRequestStructure = function (message: string, data?: Object, innerError?: Error): APIError {
   return new APIError(ErrorIds.InvalidRequestStructure, message, {
     httpStatus: 400,
     data: data,
@@ -112,7 +113,7 @@ factory.invalidRequestStructure = function (message, data, innerError) {
 };
 
 factory.itemAlreadyExists = function (
-  resourceType, conflictingKeys, innerError
+  resourceType: ?string, conflictingKeys: { [string]: string }, innerError: ?Error
 ) {
   resourceType = resourceType || 'resource';
   var keysDescription = Object.keys(conflictingKeys).map(function (k) {
@@ -129,7 +130,7 @@ factory.itemAlreadyExists = function (
   });
 };
 
-factory.missingHeader = function (headerName, status) {
+factory.missingHeader = function (headerName: string, status: ?number): APIError {
   return new APIError(
     ErrorIds.MissingHeader, 
     'Missing expected header "' + headerName + '"', {
@@ -145,7 +146,7 @@ factory.missingHeader = function (headerName, status) {
  * @param {*} data 
  * @param {*} innerError 
  */
-factory.periodsOverlap = function (message, data, innerError) {
+factory.periodsOverlap = function (message: string, data: Object, innerError: Error) {
   return new APIError(ErrorIds.PeriodsOverlap, message, {
     httpStatus: 400,
     data: data,
@@ -154,7 +155,7 @@ factory.periodsOverlap = function (message, data, innerError) {
   });
 };
 
-factory.tooManyResults = function (limit) {
+factory.tooManyResults = function (limit: number) {
   return new APIError(
     ErrorIds.TooManyResults,
     'Your request gave too many results (the limit is ' + limit + '. Directly calling ' +
@@ -162,7 +163,7 @@ factory.tooManyResults = function (limit) {
     {limit: limit, httpStatus: 413});
 };
 
-factory.unexpectedError = function (sourceError, message) {
+factory.unexpectedError = function (sourceError: mixed, message?: string) {
   // If a message was given: display it. 
   if (message != null)
     return produceError(message);
@@ -181,8 +182,8 @@ factory.unexpectedError = function (sourceError, message) {
   // Give up: 
   return produceError('(no message given)');
   
-  function produceError(msg, error) {
-    const opts = {
+  function produceError(msg: string, error?: Error): APIError {
+    const opts: APIErrorOptions = {
       httpStatus: 500,
       innerError: error,
     };
@@ -194,8 +195,8 @@ factory.unexpectedError = function (sourceError, message) {
 };
 
 factory.unknownReferencedResource = function (
-  resourceType, paramKey, 
-  value, innerError
+  resourceType: ?string, paramKey: string, 
+  value: Array<string> | string, innerError: Error
 ) {
   const joinedVals = typeof value === 'string' ?
     value :
@@ -215,7 +216,7 @@ factory.unknownReferencedResource = function (
   });
 };
 
-factory.unknownResource = function (resourceType, id, innerError) {
+factory.unknownResource = function (resourceType: ?string, id: ?string, innerError?: Error): APIError {
   var message = 'Unknown ' + (resourceType || 'resource') + ' ' + (id ? '"' + id + '"' : '');
   return new APIError(ErrorIds.UnknownResource, message, {
     httpStatus: 404,
@@ -224,14 +225,14 @@ factory.unknownResource = function (resourceType, id, innerError) {
   });
 };
 
-factory.unsupportedContentType = function (contentType) {
+factory.unsupportedContentType = function (contentType: string) {
   return new APIError(
     ErrorIds.UnsupportedContentType, 
     `If you think we should, please help us and report an issue! (You used ${contentType})`,
     { httpStatus: 415 });
 };
 
-factory.goneResource = function () {
+factory.goneResource = function (): APIError {
   return new APIError(
     ErrorIds.Gone, 'API method gone, please stop using it.',
     {
@@ -241,7 +242,7 @@ factory.goneResource = function () {
   );
 };
 
-factory.unavailableMethod = function (message) {
+factory.unavailableMethod = function (message: ?string): APIError {
   return new APIError(
     ErrorIds.unavailableMethod, 'API method unavailable in current version. This method is only available in the commercial license.',
     {
@@ -255,8 +256,8 @@ factory.unavailableMethod = function (message) {
  * Check in service-register if email is used
  * The name is used in the service-core and service-register
  **/
-factory.InvalidInvitationToken = () => {
-  const opts = {
+factory.InvalidInvitationToken = (): APIError => {
+  const opts: APIErrorOptions = {
     httpStatus: 400,
     data: {param: 'invitationToken'},
   };

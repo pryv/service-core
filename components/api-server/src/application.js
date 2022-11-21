@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 // A central registry for singletons and configuration-type instances; pass this
 // to your code to give it access to app setup.
@@ -60,7 +60,12 @@ const { tracingMiddleware } = require('tracing');
 
 logger.debug('Loading app');
 
+import type { CustomAuthFunction } from 'business';
+import type { WebhooksSettingsHolder }  from './methods/webhooks';
 
+type UpdatesSettingsHolder = {
+  ignoreProtectedFields: boolean,
+}
 
 // Application is a grab bag of singletons / system services with not many
 // methods of its own. It is the type-safe version of DI.
@@ -75,19 +80,19 @@ class Application {
 
 
   // Normal user API
-  api;
+  api: API;
   // API for system routes.
-  systemAPI;
+  systemAPI: API;
 
-  database;
+  database: storage.Database;
 
   // Storage subsystem
-  storageLayer;
+  storageLayer: storage.StorageLayer;
 
-  expressApp;
+  expressApp: express$Application;
 
-  isOpenSource;
-  isAuditActive;
+  isOpenSource: boolean;
+  isAuditActive: boolean;
 
   constructor() {
     this.initalized = false;
@@ -123,8 +128,8 @@ class Application {
 
     this.produceStorageSubsystem();
     await this.createExpressApp();
-    const apiVersion = await getAPIVersion();
-    const hostname = require('os').hostname();
+    const apiVersion: string = await getAPIVersion();
+    const hostname: string = require('os').hostname();
     this.expressApp.use(tracingMiddleware(
       'express1',
       {
@@ -175,7 +180,7 @@ class Application {
     console.log(routes);
   }
 
-  async createExpressApp() {
+  async createExpressApp(): Promise<express$Application> {
     this.expressApp = await expressAppInit(this.logging);
   }
 
@@ -230,7 +235,7 @@ class Application {
   //
   customAuthStepLoaded = false;
   customAuthStepFn = null;
-  getCustomAuthFunction(from) {
+  getCustomAuthFunction(from): ?CustomAuthFunction {
     if (! this.customAuthStepLoaded) {
       this.customAuthStepFn = this.loadCustomExtension();
       this.customAuthStepLoaded = true;
@@ -239,7 +244,7 @@ class Application {
     return this.customAuthStepFn;
   }
 
-  loadCustomExtension() {
+  loadCustomExtension(): ?Extension {
     const defaultFolder = this.config.get('customExtensions:defaultFolder');
     const name = 'customAuthStepFn';
     const customAuthStepFnPath = this.config.get('customExtensions:customAuthStepFn');

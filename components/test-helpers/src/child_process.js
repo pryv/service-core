@@ -4,16 +4,19 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const logger = require('@pryv/boiler').getLogger('child_process');
 const msgpack = require('msgpack5')();
 
+export interface ApplicationLauncher {
+  launch(injectSettings: {}): mixed; 
+}
 
 class ChildProcess {
-  launcher; 
+  launcher: Object; 
   
-  constructor(launcher) {
+  constructor(launcher: ApplicationLauncher) {
     this.launcher = launcher;
     
     // This bit is useful to trace down promise rejections that aren't caught. 
@@ -30,13 +33,13 @@ class ChildProcess {
 
   // Handles promise rejections that aren't caught somewhere. This is very
   // useful for debugging. 
-  unhandledRejection(reason, promise) {
+  unhandledRejection(reason: Error, promise: Promise<mixed>) {
     logger.warn(                                // eslint-disable-line no-console
       'Unhandled promise rejection:', promise, 
       'reason:', reason.stack || reason); 
   }
   
-  async handleParentMessage(wireMessage) {
+  async handleParentMessage(wireMessage: Buffer) {
     const message = msgpack.decode(wireMessage);
     
     const [msgId, cmd, ...args] = message; 
@@ -58,14 +61,14 @@ class ChildProcess {
       
     logger.debug('handleParentMessage/done', cmd);
   }
-  respondToParent(msg) {
+  respondToParent(msg: Array<mixed>) {
     logger.debug('respondToParent', msg);
     
     // FLOW Somehow flow-type doesn't know about process here. 
     process.send(
       msgpack.encode(msg));
   }
-  dispatchParentMessage(cmd, ...args) {
+  dispatchParentMessage(cmd: string, ...args: Array<mixed>): Promise<mixed> | mixed {
     if (! cmd.startsWith('int_')) {
       const launcher = this.launcher;
       
@@ -91,7 +94,7 @@ class ChildProcess {
   // Tells the launcher to launch the application, injecting the given
   // `injectSettings`.
   // 
-  async intStartServer(injectSettings) {
+  async intStartServer(injectSettings: {}) {
     const launcher = this.launcher;
     
     return launcher.launch(injectSettings);

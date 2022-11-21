@@ -4,20 +4,55 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const request = require('superagent');
 const errors = require('errors').factory;
 const URL = require('url');
 
+type Callback = (error: ?Error, res: ?Object) => any;
 
+type Recipient = {
+  email: string,
+  name: string,
+  type: ?string
+};
 
+type EmailSettings = {
+  method: EmailMethod,
+  url: string,
+  key: string,
+  welcomeTemplate: string,
+  resetPasswordTemplate: string
+};
 
+type EmailMethod = 'mandrill' | 'microservice';
 
+type MandrillData = {
+  key: string,
+  template_name: string,
+  template_content: Array<string>,
+  message: MandrillMessage
+};
 
+type MandrillMessage = {
+  to: Recipient[],
+  global_merge_vars: Array<MandrillSubstitution>,
+  tags: Array<string>
+}
 
+type MandrillSubstitution = {
+  name: string,
+  content: string
+};
 
+type MicroserviceData = {
+  key: string,
+  to: Recipient,
+  substitutions: Substitutions
+};
 
+type Substitutions = {[string]: string};
 
 /**
 * Helper function that modularizes the sending of an email,
@@ -29,8 +64,8 @@ const URL = require('url');
 * @param lang: user prefered language
 * @param callback(err,res): called once the email is sent
 */
-exports.sendmail = function (emailSettings, template,
-  recipient, subs, lang, callback) {
+exports.sendmail = function (emailSettings: EmailSettings, template: string,
+  recipient: Recipient, subs: Substitutions, lang: string, callback: Callback): void {
     
   const mailingMethod = emailSettings.method;
   
@@ -82,7 +117,7 @@ exports.sendmail = function (emailSettings, template,
   // NOT REACHED
 };
 
-function _sendmail(url, data, cb) {
+function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callback): void {
   request.post(url).send(data).end((err, res) => {
     if (err!=null || (res!=null && !res.ok)) {
       return cb(parseError(url, err, res));

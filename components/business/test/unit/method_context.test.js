@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 /* global describe, it, beforeEach */
 
@@ -17,8 +17,9 @@ const chai = require('chai');
 const assert = chai.assert; 
 
 const MethodContext = require('../../src/MethodContext');
+import type { ContextSource } from 'business';
 
-const contextSource = {
+const contextSource: ContextSource = {
   name: 'test',
   ip: '127.0.0.1'
 }
@@ -46,7 +47,7 @@ describe('MethodContext', () => {
     const username = 'USERNAME';
     const customAuthStep = null; 
     
-    let access;
+    let access: Object;
     let mc, findOne, storage;
     beforeEach(() => {
       mc = new MethodContext(contextSource, username, 'TOKEN CALLERID', customAuthStep);

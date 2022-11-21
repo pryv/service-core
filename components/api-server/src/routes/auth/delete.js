@@ -4,10 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// 
+// @flow
 
 const methodCallback = require('../methodCallback');
 const API = require('../../API');
+import type Application  from '../../application';
 const { getConfigUnsafe } = require('@pryv/boiler');
 
 const middleware = require('middleware');
@@ -17,8 +18,8 @@ const { setMethodId } = require('middleware');
  * Routes for users
  * @param app
  */
-module.exports = function(expressApp, app) {
-  const api = app.api;
+module.exports = function(expressApp: express$Application, app: Application) {
+  const api: API = app.api;
   
 
   const initContextMiddleware = middleware.initContext(app.storageLayer);
@@ -35,9 +36,9 @@ module.exports = function(expressApp, app) {
       });
     },
     function callMethodAuthDelete(
-      req,
-      res,
-      next
+      req: express$Request,
+      res: express$Response,
+      next: express$NextFunction
     ) {
       req.context.user.username = req.params.username;
       req.context.authorizationHeader = req.headers.authorization;
