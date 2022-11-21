@@ -383,7 +383,6 @@ class StreamConcatArray {
     this._next();
   }
 }
-export { };
 
 /**
  * @typedef {{
