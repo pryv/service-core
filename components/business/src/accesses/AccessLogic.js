@@ -445,7 +445,7 @@ class AccessLogic {
   */
   async canGetEventsOnStreamAndWithTags (streamId, tags) {
     if (this.isPersonal()) return true;
-    return await this.canGetEventsOnStream(streamId, 'local') &&
+    return (await this.canGetEventsOnStream(streamId, 'local')) &&
       (this.canGetEventsWithAnyTag() ||
         _.some(tags || [], this._canGetEventsWithTag.bind(this)));
   }
@@ -459,7 +459,7 @@ class AccessLogic {
    */
   async canUpdateEventsOnStreamAndWIthTags (streamId, tags) {
     if (this.isPersonal()) return true;
-    return await this.canUpdateEventsOnStream(streamId) ||
+    return (await this.canUpdateEventsOnStream(streamId)) ||
       (this._canUpdateEventWithTag('*') ||
         _.some(tags || [], this._canUpdateEventWithTag.bind(this)));
   }
@@ -473,7 +473,7 @@ class AccessLogic {
    */
   async canCreateEventsOnStreamAndWIthTags (streamId, tags) {
     if (this.isPersonal()) return true;
-    return await this.canCreateEventsOnStream(streamId) ||
+    return (await this.canCreateEventsOnStream(streamId)) ||
       (this._canCreateEventsWithTag('*') ||
         _.some(tags || [], this._canCreateEventsWithTag.bind(this)));
   }

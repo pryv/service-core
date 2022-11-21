@@ -63,7 +63,7 @@ class Storage {
   async forUser(userId) {
     this.logger.debug('forUser: ' + userId);
     this.checkInititalized();
-    return this.userDBsCache.get(userId) || await open(this, userId, this.logger);
+    return this.userDBsCache.get(userId) || (await open(this, userId, this.logger));
   }
 
   /**

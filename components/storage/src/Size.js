@@ -36,7 +36,7 @@ class Size {
     const mall = await getMall();
     const mallSize = await mall.getUserStorageSize(user.id);
     const storageUsed = {
-      dbDocuments: mallSize + await computeCategory(this.dbDocumentsItems),
+      dbDocuments: mallSize + (await computeCategory(this.dbDocumentsItems)),
       attachedFiles: await computeCategory(this.attachedFilesItems),
     };
     let userObject = new User(user);

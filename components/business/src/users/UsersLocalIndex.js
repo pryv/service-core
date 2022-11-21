@@ -70,7 +70,7 @@ class UsersLocalIndex {
   }
 
   async usernameExists(username) {
-    const res = (await this.getUserId(username) != null);
+    const res = ((await this.getUserId(username)) != null);
     logger.debug('usernameExists', username, res);
     return res;
   }
