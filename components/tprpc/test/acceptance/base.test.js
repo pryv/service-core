@@ -71,7 +71,7 @@ describe('Base API', () => {
     const res1 = response.results[1];
     assert.strictEqual(res1.title, 'A title 2');
   });
-  it('[V7MJ] failing a call (server-side)', async () => {
+  it('[V7MJ] failing a call (server-side)', async () => {
     stub.throws(new Error('server-side error'));
     let caught = false;
     try {

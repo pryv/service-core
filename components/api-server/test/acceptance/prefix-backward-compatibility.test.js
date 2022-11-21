@@ -257,7 +257,7 @@ describe('backward-compatibility', () => {
         const streamIdWithoutPrefix = removeDot(streamId);
         let customStreamIdVariant, privateStreamIdVariant;
         try { customStreamIdVariant = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamIdWithoutPrefix); } catch (e) {}
-        try { privateStreamIdVariant = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix); } catch (e) {}
+        try { privateStreamIdVariant = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix); } catch (e) {}
         assert.isTrue(customStreamIdVariant != null || privateStreamIdVariant != null, 'streamId starting with dot but neither custom nor private: ' + streamId);
       } else {
         if (!SystemStreamsSerializer.isSystemStreamId(streamId)) return;

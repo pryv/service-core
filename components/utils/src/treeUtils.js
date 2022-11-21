@@ -317,7 +317,7 @@ exports.debug = function debug (streams, properties, depth) {
   for (const stream of streams) {
     let line = base + stream.id;
     for (const p of properties) {
-      line += ' | ' + p + ': ' + stream[p];
+      line += ' | ' + p + ': ' + stream[p];
     }
     console.log(line);
     if (stream.children) {

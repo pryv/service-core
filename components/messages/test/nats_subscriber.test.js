@@ -15,7 +15,7 @@ const { getConfig } = require('@pryv/boiler');
 const { ConditionVariable } = require('test-helpers').syncPrimitives;
 const natsPubsub = require('../src/nats_pubsub');
 describe('NatsSubscriber', () => {
-  it('[DMMP] should construct', async () => {
+  it('[DMMP] should construct', async () => {
     await natsPubsub.init();
   });
   async function subscriber (username, msgs) {

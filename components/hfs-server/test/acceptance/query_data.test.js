@@ -78,7 +78,7 @@ describe('Querying data from a HF series', function () {
   after(() => {
     server.stop();
   });
-  it('[Q1X1] should should accept a query with authentication token header', function () {
+  it('[Q1X1] should should accept a query with authentication token header', function () {
     return server
       .request()
       .get(`/${userId}/events/${eventId}/series`)
@@ -86,7 +86,7 @@ describe('Querying data from a HF series', function () {
       .expect(200);
   });
   // Fixes #210
-  it('[Q1X2] should accept a query with authentication token in url parameter', function () {
+  it('[Q1X2] should accept a query with authentication token in url parameter', function () {
     return server
       .request()
       .get(`/${userId}/events/${eventId}/series?auth=` + accessToken)
@@ -115,7 +115,7 @@ describe('Querying data from a HF series', function () {
       .set('authorization', secondStreamToken);
     chai.expect(res).to.have.property('status').that.eql(200);
   });
-  it('[I2ZH] should refuse a query for an unknown user', function () {
+  it('[I2ZH] should refuse a query for an unknown user', function () {
     return server
       .request()
       .get('/some-user/events/some-eventId/series')
@@ -126,7 +126,7 @@ describe('Querying data from a HF series', function () {
         assert.strictEqual(res.body.error.id, ErrorIds.UnknownResource);
       });
   });
-  it('[EYCA] should refuse a query missing the authorization token', function () {
+  it('[EYCA] should refuse a query missing the authorization token', function () {
     return server
       .request()
       .get(`/${userId}/events/${eventId}/series`)
@@ -136,7 +136,7 @@ describe('Querying data from a HF series', function () {
         assert.strictEqual(res.body.error.id, ErrorIds.MissingHeader);
       });
   });
-  it('[OINY] should refuse a query containing an unauthorized token', function () {
+  it('[OINY] should refuse a query containing an unauthorized token', function () {
     return server
       .request()
       .get(`/${userId}/events/${eventId}/series`)
@@ -162,7 +162,7 @@ describe('Querying data from a HF series', function () {
         assert.match(error.message, /Unknown event/);
       });
   });
-  it('[QMC7] should refuse a query containing parameters with the wrong format', function () {
+  it('[QMC7] should refuse a query containing parameters with the wrong format', function () {
     return server
       .request()
       .get(`/${userId}/events/${eventId}/series`)
@@ -177,7 +177,7 @@ describe('Querying data from a HF series', function () {
         assert.strictEqual(err.id, ErrorIds.InvalidParametersFormat);
       });
   });
-  it('[HGVV] should refuse a query when toTime is before fromTime', function () {
+  it('[HGVV] should refuse a query when toTime is before fromTime', function () {
     return server
       .request()
       .get(`/${userId}/events/${eventId}/series`)

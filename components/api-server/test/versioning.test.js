@@ -23,7 +23,7 @@ const charlatan = require('charlatan');
 const SystemStreamSerializer = require('business/src/system-streams/serializer');
 const { integrity } = require('business');
 const assert = require('chai').assert;
-const { getMall } = require('mall');
+const { getMall } = require('mall');
 
 require('date-utils');
 
@@ -618,7 +618,7 @@ describe('Versioning', function () {
         phoneNumber: charlatan.Number.number(3)
       };
     }
-    function extractToken (apiEndpoint) {
+    function extractToken (apiEndpoint) {
       const hostname = apiEndpoint.split('//')[1];
       return hostname.split('@')[0];
     }

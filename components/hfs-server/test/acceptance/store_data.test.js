@@ -653,7 +653,7 @@ describe('Storing data in a HF series', function () {
         ]);
         assert.isTrue(ok);
       });
-      it("[1NDB] doesn't accept data in non-series format", async () => {
+      it("[1NDB] doesn't accept data in non-series format", async () => {
         const now = 6;
         const { ok, body } = await tryStore({ type: 'angular-speed/rad-s' }, ['deltaTime', 'value'], [
           [now - 3, 1],
@@ -833,7 +833,7 @@ describe('Storing data in a HF series', function () {
             [now - 1, 1, 3]
           ]
         ];
-        it("[AJMS] refuses to store when field names don't match the type", async () => {
+        it("[AJMS] refuses to store when field names don't match the type", async () => {
           assert.isFalse(await tryStore(...args));
         });
         it('[7CR7] returns the error message with the id "invalid-request-structure"', async () => {

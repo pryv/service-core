@@ -12,7 +12,7 @@ const _ = require('lodash');
 const should = require('should');
 
 describe('DrainStream', function () {
-  it('[AFWR] must be fed objects and return them in the callback', function (done) {
+  it('[AFWR] must be fed objects and return them in the callback', function (done) {
     const input = [{ a: 'a' }, { b: 'b' }, { c: 'c' }];
 
     function expectation (err, array) {
@@ -29,7 +29,7 @@ describe('DrainStream', function () {
     drain.end();
   });
 
-  it('[23UQ] must return an error when the provided limit is exceeded', function (done) {
+  it('[23UQ] must return an error when the provided limit is exceeded', function (done) {
     function expectation (err) {
       should.exist(err);
       done();

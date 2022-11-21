@@ -47,7 +47,7 @@ describe('Metadata Loader', function () {
     });
   });
 
-  it('[U6F2] should allow write access to series', function () {
+  it('[U6F2] should allow write access to series', function () {
     const metadata = loader.forSeries(USER_NAME, EVENT_ID, ACCESS_TOKEN);
     return metadata.then((metadata) => {
       should(metadata.canWrite()).be.true();
@@ -60,7 +60,7 @@ describe('Metadata Cache', function () {
     config = await getConfig();
     await require('business/src/system-streams/serializer').init();
   });
-  it('[O8AE] returns loaded metadata for N minutes', async () => {
+  it('[O8AE] returns loaded metadata for N minutes', async () => {
     let n = 0;
     const loaderStub = {
       forSeries: function () {

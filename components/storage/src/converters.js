@@ -59,7 +59,7 @@ exports.getKeyValueSetUpdateFn = function (propertyName) {
     const keyValueSet = update.$set[propertyName];
     if (keyValueSet) {
       Object.keys(keyValueSet).forEach(function (key) {
-        if (keyValueSet[key] !== null) {
+        if (keyValueSet[key] !== null) {
           update.$set[propertyName + '.' + key] = keyValueSet[key];
         } else {
           update.$unset[propertyName + '.' + key] = 1;

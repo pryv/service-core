@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const { safetyCleanDuplicate } = require('platform/src/service_register');
+const { safetyCleanDuplicate } = require('platform/src/service_register');
 const assert = require('chai').assert;
 
 describe('Service Register Errors', function () {

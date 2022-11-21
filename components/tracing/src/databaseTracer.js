@@ -17,7 +17,7 @@ module.exports = function patch (db) {
   if (!isTracingEnabled) return;
   const functionsToPatch = getAllFuncs(db);
   for (const fInfo of functionsToPatch) {
-    if (fInfo.id === 'getCollection' || fInfo.id === 'getCollectionSafe') continue; // ignores
+    if (fInfo.id === 'getCollection' || fInfo.id === 'getCollectionSafe') continue; // ignores
 
     if (fInfo.params[0] === 'collectionInfo' && fInfo.params.includes('callback')) {
       const callbackIndex = fInfo.params.findIndex(e => e == 'callback');

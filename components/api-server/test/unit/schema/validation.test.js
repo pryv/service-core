@@ -9,25 +9,25 @@ require('../test-helper');
 const assert = require('chai').assert;
 const { tryCoerceStringValues } = require('../../../src/schema/validation');
 describe('tryCoerceStringValues', () => {
-  it('[DTZ1] should behave as documented in the method', () => {
+  it('[DTZ1] should behave as documented in the method', () => {
     const object = { a: 'true', b: '2343', c: 'foobar' };
     const types = { a: 'boolean', b: 'number' };
     tryCoerceStringValues(object, types);
     const expect = { a: true, b: 2343, c: 'foobar' };
     assert.deepEqual(object, expect);
   });
-  it("[X26S] doesn't create keys in object", () => {
+  it("[X26S] doesn't create keys in object", () => {
     const o = {};
     const t = { a: 'number' };
     tryCoerceStringValues(o, t);
     assert.lengthOf(Object.keys(o), 0, 'Keys have been created in target.');
   });
-  it('[4MHH] should convert to array', () => {
+  it('[4MHH] should convert to array', () => {
     const obj = { a: '1', b: 'test' };
     tryCoerceStringValues(obj, { a: 'array', b: 'array' });
     assert.deepEqual(obj, { a: ['1'], b: ['test'] });
   });
-  it('[X8PY] number conversion works', () => {
+  it('[X8PY] number conversion works', () => {
     ok('123', 123);
     ok('123.45', 123.45);
     not_ok('123abc');

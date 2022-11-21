@@ -21,7 +21,7 @@ describe('ArrayStream', function () {
 
     for (let i = -3; i <= 3; i++) {
       const sign = i < 0 ? '' : '+';
-      it(`[${testIDs[i + 3]}] must return a valid array when receiving limit` + sign + i + ' items',
+      it(`[${testIDs[i + 3]}] must return a valid array when receiving limit` + sign + i + ' items',
         function (done) {
           const n = arraySize + i;
           n.should.be.above(0);
@@ -35,7 +35,7 @@ describe('ArrayStream', function () {
     const testIDs = ['69F6', 'BJRT', 'YJI0', 'EKQQ', '5SUK', 'FPL8', 'ZMO9', 'WFSL', '1YQS', '25IQ'];
 
     for (let i = 0; i <= 3; i++) {
-      it(`[${testIDs[i]}] must return a valid array when receiving ` + i + ' item(s)',
+      it(`[${testIDs[i]}] must return a valid array when receiving ` + i + ' item(s)',
         function (done) {
           pipeAndCheck(i, true, null, done);
         }

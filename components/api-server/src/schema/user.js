@@ -39,7 +39,7 @@ module.exports = function (action) {
   }
 
   // only accept password hash on create (request from registration-server) (and store of course)
-  if (action === Action.CREATE || action === Action.STORE) {
+  if (action === Action.CREATE || action === Action.STORE) {
     schema.properties.passwordHash = helpers.string();
   }
 

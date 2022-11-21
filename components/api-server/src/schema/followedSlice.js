@@ -15,7 +15,7 @@ const helpers = require('./helpers');
  * @param {Action} action
  */
 module.exports = function (action) {
-  if (action === Action.STORE) { action = Action.READ; } // read items === stored items
+  if (action === Action.STORE) { action = Action.READ; } // read items === stored items
 
   const schema = {
     id: helpers.getTypeURI('followedSlice', action),

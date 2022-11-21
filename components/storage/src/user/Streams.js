@@ -118,7 +118,7 @@ Streams.prototype.updateOne = function (user, query, updatedData, callback) {
  * Implementation.
  */
 Streams.prototype.delete = function (userOrUserId, query, callback) {
-  const userId = userOrUserId.id || userOrUserId;
+  const userId = userOrUserId.id || userOrUserId;
   cache.unsetUserData(userId);
   const update = {
     $set: { deleted: Date.now() / 1000 },

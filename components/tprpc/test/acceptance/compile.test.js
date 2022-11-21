@@ -20,7 +20,7 @@ describe('Type Compilation', function () {
   afterEach(() => {
     temp.cleanupSync();
   });
-  it('[0YBR] compiles a .proto 3 syntax file into a set of flow-type interfaces', async () => {
+  it('[0YBR] compiles a .proto 3 syntax file into a set of flow-type interfaces', async () => {
     const fullPath = path.join(__dirname, '../fixtures/base.proto');
     const definition = await rpc.load(fullPath);
     // Write the (flow type) signature to the temp dir

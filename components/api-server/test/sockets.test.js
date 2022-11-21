@@ -103,7 +103,7 @@ describe('Socket.IO', function () {
   beforeEach(function (done) {
     async.series([testData.resetStreams, testData.resetEvents], done);
   });
-  it('[25M0] must dynamically create a namespace for the user', function (done) {
+  it('[25M0] must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, { auth: token });
     // We expect communication to work.
     ioCons.con.once('connect', done);
@@ -164,7 +164,7 @@ describe('Socket.IO', function () {
       }
     ], done);
   });
-  it('[OSOT] must refuse connection if no valid access token is provided', function (done) {
+  it('[OSOT] must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
     ioCons.con.once('connect', function () {
       done(new Error('Connecting should have failed'));

@@ -27,7 +27,7 @@ describe('Metadata Updater', () => {
     const client = new rpc.Client(definition);
     service = client.proxy('MetadataUpdaterService', `127.0.0.1:${server.port}`);
   });
-  it('[POMC] allows scheduling an update', async () => {
+  it('[POMC] allows scheduling an update', async () => {
     const now = new Date() / 1e3; // now in seconds
     await service.scheduleUpdate({
       entries: [

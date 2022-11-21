@@ -22,7 +22,7 @@ describe('ErrorLogger', () => {
     target = {};
     subject = ErrorLogger.wrap(target, logger);
   });
-  it('[9UOR] forwards calls', () => {
+  it('[9UOR] forwards calls', () => {
     target.foo = sinon.spy();
 
     subject.foo('a', 'b', 'c');
@@ -30,7 +30,7 @@ describe('ErrorLogger', () => {
     sinon.assert.calledOnce(target.foo);
     sinon.assert.calledWith(target.foo, 'a', 'b', 'c');
   });
-  it('[5AVE] catches and logs all exceptions, rethrowing afterwards', () => {
+  it('[5AVE] catches and logs all exceptions, rethrowing afterwards', () => {
     target.foo = sinon.stub();
 
     target.foo.throws('foobar');

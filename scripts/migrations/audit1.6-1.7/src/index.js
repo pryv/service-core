@@ -82,7 +82,7 @@ async function listDirectory (logDiretory) {
 function listAuditFilesForUser (username) {
   function getLogN (filname) {
     const s = filname.split('.');
-    return parseInt(s[2]) || 0;
+    return parseInt(s[2]) || 0;
   }
 
   return new Promise((resolve, reject) => {
@@ -119,6 +119,7 @@ function readFile (username, filename) {
           storeEvent(username, item);
         }
       } catch (e) {
+        // eslint-disable-next-line n/no-callback-literal
         cb(false);
         reject(new Error('Error on file ' + file + ':' + lineCount + ' >>> ' + e.message + '\n' + line));
         return;
@@ -128,6 +129,7 @@ function readFile (username, filename) {
       }
       if (last) resolve();
       if (count > 10) {
+        // eslint-disable-next-line n/no-callback-literal
         cb(false);
         resolve();
         return;
@@ -160,7 +162,7 @@ function storeEvent (username, event) {
 }
 
 // Load routes in a fake expressRouter
-router = Router();
+const router = Router();
 
 const IGNORES = [
   { methodId: false, path: '/:username/robots.txt', method: 'get' },
@@ -177,7 +179,7 @@ router.get('/*', (req, res, next) => { logger.info('IGNORED>', req.url, req.meth
 const NOUSERNAME = ['/reg/', '/register/', '/system/'];
 function addUserNameIfNeeded (saction, username) {
   for (const n of NOUSERNAME) {
-    if (saction[1].startsWith(NOUSERNAME)) return;
+    if (saction[1].startsWith(n)) return;
   }
   if (!saction[1].startsWith('/' + username)) saction[1] = '/' + username + saction[1];
 }
@@ -308,7 +310,7 @@ async function getAuditLogDir () {
 let db; let config; let audiLogsDirs; const userIdMap = {}; const userStorageByUsername = {}; const userAnchor = {};
 async function start () {
   config = await getConfig();
-  if (config.get('openSource:isActive') || (!config.get('audit:active'))) {
+  if (config.get('openSource:isActive') || (!config.get('audit:active'))) {
     logger.info('Skipping Migration Audit is not active');
   }
   await audit.init();

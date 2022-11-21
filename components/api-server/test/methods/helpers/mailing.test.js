@@ -23,7 +23,7 @@ describe('Mailing helper methods', () => {
     email: recipient.email
   };
 
-  it('[HGVD] should throw an error if mailing method is invalid', () => {
+  it('[HGVD] should throw an error if mailing method is invalid', () => {
     const emailSettings = {
       method: 'invalid',
       url: 'https://localhost:9000/sendmail',

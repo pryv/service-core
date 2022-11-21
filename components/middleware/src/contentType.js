@@ -14,17 +14,17 @@ const errors = require('errors').factory;
 /**
  * Accepts a variable number of content types as arguments.
  */
-function checkContentType (/* arguments */) {
+function checkContentType (/* arguments */) {
   const acceptedTypes = arguments;
   const count = acceptedTypes.length;
   return function (req, res, next) {
-    if (count < 1) { return next(); }
+    if (count < 1) { return next(); }
 
     const contentType = req.headers['content-type'];
     if (!contentType) { return next(errors.missingHeader('Content-Type')); }
 
     for (let i = 0; i < count; i++) {
-      if (req.is(acceptedTypes[i])) {
+      if (req.is(acceptedTypes[i])) {
         return next();
       }
     }

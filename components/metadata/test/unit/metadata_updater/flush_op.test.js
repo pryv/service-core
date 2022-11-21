@@ -103,7 +103,7 @@ describe('Flush', () => {
       });
       op = new Flush(update);
     });
-    it("[5QO0] doesn't modify duration", async () => {
+    it("[5QO0] doesn't modify duration", async () => {
       await op.run();
       const event = await mall.events.getOne(userId, eventWithContentId);
       // See fixture above

@@ -84,7 +84,7 @@ Accesses.prototype.findDeletions = function (
   options,
   callback
 ) {
-  query = query || {};
+  query = query || {};
   query.deleted = { $type: 'number' };
 
   this.database.find(

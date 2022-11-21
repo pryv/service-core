@@ -21,7 +21,7 @@ describe('Server', () => {
     const baseUrl = server.baseUrl;
     return url.resolve(baseUrl, path);
   }
-  it('[O84I] can be constructed', function () {
+  it('[O84I] can be constructed', function () {
     should.exist(server);
   });
   describe('.start', function () {
