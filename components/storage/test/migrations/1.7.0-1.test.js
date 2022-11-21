@@ -21,7 +21,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getLogger } = require('@pryv/boiler');
 const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 
-const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin'
+const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
 
 const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
 

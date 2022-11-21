@@ -17,7 +17,7 @@ const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
 
-const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin'
+const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin'
 
 const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
 
