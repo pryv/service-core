@@ -62,7 +62,7 @@
     "rimraf": "^3.0.2",
     "shimmer": "^1.2.0",
     "slug": "^5.3.0",
-    "socket.io": "^3.1.2",
+    "socket.io": "^4.5.3",
     "socketio-wildcard": "^2.0.0",
     "superagent": "^8.0.3",
     "tchannel": "https://github.com/pryv/tchannel-node#v4.0.2",
