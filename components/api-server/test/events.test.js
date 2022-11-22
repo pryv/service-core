@@ -279,7 +279,7 @@ describe('events', function () {
         toTime: 0
       };
       const events = testData.events.filter(function (e) {
-        return e.time == 0;
+        return e.time === 0;
       });
       request.get(basePath).query(params).end(function (res) {
         validation.check(res, {

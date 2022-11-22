@@ -119,7 +119,7 @@ describe('Migration - 1.7.x', function () {
 
     for (const previousAccess of previousAccessesWithTags) {
       const newAccess = await accessesCollection.findOne({ _id: previousAccess._id });
-      const forcedStreamsPerms = newAccess.permissions.filter(p => (p.feature && p.feature == 'forcedStreams'));
+      const forcedStreamsPerms = newAccess.permissions.filter(p => (p.feature && p.feature === 'forcedStreams'));
       assert.equal(forcedStreamsPerms.length, 1);
       const forcedStreams = forcedStreamsPerms[0].streams;
       assert.isAbove(forcedStreams.length, 0);

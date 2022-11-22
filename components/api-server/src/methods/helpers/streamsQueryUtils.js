@@ -233,7 +233,7 @@ async function expandAndTransformStreamQuery (streamQuery, expandSet) {
   if (streamQuery.all) {
     for (const streamId of streamQuery.all) {
       const expandedSet = await expandSet([streamId], streamQuery.storeId, streamQuery.not);
-      if (expandedSet.length == 0) { continue; } // escape
+      if (expandedSet.length === 0) { continue; } // escape
       if (!res.and) { res.and = []; }
       containsAtLeastOneInclusion = true;
       res.and.push({ any: uniqueStreamIds(expandedSet) });
@@ -244,7 +244,7 @@ async function expandAndTransformStreamQuery (streamQuery, expandSet) {
     const not = [];
     for (const streamId of streamQuery.not) {
       const expandedSet = await expandSet([streamId], streamQuery.storeId, streamQuery.any);
-      if (expandedSet.length == 0) { continue; } // escape
+      if (expandedSet.length === 0) { continue; } // escape
       not.push(...expandedSet);
     }
     if (not.length > 0) {

@@ -32,17 +32,17 @@ class PubSub extends EventEmitter {
     this.logger = logger.getLogger(this.scopeName);
     this.natsSubscriptionMap = {};
 
-    if (this.options.nats != CONSTANTS.NATS_MODE_NONE) {
+    if (this.options.nats !== CONSTANTS.NATS_MODE_NONE) {
       initNats();
     }
-    if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_ALL)) {
+    if ((nats != null) && (this.options.nats === CONSTANTS.NATS_MODE_ALL)) {
       nats.subscribe(this.scopeName, this);
     }
   }
 
   on (eventName, listener) {
     // nats "keyed" listeners
-    if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY)) {
+    if ((nats != null) && (this.options.nats === CONSTANTS.NATS_MODE_KEY)) {
       if (this.natsSubscriptionMap[eventName] == null) { // not yet listening .. subscribe
         nats.subscribe(this.scopeName + '.' + eventName, this).then((sub) => {
           this.natsSubscriptionMap[eventName] = { sub, counter: 1 };
@@ -62,10 +62,10 @@ class PubSub extends EventEmitter {
     this.on(eventName, listener);
     return function () {
       this.off(eventName, listener);
-      if ((nats != null) && (this.options.nats == CONSTANTS.NATS_MODE_KEY) && (this.natsSubscriptionMap[eventName] != null)) {
+      if ((nats != null) && (this.options.nats === CONSTANTS.NATS_MODE_KEY) && (this.natsSubscriptionMap[eventName] != null)) {
         this.logger.debug('off', eventName);
         this.natsSubscriptionMap[eventName].counter--;
-        if (this.natsSubscriptionMap[eventName].counter == 0) { // no more listeners .. close nats subscription
+        if (this.natsSubscriptionMap[eventName].counter === 0) { // no more listeners .. close nats subscription
           this.natsSubscriptionMap[eventName].sub.unsubscribe();
           delete this.natsSubscriptionMap[eventName];
         }
@@ -80,8 +80,8 @@ class PubSub extends EventEmitter {
     if (this.options.forwardToTests) forwardToTests(eventName, payload);
 
     if (nats != null) {
-      if (this.options.nats == CONSTANTS.NATS_MODE_ALL) nats.deliver(this.scopeName, eventName, payload);
-      if (this.options.nats == CONSTANTS.NATS_MODE_KEY) nats.deliver(this.scopeName + '.' + eventName, eventName, payload);
+      if (this.options.nats === CONSTANTS.NATS_MODE_ALL) nats.deliver(this.scopeName, eventName, payload);
+      if (this.options.nats === CONSTANTS.NATS_MODE_KEY) nats.deliver(this.scopeName + '.' + eventName, eventName, payload);
     }
   }
 
@@ -112,7 +112,7 @@ testMessageMap[CONSTANTS.USERNAME_BASED_ACCOUNT_CHANGED] = 'axon-account-changed
 let globalTestNotifier = null;
 
 function forwardToTests (eventName, payload) {
-  if (eventName == CONSTANTS.SERVER_READY) {
+  if (eventName === CONSTANTS.SERVER_READY) {
     return globalTestNotifier.emit('axon-server-ready');
   }
   const testMessageKey = testMessageMap[payload];

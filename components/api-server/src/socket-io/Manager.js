@@ -308,7 +308,7 @@ class Connection {
     });
     const api = this.api;
     const logger = this.logger;
-    if (!callData || !callData.data || callData.data.length != 3) {
+    if (!callData || !callData.data || callData.data.length !== 3) {
       if (callback) {
         callback(new Error('invalid data'));
       }

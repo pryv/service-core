@@ -44,7 +44,7 @@ function endTimeFromStoreToDuration (eventData) {
   } else if (eventData.endTime !== undefined) {
     const prevDuration = eventData.duration;
     eventData.duration = eventData.endTime - eventData.time;
-    if (prevDuration != null && prevDuration != eventData.duration) {
+    if (prevDuration != null && prevDuration !== eventData.duration) {
       console.log('What !! ', new Error('Duration issue.. This should not thappen'));
     }
   }
@@ -174,7 +174,7 @@ function addStoreId (storeId, eventData) {
  * @returns {any}
  */
 function removeEmptyAttachments (eventData) {
-  if (eventData?.attachments != null && eventData.attachments.length == 0) {
+  if (eventData?.attachments != null && eventData.attachments.length === 0) {
     delete eventData.attachments;
   }
   return eventData;

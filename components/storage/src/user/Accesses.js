@@ -157,7 +157,7 @@ Accesses.prototype.updateOne = function (userOrUserId, query, update, callback) 
       return callback(errIntegrity, accessData);
     }
     // only update if there is a mismatch of integrity
-    if (integrityCheck != accessData.integrity) {
+    if (integrityCheck !== accessData.integrity) {
       // could be optimized by using "updateOne" instead of findOne and update
       return Accesses.super_.prototype.findOneAndUpdate.call(that, userOrUserId, { _id: accessData.id }, { integrity: accessData.integrity }, callback);
     }
@@ -215,7 +215,7 @@ function getResetIntegrity (accessesStore, userOrUserId, update, callback) {
       delete access.integrityBatchCode; // remove integrity batch code for computation
       const previousIntegrity = access.integrity;
       integrity.accesses.set(access, true);
-      if (previousIntegrity == access.integrity) return null;
+      if (previousIntegrity === access.integrity) return null;
       return {
         $unset: { integrityBatchCode: 1 },
         $set: { integrity: access.integrity }
@@ -224,7 +224,7 @@ function getResetIntegrity (accessesStore, userOrUserId, update, callback) {
 
     function doneCallBack (err2, res2) {
       if (err2) return callback(err2);
-      if (res2.count != initialModifiedCount) { // updated documents counts does not match
+      if (res2.count !== initialModifiedCount) { // updated documents counts does not match
         logger.error('Issue when adding integrity to updated events for ' + JSON.stringify(userOrUserId) + ' counts does not match');
         // eventually throw an error here.. But this will not help the API client ..
         // to be discussed !

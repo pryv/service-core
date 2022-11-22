@@ -265,7 +265,7 @@ module.exports = async function (api) {
         includeTrashed: true,
         expandChildren: 1
       });
-      if (targetParentArray.length == 0) {
+      if (targetParentArray.length === 0) {
         // no parent
         return next(errors.unknownReferencedResource('parent stream', 'parentId', params.update.parentId));
       }

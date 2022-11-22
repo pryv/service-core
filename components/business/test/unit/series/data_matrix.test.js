@@ -87,8 +87,8 @@ describe('DataMatrix', function () {
       ]);
       let times = 0;
       matrix.eachRow((row, idx) => {
-        if (idx == 0) { assert.deepEqual(row.values, [1, 2, 3]); }
-        if (idx == 1) { assert.deepEqual(row.values, [4, 5, 6]); }
+        if (idx === 0) { assert.deepEqual(row.values, [1, 2, 3]); }
+        if (idx === 1) { assert.deepEqual(row.values, [4, 5, 6]); }
         assert.strictEqual(row.columnNames, headers);
         times += 1;
       });

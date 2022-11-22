@@ -291,7 +291,7 @@ module.exports = async function (api) {
      */
   function validateAccountStreamsForCreation (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) { return next(); }
-    throwIfUserTriesToAddMultipleAccountStreamIds(context.accountStreamIds); // assert context.accountStreamIds.length == 1 - probably OK for mixing custom and account
+    throwIfUserTriesToAddMultipleAccountStreamIds(context.accountStreamIds); // assert context.accountStreamIds.length === 1 - probably OK for mixing custom and account
     context.accountStreamId = context.accountStreamIds[0];
     throwIfStreamIdIsNotEditable(context.accountStreamId);
     next();
@@ -890,7 +890,7 @@ module.exports = async function (api) {
      */
   function validateAccountStreamsForUpdate (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) { return next(); }
-    throwIfUserTriesToAddMultipleAccountStreamIds(context.accountStreamIds); // assert context.accountStreamIds.length == 1
+    throwIfUserTriesToAddMultipleAccountStreamIds(context.accountStreamIds); // assert context.accountStreamIds.length === 1
     context.accountStreamId = context.accountStreamIds[0];
     context.oldAccountStreamIds.forEach((streamId) => {
       throwIfStreamIdIsNotEditable(streamId);

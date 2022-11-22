@@ -50,7 +50,7 @@ class ServiceRegister {
         core
       });
     } catch (err) {
-      if ((err.status == 409 || err.status == 400) &&
+      if ((err.status === 409 || err.status === 400) &&
                 err?.response?.body?.error) {
         if (err.response.body.error != null) {
           if (err.response.body.error.id === ErrorIds.InvalidInvitationToken) {
@@ -177,7 +177,7 @@ class ServiceRegister {
         .set('Authorization', this.settings.key);
       return res.body;
     } catch (err) {
-      if ((err.status == 400 || err.status == 409) &&
+      if ((err.status === 400 || err.status === 409) &&
                 err.response.body.error != null) {
         if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
           throw errors.itemAlreadyExists('user', safetyCleanDuplicate(err.response.body.error.data, username, updateParams));
@@ -186,7 +186,7 @@ class ServiceRegister {
           throw errors.unexpectedError(err.response.body.error);
         }
       }
-      if (err.status == 400 && err.response.body?.user === null) {
+      if (err.status === 400 && err.response.body?.user === null) {
         // do not throw any error if no data was updated (double click for updating the event)
         this.logger.error('No data was updated');
       } else {

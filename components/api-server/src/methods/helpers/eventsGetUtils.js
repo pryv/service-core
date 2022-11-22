@@ -337,7 +337,7 @@ function stripDoNotExpandMarker (streamIdWithDoNotExpandMarker) {
   return streamIdWithDoNotExpandMarker.slice(0, -1);
 }
 /**
- * Add Hidden StreamsId (System) to local queries and eventually trashed streams if state != 'all'
+ * Add Hidden StreamsId (System) to local queries and eventually trashed streams if state !== 'all'
  * @param {MethodContext} context
  * @param {GetEventsParams} params
  * @param {Result} result

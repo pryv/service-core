@@ -24,7 +24,7 @@ module.exports = async function () {
     res.header('Access-Control-Allow-Credentials', 'true');
     // keep API version in HTTP headers for now
     res.header('API-Version', version);
-    if (req.method == 'OPTIONS') {
+    if (req.method === 'OPTIONS') {
       res.sendStatus(200);
       return;
     }

@@ -219,7 +219,7 @@ describe('Storing data in a HF series', function () {
         .post(`/${userId}/events/${event.id}/series`)
         .set('authorization', accessToken)
         .send(requestData);
-      if (response.statusCode != 200) {
+      if (response.statusCode !== 200) {
         logger.debug('Failed to store data, debug report:');
         logger.debug('response.body', response.body);
       }
@@ -617,7 +617,7 @@ describe('Storing data in a HF series', function () {
           .post(`/${userId}/events/${event.id}/series`)
           .set('authorization', accessToken)
           .send(requestData);
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           logger.debug('Failed to store data, debug report:');
           logger.debug('response.body', response.body);
         }

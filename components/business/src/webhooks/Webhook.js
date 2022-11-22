@@ -104,8 +104,8 @@ class Webhook {
        * @returns {Promise<void>}
        */
   async send (message, isRescheduled) {
-    if (this.state == 'inactive') { return; }
-    if (isRescheduled != null && isRescheduled == true) {
+    if (this.state === 'inactive') { return; }
+    if (isRescheduled != null && isRescheduled === true) {
       this.timeout = null;
     }
     this.messageBuffer.add(message);
@@ -149,7 +149,7 @@ class Webhook {
       return status < 200 || status >= 300;
     }
     function handleRetry (message) {
-      if (this.state == 'inactive') {
+      if (this.state === 'inactive') {
         return;
       }
       reschedule.call(this, message);

@@ -34,12 +34,12 @@ async function events () {
       errors.push('event has no integrity property');
     } else {
       const i = integrity.events.compute(event).integrity;
-      if (i != event.integrity) {
+      if (i !== event.integrity) {
         errors.push('expected integrity: ' + i);
       }
     }
 
-    if (errors.length != 0) {
+    if (errors.length !== 0) {
       if (erroneousEvents.length < 3) {
         erroneousEvents.push({ event, errors });
       } else {
@@ -75,12 +75,12 @@ async function accesses () {
       errors.push('access has no integrity property');
     } else {
       const i = integrity.accesses.compute(access).integrity;
-      if (i != access.integrity) {
+      if (i !== access.integrity) {
         errors.push('expected integrity: ' + i);
       }
     }
 
-    if (errors.length != 0) {
+    if (errors.length !== 0) {
       if (erroneousAccess.length < 3) {
         erroneousAccess.push({ access, errors });
       } else {

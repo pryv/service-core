@@ -113,7 +113,7 @@ class UsersRepository {
     const userAccountEvents = await this.mall.events.get(userId, query);
     const username = await usersIndex.getUsername(userId);
     // convert events to the account info structure
-    if (userAccountEvents.length == 0) {
+    if (userAccountEvents.length === 0) {
       return null;
     }
     if (username == null) {

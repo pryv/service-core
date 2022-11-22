@@ -37,7 +37,7 @@ function validateFileUpload (req, res, next) {
     if (bodyKeys.length > 1) {
       return next(errors.invalidRequestStructure("In multipart requests, we don't expect more than one non-file part."));
     }
-    if (bodyKeys.length == 0) {
+    if (bodyKeys.length === 0) {
       return next();
     }
     // assert: bodyKeys.length === 1

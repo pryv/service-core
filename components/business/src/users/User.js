@@ -63,7 +63,7 @@ class User {
        * @returns {{}}
        */
   getReadableAccount () {
-    return _.pick(this, this.readableAccountFields.filter((x) => x !== 'dbDocuments' && x != 'attachedFiles'));
+    return _.pick(this, this.readableAccountFields.filter((x) => x !== 'dbDocuments' && x !== 'attachedFiles'));
   }
 
   /**
@@ -71,7 +71,7 @@ class User {
        * @returns {{}}
        */
   getFullAccount () {
-    return _.pick(this, this.accountFields.filter((x) => x !== 'dbDocuments' && x != 'attachedFiles'));
+    return _.pick(this, this.accountFields.filter((x) => x !== 'dbDocuments' && x !== 'attachedFiles'));
   }
 
   /**
@@ -89,7 +89,7 @@ class User {
   getAccountWithId () {
     const res = _.pick(this, this.accountFields
       .concat('id')
-      .filter((x) => x !== 'dbDocuments' && x != 'attachedFiles'));
+      .filter((x) => x !== 'dbDocuments' && x !== 'attachedFiles'));
     res.username = this.username;
     return res;
   }

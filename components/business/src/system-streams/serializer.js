@@ -267,10 +267,10 @@ class SystemStreamsSerializer {
     Object.keys(accountStreams).forEach((streamId) => {
       returnObject.accountFieldsWithPrefix.push(streamId);
       const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamId);
-      if (accountStreams[streamId].isUnique == true) {
+      if (accountStreams[streamId].isUnique === true) {
         returnObject.uniqueAccountFields.push(streamIdWithoutPrefix);
       }
-      if (accountStreams[streamId].isShown == true) {
+      if (accountStreams[streamId].isShown === true) {
         returnObject.readableAccountFields.push(streamIdWithoutPrefix);
       }
       returnObject.accountFields.push(streamIdWithoutPrefix);

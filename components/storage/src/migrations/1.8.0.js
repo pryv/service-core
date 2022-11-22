@@ -70,7 +70,7 @@ module.exports = async function (context, callback) {
         }
         if (isUnique) {
           const currentUsername = await platformWideDB.getUsersUniqueField(field, value);
-          if (currentUsername == username) {
+          if (currentUsername === username) {
             logDebug('skip');
             continue;
           } // already set
@@ -86,7 +86,7 @@ module.exports = async function (context, callback) {
           logDebug('set unique');
         } else {
           const currentValue = await platformWideDB.getUserIndexedField(username, field);
-          if (currentValue == value) {
+          if (currentValue === value) {
             logDebug('skip');
             continue;
           } // already set

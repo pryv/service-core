@@ -119,7 +119,7 @@ class DB {
  */
 function parseEntry (entry) {
   const [type, field, userNameOrValue] = entry.key.split('/');
-  const isUnique = (type == 'user-unique');
+  const isUnique = (type === 'user-unique');
   return {
     isUnique,
     field,

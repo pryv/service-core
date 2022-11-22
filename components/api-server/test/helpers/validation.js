@@ -101,7 +101,7 @@ function checkEventIntegrity (e) {
   if (!integrity.events.isActive) return;
   if (isOpenSource) return;
   const int = integrity.events.hash(e);
-  if (e.integrity != int) {
+  if (e.integrity !== int) {
     throw (new Error('Received item with bad integrity checkum. \nexpected [' + int + '] \ngot: \n' + JSON.stringify(e, null, 2)));
   }
 }
@@ -110,7 +110,7 @@ function checkAccessIntegrity (access) {
   if (!integrity.accesses.isActive) return;
   if (isOpenSource) return;
   const int = integrity.accesses.hash(access);
-  if (access.integrity != int) {
+  if (access.integrity !== int) {
     throw (new Error('Received item with bad integrity checkum. \nexpected [' + int + '] \ngot: \n' + JSON.stringify(access, null, 2)));
   }
 }
@@ -243,7 +243,7 @@ function checkObjectEquality (actual, expected, verifiedProps = []) {
   let isApprox = false;
   if (expected.created) {
     checkApproxTimeEquality(actual.created, expected.created);
-    isApprox = isApprox || actual.created != expected.created;
+    isApprox = isApprox || actual.created !== expected.created;
   }
   verifiedProps.push('created');
 
@@ -253,13 +253,13 @@ function checkObjectEquality (actual, expected, verifiedProps = []) {
 
   if (expected.modified) {
     checkApproxTimeEquality(actual.modified, expected.modified);
-    isApprox = isApprox || actual.modified != expected.modified;
+    isApprox = isApprox || actual.modified !== expected.modified;
   }
   verifiedProps.push('modified');
 
   if (expected.deleted) {
     checkApproxTimeEquality(actual.deleted, expected.deleted);
-    isApprox = isApprox || actual.deleted != expected.deleted;
+    isApprox = isApprox || actual.deleted !== expected.deleted;
   }
   verifiedProps.push('deleted');
 

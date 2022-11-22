@@ -56,7 +56,7 @@ class Platform {
    * during tests forward to register might be activated and deactivated
    */
   #shouldForwardToRegister () {
-    return this.#serviceRegisterConn != null && process.NODE_ENV != 'test' && !this.#config.get('testsSkipForwardToRegister');
+    return this.#serviceRegisterConn != null && process.NODE_ENV !== 'test' && !this.#config.get('testsSkipForwardToRegister');
   }
 
   // for tests only - called by repository
@@ -81,7 +81,7 @@ class Platform {
   async checkUpdateOperationUniqueness (username, operations) {
     const localUniquenessErrors = {};
     for (const op of operations) {
-      if (op.action != 'delete' && op.isUnique) {
+      if (op.action !== 'delete' && op.isUnique) {
         const value = await this.#db.getUsersUniqueField(op.key, op.value);
         if (value != null) localUniquenessErrors[op.key] = op.value;
       }
@@ -109,8 +109,8 @@ class Platform {
     // ** Execute request on register
     if (!skipFowardToRegister && this.#shouldForwardToRegister()) {
       const ops2 = operations.map(op => {
-        const action = op.action == 'delete' ? 'delete' : 'update';
-        const isCreation = op.action == 'create';
+        const action = op.action === 'delete' ? 'delete' : 'update';
+        const isCreation = op.action === 'create';
         return { [action]: { key: op.key, value: op.value, isUnique: op.isUnique, isCreation, isActive: op.isActive } };
       });
       await this.#serviceRegisterConn.updateUserInServiceRegister(username, ops2);

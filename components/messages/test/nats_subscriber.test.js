@@ -50,7 +50,7 @@ describe('NatsSubscriber', () => {
     describe('subscribe("USERNAME")', () => {
       it('[4MAI] accepts messages from USERNAME.sok1 and dispatches them to sinks', async () => {
         await rawClient.publish('foobar', encode({ eventName: 'onTestMessage' }));
-        while (msgs.length == 0) {
+        while (msgs.length === 0) {
           await new Promise((r) => setTimeout(r, 50));
         }
         assert.deepEqual(msgs, ['onTestMessage']);
@@ -58,7 +58,7 @@ describe('NatsSubscriber', () => {
       it('[47BP] ignores messages from other users', async () => {
         rawClient.publish('barbaz', encode({ eventName: 'onTestMessage1' }));
         rawClient.publish('foobar', encode({ eventName: 'onTestMessage2' }));
-        while (msgs.length == 0) {
+        while (msgs.length === 0) {
           await new Promise((r) => setTimeout(r, 50));
         }
         // We've received the second message and not the first. Apart from waiting
@@ -71,7 +71,7 @@ describe('NatsSubscriber', () => {
       this.timeout(1000);
       it('[L49E] should unsubscribe from NATS', async () => {
         rawClient.publish('foobar', encode({ eventName: 'onTestMessage1' }));
-        while (msgs.length == 0) {
+        while (msgs.length === 0) {
           await new Promise((r) => setTimeout(r, 50));
         }
         natsSUB.unsubscribe();

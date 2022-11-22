@@ -21,7 +21,7 @@ async function validate (config) {
    * Parse all string fields and fail if "REPLACE" is found
    * stops if an "active: false" field is found in path
    * @param {*} obj The object to inspect
-   * @param {Array<string>|false} finalPath is != false the path to access the value (set when passing thru first Array)
+   * @param {Array<string>|false} finalPath is !== false the path to access the value (set when passing thru first Array)
    * @param {Array<string} parentPath path to display in case of error. If in array the index of the array is happened to the path
    * @param {string} key the key to construct the path
    */

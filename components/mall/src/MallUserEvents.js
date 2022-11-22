@@ -142,7 +142,7 @@ class MallUserEvents {
        * @returns {Promise<any>}
        */
   async getStreamedWithParamsByStore (userId, paramsByStore) {
-    if (Object.keys(paramsByStore).length != 1) {
+    if (Object.keys(paramsByStore).length !== 1) {
       return new Error('getStreamed only supported for one store at a time');
     }
     const storeId = Object.keys(paramsByStore)[0];
@@ -300,7 +300,7 @@ class MallUserEvents {
       const storeStreamIds = [];
       for (const fullStreamId of storeEvent.streamIds) {
         const [streamStoreId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(fullStreamId);
-        if (streamStoreId != storeId) {
+        if (streamStoreId !== storeId) {
           throw errorFactory.invalidRequestStructure('events cannot be moved to a different store', eventData);
         }
         storeStreamIds.push(storeStreamId);

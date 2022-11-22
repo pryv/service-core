@@ -177,7 +177,7 @@ const converters = {
     };
   },
   typesList: (list) => {
-    if (list.length == 0) { return null; }
+    if (list.length === 0) { return null; }
     return { type: { $in: list.map(getTypeQueryValue) } };
   },
   streamsQuery: (content) => {
@@ -202,7 +202,7 @@ function paramsToMongoquery (params) {
       query.$and.push(newCondition);
     }
   }
-  if (query.$and.length == 0) { delete query.$and; } // remove empty $and
+  if (query.$and.length === 0) { delete query.$and; } // remove empty $and
   return { query, options };
 }
 /**

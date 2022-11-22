@@ -251,7 +251,7 @@ module.exports = async function produceAccessesApiMethods (api) {
     }
     return next();
     async function ensureStream (permission) {
-      // We ensure stream Exists only if streamid is != '*' and if a defaultName is providedd
+      // We ensure stream Exists only if streamid is !== '*' and if a defaultName is providedd
       if (permission.streamId == null ||
                 permission.streamId === '*' ||
                 permission.defaultName == null) { return; }

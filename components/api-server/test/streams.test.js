@@ -730,12 +730,12 @@ describe('[STRE] streams', function () {
 
           // deleted stream
           const deletedStreams = await mall.streams.getDeletions(user.id, 0, ['local']);
-          const foundDeletedStream = deletedStreams.filter(s => s.id == id)[0];
+          const foundDeletedStream = deletedStreams.filter(s => s.id === id)[0];
           should.exists(foundDeletedStream, 'cannot find deleted stream');
           validation.checkObjectEquality(foundDeletedStream, expectedDeletion);
 
           // child stream
-          const foundDeletedChild = deletedStreams.filter(s => s.id == childId)[0];
+          const foundDeletedChild = deletedStreams.filter(s => s.id === childId)[0];
           should.exists(foundDeletedChild, 'cannot find deleted child stream');
           validation.checkObjectEquality(foundDeletedChild, expectedChildDeletion);
         }

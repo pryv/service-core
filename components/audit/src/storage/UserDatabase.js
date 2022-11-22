@@ -255,7 +255,7 @@ const converters = {
     return `(${content.field} >= ${value} OR ${content.field} IS NULL)`;
   },
   typesList: (list) => {
-    if (list.length == 0) return null;
+    if (list.length === 0) return null;
     const lt = list.map((type) => {
       const typeCorced = events.coerceSelectValueForCollumn('type', type);
       // unsupported "*" query for types

@@ -79,8 +79,8 @@ function tryCoerceStringValues (object, settings) {
     if (typeof value !== 'string') { return value; }
     switch (type) {
       case 'boolean':
-        if (value.toLowerCase() == 'true') { return true; }
-        if (value.toLowerCase() == 'false') { return false; }
+        if (value.toLowerCase() === 'true') { return true; }
+        if (value.toLowerCase() === 'false') { return false; }
         return value;
       case 'number':
         newNumber = Number(value);

@@ -204,7 +204,7 @@ class Database {
    * @returns {void}
    */
   countAll (collectionInfo, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -249,7 +249,7 @@ class Database {
        * @returns {void}
        */
   count (collectionInfo, query, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -274,7 +274,7 @@ class Database {
        * @returns {void}
        */
   findCursor (collectionInfo, query, options, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -345,7 +345,7 @@ class Database {
        * @returns {void}
        */
   findOne (collectionInfo, query, options, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -366,7 +366,7 @@ class Database {
        * @returns {void}
        */
   insertOne (collectionInfo, item, callback, options = {}) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -391,7 +391,7 @@ class Database {
        * @returns {void}
        */
   insertMany (collectionInfo, items, callback, options = {}) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -419,7 +419,7 @@ class Database {
        * @returns {void}
        */
   updateOne (collectionInfo, query, update, callback, options = {}) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -446,7 +446,7 @@ class Database {
        * @returns {void}
        */
   updateMany (collectionInfo, query, update, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -479,7 +479,7 @@ class Database {
        * @returns {void}
        */
   findOneAndUpdate (collectionInfo, query, update, callback) {
-    if (collectionInfo.name == 'streams') { tellMeIfStackDoesNotContains(['localUserStreams.js', 'callbackIntegrity'], { for: collectionInfo.name }); }
+    if (collectionInfo.name === 'streams') { tellMeIfStackDoesNotContains(['localUserStreams.js', 'callbackIntegrity'], { for: collectionInfo.name }); }
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, (collection) => {
       collection.findOneAndUpdate(query, update, { returnDocument: 'after' }, function (err, r) {
@@ -502,7 +502,7 @@ class Database {
        * @returns {void}
        */
   upsertOne (collectionInfo, query, update, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreamss.js'], {
         for: collectionInfo.name
       });
@@ -522,7 +522,7 @@ class Database {
        * @returns {void}
        */
   deleteOne (collectionInfo, query, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -542,7 +542,7 @@ class Database {
        * @returns {void}
        */
   deleteMany (collectionInfo, query, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -562,7 +562,7 @@ class Database {
        * @returns {void}
        */
   totalSize (collectionInfo, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
@@ -587,7 +587,7 @@ class Database {
        * @returns {void}
        */
   dropCollection (collectionInfo, callback) {
-    if (collectionInfo.name == 'streams') {
+    if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
