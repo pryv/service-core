@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const cuid = require('cuid');
-const _ = require('lodash');
 const path = require('path');
 const bluebird = require('bluebird');
 const nock = require('nock');

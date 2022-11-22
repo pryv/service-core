@@ -20,7 +20,6 @@ const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/eventsMethods');
 const fs = require('fs');
 const should = require('should'); // explicit require to benefit from static function
-const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
@@ -1214,7 +1213,6 @@ describe('events', function () {
 
     it('[ZI01] must add the uploaded files to the event as attachments', function (done) {
       const event = testData.events[1];
-      let time;
 
       request.post(path(event.id))
         .attach('image', testData.attachments.image.path,
@@ -1739,7 +1737,6 @@ describe('events', function () {
 
     it('[73CD] must delete the event when already trashed including all its attachments', function (done) {
       const id = testData.events[0].id;
-      let deletionTime;
       let event;
 
       async.series([

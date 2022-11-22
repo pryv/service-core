@@ -5,8 +5,6 @@
  * Proprietary and confidential
  */
 
-const bluebird = require('bluebird');
-
 const helpers = require('api-server/src/schema/helpers');
 const validator = require('api-server/src/schema/validation');
 

@@ -9,20 +9,15 @@
 const chai = require('chai');
 const assert = chai.assert;
 const cuid = require('cuid');
-const bluebird = require('bluebird');
-const charlatan = require('charlatan');
 require('test-helpers/src/api-server-tests-config');
 const storage = require('storage');
 const { databaseFixture } = require('test-helpers');
 const { PendingUpdate } = require('../../../src/metadata_updater/pending_updates');
 const { Flush } = require('../../../src/metadata_updater/flush');
-const { getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 let mall;
 describe('Flush', () => {
   const connection = produceMongoConnection();
-  const db = produceStorageLayer(connection);
-  const logger = getLogger('flush');
   const now = Date.now() / 1000;
   const initialDuration = 100;
   const fromDeltaTime = initialDuration - 10;

@@ -19,7 +19,7 @@ const testData = helpers.data;
 
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 
-const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
+const { getVersions } = require('./util');
 
 describe('Migration - 1.7.5', function () {
   this.timeout(20000);
@@ -37,7 +37,6 @@ describe('Migration - 1.7.5', function () {
 
   it('[MA7J] must handle data migration from 1.7.1 to 1.7.5', async function () {
     const newVersion = getVersions('1.7.5');
-    const accessesStorage = storage.user.accesses;
 
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.7.1', mongoFolder, cb));
 

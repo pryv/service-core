@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global assert, cuid, audit, config, initTests */
+/* global assert, cuid, audit, initTests */
 
 describe('Audit Storage', () => {
   const userId = cuid();
@@ -46,9 +46,9 @@ describe('Audit Storage', () => {
     });
 
     it('[9VM3]  storage.getActions returns a list of available actions', async () => {
-      const event1 = await sendAndWait({ streamIds: ['access-toto', 'action-events.get'] });
-      const event2 = await sendAndWait({ streamIds: ['access-titi', 'action-events.create'] });
-      const event3 = await sendAndWait({ streamIds: ['access-titi', 'action-events.get'] });
+      await sendAndWait({ streamIds: ['access-toto', 'action-events.get'] });
+      await sendAndWait({ streamIds: ['access-titi', 'action-events.create'] });
+      await sendAndWait({ streamIds: ['access-titi', 'action-events.get'] });
       const actions = userStrorage.getAllActions();
       const accesses = userStrorage.getAllAccesses();
       assert.equal(actions.length, 2);

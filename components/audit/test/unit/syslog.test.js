@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global assert, cuid, app, auditProducer, config, initTests */
+/* global assert, cuid, config, initTests */
 
 const SyslogWatch = require('../support/SyslogWatch');
 

@@ -6,7 +6,6 @@
  */
 // Tests pertaining to storing data in a hf series.
 /* global describe, it, before, after */
-const timestamp = require('unix-timestamp');
 const { ErrorIds } = require('errors');
 const cuid = require('cuid');
 const chai = require('chai');

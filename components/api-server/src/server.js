@@ -8,15 +8,12 @@
 const { getApplication } = require('api-server/src/application');
 const http = require('http');
 const bluebird = require('bluebird');
-const EventEmitter = require('events');
-const utils = require('utils');
 const { axonMessaging } = require('messages');
 const { pubsub } = require('messages');
 const { getUsersRepository } = require('business/src/users');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getAPIVersion } = require('middleware/src/project_version');
 let app;
-let apiVersion;
 // Server class for api-server process. To use this, you
 // would
 //

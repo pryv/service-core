@@ -5,12 +5,12 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
 describe('Audit Streams and Events', function () {
   let user, username, password, access, appAccess, anotherAppAccess;
   let personalToken;
-  let auditPath;
+
   let mongoFixtures;
 
   const streamId = 'yo';
@@ -58,7 +58,6 @@ describe('Audit Streams and Events', function () {
   }
   function validGet (path, access) { return coreRequest.get(path).set('Authorization', access.token); }
   function validPost (path, access) { return coreRequest.post(path).set('Authorization', access.token); }
-  function forbiddenGet (path) { return coreRequest.get(path).set('Authorization', 'whatever'); }
 
   let start, stop;
   before(async () => {

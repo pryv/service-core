@@ -12,7 +12,6 @@ const { treeUtils } = require('utils');
 const { StreamProperties } = require('business/src/streams');
 const StreamPropsWithoutChildren = StreamProperties.filter((p) => p !== 'children');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
-const handleDuplicateError = require('../Database').handleDuplicateError;
 let visibleStreamsTree = [];
 /**
  * Local data store: streams implementation.

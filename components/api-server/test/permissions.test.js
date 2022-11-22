@@ -47,10 +47,6 @@ describe('[ACCP] Access permissions', function () {
     return treeUtils.expandIds(testData.streams, tokenStreamIds);
   }
 
-  function getAllTagsByToken (testAccessIndex) {
-    return _.map(testData.accesses[testAccessIndex].permissions, 'tag');
-  }
-
   before(function (done) {
     async.series([
       testData.resetUsers,

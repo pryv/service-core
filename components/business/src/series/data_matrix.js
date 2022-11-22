@@ -7,7 +7,6 @@
 const assert = require('assert');
 const { error } = require('./errors');
 // 'series' layer depends on the 'types' layer.
-const InfluxRowType = require('../types/influx_row_type');
 const Row = require('./row');
 /** Data in matrix form. Columns have names, rows have numbers, starting at 0.
  */

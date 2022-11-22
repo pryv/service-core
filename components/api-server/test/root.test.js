@@ -51,7 +51,7 @@ describe('[ROOT] root', function () {
     sharedAccessToken, sharedAccess,
     stream, streamId,
     stream2, streamId2,
-    stream3, streamId3,
+    streamId3,
     username2, appAccess2Token;
   before(() => {
     username = cuid();
@@ -85,7 +85,7 @@ describe('[ROOT] root', function () {
     await stream.event();
     stream = stream.attrs;
     stream2 = await user.stream({ id: streamId2 });
-    stream3 = await user.stream({ id: streamId3 });
+    await user.stream({ id: streamId3 });
     await stream2.event();
     stream2 = stream.attrs;
     await user.access({

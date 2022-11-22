@@ -14,8 +14,6 @@ const eventsMethodsSchema = require('../src/schema/eventsMethods');
 const streamsMethodsSchema = require('../src/schema/streamsMethods');
 const should = require('should'); // explicit require to benefit from static functions
 const _ = require('lodash');
-const storage = helpers.dependencies.storage.user.events;
-const timestamp = require('unix-timestamp');
 const testData = helpers.data;
 const bluebird = require('bluebird');
 const url = require('url');
@@ -81,12 +79,9 @@ describe('Versioning', function () {
   const eventWithHistory = testData.events[16];
   const trashedEventWithHistory = testData.events[19];
   const eventWithNoHistory = testData.events[22];
-  const runningEventOnNormalStream = testData.events[23];
-  const runningEventOnSingleActivityStream = testData.events[24];
   const eventOnChildStream = testData.events[25];
 
   const normalStream = testData.streams[7];
-  const singleActivityStream = testData.streams[8];
   const childStream = normalStream.children[0];
 
   describe('Events', function () {
@@ -577,7 +572,6 @@ describe('Versioning', function () {
         async function checkThatHistoryIsUnchanged () {
           const events = await mall.events.get(user.id, { headId: eventOnChildStream.id, state: 'all', withDeletions: true });
 
-          let checked = false;
           (events.length).should.eql(1);
           events.forEach(function (event) {
             event.headId.should.eql(eventOnChildStream.id);
@@ -644,7 +638,7 @@ describe('Versioning', function () {
       const oldEmailEvent = resEvents.body.events[0];
 
       // 2.
-      const resUpdate = await req
+      await req
         .put(buildPath(`/${user1.username}/events/${oldEmailEvent.id}`))
         .set('Authorization', token)
         .send({

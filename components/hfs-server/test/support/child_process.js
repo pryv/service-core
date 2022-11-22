@@ -9,7 +9,6 @@ const Application = require('../../src/application');
 const { InfluxRowType, TypeRepository } = require('business').types;
 const ChildProcess = require('test-helpers').child_process;
 const { getConfig, getLogger } = require('@pryv/boiler');
-const logger = getLogger('child_process');
 const typeRepo = new TypeRepository();
 
 class ApplicationLauncher {

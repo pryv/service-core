@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const _ = require('lodash');
-const Result = require('api-server/src/Result');
 const methodCallback = require('api-server/src/routes/methodCallback');
 const Paths = require('api-server/src/routes/Paths');
 const middleware = require('middleware');

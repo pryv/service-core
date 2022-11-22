@@ -22,7 +22,6 @@ const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const treeUtils = require('utils').treeUtils;
 const _ = require('lodash');
-const charlatan = require('charlatan');
 const bluebird = require('bluebird');
 
 const { getMall } = require('mall');

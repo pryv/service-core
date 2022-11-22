@@ -23,5 +23,5 @@ function lookFor (str) {
   await getConfig();
   const syslog = await getSyslog();
   lookFor('toto');
-  const res = syslog.syslogger.log('info', 'toto');
+  syslog.syslogger.log('info', 'toto');
 })();

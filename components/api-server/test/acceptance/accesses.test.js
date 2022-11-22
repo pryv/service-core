@@ -325,7 +325,6 @@ describe('accesses', () => {
   });
   describe('access expiry', () => {
     // Uses dynamic fixtures:
-    let mongoFixtures;
     // Set up a few ids that we'll use for testing. NOTE that these ids will
     // change on every test run.
     let userId, streamId, accessToken, expiredToken, validId;
@@ -593,7 +592,6 @@ describe('accesses', () => {
     });
   });
   describe('access client data', () => {
-    let mongoFixtures;
     function sampleAccess (name, clientData) {
       return {
         id: cuid(),

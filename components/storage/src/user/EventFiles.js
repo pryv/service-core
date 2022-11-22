@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const async = require('async');
 const cuid = require('cuid');
 const fs = require('fs');
 const mkdirp = require('mkdirp');

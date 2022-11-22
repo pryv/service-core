@@ -9,7 +9,6 @@ const nconf = require('nconf');
 const assert = chai.assert;
 const systemStreamsConfig = require('api-server/config/components/systemStreams');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { getConfig } = require('@pryv/boiler');
 const treeUtils = require('utils/src/treeUtils');
 const { defaults: dataStoreDefaults } = require('pryv-datastore');
 const PRIVATE_PREFIX = ':_system:';
@@ -109,7 +108,6 @@ describe('XXXSystemStreams config', () => {
       }
     });
     it('[KMT3] must prefix default streams with the Pryv prefix', () => {
-      const systemStreams = store.get('systemStreams');
       [
         'account',
         'username',
@@ -128,7 +126,6 @@ describe('XXXSystemStreams config', () => {
       });
     });
     it('[PVDC] must prefix custom streams with the customer prefix', () => {
-      const systemStreams = store.get('systemStreams');
       [
         'field1',
         'username',

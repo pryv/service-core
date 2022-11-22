@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 
-const { DataStore } = require('pryv-datastore');
 const _ = require('lodash');
 const storeDataUtils = require('./helpers/storeDataUtils');
 const eventsUtils = require('./helpers/eventsUtils');

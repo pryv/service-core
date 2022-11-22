@@ -27,8 +27,6 @@ const streamsMethodsSchema = require('../src/schema/streamsMethods');
 const eventsMethodsSchema = require('../src/schema/eventsMethods');
 const validation = helpers.validation;
 const testData = helpers.data;
-const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection } = require('./test-helpers');
 const { integrity } = require('business');
 const { ConditionVariable } = require('test-helpers').syncPrimitives;
 describe('Socket.IO', function () {

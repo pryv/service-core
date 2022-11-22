@@ -15,7 +15,6 @@ const IS_SHOWN = features.IS_SHOWN;
 const IS_INDEXED = features.IS_INDEXED;
 const IS_EDITABLE = features.IS_EDITABLE;
 const IS_UNIQUE = features.IS_UNIQUE;
-const IS_REQUIRED_IN_VALIDATION = features.IS_REQUIRED_IN_VALIDATION;
 const ALL = 'all';
 let singleton = null;
 /**

@@ -9,7 +9,6 @@
 const chai = require('chai');
 const assert = chai.assert;
 const sinon = require('sinon');
-const awaiting = require('awaiting');
 const { PendingUpdate, PendingUpdatesMap } = require('../../../src/metadata_updater/pending_updates');
 const { Controller } = require('../../../src/metadata_updater/controller');
 const { Flush } = require('../../../src/metadata_updater/flush');

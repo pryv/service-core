@@ -6,8 +6,6 @@
  */
 const path = require('path');
 const methodCallback = require('../methodCallback');
-const API = require('../../API');
-const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const regPath = require('../Paths').Register;
 const errors = require('errors').factory;

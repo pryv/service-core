@@ -94,7 +94,7 @@ describe('system route', function () {
         token
       });
       await user.session(token);
-      const res = await server.request()
+      await server.request()
         .put(profilePath)
         .set('authorization', token)
         .send({

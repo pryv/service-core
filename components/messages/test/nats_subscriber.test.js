@@ -9,10 +9,9 @@ require('api-server/test/unit/test-helper');
 const chai = require('chai');
 const assert = chai.assert;
 const { connect, JSONCodec } = require('nats');
-const { encode, decode } = JSONCodec();
+const { encode } = JSONCodec();
 const { getConfig } = require('@pryv/boiler');
 /* global describe, it, beforeEach, afterEach */
-const { ConditionVariable } = require('test-helpers').syncPrimitives;
 const natsPubsub = require('../src/nats_pubsub');
 describe('NatsSubscriber', () => {
   it('[DMMP] should construct', async () => {

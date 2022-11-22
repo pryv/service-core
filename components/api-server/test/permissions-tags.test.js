@@ -32,7 +32,6 @@ describe('Access permissions - Tags', function () {
   });
 
   let username,
-    streamId,
     basePath,
     token;
 

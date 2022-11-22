@@ -183,20 +183,7 @@ class Deletion {
     next();
   }
 }
-/**
- * @param {Array<string>} paths
- * @returns {string}
- */
-function findNotExistingDir (paths) {
-  let notExistingDir = '';
-  for (const path of paths) {
-    if (!fs.existsSync(path)) {
-      notExistingDir = path;
-      break;
-    }
-  }
-  return notExistingDir;
-}
+
 /**
  * @param {Array<string>} paths
  * @returns {string}

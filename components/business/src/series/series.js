@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const _ = require('lodash');
 const { isoOrTimeToDate, formatDate } = require('influx/lib/src/grammar/times');
 const DataMatrix = require('./data_matrix');
 /** Represents a single data series in influxDB.

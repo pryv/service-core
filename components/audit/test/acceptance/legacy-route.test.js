@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
 describe('Audit legacy route', function () {
   let user, username, password, access, appAccess;
@@ -49,7 +49,6 @@ describe('Audit legacy route', function () {
 
   function validGet (path) { return coreRequest.get(path).set('Authorization', appAccess.token); }
   function validPost (path) { return coreRequest.post(path).set('Authorization', appAccess.token); }
-  function forbiddenGet (path) { return coreRequest.get(path).set('Authorization', 'whatever'); }
 
   let start, stop;
   before(async () => {

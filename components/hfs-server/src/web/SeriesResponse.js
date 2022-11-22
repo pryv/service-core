@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const business = require('business');
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
 /** Represents a response in series format.
  *

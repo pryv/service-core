@@ -18,15 +18,6 @@ const forbiddenCharsMap = {
   "'": true,
   '\\': true
 };
-/**
- * List of store prefixes
- */
-const existingStoresMap = {
-  ':system:': true,
-  ':_system:': true,
-  ':_audit:': true
-};
-const COLUMN = ':';
 const STREAMID_AT_CREATION_REGEXP_STR = '^[a-z0-9-]{1,100}';
 /**
  * Find forbidden character for 'streams' or 'permission.streamId'

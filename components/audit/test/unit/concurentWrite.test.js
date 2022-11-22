@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 
-/* global assert, cuid, audit, config, initTests, sinon */
 
 describe('Audit Storage concurent Writes', () => {
   const userId = cuid();
@@ -16,20 +15,6 @@ describe('Audit Storage concurent Writes', () => {
     await initTests();
   });
 
-  async function sendAndWait (event) {
-    const e = Object.assign(
-      {
-        type: 'log/test',
-        createdBy,
-        streamIds: [':_audit:test'],
-        content: {
-          action: 'events.get',
-          message: 'hello'
-        }
-      }, event);
-    await audit.eventForUser(userId, e);
-    return e;
-  }
 
   before(async () => {
     userStorage = await audit.storage.forUser(userId);

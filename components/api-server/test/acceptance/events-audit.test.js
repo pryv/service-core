@@ -35,7 +35,7 @@ describe('Audit logs events', () => {
     streamId = cuid();
     const user = await mongoFixtures.user(username);
     const stream = await user.stream({ id: streamId, name: charlatan.Lorem.word() });
-    const event = await stream.event({
+    await stream.event({
       type: 'language/iso-639-1',
       content: charlatan.Lorem.characters(2)
     });
@@ -118,23 +118,7 @@ describe('Audit logs events', () => {
         .query(query);
     }
   }
-  async function put (path, payload, query) {
-    return await server.request()
-      .put(path)
-      .set('Authorization', token)
-      .query(query)
-      .send(payload);
-  }
-  async function del (path, query) {
-    return await server.request()
-      .del(path)
-      .set('Authorization', token)
-      .query(query);
-  }
 
-  function toSystem (streamId) {
-    return SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
-  }
 
   describe('GET /events', () => {
     it('[0BK7] must not return null values or trashed=false', async () => {

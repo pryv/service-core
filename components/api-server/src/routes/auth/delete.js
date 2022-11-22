@@ -5,8 +5,6 @@
  * Proprietary and confidential
  */
 const methodCallback = require('../methodCallback');
-const API = require('../../API');
-const { getConfigUnsafe } = require('@pryv/boiler');
 const middleware = require('middleware');
 const { setMethodId } = require('middleware');
 /**

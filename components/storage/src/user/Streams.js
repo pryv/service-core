@@ -4,11 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const async = require('async');
 const BaseStorage = require('./BaseStorage');
 const converters = require('./../converters');
 const util = require('util');
-const toString = require('utils').toString;
 const treeUtils = require('utils').treeUtils;
 const _ = require('lodash');
 

@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const express = require('express');
 const Paths = require('./Paths');
 const methodCallback = require('./methodCallback');
 const { setMethodId } = require('middleware');

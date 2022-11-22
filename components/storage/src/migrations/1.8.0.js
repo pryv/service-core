@@ -4,11 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository } = require('business/src/users/repository');
 const { getLogger } = require('@pryv/boiler');
-const DOT = '.';
 const PlatformWideDB = require('platform/src/DB');
 /**
  * v1.7.5:
@@ -29,7 +27,7 @@ module.exports = async function (context, callback) {
   }
   logger.info('V1.7.5 => v1.8.0 Migration finished');
   callback();
-  async function setAllTrashed () {
+  async function setAllTrashed () { // Check this!
     await eventsCollection.updateMany({ trashed: null, deleted: null }, { $set: { trashed: false } });
   }
   async function migrateUserids () {

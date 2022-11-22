@@ -41,7 +41,6 @@ function MulterIntegrityDiskStorage (opts) {
   }
 }
 
-const count = 0;
 
 MulterIntegrityDiskStorage.prototype._handleFile = function _handleFile (req, file, cb) {
   const that = this;

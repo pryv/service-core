@@ -7,7 +7,6 @@
 'use strict';
 // Tests pertaining to storing data in a hf series.
 /* global describe, it */
-const influx = require('influx');
 const series = require('business').series;
 const userStorage = require('test-helpers').dependencies.storage.user.events;
 const Repository = series.Repository;

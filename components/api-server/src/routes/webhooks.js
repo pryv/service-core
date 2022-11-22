@@ -9,7 +9,6 @@ const Paths = require('./Paths');
 const _ = require('lodash');
 const middleware = require('middleware');
 const { setMethodId } = require('middleware');
-const API = require('../API');
 /**
  * Webhooks route handling.
  *

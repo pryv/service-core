@@ -13,7 +13,6 @@ const path = require('path');
 const rimraf = require('rimraf');
 const bluebird = require('bluebird');
 const mkdirp = require('mkdirp');
-const fs = require('fs');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('user-local-directory');

@@ -6,7 +6,6 @@
  */
 const _ = require('lodash');
 const converters = require('./../converters');
-const timestamp = require('unix-timestamp');
 const logger = require('@pryv/boiler').getLogger('storage:base-storage');
 
 const BULKWRITE_BATCH_SIZE = 1000;

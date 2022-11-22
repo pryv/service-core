@@ -4,10 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const nock = require('nock');
 const chai = require('chai');
 const assert = chai.assert;
-const charlatan = require('charlatan');
 const { getConfig } = require('@pryv/boiler');
 const testServiceInfo = require('../../../../test/service-info.json');
 

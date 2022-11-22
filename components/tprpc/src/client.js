@@ -6,7 +6,6 @@
  */
 const TChannel = require('tchannel');
 
-const Definition = require('./definition');
 const { RemoteError } = require('./errors');
 
 // An rpc client connection; use this as a factory for 'proxy' objects that

@@ -11,7 +11,7 @@ const { pubsub } = require('messages');
 const { getConfig } = require('@pryv/boiler');
 
 const { connect, JSONCodec } = require('nats');
-const { encode, decode } = JSONCodec();
+const { encode } = JSONCodec();
 
 describe('Synchro', function () {
   let natsClient;

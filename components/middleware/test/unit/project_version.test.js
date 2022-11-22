@@ -8,8 +8,6 @@
 const path = require('path');
 const chai = require('chai');
 const assert = chai.assert;
-const sinon = require('sinon');
-const bluebird = require('bluebird');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const { getAPIVersion } = require('../../src/project_version');
@@ -19,13 +17,13 @@ const versionFilePath = path.join(__dirname, '../../../../', '.api-version');
 describe('APIVersion#version', () => {
   describe('when a ".api-version" file exists in the project and is != that 1.2.3', () => {
     before(() => {
-      const versionRead = fs.writeFileSync(versionFilePath, '1.2.4', {
+      fs.writeFileSync(versionFilePath, '1.2.4', {
         encoding: 'utf-8'
       });
     });
     after(() => {
       // put test version back in place
-      const versionRead = fs.writeFileSync(versionFilePath, '1.2.3', {
+      fs.writeFileSync(versionFilePath, '1.2.3', {
         encoding: 'utf-8'
       });
     });

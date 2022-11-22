@@ -9,7 +9,7 @@ require('api-server/test/unit/test-helper');
 const chai = require('chai');
 const assert = chai.assert;
 const { connect, JSONCodec } = require('nats');
-const { encode, decode } = JSONCodec();
+const { decode } = JSONCodec();
 /* global describe, it */
 const natsPubsub = require('../src/nats_pubsub');
 const { getConfig } = require('@pryv/boiler');

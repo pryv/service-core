@@ -632,10 +632,6 @@ describe('permissions create-only level', () => {
       basePath = `/${username}/webhooks`;
     });
 
-    function reqPath (id) {
-      return `${basePath}/${id}`;
-    }
-
     describe('CREATE /', function () {
       it('[3AE9] should allow creating webhooks', async function () {
         const res = await server

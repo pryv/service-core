@@ -7,7 +7,6 @@
 /**
  * Regroups shared test data and related  helper functions.
  */
-const bluebird = require('bluebird');
 const async = require('async');
 const childProcess = require('child_process');
 const dependencies = require('./dependencies');

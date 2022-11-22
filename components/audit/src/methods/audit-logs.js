@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const errors = require('errors').factory;
-const async = require('async');
 const commonFns = require('api-server/src/methods/helpers/commonFunctions');
 const methodsSchema = require('../schema/auditMethods');
 const eventsGetUtils = require('api-server/src/methods/helpers/eventsGetUtils');

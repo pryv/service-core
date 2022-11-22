@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const cuid = require('cuid');
-const _ = require('lodash');
 const path = require('path');
 const assert = require('chai').assert;
 const { describe, before, it } = require('mocha');
@@ -137,7 +136,6 @@ describe('System streams', function () {
           }
         ];
 
-        const { DataStore } = require('pryv-datastore');
 
         readableStreams = treeUtils.cloneAndApply(readableStreams, (s) => {
           s.createdBy = dataStoreDefaults.SystemAccessId;

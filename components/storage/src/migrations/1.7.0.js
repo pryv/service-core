@@ -4,9 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { UsersRepository, getUsersRepository, User } = require('business/src/users');
 const { getMall } = require('mall');
 const { getLogger } = require('@pryv/boiler');
 const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');

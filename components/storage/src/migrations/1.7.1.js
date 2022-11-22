@@ -4,8 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const bluebird = require('bluebird');
-const { UsersRepository, getUsersRepository, User } = require('business/src/users');
 
 const { getLogger } = require('@pryv/boiler');
 /**

@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const APIError = require('errors/src/APIError');
 const errors = require('errors').factory;
 const validation = require('../../schema/validation');
 const { findForbiddenChar, isStreamIdValidForCreation } = require('../../schema/streamId');

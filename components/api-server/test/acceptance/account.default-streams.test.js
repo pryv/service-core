@@ -9,7 +9,6 @@
 const assert = require('chai').assert;
 const _ = require('lodash');
 const cuid = require('cuid');
-const bluebird = require('bluebird');
 const charlatan = require('charlatan');
 const nock = require('nock');
 const supertest = require('supertest');
@@ -25,7 +24,6 @@ const { getConfig } = require('@pryv/boiler');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const helpers = require('api-server/test/helpers');
-const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
 
 const { getMall } = require('mall');
 

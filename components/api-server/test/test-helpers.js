@@ -26,7 +26,6 @@ after(async () => {
   await context.shutdown();
 });
 const storage = require('storage');
-const { getConfig } = require('@pryv/boiler');
 const InfluxConnection = require('business/src/series/influx_connection');
 // Produces and returns a connection to MongoDB.
 /**

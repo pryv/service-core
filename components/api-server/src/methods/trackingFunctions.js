@@ -6,7 +6,7 @@
  */
 
 const updateAccessUsageStats = require('./helpers/updateAccessUsageStats');
-const { getLogger, getConfig } = require('@pryv/boiler');
+const { getConfig } = require('@pryv/boiler');
 
 /**
  * Call tracking functions, to be registered after all methods have been registered.

@@ -20,7 +20,7 @@ describe('Manage InfluxDB data (business.series.*)', function () {
     host: 'localhost'
   });
   before(async () => {
-    const config = await getConfig();
+    await getConfig();
     SystemStreamsSerializer.init();
   });
   // TODO beforeEach delete the measurement

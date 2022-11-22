@@ -16,9 +16,8 @@ const { getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 
 describe('Metadata Loader', function () {
-  let database, config, pryv, mall;
+  let database, pryv, mall;
   before(async function () {
-    config = await getConfig();
     await require('business/src/system-streams/serializer').init();
     database = await storage.getDatabase();
     pryv = databaseFixture(database);

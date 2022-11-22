@@ -12,7 +12,6 @@ const DataMatrix = require('../../../src/series/data_matrix');
 const { ParseFailure } = require('../../../src/series/errors');
 const Row = require('../../../src/series/row');
 const { TypeRepository } = require('../../../src/types');
-const InfluxRowType = require('../../../src/types/influx_row_type');
 describe('DataMatrix', function () {
   describe('.parse(obj)', () => {
     const typeRepo = new TypeRepository();

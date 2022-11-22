@@ -4,9 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const bluebird = require('bluebird');
 const { getUsersRepository } = require('business/src/users');
-const { PendingUpdate } = require('./pending_updates');
 const { getMall } = require('mall');
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('hfs:flush');
@@ -42,7 +40,7 @@ class Flush {
     // possibly destroying duration in the process.
     //
     // The chosen option at least leaves duration correct.
-    const { from, to } = request.dataExtent;
+    const { to } = request.dataExtent;
     // first get event... because we need it's current time
     // we could optimze here if the call sent the time of the event.. or use agregate call of mongo
     const mall = await getMall(); // too bad we cannot easily pass mall here

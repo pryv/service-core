@@ -6,11 +6,9 @@
  */
 // Tests pertaining to storing data in a hf series.
 /* global describe, it, beforeEach, after, before, afterEach */
-const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const cuid = require('cuid');
-const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
 const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
@@ -21,7 +19,7 @@ const metadata = require('metadata');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('store_data.test');
 const { getMall } = require('mall');
-const { getUsersRepository, User } = require('business/src/users');
+const { getUsersRepository } = require('business/src/users');
 describe('Storing data in a HF series', function () {
   let database, pryv, config;
   let mall;
@@ -255,7 +253,7 @@ describe('Storing data in a HF series', function () {
       ]);
       // move event to tomorrow
       const newEventTime = Date.now() / 1000 + 60 * 60 * 24;
-      const response = await apiServer
+      await apiServer
         .request()
         .put('/' + result.user.username + '/events/' + result.event.id)
         .set('authorization', accessToken)

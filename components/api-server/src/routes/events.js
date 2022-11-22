@@ -7,7 +7,6 @@
 const methodCallback = require('./methodCallback');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
-const express = require('express');
 const Paths = require('./Paths');
 const tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues;
 const _ = require('lodash');

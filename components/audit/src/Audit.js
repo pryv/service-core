@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const _ = require('lodash');
 const { getStorage, closeStorage } = require('./storage');
 const { getSyslog } = require('./syslog');
 const { getConfig, getLogger } = require('@pryv/boiler');

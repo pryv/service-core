@@ -11,7 +11,6 @@ const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getPasswordRules } = require('business/src/users');
-const { Permission } = require('business/src/accesses');
 const updateAccessUsageStats = require('./helpers/updateAccessUsageStats');
 /**
  * Utility API methods implementations.

@@ -16,14 +16,12 @@ const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
-const migrations = require('../../src/migrations');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { getLogger } = require('@pryv/boiler');
 const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 
-const { getVersions, compareIndexes, applyPreviousIndexes } = require('./util');
+const { getVersions, compareIndexes } = require('./util');
 
 describe('Migration - 1.7.x', function () {
   this.timeout(20000);
@@ -52,9 +50,7 @@ describe('Migration - 1.7.x', function () {
     const versions0 = getVersions('1.7.0');
     const versions1 = getVersions('1.7.1');
     const newIndexes = testData.getStructure('1.7.0').indexes;
-    const defaultUser = { id: 'u_0' };
 
-    const systemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds();
 
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
 

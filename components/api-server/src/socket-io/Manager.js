@@ -14,7 +14,6 @@ const { pubsub } = require('messages');
 })();
 const { getAPIVersion } = require('middleware/src/project_version');
 const { initRootSpan } = require('tracing');
-const MethodContext = require('business').MethodContext;
 // Manages contexts for socket-io. NamespaceContext's are created when the first
 // client connects to a namespace and are then kept forever.
 //
@@ -223,7 +222,6 @@ class NamespaceContext {
        */
   onConnect (socket) {
     const logger = this.logger;
-    const io = this.socketServer;
     const namespaceName = socket.nsp.name;
     logger.info(`New client connected on namespace '${namespaceName}' (context ${this.socketNs.name})`);
 

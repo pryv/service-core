@@ -25,7 +25,6 @@ describe('AuditFilter', () => {
     it('[YIDZ] must accept a valid method aggregator', () => {
       const method = 'events.all';
       const parts = method.split('.');
-      const found = false;
       assert.isAbove(apiMethods.AUDITED_METHODS.filter(m => m.startsWith(parts[0])).length, 0);
       try {
         validation.filter(buildFilter([method]));

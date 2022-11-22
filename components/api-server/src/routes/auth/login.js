@@ -6,7 +6,6 @@
  */
 const cookieParser = require('cookie-parser');
 const lodash = require('lodash');
-const express = require('express');
 const errors = require('errors').factory;
 const middleware = require('middleware');
 const { setMethodId } = require('middleware');

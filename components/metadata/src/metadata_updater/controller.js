@@ -4,8 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const storage = require('storage');
-const { PendingUpdate, PendingUpdatesMap } = require('./pending_updates');
 const { Flush } = require('./flush');
 // Controller for the metadata updates. Manages operation timing and starts
 // actual update flush operation.

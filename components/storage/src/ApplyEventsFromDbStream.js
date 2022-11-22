@@ -7,7 +7,6 @@
 const Transform = require('stream').Transform;
 const inherits = require('util').inherits;
 const converters = require('./converters');
-const timestamp = require('unix-timestamp');
 
 module.exports = ApplyEventsFromDbStream;
 

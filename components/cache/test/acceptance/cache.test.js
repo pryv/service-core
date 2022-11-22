@@ -67,15 +67,11 @@ describe('Cache', function () {
 
   function validGet (path) { return coreRequest.get(path).set('Authorization', appAccess.token); }
   function validPost (path) { return coreRequest.post(path).set('Authorization', appAccess.token); }
-  function forbiddenGet (path) { return coreRequest.get(path).set('Authorization', 'whatever'); }
-
-  let start, stop;
+  
   before(async () => {
-    start = Date.now() / 1000;
     await validGet(eventsPath);
     await validPost(eventsPath)
       .send({ streamIds: [streamId], type: 'count/generic', content: 2 });
-    stop = Date.now() / 1000;
     await validGet(eventsPath);
     await validGet(eventsPath)
       .query({ streams: ['other'] });

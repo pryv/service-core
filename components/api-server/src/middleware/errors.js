@@ -9,7 +9,7 @@ const errorsFactory = errors.factory;
 const APIError = errors.APIError;
 const errorHandling = errors.errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
-const { getLogger, notifyAirbrake } = require('@pryv/boiler');
+const { notifyAirbrake } = require('@pryv/boiler');
 const { getConfigUnsafe } = require('@pryv/boiler');
 (async () => {
   await commonMeta.loadSettings();

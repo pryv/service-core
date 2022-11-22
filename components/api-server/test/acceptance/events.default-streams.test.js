@@ -509,7 +509,6 @@ describe('[FG5R] Events of system streams', () => {
           });
           describe('[6B8D] When creating an event that is already taken only on core', () => {
             // simulating dnsLess behaviour for non-unique event error
-            let serviceRegisterRequest;
             let streamId;
             const email = charlatan.Internet.email();
             before(async function () {
@@ -573,8 +572,6 @@ describe('[FG5R] Events of system streams', () => {
 
     describe('when using a shared access with a contribute-level permission on a system stream', () => {
       let sharedAccess;
-      let initialEvent;
-      let user2;
       const streamId = 'email';
       let systemStreamId;
       before(async function () {

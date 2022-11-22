@@ -5,14 +5,13 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
 
 const { integrity } = require('business');
 
 describe('Audit events integrity', function () {
   let user, username, password, access, appAccess;
   let personalToken;
-  let auditPath;
   let mongoFixtures;
 
   let auditedEvent;

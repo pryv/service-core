@@ -7,9 +7,8 @@
 /* global describe, it */
 const chai = require('chai');
 const assert = chai.assert;
-const { BatchRequest, BatchRequestElement, ParseFailure } = require('../../../src/series/batch_request');
+const { BatchRequest, BatchRequestElement } = require('../../../src/series/batch_request');
 const { TypeRepository } = require('../../../src/types');
-const InfluxRowType = require('../../../src/types/influx_row_type');
 describe('BatchRequest', () => {
   describe('.parse', () => {
     const typeRepo = new TypeRepository();
