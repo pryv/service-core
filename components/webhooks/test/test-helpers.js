@@ -6,7 +6,7 @@
  */
 process.env.NODE_ENV = 'test';
 const path = require('path');
-const { getConfigUnsafe } = require('@pryv/boiler').init({
+require('@pryv/boiler').init({
   appName: 'webhooks-test',
   baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [

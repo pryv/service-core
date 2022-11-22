@@ -22,7 +22,6 @@ function initTracer (serviceName) {
       param: 1
     }
   };
-  const options = {};
   return initJaegerTracer(config, {});
 }
 /**
@@ -80,7 +79,7 @@ class Tracing {
     // check if name already exists .. if yes add a trailer
     let trailer = '';
     while (this.spansStack.findIndex((span) => span._operationName === name + trailer) >= 0) {
-      trailer = trailer == '' ? 1 : trailer + 1;
+      trailer = trailer === '' ? 1 : trailer + 1;
     }
     name = name + trailer;
     if (childOf != null) {
@@ -113,7 +112,7 @@ class Tracing {
     this.history.push('tag ' + name + ':  ' + key + ' > ' + value);
     let span;
     if (name == null) {
-      span = this.spansStack[lastIndex];
+      span = this.spansStack[this.lastIndex];
     } else {
       span = this.spansStack.find((span) => span._operationName === name);
     }
@@ -134,7 +133,7 @@ class Tracing {
     this.history.push('log ' + name + ': ' + JSON.stringify(data));
     let span;
     if (name == null) {
-      span = this.spansStack[lastIndex];
+      span = this.spansStack[this.lastIndex];
     } else {
       span = this.spansStack.find((span) => span._operationName === name);
     }
@@ -182,7 +181,7 @@ class Tracing {
  * @returns {void}
  */
   checkIfFinished () {
-    if (this.spansStack != 0) {
+    if (this.spansStack.length !== 0) {
       const remaining = this.spansStack.map((x) => x._operationName);
       console.log(' Not done ', this.history, remaining);
     }

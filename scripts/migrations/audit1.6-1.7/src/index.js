@@ -291,10 +291,6 @@ function getLastSynchedItem (username) {
   }
 }
 
-function flagUserFullySynched (username) {
-
-}
-
 // --------- Arguments ------ //
 
 async function getAuditLogDir () {
@@ -318,7 +314,7 @@ async function start () {
   audiLogsDirs = await getAuditLogDir();
 
   db = await connectToMongo();
-  usernames = await listDirectory(audiLogsDirs);
+  const usernames = await listDirectory(audiLogsDirs);
   for (const username of usernames) {
     const uid = await userIdForusername(username);
     if (!uid) {

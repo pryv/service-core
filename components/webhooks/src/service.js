@@ -44,7 +44,7 @@ class WebhooksService {
     this.logger.info('Listeners for webhooks creation/deletion up.');
     await this.loadWebhooks();
     this.logger.info('Loaded webhooks for ' + this.webhooks.size + ' user(s).');
-    const numWebhooks = await this.setMeta.call(this);
+    const numWebhooks = await this.setMeta(this);
     await this.sendBootMessage();
     this.logger.info(BOOT_MESSAGE + ' sent.');
     await this.initSubscribers();

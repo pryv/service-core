@@ -20,7 +20,7 @@ module.exports = function patch (db) {
     if (fInfo.id === 'getCollection' || fInfo.id === 'getCollectionSafe') continue; // ignores
 
     if (fInfo.params[0] === 'collectionInfo' && fInfo.params.includes('callback')) {
-      const callbackIndex = fInfo.params.findIndex(e => e == 'callback');
+      const callbackIndex = fInfo.params.findIndex(e => e === 'callback');
       db[fInfo.id + '_'] = db[fInfo.id];
 
       // replace original function
@@ -38,9 +38,9 @@ function getAllFuncs (toCheck) {
   let obj = toCheck;
   do {
     props.push(...Object.getOwnPropertyNames(obj));
-  } while (obj = Object.getPrototypeOf(obj));
+  } while ((obj = Object.getPrototypeOf(obj)) != null);
   return props.sort().map((e, i, arr) => {
-    if (e != arr[i + 1] && typeof toCheck[e] === 'function') {
+    if (e !== arr[i + 1] && typeof toCheck[e] === 'function') {
       const params = getParamNames(toCheck[e]);
       return { id: e, params };
     }

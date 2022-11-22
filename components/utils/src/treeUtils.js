@@ -1,3 +1,4 @@
+/* eslint-disable no-prototype-builtins */
 /**
  * @license
  * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
