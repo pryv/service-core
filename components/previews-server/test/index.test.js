@@ -9,11 +9,10 @@
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const request = require('superagent');
-const url = require('url');
 
 describe('(index)', function () {
   function path (a) {
-    return url.resolve(server.url, a || '/');
+    return new URL(a || '/', server.url).toString();
   }
 
   before(server.ensureStarted.bind(server, helpers.dependencies.settings));

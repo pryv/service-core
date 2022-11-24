@@ -6,7 +6,7 @@
  */
 const request = require('superagent');
 const errors = require('errors').factory;
-const URL = require('url');
+
 /**
  * Helper function that modularizes the sending of an email,
  * should it be via Mandrill or via Pryv service-mail
@@ -23,7 +23,7 @@ exports.sendmail = function (emailSettings, template, recipient, subs, lang, cal
   switch (mailingMethod) {
     case 'microservice':
       {
-        const url = URL.resolve(emailSettings.url, template + '/' + lang);
+        const url = new URL(template + '/' + lang, emailSettings.url).toString();
         const data = {
           key: emailSettings.key,
           to: recipient,

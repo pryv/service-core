@@ -16,7 +16,6 @@ const should = require('should'); // explicit require to benefit from static fun
 const _ = require('lodash');
 const testData = helpers.data;
 const bluebird = require('bluebird');
-const url = require('url');
 const charlatan = require('charlatan');
 const SystemStreamSerializer = require('business/src/system-streams/serializer');
 const { integrity } = require('business');
@@ -600,7 +599,7 @@ describe('Versioning', function () {
     });
 
     function buildPath (path) {
-      return url.resolve(server.url, path);
+      return new URL(path, server.url).toString();
     }
     function generateRegisterBody () {
       return {

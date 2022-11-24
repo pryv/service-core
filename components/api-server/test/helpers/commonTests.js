@@ -11,14 +11,13 @@
 const validation = require('./validation');
 const ErrorIds = require('errors').ErrorIds;
 const request = require('superagent');
-const url = require('url');
 
 /**
  * @param {String} serverURL
  * @param {String} path
  */
 exports.checkAccessTokenAuthentication = function (serverURL, path, done) {
-  request.get(url.resolve(serverURL, path)).end(function (err, res) {
+  request.get(new URL(path, serverURL).toString()).end(function (err, res) {
     validation.check(res, {
       status: 401,
       id: ErrorIds.InvalidAccessToken

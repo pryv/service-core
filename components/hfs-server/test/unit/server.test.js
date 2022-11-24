@@ -7,7 +7,6 @@
 /* global describe, it, beforeEach, afterEach, before */
 const should = require('should');
 const superagent = require('superagent');
-const url = require('url');
 const Application = require('../../src/application');
 describe('Server', () => {
   const request = superagent;
@@ -19,7 +18,7 @@ describe('Server', () => {
   });
   function toUrl (path) {
     const baseUrl = server.baseUrl;
-    return url.resolve(baseUrl, path);
+    return new URL(path, baseUrl).toString();
   }
   it('[O84I] can be constructed', function () {
     should.exist(server);

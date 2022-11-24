@@ -9,7 +9,6 @@
 require('./test-helpers');
 
 const ErrorIds = require('errors').ErrorIds;
-const url = require('url');
 const _ = require('lodash');
 const cuid = require('cuid');
 const chai = require('chai');
@@ -163,7 +162,7 @@ describe('events.streamIds', function () {
     });
 
     function eventPath (eventId) {
-      return url.resolve(basePathEvent, eventId);
+      return basePathEvent + eventId;
     }
 
     describe('GET /events', function () {
@@ -390,7 +389,7 @@ describe('events.streamIds', function () {
 
     describe('POST /event/start', function () {
       function path () {
-        return url.resolve(basePathEvent, 'start');
+        return basePathEvent + 'start';
       }
 
       it('[FOM3] must return a 410 (Gone)', async function () {
@@ -409,7 +408,7 @@ describe('events.streamIds', function () {
 
     describe('POST /event/stop', function () {
       function path () {
-        return url.resolve(basePathEvent, 'stop');
+        return basePathEvent + 'stop';
       }
 
       it('[BR33] must return a 410 (Gone)', async function () {
@@ -428,7 +427,7 @@ describe('events.streamIds', function () {
 
     describe('DELETE /events/:id', function () {
       function eventPath (eventId) {
-        return url.resolve(basePathEvent, eventId);
+        return basePathEvent + eventId;
       }
 
       it('[BPL0] must return streamIds & streamId containing the first one (if many)', async function () {
@@ -684,10 +683,10 @@ describe('events.streamIds', function () {
      */
 
     function pathStreamId (streamId) {
-      return url.resolve(basePathStream, streamId);
+      return basePathStream + streamId;
     }
     function pathEventId (eventId) {
-      return url.resolve(basePathEvent, eventId);
+      return basePathEvent + eventId;
     }
 
     describe('POST /streams', function () {

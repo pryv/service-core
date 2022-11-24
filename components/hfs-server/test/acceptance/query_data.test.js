@@ -10,7 +10,6 @@ const { ErrorIds } = require('errors');
 const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
-const URL = require('url');
 const superagent = require('superagent');
 const { spawnContext, produceMongoConnection } = require('./test-helpers');
 const testHelpers = require('test-helpers');
@@ -92,9 +91,9 @@ describe('Querying data from a HF series', function () {
       .expect(200);
   });
   it('[Q1X3] must accept basic auth schema', async function () {
-    const url = new URL.URL(server.baseUrl);
+    const url = new URL(server.baseUrl);
     const basicAuthUrl = url.href.replace(url.hostname, accessToken + '@' + url.hostname);
-    const apiEndPointUrl = URL.resolve(basicAuthUrl, userId + '/events/' + eventId + '/series');
+    const apiEndPointUrl = new URL(userId + '/events/' + eventId + '/series', basicAuthUrl).toString();
     const res = await superagent.get(apiEndPointUrl);
     assert.equal(res.status, 200);
   });

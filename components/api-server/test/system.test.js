@@ -11,7 +11,6 @@ const async = require('async');
 const should = require('should');
 const request = require('superagent');
 const timestamp = require('unix-timestamp');
-const url = require('url');
 const _ = require('lodash');
 const assert = require('chai').assert;
 const bluebird = require('bluebird');
@@ -65,7 +64,7 @@ describe('system route', function () {
   });
 
   it('[CHEK] System check Platform integrity ', async () => {
-    const res = await request.get(url.resolve(server.url(), '/system/check-platform-integrity'))
+    const res = await request.get(new URL('/system/check-platform-integrity', server.url()).toString())
       .set('authorization', config.get('auth:adminAccessKey'));
     should.exists(res.body.checks);
     const checkLength = 2;
@@ -125,7 +124,7 @@ describe('system (ex-register)', function () {
 
   this.timeout(5000);
   function basePath () {
-    return url.resolve(server.url, '/system');
+    return new URL('/system', server.url).toString();
   }
 
   before(async function () {
@@ -328,7 +327,7 @@ describe('system (ex-register)', function () {
 
       it('[ZG1L] must support the old "/register" path for backwards-compatibility', function (done) {
         const newUserDataExpected = Object.assign({}, newUserData);
-        request.post(url.resolve(server.url, '/register/create-user'))
+        request.post(new URL('/register/create-user', server.url).toString())
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .send(newUserDataExpected)
           .end(function (err, res) {
@@ -567,14 +566,14 @@ describe('system (ex-register)', function () {
             });
         },
         function makeUserRequest1 (stepDone) {
-          request.get(url.resolve(server.url, '/' + user.username + '/events'))
+          request.get(new URL('/' + user.username + '/events', server.url).toString())
             .set('authorization', testData.accesses[4].token)
             .end(function (err) {
               stepDone(err);
             });
         },
         function makeUserRequest2 (stepDone) {
-          request.get(url.resolve(server.url, '/' + user.username + '/events'))
+          request.get(new URL('/' + user.username + '/events', server.url).toString())
             .set('authorization', testData.accesses[1].token)
             .end(function (err) {
               expectedTime = timestamp.now();
