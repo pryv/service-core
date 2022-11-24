@@ -35,7 +35,7 @@ module.exports = async function (context, callback) {
   await migrateTags(eventsCollection, streamsCollection);
   await migrateTagsAccesses(accessesCollection);
   logger.info('Accounts were migrated, now rebuilding the indexes');
-  await rebuildIndexes(context.database, eventsCollection),
+  await rebuildIndexes(context.database, eventsCollection);
   logger.info('V1.6.21 => v1.7.0 Migration finished');
   callback();
   async function migrateAccounts (eventsCollection) {
@@ -147,7 +147,7 @@ module.exports = async function (context, callback) {
     const usersWithTag = await eventsCollection.distinct('userId', {
       tags: { $exists: true, $ne: null }
     });
-    for (userId of usersWithTag) {
+    for (const userId of usersWithTag) {
       const now = Date.now() / 1000;
       async function createStream (id, name, parentId) {
         try {
@@ -168,14 +168,14 @@ module.exports = async function (context, callback) {
       await createStream(TAG_ROOT_STREAMID, 'Migrated Tags');
       // get all tags for user
       const tags = await eventsCollection.distinct('tags', { userId });
-      for (tag of tags) {
+      for (const tag of tags) {
         await createStream(TAG_PREFIX + tag, tag, TAG_ROOT_STREAMID);
         await migrateEvents(userId);
       }
       // migrate tags (add to streams for each event)
     }
     async function migrateEvents (userId) {
-      eventsMigrated = 0;
+      let eventsMigrated = 0;
       const cursor = eventsCollection.find({
         userId,
         tags: { $exists: true, $ne: [] }
@@ -251,13 +251,13 @@ module.exports = async function (context, callback) {
       if (requests.length === 1000) {
         // Execute per 1000 operations and re-init
         await accessesCollection.bulkWrite(requests);
-        console.log('Migrated ' + accessesMigrated + ' accesses for user ' + userId);
+        console.log('Migrated ' + accessesMigrated + ' accesses for user ' + access.userId);
         requests = [];
       }
     }
     if (requests.length > 0) {
       await accessesCollection.bulkWrite(requests);
-      console.log('Migrated ' + accessesMigrated + ' accesses for user ' + userId);
+      console.log('Migrated ' + accessesMigrated + ' accesses ');
     }
   }
 };

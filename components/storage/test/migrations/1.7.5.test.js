@@ -8,7 +8,7 @@
  * Tests data migration between versions.
  */
 
-/* global describe, it, assert */
+/* global describe, it, assert, before, after */
 
 const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');

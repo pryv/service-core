@@ -47,12 +47,12 @@ EventFiles.prototype.getTotalSize = function (user, callback) {
 async function * recursiveReadDirAsync (dir) {
   const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
   for (const dirent of dirents) {
-    const res = path.resolve(dir, dirent.name);
+    const filePath = path.resolve(dir, dirent.name);
     if (dirent.isDirectory()) {
-      yield * recursiveReadDirAsync(res);
+      yield * recursiveReadDirAsync(filePath);
     } else {
       try {
-        const fileStats = await fs.promises.stat(res);
+        const fileStats = await fs.promises.stat(filePath);
         yield fileStats.size;
       } catch (err) {
         this.logger.error('Data corrupted; expected ' + toString.path(filePath) + ' to exist');

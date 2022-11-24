@@ -8,7 +8,7 @@
  * Tests data migration between versions.
  */
 
-/* global describe, it, assert */
+/* global describe, it, assert, before, after */
 
 const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');
@@ -18,7 +18,7 @@ const database = storage.database;
 const testData = helpers.data;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
-
+const DOT = '.';
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 
 const { getVersions, compareIndexes } = require('./util');
@@ -50,7 +50,6 @@ describe('Migration - 1.7.x', function () {
     const versions0 = getVersions('1.7.0');
     const versions1 = getVersions('1.7.1');
     const newIndexes = testData.getStructure('1.7.0').indexes;
-
 
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
 
@@ -101,16 +100,16 @@ describe('Migration - 1.7.x', function () {
     // ----------------- tag migrations
     const eventsWithTags = await eventsCollection.find({ tags: { $exists: true, $ne: [] } }).toArray();
     assert.equal(eventsWithTags.length, 0);
-    for (event of previousEventsWithTags) {
+    for (const event of previousEventsWithTags) {
       const newEvent = await eventsCollection.findOne({ _id: event._id });
       // check if tags have been added to streamIds
-      for (tag of event.tags) {
+      for (const tag of event.tags) {
         assert.include(newEvent.streamIds, TAG_PREFIX + tag);
+        // check if stream exists for this user
+        const stream = await streamsCollection.findOne({ userId: event.userId, streamId: TAG_PREFIX + tag });
+        assert.exists(stream);
+        assert.equal(stream.parentId, TAG_ROOT_STREAMID);
       }
-      // check if stream exists for this user
-      const stream = await streamsCollection.findOne({ userId: event.userId, streamId: TAG_PREFIX + tag });
-      assert.exists(stream);
-      assert.equal(stream.parentId, TAG_ROOT_STREAMID);
     }
 
     // -- permissions

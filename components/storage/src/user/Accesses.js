@@ -11,6 +11,8 @@ const generateId = require('cuid');
 const util = require('util');
 const _ = require('lodash');
 const integrity = require('business/src/integrity');
+const { getLogger } = require('@pryv/boiler');
+const logger = getLogger('storage:accesses');
 
 module.exports = Accesses;
 
