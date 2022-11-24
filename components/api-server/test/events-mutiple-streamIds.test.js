@@ -50,7 +50,7 @@ describe('events.streamIds', function () {
       eventAB,
       tokenReadA,
       tokenContributeA,
-      tokenContributeA_ReadB,
+      tokenContributeAReadB,
       tokenContributeB,
       tokenContributeAB,
       basePathEvent;
@@ -64,7 +64,7 @@ describe('events.streamIds', function () {
       trashedEventIdAB = cuid();
       tokenReadA = cuid();
       tokenContributeA = cuid();
-      tokenContributeA_ReadB = cuid();
+      tokenContributeAReadB = cuid();
       tokenContributeB = cuid();
       tokenContributeAB = cuid();
       basePathEvent = `/${username}/events/`;
@@ -100,7 +100,7 @@ describe('events.streamIds', function () {
       });
       await user.access({
         type: 'app',
-        token: tokenContributeA_ReadB,
+        token: tokenContributeAReadB,
         permissions: [
           {
             streamId: 'streamA',
@@ -183,7 +183,7 @@ describe('events.streamIds', function () {
       it('[IJQZ] must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
           .get(eventPath(eventIdAB))
-          .set('Authorization', tokenContributeA_ReadB);
+          .set('Authorization', tokenContributeAReadB);
         const event = res.body.event;
         assert.equal(event.streamId, streamAId);
         assert.deepEqual(event.streamIds, [streamAId, streamBId]);
@@ -377,7 +377,7 @@ describe('events.streamIds', function () {
         it('[JLS5] must forbid streamId deletion, if you have read but no contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdAB))
-            .set('Authorization', tokenContributeA_ReadB)
+            .set('Authorization', tokenContributeAReadB)
             .send({
               streamIds: [streamAId]
             });
@@ -597,11 +597,11 @@ describe('events.streamIds', function () {
       username,
       streamAId,
       streamBId,
-      streamA_AId,
-      streamA_A_AId,
-      eventIdA_AandB,
-      eventIdAandA_A,
-      eventIdA_AandA_A_A,
+      streamAxAId,
+      streamAxAxAId,
+      eventIdAxAandB,
+      eventIdAandAxA,
+      eventIdAxAandAxAxA,
       manageAccessToken,
       basePathEvent,
       basePathStream;
@@ -610,11 +610,11 @@ describe('events.streamIds', function () {
       username = cuid();
       streamAId = 'streamAId';
       streamBId = 'streamBId';
-      streamA_AId = 'streamA_AId';
-      streamA_A_AId = 'streamA_A_AId';
-      eventIdAandA_A = cuid();
-      eventIdA_AandB = cuid();
-      eventIdA_AandA_A_A = cuid();
+      streamAxAId = 'streamA_AId';
+      streamAxAxAId = 'streamA_A_AId';
+      eventIdAandAxA = cuid();
+      eventIdAxAandB = cuid();
+      eventIdAxAandAxAxA = cuid();
       manageAccessToken = cuid();
       basePathStream = `/${username}/streams/`;
       basePathEvent = `/${username}/events/`;
@@ -630,12 +630,12 @@ describe('events.streamIds', function () {
       });
       await user.stream({
         parentId: streamAId,
-        id: streamA_AId,
+        id: streamAxAId,
         name: 'stream son of A'
       });
       await user.stream({
-        parentId: streamA_AId,
-        id: streamA_A_AId,
+        parentId: streamAxAId,
+        id: streamAxAxAId,
         name: 'stream son of son of A'
       });
       await user.access({
@@ -652,22 +652,22 @@ describe('events.streamIds', function () {
         type: 'note/txt',
         time: (Date.now() / 1000) - 2,
         content: 'In B and Son of A',
-        id: eventIdA_AandB,
-        streamIds: [streamBId, streamA_AId]
+        id: eventIdAxAandB,
+        streamIds: [streamBId, streamAxAId]
       });
       await user.event({
         type: 'note/txt',
         time: (Date.now() / 1000) - 1,
         content: 'In A and Son of A',
-        id: eventIdAandA_A,
-        streamIds: [streamAId, streamA_AId]
+        id: eventIdAandAxA,
+        streamIds: [streamAId, streamAxAId]
       });
       await user.event({
         type: 'note/txt',
         time: (Date.now() / 1000),
         content: 'In Son of A and Son of Son of A',
-        id: eventIdA_AandA_A_A,
-        streamIds: [streamA_AId, streamA_A_AId]
+        id: eventIdAxAandAxAxA,
+        streamIds: [streamAxAId, streamAxAxAId]
       });
     });
     afterEach(async () => {
@@ -727,10 +727,10 @@ describe('events.streamIds', function () {
             }
 
             const res = await server.request()
-              .get(pathEventId(eventIdA_AandB))
+              .get(pathEventId(eventIdAxAandB))
               .set('Authorization', manageAccessToken);
             const event = res.body.event;
-            assert.deepEqual(event.streamIds, [streamA_AId]);
+            assert.deepEqual(event.streamIds, [streamAxAId]);
           });
         });
       });
@@ -751,14 +751,14 @@ describe('events.streamIds', function () {
               .query({ includeDeletions: true, modifiedSince: 0 });
             const deletions = res.body.eventDeletions;
             assert.exists(deletions, 'deleted events are not found');
-            let foundAandA_A = false;
-            let foundA_AandA_A_A = false;
+            let foundAandAxA = false;
+            let foundAxAandAxAxA = false;
             deletions.forEach(d => {
-              if (d.id === eventIdAandA_A) foundAandA_A = true;
-              if (d.id === eventIdA_AandA_A_A) foundA_AandA_A_A = true;
+              if (d.id === eventIdAandAxA) foundAandAxA = true;
+              if (d.id === eventIdAxAandAxAxA) foundAxAandAxAxA = true;
             });
-            assert.isTrue(foundAandA_A);
-            assert.isTrue(foundA_AandA_A_A);
+            assert.isTrue(foundAandAxA);
+            assert.isTrue(foundAxAandAxAxA);
           });
         });
 
@@ -766,7 +766,7 @@ describe('events.streamIds', function () {
           it('[2FRR] must not delete events, but remove all streamIds and add its parentId', async function () {
             for (let i = 0; i < 2; i++) {
               await server.request()
-                .delete(basePathStream + streamA_AId)
+                .delete(basePathStream + streamAxAId)
                 .set('Authorization', manageAccessToken)
                 .query({ mergeEventsWithParent: true });
             }
@@ -776,27 +776,27 @@ describe('events.streamIds', function () {
               .set('Authorization', manageAccessToken);
             assert.equal(res.body.events.length, 3);
 
-            let foundAandA_A = false;
-            let foundA_AandA_A_A = false;
-            let foundA_AandB = false;
+            let foundAandAxA = false;
+            let foundAxAandAxAxA = false;
+            let foundAxAandB = false;
             res.body.events.forEach(e => {
-              if (e.id === eventIdAandA_A) {
-                foundAandA_A = true;
+              if (e.id === eventIdAandAxA) {
+                foundAandAxA = true;
                 assert.deepEqual(e.streamIds, [streamAId]);
               }
-              if (e.id === eventIdA_AandA_A_A) {
-                foundA_AandA_A_A = true;
+              if (e.id === eventIdAxAandAxAxA) {
+                foundAxAandAxAxA = true;
                 assert.deepEqual(e.streamIds, [streamAId]);
               }
-              if (e.id === eventIdA_AandB) {
-                foundA_AandB = true;
+              if (e.id === eventIdAxAandB) {
+                foundAxAandB = true;
                 assert.isTrue(_.includes(e.streamIds, streamAId));
                 assert.isTrue(_.includes(e.streamIds, streamBId));
               }
             });
-            assert.isTrue(foundAandA_A);
-            assert.isTrue(foundA_AandA_A_A);
-            assert.isTrue(foundA_AandB);
+            assert.isTrue(foundAandAxA);
+            assert.isTrue(foundAxAandAxAxA);
+            assert.isTrue(foundAxAandB);
           });
         });
       });

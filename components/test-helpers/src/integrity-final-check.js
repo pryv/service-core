@@ -17,7 +17,7 @@ async function events () {
   const database = await getDatabase();
   const cursor = await bluebird.fromCallback(cb => database.findCursor({ name: 'events' }, {}, {}, cb));
   const erroneousEvents = [];
-  let and_N_more = 0;
+  let andNMore = 0;
   while (await cursor.hasNext()) {
     const event = await cursor.next();
     event.id = event._id;
@@ -43,13 +43,13 @@ async function events () {
       if (erroneousEvents.length < 3) {
         erroneousEvents.push({ event, errors });
       } else {
-        and_N_more++;
+        andNMore++;
       }
     }
   }
   if (erroneousEvents.length > 0) {
-    if (and_N_more > 0) {
-      erroneousEvents.push('... And ' + and_N_more + ' More');
+    if (andNMore > 0) {
+      erroneousEvents.push('... And ' + andNMore + ' More');
     }
     throw new Error('Integrity not respected for ' + JSON.stringify(erroneousEvents, null, 2));
     console.log(new Error('integrity check'));
@@ -62,7 +62,7 @@ async function accesses () {
   const database = await getDatabase();
   const cursor = await bluebird.fromCallback(cb => database.findCursor({ name: 'accesses' }, {}, {}, cb));
   const erroneousAccess = [];
-  let and_N_more = 0;
+  let andNMore = 0;
   while (await cursor.hasNext()) {
     const access = await cursor.next();
     access.id = access._id;
@@ -84,13 +84,13 @@ async function accesses () {
       if (erroneousAccess.length < 3) {
         erroneousAccess.push({ access, errors });
       } else {
-        and_N_more++;
+        andNMore++;
       }
     }
   }
   if (erroneousAccess.length > 0) {
-    if (and_N_more > 0) {
-      erroneousAccess.push('... And ' + and_N_more + ' More');
+    if (andNMore > 0) {
+      erroneousAccess.push('... And ' + andNMore + ' More');
     }
     throw new Error('Integrity not respected for ' + JSON.stringify(erroneousAccess, null, 2));
     console.log(new Error('integrity check'));

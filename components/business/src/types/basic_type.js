@@ -6,7 +6,7 @@
  */
 const bluebird = require('bluebird');
 const assert = require('assert');
-const value_types = require('./value_types');
+const valueTypes = require('./value_types');
 // A basic type like 'mass/kg'. In high frequency data, this must be stored
 // using the column name 'value'.
 //
@@ -26,7 +26,7 @@ class BasicType {
   constructor (outerType, schema) {
     this._schema = schema;
     this._outerType = outerType;
-    this._innerType = value_types(schema.type);
+    this._innerType = valueTypes(schema.type);
   }
 
   /**

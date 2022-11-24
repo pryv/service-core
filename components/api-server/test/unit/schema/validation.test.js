@@ -30,15 +30,15 @@ describe('tryCoerceStringValues', () => {
   it('[X8PY] number conversion works', () => {
     ok('123', 123);
     ok('123.45', 123.45);
-    not_ok('123abc');
-    not_ok('123.45aksfhjal');
+    notOk('123abc');
+    notOk('123.45aksfhjal');
     function ok (n, e) {
       const o = { a: n };
       const s = { a: 'number' };
       tryCoerceStringValues(o, s);
       assert.equal(o.a, e);
     }
-    function not_ok (n) {
+    function notOk (n) {
       const o = { a: n };
       const s = { a: 'number' };
       tryCoerceStringValues(o, s);

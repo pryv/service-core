@@ -7,7 +7,7 @@
 //
 
 const url = require('url');
-const child_process = require('child_process');
+const childProcessNodeInternal = require('child_process');
 const net = require('net');
 const EventEmitter = require('events');
 const axon = require('axon');
@@ -81,7 +81,7 @@ class SpawnContext {
         ...process.env,
         PRYV_BOILER_SUFFIX: '#' + spawnCounter++
       };
-      const childProcess = child_process.fork(childPath, null, {
+      const childProcess = childProcessNodeInternal.fork(childPath, null, {
         execArgv: newArgv,
         env: newEnv
       });

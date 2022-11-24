@@ -6,7 +6,7 @@
  */
 const assert = require('assert');
 const _ = require('lodash');
-const value_types = require('./value_types');
+const valueTypes = require('./value_types');
 // A complex type like 'position/wgs84' that has several subfields.
 //
 
@@ -77,7 +77,7 @@ class ComplexType {
       const fieldDescriptor = properties[lookupField];
       const fieldType = fieldDescriptor.type;
       if (fieldType !== 'object') {
-        if (parts.length === 0) { return value_types(fieldType); } else { throw new Error(`forField can only retrieve leaf (value) types (${name} @ ${lookupField})`); }
+        if (parts.length === 0) { return valueTypes(fieldType); } else { throw new Error(`forField can only retrieve leaf (value) types (${name} @ ${lookupField})`); }
       }
       // assert: fieldType === 'object'
       const fieldProperties = fieldDescriptor.properties;
