@@ -151,7 +151,7 @@ const findById = (exports.findById = function (array, id) {
 /**
  * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
  */
-var findInTree = (exports.findInTree = function (array, iterator) {
+const findInTree = (exports.findInTree = function (array, iterator) {
   for (let i = 0, n = array.length; i < n; i++) {
     const item = array[i];
     // check if item matches
@@ -185,7 +185,7 @@ const iterateOnPromise = (exports.iterateOnPromise = async function (array, iter
  *                              (if yes, the tree structure may be modified)
  * @callback {Promise<boolean>} iterator Arguments: ({Object}), return value: {Boolean}
  */
-var filterTreeOnPromise = (exports.filterTreeOnPromise = async function (array, keepOrphans, iterator) {
+const filterTreeOnPromise = (exports.filterTreeOnPromise = async function (array, keepOrphans, iterator) {
   const filteredArray = [];
   for (let i = 0, n = array.length; i < n; i++) {
     const item = array[i];
@@ -207,7 +207,7 @@ var filterTreeOnPromise = (exports.filterTreeOnPromise = async function (array, 
  *                              (if yes, the tree structure may be modified)
  * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
  */
-var filterTree = (exports.filterTree = function (array, keepOrphans, iterator) {
+const filterTree = (exports.filterTree = function (array, keepOrphans, iterator) {
   const filteredArray = [];
   for (let i = 0, n = array.length; i < n; i++) {
     const item = array[i];

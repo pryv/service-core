@@ -93,9 +93,7 @@ function parseError (url, err, res) {
   // 2.1 Because of SSL certificates
   if (errorMsg.match(/certificate/i)) {
     baseMsg += 'Trying to do SSL but certificates are invalid: ';
-  }
-  // 2.2 Because of unreachable url
-  else if (errorMsg.match(/not found/i)) {
+  } else if (errorMsg.match(/not found/i)) { // 2.2 Because of unreachable url
     baseMsg += 'Endpoint seems unreachable: ';
   }
   return errors.unexpectedError(baseMsg + errorMsg);

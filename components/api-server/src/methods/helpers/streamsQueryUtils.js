@@ -40,7 +40,7 @@ function transformArrayOfStringsToStreamsQuery (arrayOfQueries) {
   const { numStreamIds, streamIds } = countStreamIds(arrayOfQueries);
   if (numStreamIds === 0) { return arrayOfQueries; }
   if (numStreamIds !== arrayOfQueries.length) {
-    throw "Error in 'streams' parameter: streams queries and streamIds cannot be mixed";
+    throw new Error("Error in 'streams' parameter: streams queries and streamIds cannot be mixed");
   }
   // group streamIds per "store"
   const map = {};
@@ -94,7 +94,7 @@ function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
     const [thisStoreId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(fullStreamId);
     if (streamQuery.storeId == null) { streamQuery.storeId = thisStoreId; }
     if (streamQuery.storeId !== thisStoreId) {
-      throw ("Error in 'streams' parameter '" +
+      throw new Error("Error in 'streams' parameter '" +
                 objectToString(arrayOfQueries) +
                 "' streams query: '" +
                 objectToString(streamQuery) +
@@ -103,7 +103,7 @@ function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
     return storeStreamId;
   }
   if (streamQuery.any == null) {
-    throw ("Error in 'streams' parameter '" +
+    throw new Error("Error in 'streams' parameter '" +
             objectToString(arrayOfQueries) +
             "' streams query: '" +
             objectToString(streamQuery) +
@@ -112,7 +112,7 @@ function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
   let hasAnyStar = false;
   for (const [property, arrayOfStreamIds] of Object.entries(streamQuery)) {
     if (!['all', 'any', 'not'].includes(property)) {
-      throw ("Error in 'streams' parameter '" +
+      throw new Error("Error in 'streams' parameter '" +
                 objectToString(arrayOfQueries) +
                 "' unknown property: '" +
                 property +
@@ -121,7 +121,7 @@ function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
                 "'");
     }
     if (!Array.isArray(arrayOfStreamIds)) {
-      throw ("Error in 'streams' parameter '" +
+      throw new Error("Error in 'streams' parameter '" +
                 objectToString(arrayOfQueries) +
                 "' value of : '" +
                 property +
@@ -132,7 +132,7 @@ function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
     const arrayOfCleanStreamIds = [];
     for (const item of arrayOfStreamIds) {
       if (typeof item !== 'string') {
-        throw ("Error in 'streams' parameter[" +
+        throw new Error("Error in 'streams' parameter[" +
                     objectToString(arrayOfQueries) +
                     '] all items of ' +
                     objectToString(arrayOfStreamIds) +
@@ -140,13 +140,13 @@ function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
                     objectToString(item));
       }
       if (item === '#*') {
-        throw ("Error in 'streams' parameter '" +
+        throw new Error("Error in 'streams' parameter '" +
                     objectToString(arrayOfQueries) +
                     ', "#*" is not valid.');
       }
       const forbiddenChar = findForbiddenChar(item);
       if (forbiddenChar != null) {
-        throw ("Error in 'streams' parameter '" +
+        throw new Error("Error in 'streams' parameter '" +
                     objectToString(arrayOfQueries) +
                     "' forbidden chartacter '" +
                     forbiddenChar +
@@ -155,7 +155,7 @@ function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
                     "'.");
       }
       if (property !== 'any' && item === '*') {
-        throw ("Error in 'streams' parameter[" +
+        throw new Error("Error in 'streams' parameter[" +
                     objectToString(arrayOfQueries) +
                     "] only 'any' can contain '*' : " +
                     objectToString(arrayOfStreamIds));
@@ -163,7 +163,7 @@ function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
       if (property === 'any' && item === '*') {
         hasAnyStar = true;
         if (arrayOfStreamIds.length > 1) {
-          throw ("Error in 'streams' parameter[" +
+          throw new Error("Error in 'streams' parameter[" +
                         objectToString(arrayOfQueries) +
                         "] '*' cannot be mixed with other streamIds in 'any': " +
                         objectToString(arrayOfStreamIds));
@@ -175,7 +175,7 @@ function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
     }
   }
   if (hasAnyStar && streamQuery.all != null) {
-    throw ("Error in 'streams' parameter[" +
+    throw new Error("Error in 'streams' parameter[" +
             objectToString(streamQuery) +
             "] {any: '*'} cannot be mixed with 'all': " +
             objectToString(arrayOfQueries));
@@ -202,9 +202,10 @@ exports.expandAndTransformStreamQueries =
       async function expandSet (streamIds, storeId, excludedIds = []) {
         const expandedSet = new Set(); // use a Set to avoid duplicate entries;
         for (const streamId of streamIds) {
-          if (!excludedIds.includes(streamId))
           // skip streamId presents in exluded set
-          { (await expandStream(streamId, storeId, excludedIds)).forEach((item) => expandedSet.add(item)); }
+          if (!excludedIds.includes(streamId)) {
+            (await expandStream(streamId, storeId, excludedIds)).forEach((item) => expandedSet.add(item));
+          }
         }
         return Array.from(expandedSet);
       }

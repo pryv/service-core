@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, before, beforeEach, after, afterEach, it */
+/* global describe, before, after, it */
 
 const cuid = require('cuid');
 const { assert } = require('chai');
@@ -99,7 +99,7 @@ function customExpand (streamId, storeId = 'local', excludedIds = []) {
   if (!STREAMS[streamId]) return [];
   res.push(streamId);
   if (STREAMS[streamId].childrens && (!excludedIds.includes(streamId))) { // eventually exclude childrens
-    STREAMS[streamId].childrens.map((childId) => {
+    STREAMS[streamId].childrens.forEach((childId) => {
       const expanded = customExpand(childId, streamId, excludedIds);
       res.push(...expanded);
     });
@@ -107,7 +107,7 @@ function customExpand (streamId, storeId = 'local', excludedIds = []) {
   return res;
 }
 
-describe('events.get streams query', function () {
+describe('[EGSQ] events.get streams query', function () {
   describe('Internal query helpers', function () {
     async function validateQuery (query) {
       if (!Array.isArray(query)) query = [query];
@@ -185,19 +185,19 @@ describe('events.get streams query', function () {
 
       it('[NHGF] not accept any: "*" query mixed with "all" query. like: {any: [*], all: ["D"], not: ["A"]}', async function () {
         try {
-          const res = await validateQuery({ any: ['*'], all: ['D'], not: ['A'] });
+          await validateQuery({ any: ['*'], all: ['D'], not: ['A'] });
           assert(false);
         } catch (e) {
-          assert.include(e, '\'*\'} cannot be mixed with \'all\'');
+          assert.include(e.message, '\'*\'} cannot be mixed with \'all\'');
         }
       });
 
       it('[U0FA] not accept any: "*", "B" mix. like: {any: ["*2, "D"], not: ["A"]}', async function () {
         try {
-          const res = await validateQuery({ any: ['*', 'D'], not: ['A'] });
+          await validateQuery({ any: ['*', 'D'], not: ['A'] });
           assert(false);
         } catch (e) {
-          assert.include(e, '\'*\' cannot be mixed with other streamIds in \'any\'');
+          assert.include(e.message, '\'*\' cannot be mixed with other streamIds in \'any\'');
         }
       });
 
@@ -214,15 +214,16 @@ describe('events.get streams query', function () {
 
         it('[I7GF] should throw an error if two different store are mixed in a query item', async function () {
           try {
-            const res = await validateQuery([{ any: ['A', ':_audit:test'] }]);
+            await validateQuery([{ any: ['A', ':_audit:test'] }]);
             assert(false);
           } catch (e) {
-            assert.include(e, 'queries must me grouped by store');
+            assert.include(e.message, 'queries must me grouped by store');
           }
         });
 
-        it('[ZUTR] should expand queries from differnt store', async function () {
-          const res = await validateQuery([{ any: ['A'] }, { any: [':_audit:test'] }]);
+        it.skip('[ZUTR] should expand queries from differnt store', async function () {
+          await validateQuery([{ any: ['A'] }, { any: [':_audit:test'] }]);
+          // todo
         });
       });
     });
@@ -257,12 +258,12 @@ describe('events.get streams query', function () {
           await Promise.all(streamsQueries.map(async (streamsQuery) => {
             let hasThrown = false;
             try {
-              const query = await validateQuery(streamsQuery);
+              await validateQuery(streamsQuery);
             } catch (e) {
               hasThrown = true;
-              assert.include(e, error);
+              assert.include(e.message, error);
             }
-            if (!hasThrown) throw ('checkPermissionsAndApplyToScope was expected to throw [' + error + '] with query: <<' + JSON.stringify(streamsQuery) + '>>');
+            if (!hasThrown) throw new Error('checkPermissionsAndApplyToScope was expected to throw [' + error + '] with query: <<' + JSON.stringify(streamsQuery) + '>>');
           }));
         }
       });
@@ -368,9 +369,9 @@ describe('events.get streams query', function () {
         ]
       });
       for (const [key, event] of Object.entries(EVENTS)) {
-        event.type = 'note/txt',
-        event.content = key,
-        event.id = cuid(),
+        event.type = 'note/txt';
+        event.content = key;
+        event.id = cuid();
         EVENT4ID[event.id] = key;
         await user.event(event);
       }
@@ -472,7 +473,6 @@ describe('events.get streams query', function () {
       assert.equal(events.length, 1);
       events.forEach(e => {
         let isFoundA = false;
-        const isFoundE = false;
         const streamIds = customExpand('A');
         streamIds.forEach(streamId => {
           if (e.streamIds.includes(streamId)) isFoundA = true;
@@ -512,7 +512,7 @@ describe('events.get streams query', function () {
       const events = res.body.events;
       const expectedEvents = ['b', 'a', 'c'];
       assert.equal(events.length, expectedEvents.length);
-      const resIds = events.map((e) => {
+      events.forEach((e) => {
         assert.exists(EVENT4ID[e.id]);
         assert.include(expectedEvents, EVENT4ID[e.id]);
       });
