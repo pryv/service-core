@@ -259,16 +259,16 @@ class MethodContext {
        * @returns {Promise<void>}
        */
   performCustomAuthStep (customAuthStep) {
-    return new bluebird((res, rej) => {
+    return new Promise((resolve, reject) => {
       try {
         customAuthStep(this, (err) => {
-          if (err != null) { rej(errors.invalidAccessToken(`Custom auth step failed: ${err.message}`)); }
-          res();
+          if (err != null) { reject(errors.invalidAccessToken(`Custom auth step failed: ${err.message}`)); }
+          resolve();
         });
       } catch (err) {
         // If the custom auth step throws a synchronous exception, then we dont
         // simply log an auth failure, but rather a server failure:
-        rej(errors.unexpectedError(`Custom auth step threw synchronously: ${err.message}`));
+        reject(errors.unexpectedError(`Custom auth step threw synchronously: ${err.message}`));
       }
     });
   }

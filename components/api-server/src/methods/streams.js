@@ -338,7 +338,6 @@ module.exports = async function (api) {
     }
   }
   async function deleteWithData (context, params, result, next) {
-    let hasLinkedEvents;
     const [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(params.id);
     // Load stream and chlidren (context.stream does not have expanded children tree)
     const streamToDeleteSingleArray = await mall.streams.get(context.user.id, {
@@ -361,7 +360,7 @@ module.exports = async function (api) {
     const events = await mall.events.getWithParamsByStore(context.user.id, {
       [storeId]: { streams: [{ any: cleanDescendantIds }], limit: 1 }
     });
-    hasLinkedEvents = !!events.length;
+    const hasLinkedEvents = !!events.length;
     if (hasLinkedEvents) {
       // has linked events -----------------
       if (params.mergeEventsWithParent === null) {

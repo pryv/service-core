@@ -6,6 +6,7 @@
  */
 /* global describe, it, before, after */
 
+const { setTimeout } = require('timers/promises');
 require('./test-helpers');
 const httpServer = require('./support/httpServer');
 const assert = require('chai').assert;
@@ -32,8 +33,6 @@ const customSettings = {
 };
 const monitoringUsername = cuid();
 const monitorToken = cuid();
-
-const Promise = require('bluebird');
 
 describe('service-reporting', () => {
   let mongoFixtures;
@@ -74,7 +73,7 @@ describe('service-reporting', () => {
     });
 
     it('[G1UG] must start and successfully send a report when service-reporting is listening', async () => {
-      await new Promise(r => setTimeout(r, 1000));
+      await setTimeout(1000);
       assert.isTrue(reportRecieved, 'Should have revceif report received event from server');
       await assertServerStarted();
       const lastReport = reportHttpServer.getLastReport();

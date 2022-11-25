@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const bluebird = require('bluebird');
 
 class Waiter {
   promise;
@@ -18,9 +17,9 @@ class Waiter {
   done;
   constructor (timeout) {
     this.done = false;
-    this.promise = new bluebird((res, rej) => {
-      this.resolve = res;
-      this.reject = rej;
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
       if (timeout != null && timeout > 0) {
         this.timeout = setTimeout(() => this.timeoutFired(), timeout);
       }

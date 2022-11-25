@@ -5,6 +5,8 @@
  * Proprietary and confidential
  */
 /* global it, assert, describe, before, beforeEach */
+
+const { setTimeout } = require('timers/promises');
 const cache = require('cache');
 const synchro = require('../../src/synchro');
 const MESSAGES = synchro.MESSAGES;
@@ -35,10 +37,6 @@ describe('Synchro', function () {
     }
   });
 
-  async function sleepMs (timeMs) {
-    return new Promise(r => setTimeout(r, timeMs));
-  }
-
   it('[LHGV] Should register listener on userId when using setStreams', () => {
     cache.setStreams('toto', 'test', 'titi');
     assert.isTrue(synchro.listenerMap.has('toto'), 'should be registered');
@@ -54,9 +52,9 @@ describe('Synchro', function () {
     const al = cache.getAccessLogicForId('toto', 'test');
     assert.exists(al);
     assert.equal(al.token, 'titi');
-    await sleepMs(50);
+    await setTimeout(50);
     natsClient.publish('cache.toto', encode({ eventName: 'toto', payload: { action: MESSAGES.UNSET_ACCESS_LOGIC, accessId: 'test', accessToken: 'titi' } }));
-    await sleepMs(50);
+    await setTimeout(50);
     assert.notExists(cache.getAccessLogicForId('toto', 'test'));
   });
 
@@ -79,9 +77,9 @@ describe('Synchro', function () {
     cache.setUserId('toto', 'toto-id');
     cache.setStreams('toto-id', 'test', 'titi');
     assert.isTrue(synchro.listenerMap.has('toto-id'), 'should be registered');
-    await sleepMs(50);
+    await setTimeout(50);
     pubsub.cache.emit('toto', { action: MESSAGES.UNSET_USER_DATA });
-    await sleepMs(50);
+    await setTimeout(50);
     assert.isTrue(synchro.listenerMap.has('toto-id'), 'should not be removed');
   });
 
@@ -89,9 +87,9 @@ describe('Synchro', function () {
     cache.setUserId('toto', 'toto-id');
     cache.setStreams('toto-id', 'test', 'titi');
     assert.isTrue(synchro.listenerMap.has('toto-id'), 'should be registered');
-    await sleepMs(50);
+    await setTimeout(50);
     natsClient.publish('cache.toto-id', encode({ eventName: 'toto-id', payload: { action: MESSAGES.UNSET_USER_DATA } }));
-    await sleepMs(50);
+    await setTimeout(50);
     assert.isFalse(synchro.listenerMap.has('toto-id'), 'should be removed');
   });
 
@@ -100,9 +98,9 @@ describe('Synchro', function () {
     cache.setStreams('toto-id', 'test', 'titi');
     assert.equal(cache.getUserId('toto'), 'toto-id', 'userId should be cached');
     assert.isTrue(synchro.listenerMap.has('toto-id'), 'should be registered');
-    await sleepMs(50);
+    await setTimeout(50);
     natsClient.publish('cache.unset-user', encode({ eventName: 'unset-user', payload: { action: MESSAGES.UNSET_USER, username: 'toto' } }));
-    await sleepMs(50);
+    await setTimeout(50);
     assert.isFalse(synchro.listenerMap.has('toto-id'), 'listner should be removed');
     assert.isUndefined(cache.getUserId('toto'), 'userId should be removed');
   });

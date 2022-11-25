@@ -14,7 +14,6 @@ const axon = require('axon');
 const path = require('path');
 const lodash = require('lodash');
 const msgpack = require('msgpack5')();
-const bluebird = require('bluebird');
 const supertest = require('supertest');
 const _ = require('lodash');
 const { ConditionVariable, Fuse } = require('./condition_variable');
@@ -166,23 +165,23 @@ class SpawnContext {
       const server = net.createServer();
 
       logger.debug('Trying future child port', port);
-      return new bluebird((res, rej) => {
+      return new Promise((resolve, reject) => {
         try {
           server.on('error', (err) => {
             logger.debug('Future child port unavailable: ', err);
             server.close();
-            res(false);
+            resolve(false);
           });
 
           const host = '0.0.0.0';
           const backlog = 511; // default
           server.listen(port, host, backlog, () => {
             server.close();
-            res(true);
+            resolve(true);
           });
         } catch (err) {
           logger.debug('Synchronous exception while looking for a future child port: ', err);
-          rej(err);
+          reject(err);
         }
       });
     }
@@ -361,7 +360,7 @@ class ProcessProxy {
        * @returns {Promise<unknown>}
        */
   sendToChild (msg, ...args) {
-    return new bluebird((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const child = this.childProcess;
       const msgId = this.createPendingMessage(resolve, reject);
       // This is where things get async - the child will answer whenever it

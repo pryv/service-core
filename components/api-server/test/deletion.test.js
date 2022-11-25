@@ -4,12 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+const { describe, it, before, beforeEach, after } = require('mocha');
 const nock = require('nock');
 const cuid = require('cuid');
 const fs = require('fs');
 const path = require('path');
 const assert = require('chai').assert;
-const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const { getApplication } = require('api-server/src/application');

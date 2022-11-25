@@ -269,7 +269,7 @@ describe('Socket.IO', function () {
     it('[744Z] must notify other sockets for the same user about events changes', () => {
       ioCons.con1 = connect(namespace, { auth: token }); // personal access
       ioCons.con2 = connect(namespace, { auth: testData.accesses[2].token }); // "read all" access
-      return new bluebird((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         ioCons.con2.on('eventsChanged', function () {
           resolve();
         });
@@ -289,13 +289,13 @@ describe('Socket.IO', function () {
     it('[GJLT] must notify other sockets for the same user (only) about streams changes', function () {
       ioCons.con1 = connect(namespace, { auth: token }); // personal access
       ioCons.otherCon = connect('/' + otherUser.username, { auth: otherToken });
-      return new bluebird((res, rej) => {
+      return new Promise((resolve, reject) => {
         // We do _not_ want otherCon to be notified.
-        ioCons.otherCon.once('streamsChanged', rej);
+        ioCons.otherCon.once('streamsChanged', reject);
         // NOTE How to test if no notifications are sent to otherCon? We reject
         //  if we receive one - but have to wait for notifications to get in to
         //  make this effective. Let's sacrifice 100ms.
-        setTimeout(res, 100);
+        setTimeout(resolve, 100);
         // Now create a stream for con1.
         whenAllConnectedDo(function () {
           const params = {
@@ -303,7 +303,7 @@ describe('Socket.IO', function () {
             parentId: undefined
           };
           ioCons.con1.emit('streams.create', params, (err) => {
-            if (err) { rej(err); }
+            if (err) { reject(err); }
           });
         });
       });
@@ -460,8 +460,8 @@ describe('Socket.IO', function () {
 function expectNCalls (n) {
   let callCount = 0;
   let deferred;
-  const promise = new bluebird((res) => {
-    deferred = res;
+  const promise = new Promise((resolve) => {
+    deferred = resolve;
   });
   const fun = () => {
     callCount += 1;

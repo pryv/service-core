@@ -79,7 +79,7 @@ exports.getTrustedAppCheck = function getTrustedAppCheck (authSettings) {
     //  better approach would be to whitelist all characters that are allowed
     //  in the input language.
     // first escape the origin string
-    let rxString = origin.replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1');
+    let rxString = origin.replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1'); // eslint-disable-line no-useless-escape
     // then replace wildcards
     rxString = rxString.replace(/\\\*/g, '\\S*');
     return new RegExp('^' + rxString + '$');

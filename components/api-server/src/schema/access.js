@@ -119,7 +119,7 @@ const permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contr
 
 const featureSetting = exports.featureSetting = string({ enum: ['forbidden'] });
 
-var permissions = exports.permissions = function (action) {
+const permissions = exports.permissions = function (action) {
   const streamPermission = object({
     streamId: {
       type: ['string', 'null']

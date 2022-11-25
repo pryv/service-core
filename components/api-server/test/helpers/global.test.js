@@ -4,6 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+const { afterEach } = require('mocha');
+
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
 afterEach(async function () {
