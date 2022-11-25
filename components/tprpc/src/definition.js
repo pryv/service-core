@@ -148,9 +148,9 @@ class Compiler {
  */
   printType (name, json) {
     if (json.nested != null) { this.printTypes(json); }
-    if (json.values != null) { this.printTypeAsEnum(name, json); }
-    // Assume any other type, output as an interface.
-    else { this.printTypeAsInterface(name, json); }
+    if (json.values != null) { // Assume any other type, output as an interface.
+      this.printTypeAsEnum(name, json);
+    } else { this.printTypeAsInterface(name, json); }
   }
 
   /**

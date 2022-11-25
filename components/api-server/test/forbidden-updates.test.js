@@ -91,9 +91,7 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
             should(err.id).be.equal('forbidden');
             should(err.httpStatus).be.equal(403);
             stepDone();
-          }
-          // Non-strict mode: we do not expect an error but a warning log
-          else {
+          } else { // Non-strict mode: we do not expect an error but a warning log
             if (err != null) return stepDone(err);
 
             // From here we expect a warning log to be triggered (see logger above).
