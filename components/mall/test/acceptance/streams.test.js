@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global assert, describe, before, it, initTests, initCore, getNewFixture, charlatan, cuid, accessesPath, eventsPath, streamsPath, coreRequest  */
+/* global assert, describe, before, it, initTests, initCore, getNewFixture, charlatan, cuid, after, coreRequest  */
 require('test-helpers/src/api-server-tests-config');
 const { getConfig } = require('@pryv/boiler');
 
@@ -13,6 +13,7 @@ describe('Stores Streams', function () {
   let personalToken;
   let mongoFixtures;
   let isOpenSource;
+  let accessesPath, streamsPath;
 
   before(async () => {
     isOpenSource = (await getConfig()).get('openSource:isActive');
@@ -38,7 +39,6 @@ describe('Stores Streams', function () {
     await user.session(personalToken);
     user = user.attrs;
     accessesPath = '/' + username + '/accesses/';
-    eventsPath = '/' + username + '/events/';
     streamsPath = '/' + username + '/streams/';
 
     const res = await coreRequest.post(accessesPath)

@@ -579,7 +579,6 @@ describe('Versioning', function () {
               const expected = _.cloneDeep(testData.events[26]);
               delete expected.tags;
               event.should.eql(expected);
-              checked = true;
             }
           });
         }

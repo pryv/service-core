@@ -28,7 +28,7 @@ class LocalUserEvents {
       return db.updateEvent(eventData.id, eventData);
     } catch (err) {
       if (err.message === 'UNIQUE constraint failed: events.eventid') {
-        throw errorFactory.itemAlreadyExists('event', { id: eventId }, err);
+        throw errorFactory.itemAlreadyExists('event', { id: eventData.id }, err);
       }
       throw errorFactory.unexpectedError(err);
     }

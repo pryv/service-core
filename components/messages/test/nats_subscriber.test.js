@@ -51,7 +51,7 @@ describe('NatsSubscriber', () => {
       it('[4MAI] accepts messages from USERNAME.sok1 and dispatches them to sinks', async () => {
         await rawClient.publish('foobar', encode({ eventName: 'onTestMessage' }));
         while (msgs.length === 0) {
-          await new Promise((r) => setTimeout(r, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
         assert.deepEqual(msgs, ['onTestMessage']);
       });
@@ -59,7 +59,7 @@ describe('NatsSubscriber', () => {
         rawClient.publish('barbaz', encode({ eventName: 'onTestMessage1' }));
         rawClient.publish('foobar', encode({ eventName: 'onTestMessage2' }));
         while (msgs.length === 0) {
-          await new Promise((r) => setTimeout(r, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
         // We've received the second message and not the first. Apart from waiting
         // a long time for the first _not_ to arrive, this is the best assertion we
@@ -72,7 +72,7 @@ describe('NatsSubscriber', () => {
       it('[L49E] should unsubscribe from NATS', async () => {
         rawClient.publish('foobar', encode({ eventName: 'onTestMessage1' }));
         while (msgs.length === 0) {
-          await new Promise((r) => setTimeout(r, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
         natsSUB.unsubscribe();
         rawClient.publish('foobar', encode({ eventName: 'onTestMessage2' }));

@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 // Unit test for type repository
-/* global describe, it, beforeEach */
+/* global describe, it, beforeEach, before */
 const should = require('should');
 const chai = require('chai');
 const assert = chai.assert;

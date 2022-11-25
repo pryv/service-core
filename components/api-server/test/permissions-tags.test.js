@@ -37,7 +37,6 @@ describe('Access permissions - Tags', function () {
 
   before(async () => {
     username = cuid();
-    streamId = cuid();
     const user = await mongoFixtures.user(username, {});
     basePath = `/${username}/accesses`;
     token = cuid();

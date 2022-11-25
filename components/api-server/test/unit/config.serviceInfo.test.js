@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/* global describe, before, it */
 const chai = require('chai');
 const assert = chai.assert;
 const { getConfig } = require('@pryv/boiler');

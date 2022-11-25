@@ -27,7 +27,7 @@ ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callba
     // SingleCollectionsMode - start
     delete event.userId;
 
-    for (converter of this.converters) {
+    for (const converter of this.converters) {
       event = converter(event);
     }
 

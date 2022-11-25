@@ -6,7 +6,7 @@
  */
 'use strict';
 // Tests pertaining to managing influx data - acceptance tests that actually write.
-/* global describe, it */
+/* global describe, it, before */
 const { should } = require('../../test-helpers');
 const { getConfig } = require('@pryv/boiler');
 const influx = require('influx');

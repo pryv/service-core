@@ -12,12 +12,13 @@ const axon = require('axon');
 const { getConfig, getLogger } = require('@pryv/boiler');
 
 let axonSocket = null;
-const initalizing = false;
+let initalizing = false;
 exports.getTestNotifier = async function () {
-  while (initalizing) { await new Promise((r) => setTimeout(r, 50)); }
+  // eslint-disable-next-line no-unmodified-loop-condition
+  while (initalizing) { await new Promise((resolve) => setTimeout(resolve, 50)); }
   if (axonSocket != null) return axonSocket;
   const logger = getLogger('test-messaging');
-  initializing = true;
+  initalizing = true;
   const config = await getConfig();
   const axonSettings = config.get('axonMessaging');
 
@@ -25,14 +26,14 @@ exports.getTestNotifier = async function () {
 
   try {
     axonSocket = await openPubSocket(axonSettings);
-  } catch (e) {
+  } catch (err) {
     logger.error('Error setting up TCP pub socket: ' + err);
     process.exit(1);
   }
 
   logger.info('TCP pub socket ready on ' + axonSettings.host + ':' + axonSettings.port);
 
-  initializing = false;
+  initalizing = false;
   return axonSocket;
 };
 

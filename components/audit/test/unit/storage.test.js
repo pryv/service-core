@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global assert, cuid, audit, initTests */
+/* global describe, before, it, assert, cuid, audit, initTests */
 
 describe('Audit Storage', () => {
   const userId = cuid();

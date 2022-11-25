@@ -4,10 +4,10 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/* global describe, it, before, assert, cuid, initTests, audit */
 
 describe('Audit Storage concurent Writes', () => {
   const userId = cuid();
-  const createdBy = cuid();
   let userStorage;
 
   before(async () => {
@@ -24,6 +24,7 @@ describe('Audit Storage concurent Writes', () => {
     function statement () {
       callCount++;
       if (callCount > 20) return true;
+      // eslint-disable-next-line no-throw-literal
       throw { code: 'SQLITE_BUSY' };
     }
     await userStorage.concurentSafeWriteStatement(statement, 21);
@@ -36,6 +37,7 @@ describe('Audit Storage concurent Writes', () => {
     function statement () {
       callCount++;
       if (callCount > 20) return true;
+      // eslint-disable-next-line no-throw-literal
       throw { code: 'SQLITE_BUSY' };
     }
     try {

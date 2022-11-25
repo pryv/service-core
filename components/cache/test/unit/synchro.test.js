@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/* global it, assert, describe, before, beforeEach */
 const cache = require('cache');
 const synchro = require('../../src/synchro');
 const MESSAGES = synchro.MESSAGES;

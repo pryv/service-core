@@ -4,13 +4,14 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/* global describe, it, before */
 require('test-helpers/src/api-server-tests-config');
 require('api-server/test/unit/test-helper');
 const chai = require('chai');
 const assert = chai.assert;
 const { connect, JSONCodec } = require('nats');
 const { decode } = JSONCodec();
-/* global describe, it */
+
 const natsPubsub = require('../src/nats_pubsub');
 const { getConfig } = require('@pryv/boiler');
 // function decode(x) {return x};

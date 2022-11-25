@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, charlatan */
 
 const { integrity } = require('business');
 
@@ -13,7 +13,7 @@ describe('Audit events integrity', function () {
   let user, username, password, access, appAccess;
   let personalToken;
   let mongoFixtures;
-
+  let eventsPath, accessesPath;
   let auditedEvent;
 
   const streamId = 'yo';
@@ -39,7 +39,6 @@ describe('Audit events integrity', function () {
     user = user.attrs;
     accessesPath = '/' + username + '/accesses/';
     eventsPath = '/' + username + '/events/';
-    auditPath = '/' + username + '/audit/logs/';
 
     const res = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)

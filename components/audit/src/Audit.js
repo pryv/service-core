@@ -176,13 +176,13 @@ function buildDefaultEvent (context) {
 /**
  * @returns {void}
  */
-function log (context, userId, validity, id) {
-  const methodId = context.methodId;
-  if (context.access?.id == null || methodId == null || userId == null) {
-    console.log('XXX E> ApiCall', methodId, ' UserId', userId, ' accesId:', context.access?.id, 'Audited?', AUDITED_METHODS_MAP[methodId], 'XX' + validity, id);
-    // const e = new Error();
-    // const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
-    // console.log(stack);
-    // console.log('XXXX> Access:', context.access);
-  }
-}
+// function log (context, userId, validity, id) {
+//  const methodId = context.methodId;
+//  if (context.access?.id == null || methodId == null || userId == null) {
+//    console.log('XXX E> ApiCall', methodId, ' UserId', userId, ' accesId:', context.access?.id, 'Audited?', AUDITED_METHODS_MAP[methodId], 'XX' + validity, id);
+// const e = new Error();
+// const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
+// console.log(stack);
+// console.log('XXXX> Access:', context.access);
+//  }
+// }

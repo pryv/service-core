@@ -282,7 +282,6 @@ describe('system (ex-register)', function () {
 
       it('[9K71] must run the process but not save anything for test username "recla"',
         async function () {
-          let originalCount;
           let createdUserId;
           const settings = _.cloneDeep(helpers.dependencies.settings);
 
@@ -301,8 +300,8 @@ describe('system (ex-register)', function () {
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
           const usersRepository = await getUsersRepository();
-          originalUsers = await usersRepository.getAll();
-          originalCount = originalUsers.length;
+          const originalUsers = await usersRepository.getAll();
+          const originalCount = originalUsers.length;
 
           // create user
           const data = {

@@ -17,7 +17,7 @@ let initializing = false;
  */
 async function getMall () {
   while (initializing) {
-    await new Promise((r) => setTimeout(r, 5));
+    await new Promise((resolve) => setTimeout(resolve, 5));
   }
   if (mall != null) { return mall; }
   initializing = true;

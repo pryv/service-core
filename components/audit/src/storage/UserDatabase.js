@@ -214,7 +214,7 @@ class UserDatabase {
           throw error;
         }
         const waitTime = i > (WAIT_LIST_MS.length - 1) ? 100 : WAIT_LIST_MS[i];
-        await new Promise((r) => setTimeout(r, waitTime));
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
         this.logger.debug('SQLITE_BUSY, retrying in ' + waitTime + 'ms');
       }
     }

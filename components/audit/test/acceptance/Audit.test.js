@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global describe, before, after, it, assert, path, charlatan, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix, apiMethods, fakeAuditEvent, CONSTANTS, sinon, MethodContextUtils, CONSTANTS, AuditAccessIds */
 
 describe('Audit', function () {
   let user, username, password, access, readAccess;
@@ -188,6 +188,7 @@ describe('Audit', function () {
       });
     });
     describe('with errorId "invalid-request-structure"', function () {
+      let now;
       const query = { streams: JSON.stringify({ any: ['A', 'Z', true] }) }; // copied from 30NV
       before(async function () {
         now = Date.now() / 1000;
@@ -215,6 +216,7 @@ describe('Audit', function () {
       });
     });
     describe('with errorId "invalid-parameters-format"', function () {
+      let now;
       const query = { fromTime: 'yo' };
       before(async function () {
         now = Date.now() / 1000;
@@ -242,6 +244,7 @@ describe('Audit', function () {
       });
     });
     describe('with errorId "unknown-referenced-resource"', function () {
+      let now;
       const query = { streams: ['does-not-exist', 'neither'] };
       before(async function () {
         now = Date.now() / 1000;
@@ -269,6 +272,7 @@ describe('Audit', function () {
       });
     });
     describe('with errorId "invalid-access-token"', function () {
+      let now;
       before(async function () {
         now = Date.now() / 1000;
         res = await coreRequest
@@ -294,6 +298,7 @@ describe('Audit', function () {
       });
     });
     describe('with errorId "forbidden"', function () {
+      let now;
       before(async function () {
         now = Date.now() / 1000;
         res = await coreRequest
@@ -323,6 +328,7 @@ describe('Audit', function () {
       });
     });
     describe('with errorId "unknown-resource"', function () {
+      let now;
       before(async function () {
         now = Date.now() / 1000;
         res = await coreRequest
@@ -347,6 +353,7 @@ describe('Audit', function () {
       });
     });
     describe('with a malformed request body', function () {
+      let now;
       before(async function () {
         now = Date.now() / 1000;
         res = await coreRequest

@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/* global describe, it, before, after */
 const chai = require('chai');
 const nconf = require('nconf');
 const assert = chai.assert;
@@ -13,7 +14,7 @@ const treeUtils = require('utils/src/treeUtils');
 const { defaults: dataStoreDefaults } = require('pryv-datastore');
 const PRIVATE_PREFIX = ':_system:';
 const CUSTOMER_PREFIX = ':system:';
-describe('XXXSystemStreams config', () => {
+describe('[SSDC] SystemStreams config', () => {
   let store;
   const customRootStreamId = 'myNewStream';
   const DEFAULT_VALUES_FOR_FIELDS = {

@@ -5,13 +5,13 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global describe, before, after, it, assert, cuid, initTests, initCore, charlatan, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix, CONSTANTS */
 
 describe('Audit legacy route', function () {
   let user, username, password, access, appAccess;
   let personalToken;
-  let auditPath;
   let mongoFixtures;
+  let eventsPath, accessesPath, auditPath;
 
   const streamId = 'yo';
   before(async function () {

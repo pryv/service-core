@@ -5,12 +5,12 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix, charlatan */
 
 describe('Audit Streams and Events', function () {
   let user, username, password, access, appAccess, anotherAppAccess;
   let personalToken;
-
+  let eventsPath, streamsPath, accessesPath;
   let mongoFixtures;
 
   const streamId = 'yo';

@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global cache, describe, before, after, it, assert, cuid, config, initTests, initCore, coreRequest, getNewFixture */
+/* global cache, describe, before, after, it, assert, cuid, config, initTests, initCore, coreRequest, getNewFixture, charlatan */
 
 const STREAMS = {
   A: {},
@@ -21,6 +21,7 @@ describe('Cache', function () {
   let user, username, password, access, appAccess;
   let personalToken;
   let mongoFixtures;
+  let accessesPath, eventsPath, streamsPath;
 
   const streamId = 'yo';
   before(async function () {
