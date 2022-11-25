@@ -136,7 +136,6 @@ describe('System streams', function () {
           }
         ];
 
-
         readableStreams = treeUtils.cloneAndApply(readableStreams, (s) => {
           s.createdBy = dataStoreDefaults.SystemAccessId;
           s.modifiedBy = dataStoreDefaults.SystemAccessId;

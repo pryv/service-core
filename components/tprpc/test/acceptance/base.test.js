@@ -5,6 +5,9 @@
  * Proprietary and confidential
  */
 /* global describe, it, before, after, beforeEach, afterEach */
+
+const path = require('path');
+
 require('@pryv/boiler').init({ appName: 'tprpc-test', baseConfigDir: '' });
 const chai = require('chai');
 const assert = chai.assert;
@@ -16,7 +19,7 @@ describe('Base API', () => {
   // Loads the service definition
   let definition;
   before(async () => {
-    definition = await rpc.load(__dirname + '/../fixtures/base.proto');
+    definition = await rpc.load(path.resolve(__dirname, '../fixtures/base.proto'));
   });
   // If nothing else is done, this is the server implementation
   const impl = {

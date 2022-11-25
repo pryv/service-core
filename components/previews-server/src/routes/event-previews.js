@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+const path = require('path');
 const Cache = require('../cache');
 const childProcess = require('child_process');
 const CronJob = require('cron').CronJob;
@@ -194,7 +195,7 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
      */
   function runCacheCleanupWorker (callback) {
     callback = typeof callback === 'function' ? callback : function () { };
-    const worker = childProcess.fork(__dirname + '/../runCacheCleanup.js', process.argv.slice(2));
+    const worker = childProcess.fork(path.resolve(__dirname, '../runCacheCleanup.js'), process.argv.slice(2));
     workerRunning = true;
     worker.on('exit', function (code) {
       workerRunning = false;

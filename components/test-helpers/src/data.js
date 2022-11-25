@@ -140,8 +140,7 @@ function resetData (storage, user, items, done) {
 /**
  * Source attachments directory path (!= server storage path)
  */
-const attachmentsDirPath = (exports.attachmentsDirPath =
-    __dirname + '/data/attachments/');
+const attachmentsDirPath = (exports.attachmentsDirPath = path.join(__dirname, '/data/attachments/'));
 const attachments = (exports.attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
   document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
@@ -319,7 +318,7 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
  * @returns {Object} structure
  */
 exports.getStructure = function (version) {
-  return require(path.resolve(__dirname + '/structure/' + version));
+  return require(path.join(__dirname, '/structure/', version));
 };
 /**
  * @returns {void}

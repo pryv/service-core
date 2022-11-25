@@ -67,7 +67,7 @@ describe('Cache', function () {
 
   function validGet (path) { return coreRequest.get(path).set('Authorization', appAccess.token); }
   function validPost (path) { return coreRequest.post(path).set('Authorization', appAccess.token); }
-  
+
   before(async () => {
     await validGet(eventsPath);
     await validPost(eventsPath)

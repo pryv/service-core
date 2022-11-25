@@ -56,6 +56,7 @@ describe('webhooks', function () {
 
   let apiServer, webhooksApp, webhooksService;
   before(async function () {
+    this.timeout(5000);
     apiServer = await context.spawn({
       webhooks: {
         minIntervalMs: 10

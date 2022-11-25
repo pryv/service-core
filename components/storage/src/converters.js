@@ -10,7 +10,6 @@
 
 const generateId = require('cuid');
 
-
 exports.createIdIfMissing = function (item) {
   item.id = item.id || generateId();
   return item;

@@ -11,6 +11,7 @@ const childProcessNodeInternal = require('child_process');
 const net = require('net');
 const EventEmitter = require('events');
 const axon = require('axon');
+const path = require('path');
 const lodash = require('lodash');
 const msgpack = require('msgpack5')();
 const bluebird = require('bluebird');
@@ -46,8 +47,8 @@ class SpawnContext {
   // a module.
   //
 
-  constructor (childPath = __dirname + '/../../api-server/test/helpers/child_process') {
-    this.childPath = childPath;
+  constructor (childPath) {
+    this.childPath = childPath || path.resolve(__dirname, '../../api-server/test/helpers/child_process');
     this.basePort = basePort;
     basePort += 10;
 

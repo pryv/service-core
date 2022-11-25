@@ -8,14 +8,14 @@ const testHelpers = require('test-helpers');
 const InstanceManager = testHelpers.InstanceManager;
 
 const { getConfigUnsafe } = require('@pryv/boiler');
-
+const path = require('path');
 /**
  * Overrides common test dependencies with server-specific config settings.
  */
 const deps = module.exports = testHelpers.dependencies;
 deps.settings = getConfigUnsafe(true).get();
 deps.instanceManager = new InstanceManager({
-  serverFilePath: __dirname + '/../../src/server.js',
+  serverFilePath: path.resolve(__dirname, '../../src/server.js'),
   axonMessaging: deps.settings.axonMessaging,
   logging: deps.logging
 });

@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 
-
 describe('Audit Storage concurent Writes', () => {
   const userId = cuid();
   const createdBy = cuid();
@@ -14,7 +13,6 @@ describe('Audit Storage concurent Writes', () => {
   before(async () => {
     await initTests();
   });
-
 
   before(async () => {
     userStorage = await audit.storage.forUser(userId);

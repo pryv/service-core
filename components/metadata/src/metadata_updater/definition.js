@@ -4,7 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+const path = require('path');
 const rpc = require('tprpc');
 module.exports = {
-  produce: () => rpc.load(__dirname + '/interface.proto')
+  produce: () => rpc.load(path.join(__dirname, '/interface.proto'))
 };

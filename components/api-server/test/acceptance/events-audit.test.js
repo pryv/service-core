@@ -119,7 +119,6 @@ describe('Audit logs events', () => {
     }
   }
 
-
   describe('GET /events', () => {
     it('[0BK7] must not return null values or trashed=false', async () => {
       const res = await get('/events', { streams: [':_audit:action-events.get'] }, personalToken);

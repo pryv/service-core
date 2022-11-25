@@ -11,7 +11,6 @@
 require('test-helpers/src/api-server-tests-config');
 const { getConfig } = require('@pryv/boiler');
 
-
 /**
  * Core
  */
