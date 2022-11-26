@@ -12,8 +12,7 @@ const charlatan = require('charlatan');
 const cuid = require('cuid');
 const assert = require('chai').assert;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const timestamp = require('unix-timestamp');
-const { TAG_PREFIX, TAG_ROOT_STREAMID, TAG_PREFIX_LENGTH } = require('api-server/src/methods/helpers/backwardCompatibility');
+const { TAG_PREFIX, TAG_ROOT_STREAMID } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { findById } = require('utils/src/treeUtils');
 
 describe('backward-compatibility', () => {
@@ -23,11 +22,9 @@ describe('backward-compatibility', () => {
     let server;
     let username;
     let token;
-    let tagPrefix;
     let streamId;
     before(async () => {
       config = await getConfig();
-      tagPrefix = config.get('backward');
 
       mongoFixtures = databaseFixture(await produceMongoConnection());
 
@@ -35,7 +32,7 @@ describe('backward-compatibility', () => {
       token = cuid();
       const user = await mongoFixtures.user(username);
       streamId = cuid();
-      const stream = await user.stream({ id: streamId });
+      await user.stream({ id: streamId });
       await user.stream({
         id: TAG_ROOT_STREAMID
       });
@@ -159,7 +156,7 @@ describe('backward-compatibility', () => {
         });
       });
       it('[R3NU] should return the event with its tags', async () => {
-        res = await get('events');
+        const res = await get('events');
         assert.equal(res.status, 200);
         const events = res.body.events;
         const eventWithTags = events.filter(e => e.tags.includes('hello'));
@@ -190,7 +187,7 @@ describe('backward-compatibility', () => {
       token = cuid();
       const user = await mongoFixtures.user(username);
       const stream = await user.stream();
-      const event = await stream.event({
+      await stream.event({
         type: 'language/iso-639-1',
         content: charlatan.Lorem.characters(2)
       });
@@ -433,7 +430,7 @@ describe('backward-compatibility', () => {
         assert.isNotEmpty(accesses);
         for (const access of accesses) {
           if (access.permissions == null) continue;
-          for (permission of access.permissions) {
+          for (const permission of access.permissions) {
             checkOldPrefix(permission.streamId);
           }
         }
@@ -441,7 +438,7 @@ describe('backward-compatibility', () => {
         assert.isNotEmpty(deletions);
         for (const access of deletions) {
           if (access.permissions == null) continue;
-          for (permission of access.permissions) {
+          for (const permission of access.permissions) {
             checkOldPrefix(permission.streamId);
           }
         }
@@ -616,7 +613,7 @@ describe('backward-compatibility', () => {
           assert.isNotEmpty(accesses);
           for (const access of accesses) {
             if (access.permissions == null) continue;
-            for (permission of access.permissions) {
+            for (const permission of access.permissions) {
               checkNewPrefix(permission.streamId);
             }
           }
@@ -624,7 +621,7 @@ describe('backward-compatibility', () => {
           assert.isNotEmpty(deletions);
           for (const access of deletions) {
             if (access.permissions == null) continue;
-            for (permission of access.permissions) {
+            for (const permission of access.permissions) {
               checkNewPrefix(permission.streamId);
             }
           }
