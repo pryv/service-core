@@ -7,5 +7,6 @@
   "files.watcherExclude": {
     "**/var-pryv/**": true
   },
-  "javascript.validate.enable": false
+  "javascript.validate.enable": false,
+  "semistandard.enable": false
 }
