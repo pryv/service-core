@@ -4,7 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* eslint-disable no-console */
+
+// TODO remove this (use a single mocking tool if possible)
+
 const EventEmitter = require('events');
 const bluebird = require('bluebird');
 const express = require('express');
