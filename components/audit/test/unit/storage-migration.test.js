@@ -5,8 +5,6 @@
  * Proprietary and confidential
  */
 
-/* global describe, it, before, after, assert, initTests */
-
 const setUserBasePathTestOnly = require('business').users.userLocalDirectory.setBasePathTestOnly;
 
 const path = require('path');

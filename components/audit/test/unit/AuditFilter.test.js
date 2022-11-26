@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, validation, assert, apiMethods, AuditFilter */
 
 describe('AuditFilter', () => {
   function buildFilter (include = ['all'], exclude = []) {
