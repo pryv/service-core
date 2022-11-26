@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, before, assert, cuid, initTests, audit */
+/* global assert, cuid, initTests, audit */
 
 describe('Audit Storage concurent Writes', () => {
   const userId = cuid();

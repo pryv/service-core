@@ -9,7 +9,6 @@ const path = require('path');
 const bluebird = require('bluebird');
 const nock = require('nock');
 const assert = require('chai').assert;
-const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 

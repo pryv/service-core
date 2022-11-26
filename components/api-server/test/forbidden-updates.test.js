@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it */
 
 const commonFns = require('../src/methods/helpers/commonFunctions');
 const streamSchema = require('../src/schema/stream');

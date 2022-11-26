@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const path = require('path');
 const { getLogger } = require('@pryv/boiler').init({
   appName: 'hfs-server-tests',
@@ -62,9 +63,10 @@ exports.produceStorageLayer = produceStorageLayer;
 logger.debug('creating new spawn context');
 const spawner = testHelpers.spawner;
 const spawnContext = new spawner.SpawnContext('test/support/child_process');
-/* global after */
+
 after(() => {
   logger.debug('shutting down spawn context');
   spawnContext.shutdown();
 });
+
 exports.spawnContext = spawnContext;

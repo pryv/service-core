@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 require('test-helpers/src/api-server-tests-config');
 require('api-server/test/unit/test-helper');
 const chai = require('chai');
@@ -11,8 +12,9 @@ const assert = chai.assert;
 const { connect, JSONCodec } = require('nats');
 const { encode } = JSONCodec();
 const { getConfig } = require('@pryv/boiler');
-/* global describe, it, beforeEach, afterEach */
+
 const natsPubsub = require('../src/nats_pubsub');
+
 describe('NatsSubscriber', () => {
   it('[DMMP] should construct', async () => {
     await natsPubsub.init();

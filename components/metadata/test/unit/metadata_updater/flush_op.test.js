@@ -4,8 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // A test for the flush operation that flushes updates to disk.
-/* global describe, it, beforeEach, before, after */
+
 const chai = require('chai');
 const assert = chai.assert;
 const cuid = require('cuid');
@@ -16,6 +17,7 @@ const { PendingUpdate } = require('../../../src/metadata_updater/pending_updates
 const { Flush } = require('../../../src/metadata_updater/flush');
 const { getMall } = require('mall');
 let mall;
+
 describe('Flush', () => {
   const connection = produceMongoConnection();
   const now = Date.now() / 1000;

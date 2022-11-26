@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it */
+
 'use strict';
 
 const DrainStream = require('../../../src/methods/streams/DrainStream');

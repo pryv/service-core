@@ -4,8 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // Tests that exercise auth checks that have been disabled in other tests.
-/* global describe, it, before, afterEach, beforeEach */
+
 const should = require('should');
 const chai = require('chai');
 const assert = chai.assert;

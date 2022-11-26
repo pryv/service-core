@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, beforeEach, afterEach */
+
 const temp = require('temp').track();
 const path = require('path');
 const fs = require('fs');
@@ -12,6 +12,7 @@ const chai = require('chai');
 const assert = chai.assert;
 const logger = require('@pryv/boiler').getLogger('compile.test');
 const rpc = require('tprpc');
+
 describe('Type Compilation', function () {
   let tmpDirPath;
   beforeEach(() => {

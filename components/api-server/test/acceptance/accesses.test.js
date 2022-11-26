@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, before, after, beforeEach */
+
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const chai = require('chai');
@@ -17,6 +17,7 @@ const { ErrorIds } = require('errors/src');
 const helpers = require('../helpers');
 const databaseFixture = helpers.databaseFixture;
 const userAccountStorage = require('business/src/users/userAccountStorage');
+
 describe('accesses', () => {
   let storage, produceMongoConnection, context;
   before(() => {

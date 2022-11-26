@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, before, beforeEach, it */
+
 const ErrorIds = require('errors').ErrorIds;
 const async = require('async');
 const methodsSchema = require('../src/schema/accessesMethods');
@@ -14,6 +14,7 @@ const should = require('should');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
+
 describe('[ACCP] accesses (app)', function () {
   let helpers, server, validation, storage, testData;
   let additionalTestAccesses, user, access, basePath, accessesNotifCount;

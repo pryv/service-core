@@ -4,12 +4,14 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // Tests for the PendingUpdatesMap and its helper classes.
-/* global describe, it, beforeEach */
+
 const chai = require('chai');
 const assert = chai.assert;
 const sinon = require('sinon');
 const { PendingUpdatesMap, PendingUpdate } = require('../../../src/metadata_updater/pending_updates');
+
 describe('PendingUpdatesMap', () => {
   describe('#merge and #get', () => {
     let map;

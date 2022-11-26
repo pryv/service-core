@@ -4,11 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it */
+
 const chai = require('chai');
 const assert = chai.assert;
 const { BatchRequest, BatchRequestElement } = require('../../../src/series/batch_request');
 const { TypeRepository } = require('../../../src/types');
+
 describe('BatchRequest', () => {
   describe('.parse', () => {
     const typeRepo = new TypeRepository();

@@ -4,8 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // Tests pertaining to storing data in a hf series.
-/* global describe, it, before, after */
+
 const { ErrorIds } = require('errors');
 const cuid = require('cuid');
 const chai = require('chai');
@@ -14,6 +15,7 @@ const superagent = require('superagent');
 const { spawnContext, produceMongoConnection } = require('./test-helpers');
 const testHelpers = require('test-helpers');
 const databaseFixture = testHelpers.databaseFixture;
+
 describe('Querying data from a HF series', function () {
   let database, pryv;
   before(async function () {

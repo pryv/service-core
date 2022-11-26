@@ -4,8 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // Tests pertaining to storing data in a hf series.
-/* global describe, it, beforeEach, after, before, afterEach */
+
 const chai = require('chai');
 const assert = chai.assert;
 const cuid = require('cuid');

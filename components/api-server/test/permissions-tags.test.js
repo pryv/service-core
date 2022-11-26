@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, before, after */
 
 const cuid = require('cuid');
 const chai = require('chai');

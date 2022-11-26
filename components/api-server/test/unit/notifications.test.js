@@ -4,10 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, beforeEach, before */
+
 require('./test-helper');
 const assert = require('chai').assert;
 const { pubsub } = require('messages');
+
 describe('Notifications', () => {
   let axonMsgs = [];
   let emittedMsgs = [];

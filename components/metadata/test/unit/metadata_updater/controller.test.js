@@ -4,8 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // Tests the Metadata Updater Controller.
-/* global describe, it, beforeEach, afterEach */
+
 const chai = require('chai');
 const assert = chai.assert;
 const sinon = require('sinon');
@@ -13,6 +14,7 @@ const { PendingUpdate, PendingUpdatesMap } = require('../../../src/metadata_upda
 const { Controller } = require('../../../src/metadata_updater/controller');
 const { Flush } = require('../../../src/metadata_updater/flush');
 const { getLogger } = require('@pryv/boiler');
+
 describe('Metadata Updater/Controller', () => {
   const logger = getLogger('metadata');
   let map;

@@ -4,14 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 'use strict';
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const supertest = require('supertest');
 const should = require('should');
 const { fixturePath, fixtureFile } = require('../test-helper');
 const uploads = require('../../../src/middleware/uploads');
-/* globals describe, it */
+
 describe('uploads middleware', function () {
   function app () {
     const app = express();

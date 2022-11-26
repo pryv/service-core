@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, beforeEach, after, it */
 
 const async = require('async');
 const should = require('should');

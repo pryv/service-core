@@ -5,8 +5,6 @@
  * Proprietary and confidential
  */
 
-const { afterEach } = require('mocha');
-
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
 afterEach(async function () {

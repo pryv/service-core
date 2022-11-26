@@ -5,8 +5,6 @@
  * Proprietary and confidential
  */
 
-/* global describe */
-
 describe('Dummy', function () {
 
 });

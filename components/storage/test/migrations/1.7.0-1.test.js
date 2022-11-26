@@ -4,11 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Tests data migration between versions.
  */
 
-/* global describe, it, assert, before, after */
+/* global assert */
 
 const bluebird = require('bluebird');
 require('test-helpers/src/api-server-tests-config');

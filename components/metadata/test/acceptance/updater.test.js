@@ -4,13 +4,15 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // A test for the updater service.
-/* global describe, it, before, after */
+
 const chai = require('chai');
 const assert = chai.assert;
 const helpers = require('./test-helpers');
 const rpc = require('tprpc');
 const metadata = require('metadata');
+
 describe('Metadata Updater', () => {
   // Set up the server end
   let server;

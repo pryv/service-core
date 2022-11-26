@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, after, before */
+
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
@@ -13,6 +13,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const { getUsersRepository, User } = require('business/src/users');
 const { ErrorIds } = require('errors');
+
 describe('Users repository', () => {
   let mongoFixtures;
   before(async function () {

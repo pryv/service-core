@@ -4,11 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // Tests the heap package as far as we need it.
-/* global describe, it, beforeEach */
+
 const chai = require('chai');
 const assert = chai.assert;
 const Heap = require('heap');
+
 describe('Heap', () => {
   let heap;
   beforeEach(() => {

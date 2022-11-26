@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, before, after */
+
 const assert = require('chai').assert;
 const _ = require('lodash');
 const nock = require('nock');
@@ -21,6 +21,7 @@ const userAccountStorage = require('business/src/users/userAccountStorage');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 const { ApiEndpoint } = require('utils');
+
 /**
  * @returns {{ appId: string; username: any; email: any; password: string; invitationToken: string; referer: string; insurancenumber: any; }}
  */

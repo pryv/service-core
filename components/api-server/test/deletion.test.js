@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 
-const { describe, it, before, beforeEach, after } = require('mocha');
 const nock = require('nock');
 const cuid = require('cuid');
 const fs = require('fs');

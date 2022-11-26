@@ -21,7 +21,7 @@ function unhandledRejection (reason, promise) {
 // Set up a context for spawning api-servers.
 const { SpawnContext } = require('test-helpers').spawner;
 const context = new SpawnContext();
-/* global after */
+
 after(async () => {
   await context.shutdown();
 });

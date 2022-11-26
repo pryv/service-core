@@ -6,8 +6,6 @@
  */
 'use strict';
 
-/* global describe, before, after, it */
-
 require('./test-helpers');
 const helpers = require('./helpers');
 const ErrorIds = require('errors').ErrorIds;

@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, before, beforeEach, it */
 
 const assert = require('chai').assert;
 const should = require('should');

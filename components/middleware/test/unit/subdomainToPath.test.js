@@ -4,11 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const supertest = require('supertest');
 const express = require('express');
 const should = require('should');
 const subdomainToPath = require('middleware/src/subdomainToPath')([]);
-/* globals describe, it */
+
 describe('subdomainToPath middleware', function () {
   describe('using a minimal application', function () {
     const app = express();

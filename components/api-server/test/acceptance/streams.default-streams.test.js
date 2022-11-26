@@ -7,7 +7,6 @@
 const cuid = require('cuid');
 const path = require('path');
 const assert = require('chai').assert;
-const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;

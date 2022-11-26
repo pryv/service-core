@@ -4,13 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 'use strict';
+
 // Tests pertaining to storing data in a hf series.
-/* global describe, it */
+
 const series = require('business').series;
 const userStorage = require('test-helpers').dependencies.storage.user.events;
 const Repository = series.Repository;
 const DataMatrix = series.DataMatrix;
+
 describe('business.series.Repository', function () {
   describe('with stubbed out connection', function () {
     const namespace = 'pryv-userdb.USER_ID'; // influx database

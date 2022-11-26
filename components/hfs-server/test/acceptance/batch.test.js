@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, after, before, beforeEach, afterEach */
+
 const chai = require('chai');
 const assert = chai.assert;
 const cuid = require('cuid');
@@ -12,6 +12,7 @@ const rpc = require('tprpc');
 const metadata = require('metadata');
 const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
+
 describe('Storing BATCH data in a HF series', function () {
   let database;
   before(async function () {

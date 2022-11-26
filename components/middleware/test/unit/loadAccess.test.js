@@ -4,10 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const loadAccessMiddleware = require('../../src/loadAccess');
 const should = require('should');
 const bluebird = require('bluebird');
-/* globals describe, it, beforeEach */
+
 describe('loadAccess middleware', function () {
   const loadAccess = loadAccessMiddleware();
   // Mocking request and response context/headers

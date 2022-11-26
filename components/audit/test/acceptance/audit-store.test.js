@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix, charlatan */
+/* global assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix, charlatan */
 
 describe('Audit Streams and Events', function () {
   let user, username, password, access, appAccess, anotherAppAccess;

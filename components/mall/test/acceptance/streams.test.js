@@ -4,7 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global assert, describe, before, it, initTests, initCore, getNewFixture, charlatan, cuid, after, coreRequest  */
+
+/* global assert, initTests, initCore, getNewFixture, charlatan, cuid, coreRequest  */
+
 require('test-helpers/src/api-server-tests-config');
 const { getConfig } = require('@pryv/boiler');
 

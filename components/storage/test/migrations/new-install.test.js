@@ -4,7 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, before, assert */
+
+/* global assert */
 
 const timestamp = require('unix-timestamp');
 const { getVersions } = require('./util');

@@ -4,8 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const should = require('should');
-/* global describe, it */
 
 const controllerFactory = require('../../../src/web/controller');
 const controller = controllerFactory({});

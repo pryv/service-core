@@ -4,17 +4,19 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, beforeEach */
+
 require('test-helpers/src/api-server-tests-config');
 const timestamp = require('unix-timestamp');
 const sinon = require('sinon');
 const chai = require('chai');
 const assert = chai.assert;
 const MethodContext = require('../../src/MethodContext');
+
 const contextSource = {
   name: 'test',
   ip: '127.0.0.1'
 };
+
 describe('MethodContext', () => {
   describe('#parseAuth', () => {
     const username = 'USERNAME';

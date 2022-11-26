@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it */
 
 const treeUtils = require('../src/treeUtils');
 const should = require('should'); // explicit require to benefit from static functions

@@ -8,7 +8,6 @@ const chai = require('chai');
 const assert = chai.assert;
 const nock = require('nock');
 const mailing = require('../../../src/methods/helpers/mailing');
-/* global describe, it, before */
 
 describe('Mailing helper methods', () => {
   const template = 'welcome';

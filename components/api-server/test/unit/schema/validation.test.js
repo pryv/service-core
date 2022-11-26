@@ -4,10 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it */
+
 require('../test-helper');
 const assert = require('chai').assert;
 const { tryCoerceStringValues } = require('../../../src/schema/validation');
+
 describe('tryCoerceStringValues', () => {
   it('[DTZ1] should behave as documented in the method', () => {
     const object = { a: 'true', b: '2343', c: 'foobar' };

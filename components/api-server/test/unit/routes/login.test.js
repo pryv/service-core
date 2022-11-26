@@ -4,12 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 'use strict';
-// Unit tests for auth.js
-/* global describe, it */
+
 const should = require('should');
 const express = require('express');
 const authMod = require('api-server/src/routes/auth/login');
+
 describe('Authentication', function () {
   const settings = {
     auth: {

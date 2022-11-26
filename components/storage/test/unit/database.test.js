@@ -4,10 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, beforeEach, afterEach */
+
 const chai = require('chai');
 const assert = chai.assert;
 const Database = require('../../src/Database');
+
 describe('Database', () => {
   const connectionSettings = {
     host: 'localhost',

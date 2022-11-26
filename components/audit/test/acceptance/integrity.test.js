@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, initTests, initCore, coreRequest, getNewFixture, charlatan */
+/* global assert, cuid, initTests, initCore, coreRequest, getNewFixture, charlatan */
 
 const { integrity } = require('business');
 

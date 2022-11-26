@@ -4,10 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, beforeEach, afterEach, before */
+
 const should = require('should');
 const superagent = require('superagent');
 const Application = require('../../src/application');
+
 describe('Server', () => {
   const request = superagent;
   let application, server;

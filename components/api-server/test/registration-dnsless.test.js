@@ -6,7 +6,6 @@
  */
 const nock = require('nock');
 const assert = require('chai').assert;
-const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const bluebird = require('bluebird');

@@ -4,14 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // Tests pertaining to storing data in a hf series.
-/* global describe, it */
+
 const chai = require('chai');
 const assert = chai.assert;
 const DataMatrix = require('../../../src/series/data_matrix');
 const { ParseFailure } = require('../../../src/series/errors');
 const Row = require('../../../src/series/row');
 const { TypeRepository } = require('../../../src/types');
+
 describe('DataMatrix', function () {
   describe('.parse(obj)', () => {
     const typeRepo = new TypeRepository();

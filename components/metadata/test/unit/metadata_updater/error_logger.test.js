@@ -4,11 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, beforeEach */
+
 const sinon = require('sinon');
 const chai = require('chai');
 const assert = chai.assert;
 const { ErrorLogger } = require('../../../src/metadata_updater/error_logger');
+
 describe('ErrorLogger', () => {
   let logger;
   let target, subject;

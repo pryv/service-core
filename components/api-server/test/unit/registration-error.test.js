@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, */
+
 const { safetyCleanDuplicate } = require('platform/src/service_register');
 const assert = require('chai').assert;
 

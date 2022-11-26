@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, before, beforeEach, afterEach, it */
+
 /**
  * Tests Socket.IO access to the API.
  */

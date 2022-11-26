@@ -4,14 +4,17 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // Unit test for type repository
-/* global describe, it, beforeEach, before */
+
 const should = require('should');
 const chai = require('chai');
 const assert = chai.assert;
 const { TypeRepository } = require('../../src/types');
 const { getConfig } = require('@pryv/boiler');
+
 let isOpenSource = false;
+
 describe('business.types.TypeRepository', function () {
   before(async () => {
     isOpenSource = (await getConfig()).get('openSource:isActive');
