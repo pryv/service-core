@@ -5,17 +5,19 @@
  * Proprietary and confidential
  */
 
+const async = require('async');
+const should = require('should'); // explicit require to benefit from static functions
+const { assert } = require('chai');
+const _ = require('lodash');
+
 require('./test-helpers');
 const helpers = require('./helpers');
 const ErrorIds = require('errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
-const async = require('async');
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/followedSlicesMethods');
-const should = require('should'); // explicit require to benefit from static functions
 const storage = helpers.dependencies.storage.user.followedSlices;
 const testData = helpers.data;
-const _ = require('lodash');
 
 describe('followed slices', function () {
   const user = Object.assign({}, testData.users[0]);
@@ -82,6 +84,7 @@ describe('followed slices', function () {
       async.series([
         function countInitial (stepDone) {
           storage.countAll(user, function (err, count) {
+            assert.notExists(err);
             originalCount = count;
             stepDone();
           });
@@ -99,6 +102,8 @@ describe('followed slices', function () {
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, followedSlices) {
+            assert.notExists(err);
+
             followedSlices.length.should.eql(originalCount + 1, 'followed slices');
 
             const expected = _.clone(data);
@@ -227,6 +232,8 @@ describe('followed slices', function () {
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, slices) {
+            assert.notExists(err);
+
             slices.length.should.eql(testData.followedSlices.length - 1, 'followed slices');
 
             const deletedSlice = _.find(slices, function (slice) {

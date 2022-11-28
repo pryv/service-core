@@ -7,6 +7,7 @@
 
 const cuid = require('cuid');
 const { assert } = require('chai');
+
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
@@ -87,9 +88,9 @@ describe('permissions forcedStreams', function () {
         ]
       });
       for (const [key, event] of Object.entries(EVENTS)) {
-        event.type = 'note/txt',
-        event.content = key,
-        event.id = cuid(),
+        event.type = 'note/txt';
+        event.content = key;
+        event.id = cuid();
         EVENT4ID[event.id] = key;
         await user.event(event);
       }
