@@ -111,7 +111,6 @@ Streams.prototype.updateOne = function (user, query, updatedData, callback) {
   Streams.super_.prototype.updateOne.call(this, user, query, updatedData, callback);
 };
 
-/* jshint -W024 */
 /**
  * Implementation.
  */

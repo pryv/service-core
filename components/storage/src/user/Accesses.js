@@ -114,7 +114,6 @@ Accesses.prototype.getCollectionInfo = function (userOrUserId) {
   };
 };
 
-/* jshint -W024 */
 /**
  * Implementation.
  */

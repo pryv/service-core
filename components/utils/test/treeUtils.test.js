@@ -90,12 +90,10 @@ describe('tree utils', function () {
     });
 
     it('[VVVS] must throw an error if objects do not contain the necessary properties', function () {
-      /* jshint -W068 */
       (function () { treeUtils.buildTree(invalidArray); }).should.throw();
     });
 
     it('[CEUF] must throw an error if the object in argument is not an array', function () {
-      /* jshint -W068 */
       (function () { treeUtils.buildTree(testArray[0]); }).should.throw();
     });
   });
@@ -106,7 +104,6 @@ describe('tree utils', function () {
     });
 
     it('[OVJM] must throw an error if the object in argument is not an array', function () {
-      /* jshint -W068 */
       (function () { treeUtils.flattenTree(testTree[0]); }).should.throw();
     });
   });

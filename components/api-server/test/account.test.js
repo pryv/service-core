@@ -140,8 +140,7 @@ describe('[ACCO] account', function () {
           server.ensureStarted.bind(server, settings),
           function update (stepDone) {
             request.put(basePath).send(updatedData).end(function (res) {
-              // jshint -W030
-              regServerCalled.should.be.ok;
+              regServerCalled.should.be.ok();
               const expected = _.defaults(updatedData, user);
               delete expected.id;
               delete expected.password;
