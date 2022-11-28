@@ -136,6 +136,7 @@ describe('accesses', () => {
           });
           it('[A4JP] should contain the field "deleted:null" in the database', (done) => {
             storage.findAll({ id: userId }, {}, (err, accesses) => {
+              assert.notExists(err);
               const deletedAccess = accesses.find((a) => a.name === access.name);
               assert.equal(deletedAccess.deleted, null);
               done();
@@ -308,6 +309,7 @@ describe('accesses', () => {
       it('[IVWP] should delete it and the accesses it created, not touching the expired ones', async () => {
         await bluebird.fromCallback((callback) => {
           storage.findAll({ id: username }, {}, (err, accesses) => {
+            assert.notExists(err);
             const deletedAccess = accesses.find((a) => a.id === access.id);
             const deletedShared1 = accesses.find((a) => a.id === sharedAccess1.id);
             const deletedShared2 = accesses.find((a) => a.id === sharedAccess2.id);
