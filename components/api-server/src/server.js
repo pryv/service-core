@@ -124,7 +124,25 @@ class Server {
     // 512).
     const backlog = 511;
     // Start listening on the HTTP port.
-    await server.listen(port, hostname, backlog);
+    let startFinished = false;
+    await new Promise((resolve, reject) => {
+      server.listen(port, hostname, backlog, () => {
+        if (!startFinished) {
+          startFinished = true;
+          resolve();
+        }
+      });
+      server.once('error', (err) => {
+        if (!startFinished) {
+          startFinished = true;
+          console.log(
+            'There was an error starting the server in the error listener:',
+            err
+          );
+          reject(err);
+        }
+      });
+    });
     const address = server.address();
     const protocol = 'http';
     const serverUrl = protocol + '://' + address.address + ':' + address.port;

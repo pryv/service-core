@@ -73,7 +73,7 @@ describe('service-reporting', () => {
 
     it('[G1UG] must start and successfully send a report when service-reporting is listening', async () => {
       await setTimeout(1000);
-      assert.isTrue(reportRecieved, 'Should have revceif report received event from server');
+      assert.isTrue(reportRecieved, 'Should have received report received event from server');
       await assertServerStarted();
       const lastReport = reportHttpServer.getLastReport();
       const reportingSettings = customSettings.reporting;
