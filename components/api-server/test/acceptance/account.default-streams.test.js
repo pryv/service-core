@@ -5,14 +5,14 @@
  * Proprietary and confidential
  */
 
-const assert = require('chai').assert;
+const { assert } = require('chai');
 const _ = require('lodash');
 const cuid = require('cuid');
 const charlatan = require('charlatan');
 const nock = require('nock');
 const supertest = require('supertest');
 
-const ErrorIds = require('errors').ErrorIds;
+const { ErrorIds } = require('errors');
 const { getApplication } = require('api-server/src/application');
 
 const { pubsub } = require('messages');
@@ -22,7 +22,6 @@ const { getConfig } = require('@pryv/boiler');
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
-const helpers = require('api-server/test/helpers');
 
 const { getMall } = require('mall');
 
@@ -161,10 +160,11 @@ describe('[ACCO] Account with system streams', function () {
           event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')));
         const attachedFilesAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles')));
-        const insurancenumberAccountEvent = allVisibleAccountEvents.find(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
-        const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
+        // TODO: verify the following data or remove those lines
+        // const insurancenumberAccountEvent = allVisibleAccountEvents.find(event =>
+        //   event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
+        // const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
+        //   event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
         assert.equal(res.body.account.email, emailAccountEvent.content);
         assert.equal(res.body.account.language, languageAccountEvent.content);
         assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);

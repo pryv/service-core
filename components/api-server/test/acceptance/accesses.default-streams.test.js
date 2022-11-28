@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const cuid = require('cuid');
 const path = require('path');
 const bluebird = require('bluebird');
@@ -194,10 +195,9 @@ describe('Accesses with account streams', function () {
             assert.deepEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
           });
           it('[TI1X] should allow to create visible stream events', async () => {
-            scope = nock(config.get('services:register:url'));
+            const scope = nock(config.get('services:register:url'));
             scope.put('/users',
               (body) => {
-                serviceRegisterRequest = body;
                 return true;
               }).reply(200, { errors: [] });
 

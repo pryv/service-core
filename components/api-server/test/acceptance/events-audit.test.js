@@ -10,7 +10,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('api-server/test/test-helpers');
 const charlatan = require('charlatan');
 const cuid = require('cuid');
-const assert = require('chai').assert;
+const { assert } = require('chai');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('Audit logs events', () => {
@@ -18,7 +18,7 @@ describe('Audit logs events', () => {
   let mongoFixtures;
   let server;
   let username;
-  let auditToken, actionsToken;
+  let auditToken, actionsToken, personalToken;
   let streamId;
   before(async function () {
     config = await getConfig();

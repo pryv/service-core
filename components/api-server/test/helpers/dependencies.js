@@ -4,12 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const path = require('path');
 
 const testHelpers = require('test-helpers');
 const InstanceManager = testHelpers.InstanceManager;
 const { getConfigUnsafe } = require('@pryv/boiler');
-
 
 /**
  * Overrides common test dependencies with server-specific config settings.
