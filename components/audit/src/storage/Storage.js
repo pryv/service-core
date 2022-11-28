@@ -24,7 +24,7 @@ class Storage {
 
   async init () {
     if (this.initialized) {
-      throw ('Database already initalized');
+      throw new Error('Database already initalized');
     }
     this.initialized = true;
     this.config = await getConfig();
@@ -51,8 +51,8 @@ class Storage {
   /**
    * @throws if not initalized
    */
-  checkInititalized () {
-    if (!this.initialized) throw ('Initialize db component before using it');
+  checkInitialized () {
+    if (!this.initialized) throw new Error('Initialize db component before using it');
   }
 
   /**
@@ -62,7 +62,7 @@ class Storage {
    */
   async forUser (userId) {
     this.logger.debug('forUser: ' + userId);
-    this.checkInititalized();
+    this.checkInitialized();
     return this.userDBsCache.get(userId) || (await open(this, userId, this.logger));
   }
 
@@ -86,7 +86,7 @@ class Storage {
   }
 
   close () {
-    this.checkInititalized();
+    this.checkInitialized();
     this.userDBsCache.clear();
   }
 

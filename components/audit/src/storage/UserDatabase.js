@@ -4,17 +4,17 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const SQLite3 = require('better-sqlite3');
+const { Readable } = require('stream');
+
 const eventSchemas = require('./schemas/events');
 const { createFTSFor } = require('./FullTextSearchDataBase');
 const events = require('./schemas/events');
-const { Readable } = require('stream');
 
 const { toSQLiteQuery } = require('audit/src/storage/sqLiteStreamQueryUtils');
 
-const DB_OPTIONS = {
-
-};
+const DB_OPTIONS = {};
 
 const tables = {
   events: events.dbSchema
@@ -23,9 +23,10 @@ const tables = {
 const ALL_EVENTS_TAG = events.ALL_EVENTS_TAG;
 
 const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25, 25, 50, 50, 100];
+
 class UserDatabase {
   /**
-   * sqlite3 instance
+   * SQLite3 instance
    */
   db;
   create;
@@ -59,11 +60,11 @@ class UserDatabase {
     this.columnNames = {};
 
     // --- Create all Tables
-    Object.keys(tables).map((tableName) => {
+    Object.keys(tables).forEach((tableName) => {
       const columnsTypes = [];
       const indexes = [];
       const columnNames = Object.keys(tables[tableName]);
-      columnNames.map((columnName) => {
+      columnNames.forEach((columnName) => {
         const column = tables[tableName][columnName];
         columnsTypes.push(`${columnName} ${column.type}`);
         if (column.index) indexes.push(columnName);
@@ -73,7 +74,7 @@ class UserDatabase {
         columnsTypes.join(', ') +
       ');').run();
 
-      indexes.map((columnName) => {
+      indexes.forEach((columnName) => {
         this.db.prepare(`CREATE INDEX IF NOT EXISTS ${tableName}_${columnName} ON ${tableName}(${columnName})`).run();
       });
 
