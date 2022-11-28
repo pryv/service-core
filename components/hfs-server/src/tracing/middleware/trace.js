@@ -20,8 +20,7 @@ function tracingMiddleware (ctx, req, res, next // eslint-disable-line no-unused
 ) {
   const Tags = opentracing.Tags;
   const tracer = ctx.tracer;
-  $$(req.url);
-  const pathname = req.url).pathname;
+  const pathname = req.url.split('#')[0].split('?')[0];
   const span = tracer.startSpan(`${req.method} ${pathname || '(n/a)'}`);
 
   span.setTag(Tags.HTTP_METHOD, req.method);

@@ -78,7 +78,7 @@ class MetadataCache {
     const cachedTokenListForEvent = cache.get(eventKey);
     if (cachedTokenListForEvent != null) {
       // what does this return
-      cachedTokenListForEvent.map((token) => {
+      cachedTokenListForEvent.forEach((token) => {
         cache.delete(eventKey + '/' + token);
       });
     }
