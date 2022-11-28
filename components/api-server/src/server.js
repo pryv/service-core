@@ -4,37 +4,31 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 // Always require application first to be sure boiler is initialized
 const { getApplication } = require('api-server/src/application');
 const http = require('http');
-const bluebird = require('bluebird');
 const { axonMessaging } = require('messages');
 const { pubsub } = require('messages');
 const { getUsersRepository } = require('business/src/users');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getAPIVersion } = require('middleware/src/project_version');
 let app;
-// Server class for api-server process. To use this, you
-// would
-//
-//    const server = new Server();
-//    server.start();
-//
 
+/**
+ * Server class for api-server process. To use this, you would:
+ *
+ *    const server = new Server();
+ *    server.start();
+ */
 class Server {
   isOpenSource;
-
   logger;
-
   config;
-  // Load config and setup base configuration.
-  //
-  constructor () { }
-  // Start the server.
-  //
+
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async start () {
     this.logger = getLogger('server');
     this.logger.debug('start initiated');
@@ -66,19 +60,18 @@ class Server {
   }
 
   /**
- * @returns {string}
- */
+   * @returns {string}
+   */
   findDefaultParam () {
     const DEFAULT_VALUES = ['REPLACE_ME'];
     if (DEFAULT_VALUES.includes(this.config.get('auth:adminAccessKey'))) { return 'auth:adminAccessKey'; }
     return null;
   }
 
-  // Requires and registers all API methods.
-  //
   /**
- * @returns {Promise<void>}
- */
+   * Requires and registers all API methods.
+   * @returns {Promise<void>}
+   */
   async registerApiMethods () {
     await require('./methods/system')(app.systemAPI, app.api);
     await require('./methods/utility')(app.api);
@@ -104,8 +97,8 @@ class Server {
 
   /**
    * @param {http.Server} server
-     * @returns {Promise<void>}
-     */
+   * @returns {Promise<void>}
+   */
   async setupSocketIO (server) {
     const api = app.api;
     const customAuthStepFn = app.getCustomAuthFunction('server.js');
@@ -117,8 +110,8 @@ class Server {
   /**
    * Open http port and listen to incoming connections.
    * @param {http.Server} server
-     * @returns {Promise<void>}
-     */
+   * @returns {Promise<void>}
+   */
   async startListen (server) {
     const config = this.config;
     const logger = this.logger;
@@ -131,7 +124,7 @@ class Server {
     // 512).
     const backlog = 511;
     // Start listening on the HTTP port.
-    await bluebird.fromCallback((cb) => server.listen(port, hostname, backlog, cb));
+    await server.listen(port, hostname, backlog);
     const address = server.address();
     const protocol = 'http';
     const serverUrl = protocol + '://' + address.address + ':' + address.port;
@@ -157,21 +150,20 @@ class Server {
     }
   }
 
-  // Sets up `Notifications` bus and registers it for everyone to consume.
-  //
   /**
- * @returns {Promise<void>}
- */
+   * Sets up `Notifications` bus and registers it for everyone to consume.
+   * @returns {Promise<void>}
+   */
   async setupTestsNotificationBus () {
     const testNotifier = await axonMessaging.getTestNotifier();
     pubsub.setTestNotifier(testNotifier);
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async setupReporting () {
-    const Reporting = require('lib-reporting');
+    const reporting = require('lib-reporting');
     const serviceInfoUrl = this.config.get('serviceInfoUrl');
     async function collectClientData () {
       return {
@@ -187,12 +179,12 @@ class Server {
     const mylog = function (str) {
       this.logger.info(str);
     }.bind(this);
-    new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), mylog, reportingUrl);
+    reporting.start(licenseName, role, templateVersion, collectClientData.bind(this), mylog, reportingUrl);
   }
 
   /**
- * @returns {Promise<Number>}
- */
+   * @returns {Promise<Number>}
+   */
   async getUserCount () {
     let numUsers;
     try {
@@ -205,4 +197,5 @@ class Server {
     return numUsers;
   }
 }
+
 module.exports = Server;
