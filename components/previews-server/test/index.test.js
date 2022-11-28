@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+/* global should */
 
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
@@ -17,11 +18,9 @@ describe('(index)', function () {
   before(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
   describe('OPTIONS /', function () {
-    it('[E5MW] should return OK', function (done) {
-      request.options(path()).end(function (err, res) {
-        res.statusCode.should.eql(200);
-        done();
-      });
+    it('[E5MW] should return OK', async function () {
+      const res = await request.options(path());
+      res.statusCode.should.eql(200);
     });
   });
 });

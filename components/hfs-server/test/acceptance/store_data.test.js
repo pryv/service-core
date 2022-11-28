@@ -17,15 +17,14 @@ const { databaseFixture } = require('test-helpers');
 const apiServerContext = require('api-server/test/test-helpers').context;
 const rpc = require('tprpc');
 const metadata = require('metadata');
-const { getConfig, getLogger } = require('@pryv/boiler');
+const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('store_data.test');
 const { getMall } = require('mall');
 const { getUsersRepository } = require('business/src/users');
-describe('Storing data in a HF series', function () {
-  let database, pryv, config;
+describe('[SDHF] Storing data in a HF series', function () {
+  let database, pryv;
   let mall;
   before(async function () {
-    config = await getConfig();
     database = await produceMongoConnection();
     mall = await getMall();
     await require('business/src/system-streams/serializer').init();
@@ -36,7 +35,6 @@ describe('Storing data in a HF series', function () {
     let server;
     before(async () => {
       logger.debug('spawning');
-      // without config.get() spawnContext does not take the right config
       server = await spawnContext.spawn();
     });
     after(() => {
@@ -96,7 +94,7 @@ describe('Storing data in a HF series', function () {
     }
     it('[ZUBI] should convert timestamp to deltaTime', async () => {
       const nowPlus1Sec = nowEvent + 1;
-      const response = await storeData({ timestamp: nowPlus1Sec, value: 80.3 }, accessToken);
+      await storeData({ timestamp: nowPlus1Sec, value: 80.3 }, accessToken);
       // Check if the data is really there
       const userName = userId; // identical with id here, but will be user name in general.
       const options = { database: `user.${userName}` };
@@ -263,7 +261,7 @@ describe('Storing data in a HF series', function () {
       // reference time is taken from the cache instead of mongodb (cache is not invalidated on time)
       await awaiting.delay(500);
       // add Data using timestamp sugar
-      const result2 = await storeData(result.event.id, {
+      await storeData(result.event.id, {
         format: 'flatJSON',
         fields: ['timestamp', 'value'],
         points: [
@@ -296,7 +294,7 @@ describe('Storing data in a HF series', function () {
       ]);
       // move event to tomorrow
       const newEventTime = Date.now() / 1000 + 60 * 60 * 24;
-      const response = await apiServer
+      await apiServer
         .request()
         .delete('/' + result.user.username + '/events/' + result.event.id)
         .set('authorization', accessToken);

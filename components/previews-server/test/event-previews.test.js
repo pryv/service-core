@@ -332,13 +332,12 @@ describe('event previews', function () {
 
     it('[G5JR] must ignore files with no readable extended attribute', async function () {
       const event = testData.events[2];
-      let cachedPath;
       const resGet = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
         cb(null, res);
       }));
 
       resGet.statusCode.should.eql(200);
-      cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+      const cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
 
       const lastAccessed = await xattr.get(cachedPath, 'user.pryv.lastAccessed');
       assert.isNotNull(lastAccessed);

@@ -15,7 +15,6 @@ class DB {
   db;
   queries;
 
-  constructor () { }
 
   async init () {
     const config = await getConfig();

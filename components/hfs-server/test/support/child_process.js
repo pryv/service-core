@@ -8,7 +8,7 @@ const bluebird = require('bluebird');
 const Application = require('../../src/application');
 const { InfluxRowType, TypeRepository } = require('business').types;
 const ChildProcess = require('test-helpers').child_process;
-const { getConfig, getLogger } = require('@pryv/boiler');
+const { getConfig } = require('@pryv/boiler');
 const typeRepo = new TypeRepository();
 
 class ApplicationLauncher {

@@ -17,7 +17,7 @@ exports.createIdIfMissing = function (item) {
 
 exports.getRenamePropertyFn = function (oldName, newName) {
   return function (item) {
-    if (!item || !item.hasOwnProperty(oldName)) {
+    if (!item || item[oldName] == null) {
       return item;
     }
 

@@ -16,6 +16,7 @@ let initializing = false;
  * @returns {Promise<any>}
  */
 async function getMall () {
+  // eslint-disable-next-line no-unmodified-loop-condition
   while (initializing) {
     await new Promise((resolve) => setTimeout(resolve, 5));
   }

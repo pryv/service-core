@@ -120,7 +120,7 @@ class Database {
       for (let i = 0; i < collectionInfo.indexes.length; i++) {
         const tempIndex = { userId: 1 };
         for (const property in collectionInfo.indexes[i].index) {
-          if (collectionInfo.indexes[i].index.hasOwnProperty(property)) {
+          if (collectionInfo.indexes[i].index[property] != null) {
             tempIndex[property] = collectionInfo.indexes[i].index[property];
           }
         }

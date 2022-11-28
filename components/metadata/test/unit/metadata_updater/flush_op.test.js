@@ -156,15 +156,6 @@ function makeUpdate (now, attrs = {}) {
 function produceMongoConnection () {
   return storage.getDatabaseSync();
 }
-// Produces a StorageLayer instance
-//
-/**
- * @param {storage.Database} connection
- * @returns {any}
- */
-function produceStorageLayer (connection) {
-  return storage.getStorageLayerSync();
-}
 
 /**
  * @typedef {{
