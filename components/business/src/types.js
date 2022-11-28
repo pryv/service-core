@@ -101,7 +101,7 @@ class TypeRepository {
        * @returns {Promise<any>}
        */
   async validate (event) {
-    const content = event.hasOwnProperty('content') ? event.content : null;
+    const content = event.content != null ? event.content : null;
     const schema = defaultTypes.types[event.type];
     if (schema == null) { throw new Error(`Event type validation was used on the unknown type "${event.type}".`); }
     return bluebird
@@ -122,7 +122,7 @@ class TypeRepository {
       const leafTypeName = name.slice(SERIES_PREFIX.length);
       return this.isKnown(leafTypeName);
     }
-    return defaultTypes.types.hasOwnProperty(name);
+    return defaultTypes.types[name] != null;
   }
 
   // Lookup a leaf type by name. A leaf type is either simple ('mass/kg') or

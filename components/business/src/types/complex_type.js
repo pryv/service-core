@@ -71,8 +71,7 @@ class ComplexType {
     while (parts.length > 0) {
       const lookupField = parts.shift();
       if (properties == null || typeof properties !== 'object') { throw new Error('AF: schema postulates an object here.'); }
-      const isSafeForAccess = properties.hasOwnProperty(lookupField) &&
-                properties.propertyIsEnumerable(lookupField);
+      const isSafeForAccess = properties[lookupField] != null && {}.propertyIsEnumerable.call(properties, lookupField);
       if (!isSafeForAccess) { throw new Error(`This type (${outerType}) has no such field (${name} @ ${lookupField})`); }
       const fieldDescriptor = properties[lookupField];
       const fieldType = fieldDescriptor.type;
