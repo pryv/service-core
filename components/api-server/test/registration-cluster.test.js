@@ -38,7 +38,7 @@ function defaults () {
   };
 }
 
-describe('registration: cluster', function () {
+describe('[REGC] registration: cluster', function () {
   let isDnsLess;
 
   before(async function () {
@@ -100,7 +100,7 @@ describe('registration: cluster', function () {
     return validationRequest;
   }
 
-  function buildRegistrationRequest (user, request, hasToken = true) {
+  function buildRegistrationRequest (user, hasToken = true) {
     const registrationRequest = {
       host: { name: res.req._header.split('Host: ')[1].split('\r\n')[0] },
       unique: ['username', 'email'],
@@ -534,19 +534,20 @@ describe('registration: cluster', function () {
       });
 
       describe('and "invitationToken" is missing', () => {
+        const serviceRegisterValidate = [];
+        const serviceRegisterCreateUser = [];
         before(async () => {
           userData = defaults();
           delete userData.invitationToken;
-          serviceRegisterRequests = [];
           nock(regUrl)
             .post('/users/validate', (body) => {
-              serviceRegisterRequests.push(body);
+              serviceRegisterValidate.push(body);
               return true;
             })
             .reply(200, { errors: [] });
           nock(regUrl)
             .post('/users', (body) => {
-              serviceRegisterRequests.push(body);
+              serviceRegisterCreateUser.push(body);
               return true;
             })
             .reply(200, {
@@ -567,12 +568,11 @@ describe('registration: cluster', function () {
         });
 
         it('[5O4Q] should send the right data to register', () => {
-          const validationSent = serviceRegisterRequests[0];
+          const validationSent = serviceRegisterValidate[0];
           assert.deepEqual(validationSent, buildValidationRequest(userData, false));
-          let registrationSent = serviceRegisterRequests[1];
+          let registrationSent = serviceRegisterCreateUser[0];
           registrationSent = stripRegistrationRequest(registrationSent);
-          // TODO fix this
-          // assert.deepEqual(registrationSent, buildRegistrationRequest(userData, false));
+          assert.deepEqual(registrationSent, buildRegistrationRequest(userData, false));
         });
       });
     });
