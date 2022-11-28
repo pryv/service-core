@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global should */
 
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;

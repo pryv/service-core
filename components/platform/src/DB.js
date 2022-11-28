@@ -15,7 +15,6 @@ class DB {
   db;
   queries;
 
-
   async init () {
     const config = await getConfig();
     const basePath = config.get('userFiles:path');

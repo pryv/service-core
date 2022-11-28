@@ -7,7 +7,6 @@
 // Middleware that will perform request tracing via opentacing.
 // Heavily inspired by express-opentracing.
 const lodash = require('lodash');
-const url = require('url');
 const opentracing = require('opentracing');
 const cls = require('../cls');
 /**
@@ -21,7 +20,8 @@ function tracingMiddleware (ctx, req, res, next // eslint-disable-line no-unused
 ) {
   const Tags = opentracing.Tags;
   const tracer = ctx.tracer;
-  const pathname = url.parse(req.url).pathname;
+  $$(req.url);
+  const pathname = req.url).pathname;
   const span = tracer.startSpan(`${req.method} ${pathname || '(n/a)'}`);
 
   span.setTag(Tags.HTTP_METHOD, req.method);

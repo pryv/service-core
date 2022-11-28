@@ -221,7 +221,7 @@ describe('event previews', function () {
     });
 
     it('[VIJO] must forbid requests missing an access token', function (done) {
-      const url = require('url').resolve(server.url, path(testData.events[2].id));
+      const url = new URL(path(testData.events[2].id), server.url).toString();
       superagent.get(url).end((res) => {
         assert.strictEqual(res.status, 401);
         done();

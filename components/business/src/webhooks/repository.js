@@ -22,9 +22,8 @@ class Repository {
        * @returns {Promise<Map<string, any[]>>}
        */
   async getAll () {
-    let users;
     const usersRepository = await getUsersRepository();
-    users = await usersRepository.getAllUsernames();
+    const users = await usersRepository.getAllUsernames();
     const allWebhooks = new Map();
     await bluebird.all(users.map(retrieveWebhooks, this));
     return allWebhooks;

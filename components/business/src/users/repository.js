@@ -383,6 +383,7 @@ let usersRepositoryInitializing = false;
  * @returns {Promise<any>}
  */
 async function getUsersRepository () {
+  // eslint-disable-next-line no-unmodified-loop-condition
   while (usersRepositoryInitializing) {
     await setTimeout(100);
   }
