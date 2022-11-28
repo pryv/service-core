@@ -8,7 +8,6 @@
  * Regroups acceptance tests reused in different places.
  */
 
-const { assert } = require('chai');
 const request = require('superagent');
 
 const validation = require('./validation');
