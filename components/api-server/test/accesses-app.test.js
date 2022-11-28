@@ -5,12 +5,13 @@
  * Proprietary and confidential
  */
 
-const ErrorIds = require('errors').ErrorIds;
-const async = require('async');
-const methodsSchema = require('../src/schema/accessesMethods');
-const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const should = require('should');
+const async = require('async');
+const timestamp = require('unix-timestamp');
+
+const { ErrorIds } = require('errors');
+const methodsSchema = require('../src/schema/accessesMethods');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
@@ -19,12 +20,15 @@ describe('[ACCP] accesses (app)', function () {
   let helpers, server, validation, storage, testData;
   let additionalTestAccesses, user, access, basePath, accessesNotifCount;
   let request = null; // must be set after server instance started
+
   function buildApiEndpoint (username, token) {
     return ApiEndpoint.build(username, token);
   }
-  before(async function () {
+
+  before(async () => {
     await getConfig(); // needed for ApiEndpoint.build();
   });
+
   before(() => {
     require('./test-helpers');
     helpers = require('./helpers');
@@ -119,7 +123,7 @@ describe('[ACCP] accesses (app)', function () {
       }
     ];
     user = Object.assign({}, testData.users[0]);
-    additionalTestAccesses.map((a) => {
+    additionalTestAccesses.forEach((a) => {
       a.apiEndpoint = buildApiEndpoint(user.username, a.token);
       integrity.accesses.set(a);
     });
@@ -130,13 +134,16 @@ describe('[ACCP] accesses (app)', function () {
       accessesNotifCount++;
     });
   });
+
   function path (id) {
     return basePath + '/' + id;
   }
+
   function req () {
     if (request) { return request; }
     throw new Error('request is still not defined.');
   }
+
   before(function (done) {
     async.series([
       testData.resetUsers,
@@ -148,8 +155,10 @@ describe('[ACCP] accesses (app)', function () {
       }
     ], done);
   });
+
   describe('GET /', function () {
     before(resetAccesses);
+
     it("[YEHW] must return shared accesses whose permissions are a subset of the current one's", function (done) {
       req()
         .get(basePath, access.token)
@@ -161,6 +170,7 @@ describe('[ACCP] accesses (app)', function () {
           }, done);
         });
     });
+
     it('[GLHP] must be forbidden to requests with a shared access token', function (done) {
       const sharedAccess = testData.accesses[1];
       req()
@@ -170,8 +180,10 @@ describe('[ACCP] accesses (app)', function () {
         });
     });
   });
+
   describe('POST /', function () {
     beforeEach(resetAccesses);
+
     it('[QVHS] must create a new shared access with the sent data and return it', function (done) {
       const data = {
         name: 'New Access',
@@ -209,6 +221,7 @@ describe('[ACCP] accesses (app)', function () {
           done();
         });
     });
+
     it('[6GR1] must forbid trying to create a non-shared access', function (done) {
       const data = {
         name: 'New Access',
@@ -227,6 +240,7 @@ describe('[ACCP] accesses (app)', function () {
           validation.checkErrorForbidden(res, done);
         });
     });
+
     it('[A4MC] must forbid trying to create an access with greater permissions', function (done) {
       const data = {
         name: 'New Access',
@@ -244,6 +258,7 @@ describe('[ACCP] accesses (app)', function () {
           validation.checkErrorForbidden(res, done);
         });
     });
+
     it('[QN6D] must return a correct error if the sent data is badly formatted', function (done) {
       const data = {
         name: 'New Access',
@@ -261,6 +276,7 @@ describe('[ACCP] accesses (app)', function () {
           validation.checkErrorInvalidParams(res, done);
         });
     });
+
     it('[4HAE] must allow creation of shared accesses with an access that has superior permission on root stream (*)', function (done) {
       const access = additionalTestAccesses[3];
       const data = {
@@ -283,8 +299,10 @@ describe('[ACCP] accesses (app)', function () {
         });
     });
   });
+
   describe('PUT /<token>', function () {
     beforeEach(resetAccesses);
+
     it('[11UZ]  must return a 410 (Gone)', function (done) {
       req()
         .put(path(additionalTestAccesses[1].id), access.token)
@@ -295,8 +313,10 @@ describe('[ACCP] accesses (app)', function () {
         });
     });
   });
+
   describe('DELETE /<id>', function () {
     beforeEach(resetAccesses);
+
     it('[5BOO] must delete the shared access', function (done) {
       const deletedAccess = additionalTestAccesses[2];
       let deletionTime;
@@ -317,6 +337,7 @@ describe('[ACCP] accesses (app)', function () {
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, accesses) {
+            should.not.exist(err);
             accesses.length.should.eql(testData.accesses.length + additionalTestAccesses.length, 'accesses');
             const expected = _.assign({
               deleted: deletionTime
@@ -328,6 +349,7 @@ describe('[ACCP] accesses (app)', function () {
         }
       ], done);
     });
+
     it('[ZTSX] forbid deletion of already deleted for AppTokens', function (done) {
       req()
         .del(path(access.id), access.token)
@@ -354,6 +376,7 @@ describe('[ACCP] accesses (app)', function () {
             });
         });
     });
+
     it('[VGQS] must forbid trying to delete a non-shared access', function (done) {
       req()
         .del(path(additionalTestAccesses[1].id), access.token)
@@ -361,6 +384,7 @@ describe('[ACCP] accesses (app)', function () {
           validation.checkErrorForbidden(res, done);
         });
     });
+
     it('[ZTSY] must forbid trying to delete an access that was not created by itself', function (done) {
       req()
         .del(path(testData.accesses[1].id), access.token)
@@ -368,6 +392,7 @@ describe('[ACCP] accesses (app)', function () {
           validation.checkErrorForbidden(res, done);
         });
     });
+
     it('[J32P] must return a correct error if the access does not exist', function (done) {
       req()
         .del(path('unknown-id'), access.token)
@@ -379,6 +404,7 @@ describe('[ACCP] accesses (app)', function () {
         });
     });
   });
+
   function resetAccesses (done) {
     accessesNotifCount = 0;
     async.series([

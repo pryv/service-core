@@ -79,7 +79,7 @@ exports.check = function (response, expected, done) {
   }
 
   if (expected.sanitizeFn) {
-    expect(expected.sanitizeTarget).to.exist;
+    assert.exists(expected.sanitizeTarget);
     expected.sanitizeFn(response.body[expected.sanitizeTarget]);
   }
   if (expected.body) {
@@ -140,8 +140,7 @@ exports.checkError = function (response, expected, done) {
 };
 
 function checkJSON (response, schema) {
-  /* jshint -W030 */
-  response.should.be.json;
+  assert.include(response.headers['content-type'], 'application/json');
   checkSchema(response.body, schema);
 }
 
@@ -168,13 +167,13 @@ exports.checkStoredItem = function (item, schemaName) {
 };
 
 function checkMeta (parentObject) {
-  expect(parentObject.meta).to.exist;
+  assert.exists(parentObject.meta);
 
   const meta = parentObject.meta;
 
   assert.match(meta.apiVersion, /^\d+\.\d+\.\d+/);
   assert.match(meta.serverTime, /^\d+\.?\d*$/);
-  expect(meta.serial).to.exist;
+  assert.exists(meta.serial);
 }
 exports.checkMeta = checkMeta;
 
@@ -188,9 +187,9 @@ exports.checkErrorInvalidParams = function (res, done) {
   const body = res.body;
   const error = body.error;
 
-  expect(error).to.exist;
+  assert.exists(error);
   expect(error.id).to.equal(ErrorIds.InvalidParametersFormat);
-  expect(res.body.error.data).to.exist; // expect validation errors
+  assert.exists(res.body.error.data); // expect validation errors
 
   if (done) done();
 };
@@ -268,7 +267,7 @@ function checkObjectEquality (actual, expected, verifiedProps = []) {
   }
 
   if (expected.children != null) {
-    expect(actual.children).to.exist;
+    assert.exists(actual.children);
     assert.strictEqual(actual.children.length, expected.children.length);
 
     for (let i = 0, n = expected.children.length; i < n; i++) {
@@ -279,7 +278,7 @@ function checkObjectEquality (actual, expected, verifiedProps = []) {
   verifiedProps.push('children');
 
   if (expected.attachments != null) {
-    expect(actual.attachments).to.exist;
+    assert.exists(actual.attachments);
 
     assert.strictEqual(actual.attachments.length, expected.attachments.length,
       `Must have ${expected.attachments.length} attachments.`);
@@ -317,7 +316,7 @@ function checkApproxTimeEquality (actual, expected, epsilon = 2) {
 exports.checkHeaders = function (response, expectedHeaders) {
   expectedHeaders.forEach(function (expected) {
     const value = response.headers[expected.name.toLowerCase()];
-    expect(value).to.exist;
+    assert.exists(value);
     if (expected.value) {
       value.should.eql(expected.value);
     }

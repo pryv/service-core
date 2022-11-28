@@ -5,27 +5,27 @@
  * Proprietary and confidential
  */
 
+const { assert } = require('chai');
+const supertest = require('supertest');
+const bluebird = require('bluebird');
+const async = require('async');
+const fs = require('fs');
+const should = require('should'); // explicit require to benefit from static function
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
+
 require('./test-helpers');
 
-const bluebird = require('bluebird');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
-const async = require('async');
 const attachmentsCheck = helpers.attachmentsCheck;
 const commonTests = helpers.commonTests;
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
 const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/eventsMethods');
-const fs = require('fs');
-const should = require('should'); // explicit require to benefit from static function
 const testData = helpers.data;
-const timestamp = require('unix-timestamp');
-const _ = require('lodash');
 
-const chai = require('chai');
-const assert = chai.assert;
-const supertest = require('supertest');
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { integrity } = require('business');
 const { getMall } = require('mall');
@@ -68,6 +68,7 @@ describe('events', function () {
       function (stepDone) {
         helpers.dependencies.storage.user.accesses.findOne(user, { token: request.token },
           null, function (err, acc) {
+            assert.notExists(err);
             access = acc;
             stepDone();
           });
@@ -108,7 +109,7 @@ describe('events', function () {
                 .filter(function (e) {
                   return !e.trashed && !_.some(testData.streams, containsTrashedEventStream);
                   function containsTrashedEventStream (stream) {
-                    return stream.trashed && stream.id === e.streamIds[0] ||
+                    return (stream.trashed && stream.id === e.streamIds[0]) ||
                       _.some(stream.children, containsTrashedEventStream);
                   }
                 });
@@ -1576,7 +1577,7 @@ describe('events', function () {
       function setIgnoreProtectedFieldUpdates (activated, stepDone) {
         const settings = _.cloneDeep(helpers.dependencies.settings);
         settings.updates.ignoreProtectedFields = activated;
-        server.ensureStarted.call(server, settings, stepDone);
+        server.ensureStarted(settings, stepDone);
       }
     });
 
@@ -1611,10 +1612,10 @@ describe('events', function () {
       async.parallel([
         function createNormalEvent (stepDone) {
           request.post(basePath).send(normalEvent).end(function (res) {
-            should.exist(res.status);
+            assert.exists(res.status);
             should(res.status).be.eql(201);
 
-            should.exist(res.body.event.id);
+            assert.exists(res.body.event.id);
             normalEventId = res.body.event.id;
 
             stepDone();
@@ -1622,10 +1623,10 @@ describe('events', function () {
         },
         function createHfEvent (stepDone) {
           request.post(basePath).send(hfEvent).end(function (res) {
-            should.exist(res.status);
+            assert.exists(res.status);
             should(res.status).be.eql(201);
 
-            should.exist(res.body.event.id);
+            assert.exists(res.body.event.id);
             hfEventId = res.body.event.id;
 
             stepDone();
@@ -1636,10 +1637,10 @@ describe('events', function () {
 
     it('[Z7R1] a normal event should not be updated to an hf-event', function (done) {
       request.put(path(normalEventId)).send(hfEvent).end(function (res) {
-        should.exist(res.status);
+        assert.exists(res.status);
         should(res.status).be.eql(400);
 
-        should.exist(res.body.error.id);
+        assert.exists(res.body.error.id);
         should(res.body.error.id).be.eql('invalid-operation');
 
         done();
@@ -1648,10 +1649,10 @@ describe('events', function () {
 
     it('[Z7R2] An hf-event should not be updated to a normal event', function (done) {
       request.put(path(hfEventId)).send(normalEvent).end(function (res) {
-        should.exist(res.status);
+        assert.exists(res.status);
         should(res.status).be.eql(400);
 
-        should.exist(res.body.error.id);
+        assert.exists(res.body.error.id);
         should(res.body.error.id).be.eql('invalid-operation');
 
         done();
@@ -1763,7 +1764,7 @@ describe('events', function () {
           const deletion = _.find(events, function (event) {
             return event.id === id;
           });
-          should.exist(deletion);
+          assert.exists(deletion);
           const expected = { id, deleted: deletion.deleted };
           integrity.events.set(expected);
           validation.checkObjectEquality(deletion, expected);

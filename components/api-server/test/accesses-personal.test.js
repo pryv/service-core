@@ -5,50 +5,59 @@
  * Proprietary and confidential
  */
 
-require('./test-helpers');
-const helpers = require('./helpers');
-const ErrorIds = require('errors').ErrorIds;
-const server = helpers.dependencies.instanceManager;
 const async = require('async');
 const charlatan = require('charlatan');
-const validation = helpers.validation;
-const methodsSchema = require('../src/schema/accessesMethods');
+const { assert } = require('chai');
 const should = require('should');
-const storage = helpers.dependencies.storage.user.accesses;
-const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
+
+require('./test-helpers');
+const helpers = require('./helpers');
+const { ErrorIds } = require('errors');
+const server = helpers.dependencies.instanceManager;
+const validation = helpers.validation;
+const methodsSchema = require('../src/schema/accessesMethods');
+const storage = helpers.dependencies.storage.user.accesses;
+const testData = helpers.data;
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
 const { getMall } = require('mall');
+
 describe('accesses (personal)', function () {
   const user = Object.assign({}, testData.users[0]);
   const basePath = '/' + user.username + '/accesses';
   let sessionAccessId = null;
   let request = null;
   let mall = null;
+
   function path (id) {
     return basePath + '/' + id;
   }
+
   function req () {
     if (request == null) {
       throw Error('request was null');
     }
     return request;
   }
+
   // to verify data change notifications
   let accessesNotifCount;
   server.on('axon-accesses-changed', function () {
     accessesNotifCount++;
   });
+
   function buildApiEndpoint (username, token) {
     return ApiEndpoint.build(username, token);
   }
+
   before(async function () {
     await getConfig(); // needed for ApiEndpoint.build();
     mall = await getMall();
   });
+
   before(function (done) {
     async.series([
       testData.resetUsers,
@@ -63,14 +72,17 @@ describe('accesses (personal)', function () {
           stepDone('request is null');
         }
         storage.findOne(user, { token: request && request.token }, null, function (err, access) {
+          assert.notExists(err);
           sessionAccessId = access.id;
           stepDone();
         });
       }
     ], done);
   });
+
   describe('GET /', function () {
     before(resetAccesses);
+
     it('[K5BF] must return all accesses (including personal ones)', function (done) {
       req()
         .get(basePath)
@@ -96,10 +108,12 @@ describe('accesses (personal)', function () {
         });
     });
   });
+
   describe('POST /', function () {
     beforeEach(function (done) {
       async.series([resetAccesses, testData.resetStreams], done);
     });
+
     it('[BU9U] must create a new shared access with the sent data, returning it', (done) => {
       const data = {
         name: 'New Access',
@@ -114,6 +128,7 @@ describe('accesses (personal)', function () {
       async.series([
         function countInitial (stepDone) {
           storage.countAll(user, function (err, count) {
+            assert.notExists(err);
             originalCount = count;
             stepDone();
           });
@@ -135,6 +150,7 @@ describe('accesses (personal)', function () {
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, accesses) {
+            assert.notExists(err);
             accesses.length.should.eql(originalCount + 1, 'accesses');
             const expected = {
               id: createdAccess.id,
@@ -161,6 +177,7 @@ describe('accesses (personal)', function () {
         }
       ], done);
     });
+
     it('[FPUE] must create a new app access with the sent data, creating/restoring requested streams', function (done) {
       const data = {
         id: undefined,
@@ -243,6 +260,7 @@ describe('accesses (personal)', function () {
         }
       ], done);
     });
+
     it('[865I] must accept two app accesses with the same name (app ids) but different device names', function (done) {
       const data = {
         name: testData.accesses[4].name,
@@ -265,6 +283,7 @@ describe('accesses (personal)', function () {
           }, done);
         });
     });
+
     it('[4Y3Y] must ignore erroneous requests to create new streams', function (done) {
       const data = {
         id: undefined,
@@ -302,6 +321,7 @@ describe('accesses (personal)', function () {
           done();
         });
     });
+
     it('[WSG8] must fail if a stream similar to that requested for creation already exists', (done) => {
       const data = {
         name: 'my-sweet-app-id',
@@ -325,6 +345,7 @@ describe('accesses (personal)', function () {
           }, done);
         });
     });
+
     it('[GVC7] must refuse to create new personal accesses (obtained via login only)', function (done) {
       const data = {
         token: 'client-defined-token',
@@ -338,6 +359,7 @@ describe('accesses (personal)', function () {
           validation.checkErrorForbidden(res, done);
         });
     });
+
     it("[YRNE] must slugify the new access' predefined token", function (done) {
       const data = {
         token: 'pas encodé de bleu!',
@@ -356,6 +378,7 @@ describe('accesses (personal)', function () {
           done();
         });
     });
+
     it("[00Y3] must return an error if a permission's streamId has an invalid format", (done) => {
       const data = {
         name: 'Access with slugified streamId permission',
@@ -377,6 +400,7 @@ describe('accesses (personal)', function () {
           }, done);
         });
     });
+
     it('[V3AV] must return an error if the sent data is badly formatted', function (done) {
       const data = {
         name: 'New Access',
@@ -394,6 +418,7 @@ describe('accesses (personal)', function () {
           validation.checkErrorInvalidParams(res, done);
         });
     });
+
     it('[HETK] must refuse empty `defaultName` values for streams', function (done) {
       const data = {
         name: 'New Access',
@@ -412,6 +437,7 @@ describe('accesses (personal)', function () {
           validation.checkErrorInvalidParams(res, done);
         });
     });
+
     it('[YG81] must return an error if an access with the same token already exists', function (done) {
       const data = {
         token: testData.accesses[1].token,
@@ -428,6 +454,7 @@ describe('accesses (personal)', function () {
           }, done);
         });
     });
+
     it('[GZTH] must return an error if an access with the same name already exists', function (done) {
       const data = {
         name: testData.accesses[2].name,
@@ -444,6 +471,7 @@ describe('accesses (personal)', function () {
           }, done);
         });
     });
+
     it('[4HO6] must return an error if an "app" access with the same name (app id) and device ' +
             'name already exists', function (done) {
       const existing = testData.accesses[4];
@@ -468,6 +496,7 @@ describe('accesses (personal)', function () {
           }, done);
         });
     });
+
     it('[PO0R] must return an error if the device name is set for a non-app access', function (done) {
       const data = {
         name: 'Yikki-yikki',
@@ -483,6 +512,7 @@ describe('accesses (personal)', function () {
           }, done);
         });
     });
+
     it("[RWGG] must return an error if the given predefined access's token is a reserved word", (done) => {
       const data = {
         token: 'null',
@@ -499,6 +529,7 @@ describe('accesses (personal)', function () {
           }, done);
         });
     });
+
     it('[08SK] must return an error if the permission streamId has invalid characters', (done) => {
       const data = {
         name: charlatan.Lorem.word(),
@@ -520,8 +551,10 @@ describe('accesses (personal)', function () {
         });
     });
   });
+
   describe('PUT /<token>', function () {
     beforeEach(resetAccesses);
+
     it('[U04A] must return a 410 (Gone)', function (done) {
       req()
         .put(path('unknown-id'))
@@ -534,8 +567,10 @@ describe('accesses (personal)', function () {
         });
     });
   });
+
   describe('DELETE /<id>', function () {
     beforeEach(resetAccesses);
+
     it('[S8EK] must delete the shared access', (done) => {
       const deletedAccess = testData.accesses[1];
       let deletionTime;
@@ -556,6 +591,7 @@ describe('accesses (personal)', function () {
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, accesses) {
+            assert.notExists(err);
             accesses.length.should.eql(testData.accesses.length, 'accesses');
             const expected = _.assign({
               deleted: deletionTime
@@ -567,6 +603,7 @@ describe('accesses (personal)', function () {
         }
       ], done);
     });
+
     it('[5GBI] must delete the personal access', function (done) {
       req()
         .del(path(testData.accesses[0].id))
@@ -579,6 +616,7 @@ describe('accesses (personal)', function () {
           done();
         });
     });
+
     it('[NN11] must return an error if the access does not exist', function (done) {
       req()
         .del(path('unknown-id'))
@@ -590,9 +628,12 @@ describe('accesses (personal)', function () {
         });
     });
   });
+
   describe('POST /check-app', function () {
     before(resetAccesses);
+
     const path = basePath + '/check-app';
+
     it('[VCH9] must return the adjusted permissions structure if no access exists', function (done) {
       const data = {
         requestingAppId: 'the-love-generator',
@@ -627,6 +668,7 @@ describe('accesses (personal)', function () {
           done();
         });
     });
+
     it('[R8H4] must accept requested permissions with "*" for "all streams"', function (done) {
       const data = {
         requestingAppId: 'lobabble-dabidabble',
@@ -662,6 +704,7 @@ describe('accesses (personal)', function () {
           done();
         });
     });
+
     it('[9QNK] must return the existing app access if matching', function (done) {
       const data = {
         requestingAppId: testData.accesses[4].name,
@@ -689,6 +732,7 @@ describe('accesses (personal)', function () {
           done();
         });
     });
+
     it('[IF33] must also return the token of the existing mismatching access if any', function (done) {
       const data = {
         requestingAppId: testData.accesses[4].name,
@@ -721,6 +765,7 @@ describe('accesses (personal)', function () {
           done();
         });
     });
+
     it('[G5T2] must propose fixes to duplicate ids of streams and signal an error when appropriate', function (done) {
       const data = {
         requestingAppId: 'the-love-generator',
@@ -749,6 +794,7 @@ describe('accesses (personal)', function () {
           done();
         });
     });
+
     it('[MTY1] must return an error if the sent data is badly formatted', function (done) {
       const data = {
         requestingAppId: testData.accesses[4].name,
@@ -767,6 +813,7 @@ describe('accesses (personal)', function () {
           validation.checkErrorInvalidParams(res, done);
         });
     });
+
     it('[U5KD] must be forbidden to non-personal accesses', function (done) {
       const data = {
         requestingAppId: testData.accesses[4].name,
@@ -780,6 +827,7 @@ describe('accesses (personal)', function () {
         });
     });
   });
+
   function resetAccesses (done) {
     accessesNotifCount = 0;
     testData.resetAccesses(done, null, request && request.token);

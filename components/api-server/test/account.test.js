@@ -136,11 +136,12 @@ describe('[ACCO] account', function () {
           });
           regServerCalled = true;
         });
+
         async.series([
           server.ensureStarted.bind(server, settings),
           function update (stepDone) {
             request.put(basePath).send(updatedData).end(function (res) {
-              regServerCalled.should.be.ok();
+              assert.isOk(regServerCalled);
               const expected = _.defaults(updatedData, user);
               delete expected.id;
               delete expected.password;
@@ -594,12 +595,13 @@ describe('[ACCO] account', function () {
             });
         },
         function verifyStoredRequest (stepDone) {
-          should.exist(resetToken);
+          assert.exists(resetToken);
           pwdResetReqsStorage.get(
             resetToken,
             user.username,
             function (err, resetReq) {
-              should.exist(resetReq);
+              assert.notExists(err);
+              assert.exists(resetReq);
               should(resetReq._id).be.equal(resetToken);
               should(resetReq.username).be.equal(user.username);
               stepDone();
@@ -657,7 +659,7 @@ describe('[ACCO] account', function () {
       // fetch reset token from server process
       server.on('password-reset-token', function () {
         mailSent = true;
-        return callback('Reset email should not be sent!');
+        return callback(new Error('Reset email should not be sent!'));
       });
 
       async.series([
@@ -690,7 +692,8 @@ describe('[ACCO] account', function () {
           pwdResetReqsStorage.generate(
             user1.username,
             function (err, token) {
-              should.exist(token);
+              assert.notExists(err);
+              assert.exists(token);
               resetToken = token;
               stepDone();
             }
@@ -782,7 +785,8 @@ describe('[ACCO] account', function () {
           pwdResetReqsStorage.generate(
             user.username,
             function (err, token) {
-              should.exist(token);
+              assert.notExists(err);
+              assert.exists(token);
               resetToken = token;
               stepDone();
             }
@@ -858,13 +862,13 @@ describe('[ACCO] account', function () {
               });
           },
           function verifyStoredRequest (stepDone) {
-            should.exist(resetToken);
+            assert.exists(resetToken);
             pwdResetReqsStorage.get(
               resetToken,
               user.username,
               function (err, resetReq) {
                 should.not.exist(err);
-                should.exist(resetReq);
+                assert.exists(resetReq);
                 should(resetReq._id).be.equal(resetToken);
                 should(resetReq.username).be.equal(user.username);
                 stepDone();
