@@ -4,8 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-
 const async = require('async');
 const should = require('should');
 const request = require('superagent');
@@ -34,7 +32,7 @@ const { getConfig } = require('@pryv/boiler');
 
 require('date-utils');
 
-describe('system route', function () {
+describe('[SYRO] system route', function () {
   let mongoFixtures;
   let username;
   let server;
@@ -118,7 +116,7 @@ describe('system route', function () {
   });
 });
 
-describe('system (ex-register)', function () {
+describe('[SYER] system (ex-register)', function () {
   let mongoFixtures;
 
   this.timeout(5000);
@@ -177,8 +175,6 @@ describe('system (ex-register)', function () {
 
         let mailSent = false;
 
-        let originalCount;
-
         // setup mail server mock
         helpers.instanceTestSetup.set(settings, {
           context: settings.services.email,
@@ -202,7 +198,7 @@ describe('system (ex-register)', function () {
         const usersRepository = await getUsersRepository();
         const originalUsers = await usersRepository.getAll();
 
-        originalCount = originalUsers.length;
+        const originalCount = originalUsers.length;
         // create user
         const res = await bluebird.fromCallback(cb => post(newUserData, cb));
         validation.check(res, {
@@ -257,7 +253,7 @@ describe('system (ex-register)', function () {
 
       // fetch notification from server process
       server.once('mail-sent2', function () {
-        return callback('Welcome email should not be sent!');
+        return callback(new Error('Welcome email should not be sent!'));
       });
 
       async.series([
@@ -265,6 +261,7 @@ describe('system (ex-register)', function () {
         function registerNewUser (stepDone) {
           const newUserDataExpected = Object.assign({}, newUserData);
           post(newUserDataExpected, function (err, res) {
+            should.not.exists(err);
             validation.check(res, {
               status: 201,
               schema: methodsSchema.createUser.result
@@ -281,7 +278,6 @@ describe('system (ex-register)', function () {
 
       it('[9K71] must run the process but not save anything for test username "recla"',
         async function () {
-          let createdUserId;
           const settings = _.cloneDeep(helpers.dependencies.settings);
 
           should(process.env.NODE_ENV).be.eql('test');
@@ -315,7 +311,7 @@ describe('system (ex-register)', function () {
             status: 201,
             schema: methodsSchema.createUser.result
           });
-          createdUserId = res.body.id;
+          const createdUserId = res.body.id;
 
           // getUpdatedUsers
           const users = await usersRepository.getAll();
@@ -329,6 +325,7 @@ describe('system (ex-register)', function () {
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .send(newUserDataExpected)
           .end(function (err, res) {
+            should.not.exists(err);
             validation.check(res, {
               status: 201
             }, done);
@@ -336,6 +333,7 @@ describe('system (ex-register)', function () {
       });
 
       it('[VGF5] must return a correct 400 error if the sent data is badly formatted', function (done) {
+        // eslint-disable-next-line n/handle-callback-err
         post({ badProperty: 'bad value' }, function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
@@ -343,6 +341,7 @@ describe('system (ex-register)', function () {
 
       it('[ABI5] must return a correct 400 error if the language property is above 5 characters', function (done) {
         const newUserDataExpected = Object.assign({}, newUserData);
+        // eslint-disable-next-line n/handle-callback-err
         post(_.assignIn(newUserDataExpected, { language: 'abcdef' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
@@ -350,6 +349,7 @@ describe('system (ex-register)', function () {
 
       it('[OVI4] must return a correct 400 error if the language property is the empty string', function (done) {
         const newUserDataExpected = Object.assign({}, newUserData);
+        // eslint-disable-next-line n/handle-callback-err
         post(_.assignIn(newUserDataExpected, { language: '' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
@@ -400,6 +400,7 @@ describe('system (ex-register)', function () {
         request
           .post(path())
           .set('authorization', 'bad-key').send(newUserDataExpected)
+          // eslint-disable-next-line n/handle-callback-err
           .end(function (err, res) {
             validation.checkError(res, {
               status: 404,
@@ -412,6 +413,7 @@ describe('system (ex-register)', function () {
         request.post(path())
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .set('Content-Type', 'application/Jssdlfkjslkjfon') // <-- case error
+          // eslint-disable-next-line n/handle-callback-err
           .end(function (err, res) {
             validation.checkError(res, {
               status: 415,
@@ -459,7 +461,7 @@ describe('system (ex-register)', function () {
             json: false
           }
         };
-        server.ensureStarted.call(server, settings, stepDone);
+        server.ensureStarted(settings, stepDone);
       }
 
       after(server.ensureStarted.bind(server, helpers.dependencies.settings));
@@ -470,6 +472,7 @@ describe('system (ex-register)', function () {
         async.series([
           function failCreateUser (stepDone) {
             request.post(path()).set('authorization', 'bad-key').send(newUserDataExpected)
+              // eslint-disable-next-line n/handle-callback-err
               .end(function (err, res) {
                 validation.checkError(res, {
                   status: 404,
@@ -486,6 +489,7 @@ describe('system (ex-register)', function () {
         const newUserDataExpected = Object.assign({}, newUserData);
         async.series([
           function failCreateUser (stepDone) {
+            // eslint-disable-next-line n/handle-callback-err
             post(_.extend({ invalidParam: 'yolo' }, newUserDataExpected), function (err, res) {
               validation.checkError(res, {
                 status: 400,
@@ -504,6 +508,7 @@ describe('system (ex-register)', function () {
             const dataWithNoPasswordHash = _.cloneDeep(newUserDataExpected);
             delete dataWithNoPasswordHash.passwordHash;
 
+            // eslint-disable-next-line n/handle-callback-err
             post(dataWithNoPasswordHash, function (err, res) {
               validation.checkError(res, {
                 status: 400,
@@ -555,6 +560,7 @@ describe('system (ex-register)', function () {
           request.get(path(user.username))
             .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
             .end(function (err, res) {
+              should.not.exists(err);
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.getUserInfo.result
@@ -582,6 +588,7 @@ describe('system (ex-register)', function () {
           request.get(path(user.username))
             .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
             .end(function (err, res) {
+              should.not.exists(err);
               const info = res.body.userInfo;
 
               assert.approximately(info.lastAccess, expectedTime, 2);
@@ -610,6 +617,7 @@ describe('system (ex-register)', function () {
     });
 
     it('[FNJ5] must return a correct 404 error when authentication is invalid', function (done) {
+      // eslint-disable-next-line n/handle-callback-err
       request.get(path(user.username)).set('authorization', 'bad-key').end(function (err, res) {
         validation.checkError(res, {
           status: 404,
