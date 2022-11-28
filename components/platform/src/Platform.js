@@ -56,7 +56,7 @@ class Platform {
    * during tests forward to register might be activated and deactivated
    */
   #shouldForwardToRegister () {
-    return this.#serviceRegisterConn != null && process.NODE_ENV !== 'test' && !this.#config.get('testsSkipForwardToRegister');
+    return this.#serviceRegisterConn != null && (process.env.NODE_ENV !== 'test' || !this.#config.get('testsSkipForwardToRegister'));
   }
 
   // for tests only - called by repository

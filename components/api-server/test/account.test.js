@@ -92,6 +92,7 @@ describe('[ACCO] account', function () {
     it('[0PPV] must modify account details with the sent data, notifying register if e-mail changed',
       function (done) {
         const settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.testsSkipForwardToRegister = false;
         const updatedData = {
           email: 'userzero.new@test.com',
           language: 'zh'

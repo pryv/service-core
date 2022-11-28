@@ -37,7 +37,13 @@ exports.execute = function (testSetup, testNotifier) {
     // inject TCP axonMessaging socket to allow passing data back to test process
     obj.context.testNotifier = testNotifier;
   }
-  obj.execute();
+  try { 
+    const result = obj.execute();
+    logger.debug('executeResult', result);
+  } catch (error) {
+    logger.error('executeResult Error', error);
+    throw error;
+  }
 };
 /**
  * @returns {string}
@@ -64,10 +70,10 @@ function parse (str) {
       if (typeof value !== 'string') {
         return value;
       }
-      return value.substring(0, 8) === 'function'
-        // eslint-disable-next-line no-eval
-        ? eval('(' + value + ')')
-        : value;
+      // eslint-disable-next-line no-eval
+      const evalValue = value.substring(0, 8) === 'function' ? eval('(' + value + ')') : value;
+      logger.debug('evalValue', value);
+      return evalValue;
     });
   } catch (e) {
     logger.debug('Failed parsing string:', str);
