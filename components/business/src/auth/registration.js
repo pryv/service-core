@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
@@ -12,6 +13,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { getUsersRepository, User } = require('business/src/users');
 const { getLogger } = require('@pryv/boiler');
 const { ApiEndpoint } = require('utils');
+
 /**
  * Create (register) a new user
  */
@@ -152,14 +154,14 @@ class Registration {
       // some default values and indexed/uinique fields of the system
       const userData = {
         user: {
-          id: context.newUser.id
+          id: context.newUser.id,
+          username: context.newUser.username
         },
         host: { name: context.host },
         unique: [
           'username',
           ...SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()
-        ],
-        user: { username: context.newUser.username }
+        ]
       };
       userStreamsIds.forEach((streamId) => {
         if (context.newUser[streamId] != null) { userData.user[streamId] = context.newUser[streamId]; }

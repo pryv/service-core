@@ -130,8 +130,6 @@ class DBIndex {
   queryDeleteAll;
   queryDeleteById;
 
-  constructor () { }
-
   async init () {
     const config = await getConfig();
     const basePath = config.get('userFiles:path');

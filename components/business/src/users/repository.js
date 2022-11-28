@@ -4,9 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
 const { setTimeout } = require('timers/promises');
+
 const User = require('./User');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -17,23 +19,24 @@ const usersIndex = require('./UsersLocalIndex');
 const { getMall } = require('mall');
 const { getPlatform } = require('platform');
 const cache = require('cache');
+
+module.exports = {
+  getUsersRepository
+};
+
 /**
  * Repository of the users
  */
 class UsersRepository {
   storageLayer;
-
   sessionsStorage;
-
   accessStorage;
-
   mall;
-
   platform;
-  constructor () { }
+
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async init () {
     this.mall = await getMall();
     this.platform = await getPlatform();
@@ -45,10 +48,10 @@ class UsersRepository {
     await usersIndex.init();
   }
 
-  // only for testing
   /**
- * @returns {Promise<any[]>}
- */
+   * only for testing
+   * @returns {Promise<any[]>}
+   */
   async getAll () {
     const usersMap = await usersIndex.getAllByUsername();
     const users = [];
@@ -62,10 +65,10 @@ class UsersRepository {
     return users;
   }
 
-  // only for test data to reset all users Dbs.
   /**
- * @returns {Promise<void>}
- */
+   * only for test data to reset all users Dbs.
+   * @returns {Promise<void>}
+   */
   async deleteAll () {
     const usersMap = await usersIndex.getAllByUsername();
     for (const [, userId] of Object.entries(usersMap)) {
@@ -76,8 +79,8 @@ class UsersRepository {
   }
 
   /**
- * @returns {Promise<any[]>}
- */
+   * @returns {Promise<any[]>}
+   */
   async getAllUsernames () {
     const usersMap = await usersIndex.getAllByUsername();
     const users = [];
@@ -88,17 +91,17 @@ class UsersRepository {
   }
 
   /**
- * @param {string} username
-       * @returns {Promise<any>}
-       */
+   * @param {string} username
+   * @returns {Promise<any>}
+   */
   async getUserIdForUsername (username) {
     return await usersIndex.getUserId(username);
   }
 
   /**
- * @param {string} userId
-       * @returns {Promise<any>}
-       */
+   * @param {string} userId
+   * @returns {Promise<any>}
+   */
   async getUserById (userId) {
     const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
     const query = {
@@ -132,9 +135,9 @@ class UsersRepository {
   }
 
   /**
- * @param {string} username
-       * @returns {Promise<any>}
-       */
+   * @param {string} username
+   * @returns {Promise<any>}
+   */
   async getUserByUsername (username) {
     const userId = await this.getUserIdForUsername(username);
     if (userId) {
@@ -145,9 +148,9 @@ class UsersRepository {
   }
 
   /**
- * @param {string} userId
-       * @returns {Promise<any>}
-       */
+   * @param {string} userId
+   * @returns {Promise<any>}
+   */
   async getStorageUsedByUserId (userId) {
     return {
       dbDocuments: (await this.getOnePropertyValue(userId, 'dbDocuments')) || 0,
@@ -156,10 +159,10 @@ class UsersRepository {
   }
 
   /**
- * @param {string} userId
-       * @param {string} propertyKey
-       * @returns {Promise<any>}
-       */
+   * @param {string} userId
+   * @param {string} propertyKey
+   * @returns {Promise<any>}
+   */
   async getOnePropertyValue (userId, propertyKey) {
     const query = {
       limit: 1,
@@ -188,11 +191,11 @@ class UsersRepository {
   }
 
   /**
- * @param {string} userId
-       * @param {string} token
-       * @param {string} appId
-       * @returns {any}
-       */
+   * @param {string} userId
+   * @param {string} token
+   * @param {string} appId
+   * @returns {any}
+   */
   async createPersonalAccessForUser (userId, token, appId, transactionSession) {
     const accessData = {
       token,
@@ -209,8 +212,8 @@ class UsersRepository {
   }
 
   /**
- * @returns {boolean}
- */
+   * @returns {boolean}
+   */
   validateAllStorageObjectsInitialized () {
     if (this.accessStorage == null || this.sessionsStorage == null) {
       throw new Error('Please initialize the user repository with all dependencies.');
@@ -219,11 +222,11 @@ class UsersRepository {
   }
 
   /**
- * @param {User} user
-       * @param {boolean | undefined | null} withSession
-       * @param {boolean | undefined | null} skipFowardToRegister
-       * @returns {Promise<any>}
-       */
+   * @param {User} user
+   * @param {boolean | undefined | null} withSession
+   * @param {boolean | undefined | null} skipFowardToRegister
+   * @returns {Promise<any>}
+   */
   async insertOne (user, withSession = false, skipFowardToRegister = false) {
     // Create the User at a Platfrom Level..
     const operations = [];
@@ -282,11 +285,11 @@ class UsersRepository {
   }
 
   /**
- * @param {User} user
-       * @param {{}} update
-       * @param {string} accessId
-       * @returns {Promise<void>}
-       */
+   * @param {User} user
+   * @param {{}} update
+   * @param {string} accessId
+   * @returns {Promise<void>}
+   */
   async updateOne (user, update, accessId) {
     // change password into hash if it exists
     if (update.password) {
@@ -324,11 +327,11 @@ class UsersRepository {
   }
 
   /**
- * @param {string} userId
-       * @param {string | null} username
-       * @param {boolean | null} skipFowardToRegister
-       * @returns {Promise<number>}
-       */
+   * @param {string} userId
+   * @param {string | null} username
+   * @param {boolean | null} skipFowardToRegister
+   * @returns {Promise<number>}
+   */
   async deleteOne (userId, username, skipFowardToRegister) {
     const user = await this.getUserById(userId);
     if (username == null) {
@@ -346,10 +349,10 @@ class UsersRepository {
   }
 
   /**
- * @param {string} userId
-       * @param {string} password
-       * @returns {Promise<boolean>}
-       */
+   * @param {string} userId
+   * @param {string} password
+   * @returns {Promise<boolean>}
+   */
   async checkUserPassword (userId, password) {
     const currentPass = await userAccountStorage.getPasswordHash(userId);
     let isValid = false;
@@ -360,27 +363,29 @@ class UsersRepository {
   }
 
   /**
-     * @param {String} userId  undefined
-     * @param {String} password  undefined
-       * @returns {any}
-       */
+   * @param {String} userId  undefined
+   * @param {String} password  undefined
+   * @returns {any}
+   */
   async setUserPassword (userId, password, accessId = 'system', modifiedTime) {
     const passwordHash = await encryption.hash(password);
     await userAccountStorage.addPasswordHash(userId, passwordHash, accessId, modifiedTime);
   }
 
   /**
- * @returns {Promise<number>}
- */
+   * @returns {Promise<number>}
+   */
   async count () {
     const users = await usersIndex.getAllByUsername();
     return Object.keys(users).length;
   }
 }
+
 let usersRepository = null;
 let usersRepositoryInitializing = false;
+
 /**
- * @returns {Promise<any>}
+ * @returns {Promise<UsersRepository>}
  */
 async function getUsersRepository () {
   // eslint-disable-next-line no-unmodified-loop-condition
@@ -396,6 +401,3 @@ async function getUsersRepository () {
   }
   return usersRepository;
 }
-module.exports = {
-  getUsersRepository
-};
