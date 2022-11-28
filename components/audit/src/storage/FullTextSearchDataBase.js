@@ -27,7 +27,7 @@ function createFTSFor (db, tableName, tableData, columnsToInclude, id) {
   const columnNames = Object.keys(tableData);
 
   // create virtual table
-  columnNames.map((columnName) => {
+  columnNames.forEach((columnName) => {
     const unindexed = columnsToInclude.includes(columnName) ? '' : ' UNINDEXED';
     if (columnName !== itemId) { columnsTypes.push(columnName + unindexed); }
   });

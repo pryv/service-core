@@ -5,29 +5,29 @@
  * Proprietary and confidential
  */
 
+const async = require('async');
+const fs = require('fs');
+const should = require('should'); // explicit require to benefit from static function
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
+const bluebird = require('bluebird');
+const chai = require('chai');
+const assert = chai.assert;
+
 require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
-const async = require('async');
 const commonTests = helpers.commonTests;
-const fs = require('fs');
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
 const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/streamsMethods');
-const should = require('should'); // explicit require to benefit from static function
 
 const testData = helpers.data;
-const timestamp = require('unix-timestamp');
 const treeUtils = require('utils').treeUtils;
-const _ = require('lodash');
-const bluebird = require('bluebird');
 
 const { getMall } = require('mall');
 const cache = require('cache');
-
-const chai = require('chai');
-const assert = chai.assert;
 
 describe('[STRE] streams', function () {
   const user = Object.assign({}, testData.users[0]);
@@ -62,6 +62,7 @@ describe('[STRE] streams', function () {
       function (stepDone) {
         helpers.dependencies.storage.user.accesses.findOne(user, { token: request.token },
           null, function (err, access) {
+            assert.notExists(err);
             accessId = access.id;
             stepDone();
           });
@@ -123,7 +124,7 @@ describe('[STRE] streams', function () {
           status: 200,
           schema: methodsSchema.get.result
         });
-        should.exist(res.body.streamDeletions);
+        assert.exists(res.body.streamDeletions);
         done();
       });
     });
@@ -658,7 +659,7 @@ describe('[STRE] streams', function () {
       function setIgnoreProtectedFieldUpdates (activated, stepDone) {
         const settings = _.cloneDeep(helpers.dependencies.settings);
         settings.updates.ignoreProtectedFields = activated;
-        server.ensureStarted.call(server, settings, stepDone);
+        server.ensureStarted(settings, stepDone);
       }
     });
   });
@@ -730,12 +731,12 @@ describe('[STRE] streams', function () {
           // deleted stream
           const deletedStreams = await mall.streams.getDeletions(user.id, 0, ['local']);
           const foundDeletedStream = deletedStreams.filter(s => s.id === id)[0];
-          should.exists(foundDeletedStream, 'cannot find deleted stream');
+          assert.exists(foundDeletedStream, 'cannot find deleted stream');
           validation.checkObjectEquality(foundDeletedStream, expectedDeletion);
 
           // child stream
           const foundDeletedChild = deletedStreams.filter(s => s.id === childId)[0];
-          should.exists(foundDeletedChild, 'cannot find deleted child stream');
+          assert.exists(foundDeletedChild, 'cannot find deleted child stream');
           validation.checkObjectEquality(foundDeletedChild, expectedChildDeletion);
         }
       ],

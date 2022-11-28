@@ -115,6 +115,7 @@ module.exports = async function (api) {
       return next(err);
     }
   }
+
   async function enforcePasswordRules (context, params, result, next) {
     try {
       await passwordRules.checkCurrentPasswordAge(context.user.id);
@@ -150,6 +151,7 @@ module.exports = async function (api) {
       next();
     });
   }
+
   async function addUserBusinessToContext (context, params, result, next) {
     try {
       // get user details
@@ -161,6 +163,7 @@ module.exports = async function (api) {
     }
     next();
   }
+
   async function setPassword (context, params, result, next) {
     try {
       const usersRepository = await getUsersRepository();
@@ -171,6 +174,7 @@ module.exports = async function (api) {
     }
     next();
   }
+
   function sendPasswordResetMail (context, params, result, next) {
     // Skip this step if reset mail is deactivated
     const isMailActivated = emailSettings.enabled;
@@ -220,6 +224,7 @@ module.exports = async function (api) {
       next();
     });
   }
+
   async function updateDataOnPlatform (context, params, result, next) {
     try {
       const editableAccountMap = SystemStreamsSerializer.getEditableAccountMap();
@@ -242,6 +247,7 @@ module.exports = async function (api) {
     }
     next();
   }
+
   async function updateAccount (context, params, result, next) {
     try {
       const accessId = context.access?.id
@@ -254,6 +260,7 @@ module.exports = async function (api) {
     }
     next();
   }
+
   async function destroyPasswordResetToken (context, params, result, next) {
     const id = context.passwordResetRequest._id;
     await bluebird.fromCallback((cb) => passwordResetRequestsStorage.destroy(id, context.user.username, cb));
