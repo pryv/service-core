@@ -9,8 +9,6 @@ const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const { getLogger } = require('@pryv/boiler');
 
-/* jshint -W098 */
-
 /**
  * Error route handling.
  * TODO: (re)move that once something's been done about api-server's own errors middleware

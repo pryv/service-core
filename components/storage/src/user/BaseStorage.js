@@ -322,7 +322,6 @@ BaseStorage.prototype.updateMany = function (
   );
 };
 
-/* jshint -W024, -W098 */
 /**
  * Deletes the document(s), replacing them with a deletion record (i.e. id and deletion date).
  * Returns the deletion.

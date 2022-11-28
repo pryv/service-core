@@ -6,20 +6,23 @@
  */
 
 const path = require('path');
-
-require('@pryv/boiler').init({ appName: 'tprpc-test', baseConfigDir: '' });
 const chai = require('chai');
 const assert = chai.assert;
 const sinon = require('sinon');
+
 const rpc = require('tprpc');
+require('@pryv/boiler').init({ appName: 'tprpc-test', baseConfigDir: '' });
 const { Corpus } = require('../fixtures/base');
+
 describe('Base API', () => {
   const endpoint = '127.0.0.1:4020';
+
   // Loads the service definition
   let definition;
   before(async () => {
     definition = await rpc.load(path.resolve(__dirname, '../fixtures/base.proto'));
   });
+
   // If nothing else is done, this is the server implementation
   const impl = {
     search: () => {
@@ -31,7 +34,8 @@ describe('Base API', () => {
       });
     }
   };
-    // Stub allows using sinon-api on the impl#search function.
+
+  // Stub allows using sinon-api on the impl#search function.
   let stub;
   beforeEach(() => {
     stub = sinon.stub(impl, 'search');
@@ -40,6 +44,7 @@ describe('Base API', () => {
   afterEach(() => {
     stub.restore();
   });
+
   // RPC server, serving impl
   let server;
   before(async () => {
@@ -50,12 +55,14 @@ describe('Base API', () => {
   after(() => {
     server.close();
   });
+
   // And this is the client-side object that implements the service.
   let proxy;
   before(() => {
     const client = new rpc.Client(definition);
     proxy = client.proxy('SearchService', endpoint);
   });
+
   it('[GZFK] making a call', async () => {
     const response = await proxy.search({
       query: 'select content from events',
@@ -73,6 +80,7 @@ describe('Base API', () => {
     const res1 = response.results[1];
     assert.strictEqual(res1.title, 'A title 2');
   });
+
   it('[V7MJ] failing a call (server-side)', async () => {
     stub.throws(new Error('server-side error'));
     let caught = false;
