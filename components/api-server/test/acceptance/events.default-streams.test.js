@@ -38,6 +38,7 @@ describe('[FG5R] Events of system streams', () => {
   let scope;
   let isDnsLess;
   let mall;
+  let eventData;
 
   async function getOneEvent (userId, streamId) {
     const events = await mall.events.get(userId, { streams: [{ any: [streamId] }] });
@@ -65,7 +66,7 @@ describe('[FG5R] Events of system streams', () => {
    * @param string streamId
    */
   async function createAdditionalEvent (streamId) {
-    eventDataForadditionalEvent = {
+    const eventDataForadditionalEvent = {
       streamIds: [streamId],
       content: charlatan.Lorem.characters(7),
       type: 'string/pryv'
@@ -144,11 +145,10 @@ describe('[FG5R] Events of system streams', () => {
       });
     });
     describe('When using a shared access with a read-level permission on the .account stream', () => {
-      let sharedAccess;
       let separatedEvents;
       before(async function () {
         await createUser();
-        sharedAccess = await user.access({
+        const sharedAccess = await user.access({
           token: cuid(),
           type: 'shared',
           permissions: [{
@@ -267,7 +267,7 @@ describe('[FG5R] Events of system streams', () => {
       before(async () => {
         systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
         await createUser();
-        sharedAccess = await user.access({
+        const sharedAccess = await user.access({
           token: cuid(),
           type: 'shared',
           permissions: [{
@@ -576,8 +576,8 @@ describe('[FG5R] Events of system streams', () => {
       let systemStreamId;
       before(async function () {
         systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-        user2 = await createUser();
-        sharedAccess = await user.access({
+        const user2 = await createUser();
+        sharedAccess = await user2.access({
           token: cuid(),
           type: 'shared',
           permissions: [{
@@ -1096,8 +1096,8 @@ describe('[FG5R] Events of system streams', () => {
     describe('when using a shared access with a contribute-level access on a system stream', () => {
       describe('to update an editable system event', () => {
         before(async function () {
-          await createUser();
-          sharedAccess = await user.access({
+          const user2 = await createUser();
+          const sharedAccess = await user2.access({
             token: cuid(),
             type: 'shared',
             permissions: [{
@@ -1112,7 +1112,7 @@ describe('[FG5R] Events of system streams', () => {
 
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
-            .set('authorization', access.token);
+            .set('authorization', sharedAccess.attrs.token);
         });
         it('[W8PQ] should return 200', () => {
           assert.equal(res.status, 200);
@@ -1129,7 +1129,7 @@ describe('[FG5R] Events of system streams', () => {
       describe('to update an editable system event', () => {
         before(async function () {
           await createUser();
-          sharedAccess = await user.access({
+          const sharedAccess = await user.access({
             token: cuid(),
             type: 'shared',
             permissions: [{
@@ -1321,7 +1321,7 @@ describe('[FG5R] Events of system streams', () => {
         initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
 
         await createAdditionalEvent(systemStreamId);
-        sharedAccess = await user.access({
+        const sharedAccess = await user.access({
           token: cuid(),
           type: 'shared',
           permissions: [{
