@@ -137,6 +137,7 @@ BaseStorage.prototype.findAndUpdateIfNeeded = function (userOrUserId, query, opt
     finalQuery,
     finalOptions,
     async (err, cursor) => {
+      if (err) return callback(err);
       let updatesToDo = []; // keeps a list of updates to do
       let updatesDone = 0;
       async function executBulk () {

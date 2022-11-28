@@ -20,6 +20,7 @@ module.exports = async function (context, callback) {
     name: 'events'
   });
   try {
+    await setAllTrashed();
     await migrateUserids();
     await migrateIndexedFieldsToPlatform();
   } catch (e) {

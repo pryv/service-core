@@ -42,7 +42,7 @@ exports.stateToDB = function (item) {
 };
 
 exports.stateUpdate = function (update) {
-  if (update.$set.hasOwnProperty('trashed') && !update.$set.trashed) {
+  if (update.$set.trashed != null && !update.$set.trashed) {
     update.$unset.trashed = 1;
     delete update.$set.trashed;
   }

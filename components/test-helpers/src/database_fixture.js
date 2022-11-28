@@ -474,10 +474,6 @@ class FixtureEvent extends FixtureTreeNode {
 }
 /** @extends FixtureTreeNode */
 class FixtureAccess extends FixtureTreeNode {
-  constructor (context, attrs) {
-    super(context, attrs);
-  }
-
   /**
  * @returns {any}
  */

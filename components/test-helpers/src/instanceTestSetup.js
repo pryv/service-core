@@ -65,6 +65,7 @@ function parse (str) {
         return value;
       }
       return value.substring(0, 8) === 'function'
+        // eslint-disable-next-line no-eval
         ? eval('(' + value + ')')
         : value;
     });

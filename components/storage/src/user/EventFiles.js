@@ -32,8 +32,9 @@ function EventFiles (settings, logger) {
  */
 EventFiles.prototype.getTotalSize = function (user, callback) {
   const userPath = this.getAttachmentPath(user.id);
-  fs.exists(userPath, function (exists) {
-    if (!exists) {
+  fs.access(userPath, fs.constants.R_OK, function (err) {
+    const readable = err == null;
+    if (!readable) {
       this.logger.debug('No attachments dir for user ' + toString.user(user));
       return callback(null, 0);
     }
