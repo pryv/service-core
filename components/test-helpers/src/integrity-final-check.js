@@ -52,7 +52,6 @@ async function events () {
       erroneousEvents.push('... And ' + andNMore + ' More');
     }
     throw new Error('Integrity not respected for ' + JSON.stringify(erroneousEvents, null, 2));
-    console.log(new Error('integrity check'));
   }
   // await bluebird.fromCallback(cb => database.deleteMany({name: 'events'}, {},cb));
 }
@@ -93,7 +92,6 @@ async function accesses () {
       erroneousAccess.push('... And ' + andNMore + ' More');
     }
     throw new Error('Integrity not respected for ' + JSON.stringify(erroneousAccess, null, 2));
-    console.log(new Error('integrity check'));
   }
   // await bluebird.fromCallback(cb => database.deleteMany({name: 'events'}, {},cb));
 }
