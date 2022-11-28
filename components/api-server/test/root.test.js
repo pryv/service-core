@@ -6,18 +6,18 @@
  */
 'use strict';
 
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
+const { assert } = require('chai');
+const cuid = require('cuid');
+const bluebird = require('bluebird');
+const superagent = require('superagent'); // for basic auth
+
 require('./test-helpers');
 const helpers = require('./helpers');
 const ErrorIds = require('errors').ErrorIds;
 const methodsSchema = require('../src/schema/generalMethods');
 const validation = helpers.validation;
-const timestamp = require('unix-timestamp');
-const _ = require('lodash');
-const chai = require('chai');
-const assert = chai.assert;
-const cuid = require('cuid');
-const bluebird = require('bluebird');
-const superagent = require('superagent'); // for basic auth
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -252,9 +252,7 @@ describe('[ROOT] root', function () {
     });
 
     it('[J2WP] trackingFunctions should update the access\'s "last used" time and *internal* request counters', async function () {
-      let expectedTime;
       const calledMethodKey = 'events:get';
-      let originalCallCount;
 
       // checkOriginalAccess;
       let access = await bluebird.fromCallback(cb => {
@@ -265,7 +263,7 @@ describe('[ROOT] root', function () {
           cb
         );
       });
-      originalCallCount =
+      const originalCallCount =
         access.calls && access.calls[calledMethodKey]
           ? access.calls[calledMethodKey]
           : 0;
@@ -274,7 +272,7 @@ describe('[ROOT] root', function () {
       let res = await server.request()
         .get('/' + username + '/events')
         .set('Authorization', personalAccessToken);
-      expectedTime = timestamp.now();
+      const expectedTime = timestamp.now();
 
       // checkUpdatedAccess
       access = await bluebird.fromCallback(cb => {

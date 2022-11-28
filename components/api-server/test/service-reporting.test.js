@@ -7,8 +7,8 @@
 
 const { setTimeout } = require('timers/promises');
 require('./test-helpers');
-const httpServer = require('./support/httpServer');
-const assert = require('chai').assert;
+const HttpServer = require('./support/httpServer');
+const { assert } = require('chai');
 const hostname = require('os').hostname;
 const cuid = require('cuid');
 
@@ -54,8 +54,8 @@ describe('service-reporting', () => {
   describe('POST report on service-reporting (started)', () => {
     let reportRecieved = false;
     before(async () => {
-      infoHttpServer = new httpServer('/service/info', 200);
-      reportHttpServer = new httpServer('/reports', 200);
+      infoHttpServer = new HttpServer('/service/info', 200);
+      reportHttpServer = new HttpServer('/reports', 200);
 
       reportHttpServer.on('report_received', function () {
         reportRecieved = true;

@@ -12,7 +12,7 @@ const validation = helpers.validation;
 const methodsSchema = require('../src/schema/service-infoMethods');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
-const httpServer = require('./support/httpServer');
+const HttpServer = require('./support/httpServer');
 const { getConfig } = require('@pryv/boiler');
 
 const username = cuid();
@@ -26,7 +26,7 @@ describe('Service', () => {
     const config = await getConfig();
     mockInfo = config.get('service');
 
-    infoHttpServer = new httpServer('/service/info', 200, mockInfo);
+    infoHttpServer = new HttpServer('/service/info', 200, mockInfo);
     await infoHttpServer.listen(infoHttpServerPort);
     mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.user(username, {});

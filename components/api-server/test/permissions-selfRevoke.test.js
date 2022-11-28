@@ -5,12 +5,11 @@
  * Proprietary and confidential
  */
 
-require('./test-helpers');
-
 const _ = require('lodash');
 const cuid = require('cuid');
-const chai = require('chai');
-const assert = chai.assert;
+const { assert } = require('chai');
+
+require('./test-helpers');
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -148,8 +147,7 @@ describe('permissions selfRevoke', function () {
   describe('DELETE /accesses', function () {
     let username,
       accesses,
-      basePathAccess,
-      accessKeys;
+      basePathAccess;
 
     const accessDefs = {};
     accessDefs['must allow app accesses to self revoke by default'] = { testCode: 'AHS6', selfRevoke: true };
@@ -157,7 +155,7 @@ describe('permissions selfRevoke', function () {
     accessDefs['must allow shared accesses to self revoke by default'] = { testCode: '3DR7', type: 'shared', selfRevoke: true };
     accessDefs['must forbid shared accesses to self revoke when set'] = { testCode: 'F62D', type: 'shared', selfRevoke: false };
 
-    accessKeys = Object.keys(accessDefs);
+    const accessKeys = Object.keys(accessDefs);
 
     beforeEach(async function () {
       username = cuid();

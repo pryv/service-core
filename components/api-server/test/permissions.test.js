@@ -5,20 +5,19 @@
  * Proprietary and confidential
  */
 
+const async = require('async');
+const fs = require('fs');
+const path = require('path');
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
+const { assert } = require('chai');
+
 require('./test-helpers');
 const helpers = require('./helpers');
 const treeUtils = require('utils').treeUtils;
 const server = helpers.dependencies.instanceManager;
-const async = require('async');
-const fs = require('fs');
-const path = require('path');
 const validation = helpers.validation;
 const testData = helpers.data;
-const timestamp = require('unix-timestamp');
-const _ = require('lodash');
-const bluebird = require('bluebird');
-const chai = require('chai');
-const assert = chai.assert;
 const { integrity } = require('business');
 const { getConfig } = require('@pryv/boiler');
 
@@ -383,6 +382,7 @@ describe('[ACCP] Access permissions', function () {
         request.post(basePath, successAuth)
           .set('callerid', 'Georges (unparsed)')
           .send(newEventData).end(function (err, res) {
+            assert.notExists(err);
             res.statusCode.should.eql(201);
             const event = res.body.event;
             const expectedAuthor = testData.accesses[sharedAccessIndex].id + ' Georges (parsed)';
@@ -404,9 +404,7 @@ describe('[ACCP] Access permissions', function () {
         const srcPath = path.join(__dirname, 'permissions.fixtures', 'customAuthStepFn.invalid.js');
         fs.writeFileSync(destPath, fs.readFileSync(srcPath)); // Copy content of srcPath file to destPath
         try {
-          await bluebird.fromCallback(cb => {
-            server.restart.call(server, cb);
-          });
+          await server.restartAsync();
         } catch (error) {
           assert.isNotNull(error);
           assert.exists(error.message);

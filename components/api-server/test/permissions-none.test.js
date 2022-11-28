@@ -87,9 +87,9 @@ describe('permissions none', function () {
         ]
       });
       for (const [key, event] of Object.entries(EVENTS)) {
-        event.type = 'note/txt',
-        event.content = key,
-        event.id = cuid(),
+        event.type = 'note/txt';
+        event.content = key;
+        event.id = cuid();
         EVENT4ID[event.id] = key;
         await user.event(event);
       }
