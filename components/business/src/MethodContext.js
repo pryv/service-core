@@ -19,38 +19,35 @@ const ACCESS_TYPE_PERSONAL = 'personal';
 
 class MethodContext {
   source;
-
   user;
-
   access;
-
   streams;
-
   accessToken;
-
   callerId;
-
-  headers; // used in custom auth function
-
-  methodId; // API method id. Ex.: 'events.get'
-
-  originalQuery;
-  // Custom auth function, if one was configured.
-
-  customAuthStepFn;
-
+  /**
+   * Used in custom auth function
+   */
+  headers;
+  /**
+   * API method id, e.g. "events.get"
+   */
   methodId;
-
+  originalQuery;
+  /**
+   * Custom auth function, if one was configured.
+   */
+  customAuthStepFn;
   mall;
-
   _tracing;
-  // events get
-
+  /**
+   * Used in events.get
+   */
   acceptStreamsQueryNonStringified;
   /**
-     * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
-     */
+   * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
+   */
   disableBackwardCompatibility;
+
   constructor (source, username, auth, customAuthStepFn, headers, query, tracing) {
     this.source = source;
     this.user = { id: null, username };
@@ -83,13 +80,12 @@ class MethodContext {
     this._tracing = tracing;
   }
 
-  // Extracts access token and optional caller id from the given auth string,
-  // assigning to `this.accessToken` and `this.callerId`.
-  //
   /**
- * @param {string} auth
-       * @returns {void}
-       */
+   * Extracts access token and optional caller id from the given auth string,
+   * assigning to `this.accessToken` and `this.callerId`.
+   * @param {string} auth
+   * @returns {void}
+   */
   parseAuth (auth) {
     this.accessToken = auth;
     // Sometimes, the auth string will look like this:
@@ -103,10 +99,10 @@ class MethodContext {
     }
   }
 
-  // Load the userId and mall
   /**
- * @returns {Promise<void>}
- */
+   * Load the userId and mall
+   * @returns {Promise<void>}
+   */
   async init () {
     this.mall = await getMall();
     const usersRepository = await getUsersRepository();
@@ -117,10 +113,10 @@ class MethodContext {
     if (!this.user.id) { throw errors.unknownResource('user', this.user.username); }
   }
 
-  // Retrieve the userBusiness
   /**
- * @returns {Promise<any>}
- */
+   * Retrieve the userBusiness
+   * @returns {Promise<any>}
+   */
   async retrieveUser () {
     this.mall = await getMall();
     try {
@@ -134,19 +130,19 @@ class MethodContext {
     }
   }
 
-  // Retrieves the context's access from its token (auth in constructor)
-  //
-  // If the context's access is already set, the initial step is skipped. This
-  // allows callers to implement custom retrieval logic if needed (e.g. using a
-  // read token for attached files).
-  //
-  // This function throws/rejects for various reasons; but it will always throw
-  // a subclass of APIError.
-  //
   /**
- * @param {StorageLayer} storage
-       * @returns {Promise<void>}
-       */
+   * Retrieves the context's access from its token (auth in constructor)
+   *
+   * If the context's access is already set, the initial step is skipped. This
+   * allows callers to implement custom retrieval logic if needed (e.g. using a
+   * read token for attached files).
+   *
+   * This function throws/rejects for various reasons; but it will always throw
+   * a subclass of APIError.
+   *
+   * @param {StorageLayer} storage
+   * @returns {Promise<void>}
+   */
   async retrieveExpandedAccess (storage) {
     try {
       if (this.access == null) { await this.retrieveAccessFromToken(storage); }
@@ -169,11 +165,11 @@ class MethodContext {
     }
   }
 
-  // generic retrieve access
   /**
- * @param {StorageLayer} storage
-       * @returns {Promise<void>}
-       */
+   * Generic retrieve access
+   * @param {StorageLayer} storage
+   * @returns {Promise<void>}
+   */
   async _retrieveAccess (storage, query) {
     const access = await bluebird.fromCallback((cb) => storage.accesses.findOne(this.user, query, null, cb));
     if (access == null) { throw errors.invalidAccessToken('Cannot find access from token.', 403); }
@@ -181,12 +177,11 @@ class MethodContext {
     cache.setAccessLogic(this.user.id, this.access);
   }
 
-  // Internal: Loads `this.access`.
-  //
   /**
- * @param {StorageLayer} storage
-       * @returns {Promise<void>}
-       */
+   * Internal: Loads `this.access`.
+   * @param {StorageLayer} storage
+   * @returns {Promise<void>}
+   */
   async retrieveAccessFromToken (storage) {
     const token = this.accessToken;
     if (token == null) {
@@ -201,29 +196,28 @@ class MethodContext {
     this.checkAccessValid(this.access);
   }
 
-  // Performs validity checks on the given access. You must call this after
-  // every access load that needs to return a valid access. Internal function,
-  // since all the 'retrieveAccessFromToken*' methods call it.
-  //
-  // Returns nothing but throws if an error is detected.
-  //
   /**
- * @param {Access} access
-       * @returns {void}
-       */
+   * Performs validity checks on the given access. You must call this after
+   * every access load that needs to return a valid access. Internal function,
+   * since all the 'retrieveAccessFromToken*' methods call it.
+   *
+   * Returns nothing but throws if an error is detected.
+   *
+   * @param {Access} access
+   * @returns {void}
+   */
   checkAccessValid (access) {
     const now = timestamp.now();
     if (access.expires != null && now > access.expires) { throw errors.forbidden('Access has expired.'); }
   }
 
-  // Loads an access by id or throw an error. On success, assigns to
-  // `this.access` and `this.accessToken`.
-  //
   /**
- * @param {StorageLayer} storage
-       * @param {string} accessId
-       * @returns {Promise<any>}
-       */
+   * Loads an access by id or throw an error. On success, assigns to
+   * `this.access` and `this.accessToken`.
+   * @param {StorageLayer} storage
+   * @param {string} accessId
+   * @returns {Promise<any>}
+   */
   async retrieveAccessFromId (storage, accessId) {
     this.access = cache.getAccessLogicForId(this.user.id, accessId);
     if (this.access == null) {
@@ -234,11 +228,11 @@ class MethodContext {
     return this.access;
   }
 
-  // Loads session and touches it (personal sessions only)
   /**
- * @param {StorageLayer} storage
-       * @returns {Promise<void>}
-       */
+   * Loads session and touches it (personal sessions only)
+   * @param {StorageLayer} storage
+   * @returns {Promise<void>}
+   */
   async checkSessionValid (storage) {
     const access = this.access;
     if (access == null) { throw new Error('AF: access != null'); }
@@ -253,11 +247,11 @@ class MethodContext {
     storage.sessions.touch(token, () => null);
   }
 
-  // Perform custom auth step `customAuthStep`. Errors are caught and rethrown.
   /**
- * @param {CustomAuthFunction} customAuthStep
-       * @returns {Promise<void>}
-       */
+   * Perform custom auth step `customAuthStep`. Errors are caught and rethrown.
+   * @param {CustomAuthFunction} customAuthStep
+   * @returns {Promise<void>}
+   */
   performCustomAuthStep (customAuthStep) {
     return new Promise((resolve, reject) => {
       try {
@@ -274,20 +268,20 @@ class MethodContext {
   }
 
   /**
-     * Get a Stream for StreamId
-     * @param {string} streamId  undefined
-     * @param {string} storeId  - If storeId is null streamId should be fully scoped
-     * @returns {Promise<any>}
-     */
+   * Get a Stream for StreamId
+   * @param {string} streamId  undefined
+   * @param {string} storeId  - If storeId is null streamId should be fully scoped
+   * @returns {Promise<any>}
+   */
   async streamForStreamId (streamId, storeId) {
     return await this.mall.streams.getOne(this.user.id, streamId, storeId);
   }
 
   /**
- * @param {any} item
-       * @param {string | null} authorOverride
-       * @returns {any}
-       */
+   * @param {any} item
+   * @param {string | null} authorOverride
+   * @returns {any}
+   */
   initTrackingProperties (item, authorOverride) {
     item.created = timestamp.now();
     item.createdBy = authorOverride || this.getTrackingAuthorId();
@@ -295,21 +289,20 @@ class MethodContext {
   }
 
   /**
- * @param {any} updatedData
-       * @param {string | null} authorOverride
-       * @returns {any}
-       */
+   * @param {any} updatedData
+   * @param {string | null} authorOverride
+   * @returns {any}
+   */
   updateTrackingProperties (updatedData, authorOverride) {
     updatedData.modified = timestamp.now();
     updatedData.modifiedBy = authorOverride || this.getTrackingAuthorId();
     return updatedData;
   }
 
-  // Returns the authorId, formed by the access id and the callerId.
-  //
   /**
- * @returns {string}
- */
+   * Returns the authorId, formed by the access id and the callerId.
+   * @returns {string}
+   */
   getTrackingAuthorId () {
     const access = this.access;
     if (access == null) { throw new Error('Access needs to be retrieved first.'); }

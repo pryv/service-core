@@ -37,7 +37,7 @@ function eventToDB (sourceEvent) {
   if (sourceEvent.streamIds == null) {
     event.streamIds = ALL_EVENTS_TAG;
   } else {
-    if (!Array.isArray(sourceEvent.streamIds)) throw ('StreamIds must be an Array');
+    if (!Array.isArray(sourceEvent.streamIds)) throw new Error('streamIds must be an Array');
     event.streamIds = sourceEvent.streamIds.join(' ') + ' ' + ALL_EVENTS_TAG;
   }
 

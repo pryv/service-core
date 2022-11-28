@@ -4,12 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const winston = require('winston');
-require('winston-syslog').Syslog; // Exposes `winston.transports.Syslog`
+// eslint-disable-next-line no-unused-expressions
+require('winston-syslog').Syslog; // Exposes `winston.transports.Syslog` (ugly, but it's the recommended way)
+
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:syslog');
 
 const templates = require('./templating');
+
 /**
  * Supported messages are:
  * - emerg : Emergency
@@ -24,7 +28,7 @@ class Syslog {
 
   async init () {
     if (this.syslogger) {
-      throw ('Syslog Logger was already initialized');
+      throw new Error('Syslog logger was already initialized');
     }
 
     const config = await getConfig();

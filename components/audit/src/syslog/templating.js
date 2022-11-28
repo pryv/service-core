@@ -4,14 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+const path = require('path');
+
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit:syslog:templates');
-const path = require('path');
 
 class SyslogTransform {
   key;
   constructor (key) { this.key = key; }
-  transform (userId, event) { throw ('Transform must be implemented'); }
+  transform (userId, event) { throw new Error('Transform must be implemented'); }
 }
 
 /**
@@ -94,7 +96,7 @@ function loadTemplates (templatesFromConfig) {
     } else if (format.plugin) {
       templates['log/' + key] = new Plugin(key, format);
     } else {
-      throw ('Error: Invalid syslog fromat [' + key + '] ' + format);
+      throw new Error(`Invalid syslog format [${key}] ${format}`);
     }
   }
 }
