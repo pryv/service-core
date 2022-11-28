@@ -4,12 +4,20 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Helper functions for serializing/deserializing setup instructions for tests.
  * Added to support injecting mocks in server instance (separate process) from
  * tests.
  */
+module.exports = {
+  set,
+  clear,
+  execute
+};
+
 const logger = require('@pryv/boiler').getLogger('instance-test-setup');
+
 /**
  * @param {Object} settings The main configuration settings
  * @param {Object} setup Must have method `execute()` and be self-contained (i.e. no reference
@@ -19,32 +27,35 @@ const logger = require('@pryv/boiler').getLogger('instance-test-setup');
  *                       A `messagingSocket` property will be injected into `context` at execution
  *                       time to allow passing messages back to the test process.
  */
-exports.set = function (settings, setup) {
+function set (settings, setup) {
   if (!settings || !setup) {
     throw new Error('Expected config and setup object arguments');
   }
   settings.instanceTestSetup = stringify(setup);
-};
-exports.clear = function (settings) {
+}
+
+function clear (settings) {
   delete settings.instanceTestSetup;
-};
+}
+
 /**
  * @throws Any error encountered deserializing or calling the setup function
  */
-exports.execute = function (testSetup, testNotifier) {
+function execute (testSetup, testNotifier) {
   const obj = parse(testSetup);
   if (obj.context != null) {
     // inject TCP axonMessaging socket to allow passing data back to test process
     obj.context.testNotifier = testNotifier;
   }
-  try { 
+  try {
     const result = obj.execute();
     logger.debug('executeResult', result);
   } catch (error) {
     logger.error('executeResult Error', error);
     throw error;
   }
-};
+}
+
 /**
  * @returns {string}
  */
@@ -60,6 +71,7 @@ function stringify (obj) {
       : value;
   });
 }
+
 /**
  * @returns {any}
  */
