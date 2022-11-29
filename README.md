@@ -46,6 +46,11 @@ Everything should be accessible from the project root, including running command
 - All NPM dependencies are kept in the root `package.json`
 - Only basic properties are kept in each component's `package.json`
 
+The code follows the [Semi-Standard](https://github.com/standard/semistandard) style.
+- Run `just lint` to check linting on the entire repo
+- Run `just lint-changes` to only check modified files
+- Add the `--fix` option to either of the above to automatically fix issues when possible.
+
 
 ## Running service dependencies
 
