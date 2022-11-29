@@ -67,12 +67,13 @@ async function assertContains (path, content) {
   // a DFA and search for the expectation using a single streamed pass over
   // the input file.
   for (let i = 0; i < inputLines.length; i++) {
+    // eslint-disable-next-line no-labels
     matchAttempt: {
       for (let j = 0; j < lines.length; j++) {
         const line = inputLines[i + j];
         const expectedRaw = lines[j];
         const expected = expectedRaw.slice(indent, expectedRaw.length);
-        if (line !== expected) { break matchAttempt; }
+        if (line !== expected) { break matchAttempt; } // eslint-disable-line no-labels
       }
       // We've matched all of lines against inputLines at position i.
       return;
