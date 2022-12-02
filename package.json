@@ -27,8 +27,8 @@
   },
   "dependencies": {
     "@pryv/boiler": "https://github.com/pryv/pryv-boiler.git#semver:^1.0.9",
-    "@pryv/stable-object-representation": "^1.1.4",
     "@pryv/datastore": "git+ssh://git@github.com/pryv/pryv-datastore.git",
+    "@pryv/stable-object-representation": "^1.1.4",
     "async": "^2.6.4",
     "awaiting": "^3.0.0",
     "axon": "2.0.x",

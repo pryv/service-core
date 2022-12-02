@@ -36,6 +36,7 @@ ignore:
 - node_modules
 - test-results
 - var-pryv
+- dev-modules
 
 license: |
   Copyright (C) {YEARS} {AUTHOR_NAME} {AUTHOR_WEB} - All Rights Reserved
