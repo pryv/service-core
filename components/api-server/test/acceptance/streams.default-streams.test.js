@@ -17,7 +17,7 @@ const { databaseFixture } = require('test-helpers');
 const validation = require('api-server/test/helpers').validation;
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { defaults: dataStoreDefaults } = require('pryv-datastore');
+const { defaults: dataStoreDefaults } = require('@pryv/datastore');
 const treeUtils = require('utils/src/treeUtils');
 
 describe('System streams', function () {

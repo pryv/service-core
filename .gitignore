@@ -11,6 +11,7 @@ components/*/node_modules/
 **/v8.log
 !node_modules/components
 proxy/nginx.conf
+dev-modules
 service-core.iml
 /out
 .nyc_output/

@@ -28,6 +28,7 @@
   "dependencies": {
     "@pryv/boiler": "https://github.com/pryv/pryv-boiler.git#semver:^1.0.9",
     "@pryv/stable-object-representation": "^1.1.4",
+    "@pryv/datastore": "git+ssh://git@github.com/pryv/pryv-datastore.git",
     "async": "^2.6.4",
     "awaiting": "^3.0.0",
     "axon": "2.0.x",
@@ -48,7 +49,6 @@
     "influx": "^5.0.6",
     "jaeger-client": "^3.18.1",
     "lib-reporting": "git+ssh://git@github.com/pryv/lib-reporting#1.0.3",
-    "pryv-datastore": "git+ssh://git@github.com/pryv/lib-datastore",
     "lodash": "^4.17.4",
     "lru-cache": "^7.14.1",
     "mkdirp": "1.0.4",

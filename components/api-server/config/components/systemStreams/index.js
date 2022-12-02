@@ -19,7 +19,7 @@ const IS_UNIQUE = 'isUnique';
 const IS_REQUIRED_IN_VALIDATION = 'isRequiredInValidation';
 const REGEX_VALIDATION = 'regexValidation';
 
-const { defaults: dataStoreDefaults } = require('pryv-datastore');
+const { defaults: dataStoreDefaults } = require('@pryv/datastore');
 
 module.exports.features = {
   IS_SHOWN,

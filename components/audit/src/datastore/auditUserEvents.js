@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-const ds = require('pryv-datastore');
+const ds = require('@pryv/datastore');
 const audit = require('audit');
 
 module.exports = ds.createUserEvents({

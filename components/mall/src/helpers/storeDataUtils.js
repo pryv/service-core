@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 const { APIError, factory: apiErrors } = require('errors');
-const { errors: dataStoreErrors } = require('pryv-datastore');
+const { errors: dataStoreErrors } = require('@pryv/datastore');
 // HACK: replace data store errors factory methods with API errors factory's
 Object.assign(dataStoreErrors, apiErrors);
 
