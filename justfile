@@ -13,10 +13,6 @@ _help:
 setup-dev-env:
     scripts/setup-dev-env
 
-# Set up the dev modules linking for datastore
-setup-dev-module-datastore:
-    scripts/setup-datastore-dev-module
-
 # Install node modules afresh
 install *params: clean
     npm install {{params}}
