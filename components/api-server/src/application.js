@@ -95,14 +95,12 @@ class Application {
    */
   systemAPI;
 
-  /**
-   * @type {storage.Database}
-   */
+  /** @type {import('storage').Database} */
   database;
 
   /**
    * Storage subsystem
-   * @type {storage.StorageLayer}
+   * @type {import('storage').StorageLayer}
    */
   storageLayer;
 

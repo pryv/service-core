@@ -3,10 +3,8 @@
   "previewjsdoc.autoOpenBrowser": false,
   "files.exclude": {
   },
-  "typescript.validate.enable": false,
   "files.watcherExclude": {
     "**/var-pryv/**": true
   },
-  "javascript.validate.enable": false,
   "semistandard.enable": false
 }

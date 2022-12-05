@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-const ds = require('pryv-datastore');
+const ds = require('@pryv/datastore');
 const auditUserEvents = require('./auditUserEvents');
 const auditUserStreams = require('./auditUserStreams');
 

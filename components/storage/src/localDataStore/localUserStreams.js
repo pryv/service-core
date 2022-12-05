@@ -7,7 +7,7 @@
 const bluebird = require('bluebird');
 const _ = require('lodash');
 const cache = require('cache');
-const ds = require('pryv-datastore');
+const ds = require('@pryv/datastore');
 const { treeUtils } = require('utils');
 const { StreamProperties } = require('business/src/streams');
 const StreamPropsWithoutChildren = StreamProperties.filter((p) => p !== 'children');

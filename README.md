@@ -132,6 +132,16 @@ just run api-server migrate
 to trigger data migration. Migrations are defined in the `storage` component.
 
 
+## Developing on core and depended-upon packages simultaneously
+
+Sometimes it's necessary to work on core and e.g. `@pryv/boiler` or `@pryv/datastore` at the same time.
+
+1. Open the working copies of core and the desired package(s) in the same workspace (e.g. for VSCode, from the parent folder, run `code service-core pryv-datastore`)
+2. From `service-core`, run `npx link {package working copy path}` (e.g. `npx link ../pryv-datastore`)
+
+When you're done with the side-by-side work, `just install` to cleanup and resume using the regular package dependencies.
+
+
 ## App Configuration
 
 Components supporting configuration load their settings from (last takes precedence):
