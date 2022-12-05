@@ -12,6 +12,7 @@
 const path = require('path');
 const { getConfigUnsafe, getLogger } = require('@pryv/boiler').init({
   appName: 'previews-cache-clean',
+  baseFilesDir: path.resolve(__dirname, '../../../'),
   baseConfigDir: path.resolve(__dirname, '../../api-server/config'), // api-server config
   extraConfigs: [{
     scope: 'defaults-previews',
