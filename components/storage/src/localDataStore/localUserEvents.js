@@ -7,7 +7,7 @@
 const _ = require('lodash');
 const Readable = require('stream').Readable;
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
-const ds = require('pryv-datastore');
+const ds = require('@pryv/datastore');
 const errors = ds.errors;
 const handleDuplicateError = require('../Database').handleDuplicateError;
 /**

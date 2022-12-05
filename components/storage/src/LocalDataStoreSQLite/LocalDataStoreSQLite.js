@@ -8,7 +8,7 @@
  * Local Data Store.
  */
 const storage = require('../index');
-const ds = require('pryv-datastore');
+const ds = require('@pryv/datastore');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
 const userStreams = require('../localDataStore/localUserStreams');
 const LocalUserEventsSQLite = require('./LocalUserEventsSQLite');

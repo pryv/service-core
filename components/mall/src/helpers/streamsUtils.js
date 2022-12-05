@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const { defaults: dataStoreDefaults } = require('pryv-datastore');
+const { defaults: dataStoreDefaults } = require('@pryv/datastore');
 const { getFullItemId } = require('./storeDataUtils');
 module.exports = {
   createStoreRootStream,

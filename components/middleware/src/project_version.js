@@ -70,7 +70,7 @@ let version = null;
  * @param {boolean | null} forceRefresh
  * @returns {Promise<string>}
  */
-async function getAPIVersion (forceRefresh) {
+async function getAPIVersion (forceRefresh = false) {
   if (!version || forceRefresh) {
     const pv = new ProjectVersion();
     version = pv.version();

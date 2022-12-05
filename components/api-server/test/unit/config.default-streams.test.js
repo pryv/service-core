@@ -11,7 +11,7 @@ const assert = chai.assert;
 const systemStreamsConfig = require('api-server/config/components/systemStreams');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const treeUtils = require('utils/src/treeUtils');
-const { defaults: dataStoreDefaults } = require('pryv-datastore');
+const { defaults: dataStoreDefaults } = require('@pryv/datastore');
 const PRIVATE_PREFIX = ':_system:';
 const CUSTOMER_PREFIX = ':system:';
 
