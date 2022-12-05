@@ -20,6 +20,7 @@ const rootPath = '../../../../';
 
 const { getConfig, getLogger } = require(rootPath + 'node_modules/@pryv/boiler').init({
   appName: 'audit-migration',
+  baseFilesDir: path.resolve(__dirname, '../../../../'),
   baseConfigDir: path.resolve(__dirname, rootPath + 'components/api-server/config'),
   extraConfigs: [{
     scope: 'default-paths',

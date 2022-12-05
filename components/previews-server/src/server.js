@@ -7,6 +7,7 @@
 const path = require('path');
 const { getConfig, getLogger } = require('@pryv/boiler').init({
   appName: 'previews-server',
+  baseFilesDir: path.resolve(__dirname, '../../../'),
   baseConfigDir: path.resolve(__dirname, '../../api-server/config'),
   extraConfigs: [
     {

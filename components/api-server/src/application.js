@@ -13,6 +13,7 @@ const { setTimeout } = require('timers/promises');
 
 require('@pryv/boiler').init({
   appName: 'api-server',
+  baseFilesDir: path.resolve(__dirname, '../../../'),
   baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [
     {
