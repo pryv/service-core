@@ -38,18 +38,18 @@ class Mall {
   }
 
   /**
-     * Register a new DataStore
-     * @param {DataStore} store
-       * @returns {void}
-       */
+   * Register a new DataStore
+   * @param {DataStore} store
+   * @returns {void}
+   */
   addStore (store) {
     if (this.initialized) { throw new Error('Sources cannot be added after init()'); }
     this.stores.set(store.id, store);
   }
 
   /**
-     * @returns {Promise<this>}
-     */
+   * @returns {Promise<this>}
+   */
   async init () {
     if (this.initialized) { throw new Error('init() can only be called once.'); }
     this.initialized = true;
@@ -62,8 +62,8 @@ class Mall {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async deleteUser (userId) {
     for (const store of this.stores.values()) {
       try {
@@ -75,10 +75,10 @@ class Mall {
   }
 
   /**
-     * Return the quantity of storage used by the user in bytes.
-     * @param {string} userId
-       * @returns {Promise<number>}
-       */
+   * Return the quantity of storage used by the user in bytes.
+   * @param {string} userId
+   * @returns {Promise<number>}
+   */
   async getUserStorageSize (userId) {
     let storageUsed = 0;
     for (const store of this.stores.values()) {
