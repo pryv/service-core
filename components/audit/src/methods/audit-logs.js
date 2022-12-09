@@ -16,7 +16,15 @@ const { ConvertEventFromStoreStream } = require('mall/src/helpers/eventsUtils');
  * @param api
  */
 module.exports = function (api) {
-  api.register('audit.getLogs', eventsGetUtils.coerceStreamsParam, commonFns.getParamsValidation(methodsSchema.get.params), eventsGetUtils.applyDefaultsForRetrieval, eventsGetUtils.transformArrayOfStringsToStreamsQuery, anyStarStreamQueryIsNullQUery, removeStoreIdFromStreamQuery, limitStreamQueryToAccessToken, getAuditLogs);
+  api.register('audit.getLogs',
+    eventsGetUtils.coerceStreamsParam,
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    eventsGetUtils.applyDefaultsForRetrieval,
+    eventsGetUtils.transformArrayOfStringsToStreamsQuery,
+    anyStarStreamQueryIsNullQUery,
+    removeStoreIdFromStreamQuery,
+    limitStreamQueryToAccessToken,
+    getAuditLogs);
 };
 /**
  * @returns {void}
@@ -74,10 +82,10 @@ function limitStreamQueryToAccessToken (context, params, result, next) {
     if (query.any == null) {
       query.any = [streamId];
     } else {
-      if (query.all == null) {
-        query.all = [];
+      if (query.and == null) {
+        query.and = [];
       }
-      query.all.push({ any: [streamId] });
+      query.and.push({ any: [streamId] });
     }
   }
   next();
