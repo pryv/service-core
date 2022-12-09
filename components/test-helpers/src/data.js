@@ -91,7 +91,7 @@ exports.resetEvents = function (done, user) {
         state: 'all',
         withDeletions: true,
         includeHistory: true,
-        streams: [{ not: allAccountStreamIds }]
+        streams: [{ any: '*', and: [{ not: allAccountStreamIds }] }]
       });
     },
     async function createEvents () {
