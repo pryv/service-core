@@ -8,6 +8,7 @@
 const path = require('path');
 const { getLogger } = require('@pryv/boiler').init({
   appName: 'hfs-server-tests',
+  baseFilesDir: path.resolve(__dirname, '../../../../'),
   baseConfigDir: path.resolve(__dirname, '../../config'),
   extraConfigs: [
     {

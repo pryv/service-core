@@ -8,6 +8,7 @@ process.env.NODE_ENV = 'test';
 const path = require('path');
 require('@pryv/boiler').init({
   appName: 'webhooks-test',
+  baseFilesDir: path.resolve(__dirname, '../../../'),
   baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [
     {

@@ -12,6 +12,7 @@
 const path = require('path');
 require('@pryv/boiler').init({
   appName: 'dump-test-data',
+  baseFilesDir: path.resolve(__dirname, '../../../'),
   baseConfigDir: path.resolve(__dirname, '../../api-server/config/'),
   extraConfigs: [
     {
