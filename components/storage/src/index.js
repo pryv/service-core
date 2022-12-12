@@ -11,6 +11,7 @@ const StorageLayer = require('./storage_layer');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { dataBaseTracer } = require('tracing');
 const usersLocalIndex = require('./usersLocalIndex');
+const userAccountStorage = require('./userAccountStorage');
 
 let usersIndex;
 async function getUsersLocalIndex () {
@@ -19,6 +20,15 @@ async function getUsersLocalIndex () {
     await usersIndex.init();
   }
   return usersIndex;
+}
+
+let userAccount;
+async function getUserAccountStorage () {
+  if (!userAccount) {
+    userAccount = userAccountStorage;
+    await userAccountStorage.init();
+  }
+  return userAccountStorage;
 }
 
 let database;
@@ -90,5 +100,6 @@ module.exports = {
   getDatabaseSync,
   getStorageLayerSync,
   userLocalDirectory: require('./userLocalDirectory'),
-  getUsersLocalIndex
+  getUsersLocalIndex,
+  getUserAccountStorage
 };

@@ -21,11 +21,12 @@ const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
 const testData = helpers.data;
 const { UserRepositoryOptions } = require('business/src/users');
-const userAccountStorage = require('business/src/users/userAccountStorage');
+const { getUserAccountStorage } = require('storage');
 const encryption = require('utils').encryption;
 
 describe('auth', function () {
   this.timeout(5000);
+  let userAccountStorage;
 
   function apiPath (username) {
     return new URL(username, server.url).href;
@@ -34,6 +35,10 @@ describe('auth', function () {
   function basePath (username) {
     return apiPath(username) + '/auth';
   }
+
+  before(async function () {
+    userAccountStorage = await getUserAccountStorage();
+  });
 
   before(function (done) {
     async.series([

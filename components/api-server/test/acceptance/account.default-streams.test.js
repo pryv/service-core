@@ -17,7 +17,8 @@ const { getApplication } = require('api-server/src/application');
 
 const { pubsub } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const userAccountStorage = require('business/src/users/userAccountStorage');
+
+const { getUserAccountStorage } = require('storage');
 const { getConfig } = require('@pryv/boiler');
 
 const { databaseFixture } = require('test-helpers');
@@ -38,6 +39,11 @@ describe('[ACCO] Account with system streams', function () {
   let config;
   let isDnsLess;
   let mall;
+  let userAccountStorage;
+
+  before(async () => {
+    userAccountStorage = await getUserAccountStorage();
+  });
 
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {

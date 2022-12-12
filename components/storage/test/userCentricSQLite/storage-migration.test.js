@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-/* global assert, initTests */
+/* global assert */
 
 const setUserBasePathTestOnly = require('storage').userLocalDirectory.setBasePathTestOnly;
 

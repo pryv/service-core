@@ -14,7 +14,6 @@ const UserRepositoryOptions = require('./UserRepositoryOptions');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
-const userAccountStorage = require('./userAccountStorage');
 const { getMall } = require('mall');
 const { getPlatform } = require('platform');
 const cache = require('cache');
@@ -33,6 +32,7 @@ class UsersRepository {
   mall;
   platform;
   usersIndex;
+  userAccountStorage;
 
   /**
    * @returns {Promise<void>}
@@ -45,7 +45,7 @@ class UsersRepository {
     this.sessionsStorage = this.storageLayer.sessions;
     this.accessStorage = this.storageLayer.accesses;
     this.usersIndex = await storage.getUsersLocalIndex();
-    await userAccountStorage.init();
+    this.userAccountStorage = await storage.getUserAccountStorage();
   }
 
   /**
@@ -139,7 +139,7 @@ class UsersRepository {
    * @returns {Promise<boolean>}
    */
   async usernameExists (username) {
-    return await this.usersIndex.usernameExists(username)
+    return await this.usersIndex.usernameExists(username);
   }
 
   /**
@@ -283,7 +283,7 @@ class UsersRepository {
       // set user password
       if (user.passwordHash) {
         // if coming from deprecated `system.createUser`; TODO: remove when that method is removed
-        await userAccountStorage.addPasswordHash(user.id, user.passwordHash, user.accessId);
+        await this.userAccountStorage.addPasswordHash(user.id, user.passwordHash, user.accessId);
       } else {
         // regular user creation
         await await this.setUserPassword(user.id, user.password, user.accessId);
@@ -357,12 +357,22 @@ class UsersRepository {
   }
 
   /**
+   * @returns {Promise<number>}
+   */
+  async count () {
+    const users = await this.usersIndex.getAllByUsername();
+    return Object.keys(users).length;
+  }
+
+  // -------------------- Password Management ------------------- //
+
+  /**
    * @param {string} userId
    * @param {string} password
    * @returns {Promise<boolean>}
    */
   async checkUserPassword (userId, password) {
-    const currentPass = await userAccountStorage.getPasswordHash(userId);
+    const currentPass = await this.userAccountStorage.getPasswordHash(userId);
     let isValid = false;
     if (currentPass != null) {
       isValid = await encryption.compare(password, currentPass);
@@ -373,19 +383,10 @@ class UsersRepository {
   /**
    * @param {String} userId  undefined
    * @param {String} password  undefined
-   * @returns {any}
    */
   async setUserPassword (userId, password, accessId = 'system', modifiedTime) {
     const passwordHash = await encryption.hash(password);
-    await userAccountStorage.addPasswordHash(userId, passwordHash, accessId, modifiedTime);
-  }
-
-  /**
-   * @returns {Promise<number>}
-   */
-  async count () {
-    const users = await this.usersIndex.getAllByUsername();
-    return Object.keys(users).length;
+    await this.userAccountStorage.addPasswordHash(userId, passwordHash, accessId, modifiedTime);
   }
 }
 
