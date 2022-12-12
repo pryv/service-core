@@ -12,8 +12,7 @@ const { getPlatform } = require('platform');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
-const usersIndex = require('business/src/users/UsersLocalIndex');
-const { getPasswordRules } = require('business').users;
+const { getPasswordRules, getUsersRepository } = require('business').users;
 /**
  * Auth API methods implementations.
  *
@@ -25,7 +24,7 @@ module.exports = async function (api) {
   const storageLayer = await getStorageLayer();
   const servicesSettings = config.get('services');
   const isDnsLess = config.get('dnsLess:isActive');
-  await usersIndex.init();
+  const usersRepository = await getUsersRepository();
   const passwordRules = await getPasswordRules();
   // REGISTER
   const registration = new Registration(logging, storageLayer, servicesSettings);
@@ -76,7 +75,7 @@ module.exports = async function (api) {
     const field = Object.keys(params)[0];
     // username
     if (field === 'username') {
-      if (await usersIndex.usernameExists(params[field])) {
+      if (await usersRepository.usernameExists(params[field])) {
         return next(errors.itemAlreadyExists('user', { username: params[field] }));
       }
     }

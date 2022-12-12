@@ -10,6 +10,17 @@ const Database = require('./Database');
 const StorageLayer = require('./storage_layer');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { dataBaseTracer } = require('tracing');
+const usersLocalIndex = require('./usersLocalIndex');
+
+let usersIndex;
+async function getUsersLocalIndex () {
+  if (!usersIndex) {
+    usersIndex = usersLocalIndex;
+    await usersIndex.init();
+  }
+  return usersIndex;
+}
+
 let database;
 /**
  * @returns {any}
@@ -21,6 +32,7 @@ function _getDatabase (config) {
   }
   return database;
 }
+
 let storageLayer;
 /**
  * @returns {any}
@@ -77,5 +89,6 @@ module.exports = {
   getStorageLayer,
   getDatabaseSync,
   getStorageLayerSync,
-  userLocalDirectory: require('./userLocalDirectory')
+  userLocalDirectory: require('./userLocalDirectory'),
+  getUsersLocalIndex
 };

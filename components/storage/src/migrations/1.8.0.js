@@ -32,8 +32,7 @@ module.exports = async function (context, callback) {
     await eventsCollection.updateMany({ trashed: null, deleted: null }, { $set: { trashed: false } });
   }
   async function migrateUserids () {
-    const usersIndex = require('business/src/users/UsersLocalIndex');
-    await usersIndex.init();
+    const usersIndex = await require('storage').getUsersLocalIndex();
     const query = { streamIds: { $in: [':_system:username'] } };
     const cursor = eventsCollection.find(query, {
       projection: { userId: 1, content: 1 }
