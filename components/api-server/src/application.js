@@ -63,7 +63,7 @@ const errorsMiddlewareMod = require('./middleware/errors');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const userLocalDirectory = require('storage').userLocalDirectory;
 
 const { ExtensionLoader } = require('utils').extension;
 

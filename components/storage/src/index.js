@@ -76,5 +76,6 @@ module.exports = {
   getDatabase,
   getStorageLayer,
   getDatabaseSync,
-  getStorageLayerSync
+  getStorageLayerSync,
+  userLocalDirectory: require('./userLocalDirectory')
 };

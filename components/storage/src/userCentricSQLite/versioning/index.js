@@ -8,7 +8,7 @@
 const path = require('path');
 const fs = require('fs');
 
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const userLocalDirectory = require('storage').userLocalDirectory;
 
 const UserDatabase = require('../UserDatabase');
 const { migrate0to1 } = require('./migrate0to1');

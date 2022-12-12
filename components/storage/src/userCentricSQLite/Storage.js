@@ -11,7 +11,7 @@ const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
 
 const versioning = require('./versioning');
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const userLocalDirectory = require('storage').userLocalDirectory;
 const ensureUserDirectory = userLocalDirectory.ensureUserDirectory;
 
 const CACHE_SIZE = 500;

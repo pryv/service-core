@@ -6,7 +6,7 @@
  */
 
 module.exports = {
-  userLocalDirectory: require('./userLocalDirectory'),
+  userLocalDirectory: require('storage/src/userLocalDirectory'),
   getUsersRepository: require('./repository').getUsersRepository,
   UserRepositoryOptions: require('./UserRepositoryOptions'),
   User: require('./User'),

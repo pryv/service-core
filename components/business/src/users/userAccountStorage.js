@@ -22,7 +22,7 @@ const LRU = require('lru-cache');
 const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
 
-const userLocalDirectory = require('./userLocalDirectory');
+const userLocalDirectory = require('storage/src/userLocalDirectory');
 
 const CACHE_SIZE = 100;
 const VERSION = '1.0.0';

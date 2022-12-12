@@ -11,7 +11,7 @@ const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
 
 const userAccountStorage = require('business/src/users/userAccountStorage');
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const userLocalDirectory = require('storage').userLocalDirectory;
 
 describe('[UAST] Users Account Storage', () => {
   const passwords = []; // password will be stored in reverse order (oldest first)

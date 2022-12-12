@@ -7,7 +7,7 @@
 
 /* global assert, initTests */
 
-const setUserBasePathTestOnly = require('business').users.userLocalDirectory.setBasePathTestOnly;
+const setUserBasePathTestOnly = require('storage').userLocalDirectory.setBasePathTestOnly;
 
 const path = require('path');
 const { copy, pathExists } = require('fs-extra');
