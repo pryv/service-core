@@ -13,7 +13,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const userStreams = require('../localDataStore/localUserStreams');
 const LocalUserEventsSQLite = require('./LocalUserEventsSQLite');
 const LocalTransaction = require('../localDataStore/LocalTransaction');
-const Storage = require('audit/src/storage/Storage');
+const { getStorage } = require('../userCentricSQLite');
 module.exports = ds.createDataStore({
   id: 'local',
   name: 'Local Store',
@@ -28,8 +28,7 @@ module.exports = ds.createDataStore({
     this.streams = userStreams;
     // events
     const eventFilesStorage = (await storage.getStorageLayer()).eventFiles;
-    const userStorage = new Storage('local');
-    await userStorage.init();
+    const userStorage = await getStorage('local');
     this.events = new LocalUserEventsSQLite(userStorage, eventFilesStorage);
     return this;
   },

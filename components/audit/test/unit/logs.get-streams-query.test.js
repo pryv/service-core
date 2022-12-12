@@ -7,9 +7,9 @@
 
 const { assert } = require('chai');
 
-const { toSQLiteQuery } = require('audit/src/storage/sqLiteStreamQueryUtils');
+const { toSQLiteQuery } = require('storage/src/userCentricSQLite/sqLiteStreamQueryUtils');
 
-const { ALL_EVENTS_TAG } = require('audit/src/storage/schemas/events');
+const { ALL_EVENTS_TAG } = require('storage/src/userCentricSQLite/schemas/events');
 
 describe('toSqliteQuery()', function () {
   it('[YS6Y] must convert to SQLite including expansion', async function () {

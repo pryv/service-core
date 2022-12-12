@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const { getStorage, closeStorage } = require('./storage');
+const { getStorage, closeStorage } = require('storage/src/userCentricSQLite');
 const { getSyslog } = require('./syslog');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit');
@@ -47,7 +47,7 @@ class Audit {
   async init () {
     logger.debug('Audit initiating...');
     const config = await getConfig();
-    this._storage = await getStorage();
+    this._storage = await getStorage('audit');
     this._syslog = await getSyslog();
     this.filter = new AuditFilter({
       syslogFilter: config.get('audit:syslog:filter'),

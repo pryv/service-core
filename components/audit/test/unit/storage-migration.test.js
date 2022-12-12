@@ -12,11 +12,11 @@ const setUserBasePathTestOnly = require('business').users.userLocalDirectory.set
 const path = require('path');
 const { copy, pathExists } = require('fs-extra');
 const cuid = require('cuid');
-const versioning = require('../../src/storage/versioning');
-const UserDatabase = require('../../src/storage/UserDatabase');
+const versioning = require('storage/src/userCentricSQLite/versioning');
+const UserDatabase = require('storage/src/userCentricSQLite/UserDatabase');
 const os = require('os');
 const { getLogger } = require('@pryv/boiler');
-const Storage = require('../../src/storage/Storage');
+const Storage = require('storage/src/userCentricSQLite/Storage');
 
 describe('Audit Storage Migration', () => {
   let logger;
