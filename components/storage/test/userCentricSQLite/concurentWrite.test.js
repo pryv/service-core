@@ -4,18 +4,17 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global assert, cuid, initTests, audit */
 
-describe('Audit Storage concurent Writes', () => {
-  const userId = cuid();
+const userCentricSQLite = require('../../src/userCentricSQLite');
+const { assert } = require('chai');
+const cuid = require('cuid');
+
+describe('[UCSQ] userCentricSQLite Storage concurent Writes', () => {
   let userStorage;
 
   before(async () => {
-    await initTests();
-  });
-
-  before(async () => {
-    userStorage = await audit.storage.forUser(userId);
+    const sqliteStorageManager = await userCentricSQLite.getStorage('test');
+    userStorage = await sqliteStorageManager.forUser(cuid());
   });
 
   it('[69AH] should retry when SQLITE_BUSY', async () => {

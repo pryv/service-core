@@ -12,16 +12,15 @@ const setUserBasePathTestOnly = require('storage').userLocalDirectory.setBasePat
 const path = require('path');
 const { copy, pathExists } = require('fs-extra');
 const cuid = require('cuid');
-const versioning = require('storage/src/userCentricSQLite/versioning');
-const UserDatabase = require('storage/src/userCentricSQLite/UserDatabase');
+const versioning = require('../../src/userCentricSQLite/versioning');
+const UserDatabase = require('../../src/userCentricSQLite/UserDatabase');
 const os = require('os');
 const { getLogger } = require('@pryv/boiler');
-const Storage = require('storage/src/userCentricSQLite/Storage');
+const Storage = require('../../src/userCentricSQLite/Storage');
 
-describe('Audit Storage Migration', () => {
+describe('UserCentric Storage Migration', () => {
   let logger;
   before(async () => {
-    await initTests();
     logger = getLogger('sqlite-storage-migration-test');
   });
 
@@ -32,7 +31,7 @@ describe('Audit Storage Migration', () => {
 
   it('[MFFR] a single Migrate v0 to v1', async function () {
     const userid = cuid();
-    const srcPath = path.join(__dirname, '../support/migration/audit-v0.sqlite');
+    const srcPath = path.join(__dirname, './support/migration/audit-v0.sqlite');
     const v0dbPath = path.join(os.tmpdir(), userid + '-v0.sqlite');
     const v1dbPath = path.join(os.tmpdir(), userid + '-v1.sqlite');
     await copy(srcPath, v0dbPath);
@@ -46,7 +45,7 @@ describe('Audit Storage Migration', () => {
 
   it('[RXVF] check userDir and perform migration when needed', async function () {
     this.timeout(30000);
-    const srcDir = path.join(__dirname, '../support/migration-userDirV0');
+    const srcDir = path.join(__dirname, './support/migration-userDirV0');
     const tempUserDir = path.join(os.tmpdir(), 'pryv.io-test-userdir-' + Math.random().toString(36).substring(2, 8));
     await copy(srcDir, tempUserDir);
     assert.isFalse(await pathExists(path.join(tempUserDir, 'audit-db-version-1.0.0.txt')));
