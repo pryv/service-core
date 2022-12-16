@@ -173,6 +173,23 @@ class MallUserEvents {
     }
   }
 
+  /**
+   * @param {string} storeId
+   * @param {string} userId
+   * @param {timestamp} deletedSince
+   * @param {number} [limit]
+   * @param {number} [skip]
+   * @param {boolean} [sortAscending]
+   * @returns {Promise<Readable>}
+   */
+  async getDeletionsStreamed (storeId, userId, deletedSince, limit = null, skip = null, sortAscending = false) {
+    const eventsStore = this.eventsStores.get(storeId);
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
+    return eventsStore.getDeletionsStreamed(userId, deletedSince, limit, skip, sortAscending);
+  }
+
   // ----------------- CREATE ----------------- //
 
   /**

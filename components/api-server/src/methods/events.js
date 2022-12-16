@@ -140,16 +140,9 @@ module.exports = async function (api) {
     if (params.modifiedSince == null || !params.includeDeletions) {
       return next();
     }
-    // to be implemented also for stores that support deletion later on
-    const localDeletionsStreams = await mall.events.getStreamedWithParamsByStore(context.user.id, {
-      local: {
-        skip: params.skip,
-        limit: params.limit,
-        deletedSince: params.modifiedSince
-      }
-    });
+    const deletedEvents = await mall.events.getDeletionsStreamed('local', context.user.id, params.modifiedSince, params.limit, params.skip, params.sortAscending);
     // remove properties of events that shouldn't be exposed
-    result.addStream('eventDeletions', localDeletionsStreams.pipe(new CleanDeletedEventsStream()));
+    result.addStream('eventDeletions', deletedEvents.pipe(new CleanDeletedEventsStream()));
     next();
   }
 

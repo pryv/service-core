@@ -22,11 +22,11 @@ function CleanDeletedEventsStream () {
 inherits(CleanDeletedEventsStream, Transform);
 
 CleanDeletedEventsStream.prototype._transform = function (event, encoding, callback) {
-  const keysCount = Object.keys(event).length;
-  if (keysCount > 3 || (keysCount === 3 && event.integrity == null)) {
+  // we keep integrity only if keep the full content of the event;
+  if (event.time != null) {
     this.push({ id: event.id, deleted: event.deleted });
   } else {
-    this.push(event);
+    this.push({ id: event.id, deleted: event.deleted, integrity: event.integrity });
   }
   callback();
 };

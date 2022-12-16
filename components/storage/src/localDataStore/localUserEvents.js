@@ -26,34 +26,28 @@ module.exports = ds.createUserEvents({
     const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
     return res;
   },
+
+  /**
+   * @param {identifier} userId
+   * @param {timestamp} deletedSince
+   * @param {number} [limit]
+   * @param {number} [skip]
+   * @param {boolean} [sortAscending]
+   * @returns {Promise<Readable>}
+   */
+  async getDeletionsStreamed (userId, deletedSince, limit = null, skip = null, sortAscending = false) {
+    const query = { deleted: { $gt: deletedSince } };
+    const options = { sort: { deleted: sortAscending ? 1 : -1 } };
+    if (skip != null) options.skip = skip;
+    if (limit != null) options.limit = limit;
+    const cursor = this._getCursor(userId, query, options);
+    return readableStreamFromEventCursor(cursor);
+  },
+
   async getStreamed (userId, params) {
     const { query, options } = paramsToMongoquery(params);
     const cursor = this._getCursor(userId, query, options);
-    // streaming with backpressure - highWaterMark has really some effect "4000" seems to be an optimnal value
-    const readableUnderPressure = new Readable({
-      objectMode: true,
-      highWaterMark: 4000
-    });
-    let performingReadRequest = false;
-    readableUnderPressure._read = async () => {
-      if (performingReadRequest) { return; } // avoid strating a 2nd read request when already pushing.
-      performingReadRequest = true;
-      try {
-        let push = true;
-        while (push) {
-          if (!(await cursor.hasNext())) {
-            readableUnderPressure.push(null);
-            break;
-          } // stop
-          const value = await cursor.next();
-          push = readableUnderPressure.push(cleanResult({ value })); // if null reader is "full" (handle back pressure)
-        }
-        performingReadRequest = false;
-      } catch (err) {
-        readableUnderPressure.emit('error', err);
-      }
-    };
-    return readableUnderPressure;
+    return readableStreamFromEventCursor(cursor);
   },
   async create (userId, event, transaction) {
     try {
@@ -139,6 +133,7 @@ module.exports = ds.createUserEvents({
   }
 });
 // --------------- helpers ------------//
+
 /**
  * change _id to id and remove userId from result
  * @param {any}
@@ -154,6 +149,7 @@ function cleanResult (result) {
   }
   return value;
 }
+
 const converters = {
   equal: (content) => {
     const realfield = content.field === 'id' ? '_id' : content.field;
@@ -216,4 +212,36 @@ function getTypeQueryValue (requestedType) {
   return wildcardIndex > 0
     ? new RegExp('^' + requestedType.substr(0, wildcardIndex + 1))
     : requestedType;
+}
+
+/**
+ * Get a readable stream from a cursor
+ * @param {Cursor} cursor
+ */
+function readableStreamFromEventCursor (cursor) {
+  // streaming with backpressure - highWaterMark has really some effect "4000" seems to be an optimnal value
+  const readableUnderPressure = new Readable({
+    objectMode: true,
+    highWaterMark: 4000
+  });
+  let performingReadRequest = false;
+  readableUnderPressure._read = async () => {
+    if (performingReadRequest) { return; } // avoid strating a 2nd read request when already pushing.
+    performingReadRequest = true;
+    try {
+      let push = true;
+      while (push) {
+        if (!(await cursor.hasNext())) {
+          readableUnderPressure.push(null);
+          break;
+        } // stop
+        const value = await cursor.next();
+        push = readableUnderPressure.push(cleanResult({ value })); // if null reader is "full" (handle back pressure)
+      }
+      performingReadRequest = false;
+    } catch (err) {
+      readableUnderPressure.emit('error', err);
+    }
+  };
+  return readableUnderPressure;
 }
