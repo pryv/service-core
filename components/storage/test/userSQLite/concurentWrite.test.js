@@ -5,15 +5,15 @@
  * Proprietary and confidential
  */
 
-const userCentricSQLite = require('../../src/userCentricSQLite');
+const userSQLite = require('../../src/userSQLite');
 const { assert } = require('chai');
 const cuid = require('cuid');
 
-describe('[UCSQ] userCentricSQLite Storage concurent Writes', () => {
+describe('[UCSQ] userSQLite Storage concurent Writes', () => {
   let userStorage;
 
   before(async () => {
-    const sqliteStorageManager = await userCentricSQLite.getStorage('test');
+    const sqliteStorageManager = await userSQLite.getStorage('test');
     userStorage = await sqliteStorageManager.forUser(cuid());
   });
 

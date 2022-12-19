@@ -20,7 +20,7 @@ const logger = getLogger('user-local-directory');
 module.exports = {
   init,
   ensureUserDirectory,
-  pathForuserId,
+  getPathForUser,
   pathForAttachment,
   deleteUserDirectory,
   getBasePath,
@@ -60,7 +60,7 @@ async function init () {
  * @param {string} [extraPath] -- Optional, extra path
  */
 async function ensureUserDirectory (userId, extraPath = '') {
-  const resultPath = pathForuserId(userId, extraPath);
+  const resultPath = getPathForUser(userId, extraPath);
   await mkdirp(resultPath); // ensures directory exists
   return resultPath;
 }
@@ -70,7 +70,7 @@ async function ensureUserDirectory (userId, extraPath = '') {
  * @param {string} userId -- user id (cuid format)
  * @param {string} [extraPath] -- Optional, extra path
  */
-function pathForuserId (userId, extraPath = '') {
+function getPathForUser (userId, extraPath = '') {
   if (basePath == null) {
     throw new Error('Run init() first');
   }
@@ -105,7 +105,7 @@ function pathForAttachment (userId, eventId, fileId, ensureDirs = false) {
  * @param {*} userId -- user id
  */
 async function deleteUserDirectory (userId) {
-  const userFolder = pathForuserId(userId);
+  const userFolder = getPathForUser(userId);
   await bluebird.fromCallback(cb => rimraf(userFolder, { disableGlob: true }, cb));
 }
 

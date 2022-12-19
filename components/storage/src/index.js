@@ -13,6 +13,30 @@ const { dataBaseTracer } = require('tracing');
 const usersLocalIndex = require('./usersLocalIndex');
 const userAccountStorage = require('./userAccountStorage');
 
+module.exports = {
+  Database: require('./Database'),
+  PasswordResetRequests: require('./PasswordResetRequests'),
+  Sessions: require('./Sessions'),
+  Size: require('./Size'),
+  Versions: require('./Versions'),
+  user: {
+    Accesses: Access,
+    EventFiles: require('./user/EventFiles'),
+    FollowedSlices: require('./user/FollowedSlices'),
+    Profile: require('./user/Profile'),
+    Streams: Stream,
+    Webhooks: require('./user/Webhooks')
+  },
+  StorageLayer,
+  getDatabase,
+  getStorageLayer,
+  getDatabaseSync,
+  getStorageLayerSync,
+  userLocalDirectory: require('./userLocalDirectory'),
+  getUsersLocalIndex,
+  getUserAccountStorage
+};
+
 let usersIndex;
 async function getUsersLocalIndex () {
   if (!usersIndex) {
@@ -80,26 +104,3 @@ async function getDatabase () {
 async function getStorageLayer () {
   return _getStorageLayer(await getConfig());
 }
-module.exports = {
-  Database: require('./Database'),
-  PasswordResetRequests: require('./PasswordResetRequests'),
-  Sessions: require('./Sessions'),
-  Size: require('./Size'),
-  Versions: require('./Versions'),
-  user: {
-    Accesses: Access,
-    EventFiles: require('./user/EventFiles'),
-    FollowedSlices: require('./user/FollowedSlices'),
-    Profile: require('./user/Profile'),
-    Streams: Stream,
-    Webhooks: require('./user/Webhooks')
-  },
-  StorageLayer,
-  getDatabase,
-  getStorageLayer,
-  getDatabaseSync,
-  getStorageLayerSync,
-  userLocalDirectory: require('./userLocalDirectory'),
-  getUsersLocalIndex,
-  getUserAccountStorage
-};

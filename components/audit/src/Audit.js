@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const { getStorage, closeStorage } = require('storage/src/userCentricSQLite');
+const { getStorage, closeStorage } = require('storage/src/userSQLite');
 const { getSyslog } = require('./syslog');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit');
