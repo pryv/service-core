@@ -13,7 +13,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const userStreams = require('../localDataStore/localUserStreams');
 const LocalUserEventsSQLite = require('./LocalUserEventsSQLite');
 const LocalTransaction = require('../localDataStore/LocalTransaction');
-const { getStorage } = require('../userCentricSQLite');
+const { getStorage } = require('../userSQLite');
 module.exports = ds.createDataStore({
   id: 'local',
   name: 'Local Store',

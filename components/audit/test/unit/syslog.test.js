@@ -6,7 +6,7 @@
  */
 /* global assert, cuid, config, initTests, audit, _ */
 
-const SyslogWatch = require('storage/test/userCentricSQLite/support/SyslogWatch');
+const SyslogWatch = require('storage/test/userSQLite/support/SyslogWatch');
 
 describe('Syslog', () => {
   const userId = cuid();
