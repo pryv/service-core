@@ -98,8 +98,8 @@ class Application {
 
   config;
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async init () {
     this.logger = getLogger('application');
     this.config = await getConfig();
@@ -110,16 +110,16 @@ class Application {
   }
 
   /**
- * @returns {Promise<Application>}
- */
+   * @returns {Promise<Application>}
+   */
   async start () {
     await this.server.start();
     return this;
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async run () {
     await this.init();
     await this.start();

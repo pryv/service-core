@@ -51,9 +51,9 @@ function loadCustomAuthStepFn (customExtensions) {
  */
 async function start () {
   /**
-     * Runs the server.
-     * Launch with `node server [options]`.
-     */
+   * Runs the server.
+   * Launch with `node server [options]`.
+   */
   // load config settings
   const config = await getConfig();
   await SystemStreamsSerializer.init();

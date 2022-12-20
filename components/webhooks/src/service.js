@@ -30,8 +30,8 @@ class WebhooksService {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async start () {
     this.apiVersion = await getAPIVersion();
     this.serial = this.settings.get('service:info:serial');
@@ -52,8 +52,8 @@ class WebhooksService {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   subscribeListeners () {
     pubsub.webhooks.on(pubsub.WEBHOOKS_DELETE, this.onStop.bind(this));
     pubsub.webhooks.on(pubsub.WEBHOOKS_CREATE, this.onCreate.bind(this));
@@ -61,8 +61,8 @@ class WebhooksService {
   }
 
   /**
- * @returns {number}
- */
+   * @returns {number}
+   */
   setMeta () {
     let numWebhooks = 0;
     for (const entry of this.webhooks) {
@@ -78,8 +78,8 @@ class WebhooksService {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async sendBootMessage () {
     for (const entry of this.webhooks) {
       await bluebird.all(entry[1].map(async (webhook) => {
@@ -89,8 +89,8 @@ class WebhooksService {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async initSubscribers () {
     for (const entry of this.webhooks) {
       const username = entry[0];
@@ -102,9 +102,9 @@ class WebhooksService {
   }
 
   /**
- * @param {UsernameWebhook} usernameWebhook
-       * @returns {void}
-       */
+   * @param {UsernameWebhook} usernameWebhook
+   * @returns {void}
+   */
   onCreate (usernameWebhook) {
     this.addWebhook(usernameWebhook.username, new Webhook(_.extend({}, usernameWebhook.webhook, {
       webhooksRepository: this.repository,
@@ -115,26 +115,26 @@ class WebhooksService {
   }
 
   /**
- * @param {UsernameWebhook} usernameWebhook
-       * @returns {void}
-       */
+   * @param {UsernameWebhook} usernameWebhook
+   * @returns {void}
+   */
   onActivate (usernameWebhook) {
     this.activateWebhook(usernameWebhook.username, usernameWebhook.webhook);
   }
 
   /**
- * @param {UsernameWebhook} usernameWebhook
-       * @returns {void}
-       */
+   * @param {UsernameWebhook} usernameWebhook
+   * @returns {void}
+   */
   onStop (usernameWebhook) {
     this.stopWebhook(usernameWebhook.username, usernameWebhook.webhook.id);
   }
 
   /**
- * @param {string} username
-       * @param {Webhook} webhook
-       * @returns {Promise<void>}
-       */
+   * @param {string} username
+   * @param {Webhook} webhook
+   * @returns {Promise<void>}
+   */
   async addWebhook (username, webhook) {
     let userWebhooks = this.webhooks.get(username);
     if (userWebhooks == null) {
@@ -147,10 +147,10 @@ class WebhooksService {
   }
 
   /**
- * @param {string} username
-       * @param {Webhook} webhook
-       * @returns {void}
-       */
+   * @param {string} username
+   * @param {Webhook} webhook
+   * @returns {void}
+   */
   async activateWebhook (username, webhook) {
     const userWebhooks = this.webhooks.get(username);
     const stoppedWebhook = userWebhooks.filter((w) => w.id === webhook.id)[0];
@@ -159,10 +159,10 @@ class WebhooksService {
   }
 
   /**
- * @param {string} username
-       * @param {string} webhookId
-       * @returns {void}
-       */
+   * @param {string} username
+   * @param {string} webhookId
+   * @returns {void}
+   */
   stopWebhook (username, webhookId) {
     const [usersWebhooks, webhook, idx] = this.getWebhook(username, webhookId);
     if (webhook == null || usersWebhooks == null || idx == null) {
@@ -176,10 +176,10 @@ class WebhooksService {
   }
 
   /**
- * @param {string} username
-       * @param {string} webhookId
-       * @returns {[any[], any, number]}
-       */
+   * @param {string} username
+   * @param {string} webhookId
+   * @returns {[any[], any, number]}
+   */
   getWebhook (username, webhookId) {
     const usersWebhooks = this.webhooks.get(username);
     if (usersWebhooks == null) {
@@ -195,8 +195,8 @@ class WebhooksService {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   stop () {
     this.logger.info('Stopping webhooks service');
     for (const usernameWebhooks of this.webhooks) {
@@ -207,8 +207,8 @@ class WebhooksService {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async loadWebhooks () {
     this.webhooks = await this.repository.getAll();
   }

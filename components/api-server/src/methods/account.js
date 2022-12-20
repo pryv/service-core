@@ -72,13 +72,13 @@ module.exports = async function (api) {
   );
 
   /**
-     * Validate if given parameters are allowed for the edit
-     *
-     * @param {*} context
-     * @param {*} params
-     * @param {*} result
-     * @param {*} next
-     */
+   * Validate if given parameters are allowed for the edit
+   *
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
   function validateThatAllFieldsAreEditable (context, params, result, next) {
     const editableAccountMap = SystemStreamsSerializer.getEditableAccountMap();
     Object.keys(params.update).forEach((streamId) => {
@@ -268,12 +268,12 @@ module.exports = async function (api) {
   }
 
   /**
-     * Build response body for the account update
-     * @param {*} context
-     * @param {*} params
-     * @param {*} result
-     * @param {*} next
-     */
+   * Build response body for the account update
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
   async function buildResultData (context, params, result, next) {
     Object.keys(params.update).forEach((key) => {
       context.user[key] = params.update[key];

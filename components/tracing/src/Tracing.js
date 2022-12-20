@@ -41,16 +41,16 @@ function getTracer () {
  */
 class Tracing {
   /**
-     * the jaeger tracer
-     */
+   * the jaeger tracer
+   */
   tracer;
   /**
-     * used to track the top span to set the parent in startSpan()
-     */
+   * used to track the top span to set the parent in startSpan()
+   */
   spansStack;
   /**
-     * index of the top stack element. To avoid using length-1
-     */
+   * index of the top stack element. To avoid using length-1
+   */
   lastIndex;
 
   history;
@@ -64,13 +64,13 @@ class Tracing {
   }
 
   /**
-     * Starts a new span with the given name and tags.
-     * The span is a child of the latest span if there is one.
-       * @param {string} name
-       * @param {{} | null} tags
-       * @param {string | null} childOf
-       * @returns {string}
-       */
+   * Starts a new span with the given name and tags.
+   * The span is a child of the latest span if there is one.
+   * @param {string} name
+   * @param {{} | null} tags
+   * @param {string | null} childOf
+   * @returns {string}
+   */
   startSpan (name, tags, childOf) {
     this.history.push('start ' + name);
     // console.log('started span', name, ', spans present', this.lastIndex+2)
@@ -102,12 +102,12 @@ class Tracing {
   }
 
   /**
-     * Tags an existing span. Used mainly for errors, by setError()
-       * @param {string | undefined | null} name
-       * @param {string} key
-       * @param {string} value
-       * @returns {void}
-       */
+   * Tags an existing span. Used mainly for errors, by setError()
+   * @param {string | undefined | null} name
+   * @param {string} key
+   * @param {string} value
+   * @returns {void}
+   */
   tagSpan (name, key, value) {
     this.history.push('tag ' + name + ':  ' + key + ' > ' + value);
     let span;
@@ -124,11 +124,11 @@ class Tracing {
   }
 
   /**
-     * Add log information to span
-       * @param {string | null} name
-       * @param {object | null} data
-       * @returns {void}
-       */
+   * Add log information to span
+   * @param {string | null} name
+   * @param {object | null} data
+   * @returns {void}
+   */
   logForSpan (name, data) {
     this.history.push('log ' + name + ': ' + JSON.stringify(data));
     let span;
@@ -145,11 +145,11 @@ class Tracing {
   }
 
   /**
-     * Finishes the span with the given name. Throws an error if no span with such a name exists.
-       * @param {string | null} name
-       * @param {string | null} forceName
-       * @returns {void}
-       */
+   * Finishes the span with the given name. Throws an error if no span with such a name exists.
+   * @param {string | null} name
+   * @param {string | null} forceName
+   * @returns {void}
+   */
   finishSpan (name, forceName) {
     this.history.push('finish ' + name);
     let span;
@@ -167,10 +167,10 @@ class Tracing {
   }
 
   /**
- * @param {string | undefined | null} name
-       * @param {Error} err
-       * @returns {void}
-       */
+   * @param {string | undefined | null} name
+   * @param {Error} err
+   * @returns {void}
+   */
   setError (name, err) {
     this.tagSpan(name, Tags.ERROR, true);
     this.tagSpan(name, 'errorId', err.id);
@@ -178,8 +178,8 @@ class Tracing {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   checkIfFinished () {
     if (this.spansStack.length !== 0) {
       const remaining = this.spansStack.map((x) => x._operationName);
@@ -190,20 +190,20 @@ class Tracing {
 
 class DummyTracing {
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   startSpan () { }
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   finishSpan () { }
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   logForSpan () { }
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   setError () { }
 }
 module.exports.DummyTracing = DummyTracing;

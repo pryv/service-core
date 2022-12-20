@@ -25,10 +25,10 @@ class NamespaceBatch {
   // Stores a batch request into InfluxDB and returns a promise that will
   // resolve once the request completes successfully.
   /**
- * @param {BatchRequest} data
-       * @param {MeasurementNameResolver} resolver
-       * @returns {Promise<any>}
-       */
+   * @param {BatchRequest} data
+   * @param {MeasurementNameResolver} resolver
+   * @returns {Promise<any>}
+   */
   async store (data, resolver) {
     // These options will apply to all the points:
     const appendOptions = {

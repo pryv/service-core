@@ -43,49 +43,49 @@ class User {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   createIdIfMissing () {
     if (this.id == null) { this.id = cuid(); }
   }
 
   /**
-     * Get list of events from account data
-       * @returns {any[]}
-       */
+   * Get list of events from account data
+   * @returns {any[]}
+   */
   async getEvents () {
     if (this.events == null) { this.events = await buildEventsFromAccount(this); }
     return this.events;
   }
 
   /**
-     * Get only readable account information
-       * @returns {{}}
-       */
+   * Get only readable account information
+   * @returns {{}}
+   */
   getReadableAccount () {
     return _.pick(this, this.readableAccountFields.filter((x) => x !== 'dbDocuments' && x !== 'attachedFiles'));
   }
 
   /**
-     * Get full account information
-       * @returns {{}}
-       */
+   * Get full account information
+   * @returns {{}}
+   */
   getFullAccount () {
     return _.pick(this, this.accountFields.filter((x) => x !== 'dbDocuments' && x !== 'attachedFiles'));
   }
 
   /**
-     * Get fields provided by account methods
-       * @returns {{}}
-       */
+   * Get fields provided by account methods
+   * @returns {{}}
+   */
   getLegacyAccount () {
     return _.pick(this, ['username', 'email', 'language', 'storageUsed']);
   }
 
   /**
-     * Get account with id property added to it
-       * @returns {any}
-       */
+   * Get account with id property added to it
+   * @returns {any}
+   */
   getAccountWithId () {
     const res = _.pick(this, this.accountFields
       .concat('id')
@@ -95,9 +95,9 @@ class User {
   }
 
   /**
-     * Get account unique fields
-       * @returns {any}
-       */
+   * Get account unique fields
+   * @returns {any}
+   */
   getUniqueFields () {
     return _.pick(this, this.uniqueAccountFields);
   }

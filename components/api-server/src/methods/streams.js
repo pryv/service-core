@@ -93,12 +93,12 @@ module.exports = async function (api) {
       // request is "*" and not personal access
       // cherry pick accessible streams from result
       /********************************
-             * This is not optimal (fetches all streams) and not accurate
-             * This method can "duplicate" streams, if read rights have been given to a parent and one of it's children
-             * Either:
-             *  - detect parent / child relationships
-             *  - pass a list of streamIds to store.streams.get() to get a consolidated answer
-             *********************************/
+       * This is not optimal (fetches all streams) and not accurate
+       * This method can "duplicate" streams, if read rights have been given to a parent and one of it's children
+       * Either:
+       *  - detect parent / child relationships
+       *  - pass a list of streamIds to store.streams.get() to get a consolidated answer
+       *********************************/
       const listables = context.access.getListableStreamIds();
       const filteredStreams = [];
       for (const listable of listables) {
@@ -214,13 +214,13 @@ module.exports = async function (api) {
   // UPDATE
   api.register('streams.update', forbidSystemStreamsActions, commonFns.getParamsValidation(methodsSchema.update.params), commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger), applyPrerequisitesForUpdate, updateStream);
   /**
-     * Forbid to create or modify system streams, or add children to them
-     *
-     * @param {*} context
-     * @param {*} params
-     * @param {*} result
-     * @param {*} next
-     */
+   * Forbid to create or modify system streams, or add children to them
+   *
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
   function forbidSystemStreamsActions (context, params, result, next) {
     if (params.id != null) {
       if (isStreamIdPrefixBackwardCompatibilityActive &&

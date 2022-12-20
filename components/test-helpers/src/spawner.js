@@ -64,8 +64,8 @@ class SpawnContext {
   // Prespawns processes up to PRESPAWN_LIMIT.
   //
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   prespawn () {
     const childPath = this.childPath;
 
@@ -95,9 +95,9 @@ class SpawnContext {
   // Spawns a server instance.
   //
   /**
- * @param {any} customSettings
-       * @returns {Promise<Server>}
-       */
+   * @param {any} customSettings
+   * @returns {Promise<Server>}
+   */
   async spawn (customSettings) {
     // If by any chance we exhausted our processes really quickly, make
     // sure to spawn a few now.
@@ -140,8 +140,8 @@ class SpawnContext {
   // Returns the next free port to use for testing.
   //
   /**
- * @returns {Promise<number>}
- */
+   * @returns {Promise<number>}
+   */
   async allocatePort () {
     // Infinite loop, see below for exits.
     while (true) {
@@ -192,8 +192,8 @@ class SpawnContext {
   // the internal prespawn pool.
   //
   /**
- * @returns {ProcessProxy}
- */
+   * @returns {ProcessProxy}
+   */
   getProcess () {
     this.prespawn();
     if (this.pool.length <= 0) { throw new Error('AF: pool is not empty'); }
@@ -205,9 +205,9 @@ class SpawnContext {
   // Spawns `n` instances at different listening ports. See #spawn.
   //
   /**
- * @param {number} n
-       * @returns {Promise<Server>[]}
-       */
+   * @param {number} n
+   * @returns {Promise<Server>[]}
+   */
   spawn_multi (n) {
     if (n <= 0) { throw new Error('AF: n expected to be > 0'); }
     return lodash.times(n, () => this.spawn());
@@ -217,8 +217,8 @@ class SpawnContext {
   // exists to allow prespawning to catch up.
   //
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   onChildExit () {
     if (!this.shuttingDown) { this.prespawn(); }
   }
@@ -226,8 +226,8 @@ class SpawnContext {
   // Call this when you want to stop all children at the end of the test suite.
   //
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async shutdown () {
     logger.debug('shutting down the context', this.pool.length);
     this.shuttingDown = true;
@@ -267,8 +267,8 @@ class ProcessProxy {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   registerEvents () {
     const child = this.childProcess;
     child.on('error', (err) => this.onChildError(err));
@@ -277,8 +277,8 @@ class ProcessProxy {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   dispatchChildMessage (wireMsg) {
     const pendingMessages = this.pendingMessages;
     const [status, msgId, cmd, retOrErr] = msgpack.decode(wireMsg);
@@ -299,16 +299,16 @@ class ProcessProxy {
   }
 
   /**
- * @param {unknown} err
-       * @returns {void}
-       */
+   * @param {unknown} err
+   * @returns {void}
+   */
   onChildError (err) {
     logger.debug(err);
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   onChildExit () {
     logger.debug('child exited');
     this.exited.burn();
@@ -319,9 +319,9 @@ class ProcessProxy {
   // Starts the express/socket.io server with the settings given.
   //
   /**
- * @param {unknown} settings
-       * @returns {Promise<void>}
-       */
+   * @param {unknown} settings
+   * @returns {Promise<void>}
+   */
   async startServer (settings) {
     if (this.exited.isBurnt()) { throw new Error('Child exited prematurely; please check your setup code.'); }
     await this.sendToChild('int_startServer', settings);
@@ -333,8 +333,8 @@ class ProcessProxy {
   // Terminates the associated child process; progressing from SIGTERM to SIGKILL.
   //
   /**
- * @returns {Promise<unknown>}
- */
+   * @returns {Promise<unknown>}
+   */
   async terminate () {
     if (this.exited.isBurnt()) { return; }
     const child = this.childProcess;
@@ -355,10 +355,10 @@ class ProcessProxy {
   }
 
   /**
- * @param {string} msg
-       * @param {any} args
-       * @returns {Promise<unknown>}
-       */
+   * @param {string} msg
+   * @param {any} args
+   * @returns {Promise<unknown>}
+   */
   sendToChild (msg, ...args) {
     return new Promise((resolve, reject) => {
       const child = this.childProcess;
@@ -370,10 +370,10 @@ class ProcessProxy {
   }
 
   /**
- * @param {ResolveFun} res
-       * @param {RejectFun} rej
-       * @returns {number}
-       */
+   * @param {ResolveFun} res
+   * @param {RejectFun} rej
+   * @returns {number}
+   */
   createPendingMessage (res, rej) {
     let remainingTries = 1000;
     const pendingMessages = this.pendingMessages;
@@ -424,8 +424,8 @@ class Server extends EventEmitter {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   listen () {
     const host = this.host;
     this.messagingSocket = axon.socket('sub-emitter');
@@ -442,8 +442,8 @@ class Server extends EventEmitter {
   // be terminated.
   //
   /**
- * @returns {Promise<boolean>}
- */
+   * @returns {Promise<boolean>}
+   */
   async stop () {
     logger.debug('stop called');
     try {
@@ -457,17 +457,17 @@ class Server extends EventEmitter {
   }
 
   /**
- * @param {string} path
-       * @returns {string}
-       */
+   * @param {string} path
+   * @returns {string}
+   */
   url (path) {
     return new url.URL(path || '', this.baseUrl).toString();
   }
 
   /**
- * @param {string} newUrl
-       * @returns {any}
-       */
+   * @param {string} newUrl
+   * @returns {any}
+   */
   request (newUrl) {
     return supertest(newUrl || this.baseUrl);
   }

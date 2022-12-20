@@ -10,9 +10,9 @@ const errors = require('./errors');
 
 class NumberType {
   /**
- * @param {any} value
-       * @returns {number}
-       */
+   * @param {any} value
+   * @returns {number}
+   */
   coerce (value) {
     switch (typeof value) {
       case 'string':
@@ -24,9 +24,9 @@ class NumberType {
   }
 
   /**
- * @param {string} str
-       * @returns {number}
-       */
+   * @param {string} str
+   * @returns {number}
+   */
   coerceString (str) {
     const reNumber = /^\d+(\.\d+)?$/;
     if (!reNumber.test(str)) {
@@ -38,9 +38,9 @@ class NumberType {
 
 class BooleanType {
   /**
- * @param {any} value
-       * @returns {boolean}
-       */
+   * @param {any} value
+   * @returns {boolean}
+   */
   coerce (value) {
     if (value === true) { return true; }
     if (value === false) { return false; }
@@ -52,9 +52,9 @@ class BooleanType {
 
 class StringType {
   /**
- * @param {any} value
-       * @returns {string}
-       */
+   * @param {any} value
+   * @returns {string}
+   */
   coerce (value) {
     return '' + value;
   }
@@ -62,8 +62,8 @@ class StringType {
 
 class NullType {
   /**
- * @returns {null}
- */
+   * @returns {null}
+   */
   coerce /* value: any */() {
     return null;
   }

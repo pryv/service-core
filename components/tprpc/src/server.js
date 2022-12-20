@@ -19,9 +19,9 @@ class Server {
   }
 
   /**
- * @param {string} endpoint
-       * @returns {Promise<any>}
-       */
+   * @param {string} endpoint
+   * @returns {Promise<any>}
+   */
   async listen (endpoint) {
     // endpoint is of the form 'ip:port'
     const idx = endpoint.indexOf(':');
@@ -39,11 +39,11 @@ class Server {
   // `handler` implements the interface exposed to clients.
   //
   /**
- * @param {Definition} definition
-       * @param {string} name
-       * @param {Handler} handler
-       * @returns {void}
-       */
+   * @param {Definition} definition
+   * @param {string} name
+   * @param {Handler} handler
+   * @returns {void}
+   */
   add (definition, name, handler) {
     const channel = this.channel;
     const subChannel = channel.makeSubChannel({
@@ -57,16 +57,16 @@ class Server {
   // Handles an individual request to a method.
   //
   /**
- * @param {string} methodName
-       * @param {PBType} reqType
-       * @param {PBType} resType
-       * @param {Handler} handler
-       * @param {PBRequest} req
-       * @param {PBResponse} res
-       * @param {Buffer} arg2
-       * @param {Buffer} arg3
-       * @returns {Promise<void>}
-       */
+   * @param {string} methodName
+   * @param {PBType} reqType
+   * @param {PBType} resType
+   * @param {Handler} handler
+   * @param {PBRequest} req
+   * @param {PBResponse} res
+   * @param {Buffer} arg2
+   * @param {Buffer} arg3
+   * @returns {Promise<void>}
+   */
   async handleRequest (methodName, reqType, resType, handler, req, res, arg2, arg3) {
     const request = reqType.decode(arg3);
     const impl = handler[lodash.lowerFirst(methodName)];
@@ -85,8 +85,8 @@ class Server {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async close () {
     const channel = this.channel;
     channel.close();

@@ -21,8 +21,8 @@ class ServiceRegister {
   }
 
   /**
- * @returns {Promise<this>}
- */
+   * @returns {Promise<this>}
+   */
   async init () {
     if (this.settings == null) {
       this.settings = (await getConfig()).get('services:register');
@@ -32,12 +32,12 @@ class ServiceRegister {
   }
 
   /**
- * @param {String} username
-       * @param {String} invitationToken
-       * @param {any} uniqueFields
-       * @param {String} core
-       * @returns {Promise<void>}
-       */
+   * @param {String} username
+   * @param {String} invitationToken
+   * @param {any} uniqueFields
+   * @param {String} core
+   * @returns {Promise<void>}
+   */
   async validateUser (username, invitationToken, uniqueFields, core) {
     const url = buildUrl('/users/validate', this.settings.url);
     // log fact about the event
@@ -70,9 +70,9 @@ class ServiceRegister {
   }
 
   /**
- * @param {string} username
-       * @returns {Promise<any>}
-       */
+   * @param {string} username
+   * @returns {Promise<any>}
+   */
   async checkUsername (username) {
     const url = buildUrl(`/${username}/check_username`, this.settings.url);
     // log fact about the event
@@ -90,8 +90,8 @@ class ServiceRegister {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async createUser (user) {
     const url = buildUrl('/users', this.settings.url);
     // log fact about the event
@@ -109,8 +109,8 @@ class ServiceRegister {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async deleteUser (username) {
     const url = buildUrl('/users/' + username + '?onlyReg=true', this.settings.url);
     // log fact about the event
@@ -127,12 +127,12 @@ class ServiceRegister {
   }
 
   /**
-     * After indexed fields are updated, service-register is notified to update
-     * the information
-       * @param {string} username
-       * @param {Array<Operation>} operations
-       * @returns {Promise<void>}
-       */
+   * After indexed fields are updated, service-register is notified to update
+   * the information
+   * @param {string} username
+   * @param {Array<Operation>} operations
+   * @returns {Promise<void>}
+   */
   async updateUserInServiceRegister (username, operations) {
     const url = buildUrl('/users', this.settings.url);
     this.logger.info(`PUT ${url} for username:${username}`);

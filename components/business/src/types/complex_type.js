@@ -26,23 +26,23 @@ class ComplexType {
   }
 
   /**
- * @returns {string}
- */
+   * @returns {string}
+   */
   typeName () {
     return this._outerType;
   }
 
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   requiredFields () {
     if (this._schema.required == null) { throw new Error('Type Schema must have a list of required fields.'); }
     return this._schema.required;
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   optionalFields () {
     const requiredKeys = this.requiredFields();
     const allKeys = this.fields();
@@ -50,17 +50,17 @@ class ComplexType {
   }
 
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   fields () {
     if (this._schema.properties == null) { throw new Error('Type Schema must have a properties object.'); }
     return Object.keys(this._schema.properties);
   }
 
   /**
- * @param {string} name
-       * @returns {any}
-       */
+   * @param {string} name
+   * @returns {any}
+   */
   forField (name) {
     const PATH_SEPARATOR = '.';
     const parts = name.split(PATH_SEPARATOR);
@@ -92,17 +92,17 @@ class ComplexType {
   }
 
   /**
- * @returns {false}
- */
+   * @returns {false}
+   */
   isSeries () {
     return false;
   }
 
   /**
- * @param {Validator} validator
-       * @param {Content} content
-       * @returns {Promise<any>}
-       */
+   * @param {Validator} validator
+   * @param {Content} content
+   * @returns {Promise<any>}
+   */
   callValidator (validator, content) {
     // NOTE We don't currently perform coercion on leaf types of complex
     // named types. We could though - and this is where we would do it.

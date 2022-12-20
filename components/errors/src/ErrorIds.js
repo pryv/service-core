@@ -15,13 +15,13 @@ const ErrorIds = {
   InvalidCredentials: 'invalid-credentials',
   UnsupportedOperation: 'unsupported-operation',
   /**
-     * Used for High-Frequency Series, allowing only known, simple types.
-     */
+   * Used for High-Frequency Series, allowing only known, simple types.
+   */
   InvalidEventType: 'invalid-event-type',
   InvalidItemId: 'invalid-item-id',
   /**
-     * Used for Socket.IO support.
-     */
+   * Used for Socket.IO support.
+   */
   InvalidMethod: 'invalid-method',
   InvalidOperation: 'invalid-operation',
   InvalidParametersFormat: 'invalid-parameters-format',
@@ -34,20 +34,20 @@ const ErrorIds = {
   UnknownResource: 'unknown-resource',
   UnsupportedContentType: 'unsupported-content-type',
   /**
-     * Used for Batch calls and Socket.IO events.get result storing
-     */
+   * Used for Batch calls and Socket.IO events.get result storing
+   */
   TooManyResults: 'too-many-results',
   /**
-     * Used for removed API methods
-     */
+   * Used for removed API methods
+   */
   Gone: 'removed-method',
   /**
-     * Used for open source version
-     */
+   * Used for open source version
+   */
   unavailableMethod: 'unavailable-method',
   /**
-     * Invitation token validation in the service-register
-     */
+   * Invitation token validation in the service-register
+   */
   InvalidInvitationToken: 'invitationToken-invalid',
   InvalidUsername: 'username-invalid',
   UsernameRequired: 'username-required',
@@ -57,8 +57,8 @@ const ErrorIds = {
   InvalidPassword: 'password-invalid',
   Invalidreferer: 'referer-invalid',
   /**
-     * Throw this error for methods that are valid only for pryv.io
-     */
+   * Throw this error for methods that are valid only for pryv.io
+   */
   DeniedStreamAccess: 'denied-stream-access',
   TooHighAccessForSystemStreams: 'too-high-access-for-account-stream',
   ForbiddenMultipleAccountStreams: 'forbidden-multiple-account-streams-events',

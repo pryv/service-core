@@ -34,8 +34,8 @@ class Registration {
   }
 
   /**
- * @returns {Promise<this>}
- */
+   * @returns {Promise<this>}
+   */
   async init () {
     if (this.platform == null) {
       this.platform = await getPlatform();
@@ -44,13 +44,13 @@ class Registration {
   }
 
   /**
-     * Do minimal manipulation with data like username conversion to lowercase
-     * @param {MethodContext} context  undefined
-     * @param {unknown} params  undefined
-     * @param {Result} result  undefined
-     * @param {ApiCallback} next  undefined
-       * @returns {Promise<void>}
-       */
+   * Do minimal manipulation with data like username conversion to lowercase
+   * @param {MethodContext} context  undefined
+   * @param {unknown} params  undefined
+   * @param {Result} result  undefined
+   * @param {ApiCallback} next  undefined
+   * @returns {Promise<void>}
+   */
   async prepareUserData (context, params, result, next) {
     context.newUser = new User(params);
     // accept passwordHash at creation only; TODO: remove this once deprecated method `system.createUser` is removed
@@ -63,13 +63,13 @@ class Registration {
   }
 
   /**
-     * Validation and reservation in service-register
-     * @param {MethodContext} context  undefined
-     * @param {unknown} params  undefined
-     * @param {Result} result  undefined
-     * @param {ApiCallback} next  undefined
-       * @returns {Promise<any>}
-       */
+   * Validation and reservation in service-register
+   * @param {MethodContext} context  undefined
+   * @param {unknown} params  undefined
+   * @param {Result} result  undefined
+   * @param {ApiCallback} next  undefined
+   * @returns {Promise<any>}
+   */
   async createUserStep1_ValidateUserOnPlatform (context, params, result, next) {
     try {
       const uniqueFields = { username: context.newUser.username };
@@ -90,13 +90,13 @@ class Registration {
   }
 
   /**
-     * Check in service-register if email already exists
-     * @param {MethodContext} context  undefined
-     * @param {unknown} params  undefined
-     * @param {Result} result  undefined
-     * @param {ApiCallback} next  undefined
-       * @returns {Promise<any>}
-       */
+   * Check in service-register if email already exists
+   * @param {MethodContext} context  undefined
+   * @param {unknown} params  undefined
+   * @param {Result} result  undefined
+   * @param {ApiCallback} next  undefined
+   * @returns {Promise<any>}
+   */
   async deletePartiallySavedUserIfAny (context, params, result, next) {
     try {
       // assert that we have obtained a lock on register, so any conflicting fields here
@@ -114,13 +114,13 @@ class Registration {
   }
 
   /**
-     * Save user to the database
-     * @param {MethodContext} context  undefined
-     * @param {unknown} params  undefined
-     * @param {*} result
-     * @param {ApiCallback} next  undefined
-       * @returns {Promise<any>}
-       */
+   * Save user to the database
+   * @param {MethodContext} context  undefined
+   * @param {unknown} params  undefined
+   * @param {*} result
+   * @param {ApiCallback} next  undefined
+   * @returns {Promise<any>}
+   */
   async createUser (context, params, result, next) {
     // if it is testing user, skip registration process
     if (context.newUser.username === 'recla') {
@@ -139,13 +139,13 @@ class Registration {
   }
 
   /**
-     * Save user in service-register
-     * @param {MethodContext} context  undefined
-     * @param {unknown} params  undefined
-     * @param {Result} result  undefined
-     * @param {ApiCallback} next  undefined
-       * @returns {Promise<any>}
-       */
+   * Save user in service-register
+   * @param {MethodContext} context  undefined
+   * @param {unknown} params  undefined
+   * @param {Result} result  undefined
+   * @param {ApiCallback} next  undefined
+   * @returns {Promise<any>}
+   */
   async createUserStep2_CreateUserOnPlatform (context, params, result, next) {
     try {
       // get streams ids from the config that should be retrieved
@@ -174,13 +174,13 @@ class Registration {
   }
 
   /**
-     * Build response for user registration
-     * @param {MethodContext} context  undefined
-     * @param {unknown} params  undefined
-     * @param {Result} result  undefined
-     * @param {ApiCallback} next  undefined
-       * @returns {Promise<void>}
-       */
+   * Build response for user registration
+   * @param {MethodContext} context  undefined
+   * @param {unknown} params  undefined
+   * @param {Result} result  undefined
+   * @param {ApiCallback} next  undefined
+   * @returns {Promise<void>}
+   */
   async buildResponse (context, params, result, next) {
     result.username = context.newUser.username;
     result.apiEndpoint = ApiEndpoint.build(context.newUser.username, context.newUser.token);
@@ -188,13 +188,13 @@ class Registration {
   }
 
   /**
-     *
-     * @param {MethodContext} context  undefined
-     * @param {unknown} params  undefined
-     * @param {Result} result  undefined
-     * @param {ApiCallback} next  undefined
-       * @returns {any}
-       */
+   *
+   * @param {MethodContext} context  undefined
+   * @param {unknown} params  undefined
+   * @param {Result} result  undefined
+   * @param {ApiCallback} next  undefined
+   * @returns {any}
+   */
   sendWelcomeMail (context, params, result, next) {
     const emailSettings = this.servicesSettings.email;
     // Skip this step if welcome mail is deactivated

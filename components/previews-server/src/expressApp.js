@@ -13,8 +13,8 @@ const bodyParser = require('body-parser');
 module.exports = function expressApp (commonHeadersMiddleware, errorsMiddleware, requestTraceMiddleware) {
   const app = express();
   /** Called once routes are defined on app, allows finalizing middleware stack
-     * with things like error handling.
-     **/
+   * with things like error handling.
+   **/
   function routesDefined () {
     app.use(errorsMiddleware);
   }

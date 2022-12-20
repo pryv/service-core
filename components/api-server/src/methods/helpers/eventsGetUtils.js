@@ -109,10 +109,10 @@ function coerceStreamsParam (context, params, result, next) {
     }
   }
   /**
-     * we detect if it's JSON by looking at first char.
-     * Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
-     * @param {string} input
-     */
+   * we detect if it's JSON by looking at first char.
+   * Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
+   * @param {string} input
+   */
   function isStringifiedJSON (input) {
     return typeof input === 'string' && ['[', '{'].includes(input.substr(0, 1));
   }
@@ -232,8 +232,8 @@ async function streamQueryCheckPermissionsAndReplaceStars (context, params, resu
     } else {
       // ------------ All other cases
       /**
-             * ! we don't have to check for permissions on 'all' or 'not' as long there is at least one 'any' authorized.
-             */
+       * ! we don't have to check for permissions on 'all' or 'not' as long there is at least one 'any' authorized.
+       */
       if (streamQuery?.any?.length === 0) {
         return next(errors.invalidRequestStructure('streamQueries must have a valid {any: [...]} component'));
       }
@@ -408,10 +408,10 @@ async function findEventsFromStore (filesReadTokenSecret, isStreamIdPrefixBackwa
   }
   // out> paramsByStoreId = { local: {fromTime: 2, streams: [{any: '*}]}, audit: {fromTime: 2, streams: [{any: 'access-gagsg'}, {any: 'action-events.get}]}
   /**
-     * Will be called by "mall" for each store of events that need to be streamed to result
-     * @param {Object} storeSettings
-     * @param {ReadableStream} eventsStream of "Events"
-     */
+   * Will be called by "mall" for each store of events that need to be streamed to result
+   * @param {Object} storeSettings
+   * @param {ReadableStream} eventsStream of "Events"
+   */
   function addEventsStreamFromStore (storeSettings, eventsStream) {
     let stream = eventsStream;
     if (isStreamIdPrefixBackwardCompatibilityActive &&

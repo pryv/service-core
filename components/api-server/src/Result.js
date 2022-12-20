@@ -90,18 +90,18 @@ class Result {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   closeTracing () {
     this._private.tracing.finishSpan(this._private.tracingId);
   }
 
   // Array concat stream
   /**
- * @param {string} arrayName
-     * @param {Readable} stream
-     * @returns {void}
-     */
+   * @param {string} arrayName
+   * @param {Readable} stream
+   * @returns {void}
+   */
   addToConcatArrayStream (arrayName, stream) {
     if (!this._private.streamsConcatArrays[arrayName]) {
       this._private.streamsConcatArrays[arrayName] = new StreamConcatArray(this._private.tracing, this._private.tracingId);
@@ -112,9 +112,9 @@ class Result {
 
   // Close
   /**
- * @param {string} arrayName
-     * @returns {void}
-     */
+   * @param {string} arrayName
+   * @returns {void}
+   */
   closeConcatArrayStream (arrayName) {
     if (!this._private.streamsConcatArrays[arrayName]) {
       return;
@@ -127,10 +127,10 @@ class Result {
   // Pushes stream on the streamsArray stack, FIFO.
   //
   /**
- * @param {string} arrayName
-     * @param {Readable} stream
-     * @returns {void}
-     */
+   * @param {string} arrayName
+   * @param {Readable} stream
+   * @returns {void}
+   */
   addStream (arrayName, stream) {
     this._private.isStreamResult = true;
     this._private.streamsArray.push({ name: arrayName, stream });
@@ -139,8 +139,8 @@ class Result {
   // Returns true if the Result holds any streams, false otherwise.
   //
   /**
- * @returns {boolean}
- */
+   * @returns {boolean}
+   */
   isStreamResult () {
     return this._private.isStreamResult;
   }
@@ -148,9 +148,9 @@ class Result {
   // Execute the following when result has been fully sent
   // If already sent callback is called right away
   /**
- * @param {doneCallBack} callback
-     * @returns {void}
-     */
+   * @param {doneCallBack} callback
+   * @returns {void}
+   */
   onEnd (callback) {
     this._private.onEndCallback = callback;
   }
@@ -158,10 +158,10 @@ class Result {
   // Sends the content of Result to the HttpResponse stream passed in parameters.
   //
   /**
- * @param {express$Response} res
-     * @param {number} successCode
-     * @returns {void}
-     */
+   * @param {express$Response} res
+   * @param {number} successCode
+   * @returns {void}
+   */
   writeToHttpResponse (res, successCode) {
     const onEndCallBack = this._private.onEndCallback;
     if (this.isStreamResult()) {
@@ -180,10 +180,10 @@ class Result {
   }
 
   /**
- * @param {express$Response} res
-     * @param {number} successCode
-     * @returns {any}
-     */
+   * @param {express$Response} res
+   * @param {number} successCode
+   * @returns {any}
+   */
   writeStreams (res, successCode) {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
@@ -211,10 +211,10 @@ class Result {
   }
 
   /**
- * @param {express$Response} res
-     * @param {number} successCode
-     * @returns {void}
-     */
+   * @param {express$Response} res
+   * @param {number} successCode
+   * @returns {void}
+   */
   writeSingle (res, successCode) {
     delete this._private;
     res.status(successCode).json(commonMeta.setCommonMeta(this));
@@ -224,9 +224,9 @@ class Result {
   // In case the Result contains a streamsArray, it will drain them in arrays.
   //
   /**
- * @param {ToObjectCallback} callback
-     * @returns {void}
-     */
+   * @param {ToObjectCallback} callback
+   * @returns {void}
+   */
   toObject (callback) {
     this.closeTracing();
     if (this.isStreamResult()) {
@@ -237,9 +237,9 @@ class Result {
   }
 
   /**
- * @param {ToObjectCallback} callback
-     * @returns {void}
-     */
+   * @param {ToObjectCallback} callback
+   * @returns {void}
+   */
   toObjectStream (callback) {
     const _private = this._private;
     const streamsArray = _private.streamsArray;
@@ -262,9 +262,9 @@ class Result {
   }
 
   /**
- * @param {ToObjectCallback} callback
-     * @returns {void}
-     */
+   * @param {ToObjectCallback} callback
+   * @returns {void}
+   */
   toObjectSingle (callback) {
     delete this._private;
     callback(null, this);
@@ -287,8 +287,8 @@ class ResultStream extends Transform {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   _transform (data, encoding, callback) {
     if (this.isStart) {
       this.push('{');
@@ -301,8 +301,8 @@ class ResultStream extends Transform {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   _flush (callback) {
     const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
     this.push(thing + '}');
@@ -341,8 +341,8 @@ class StreamConcatArray {
 
   /**
    * @private
-     * @returns {void}
-     */
+   * @returns {void}
+   */
   _next () {
     if (!this.nextFactoryCallBack) { return; }
     if (this.streamsToAdd.length > 0) {
@@ -360,24 +360,24 @@ class StreamConcatArray {
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   getStream () {
     return this.multistream;
   }
 
   /**
- * @param {Readable} readableStream
-     * @returns {void}
-     */
+   * @param {Readable} readableStream
+   * @returns {void}
+   */
   add (readableStream) {
     this.tracing.logForSpan(this.tracingName, { event: 'addStream' });
     this.streamsToAdd.push(readableStream);
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   close () {
     this.isClosed = true;
     this._next();

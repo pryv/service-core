@@ -21,9 +21,9 @@ class ApplicationLauncher {
   // access.
   //
   /**
- * @param {boolean} allowAll
-       * @returns {void}
-       */
+   * @param {boolean} allowAll
+   * @returns {void}
+   */
   mockAuthentication (allowAll) {
     const app = this.app;
     if (app == null) { throw new Error('AF: app should not be null anymore'); }
@@ -32,8 +32,8 @@ class ApplicationLauncher {
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   produceMetadataLoader (authTokenValid = true) {
     const seriesMeta = {
       canWrite: () => authTokenValid,
@@ -51,8 +51,8 @@ class ApplicationLauncher {
 
   // Tells the server to use the metadata updater service located at `endpoint`
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async useMetadataUpdater (endpoint) {
     const app = this.app;
     if (app == null) { throw new Error('AF: app should not be null anymore'); }
@@ -61,8 +61,8 @@ class ApplicationLauncher {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async launch (injectSettings = {}) {
     const config = await getConfig();
     config.injectTestConfig(injectSettings);

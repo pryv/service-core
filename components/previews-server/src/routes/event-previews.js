@@ -191,8 +191,8 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
   logger.info('Start cron job for cache clean-up, time pattern: ' + cronJob.cronTime);
   cronJob.start();
   /**
-     * @param {Function} callback Optional, will be passed an error on failure
-     */
+   * @param {Function} callback Optional, will be passed an error on failure
+   */
   function runCacheCleanupWorker (callback) {
     callback = typeof callback === 'function' ? callback : function () { };
     const worker = childProcess.fork(path.resolve(__dirname, '../runCacheCleanup.js'), process.argv.slice(2));

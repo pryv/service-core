@@ -254,10 +254,10 @@ module.exports = async function produceWebhooksApiMethods (api) {
   }
 
   /**
-     * checks if the webhook is allowed to be handled by the access
-     * If Personnal: yes
-     * If App: only if it was used to create the webhook
-     */
+   * checks if the webhook is allowed to be handled by the access
+   * If Personnal: yes
+   * If App: only if it was used to create the webhook
+   */
   function isWebhookInScope (webhook, access) {
     if (access.isPersonal()) { return true; }
     return access.id === webhook.accessId;

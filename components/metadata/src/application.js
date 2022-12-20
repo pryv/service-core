@@ -38,9 +38,9 @@ class Application {
 
   metadataUpdaterService;
   /**
- * @param {any | null} overrideSettings
-       * @returns {Promise<void>}
-       */
+   * @param {any | null} overrideSettings
+   * @returns {Promise<void>}
+   */
   async setup (overrideSettings) {
     this.config = await getConfig();
     this.logger = getLogger('application');
@@ -51,8 +51,8 @@ class Application {
   // killed.
   //
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async run () {
     const logger = this.logger;
     logger.info('Metadata service is mounting services:');
@@ -64,8 +64,8 @@ class Application {
   // HOST:PORT.
   //
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async startMetadataUpdater () {
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(this.config.get('database'), this.logger.getLogger('mongodb'));

@@ -54,21 +54,21 @@ module.exports = async function (api) {
   }
   // Username check
   /**
-     * Seem to be use only in dnsLess..
-     */
+   * Seem to be use only in dnsLess..
+   */
   api.register('auth.usernameCheck', setAuditAccessId(AuditAccessIds.PUBLIC), commonFns.getParamsValidation(methodsSchema.usernameCheck.params), ifDnsLess(checkLocalUsersUniqueField, checkUsername));
   /**
-     * ⚠️ DNS-less only
-     */
+   * ⚠️ DNS-less only
+   */
   api.register('auth.emailCheck', setAuditAccessId(AuditAccessIds.PUBLIC), commonFns.getParamsValidation(methodsSchema.emailCheck.params), checkLocalUsersUniqueField);
   /**
-     * Check in service-register if user id is reserved
-     * ⚠️ DNS-less only
-     * @param {*} context
-     * @param {*} params
-     * @param {*} result
-     * @param {*} next
-     */
+   * Check in service-register if user id is reserved
+   * ⚠️ DNS-less only
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
   async function checkLocalUsersUniqueField (context, params, result, next) {
     result.reserved = false;
     // the check for the required field is done by the schema
@@ -87,13 +87,13 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * Check with register service whether username is reserved
-     * ⚠️ to be used only if dnsLess is NOT active.
-     * @param {*} context
-     * @param {*} params
-     * @param {*} result
-     * @param {*} next
-     */
+   * Check with register service whether username is reserved
+   * ⚠️ to be used only if dnsLess is NOT active.
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
   async function checkUsername (context, params, result, next) {
     result.reserved = false;
     try {

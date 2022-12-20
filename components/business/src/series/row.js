@@ -15,32 +15,32 @@ class Row {
 
   columnNames;
   /** Constructs a row - internal constructor. Use DataMatrix to produce rows.
-     */
+   */
   constructor (values, columnNames) {
     this.values = values;
     this.columnNames = columnNames;
   }
 
   /** Turns this row into an object that has the columns as keys and the row
-     * values as values. Remove columns with null values;
-     *
-     * @example
-     *    row.toStruct() # => { col1: 'value1', col2: 'value2' }
-     *
-     * @return {any} The current row in object (struct) form.
-     */
+   * values as values. Remove columns with null values;
+   *
+   * @example
+   *    row.toStruct() # => { col1: 'value1', col2: 'value2' }
+   *
+   * @return {any} The current row in object (struct) form.
+   */
   toStruct () {
     const obj = _.zipObject(this.columnNames, this.values);
     return _.pickBy(obj, (val) => val !== null);
   }
 
   /** Returns a single field value.
-     *
-     * You need to make sure that you access an actual column,
-     * otherwise this method throws an error.
-       * @param {string} column
-       * @returns {any}
-       */
+   *
+   * You need to make sure that you access an actual column,
+   * otherwise this method throws an error.
+   * @param {string} column
+   * @returns {any}
+   */
   get (column) {
     const idx = this.columnNames.indexOf(column);
     if (idx < 0) { throw new Error(`No such column ${column}.`); }
@@ -53,8 +53,8 @@ class Row {
   // error is thrown.
   //
   /**
- * @returns {number}
- */
+   * @returns {number}
+   */
   deltaTime () {
     const value = this.get('deltaTime');
     if (typeof value !== 'number') { throw new Error('Deltatime must be a number'); }

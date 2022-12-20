@@ -22,8 +22,8 @@ class Flush {
   // Flushes the information in `this.update` to disk (MongoDB).
   //
   /**
- * @returns {Promise<true>}
- */
+   * @returns {Promise<true>}
+   */
   async run () {
     const update = this.update;
     const request = update.request;

@@ -35,9 +35,9 @@ function anyStarStreamQueryIsNullQUery (context, params, result, next) {
   }
   next();
   /**
-     * arrayOfStreamQueries === [{ any: ['*']}]
-     * @param {*} arrayOfStreamQueries
-     */
+   * arrayOfStreamQueries === [{ any: ['*']}]
+   * @param {*} arrayOfStreamQueries
+   */
   function isStar (arrayOfStreamQueries) {
     return (params.arrayOfStreamQueries.length === 1 &&
             params.arrayOfStreamQueries[0]?.any?.length === 1 &&

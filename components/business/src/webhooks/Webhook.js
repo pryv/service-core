@@ -85,9 +85,9 @@ class Webhook {
   }
 
   /**
- * @param {string} username
-       * @returns {void}
-       */
+   * @param {string} username
+   * @returns {void}
+   */
   startListenting (username) {
     if (this.pubsubTurnOffListener != null) {
       throw new Error('Cannot listen twice');
@@ -98,11 +98,11 @@ class Webhook {
   }
 
   /**
-     * Send the message with the throttling and retry mechanics - to use in webhooks service
-       * @param {string} message
-       * @param {boolean} isRescheduled
-       * @returns {Promise<void>}
-       */
+   * Send the message with the throttling and retry mechanics - to use in webhooks service
+   * @param {string} message
+   * @param {boolean} isRescheduled
+   * @returns {Promise<void>}
+   */
   async send (message, isRescheduled) {
     if (this.state === 'inactive') { return; }
     if (isRescheduled != null && isRescheduled === true) {
@@ -172,10 +172,10 @@ class Webhook {
   }
 
   /**
-     * Only make the HTTP call - used for webhook.test API method
-       * @param {Array<string>} messages
-       * @returns {Promise<any>}
-       */
+   * Only make the HTTP call - used for webhook.test API method
+   * @param {Array<string>} messages
+   * @returns {Promise<any>}
+   */
   async makeCall (messages) {
     const res = await request.post(this.url).send({
       messages,
@@ -189,8 +189,8 @@ class Webhook {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   stop () {
     if (this.timeout != null) {
       clearTimeout(this.timeout);
@@ -202,9 +202,9 @@ class Webhook {
   }
 
   /**
- * @param {Run} run
-       * @returns {void}
-       */
+   * @param {Run} run
+   * @returns {void}
+   */
   addRun (run) {
     if (this.runCount > this.runsSize) {
       this.runs.splice(-1, 1);
@@ -213,8 +213,8 @@ class Webhook {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async save () {
     if (this.repository == null) {
       throw new Error('repository not set for Webhook object.');
@@ -223,9 +223,9 @@ class Webhook {
   }
 
   /**
- * @param {{}} fieldsToUpdate
-       * @returns {Promise<void>}
-       */
+   * @param {{}} fieldsToUpdate
+   * @returns {Promise<void>}
+   */
   async update (fieldsToUpdate) {
     const fields = Object.keys(fieldsToUpdate);
     _.merge(this, fieldsToUpdate);
@@ -233,8 +233,8 @@ class Webhook {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async delete () {
     if (this.repository == null) {
       throw new Error('repository not set for Webhook object.');
@@ -243,15 +243,15 @@ class Webhook {
   }
 
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   getMessageBuffer () {
     return Array.from(this.messageBuffer);
   }
 
   /**
- * @returns {{}}
- */
+   * @returns {{}}
+   */
   forStorage () {
     return _.pick(this, [
       'id',
@@ -273,8 +273,8 @@ class Webhook {
   }
 
   /**
- * @returns {{}}
- */
+   * @returns {{}}
+   */
   forApi () {
     return _.pick(this, [
       'id',
@@ -296,24 +296,24 @@ class Webhook {
   }
 
   /**
- * @param {string} version
-       * @returns {void}
-       */
+   * @param {string} version
+   * @returns {void}
+   */
   setApiVersion (version) {
     this.apiVersion = version;
   }
 
   /**
- * @param {string} serial
-       * @returns {void}
-       */
+   * @param {string} serial
+   * @returns {void}
+   */
   setSerial (serial) {
     this.serial = serial;
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   setLogger (logger) {
     this.logger = logger;
   }

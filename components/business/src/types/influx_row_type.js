@@ -17,18 +17,18 @@ class InfluxDateType {
   }
 
   /**
- * @param {number} secs
-       * @returns {number}
-       */
+   * @param {number} secs
+   * @returns {number}
+   */
   secondsToNanos (secs) {
     if (secs < 0) { throw new Error('Deltatime must be greater than 0'); }
     return Math.trunc(secs * 1000 * 1000 * 1000);
   }
 
   /**
- * @param {any} value
-       * @returns {any}
-       */
+   * @param {any} value
+   * @returns {any}
+   */
   coerce (value) {
     switch (typeof value) {
       case 'number':
@@ -55,9 +55,9 @@ class InfluxRowType {
   }
 
   /**
- * @param {SeriesMetadata} seriesMeta
-       * @returns {void}
-       */
+   * @param {SeriesMetadata} seriesMeta
+   * @returns {void}
+   */
   setSeriesMeta (seriesMeta) {
     this.seriesMeta = seriesMeta;
   }
@@ -65,20 +65,20 @@ class InfluxRowType {
   // Returns the name of the type inside the series.
   //
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   elementTypeName () {
     return this.eventType.typeName();
   }
 
   /**
-     * Returns true if the columns given can be reconciled with this type.
-     * WARNING If 'timestamp' column is found a column name will be renamed to "deltaTime"
-     * and next coerce will convert timestamps to deltaTime relatively to the
-     * Event time.
-       * @param {Array<string>} columnNames
-       * @returns {boolean}
-       */
+   * Returns true if the columns given can be reconciled with this type.
+   * WARNING If 'timestamp' column is found a column name will be renamed to "deltaTime"
+   * and next coerce will convert timestamps to deltaTime relatively to the
+   * Event time.
+   * @param {Array<string>} columnNames
+   * @returns {boolean}
+   */
   validateColumns (columnNames) {
     const underlyingType = this.eventType;
     // ** do we need to transformation timestamp into deltatime
@@ -125,11 +125,11 @@ class InfluxRowType {
   }
 
   /** Returns true if all the rows in the given row array are valid for this
-     * type.
-       * @param {Array<any>} rows
-       * @param {Array<string>} columnNames
-       * @returns {boolean}
-       */
+   * type.
+   * @param {Array<any>} rows
+   * @param {Array<string>} columnNames
+   * @returns {boolean}
+   */
   validateAllRows (rows, columnNames) {
     for (const row of rows) {
       if (!this.isRowValid(row, columnNames)) {
@@ -141,22 +141,22 @@ class InfluxRowType {
   }
 
   /** Returns true if the given row (part of the input from the client) looks
-     * right. See the code for what rules define right.
-     *
-     * Normal order of operations would be:
-     *
-     *  1) Check `columnNames` (`{@link validateColumns}`).
-     *  2) For each row:
-     *    2.1) `isRowValid`?
-     *    2.2) For each cell:
-     *      2.2.1) `coerce` into target type
-     *      2.2.2) `isCellValid`?
-     *
-     * @param {any} row  Rows parsed from client input, could be any type.
-     * @param {Array<string>} columnNames  A list of column names the client
+   * right. See the code for what rules define right.
+   *
+   * Normal order of operations would be:
+   *
+   *  1) Check `columnNames` (`{@link validateColumns}`).
+   *  2) For each row:
+   *    2.1) `isRowValid`?
+   *    2.2) For each cell:
+   *      2.2.1) `coerce` into target type
+   *      2.2.2) `isCellValid`?
+   *
+   * @param {any} row  Rows parsed from client input, could be any type.
+   * @param {Array<string>} columnNames  A list of column names the client
     provided. Check these first using `validateColumns`.
-       * @returns {boolean}
-       */
+   * @returns {boolean}
+   */
   isRowValid (row, columnNames) {
     // A valid row is an array of cells.
     if (!Array.isArray(row)) { return false; }
@@ -169,16 +169,16 @@ class InfluxRowType {
   // As part of being an EventType, return the name of this type.
   //
   /**
- * @returns {string}
- */
+   * @returns {string}
+   */
   typeName () {
     return 'series:' + this.eventType.typeName();
   }
 
   /** Returns the type of a single cell with column name `name`.
-       * @param {string} name
-       * @returns {any}
-       */
+   * @param {string} name
+   * @returns {any}
+   */
   forField (name) {
     if (name === FIELD_DELTATIME) {
       return new InfluxDateType(this.applyDeltaTimeToSerie);
@@ -191,17 +191,17 @@ class InfluxRowType {
   // fields.
   //
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   optionalFields () {
     return this.eventType.optionalFields();
   }
 
   // check if a field is required
   /**
- * @param {string} name
-       * @returns {Boolean}
-       */
+   * @param {string} name
+   * @returns {Boolean}
+   */
   isOptionalField (name) {
     return this.optionalFields().includes(name);
   }
@@ -209,31 +209,31 @@ class InfluxRowType {
   // What fields MUST be present?
   //
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   requiredFields () {
     return [FIELD_DELTATIME].concat(this.eventType.requiredFields());
   }
 
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   fields () {
     return [FIELD_DELTATIME].concat(this.eventType.fields());
   }
 
   /**
- * @returns {true}
- */
+   * @returns {true}
+   */
   isSeries () {
     return true;
   }
 
   /**
- * @param {Validator} validator
-       * @param {Content} content
-       * @returns {Promise<any>}
-       */
+   * @param {Validator} validator
+   * @param {Content} content
+   * @returns {Promise<any>}
+   */
   callValidator (validator,
     // eslint-disable-line no-unused-vars
     content) {

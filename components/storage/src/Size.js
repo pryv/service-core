@@ -14,14 +14,14 @@ class Size {
   attachedFilesItems;
 
   /**
- * Computes storage size used by user accounts.
- * Will sum sizes returned by `getTotalSize(user, callback)` on the given storage objects,
- * if function is present.
- *
- * @param {Array} dbDocumentsItems
- * @param {Array} attachedFilesItems
- * @constructor
- */
+   * Computes storage size used by user accounts.
+   * Will sum sizes returned by `getTotalSize(user, callback)` on the given storage objects,
+   * if function is present.
+   *
+   * @param {Array} dbDocumentsItems
+   * @param {Array} attachedFilesItems
+   * @constructor
+   */
   constructor (dbDocumentsItems, attachedFilesItems) {
     this.dbDocumentsItems = dbDocumentsItems;
     this.attachedFilesItems = attachedFilesItems;

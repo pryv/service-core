@@ -38,9 +38,9 @@ class ExtensionLoader {
   // below `defaultFolder` first, by appending '.js' to `name`.
   //
   /**
- * @param {string} name
-       * @returns {Extension}
-       */
+   * @param {string} name
+   * @returns {Extension}
+   */
   load (name) {
     // not explicitly specified —> try to load from default folder
     const defaultModulePath = path.join(this.defaultFolder, name + '.js');
@@ -53,9 +53,9 @@ class ExtensionLoader {
   // Tries loading an extension from path. Throws an error if not successful.
   //
   /**
- * @param {string} path
-       * @returns {Extension}
-       */
+   * @param {string} path
+   * @returns {Extension}
+   */
   loadFrom (path) {
     try {
       const fn = require(path);

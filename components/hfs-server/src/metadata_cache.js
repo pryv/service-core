@@ -27,11 +27,11 @@ const LRU_CACHE_MAX_AGE_MS = 1000 * 60 * 5; // 5 mins
 class MetadataCache {
   loader;
   /**
-     * Stores:
-     *  - username/eventId -> [accessTokens]
-     *  - accessToken -> username/eventID/accessToken
-     *  - username/eventId/accessToken -> SeriesMetadataImpl (metadata_cache.js)
-     */
+   * Stores:
+   *  - username/eventId -> [accessTokens]
+   *  - accessToken -> username/eventID/accessToken
+   *  - username/eventId/accessToken -> SeriesMetadataImpl (metadata_cache.js)
+   */
   cache;
 
   series;
@@ -53,25 +53,25 @@ class MetadataCache {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async init () {
     this.mall = await getMall();
   }
 
   // nats messages
   /**
- * @param {UsernameEvent} usernameEvent
-       * @returns {any}
-       */
+   * @param {UsernameEvent} usernameEvent
+   * @returns {any}
+   */
   dropSeries (usernameEvent) {
     return this.series.connection.dropMeasurement('event.' + usernameEvent.event.id, 'user.' + usernameEvent.username);
   }
 
   /**
- * @param {UsernameEvent} usernameEvent
-       * @returns {void}
-       */
+   * @param {UsernameEvent} usernameEvent
+   * @returns {void}
+   */
   invalidateEvent (usernameEvent) {
     const cache = this.cache;
     const eventKey = usernameEvent.username + '/' + usernameEvent.event.id;
@@ -85,8 +85,8 @@ class MetadataCache {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   subscribeToNotifications () {
     pubsub.series.on(pubsub.SERIES_UPDATE_EVENTID_USERNAME, this.invalidateEvent.bind(this));
     pubsub.series.on(pubsub.SERIES_DELETE_EVENTID_USERNAME, this.dropSeries.bind(this));
@@ -94,11 +94,11 @@ class MetadataCache {
 
   // cache logic
   /**
- * @param {string} userName
-       * @param {string} eventId
-       * @param {string} accessToken
-       * @returns {Promise<import("/Users/sim/Code/Pryv/dev/service-core/metadata_cache.ts-to-jsdoc").SeriesMetadata>}
-       */
+   * @param {string} userName
+   * @param {string} eventId
+   * @param {string} accessToken
+   * @returns {Promise<import("/Users/sim/Code/Pryv/dev/service-core/metadata_cache.ts-to-jsdoc").SeriesMetadata>}
+   */
   async forSeries (userName, eventId, accessToken) {
     const cache = this.cache;
     const key = [userName, eventId, accessToken].join('/');
@@ -149,11 +149,11 @@ class MetadataLoader {
   }
 
   /**
- * @param {string} userName
-       * @param {string} eventId
-       * @param {string} accessToken
-       * @returns {Promise<import("/Users/sim/Code/Pryv/dev/service-core/metadata_cache.ts-to-jsdoc").SeriesMetadata>}
-       */
+   * @param {string} userName
+   * @param {string} eventId
+   * @param {string} accessToken
+   * @returns {Promise<import("/Users/sim/Code/Pryv/dev/service-core/metadata_cache.ts-to-jsdoc").SeriesMetadata>}
+   */
   forSeries (userName, eventId, accessToken) {
     const storage = this.storage;
     const mall = this.mall;
@@ -241,45 +241,45 @@ class SeriesMetadataImpl {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async init () {
     this.permissions = await definePermissions(this._access, this._event);
   }
 
   /**
- * @returns {boolean}
- */
+   * @returns {boolean}
+   */
   isTrashedOrDeleted () {
     return this.trashed || this.deleted != null;
   }
 
   /**
- * @returns {boolean}
- */
+   * @returns {boolean}
+   */
   canWrite () {
     return this.permissions.write;
   }
 
   /**
- * @returns {boolean}
- */
+   * @returns {boolean}
+   */
   canRead () {
     return this.permissions.read;
   }
 
   /**
- * @returns {[string, string]}
- */
+   * @returns {[string, string]}
+   */
   namespaceAndName () {
     return [`user.${this.userName}`, `event.${this.eventId}`];
   }
 
   // Return the InfluxDB row type for the given event.
   /**
- * @param {TypeRepository} repo
-       * @returns {any}
-       */
+   * @param {TypeRepository} repo
+   * @returns {any}
+   */
   produceRowType (repo) {
     const type = repo.lookup(this.eventType);
 

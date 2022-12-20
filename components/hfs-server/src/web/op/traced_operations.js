@@ -18,10 +18,10 @@ class TracedOperations {
   }
 
   /**
- * @param {string} name
-       * @param {any} opts
-       * @returns {void}
-       */
+   * @param {string} name
+   * @param {any} opts
+   * @returns {void}
+   */
   start (name, opts) {
     const ongoing = this.ongoingOps;
     const ctx = this.context;
@@ -30,9 +30,9 @@ class TracedOperations {
   }
 
   /**
- * @param {string} name
-       * @returns {void}
-       */
+   * @param {string} name
+   * @returns {void}
+   */
   finish (name) {
     const ongoing = this.ongoingOps;
     const span = ongoing.get(name);

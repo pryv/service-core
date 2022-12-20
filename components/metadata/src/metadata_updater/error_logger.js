@@ -24,9 +24,9 @@ class ErrorLogger {
 
   logger;
   /** @static
-       * @param {T} target
-       * @returns {any}
-       */
+   * @param {T} target
+   * @returns {any}
+   */
   static wrap (target, logger) {
     // #get is expected to be invariant, but is covariant (because we're using
     // the 'class' syntax here).
@@ -42,10 +42,10 @@ class ErrorLogger {
   }
 
   /**
- * @param {T} target
-       * @param {string} propKey
-       * @returns {any}
-       */
+   * @param {T} target
+   * @param {string} propKey
+   * @returns {any}
+   */
   get (target, propKey) {
     assert(target === this.target);
 
@@ -79,11 +79,11 @@ class ErrorLogger {
   }
 
   /**
- * @param {Error} err
-       * @param {T} target
-       * @param {string} propKey
-       * @returns {void}
-       */
+   * @param {Error} err
+   * @param {T} target
+   * @param {string} propKey
+   * @returns {void}
+   */
   handleException (err, target, propKey) {
     const logger = this.logger;
     logger.error(`Uncaught error: '${err.toString()}' during call to ${target.constructor.name}#${propKey}.`);

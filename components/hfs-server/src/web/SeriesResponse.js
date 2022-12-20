@@ -12,22 +12,22 @@ const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta').se
 class SeriesResponse {
   matrix;
   /** Constructs a series response from an existing data matrix.
-     */
+   */
   constructor (mat) {
     this.matrix = mat;
   }
 
   /** Answers the client with a series response (JSON).
-       * @param {express$Response} res
-       * @returns {void}
-       */
+   * @param {express$Response} res
+   * @returns {void}
+   */
   answer (res) {
     res.json(this).status(200);
   }
 
   /** Serializes this response to JSON.
-       * @returns {any}
-       */
+   * @returns {any}
+   */
   toJSON () {
     return setCommonMeta({
       format: 'flatJSON',

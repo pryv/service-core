@@ -18,8 +18,8 @@ class Series {
 
   connection;
   /** Internal constructor, creates a series with a given name in the namespace
-     * given.
-     */
+   * given.
+   */
   constructor (conn, namespace, name) {
     this.connection = conn;
     this.namespace = namespace;
@@ -27,14 +27,14 @@ class Series {
   }
 
   /** Append data to this series.
-     *
-     * This will append the data given in `data` to this series. You should
-     * make sure that the data matches the event this series is linked to before
-     * calling this method.
-     *
-     * @param {DataMatrix} data  - data to store to the series
-     * @return {Promise<any>} - promise that resolves once the data is stored
-     */
+   *
+   * This will append the data given in `data` to this series. You should
+   * make sure that the data matches the event this series is linked to before
+   * calling this method.
+   *
+   * @param {DataMatrix} data  - data to store to the series
+   * @return {Promise<any>} - promise that resolves once the data is stored
+   */
   append (data) {
     const appendOptions = {
       database: this.namespace
@@ -62,9 +62,9 @@ class Series {
   }
 
   /** Queries the given series, returning a data matrix.
-       * @param {Query} query
-       * @returns {Promise<any>}
-       */
+   * @param {Query} query
+   * @returns {Promise<any>}
+   */
   query (query) {
     const queryOptions = { database: this.namespace };
     // TODO worry about limit, offset
@@ -82,9 +82,9 @@ class Series {
   }
 
   /** Transforms an IResult object into a data matrix.
-       * @param {IResults} result
-       * @returns {any}
-       */
+   * @param {IResults} result
+   * @returns {any}
+   */
   transformResult (result) {
     if (result.length <= 0) { return DataMatrix.empty(); }
     // assert: result.length > 0
@@ -100,9 +100,9 @@ class Series {
   }
 
   /** Builds an expression that can be used within `WHERE` from a query.
-       * @param {Query} query
-       * @returns {string[]}
-       */
+   * @param {Query} query
+   * @returns {string[]}
+   */
   buildExpression (query) {
     const subConditions = [];
     // Replace double quotes with single quotes, since the influx library gets

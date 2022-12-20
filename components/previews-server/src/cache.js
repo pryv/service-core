@@ -16,12 +16,12 @@ class Cache {
 
   cleanUpInProgress;
   /** @static
-       * @default 'user.pryv.eventModified'
-       */
+   * @default 'user.pryv.eventModified'
+   */
   static EventModifiedXattrKey = 'user.pryv.eventModified';
   /** @static
-       * @default 'user.pryv.lastAccessed'
-       */
+   * @default 'user.pryv.lastAccessed'
+   */
   static LastAccessedXattrKey = 'user.pryv.lastAccessed';
   constructor (settings) {
     this.settings = settings;
@@ -30,8 +30,8 @@ class Cache {
 
   // Removes all cached files that haven't been accessed since the given time.
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async cleanUp () {
     if (this.cleanUpInProgress) {
       throw new Error('Clean-up is already in progress.');

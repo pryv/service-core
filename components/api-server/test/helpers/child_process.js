@@ -17,9 +17,9 @@ class ApplicationLauncher {
   }
 
   /**
- * @param {any} injectSettings
-       * @returns {Promise<any>}
-       */
+   * @param {any} injectSettings
+   * @returns {Promise<any>}
+   */
   async launch (injectSettings) {
     try {
       logger.debug('launch with settings', injectSettings);

@@ -12,26 +12,26 @@ const NamespaceBatch = require('./namespace_batch');
 class Repository {
   connection;
   /** Constructs a series repository based on a connection to InfluxDB.
-     *
-     * @param influxConnection {InfluxDB} handle to the database instance
-     */
+   *
+   * @param influxConnection {InfluxDB} handle to the database instance
+   */
   constructor (influxConnection) {
     this.connection = influxConnection;
   }
 
   /** Return a series from a given namespace.
-     *
-     * In practice, we'll map namespaces to pryv users and series to events. Please
-     * see MetadataRepository and SeriesMetadata for how to get a namespace and a
-     * name.
-     *
-     * Example:
-     *
-     *    seriesRepo.get(...seriesMeta.namespace())
-       * @param {string} namespace
-       * @param {string} name
-       * @returns {Promise<any>}
-       */
+   *
+   * In practice, we'll map namespaces to pryv users and series to events. Please
+   * see MetadataRepository and SeriesMetadata for how to get a namespace and a
+   * name.
+   *
+   * Example:
+   *
+   *    seriesRepo.get(...seriesMeta.namespace())
+   * @param {string} namespace
+   * @param {string} name
+   * @returns {Promise<any>}
+   */
   async get (namespace, name) {
     // TODO Cache all the setup checks we do here in an LRU cache.
     // Make sure that the database exists:
@@ -49,9 +49,9 @@ class Repository {
   //    await batch.store();
   //
   /**
- * @param {string} namespace
-       * @returns {Promise<any>}
-       */
+   * @param {string} namespace
+   * @returns {Promise<any>}
+   */
   async makeBatch (namespace) {
     // TODO Cache all the setup checks we do here in an LRU cache.
     // Make sure that the database exists:

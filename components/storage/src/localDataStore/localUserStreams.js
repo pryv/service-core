@@ -95,7 +95,7 @@ module.exports = ds.createUserStreams({
             }
             // Any other error
             throw errors.unexpectedError(err);
-          } */
+     */
   },
   async update (userId, streamData) {
     return await bluebird.fromCallback((cb) => this.userStreamsStorage.updateOne({ id: userId }, { id: streamData.id }, streamData, cb));

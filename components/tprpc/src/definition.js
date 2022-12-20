@@ -21,9 +21,9 @@ class Definition {
   // `Definition`.
   //
   /** @static
-       * @param {string} path
-       * @returns {Promise<Definition>}
-       */
+   * @param {string} path
+   * @returns {Promise<Definition>}
+   */
   static async load (path) {
     const root = await protobufLoad(path);
     return new Definition(path, root);
@@ -59,10 +59,10 @@ class Definition {
   // require external types, unless you import those from 'elsewhere.
   //
   /**
- * @param {string} filename
-       * @param {string} targetPath
-       * @returns {void}
-       */
+   * @param {string} filename
+   * @param {string} targetPath
+   * @returns {void}
+   */
   writeTypeSignature (filename, targetPath) {
     const sigPath = targetPath || path.dirname(this.definitionPath);
     const sigFilename = path.join(sigPath, filename);
@@ -82,9 +82,9 @@ class Definition {
   // Looks up the service given by name and returns a ServiceDefinition instance.
   //
   /**
- * @param {string} serviceName
-       * @returns {any}
-       */
+   * @param {string} serviceName
+   * @returns {any}
+   */
   lookup (serviceName) {
     const root = this.root;
     const service = root.lookup(serviceName);
@@ -92,10 +92,10 @@ class Definition {
   }
 
   /**
- * @param {string} serviceName
-       * @param {MethodCallback} fn
-       * @returns {void}
-       */
+   * @param {string} serviceName
+   * @param {MethodCallback} fn
+   * @returns {void}
+   */
   forEachMethod (serviceName, fn) {
     const root = this.root;
     const service = root.lookup(serviceName);
@@ -125,8 +125,8 @@ class Compiler {
 
   // Prints a whole .proto definition file
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   printFile (json) {
     this.printTypes(json);
     this.exportEnums();
@@ -134,8 +134,8 @@ class Compiler {
 
   // Prints a list of types that are nested in a definition.
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   printTypes (json) {
     this.printObject(json.nested, (key, type) => {
       this.printType(key, type);
@@ -144,8 +144,8 @@ class Compiler {
 
   // Prints a single type.
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   printType (name, json) {
     if (json.nested != null) { this.printTypes(json); }
     if (json.values != null) { // Assume any other type, output as an interface.
@@ -154,8 +154,8 @@ class Compiler {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   printTypeAsInterface (name, json) {
     const file = this.file;
     file.writeln(`export interface ${this.translateToInterface(name)} {`);
@@ -172,8 +172,8 @@ class Compiler {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   printTypeAsEnum (name, json) {
     const file = this.file;
     if (json.values == null) { throw new Error("AF: doesn't look like an enum..."); }
@@ -190,9 +190,9 @@ class Compiler {
 
   // Generic object printer.
   /**
- * @param {(b: string, a: any) => unknown} fn
-       * @returns {void}
-       */
+   * @param {(b: string, a: any) => unknown} fn
+   * @returns {void}
+   */
   printObject (obj, fn) {
     if (obj != null) {
       for (const key of Object.keys(obj)) {
@@ -204,9 +204,9 @@ class Compiler {
 
   // Translates a type to an interface, if needed.
   /**
- * @param {string} name
-       * @returns {string}
-       */
+   * @param {string} name
+   * @returns {string}
+   */
   translateToInterface (name) {
     const enumValues = this.enumValues;
     if (enumValues.has(name)) {
@@ -235,9 +235,9 @@ class Compiler {
 
   // Translates a type to the aequivalent flow-type type.
   /**
- * @param {any} field
-       * @returns {string}
-       */
+   * @param {any} field
+   * @returns {string}
+   */
   translateType (field) {
     let output = this.translateToInterface(field.type);
     if (field.rule === 'repeated') {
@@ -248,9 +248,9 @@ class Compiler {
 
   // Returns all the values that are allowed for an enum as a string.
   /**
- * @param {Set<any>} values
-       * @returns {string}
-       */
+   * @param {Set<any>} values
+   * @returns {string}
+   */
   allowedEnumValues (values) {
     return Array.from(values)
       .map((e) => e.toString())
@@ -258,8 +258,8 @@ class Compiler {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   exportEnums () {
     const file = this.file;
     if (this.enumValues.size > 0) {
@@ -278,11 +278,11 @@ class File {
   // instance. Once the block exits, the file is closed.
   //
   /** @static
-       * @param {string} name
-       * @param {string} mode
-       * @param {(f: File) => unknown} block
-       * @returns {void}
-       */
+   * @param {string} name
+   * @param {string} mode
+   * @param {(f: File) => unknown} block
+   * @returns {void}
+   */
   static open (name, mode, block) {
     const fd = fs.openSync(name, mode);
     const file = new File(fd);
@@ -295,9 +295,9 @@ class File {
   }
 
   /**
- * @param {string} line
-       * @returns {any}
-       */
+   * @param {string} line
+   * @returns {any}
+   */
   writeln (line) {
     return fs.writeSync(this.fd, line + '\n');
   }
@@ -305,8 +305,8 @@ class File {
   // Closes the file.
   //
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   close () {
     fs.closeSync(this.fd);
   }

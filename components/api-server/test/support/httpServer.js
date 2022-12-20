@@ -44,16 +44,16 @@ class HttpServer extends EventEmitter {
   }
 
   /**
- * @param {number} port
-       * @returns {Promise<void>}
-       */
+   * @param {number} port
+   * @returns {Promise<void>}
+   */
   async listen (port) {
     this.server = await this.app.listen(port || PORT);
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   close () {
     return bluebird.fromCallback(() => {
       this.server.close();
@@ -61,8 +61,8 @@ class HttpServer extends EventEmitter {
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   getLastReport () {
     return this.lastReport;
   }

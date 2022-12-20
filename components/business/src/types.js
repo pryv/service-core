@@ -32,19 +32,19 @@ class TypeValidator {
   // Validates the given event type against its schema.
   //
   /**
- * @param {EventType} type
-       * @param {Content} content
-       * @returns {Promise<any>}
-       */
+   * @param {EventType} type
+   * @param {Content} content
+   * @returns {Promise<any>}
+   */
   validate (type, content) {
     return type.callValidator(this, content);
   }
 
   /**
- * @param {Content} content
-       * @param {any} schema
-       * @returns {Promise<any>}
-       */
+   * @param {Content} content
+   * @param {any} schema
+   * @returns {Promise<any>}
+   */
   validateWithSchema (content, schema) {
     return bluebird.try(() => {
       const validator = new ZSchemaValidator();
@@ -89,17 +89,17 @@ class TypeRepository {
   }
 
   /**
-     * Simple version of validate - to be used
-     *
-     * In api-server, use only:
-     * - isSeriesType()
-     * - isKnown()
-     * - validate()
-     *
-     * The old path: lookup(), then validator() are too heavy
-       * @param {Event} event
-       * @returns {Promise<any>}
-       */
+   * Simple version of validate - to be used
+   *
+   * In api-server, use only:
+   * - isSeriesType()
+   * - isKnown()
+   * - validate()
+   *
+   * The old path: lookup(), then validator() are too heavy
+   * @param {Event} event
+   * @returns {Promise<any>}
+   */
   async validate (event) {
     const content = event.content != null ? event.content : null;
     const schema = defaultTypes.types[event.type];
@@ -114,9 +114,9 @@ class TypeRepository {
   // (#tryUpdate).
   //
   /**
- * @param {string} name
-       * @returns {boolean}
-       */
+   * @param {string} name
+   * @returns {boolean}
+   */
   isKnown (name) {
     if (isSeriesType(name)) {
       const leafTypeName = name.slice(SERIES_PREFIX.length);
@@ -130,9 +130,9 @@ class TypeRepository {
   // `event-types.default.json`.
   //
   /**
- * @param {string} name
-       * @returns {any}
-       */
+   * @param {string} name
+   * @returns {any}
+   */
   lookupLeafType (name) {
     if (!this.isKnown(name)) { throw new errors.TypeDoesNotExistError(`Type '${name}' does not exist in this Pryv instance.`); }
     const typeSchema = defaultTypes.types[name];
@@ -149,9 +149,9 @@ class TypeRepository {
   // @throw {TypeDoesNotExistError} when name doesn't refer to a built in type.
   //
   /**
- * @param {string} name
-       * @returns {any}
-       */
+   * @param {string} name
+   * @returns {any}
+   */
   lookup (name) {
     if (isSeriesType(name)) {
       const leafTypeName = name.slice(SERIES_PREFIX.length);
@@ -165,8 +165,8 @@ class TypeRepository {
   // Produces a validator instance.
   //
   /**
- * @returns {TypeValidator}
- */
+   * @returns {TypeValidator}
+   */
   validator () {
     return new TypeValidator();
   }
@@ -175,10 +175,10 @@ class TypeRepository {
   // internet.
   //
   /**
- * @param {string} sourceURL
-       * @param {string} apiVersion
-       * @returns {Promise<void>}
-       */
+   * @param {string} sourceURL
+   * @param {string} apiVersion
+   * @returns {Promise<void>}
+   */
   async tryUpdate (sourceURL, apiVersion) {
     function unavailableError (err) {
       throw new Error('Could not update event types from ' +

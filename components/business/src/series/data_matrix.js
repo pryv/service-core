@@ -22,10 +22,10 @@ class DataMatrix {
   // structure of the object is not correct.
   //
   /** @static
-       * @param {unknown} obj
-       * @param {InfluxRowType} type
-       * @returns {DataMatrix}
-       */
+   * @param {unknown} obj
+   * @param {InfluxRowType} type
+   * @returns {DataMatrix}
+   */
   static parse (obj, type) {
     const out = this.empty();
     const parser = new Parser(out);
@@ -34,47 +34,47 @@ class DataMatrix {
   }
 
   /** Constructs an empty matrix.
-       * @static
-       * @returns {DataMatrix}
-       */
+   * @static
+   * @returns {DataMatrix}
+   */
   static empty () {
     return new DataMatrix([], []);
   }
 
   /** Store data inside the data matrix. This replaces the
-     * existing content of this matrix with the content you
-     * give as parameter.
-     *
-     * NOTE data must be rectangular; it can contain as many
-     *  rows as you want (outer array), but should always
-     *  contain columns.length columns (inner array). This is
-     *  not checked, but further operations will take place
-     *  only on known columns.
-     *
-     * @param columns {Array<string>} column names to use for
-     *  this matrix.
-     * @param data {Array<Array<Element>} data
-     * @return {void}
-     */
+   * existing content of this matrix with the content you
+   * give as parameter.
+   *
+   * NOTE data must be rectangular; it can contain as many
+   *  rows as you want (outer array), but should always
+   *  contain columns.length columns (inner array). This is
+   *  not checked, but further operations will take place
+   *  only on known columns.
+   *
+   * @param columns {Array<string>} column names to use for
+   *  this matrix.
+   * @param data {Array<Array<Element>} data
+   * @return {void}
+   */
   constructor (columns, data) {
     this.columns = columns;
     this.setData(data);
   }
 
   /** Updates the data attribute internally, keeping length === data.length.
-       * @param {Array<any>} data
-       * @returns {void}
-       */
+   * @param {Array<any>} data
+   * @returns {void}
+   */
   setData (data) {
     this.data = data;
     this.length = data.length;
   }
 
   /** Accesses the nth element of the array. If the index is out of bounds,
-     * an error is thrown.
-       * @param {number} idx
-       * @returns {import("/Users/sim/Code/Pryv/dev/service-core/data_matrix.ts-to-jsdoc").Element[]}
-       */
+   * an error is thrown.
+   * @param {number} idx
+   * @returns {import("/Users/sim/Code/Pryv/dev/service-core/data_matrix.ts-to-jsdoc").Element[]}
+   */
   at (idx) {
     assert.ok(idx >= 0);
     assert.ok(idx < this.length);
@@ -84,18 +84,18 @@ class DataMatrix {
   // Returns the row at index `idx`.
   //
   /**
- * @param {number} idx
-       * @returns {any}
-       */
+   * @param {number} idx
+   * @returns {any}
+   */
   atRow (idx) {
     const raw = this.at(idx);
     return new Row(raw, this.columns);
   }
 
   /** Iterates over each row of the data matrix.
-       * @param {(row: Row, idx: number) => void} fn
-       * @returns {void}
-       */
+   * @param {(row: Row, idx: number) => void} fn
+   * @returns {void}
+   */
   eachRow (fn) {
     this.data.forEach((row, idx) => {
       const rowObj = new Row(row, this.columns);
@@ -107,9 +107,9 @@ class DataMatrix {
   // its value with what fn returns.
   //
   /**
- * @param {(colName: string, cellVal: Element) => Element} fn
-       * @returns {void}
-       */
+   * @param {(colName: string, cellVal: Element) => Element} fn
+   * @returns {void}
+   */
   transform (fn) {
     for (const row of this.data) {
       row.forEach((cell, idx) => (row[idx] = fn(this.columns[idx], cell)));
@@ -122,8 +122,8 @@ class DataMatrix {
   // empty, this method throws an error.
   //
   /**
- * @returns {import("/Users/sim/Code/Pryv/dev/service-core/data_matrix.ts-to-jsdoc").DataExtent}
- */
+   * @returns {import("/Users/sim/Code/Pryv/dev/service-core/data_matrix.ts-to-jsdoc").DataExtent}
+   */
   minmax () {
     if (this.length <= 0) { throw new Error('Precondition error: matrix is empty.'); }
     // assert: length > 0 => at least one row is available
@@ -149,10 +149,10 @@ class Parser {
   }
 
   /**
- * @param {unknown} obj
-       * @param {InfluxRowType} type
-       * @returns {void}
-       */
+   * @param {unknown} obj
+   * @param {InfluxRowType} type
+   * @returns {void}
+   */
   parse (obj, type) {
     const out = this.out;
     if (obj == null || typeof obj !== 'object') { throw error('flatJSON structure must be an object.'); }
@@ -179,9 +179,9 @@ class Parser {
   }
 
   /**
- * @param {any} val
-       * @returns {string[]}
-       */
+   * @param {any} val
+   * @returns {string[]}
+   */
   checkFields (val) {
     if (val == null) { throw error('Field names must be a list.'); }
     if (!Array.isArray(val)) { throw error('Field names must be a list.'); }
