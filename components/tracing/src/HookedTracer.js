@@ -34,9 +34,9 @@ class HookedTracer {
   }
 
   /**
- * @param {{} | null} tags
-       * @returns {void}
-       */
+   * @param {{} | null} tags
+   * @returns {void}
+   */
   tag (tags) {
     if (!this.running) { throw new Error('Cannot tag a finished span ' + this.name); }
     if (tags == null) { return; }
@@ -48,9 +48,9 @@ class HookedTracer {
   }
 
   /**
- * @param {FinishCallback} cb
-       * @returns {FinishCallback}
-       */
+   * @param {FinishCallback} cb
+   * @returns {FinishCallback}
+   */
   finishOnCallBack (cb) {
     const that = this;
     return function (err, result) {
@@ -65,9 +65,9 @@ class HookedTracer {
   }
 
   /**
- * @param {{} | null} tags
-       * @returns {void}
-       */
+   * @param {{} | null} tags
+   * @returns {void}
+   */
   finish (tags) {
     if (!this.running) { throw new Error('Cannot finish a finished span ' + this.name); }
     if (this.tracing == null) {

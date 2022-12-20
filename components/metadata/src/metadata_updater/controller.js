@@ -31,9 +31,9 @@ class Controller {
   // controller action.
   //
   /**
- * @param {number} frequency
-       * @returns {void}
-       */
+   * @param {number} frequency
+   * @returns {void}
+   */
   runEach (frequency) {
     if (frequency <= 0) { throw new Error('Precondition failure: frequency cannot be negative.'); }
     const timer = setInterval(() => this.act(), frequency);
@@ -44,8 +44,8 @@ class Controller {
   // of the controller.
   //
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   stop () {
     const timer = this.timer;
     this.timer = null;
@@ -59,9 +59,9 @@ class Controller {
   // at this point.
   //
   /**
- * @param {EpochTime} fixedNow
-       * @returns {Promise<any>}
-       */
+   * @param {EpochTime} fixedNow
+   * @returns {Promise<any>}
+   */
   async act (fixedNow) {
     const map = this.map;
     let now = new Date() / 1e3;
@@ -80,9 +80,9 @@ class Controller {
   // Returns a Flush operation for the update `update`. Acts as a producer.
   //
   /**
- * @param {PendingUpdate} update
-       * @returns {import("/Users/sim/Code/Pryv/dev/service-core/controller.ts-to-jsdoc").Operation}
-       */
+   * @param {PendingUpdate} update
+   * @returns {import("/Users/sim/Code/Pryv/dev/service-core/controller.ts-to-jsdoc").Operation}
+   */
   flushOp (update) {
     return new Flush(update);
   }

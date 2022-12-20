@@ -64,8 +64,8 @@ module.exports = async function (api) {
     }
     next();
     /**
-         * Remove permissions with level="none" of system streams from given array
-         */
+     * Remove permissions with level="none" of system streams from given array
+     */
     function filterNonePermissionsOnSystemStreams (permissions) {
       const filteredPermissions = [];
       for (const perm of permissions) {

@@ -15,9 +15,9 @@ const session = createNamespace('tracing/cls');
 
 class Cls {
   /**
- * @param {Span} span
-       * @returns {void}
-       */
+   * @param {Span} span
+   * @returns {void}
+   */
   setRootSpan (span) {
     if (session.active == null) { return; }
     let roots = session.get(CLS_TRACE_SPAN);
@@ -32,8 +32,8 @@ class Cls {
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   getRootSpan () {
     if (session.active == null) { return null; }
     const roots = session.get(CLS_TRACE_SPAN);
@@ -45,11 +45,11 @@ class Cls {
   }
 
   /**
- * @param {express$Request} req
-       * @param {express$Response} res
-       * @param {express$NextFunction} next
-       * @returns {any}
-       */
+   * @param {express$Request} req
+   * @param {express$Response} res
+   * @param {express$NextFunction} next
+   * @returns {any}
+   */
   startExpressContext (req, res, next) {
     return session.runAndReturn(() => {
       session.bindEmitter(req);

@@ -29,9 +29,9 @@ class PendingUpdatesMap {
   // well modify it down the line.
   //
   /**
- * @param {PendingUpdate} update
-       * @returns {void}
-       */
+   * @param {PendingUpdate} update
+   * @returns {void}
+   */
   merge (update) {
     const map = this.map;
     const heap = this.heap;
@@ -54,9 +54,9 @@ class PendingUpdatesMap {
   // currently. Ownership remains with the map.
   //
   /**
- * @param {PendingUpdateKey} key
-       * @returns {PendingUpdate}
-       */
+   * @param {PendingUpdateKey} key
+   * @returns {PendingUpdate}
+   */
   get (key) {
     const map = this.map;
     return map.get(key) || null;
@@ -65,8 +65,8 @@ class PendingUpdatesMap {
   // Returns the amount of updates the map stores.
   //
   /**
- * @returns {number}
- */
+   * @returns {number}
+   */
   size () {
     return this.map.size;
   }
@@ -76,9 +76,9 @@ class PendingUpdatesMap {
   // structures.
   //
   /**
- * @param {EpochTime} now
-       * @returns {PendingUpdate[]}
-       */
+   * @param {EpochTime} now
+   * @returns {PendingUpdate[]}
+   */
   getElapsed (now) {
     const heap = this.heap;
     const map = this.map;
@@ -118,18 +118,18 @@ class PendingUpdate {
 
   cooldown;
   /** @static
-       * @param {EpochTime} now
-       * @param {IUpdateRequest} req
-       * @returns {PendingUpdate}
-       */
+   * @param {EpochTime} now
+   * @param {IUpdateRequest} req
+   * @returns {PendingUpdate}
+   */
   static fromUpdateRequest (now, req) {
     return new PendingUpdate(now, req);
   }
 
   /** @static
-       * @param {IUpdateId} id
-       * @returns {string}
-       */
+   * @param {IUpdateId} id
+   * @returns {string}
+   */
   static key (id) {
     return key(id.userId, id.eventId);
   }
@@ -144,8 +144,8 @@ class PendingUpdate {
   }
 
   /**
- * @returns {string}
- */
+   * @returns {string}
+   */
   key () {
     const request = this.request;
     return key(request.userId, request.eventId);
@@ -156,9 +156,9 @@ class PendingUpdate {
   // later will determine the update author. This method modifies this.
   //
   /**
- * @param {PendingUpdate} other
-       * @returns {void}
-       */
+   * @param {PendingUpdate} other
+   * @returns {void}
+   */
   merge (other) {
     if (this.key() !== other.key()) { throw new Error('Attempting update with data for a different series.'); }
     // The later update wins for timestamp and author
@@ -183,8 +183,8 @@ class PendingUpdate {
   }
 
   /**
- * @returns {number}
- */
+   * @returns {number}
+   */
   flushAt () {
     return Math.min(this.deadline, this.cooldown);
   }

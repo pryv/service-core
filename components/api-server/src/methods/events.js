@@ -123,8 +123,8 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * Backward compatibility for tags
-     */
+   * Backward compatibility for tags
+   */
   function migrateTagsToStreamQueries (context, params, result, next) {
     if (!isTagsBackwardCompatibilityActive) { return next(); }
     if (params.tags == null) { return next(); }
@@ -251,14 +251,14 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * Check if previous event (or "new event" for events creation) belongs to the account
-     * streams
-     *
-     * @param {*} context
-     * @param {*} params
-     * @param {*} result
-     * @param {*} next
-     */
+   * Check if previous event (or "new event" for events creation) belongs to the account
+   * streams
+   *
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
   function doesEventBelongToAccountStream (context, params, result, next) {
     const allAccountStreamsIds = SystemStreamsSerializer.getAccountStreamIds();
     const isUpdate = context.oldEvent != null && context.newEvent != null;
@@ -280,8 +280,8 @@ module.exports = async function (api) {
     next();
   }
   /**
-     *
-     */
+   *
+   */
   function validateAccountStreamsForCreation (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) { return next(); }
     throwIfUserTriesToAddMultipleAccountStreamIds(context.accountStreamIds); // assert context.accountStreamIds.length === 1 - probably OK for mixing custom and account
@@ -299,8 +299,8 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * Do additional actions if event belongs to account stream
-     */
+   * Do additional actions if event belongs to account stream
+   */
   async function appendAccountStreamsDataForCreation (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) {
       return next();
@@ -316,8 +316,8 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * register this new information on the platform
-     */
+   * register this new information on the platform
+   */
   async function createOnPlatform (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) {
       return next();
@@ -344,8 +344,8 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * register this new information on the platform
-     */
+   * register this new information on the platform
+   */
   async function updateOnPlatform (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) {
       return next();
@@ -443,8 +443,8 @@ module.exports = async function (api) {
     return streamIds;
   }
   /**
-     * Creates the event's body according to its type and context.
-     */
+   * Creates the event's body according to its type and context.
+   */
   function createSeriesEventContent (context) {
     const seriesTypeName = context.newEvent.type;
     const eventType = typeRepo.lookup(seriesTypeName);
@@ -575,8 +575,8 @@ module.exports = async function (api) {
     }
   }
   /**
-     * Depends on context.oldEvent
-     */
+   * Depends on context.oldEvent
+   */
   async function generateVersionIfNeeded (context, params, result, next) {
     if (!auditSettings.forceKeepHistory) {
       return next();
@@ -602,8 +602,8 @@ module.exports = async function (api) {
     }
   }
   /**
-     * Do additional actions if event belongs to account stream
-     */
+   * Do additional actions if event belongs to account stream
+   */
   async function appendAccountStreamsDataForUpdate (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) {
       return next();
@@ -660,10 +660,10 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * For account streams - 'active' streamId defines the 'main' event
-     * from of the stream. If there are many events (like many emails),
-     * only one should be main/active
-     */
+   * For account streams - 'active' streamId defines the 'main' event
+   * from of the stream. If there are many events (like many emails),
+   * only one should be main/active
+   */
   async function removeActiveFromSibling (context, params, result, next) {
     if (!context.removeActiveEvents) {
       return next();
@@ -708,12 +708,12 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * Fixes req.files structure for when attachments were sent without a filename, in which case
-     * Express lists files as an array in a `file` property (instead of directly as properties).
-     *
-     * @param {Object} files
-     * @returns {Object}
-     */
+   * Fixes req.files structure for when attachments were sent without a filename, in which case
+   * Express lists files as an array in a `file` property (instead of directly as properties).
+   *
+   * @param {Object} files
+   * @returns {Object}
+   */
   function sanitizeRequestFiles (files) {
     if (!files || !files.file || !Array.isArray(files.file)) {
       // assume files is an object, nothing to do
@@ -777,14 +777,14 @@ module.exports = async function (api) {
     }
   }
   /**
-     * Validates the event's content against its type (if known).
-     * Will try casting string content to number if appropriate.
-     *
-     * @param {Object} context.newEvent contains the event data
-     * @param {Object} params
-     * @param {Object} result
-     * @param {Function} next
-     */
+   * Validates the event's content against its type (if known).
+   * Will try casting string content to number if appropriate.
+   *
+   * @param {Object} context.newEvent contains the event data
+   * @param {Object} params
+   * @param {Object} result
+   * @param {Function} next
+   */
   async function validateEventContentAndCoerce (context, params, result, next) {
     const type = context.newEvent.type;
     if (isTagsBackwardCompatibilityActive) { context.newEvent = replaceTagsWithStreamIds(context.newEvent); }
@@ -830,8 +830,8 @@ module.exports = async function (api) {
     return next();
   }
   /**
-     * If they don't exist, create the streams for the present tags
-     */
+   * If they don't exist, create the streams for the present tags
+   */
   async function createStreamsForTagsIfNeeded (context, params, result, next) {
     if (!isTagsBackwardCompatibilityActive) { return next(); }
     const tags = context.newEvent.tags;
@@ -869,18 +869,18 @@ module.exports = async function (api) {
     }
   }
   /**
-     * Check if event belongs to account stream,
-     * if yes, validate and prepend context with the properties that will be
-     * used later like:
-     * a) doesEventBelongToAccountStream: boolean
-     * b) oldEventStreamIds: array<string>
-     * c) accountStreamId - string - account streamId
-     *
-     * @param {*} context
-     * @param {*} params
-     * @param {*} result
-     * @param {*} next
-     */
+   * Check if event belongs to account stream,
+   * if yes, validate and prepend context with the properties that will be
+   * used later like:
+   * a) doesEventBelongToAccountStream: boolean
+   * b) oldEventStreamIds: array<string>
+   * c) accountStreamId - string - account streamId
+   *
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
   function validateAccountStreamsForUpdate (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) { return next(); }
     throwIfUserTriesToAddMultipleAccountStreamIds(context.accountStreamIds); // assert context.accountStreamIds.length === 1
@@ -942,13 +942,13 @@ module.exports = async function (api) {
   );
 
   /**
-     * If event belongs to the account stream
-     * send update to service-register if needed
-     *
-     * @param object user {id: '', username: ''}
-     * @param object event
-     * @param string accountStreamId - accountStreamId
-     */
+   * If event belongs to the account stream
+   * send update to service-register if needed
+   *
+   * @param object user {id: '', username: ''}
+   * @param object event
+   * @param string accountStreamId - accountStreamId
+   */
   async function updateDeletionOnPlatform (username, content, accountStreamId) {
     const editableAccountStreamsMap = SystemStreamsSerializer.getEditableAccountMap();
     const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(accountStreamId);
@@ -1090,10 +1090,10 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * Check if event should not be allowed for deletion
-     * a) is not editable
-     * b) is active
-     */
+   * Check if event should not be allowed for deletion
+   * a) is not editable
+   * b) is active
+   */
   function validateAccountStreamsForDeletion (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) {
       return next();
@@ -1106,20 +1106,20 @@ module.exports = async function (api) {
     next();
   }
   /**
-     * Returns the key of the attachment with the given file name.
-     */
+   * Returns the key of the attachment with the given file name.
+   */
   function getAttachmentIndex (attachments, fileId) {
     return _.findIndex(attachments, function (att) {
       return att.id === fileId;
     });
   }
   /**
-     * Sets the file read token for each of the given event's attachments (if any) for the given
-     * access.
-     *
-     * @param access
-     * @param attachments
-     */
+   * Sets the file read token for each of the given event's attachments (if any) for the given
+   * access.
+   *
+   * @param access
+   * @param attachments
+   */
   function setFileReadToken (access, attachments) {
     if (attachments == null) {
       return;

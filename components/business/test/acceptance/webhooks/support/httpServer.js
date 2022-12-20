@@ -59,67 +59,67 @@ class HttpServer extends EventEmitter {
   }
 
   /**
- * @param {number} port
-       * @returns {Promise<void>}
-       */
+   * @param {number} port
+   * @returns {Promise<void>}
+   */
   async listen (port) {
     this.server = await this.app.listen(port || PORT);
   }
 
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   getMessages () {
     return this.messages;
   }
 
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   getMetas () {
     return this.metas;
   }
 
   /**
- * @returns {boolean}
- */
+   * @returns {boolean}
+   */
   isMessageReceived () {
     return this.messageReceived;
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   resetMessageReceived () {
     this.messageReceived = false;
   }
 
   /**
- * @returns {number}
- */
+   * @returns {number}
+   */
   getMessageCount () {
     return this.messageCount;
   }
 
   /**
- * @param {number} newStatus
-       * @returns {void}
-       */
+   * @param {number} newStatus
+   * @returns {void}
+   */
   setResponseStatus (newStatus) {
     this.responseStatus = newStatus;
   }
 
   /**
- * @param {number} delay
-       * @returns {void}
-       */
+   * @param {number} delay
+   * @returns {void}
+   */
   setResponseDelay (delay) {
     this.responseDelay = delay;
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   close () {
     return bluebird.fromCallback((cb) => {
       if (this.server == null) { return cb(); }

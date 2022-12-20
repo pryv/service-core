@@ -41,16 +41,16 @@ class Context {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async init () {
     await this.configureMetadataCache();
   }
 
   /**
- * @param {string} url
-       * @returns {void}
-       */
+   * @param {string} url
+   * @returns {void}
+   */
   configureTypeRepository (url) {
     const typeRepo = new business.types.TypeRepository();
     typeRepo.tryUpdate(url); // async
@@ -58,8 +58,8 @@ class Context {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async configureMetadataCache () {
     const mall = await getMall();
     this.metadata = new MetadataCache(this.series, new MetadataLoader(this.mongoConn, mall, getLogger('metadata-cache')), this.config);
@@ -68,9 +68,9 @@ class Context {
   // Configures the metadata updater service.
   //
   /**
- * @param {string} endpoint
-       * @returns {Promise<void>}
-       */
+   * @param {string} endpoint
+   * @returns {Promise<void>}
+   */
   async configureMetadataUpdater (endpoint) {
     const updater = await metadataUpdater.produce(endpoint);
     this.metadataUpdater = updater;
@@ -79,10 +79,10 @@ class Context {
   // Starts a child span below the request span.
   //
   /**
- * @param {string} name
-       * @param {any} opts
-       * @returns {any}
-       */
+   * @param {string} name
+   * @param {any} opts
+   * @returns {any}
+   */
   childSpan (name, opts) {
     const tracer = this.tracer;
     const rootSpan = cls.getRootSpan();

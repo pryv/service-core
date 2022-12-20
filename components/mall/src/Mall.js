@@ -15,8 +15,8 @@ const MallTransaction = require('./MallTransaction');
  */
 class Mall {
   /**
-     * @type {Map<string, DataStore>}
-     */
+   * @type {Map<string, DataStore>}
+   */
   stores;
 
   initialized;
@@ -92,9 +92,9 @@ class Mall {
   }
 
   /**
-     * @param {string} storeId
-     * @returns {Promise<any>}
-     */
+   * @param {string} storeId
+   * @returns {Promise<any>}
+   */
   async newTransaction () {
     return new MallTransaction(this);
   }

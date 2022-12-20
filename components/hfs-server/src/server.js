@@ -31,9 +31,9 @@ class Server {
 
   baseUrl;
   /**
-     * http server object
-     * @type {http.Server}
-     */
+   * http server object
+   * @type {http.Server}
+   */
   server;
   // Logger used here.
 
@@ -52,11 +52,11 @@ class Server {
   }
 
   /**
-     * Starts the HTTP server.
-     *
-     * @return {Promise<true>} A promise that will resolve once the server is
+   * Starts the HTTP server.
+   *
+   * @return {Promise<true>} A promise that will resolve once the server is
     started and accepts connections.
-     */
+   */
   async start () {
     await getConfig(); // makes sure config is loaded
     const ip = this.config.get(KEY_IP);
@@ -72,9 +72,9 @@ class Server {
   }
 
   /** Logs that the server has started.
-       * @param {any} arg
-       * @returns {Promise<any>}
-       */
+   * @param {any} arg
+   * @returns {Promise<any>}
+   */
   logStarted (arg) {
     const addr = this.server.address();
     this.logger.info(`started. (http://${addr.address}:${addr.port})`);
@@ -83,11 +83,11 @@ class Server {
   }
 
   /**
-     * Stops a running server instance.
-     *
-     * @return {Promise<true>} A promise that will resolve once the server has
+   * Stops a running server instance.
+   *
+   * @return {Promise<true>} A promise that will resolve once the server has
     stopped.
-     */
+   */
   stop () {
     const server = this.server;
     this.logger.info('stopping...');
@@ -96,11 +96,11 @@ class Server {
   }
 
   /**
-     * Sets up the express application, injecting middleware and configuring the
-     * instance.
-     *
-     * @return {Promise<any>} express application.
-     */
+   * Sets up the express application, injecting middleware and configuring the
+   * instance.
+   *
+   * @return {Promise<any>} express application.
+   */
   async setupExpress () {
     const logger = this.logger;
     const config = this.config;
@@ -125,9 +125,9 @@ class Server {
   }
 
   /** Defines all the routes that we serve from this server.
-       * @param {express$Application} app
-       * @returns {void}
-       */
+   * @param {express$Application} app
+   * @returns {void}
+   */
   defineApplication (app) {
     const ctx = this.context;
     const c = controllerFactory(ctx);

@@ -53,8 +53,8 @@ class StorageLayer {
   }
 
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async waitForConnection () {
     const database = this.connection;
     return await database.waitForConnection();

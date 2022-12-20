@@ -85,10 +85,10 @@ exports.validateStreamsQueriesAndSetStore = validateStreamsQueriesAndSetStore;
  */
 function validateStreamsQuerySchemaAndSetStore (arrayOfQueries, streamQuery) {
   /**
-     * Get StoreID, add storeId property to query and remove eventual storeId from streamId
-     * @param {string} fullStreamId - a streamId with its store prefix
-     * @returns {string} streamId without its prefix
-     */
+   * Get StoreID, add storeId property to query and remove eventual storeId from streamId
+   * @param {string} fullStreamId - a streamId with its store prefix
+   * @returns {string} streamId without its prefix
+   */
   function validateAndAttachStore (fullStreamId) {
     // queries must be grouped by store
     const [thisStoreId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(fullStreamId);

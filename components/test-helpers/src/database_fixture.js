@@ -33,16 +33,16 @@ class Context {
   }
 
   /**
- * @param {string} user
-       * @returns {UserContext}
-       */
+   * @param {string} user
+   * @returns {UserContext}
+   */
   forUser (user) {
     return new UserContext(this, user);
   }
 
   /**
- * @returns {Promise<unknown>}
- */
+   * @returns {Promise<unknown>}
+   */
   async cleanEverything () {
     const collectionNames = [
       'accesses',
@@ -78,8 +78,8 @@ class UserContext {
   }
 
   /**
- * @returns {{ sessions: Sessions; accesses: any; webhooks: any; }}
- */
+   * @returns {{ sessions: Sessions; accesses: any; webhooks: any; }}
+   */
   produceDb () {
     const conn = this.context.databaseConn;
     return {
@@ -100,16 +100,16 @@ class GenericChildHolder {
   }
 
   /**
- * @param {T} child
-       * @returns {void}
-       */
+   * @param {T} child
+   * @returns {void}
+   */
   push (child) {
     this.childs.push(child);
   }
 
   /**
- * @returns {boolean}
- */
+   * @returns {boolean}
+   */
   hasChilds () {
     return this.childs.length > 0;
   }
@@ -123,10 +123,10 @@ class GenericChildHolder {
   // (if given) needs to be of the same type, subclass of T.
   //
   /**
- * @param {U} resource
-       * @param {(a: U) => unknown} cb
-       * @returns {Promise<U>}
-       */
+   * @param {U} resource
+   * @param {(a: U) => unknown} cb
+   * @returns {Promise<U>}
+   */
   create (resource, cb) {
     const createdResource = resource.create();
     this.pending.push(createdResource);
@@ -144,9 +144,9 @@ class GenericChildHolder {
   // resolve (aka Promise.all).
   //
   /**
- * @param {(a: T) => Promise<U>} fun
-       * @returns {Promise<U[]>}
-       */
+   * @param {(a: T) => Promise<U>} fun
+   * @returns {Promise<U[]>}
+   */
   all (fun) {
     return bluebird.map(this.childs, fun);
   }
@@ -168,17 +168,17 @@ class FixtureTreeNode {
   }
 
   /**
- * @returns {boolean}
- */
+   * @returns {boolean}
+   */
   hasChilds () {
     return this.childs.hasChilds();
   }
 
   /** Merges attributes given with generated attributes and returns the
-     * resulting attribute set.
-       * @param {{}} attrs
-       * @returns {Attributes}
-       */
+   * resulting attribute set.
+   * @param {{}} attrs
+   * @returns {Attributes}
+   */
   attributes (attrs) {
     return lodash.merge({
       id: generateId(),
@@ -190,8 +190,8 @@ class FixtureTreeNode {
   }
 
   /** Override this to provide default attributes via Charlatan generation.
-       * @returns {{}}
-       */
+   * @returns {{}}
+   */
   fakeAttributes () {
     return {};
   }
@@ -211,11 +211,11 @@ class Fixture {
   // the user is really created.
   //
   /**
- * @param {string} name
-       * @param {{}} attrs
-       * @param {(a: FixtureUser) => unknown} cb
-       * @returns {Promise<FixtureUser>}
-       */
+   * @param {string} name
+   * @param {{}} attrs
+   * @param {(a: FixtureUser) => unknown} cb
+   * @returns {Promise<FixtureUser>}
+   */
   async user (name, attrs = {}, cb) {
     await initMall();
     return bluebird.try(() => {
@@ -229,8 +229,8 @@ class Fixture {
   // running tests.
   //
   /**
- * @returns {Promise<unknown>}
- */
+   * @returns {Promise<unknown>}
+   */
   async clean () {
     let errorIntegrity;
     try {
@@ -264,19 +264,19 @@ class FixtureUser extends FixtureTreeNode {
   }
 
   /**
- * @param {{}} attrs
-       * @param {(a: FixtureStream) => void} cb
-       * @returns {Promise<unknown>}
-       */
+   * @param {{}} attrs
+   * @param {(a: FixtureStream) => void} cb
+   * @returns {Promise<unknown>}
+   */
   stream (attrs = {}, cb) {
     const s = new FixtureStream(this.context, attrs);
     return this.childs.create(s, cb);
   }
 
   /**
- * @param {{}} attrs
-       * @returns {Promise<FixtureEvent>}
-       */
+   * @param {{}} attrs
+   * @returns {Promise<FixtureEvent>}
+   */
   event (attrs) {
     logger.debug('event', attrs);
     const e = new FixtureEvent(this.context, attrs);
@@ -284,44 +284,44 @@ class FixtureUser extends FixtureTreeNode {
   }
 
   /**
- * @param {{}} attrs
-       * @returns {Promise<unknown>}
-       */
+   * @param {{}} attrs
+   * @returns {Promise<unknown>}
+   */
   access (attrs = {}) {
     const a = new FixtureAccess(this.context, attrs);
     return this.childs.create(a);
   }
 
   /**
- * @param {string} token
-       * @returns {Promise<unknown>}
-       */
+   * @param {string} token
+   * @returns {Promise<unknown>}
+   */
   session (token) {
     const s = new FixtureSession(this.context, token);
     return this.childs.create(s);
   }
 
   /**
- * @param {{}} attrs
-       * @param {string} accessId
-       * @returns {Promise<unknown>}
-       */
+   * @param {{}} attrs
+   * @param {string} accessId
+   * @returns {Promise<unknown>}
+   */
   webhook (attrs = {}, accessId) {
     const w = new FixtureWebhook(this.context, attrs, accessId);
     return this.childs.create(w);
   }
 
   /** Removes all resources belonging to the user, then creates them again,
-     * according to the spec stored here.
-       * @returns {Promise<unknown>}
-       */
+   * according to the spec stored here.
+   * @returns {Promise<unknown>}
+   */
   create () {
     return this.createUser();
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   async createUser () {
     const attributes = this.attrs;
     const usersRepository = await getUsersRepository();
@@ -331,8 +331,8 @@ class FixtureUser extends FixtureTreeNode {
   }
 
   /**
- * @returns {Promise<unknown>}
- */
+   * @returns {Promise<unknown>}
+   */
   async remove () {
     const db = this.db;
     const username = this.context.userName;
@@ -352,8 +352,8 @@ class FixtureUser extends FixtureTreeNode {
   }
 
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   safeRemoveColl (col) {
     const user = this.context.user;
     // const colName = col.getCollectionInfo(user).name;
@@ -366,8 +366,8 @@ class FixtureUser extends FixtureTreeNode {
   }
 
   /**
- * @returns {{ email: any; password: any; language: string; }}
- */
+   * @returns {{ email: any; password: any; language: string; }}
+   */
   fakeAttributes () {
     return {
       email: Charlatan.Internet.email(),
@@ -388,19 +388,19 @@ class FixtureStream extends FixtureTreeNode {
   }
 
   /**
- * @param {{}} attrs
-       * @param {(a: FixtureStream) => void} cb
-       * @returns {Promise<FixtureStream>}
-       */
+   * @param {{}} attrs
+   * @param {(a: FixtureStream) => void} cb
+   * @returns {Promise<FixtureStream>}
+   */
   stream (attrs = {}, cb) {
     const s = new FixtureStream(this.context, attrs, this.attrs.id);
     return this.childs.create(s, cb);
   }
 
   /**
- * @param {{}} attrs
-       * @returns {Promise<FixtureEvent>}
-       */
+   * @param {{}} attrs
+   * @returns {Promise<FixtureEvent>}
+   */
   event (attrs) {
     logger.debug('event', attrs);
     const e = new FixtureEvent(this.context, attrs, this.attrs.id);
@@ -408,8 +408,8 @@ class FixtureStream extends FixtureTreeNode {
   }
 
   /**
-     * @returns {any}
-     */
+   * @returns {any}
+   */
   create () {
     const user = this.context.user;
     const attributes = this.attrs;
@@ -417,8 +417,8 @@ class FixtureStream extends FixtureTreeNode {
   }
 
   /**
- * @returns {{ id: string; name: any; parentId: string; }}
- */
+   * @returns {{ id: string; name: any; parentId: string; }}
+   */
   fakeAttributes () {
     return {
       id: `c${Charlatan.Number.number(15)}`,
@@ -440,15 +440,15 @@ class FixtureEvent extends FixtureTreeNode {
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   create () {
     return bluebird.try(async () => await this.createEvent());
   }
 
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async createEvent () {
     const user = this.context.user;
     const attributes = this.attrs;
@@ -457,8 +457,8 @@ class FixtureEvent extends FixtureTreeNode {
   }
 
   /**
- * @returns {{ id: string; time: number; duration: number; type: any; tags: any[]; content: number; }}
- */
+   * @returns {{ id: string; time: number; duration: number; type: any; tags: any[]; content: number; }}
+   */
   fakeAttributes () {
     // NOTE no need to worry about streamId, this is enforced by the
     // constructor.
@@ -475,8 +475,8 @@ class FixtureEvent extends FixtureTreeNode {
 /** @extends FixtureTreeNode */
 class FixtureAccess extends FixtureTreeNode {
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   create () {
     const db = this.db;
     const user = this.context.user;
@@ -485,8 +485,8 @@ class FixtureAccess extends FixtureTreeNode {
   }
 
   /**
- * @returns {{ id: string; token: any; name: any; type: any; }}
- */
+   * @returns {{ id: string; token: any; name: any; type: any; }}
+   */
   fakeAttributes () {
     return {
       id: `c${Charlatan.Number.number(15)}`,
@@ -503,8 +503,8 @@ class FixtureWebhook extends FixtureTreeNode {
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   create () {
     const db = this.db;
     const user = this.context.user;
@@ -514,8 +514,8 @@ class FixtureWebhook extends FixtureTreeNode {
   }
 
   /**
- * @returns {{ id: any; url: string; }}
- */
+   * @returns {{ id: any; url: string; }}
+   */
   fakeAttributes () {
     return {
       id: generateId(),
@@ -537,15 +537,15 @@ class FixtureSession extends FixtureTreeNode {
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   create () {
     return bluebird.try(() => this.createSession());
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   createSession () {
     const db = this.db;
     const user = this.context.user;
@@ -554,8 +554,8 @@ class FixtureSession extends FixtureTreeNode {
   }
 
   /**
- * @returns {{ _id: any; expires: any; data: { username: any; appId: any; }; }}
- */
+   * @returns {{ _id: any; expires: any; data: { username: any; appId: any; }; }}
+   */
   fakeAttributes () {
     const getNewExpirationDate = storage.Sessions.prototype.getNewExpirationDate.bind({
       options: {
@@ -592,13 +592,13 @@ class Sessions {
   }
 
   /**
-       * @param {{
-       *       id: string;
-       *     }} user
-       * @param {Attributes} attributes
-       * @param {() => void} cb
-       * @returns {void}
-       */
+   * @param {{
+   *       id: string;
+   *     }} user
+   * @param {Attributes} attributes
+   * @param {() => void} cb
+   * @returns {void}
+   */
   insertOne (user, attributes, cb) {
     const id = attributes.id;
     delete attributes.id;
@@ -607,10 +607,10 @@ class Sessions {
   }
 
   /**
- * @param {string} userName
-       * @param {() => void} cb
-       * @returns {void}
-       */
+   * @param {string} userName
+   * @param {() => void} cb
+   * @returns {void}
+   */
   removeForUser (userName, cb) {
     this.databaseConn.deleteMany(this.collectionInfo, { 'data.username': userName }, cb);
   }

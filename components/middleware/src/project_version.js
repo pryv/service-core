@@ -32,8 +32,8 @@ class ProjectVersion {
   // Returns the projects version number.
   //
   /**
- * @returns {string}
- */
+   * @returns {string}
+   */
   version () {
     const version = this.readStaticVersion();
     if (version != null && version !== '1.2.3') { return version; }
@@ -49,8 +49,8 @@ class ProjectVersion {
   }
 
   /**
- * @returns {string}
- */
+   * @returns {string}
+   */
   readStaticVersion () {
     const searchPaths = process.mainModule.paths;
     for (const current of searchPaths) {

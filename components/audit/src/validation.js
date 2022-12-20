@@ -31,9 +31,9 @@ const filterSchema = helpers.object({
 });
 
 /**
-  * @param {identifier} userId
-  * @param {PryvEvent} event
-  */
+ * @param {identifier} userId
+ * @param {PryvEvent} event
+ */
 function eventForUser (userId, event) {
   // validate uiserid
   if (!userId) return 'missing userId passed in validation';

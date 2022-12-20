@@ -18,8 +18,8 @@ module.exports = function system (expressApp, app) {
   const adminAccessKey = config.get('auth:adminAccessKey');
   const logger = getLogger('routes:system');
   /**
-     * Handle common parameters.
-     */
+   * Handle common parameters.
+   */
   expressApp.all(Paths.System + '/*', setMinimalMethodContext, checkAuth);
   expressApp.post(Paths.System + '/create-user', contentType.json, setMethodId('system.createUser'), createUser);
   // DEPRECATED: remove after all reg servers updated

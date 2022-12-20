@@ -35,8 +35,8 @@ class Application {
 
   webhooksService;
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async setup () {
     await this.initSettings();
     this.initLogger();
@@ -46,23 +46,23 @@ class Application {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async initSettings () {
     this.settings = await getConfig();
     await SystemStreamsSerializer.init();
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   initLogger () {
     this.logger = getLogger('application');
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async run () {
     const logger = this.logger;
     logger.info('Webhooks service is mounting services');
@@ -82,8 +82,8 @@ class Application {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   stop () {
     return this.webhooksService.stop();
   }

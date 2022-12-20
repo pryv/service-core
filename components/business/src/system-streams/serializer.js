@@ -32,8 +32,8 @@ class SystemStreamsSerializer {
   // array/flat: flattened tree
   // map (id as key)
   /**
-     * "systemStreams" object in config
-     */
+   * "systemStreams" object in config
+   */
   systemStreamsSettings;
   // static
   /** @static */

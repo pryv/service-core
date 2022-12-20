@@ -28,8 +28,8 @@ class MetadataForgetter {
   }
 
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async scheduleUpdate /* req: IUpdateRequest */() {
     const logger = this.logger;
     logger.info('Metadata of events will NOT be updated; please configure the metadata update service.');
@@ -41,8 +41,8 @@ class MetadataForgetter {
   }
 
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async getPendingUpdate /* req: IUpdateId */() {
     return {
       found: false,

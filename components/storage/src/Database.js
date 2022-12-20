@@ -241,13 +241,13 @@ class Database {
   }
 
   /**
-     * Counts documents matching the given query.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {{}} query  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Counts documents matching the given query.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {{}} query  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   count (collectionInfo, query, callback) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -261,18 +261,18 @@ class Database {
   }
 
   /**
-     * Finds all documents matching the given query.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {{}} query  Mongo-style query
-     * @param {FindOptions} options  Properties:
-    * {Object} projection Mongo-style fields inclusion/exclusion definition
-    * {Object} sort Mongo-style sorting definition
-    * {Number} skip Number of records to skip (or `null`)
-    * {Number} limit Number of records to return (or `null`)
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Finds all documents matching the given query.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {{}} query  Mongo-style query
+   * @param {FindOptions} options  Properties:
+   * {Object} projection Mongo-style fields inclusion/exclusion definition
+   * {Object} sort Mongo-style sorting definition
+   * {Number} skip Number of records to skip (or `null`)
+   * {Number} limit Number of records to return (or `null`)
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   findCursor (collectionInfo, query, options, callback) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -296,18 +296,18 @@ class Database {
   }
 
   /**
-     * Finds all documents matching the given query.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {{}} query  Mongo-style query
-     * @param {FindOptions} options  Properties:
-    * {Object} projection Mongo-style fields inclusion/exclusion definition
-    * {Object} sort Mongo-style sorting definition
-    * {Number} skip Number of records to skip (or `null`)
-    * {Number} limit Number of records to return (or `null`)
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Finds all documents matching the given query.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {{}} query  Mongo-style query
+   * @param {FindOptions} options  Properties:
+   * {Object} projection Mongo-style fields inclusion/exclusion definition
+   * {Object} sort Mongo-style sorting definition
+   * {Number} skip Number of records to skip (or `null`)
+   * {Number} limit Number of records to return (or `null`)
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   find (collectionInfo, query, options, callback) {
     this.findCursor(collectionInfo, query, options, (err, cursor) => {
       if (err) { return callback(err); }
@@ -316,18 +316,18 @@ class Database {
   }
 
   /**
-     * Finds all documents matching the given query and returns a readable stream.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {{}} query  Mongo-style query
-     * @param {FindOptions} options  Properties:
-    * {Object} projection Mongo-style fields inclusion/exclusion definition
-    * {Object} sort Mongo-style sorting definition
-    * {Number} skip Number of records to skip (or `null`)
-    * {Number} limit Number of records to return (or `null`)
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Finds all documents matching the given query and returns a readable stream.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {{}} query  Mongo-style query
+   * @param {FindOptions} options  Properties:
+   * {Object} projection Mongo-style fields inclusion/exclusion definition
+   * {Object} sort Mongo-style sorting definition
+   * {Number} skip Number of records to skip (or `null`)
+   * {Number} limit Number of records to return (or `null`)
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   findStreamed (collectionInfo, query, options, callback) {
     this.findCursor(collectionInfo, query, options, (err, cursor) => {
       if (err) { return callback(err); }
@@ -336,14 +336,14 @@ class Database {
   }
 
   /**
-     * Finds the first document matching the given query.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {any} query  Mongo-style query
-     * @param {FindOptions} options  Mongo-style options
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Finds the first document matching the given query.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {any} query  Mongo-style query
+   * @param {FindOptions} options  Mongo-style options
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   findOne (collectionInfo, query, options, callback) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -357,14 +357,14 @@ class Database {
   }
 
   /**
-     * Inserts a single item (must have a valid id).
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {any} item  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @param {any} options
-       * @returns {void}
-       */
+   * Inserts a single item (must have a valid id).
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {any} item  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @param {any} options
+   * @returns {void}
+   */
   insertOne (collectionInfo, item, callback, options = {}) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -383,13 +383,13 @@ class Database {
   }
 
   /**
-     * Inserts an array of items (each item must have a valid id already).
-       * @param {CollectionInfo} collectionInfo
-       * @param {Array<any>} items
-       * @param {DatabaseCallback} callback
-       * @param {any} options
-       * @returns {void}
-       */
+   * Inserts an array of items (each item must have a valid id already).
+   * @param {CollectionInfo} collectionInfo
+   * @param {Array<any>} items
+   * @param {DatabaseCallback} callback
+   * @param {any} options
+   * @returns {void}
+   */
   insertMany (collectionInfo, items, callback, options = {}) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -408,16 +408,16 @@ class Database {
   }
 
   /**
-     * Applies the given update to the document matching the given query.
-     * Does *not* return the document.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {any} query  undefined
-     * @param {any} update  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @param {any} options
-       * @returns {void}
-       */
+   * Applies the given update to the document matching the given query.
+   * Does *not* return the document.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {any} query  undefined
+   * @param {any} update  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @param {any} options
+   * @returns {void}
+   */
   updateOne (collectionInfo, query, update, callback, options = {}) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -436,15 +436,15 @@ class Database {
   }
 
   /**
-     * Applies the given update to the document(s) matching the given query.
-     * Does *not* return the document(s).
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {any} query  undefined
-     * @param {any} update  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Applies the given update to the document(s) matching the given query.
+   * Does *not* return the document(s).
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {any} query  undefined
+   * @param {any} update  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   updateMany (collectionInfo, query, update, callback) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -458,26 +458,26 @@ class Database {
   }
 
   /**
-     * Execute N requests directly on the DB
-       * @param {CollectionInfo} collectionInfo
-       * @param {Array<any>} requests
-       * @returns {Promise<any>}
-       */
+   * Execute N requests directly on the DB
+   * @param {CollectionInfo} collectionInfo
+   * @param {Array<any>} requests
+   * @returns {Promise<any>}
+   */
   async bulkWrite (collectionInfo, requests) {
     const collection = await this.getCollection(collectionInfo);
     return await collection.bulkWrite(requests);
   }
 
   /**
-     * Applies the given update to the document matching the given query, returning the updated
-     * document.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {any} query  undefined
-     * @param {any} update  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Applies the given update to the document matching the given query, returning the updated
+   * document.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {any} query  undefined
+   * @param {any} update  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   findOneAndUpdate (collectionInfo, query, update, callback) {
     if (collectionInfo.name === 'streams') { tellMeIfStackDoesNotContains(['localUserStreams.js', 'callbackIntegrity'], { for: collectionInfo.name }); }
     this.addUserIdIfneed(collectionInfo, query);
@@ -493,14 +493,14 @@ class Database {
   }
 
   /**
-     * Inserts or update the document matching the query.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {any} query  undefined
-     * @param {any} update  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Inserts or update the document matching the query.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {any} query  undefined
+   * @param {any} update  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   upsertOne (collectionInfo, query, update, callback) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreamss.js'], {
@@ -514,13 +514,13 @@ class Database {
   }
 
   /**
-     * Deletes the document matching the given query.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {any} query  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Deletes the document matching the given query.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {any} query  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   deleteOne (collectionInfo, query, callback) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -534,13 +534,13 @@ class Database {
   }
 
   /**
-     * Deletes the document(s) matching the given query.
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {any} query  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Deletes the document(s) matching the given query.
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {any} query  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   deleteMany (collectionInfo, query, callback) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -554,13 +554,13 @@ class Database {
   }
 
   /**
-     * Get collection total size.
-     * In case of singleCollectionMode count the number of documents
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Get collection total size.
+   * In case of singleCollectionMode count the number of documents
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   totalSize (collectionInfo, callback) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -582,10 +582,10 @@ class Database {
   }
 
   /**
-     * @param {DatabaseCallback} callback  *
-       * @param {CollectionInfo} collectionInfo
-       * @returns {void}
-       */
+   * @param {DatabaseCallback} callback  *
+   * @param {CollectionInfo} collectionInfo
+   * @returns {void}
+   */
   dropCollection (collectionInfo, callback) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
@@ -602,11 +602,11 @@ class Database {
   }
 
   /**
-     * Primarily meant for tests.
-     *
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Primarily meant for tests.
+   *
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   dropDatabase (callback) {
     this.ensureConnect().then(() => {
       this.db.dropDatabase(callback);
@@ -614,13 +614,13 @@ class Database {
   }
 
   /**
-     * Primarily meant for tests
-     *
-     * @param {CollectionInfo} collectionInfo  undefined
-     * @param {{}} options  undefined
-     * @param {DatabaseCallback} callback  undefined
-       * @returns {void}
-       */
+   * Primarily meant for tests
+   *
+   * @param {CollectionInfo} collectionInfo  undefined
+   * @param {{}} options  undefined
+   * @param {DatabaseCallback} callback  undefined
+   * @returns {void}
+   */
   listIndexes (collectionInfo, options, callback) {
     this.getCollectionSafe(collectionInfo, callback, (collection) => {
       collection.listIndexes(options).toArray(callback);
@@ -629,9 +629,9 @@ class Database {
 
   // class utility functions
   /** @static
-       * @param {MongoDBError | null} err
-       * @returns {boolean}
-       */
+   * @param {MongoDBError | null} err
+   * @returns {boolean}
+   */
   static isDuplicateError (err) {
     if (err == null) {
       return false;
@@ -641,9 +641,9 @@ class Database {
   }
 
   /** @static
-       * @param {MongoDBError} err
-       * @returns {void}
-       */
+   * @param {MongoDBError} err
+   * @returns {void}
+   */
   static handleDuplicateError (err) {
     err.isDuplicate = Database.isDuplicateError(err);
     err.isDuplicateIndex = (key) => {
@@ -665,15 +665,15 @@ class Database {
   /// will produce undefined behaviour.
   ///
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async close () {
     return this.client.close();
   }
 
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async startSession () {
     const session = this.client.startSession();
     return session;

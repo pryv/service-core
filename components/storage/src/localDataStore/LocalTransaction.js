@@ -22,32 +22,32 @@ class LocalTransaction {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async init () {
     const database = await getDatabase();
     this.transactionSession = await database.startSession();
   }
 
   /**
-     *
-     * @param {Function} func  undefined
-       * @returns {Promise<void>}
-       */
+   *
+   * @param {Function} func  undefined
+   * @returns {Promise<void>}
+   */
   async exec (func) {
     await this.transactionSession.withTransaction(func, this.transactionOptions);
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async commit () {
     throw new Error('not implemented');
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async rollback () {
     throw new Error('not implemented');
   }

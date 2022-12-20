@@ -50,9 +50,9 @@ class Manager {
   // Returns true if the `candidate` could be a username on a lexical level.
   //
   /**
- * @param {string} candidate
-       * @returns {boolean}
-       */
+   * @param {string} candidate
+   * @returns {boolean}
+   */
   looksLikeUsername (candidate) {
     const reUsername = new RegExp(USERNAME_REGEXP_STR);
     const lowercasedUsername = candidate.toLowerCase(); // for retro-compatibility
@@ -65,9 +65,9 @@ class Manager {
   //    manager.getUsername('/foobar') // => 'foobar'
   //
   /**
- * @param {string} namespaceName
-       * @returns {string}
-       */
+   * @param {string} namespaceName
+   * @returns {string}
+   */
   extractUsername (namespaceName) {
     const ns = cleanNS(namespaceName);
     if (!ns.startsWith('/')) { return null; }
@@ -76,10 +76,10 @@ class Manager {
     if (!this.looksLikeUsername(candidate)) { return null; }
     return candidate;
     /**
-         * Takes the last field of the NS path
-         *
-         * @param {*} namespace
-         */
+     * Takes the last field of the NS path
+     *
+     * @param {*} namespace
+     */
     function cleanNS (namespace) {
       let cleaned = '' + namespace;
       // remove eventual trailing "/"
@@ -94,9 +94,9 @@ class Manager {
   }
 
   /**
- * @param {string} namespaceName
-       * @returns {Promise<NamespaceContext>}
-       */
+   * @param {string} namespaceName
+   * @returns {Promise<NamespaceContext>}
+   */
   async ensureInitNamespace (namespaceName) {
     await initAsyncProps.call(this);
     const username = this.extractUsername(namespaceName);
@@ -109,8 +109,8 @@ class Manager {
     await context.open();
     return context;
     /**
-         * putting this here because putting it above requires rendering too much code async. I'm sorry.
-         */
+     * putting this here because putting it above requires rendering too much code async. I'm sorry.
+     */
     async function initAsyncProps () {
       if (this.apiVersion == null) { this.apiVersion = await getAPIVersion(); }
     }
@@ -151,9 +151,9 @@ class NamespaceContext {
   // and stores it in (our) namespace.
   //
   /**
- * @param {SocketIO$Socket} socket
-       * @returns {void}
-       */
+   * @param {SocketIO$Socket} socket
+   * @returns {void}
+   */
   addConnection (socket) {
     // This will represent state that we keep for every connection.
     const connection = new Connection(this.logger, socket, this, socket.methodContext, this.api, this.apiVersion, this.hostname);
@@ -164,26 +164,26 @@ class NamespaceContext {
   }
 
   /**
- * @param {Connection} conn
-       * @returns {void}
-       */
+   * @param {Connection} conn
+   * @returns {void}
+   */
   storeConnection (conn) {
     const connMap = this.connections;
     connMap.set(conn.key(), conn);
   }
 
   /**
- * @param {Connection} conn
-       * @returns {void}
-       */
+   * @param {Connection} conn
+   * @returns {void}
+   */
   deleteConnection (conn) {
     const connMap = this.connections;
     connMap.delete(conn.key());
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async open () {
     // If we've already got an active subscription, leave it be.
     if (this.pubsubRemover != null) { return; }
@@ -191,8 +191,8 @@ class NamespaceContext {
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   messageFromPubSub (payload) {
     const message = pubsubMessageToSocket(payload);
     if (message != null) {
@@ -205,8 +205,8 @@ class NamespaceContext {
   // Closes down resources associated with this namespace context.
   //
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async close () {
     if (this.pubsubRemover == null) { return; }
     this.pubsubRemover();
@@ -217,9 +217,9 @@ class NamespaceContext {
   // Called when a new socket connects to the namespace `socketNs`.
   //
   /**
- * @param {SocketIO$Socket} socket
-       * @returns {void}
-       */
+   * @param {SocketIO$Socket} socket
+   * @returns {void}
+   */
   onConnect (socket) {
     const logger = this.logger;
     const namespaceName = socket.nsp.name;
@@ -237,9 +237,9 @@ class NamespaceContext {
   // Called when the underlying socket-io socket disconnects.
   //
   /**
- * @param {Connection} conn
-       * @returns {Promise<void>}
-       */
+   * @param {Connection} conn
+   * @returns {Promise<void>}
+   */
   async onDisconnect (conn) {
     const logger = this.logger;
     const namespace = this.socketNs;
@@ -279,15 +279,15 @@ class Connection {
 
   // This should be used as a key when storing the connection inside a Map.
   /**
- * @returns {string}
- */
+   * @returns {string}
+   */
   key () {
     return this.socket.id;
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   init () {
     this.socket.on('*', (callData, callback) => this.onMethodCall(callData, callback));
   }
@@ -296,10 +296,10 @@ class Connection {
   // Called when the socket wants to call a Pryv IO method.
   //
   /**
- * @param {SocketIO$CallData} callData
-       * @param {(err: unknown, res: any) => unknown} callback
-       * @returns {Promise<unknown>}
-       */
+   * @param {SocketIO$CallData} callData
+   * @param {(err: unknown, res: any) => unknown} callback
+   * @returns {Promise<unknown>}
+   */
   async onMethodCall (callData, callback) {
     const methodContext = this.methodContext;
     methodContext.tracing = initRootSpan('socket.io', {

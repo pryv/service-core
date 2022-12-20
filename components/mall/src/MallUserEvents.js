@@ -131,16 +131,16 @@ class MallUserEvents {
   }
 
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async getStreamed (userId, params) {
     return await this.getStreamedWithParamsByStore(userId, eventsQueryUtils.getParamsByStore(params));
   }
 
   /**
-     * Specific to Mall, allow query with a prepared query by store
-       * @returns {Promise<any>}
-       */
+   * Specific to Mall, allow query with a prepared query by store
+   * @returns {Promise<any>}
+   */
   async getStreamedWithParamsByStore (userId, paramsByStore) {
     if (Object.keys(paramsByStore).length !== 1) {
       return new Error('getStreamed only supported for one store at a time');
@@ -157,10 +157,10 @@ class MallUserEvents {
   }
 
   /**
-     * To create a streamed result from multiple stores. 'events.get' pass a callback in order to add the streams
-     * To the result;
-       * @returns {Promise<void>}
-       */
+   * To create a streamed result from multiple stores. 'events.get' pass a callback in order to add the streams
+   * To the result;
+   * @returns {Promise<void>}
+   */
   async generateStreamsWithParamsByStore (userId, paramsByStore, addEventsStreamCallback) {
     for (const storeId of Object.keys(paramsByStore)) {
       const settings = this.storeSettings.get(storeId);
@@ -193,11 +193,11 @@ class MallUserEvents {
   // ----------------- CREATE ----------------- //
 
   /**
-     *
-     * @param {*} userId
-     * @param {*} eventData
-       * @returns {Promise<any>}
-       */
+   *
+   * @param {*} userId
+   * @param {*} eventData
+   * @returns {Promise<any>}
+   */
   async create (userId, eventData, mallTransaction) {
     const { storeId, eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, mallTransaction);
     try {
@@ -209,8 +209,8 @@ class MallUserEvents {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async createMany (userId, eventsData, mallTransaction) {
     for (const eventData of eventsData) {
       await this.create(userId, eventData, mallTransaction);
@@ -220,13 +220,13 @@ class MallUserEvents {
   // ----------------- ATTACHMENTS ----------------- //
 
   /**
- * @param {string} userId
-       * @param {any} eventDataWithoutAttachments
-       * @param {boolean} isExistingEvent
-       * @param {Array<AttachmentItem>} attachmentsItems
-       * @param {MallTransaction} mallTransaction
-       * @returns {Promise<any>}
-       */
+   * @param {string} userId
+   * @param {any} eventDataWithoutAttachments
+   * @param {boolean} isExistingEvent
+   * @param {Array<AttachmentItem>} attachmentsItems
+   * @param {MallTransaction} mallTransaction
+   * @returns {Promise<any>}
+   */
   async saveAttachedFiles (userId, eventDataWithoutAttachments, isExistingEvent, attachmentsItems, mallTransaction) {
     const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventDataWithoutAttachments, mallTransaction);
     return await eventsStore.saveAttachedFiles(userId, storeEvent.id, attachmentsItems, storeTransaction);
@@ -283,12 +283,12 @@ class MallUserEvents {
   }
 
   /**
- * @param {string} userId
-       * @param {any} eventData
-       * @param {string} attachmentId
-       * @param {MallTransaction} mallTransaction
-       * @returns {Promise<void>}
-       */
+   * @param {string} userId
+   * @param {any} eventData
+   * @param {string} attachmentId
+   * @param {MallTransaction} mallTransaction
+   * @returns {Promise<void>}
+   */
   async updateDeleteAttachment (userId, eventData, attachmentId, mallTransaction) {
     await this.deleteAttachedFile(userId, eventData, attachmentId, mallTransaction);
     const newEventData = _.cloneDeep(eventData);
@@ -301,8 +301,8 @@ class MallUserEvents {
   // ----------------- UPDATE ----------------- //
 
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async update (userId, eventData, mallTransaction) {
     const [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     const storeEvent = eventsUtils.convertEventToStore(storeId, eventData);
@@ -340,18 +340,18 @@ class MallUserEvents {
   }
 
   /**
-     * Utility to change streams for multiple matching events
-     * @param {string} userId - userId
-     * @param {*} query - query to find events @see events.get parms
-     * @param {any} update - perform update as per the following
-     * @param {any} update.fieldsToSet - provided object fields with matching events
-     * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
-     * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
-     * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
-     * @param {Function} update.filter - function to filter events to update (return true to update)
-     * @param {MallTransaction} mallTransaction
-     * @returns {any} Array of updated events
-     */
+   * Utility to change streams for multiple matching events
+   * @param {string} userId - userId
+   * @param {*} query - query to find events @see events.get parms
+   * @param {any} update - perform update as per the following
+   * @param {any} update.fieldsToSet - provided object fields with matching events
+   * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
+   * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
+   * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
+   * @param {Function} update.filter - function to filter events to update (return true to update)
+   * @param {MallTransaction} mallTransaction
+   * @returns {any} Array of updated events
+   */
   async updateMany (userId, query, update, mallTransaction) {
     const streamedUpdate = await this.updateStreamedMany(userId, query, update, mallTransaction);
     const result = [];
@@ -362,18 +362,18 @@ class MallUserEvents {
   }
 
   /**
-     * Utility to change streams for multiple matching events
-     * @param {string} userId - userId
-     * @param {*} query - query to find events @see events.get parms
-     * @param {any} update - perform update as per the following
-     * @param {any} update.fieldsToSet - provided object fields with matching events
-     * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
-     * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
-     * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
-     * @param {Function} update.filter - function to filter events to update (return true to update)
-     * @param {MallTransaction} mallTransaction
-     * @returns {any} Streams of updated events
-     */
+   * Utility to change streams for multiple matching events
+   * @param {string} userId - userId
+   * @param {*} query - query to find events @see events.get parms
+   * @param {any} update - perform update as per the following
+   * @param {any} update.fieldsToSet - provided object fields with matching events
+   * @param {Array<string>} update.fieldsToDelete - remove fields from matching events
+   * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
+   * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
+   * @param {Function} update.filter - function to filter events to update (return true to update)
+   * @param {MallTransaction} mallTransaction
+   * @returns {any} Streams of updated events
+   */
   async updateStreamedMany (userId, query, update = {}, mallTransaction) {
     const paramsByStore = eventsQueryUtils.getParamsByStore(query);
     // fetch events to be updated
@@ -413,11 +413,11 @@ class MallUserEvents {
   }
 
   /**
-     * Utility to remove data from event history (versions) used by methods 'events' and 'streams'
-     * @param {*} userId
-     * @param {*} eventId
-       * @returns {Promise<any>}
-       */
+   * Utility to remove data from event history (versions) used by methods 'events' and 'streams'
+   * @param {*} userId
+   * @param {*} eventId
+   * @returns {Promise<any>}
+   */
   async updateMinimizeEventHistory (userId, eventId) {
     const fieldsToDelete = [
       'streamIds',
@@ -441,13 +441,13 @@ class MallUserEvents {
   // ----------------- DELETE / UPDATE ----------------- //
 
   /**
-     * Utility to remove data from event history (versions)
-     * @param {*} userId
-     * @param {string} deletionMode one of 'keep-nothing', 'keep-authors'
-     * @param {any} query get query
-     * @param {MallTransaction} mallTransaction
-     * @returns {Promise<void>}
-     **/
+   * Utility to remove data from event history (versions)
+   * @param {*} userId
+   * @param {string} deletionMode one of 'keep-nothing', 'keep-authors'
+   * @param {any} query get query
+   * @param {MallTransaction} mallTransaction
+   * @returns {Promise<void>}
+   **/
   async updateDeleteByMode (userId, deletionMode, query, mallTransaction) {
     const fieldsToSet = { deleted: Date.now() / 1000 };
     const fieldsToDelete = DELETION_MODES_FIELDS[deletionMode] || ['integrity'];
@@ -457,8 +457,8 @@ class MallUserEvents {
   // ----------------- DELETE ----------------- //
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async delete (userId, query) {
     const paramsByStore = eventsQueryUtils.getParamsByStore(query);
     for (const storeId of Object.keys(paramsByStore)) {

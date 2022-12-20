@@ -16,19 +16,19 @@ const errorFactory = require('errors').factory;
  */
 class MallUserStreams {
   /**
-     * @type {Map<string, UserStream>}
-       * @default new Map()
-       */
+   * @type {Map<string, UserStream>}
+   * @default new Map()
+   */
   streamsStores = new Map();
   /**
-     * Store names are used for the stores' root pseudo-streams.
-     * @type {Map<string, string>}
-       * @default new Map()
-       */
+   * Store names are used for the stores' root pseudo-streams.
+   * @type {Map<string, string>}
+   * @default new Map()
+   */
   storeNames = new Map();
   /**
-     * @param {DataStore[]} stores
-     */
+   * @param {DataStore[]} stores
+   */
   constructor (stores) {
     for (const store of stores) {
       this.streamsStores.set(store.id, store.streams);
@@ -37,12 +37,12 @@ class MallUserStreams {
   }
 
   /**
-     * Helper to get a single stream
-       * @param {string} userId
-       * @param {string} streamId
-       * @param {string} storeId
-       * @returns {Promise<any>}
-       */
+   * Helper to get a single stream
+   * @param {string} userId
+   * @param {string} streamId
+   * @param {string} storeId
+   * @returns {Promise<any>}
+   */
   async getOne (userId, streamId, storeId) {
     if (storeId == null) {
       // TODO: clarify smelly code (replace full stream id with in-store id?)
@@ -59,11 +59,11 @@ class MallUserStreams {
   }
 
   /**
- * @param {String} userId
-       * @param {timestamp} deletionsSince
-       * @param {Array<string>} storeIds
-       * @returns {Promise<any[]>}
-       */
+   * @param {String} userId
+   * @param {timestamp} deletionsSince
+   * @param {Array<string>} storeIds
+   * @returns {Promise<any[]>}
+   */
   async getDeletions (userId, deletionsSince, storeIds) {
     if (deletionsSince == null) { deletionsSince = Number.MIN_SAFE_INTEGER; }
     storeIds = storeIds || [storeDataUtils.LocalStoreId];
@@ -77,12 +77,12 @@ class MallUserStreams {
   }
 
   /**
-     * Get the stream that will be set as root for all Stream Structure of this Data Store.
-     * @see https://api.pryv.com/reference/#get-streams
-     * @param {string} userId  undefined
-     * @param {StoreQuery} params  undefined
-     * @returns {Promise<any[]>} - the stream or null if not found:
-     */
+   * Get the stream that will be set as root for all Stream Structure of this Data Store.
+   * @see https://api.pryv.com/reference/#get-streams
+   * @param {string} userId  undefined
+   * @param {StoreQuery} params  undefined
+   * @returns {Promise<any[]>} - the stream or null if not found:
+   */
   async get (userId, params) {
     // -------- cleanup params --------- //
     let streamId = params.id || '*';
@@ -163,13 +163,13 @@ class MallUserStreams {
   }
 
   /**
-     * As some stores might not keep "deletion" records
-     * A "local" cache of deleted streams could be implemented
-     * This is mostly used by tests fixtures for now
-       * @param {string} userId
-       * @param {Stream} streamData
-       * @returns {Promise<any>}
-       */
+   * As some stores might not keep "deletion" records
+   * A "local" cache of deleted streams could be implemented
+   * This is mostly used by tests fixtures for now
+   * @param {string} userId
+   * @param {Stream} streamData
+   * @returns {Promise<any>}
+   */
   async createDeleted (userId, streamData) {
     const [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.id);
     if (streamData.deleted == null) { throw errorFactory.invalidRequestStructure('Missing deleted timestamp for deleted stream', streamData); }
@@ -179,10 +179,10 @@ class MallUserStreams {
   }
 
   /**
- * @param {string} userId
-       * @param {Stream} streamData
-       * @returns {Promise<any>}
-       */
+   * @param {string} userId
+   * @param {Stream} streamData
+   * @returns {Promise<any>}
+   */
   async create (userId, streamData) {
     if (streamData.deleted != null) {
       return await this.createDeleted(userId, streamData);
@@ -240,12 +240,12 @@ class MallUserStreams {
   }
 
   /**
-     * Temporary implementation
-     * TODO: cleanup
-       * @param {string} userId
-       * @param {{}} update
-       * @returns {Promise<any>}
-       */
+   * Temporary implementation
+   * TODO: cleanup
+   * @param {string} userId
+   * @param {{}} update
+   * @returns {Promise<any>}
+   */
   async updateTemp (userId, streamId, update) {
     const streamsStore = this.streamsStores.get(storeDataUtils.LocalStoreId);
     const res = await streamsStore.updateTemp(userId, streamId, update);
@@ -253,10 +253,10 @@ class MallUserStreams {
   }
 
   /**
- * @param {string} userId
-       * @param {Stream} streamData
-       * @returns {Promise<any>}
-       */
+   * @param {string} userId
+   * @param {Stream} streamData
+   * @returns {Promise<any>}
+   */
   async update (userId, streamData) {
     const streamForStore = _.cloneDeep(streamData);
     // 1- Check if there is a parent stream
@@ -292,8 +292,8 @@ class MallUserStreams {
 
   // ---------------------- delete ----------------- //
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async updateDelete (userId, streamId) {
     const [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
     const streamsStore = this.streamsStores.get(storeId);
@@ -301,12 +301,12 @@ class MallUserStreams {
   }
 
   /**
-     * Used by tests
-     * Might be replaced by standard delete.
-     * @param {string} userId  undefined
-       * @param {string} storeId
-       * @returns {Promise<void>}
-       */
+   * Used by tests
+   * Might be replaced by standard delete.
+   * @param {string} userId  undefined
+   * @param {string} storeId
+   * @returns {Promise<void>}
+   */
   async deleteAll (userId, storeId) {
     const streamsStore = this.streamsStores.get(storeId);
     await streamsStore.deleteAll(userId);
@@ -314,13 +314,13 @@ class MallUserStreams {
 
   // -------------------- utils ------------------- //
   /**
-     * @private
-     * get name of children stream
-       * @param {string} userId
-       * @param {string} streamId
-       * @param {Array<string>} exludedIds
-       * @returns {Promise<any[]>}
-       */
+   * @private
+   * get name of children stream
+   * @param {string} userId
+   * @param {string} streamId
+   * @param {Array<string>} exludedIds
+   * @returns {Promise<any[]>}
+   */
   async getNamesOfChildren (userId, streamId, exludedIds) {
     const streams = await this.get(userId, {
       id: streamId,

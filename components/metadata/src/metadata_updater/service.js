@@ -41,9 +41,9 @@ class Service {
   // Starts the service, including all subprocesses.
   //
   /**
- * @param {string} endpoint
-       * @returns {Promise<void>}
-       */
+   * @param {string} endpoint
+   * @returns {Promise<void>}
+   */
   async start (endpoint) {
     const logger = this.logger;
     const server = this.server;
@@ -59,8 +59,8 @@ class Service {
   }
 
   /**
- * @returns {any}
- */
+   * @returns {any}
+   */
   produceServiceImpl () {
     const logger = this.logger;
     return ErrorLogger.wrap(this, logger);
@@ -68,9 +68,9 @@ class Service {
 
   // --------------------------------------------------- IMetadataUpdaterService
   /**
- * @param {IUpdateRequests} req
-       * @returns {Promise<any>}
-       */
+   * @param {IUpdateRequests} req
+   * @returns {Promise<any>}
+   */
   async scheduleUpdate (req) {
     const pending = this.pending;
     const logger = this.logger;
@@ -85,9 +85,9 @@ class Service {
   }
 
   /**
- * @param {IUpdateId} req
-       * @returns {Promise<any>}
-       */
+   * @param {IUpdateId} req
+   * @returns {Promise<any>}
+   */
   async getPendingUpdate (req) {
     const pending = this.pending;
     const update = pending.get(PendingUpdate.key(req));

@@ -189,11 +189,11 @@ class UsersRepository {
   }
 
   /**
- * @param {string} username
-       * @param {string} appId
-       * @param {any} transactionSession
-       * @returns {Promise<string>}
-       */
+   * @param {string} username
+   * @param {string} appId
+   * @param {any} transactionSession
+   * @returns {Promise<string>}
+   */
   async createSessionForUser (username, appId, transactionSession) {
     return await bluebird.fromCallback((cb) => this.sessionsStorage.generate({ username, appId }, { transactionSession }, cb));
   }

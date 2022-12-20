@@ -15,9 +15,9 @@ class ApplicationLauncher {
   }
 
   /**
- * @param {any} injectSettings
-       * @returns {Promise<void>}
-       */
+   * @param {any} injectSettings
+   * @returns {Promise<void>}
+   */
   async launch (injectSettings) {
     if (injectSettings.http == null || injectSettings.http.port == null) { throw new Error('AF: http.port must be set.'); }
     const settingsOverride = {

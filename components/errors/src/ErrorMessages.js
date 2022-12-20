@@ -11,8 +11,8 @@ const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/sch
  */
 const ErrorMessages = {
   /**
-     * Invitation token validation in the service-register
-     */
+   * Invitation token validation in the service-register
+   */
   // ErrorIds.
   [ErrorIds.InvalidInvitationToken]: 'Invalid invitation',
   [ErrorIds.InvalidUsername]: 'Username should have between ' +

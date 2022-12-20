@@ -18,9 +18,9 @@ class Repository {
   }
 
   /**
-     * Returns all webhooks in a map <username, Arrra<webhooks>>
-       * @returns {Promise<Map<string, any[]>>}
-       */
+   * Returns all webhooks in a map <username, Arrra<webhooks>>
+   * @returns {Promise<Map<string, any[]>>}
+   */
   async getAll () {
     const usersRepository = await getUsersRepository();
     const users = await usersRepository.getAllUsernames();
@@ -42,13 +42,13 @@ class Repository {
   }
 
   /**
-     * Return webhooks for a given User and Access.
-     * Personal access: returns all webhooks
-     * App access: all those created by the access
-       * @param {any} user
-       * @param {any} access
-       * @returns {Promise<any[]>}
-       */
+   * Return webhooks for a given User and Access.
+   * Personal access: returns all webhooks
+   * App access: all those created by the access
+   * @param {any} user
+   * @param {any} access
+   * @returns {Promise<any[]>}
+   */
   async get (user, access) {
     const query = {};
     const options = {};
@@ -65,11 +65,11 @@ class Repository {
   }
 
   /**
-     * Returns a webhook for a user, fetched by its id
-       * @param {any} user
-       * @param {string} webhookId
-       * @returns {Promise<any>}
-       */
+   * Returns a webhook for a user, fetched by its id
+   * @param {any} user
+   * @param {string} webhookId
+   * @returns {Promise<any>}
+   */
   async getById (user, webhookId) {
     const query = {
       id: { $eq: webhookId }
@@ -81,42 +81,42 @@ class Repository {
   }
 
   /**
-     * Inserts a webhook for a user
-       * @param {{}} user
-       * @param {Webhook} webhook
-       * @returns {Promise<void>}
-       */
+   * Inserts a webhook for a user
+   * @param {{}} user
+   * @param {Webhook} webhook
+   * @returns {Promise<void>}
+   */
   async insertOne (user, webhook) {
     await bluebird.fromCallback((cb) => this.storage.insertOne(user, webhook.forStorage(), cb));
   }
 
   /**
-     * Updates certain fields of a webhook for a user
-       * @param {{}} user
-       * @param {{}} update
-       * @param {string} webhookId
-       * @returns {Promise<void>}
-       */
+   * Updates certain fields of a webhook for a user
+   * @param {{}} user
+   * @param {{}} update
+   * @param {string} webhookId
+   * @returns {Promise<void>}
+   */
   async updateOne (user, update, webhookId) {
     const query = { id: webhookId };
     await bluebird.fromCallback((cb) => this.storage.updateOne(user, query, update, cb));
   }
 
   /**
-     * Deletes a webhook for a user, given the webhook's id
-       * @param {{}} user
-       * @param {string} webhookId
-       * @returns {Promise<void>}
-       */
+   * Deletes a webhook for a user, given the webhook's id
+   * @param {{}} user
+   * @param {string} webhookId
+   * @returns {Promise<void>}
+   */
   async deleteOne (user, webhookId) {
     await bluebird.fromCallback((cb) => this.storage.delete(user, { id: webhookId }, cb));
   }
 
   /**
-     * Deletes all webhooks for a user.
-       * @param {{}} user
-       * @returns {Promise<void>}
-       */
+   * Deletes all webhooks for a user.
+   * @param {{}} user
+   * @returns {Promise<void>}
+   */
   async deleteForUser (user) {
     await bluebird.fromCallback((cb) => this.storage.delete(user, {}, cb));
   }

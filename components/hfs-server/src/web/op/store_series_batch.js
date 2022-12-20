@@ -107,9 +107,9 @@ class EventMetaDataCache {
   // up the type of the event and returns it as an InfluxRowType.
   //
   /**
- * @param {string} eventId
-       * @returns {Promise<any>}
-       */
+   * @param {string} eventId
+   * @returns {Promise<any>}
+   */
   async getRowType (eventId) {
     const ctx = this.ctx;
     const repo = ctx.typeRepository;
@@ -122,9 +122,9 @@ class EventMetaDataCache {
   }
 
   /**
- * @param {string} eventId
-       * @returns {Promise<string>}
-       */
+   * @param {string} eventId
+   * @returns {Promise<string>}
+   */
   async getMeasurementName (eventId) {
     const seriesMeta = await this.getSeriesMeta(eventId);
     const [namespace, name] = seriesMeta.namespaceAndName(); // eslint-disable-line no-unused-vars
@@ -134,8 +134,8 @@ class EventMetaDataCache {
   // Returns the SeriesMetadata for the event designated by `eventId`.
   //
   /**
- * @returns {Promise<any>}
- */
+   * @returns {Promise<any>}
+   */
   async getSeriesMeta (eventId) {
     const ctx = this.ctx;
     const loader = ctx.metadata;
@@ -145,10 +145,10 @@ class EventMetaDataCache {
   // Handles memoisation through the cache in `this.cache`.
   //
   /**
- * @param {string} key
-       * @param {() => Promise<SeriesMetadata>} factory
-       * @returns {Promise<any>}
-       */
+   * @param {string} key
+   * @param {() => Promise<SeriesMetadata>} factory
+   * @returns {Promise<any>}
+   */
   async fromCacheOrProduce (key, factory) {
     const cache = this.cache;
     // From Cache

@@ -18,11 +18,11 @@ class BasicType {
 
   _innerType;
   /**
-     * Construct a basic type.
-     *
-     * @param outerType {string} Type name such as 'mass/kg'
-     * @param schema {JSONSchema} Schema to verify content against.
-     */
+   * Construct a basic type.
+   *
+   * @param outerType {string} Type name such as 'mass/kg'
+   * @param schema {JSONSchema} Schema to verify content against.
+   */
   constructor (outerType, schema) {
     this._schema = schema;
     this._outerType = outerType;
@@ -30,37 +30,37 @@ class BasicType {
   }
 
   /**
- * @returns {string}
- */
+   * @returns {string}
+   */
   typeName () {
     return this._outerType;
   }
 
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   requiredFields () {
     return ['value'];
   }
 
   /**
- * @returns {any[]}
- */
+   * @returns {any[]}
+   */
   optionalFields () {
     return [];
   }
 
   /**
- * @returns {string[]}
- */
+   * @returns {string[]}
+   */
   fields () {
     return this.requiredFields();
   }
 
   /**
- * @param {string} name
-       * @returns {any}
-       */
+   * @param {string} name
+   * @returns {any}
+   */
   forField (name) {
     // NOTE BasicType only represents types that are not composed of multiple
     // fields. So the name MUST be 'value' here.
@@ -69,17 +69,17 @@ class BasicType {
   }
 
   /**
- * @returns {false}
- */
+   * @returns {false}
+   */
   isSeries () {
     return false;
   }
 
   /**
- * @param {Validator} validator
-       * @param {Content} content
-       * @returns {Promise<any>}
-       */
+   * @param {Validator} validator
+   * @param {Content} content
+   * @returns {Promise<any>}
+   */
   callValidator (validator, content) {
     return bluebird.try(() => {
       // Perform coercion into target type first. Then verify using the

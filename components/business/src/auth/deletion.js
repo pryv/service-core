@@ -27,15 +27,15 @@ class Deletion {
   }
 
   /**
-     * Authorization check order:
-     * 1- is a valid admin token
-     * 2- is a valid personalToken
-       * @param {MethodContext} context
-       * @param {unknown} params
-       * @param {Result} result
-       * @param {ApiCallback} next
-       * @returns {any}
-       */
+   * Authorization check order:
+   * 1- is a valid admin token
+   * 2- is a valid personalToken
+   * @param {MethodContext} context
+   * @param {unknown} params
+   * @param {Result} result
+   * @param {ApiCallback} next
+   * @returns {any}
+   */
   checkIfAuthorized (context, params, result, next) {
     const canDelete = this.config.get('user-account:delete');
     if (canDelete.includes('adminToken')) {
@@ -56,12 +56,12 @@ class Deletion {
   }
 
   /**
- * @param {MethodContext} context
-       * @param {unknown} params
-       * @param {Result} result
-       * @param {ApiCallback} next
-       * @returns {Promise<any>}
-       */
+   * @param {MethodContext} context
+   * @param {unknown} params
+   * @param {Result} result
+   * @param {ApiCallback} next
+   * @returns {Promise<any>}
+   */
   async validateUserExists (context, params, result, next) {
     const usersRepository = await getUsersRepository();
     const user = await usersRepository.getUserByUsername(params.username);
@@ -74,12 +74,12 @@ class Deletion {
   }
 
   /**
- * @param {MethodContext} context
-       * @param {unknown} params
-       * @param {Result} result
-       * @param {ApiCallback} next
-       * @returns {Promise<any>}
-       */
+   * @param {MethodContext} context
+   * @param {unknown} params
+   * @param {Result} result
+   * @param {ApiCallback} next
+   * @returns {Promise<any>}
+   */
   async validateUserFilepaths (context, params, result, next) {
     const paths = [
       this.config.get('eventFiles:attachmentsDirPath'),
@@ -101,12 +101,12 @@ class Deletion {
   }
 
   /**
- * @param {MethodContext} context
-       * @param {unknown} params
-       * @param {Result} result
-       * @param {ApiCallback} next
-       * @returns {Promise<void>}
-       */
+   * @param {MethodContext} context
+   * @param {unknown} params
+   * @param {Result} result
+   * @param {ApiCallback} next
+   * @returns {Promise<void>}
+   */
   async deleteUserFiles (context, params, result, next) {
     const paths = [
       this.config.get('eventFiles:attachmentsDirPath'),
@@ -121,12 +121,12 @@ class Deletion {
   }
 
   /**
- * @param {MethodContext} context
-       * @param {unknown} params
-       * @param {Result} result
-       * @param {ApiCallback} next
-       * @returns {Promise<any>}
-       */
+   * @param {MethodContext} context
+   * @param {unknown} params
+   * @param {Result} result
+   * @param {ApiCallback} next
+   * @returns {Promise<any>}
+   */
   async deleteHFData (context, params, result, next) {
     if (this.config.get('openSource:isActive')) { return next(); }
     // dynamic loading , because series functionality does not exist in opensource
@@ -139,12 +139,12 @@ class Deletion {
   }
 
   /**
- * @param {MethodContext} context
-       * @param {unknown} params
-       * @param {Result} result
-       * @param {ApiCallback} next
-       * @returns {Promise<any>}
-       */
+   * @param {MethodContext} context
+   * @param {unknown} params
+   * @param {Result} result
+   * @param {ApiCallback} next
+   * @returns {Promise<any>}
+   */
   async deleteAuditData (context, params, result, next) {
     if (this.config.get('openSource:isActive')) { return next(); }
     // dynamic loading , because series functionality does not exist in opensource
@@ -154,12 +154,12 @@ class Deletion {
   }
 
   /**
- * @param {MethodContext} context
-       * @param {unknown} params
-       * @param {Result} result
-       * @param {ApiCallback} next
-       * @returns {Promise<any>}
-       */
+   * @param {MethodContext} context
+   * @param {unknown} params
+   * @param {Result} result
+   * @param {ApiCallback} next
+   * @returns {Promise<any>}
+   */
   async deleteUser (context, params, result, next) {
     try {
       const dbCollections = [

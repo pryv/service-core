@@ -27,8 +27,8 @@ class Audit {
 
   tracer;
   /**
-     * Requires to call async init() to use
-     */
+   * Requires to call async init() to use
+   */
   constructor () {
     logger.debug('Start');
   }
@@ -42,8 +42,8 @@ class Audit {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async init () {
     logger.debug('Audit initiating...');
     const config = await getConfig();
@@ -57,8 +57,8 @@ class Audit {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async validApiCall (context, result) {
     const methodId = context.methodId;
     if (!this.filter.isAudited(methodId)) { return; }
@@ -79,8 +79,8 @@ class Audit {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async errorApiCall (context, error) {
     const methodId = context.methodId;
     if (!this.filter.isAudited(methodId)) { return; }
@@ -98,8 +98,8 @@ class Audit {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async eventForUser (userId, event) {
     logger.debug('eventForUser: ' +
             userId +
@@ -130,15 +130,15 @@ class Audit {
   }
 
   /**
- * @returns {Promise<void>}
- */
+   * @returns {Promise<void>}
+   */
   async reloadConfig () {
     await this.init();
   }
 
   /**
- * @returns {void}
- */
+   * @returns {void}
+   */
   close () {
     closeStorage();
   }
