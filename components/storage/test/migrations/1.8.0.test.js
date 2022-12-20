@@ -24,13 +24,14 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 
 const { getVersions } = require('./util');
 
-const usersIndex = require('business/src/users/UsersLocalIndex');
+const { getUsersLocalIndex } = require('storage');
 
 const { platform } = require('platform');
 
 describe('Migration - 1.8.0', function () {
   this.timeout(20000);
   let initialEventsUsers;
+  let usersIndex;
 
   before(async function () {
     const newVersion = getVersions('1.8.0');
@@ -41,7 +42,7 @@ describe('Migration - 1.8.0', function () {
     initialEventsUsers = await getInitialEventsUsers();
 
     // --- user Index
-    await usersIndex.init();
+    usersIndex = await getUsersLocalIndex();
     await usersIndex.deleteAll();
 
     // --- erase platform wide db

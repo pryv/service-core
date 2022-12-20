@@ -18,7 +18,7 @@ const { getApplication } = require('api-server/src/application');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
 const { getUsersRepository, User } = require('business/src/users');
-const userAccountStorage = require('business/src/users/userAccountStorage');
+const { getUserAccountStorage } = require('storage');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 const { ApiEndpoint } = require('utils');
@@ -56,11 +56,13 @@ describe('[REGC] registration: cluster', function () {
   let serviceRegisterRequests = [];
   let mongoFixtures;
   let usersRepository;
+  let userAccountStorage;
 
   // clean the database before starting all tests for registration
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.context.cleanEverything();
+    userAccountStorage = await getUserAccountStorage();
   });
 
   before(async function () {

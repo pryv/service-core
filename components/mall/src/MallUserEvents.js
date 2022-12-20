@@ -216,10 +216,10 @@ class MallUserEvents {
   }
 
   /**
- * @param {string} userId
-       * @param {string} fileId
-       * @returns {Promise<any>}
-       */
+   * @param {string} userId
+   * @param {string} fileId
+   * @returns {Promise<any>}
+   */
   async getAttachedFile (userId, eventData, fileId) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     const eventsStore = this.eventsStores.get(storeId);
@@ -228,24 +228,24 @@ class MallUserEvents {
   }
 
   /**
- * @param {string} userId
-       * @param {any} eventData
-       * @param {string} fileId
-       * @param {MallTransaction} mallTransaction
-       * @returns {Promise<any>}
-       */
+   * @param {string} userId
+   * @param {any} eventData
+   * @param {string} fileId
+   * @param {MallTransaction} mallTransaction
+   * @returns {Promise<any>}
+   */
   async deleteAttachedFile (userId, eventData, fileId, mallTransaction) {
     const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, mallTransaction);
     return await eventsStore.deleteAttachedFile(userId, storeEvent.id, fileId, storeTransaction);
   }
 
   /**
- * @param {string} userId
-       * @param {any} eventDataWithoutAttachments
-       * @param {Array<AttachmentItem>} attachmentsItems
-       * @param {MallTransaction} mallTransaction
-       * @returns {Promise<void>}
-       */
+   * @param {string} userId
+   * @param {any} eventDataWithoutAttachments
+   * @param {Array<AttachmentItem>} attachmentsItems
+   * @param {MallTransaction} mallTransaction
+   * @returns {Promise<void>}
+   */
   async createWithAttachments (userId, eventDataWithoutAttachments, attachmentsItems, mallTransaction) {
     const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
     const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutAttachments, attachmentsResponse, attachmentsItems);
@@ -253,12 +253,12 @@ class MallUserEvents {
   }
 
   /**
- * @param {string} userId
-       * @param {any} eventDataWithoutNewAttachments
-       * @param {Array<AttachmentItem>} newAttachmentsItems
-       * @param {MallTransaction} mallTransaction
-       * @returns {Promise<void>}
-       */
+   * @param {string} userId
+   * @param {any} eventDataWithoutNewAttachments
+   * @param {Array<AttachmentItem>} newAttachmentsItems
+   * @param {MallTransaction} mallTransaction
+   * @returns {Promise<void>}
+   */
   async updateWithAttachments (userId, eventDataWithoutNewAttachments, newAttachmentsItems, mallTransaction) {
     const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
     const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, newAttachmentsItems);
@@ -459,12 +459,12 @@ class MallUserEvents {
   // ----------------- UTILS -----------------
 
   /**
-     * Common utils for events.create and events.createWithAttachmentss
-     * @param {Object} eventData
-     * @param {MallTransaction} [mallTransaction]
-     * @private
-     * @returns {Promise<{ storeId: any; eventsStore: any; storeEvent: any; storeTransaction: any; }>}
-     */
+   * Common utils for events.create and events.createWithAttachmentss
+   * @param {Object} eventData
+   * @param {MallTransaction} [mallTransaction]
+   * @private
+   * @returns {Promise<{ storeId: any; eventsStore: any; storeEvent: any; storeTransaction: any; }>}
+   */
   async prepareForStore (eventData, mallTransaction) {
     let storeId = null;
     // add eventual missing id and get storeId from first streamId then

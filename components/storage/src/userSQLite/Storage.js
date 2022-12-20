@@ -11,7 +11,7 @@ const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
 
 const versioning = require('./versioning');
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const userLocalDirectory = require('storage').userLocalDirectory;
 const ensureUserDirectory = userLocalDirectory.ensureUserDirectory;
 
 const CACHE_SIZE = 500;
@@ -76,7 +76,7 @@ class Storage {
     const userDb = await this.forUser(userId);
     await userDb.close();
     this.userDBsCache.delete(userId);
-    const dbPath = await this.dbPathForUserid(userId);
+    const dbPath = await this.dbgetPathForUser(userId);
     try {
       await fs.unlink(dbPath);
     } catch (err) {
@@ -90,7 +90,7 @@ class Storage {
     this.userDBsCache.clear();
   }
 
-  async dbPathForUserId (userId) {
+  async dbgetPathForUser (userId) {
     const userPath = await ensureUserDirectory(userId);
     return path.join(userPath, this.id + '-' + this.getVersion() + '.sqlite');
   }
@@ -98,7 +98,7 @@ class Storage {
 
 async function open (storage, userId, logger) {
   logger.debug('open: ' + userId);
-  const db = new UserDatabase(logger, { dbPath: await storage.dbPathForUserId(userId) });
+  const db = new UserDatabase(logger, { dbPath: await storage.dbgetPathForUser(userId) });
   await db.init();
   storage.userDBsCache.set(userId, db);
   return db;

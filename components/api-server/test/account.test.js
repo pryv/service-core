@@ -23,16 +23,17 @@ const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
 const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
 const { getUsersRepository } = require('business/src/users');
-const userAccountStorage = require('business/src/users/userAccountStorage');
+const { getUserAccountStorage } = require('storage');
 const encryption = require('utils').encryption;
-let usersRepository = null;
 
 describe('[ACCO] account', function () {
   const user = Object.assign({}, testData.users[0]);
+  let usersRepository = null;
+  let userAccountStorage = null;
 
   before(async () => {
     usersRepository = await getUsersRepository();
-    await userAccountStorage.init();
+    userAccountStorage = await getUserAccountStorage();
   });
 
   const basePath = '/' + user.username + '/account';

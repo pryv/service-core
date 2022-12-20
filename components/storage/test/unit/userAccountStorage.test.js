@@ -10,15 +10,15 @@ const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
 
-const userAccountStorage = require('business/src/users/userAccountStorage');
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const { userLocalDirectory, getUserAccountStorage } = require('storage');
 
 describe('[UAST] Users Account Storage', () => {
   const passwords = []; // password will be stored in reverse order (oldest first)
   const userId = cuid();
+  let userAccountStorage;
 
   before(async () => {
-    await userAccountStorage.init();
+    userAccountStorage = await getUserAccountStorage();
     // create five passwords with one day delay between each other
     const now = timestamp.now();
     for (let i = 4; i >= 0; i--) { // in descending order

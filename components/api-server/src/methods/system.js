@@ -11,13 +11,11 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const { getStorageLayer } = require('storage');
+const { getStorageLayer, getUsersLocalIndex } = require('storage');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const { getUsersRepository } = require('business/src/users');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
-
-const usersIndex = require('business/src/users/UsersLocalIndex');
 
 const { platform } = require('platform');
 
@@ -34,9 +32,9 @@ module.exports = async function (systemAPI, api) {
   const usersRepository = await getUsersRepository();
   const userProfileStorage = storageLayer.profile;
   const userAccessesStorage = storageLayer.accesses;
+  const usersIndex = await getUsersLocalIndex();
 
   await platform.init();
-  await usersIndex.init();
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',

@@ -16,14 +16,20 @@ const charlatan = require('charlatan');
 const { ErrorIds } = require('errors/src');
 const helpers = require('../helpers');
 const databaseFixture = helpers.databaseFixture;
-const userAccountStorage = require('business/src/users/userAccountStorage');
+const { getUserAccountStorage } = require('storage');
 
 describe('accesses', () => {
   let storage, produceMongoConnection, context;
+  let userAccountStorage;
+
   before(() => {
     storage = helpers.dependencies.storage.user.accesses;
     ({ produceMongoConnection, context } = require('../test-helpers'));
   });
+  before(async () => {
+    userAccountStorage = await getUserAccountStorage();
+  });
+
   describe('access deletions', () => {
     let userId, streamId, activeToken, deletedToken, accessToken;
     before(async () => {

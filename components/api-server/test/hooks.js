@@ -12,10 +12,10 @@ let usersIndex, platform;
 
 async function initIndexPlatform () {
   if (usersIndex != null) return;
-  usersIndex = require('business/src/users/UsersLocalIndex');
+  const { getUsersLocalIndex } = require('storage');
+  usersIndex = await getUsersLocalIndex();
   platform = require('platform').platform;
   await platform.init();
-  await usersIndex.init();
 }
 
 exports.mochaHooks = {

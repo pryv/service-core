@@ -8,7 +8,7 @@
 const path = require('path');
 const fs = require('fs');
 
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const userLocalDirectory = require('storage').userLocalDirectory;
 
 const UserDatabase = require('../UserDatabase');
 const { migrate0to1 } = require('./migrate0to1');
@@ -48,7 +48,7 @@ async function checkAllUsers (storage) {
       return; // skip as file exists
     }
 
-    const v1dbPath = await storage.dbPathForUserId(userId);
+    const v1dbPath = await storage.dbgetPathForUser(userId);
     if (fs.existsSync(v1dbPath)) {
       logger.error('ERROR: Found V0 and V1 database for: ' + userId + '>>> Manually delete one of the version in: ' + userDir);
       process.exit(1);

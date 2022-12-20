@@ -12,7 +12,7 @@ const eventSchemas = require('./schemas/events');
 const { createFTSFor } = require('./FullTextSearchDataBase');
 const events = require('./schemas/events');
 
-const { toSQLiteQuery } = require('audit/src/storage/sqLiteStreamQueryUtils');
+const { toSQLiteQuery } = require('./sqLiteStreamQueryUtils');
 
 const DB_OPTIONS = {};
 

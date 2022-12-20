@@ -22,7 +22,7 @@ const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
 
 const { pubsub } = require('messages');
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const userLocalDirectory = require('storage').userLocalDirectory;
 const { AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 let initTestsDone = false;

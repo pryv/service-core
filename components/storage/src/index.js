@@ -10,6 +10,51 @@ const Database = require('./Database');
 const StorageLayer = require('./storage_layer');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { dataBaseTracer } = require('tracing');
+const usersLocalIndex = require('./usersLocalIndex');
+const userAccountStorage = require('./userAccountStorage');
+
+module.exports = {
+  Database: require('./Database'),
+  PasswordResetRequests: require('./PasswordResetRequests'),
+  Sessions: require('./Sessions'),
+  Size: require('./Size'),
+  Versions: require('./Versions'),
+  user: {
+    Accesses: Access,
+    EventFiles: require('./user/EventFiles'),
+    FollowedSlices: require('./user/FollowedSlices'),
+    Profile: require('./user/Profile'),
+    Streams: Stream,
+    Webhooks: require('./user/Webhooks')
+  },
+  StorageLayer,
+  getDatabase,
+  getStorageLayer,
+  getDatabaseSync,
+  getStorageLayerSync,
+  userLocalDirectory: require('./userLocalDirectory'),
+  getUsersLocalIndex,
+  getUserAccountStorage
+};
+
+let usersIndex;
+async function getUsersLocalIndex () {
+  if (!usersIndex) {
+    usersIndex = usersLocalIndex;
+    await usersIndex.init();
+  }
+  return usersIndex;
+}
+
+let userAccount;
+async function getUserAccountStorage () {
+  if (!userAccount) {
+    userAccount = userAccountStorage;
+    await userAccountStorage.init();
+  }
+  return userAccountStorage;
+}
+
 let database;
 /**
  * @returns {any}
@@ -21,6 +66,7 @@ function _getDatabase (config) {
   }
   return database;
 }
+
 let storageLayer;
 /**
  * @returns {any}
@@ -58,23 +104,3 @@ async function getDatabase () {
 async function getStorageLayer () {
   return _getStorageLayer(await getConfig());
 }
-module.exports = {
-  Database: require('./Database'),
-  PasswordResetRequests: require('./PasswordResetRequests'),
-  Sessions: require('./Sessions'),
-  Size: require('./Size'),
-  Versions: require('./Versions'),
-  user: {
-    Accesses: Access,
-    EventFiles: require('./user/EventFiles'),
-    FollowedSlices: require('./user/FollowedSlices'),
-    Profile: require('./user/Profile'),
-    Streams: Stream,
-    Webhooks: require('./user/Webhooks')
-  },
-  StorageLayer,
-  getDatabase,
-  getStorageLayer,
-  getDatabaseSync,
-  getStorageLayerSync
-};
