@@ -233,7 +233,7 @@ function readableStreamFromEventCursor (cursor) {
     return res;
   };
   readableUnderPressure._read = async () => {
-    if (performingReadRequest) { return; } // avoid strating a 2nd read request when already pushing.
+    if (performingReadRequest) { return; } // avoid starting a 2nd read request when already pushing.
     performingReadRequest = true;
     try {
       let push = true;

@@ -412,7 +412,7 @@ describe('[FG5R] Events of system streams', () => {
           });
         });
         describe('which is indexed and unique', () => {
-          describe('whose content is unique', () => {
+          describe('[WCIU] whose content is unique', () => {
             let allEventsInDb;
             let streamId;
             let newEventFromDB;
@@ -437,7 +437,7 @@ describe('[FG5R] Events of system streams', () => {
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
-              allEventsInDb = await mall.events.get(user.attrs.id, { streams: [{ any: [streamId] }], state: 'all', withDeletions: true, includeHistory: true });
+              allEventsInDb = await mall.events.get(user.attrs.id, { streams: [{ any: [streamId] }], state: 'all' });
               newEventFromDB = allEventsInDb.find(event => event.id === res.body.event.id);
               oldEventFromDB = allEventsInDb.find(event => event.id !== res.body.event.id);
             });
