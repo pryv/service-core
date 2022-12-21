@@ -23,7 +23,6 @@ const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
  * @property {Array<StreamQuery>} [streams] - an array of stream queries (see StreamQuery)
  * @property {('trashed'|'all'|null)} [state=null] - get only trashed, all document or non-trashed events (default is non-trashed)
  * @property {boolean} [withDeletions=false] - also returns deleted events (default is false) !! used by tests and internals !!
- * @property {timestamp} [deletedSince] - return deleted events since this timestamp
  * @property {boolean} [includeHistory] - if true, returns the history of the event and the event if "id" is given - Otherwise all events, including their history (use by tests only)
  * @property {Array<EventType>} [types] - reduce scope of events to a set of types
  * @property {timestamp} [fromTime] - events with a time of endTime after this timestamp
@@ -131,8 +130,6 @@ function getStoreQueryFromParams (params) {
     case 'all':
       break;
     default:
-      // trashed must be false, unless loooking for deletedSince (then we don't care)
-      if (params.deletedSince != null) break;
       query.push({ type: 'equal', content: { field: 'trashed', value: false } });
   }
 
@@ -141,14 +138,9 @@ function getStoreQueryFromParams (params) {
     query.push({ type: 'equal', content: { field: 'id', value: params.id } });
   }
 
-  if (params.deletedSince != null) {
-    query.push({ type: 'greater', content: { field: 'deleted', value: params.deletedSince } });
-    options.sort = { deleted: -1 };
-  } else {
-    // all deletions (tests only)
-    if (!params.withDeletions) {
-      query.push({ type: 'equal', content: { field: 'deleted', value: null } }); // <<== actual default value
-    }
+  // all deletions (tests only)
+  if (!params.withDeletions) {
+    query.push({ type: 'equal', content: { field: 'deleted', value: null } }); // <<== actual default value
   }
 
   // modified since

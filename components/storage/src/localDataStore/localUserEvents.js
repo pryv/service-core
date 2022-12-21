@@ -225,6 +225,13 @@ function readableStreamFromEventCursor (cursor) {
     highWaterMark: 4000
   });
   let performingReadRequest = false;
+  readableUnderPressure.getData = async function () {
+    const res = [];
+    for await (const item of this) {
+      res.push(item);
+    }
+    return res;
+  };
   readableUnderPressure._read = async () => {
     if (performingReadRequest) { return; } // avoid strating a 2nd read request when already pushing.
     performingReadRequest = true;

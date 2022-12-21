@@ -1759,15 +1759,14 @@ describe('events', function () {
           });
         },
         async function verifyEventData () {
-          const events = await mall.events.get(user.id, { state: 'all', deletedSince: 0 });
-
-          const deletion = _.find(events, function (event) {
+          const deletedEvents = await (await mall.events.getDeletionsStreamed('local', user.id, 0)).getData();
+          const deletion = _.find(deletedEvents, function (event) {
             return event.id === id;
           });
           assert.exists(deletion);
           const expected = { id, deleted: deletion.deleted };
           integrity.events.set(expected);
-          validation.checkObjectEquality(deletion, expected);
+          validation.checkObjectEquality(deletion.integrity, expected.integrity);
 
           const dirPath = eventFilesStorage.getAttachedFilePath(user, id);
           fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
