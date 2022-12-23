@@ -57,6 +57,7 @@ class UserDatabase {
     this.create = {};
     this.getAll = {};
     this.get = {};
+    this.delete = {};
     this.columnNames = {};
 
     // --- Create all Tables
@@ -89,6 +90,13 @@ class UserDatabase {
     createFTSFor(this.db, 'events', tables.events, ['streamIds']);
 
     this.queryGetTerms = this.db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
+
+    this.delete.eventsByHeadId = this.db.prepare('DELETE FROM events WHERE headId = ?');
+    this.delete.eventById = this.db.prepare('DELETE FROM events WHERE eventid = ?');
+
+    this.get.eventById = this.db.prepare('SELECT * FROM events WHERE eventid = ?');
+    this.get.eventsDeletedSince = this.db.prepare('SELECT * from events WHERE deleted >= ? ORDER BY deleted DESC');
+    this.get.eventHistory = this.db.prepare('SELECT * from events WHERE headId = ? ORDER BY modified ASC');
   }
 
   async updateEvent (eventId, eventData) {
@@ -107,7 +115,7 @@ class UserDatabase {
       if (res.changes !== 1) {
         throw new Error('Event not found');
       }
-    }, 10000);
+    });
 
     const resultEvent = eventSchemas.eventFromDB(eventForDb);
     return resultEvent;
@@ -128,7 +136,7 @@ class UserDatabase {
     await this.concurentSafeWriteStatement(() => {
       this.create.events.run(eventForDb);
       this.logger.debug('(async) CREATE event:' + JSON.stringify(eventForDb));
-    }, 10000);
+    });
   }
 
   getAllActions () {
@@ -139,21 +147,39 @@ class UserDatabase {
     return this.queryGetTerms.all('access-%');
   }
 
-  deleteEvents (params) {
+  async deleteEventsHistory (eventId) {
+    await this.concurentSafeWriteStatement(() => {
+      return this.delete.eventsByHeadId.run(eventId);
+    });
+  }
+
+  async deleteEvents (params) {
     const queryString = prepareEventsDeleteQuery(params);
     this.logger.debug('DELETE events: ' + queryString);
     if (queryString.indexOf('MATCH') > 0) {
       // SQLite does not know how to delete with "MATCH" statement
       // going by the doddgy task of getting events that matches the query and deleteing them one by one
       const selectEventsToBeDeleted = prepareEventsGetQuery(params);
-      const deleteByIdStatement = this.db.prepare('DELETE FROM events WHERE eventid = ?');
+
       for (const event of this.db.prepare(selectEventsToBeDeleted).iterate()) {
-        deleteByIdStatement.run(event.eventid);
+        await this.concurentSafeWriteStatement(() => {
+          this.delete.eventById.run(event.eventid);
+        });
       }
       return null;
     }
-    const res = this.db.prepare(queryString).run();
+    // else
+    let res = null;
+    await this.concurentSafeWriteStatement(() => {
+      res = this.db.prepare(queryString).run();
+    });
     return res;
+  }
+
+  getOneEvent (eventId) {
+    const event = this.get.eventById.get(eventId);
+    if (event == null) return null;
+    return eventSchemas.eventFromDB(event);
   }
 
   getEvents (params) {
@@ -167,14 +193,25 @@ class UserDatabase {
     return null;
   }
 
-  // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
-
   getEventsStream (params) {
     const queryString = prepareEventsGetQuery(params);
-    this.logger.debug('GET Events Stream:' + queryString);
+    this.logger.debug('GET Events Stream: ' + queryString);
+    const query = this.db.prepare(queryString);
+    return this.readableEventsStreamForIterator(query.iterate());
+  }
 
-    const iterateSource = this.db.prepare(queryString).iterate();
+  getEventsDeletionsStream (deletedSince) {
+    this.logger.debug('GET Events Deletions since: ' + deletedSince);
+    return this.readableEventsStreamForIterator(this.get.eventsDeletedSince.iterate(deletedSince));
+  }
 
+  getEventsHistory (eventId) {
+    this.logger.debug('GET Events History for: ' + eventId);
+    return this.get.eventHistory.all(eventId).map(eventSchemas.eventFromDB);
+  }
+
+  // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
+  readableEventsStreamForIterator (iterateSource) {
     const iterateTransform = {
       next: function () {
         const res = iterateSource.next();
@@ -205,7 +242,7 @@ class UserDatabase {
    * Will look "retries" times, in case of "SQLITE_BUSY".
    * This is CPU intensive, but tests have shown this solution to be efficient
    */
-  async concurentSafeWriteStatement (statement, retries) {
+  async concurentSafeWriteStatement (statement, retries = 100) {
     for (let i = 0; i < retries; i++) {
       try {
         statement();

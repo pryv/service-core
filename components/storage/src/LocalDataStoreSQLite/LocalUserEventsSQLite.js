@@ -95,9 +95,38 @@ class LocalUserEvents {
   /**
    * @returns {Promise<any>}
    */
+  async getDeletionsStreamed (userId, params) {
+    const db = await this.storage.forUser(userId);
+    return db.getEventsDeletionsStream(params);
+  }
+
+  /**
+   * @returns {Promise<any>}
+   */
+  async getHistory (userId, eventId) {
+    const db = await this.storage.forUser(userId);
+    return db.getEventsHistory(eventId);
+  }
+
+  /**
+   * @returns {Promise<any>}
+   */
+  async deleteHistory (userId, eventId) {
+    const db = await this.storage.forUser(userId);
+    return await db.deleteEventsHistory(eventId);
+  }
+
+  /**
+   * @returns {Promise<any>}
+   */
   async get (userId, params) {
     const db = await this.storage.forUser(userId);
     return db.getEvents(params);
+  }
+
+  async getOne (userId, eventId) {
+    const db = await this.storage.forUser(userId);
+    return db.getOneEvent(eventId);
   }
 
   /**
@@ -106,7 +135,7 @@ class LocalUserEvents {
   async delete (userId, params, transaction) {
     const db = await this.storage.forUser(userId);
     // here we should delete attachments linked to deleted events.
-    return db.deleteEvents(params);
+    return await db.deleteEvents(params);
   }
 
   /**
