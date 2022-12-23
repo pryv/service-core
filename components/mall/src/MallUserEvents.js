@@ -86,7 +86,9 @@ class MallUserEvents {
   async getOne (userId, fullEventId) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
     const eventsStore = this.eventsStores.get(storeId);
-    if (!eventsStore) { return null; }
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
     try {
       const event = await eventsStore.getOne(userId, storeEventId);
       if (event != null) { return eventsUtils.convertEventFromStore(storeId, event); }
@@ -99,7 +101,9 @@ class MallUserEvents {
   async getHistory (userId, fullEventId) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
     const eventsStore = this.eventsStores.get(storeId);
-    if (!eventsStore) { return null; }
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
     const res = [];
     try {
       const events = await eventsStore.getHistory(userId, storeEventId);
@@ -112,6 +116,17 @@ class MallUserEvents {
     return res;
   }
 
+  /**
+   * delete event's history
+   */
+  async deleteHistory (userId, fullEventId) {
+    const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
+    const eventsStore = this.eventsStores.get(storeId);
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
+    await eventsStore.deleteHistory(userId, storeEventId);
+  }
 
   /**
    * @returns {Promise<any[]>}
@@ -261,7 +276,9 @@ class MallUserEvents {
   async getAttachedFile (userId, eventData, fileId) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     const eventsStore = this.eventsStores.get(storeId);
-    if (!eventsStore) { return null; }
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
     return await eventsStore.getAttachedFile(userId, storeEventId, fileId);
   }
 

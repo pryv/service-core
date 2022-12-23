@@ -407,10 +407,7 @@ module.exports = async function (api) {
             } else {
               // remove the event and any attached data
               // remove the event's history
-              await mall.events.delete(context.user.id, {
-                headId: event.id,
-                state: 'all'
-              });
+              await mall.events.deleteHistory(context.user.id, event.id);
               // remove the event itself (update)
               await mall.events.updateDeleteByMode(context.user.id, 'keep-nothing', { id: event.id, state: 'all' });
             }

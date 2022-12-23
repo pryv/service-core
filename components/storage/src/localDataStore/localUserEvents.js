@@ -28,11 +28,16 @@ module.exports = ds.createUserEvents({
   },
 
   async getHistory (userId, eventId) {
-    const options = { sort: { modified: -1 } };
-    const cursor = this._getCursor(userId, { _id: eventId }, options);
+    const options = { sort: { modified: 1 } };
+    const cursor = this._getCursor(userId, { headId: eventId }, options);
     const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
-    $$({res, eventId});
     return res;
+  },
+
+  async deleteHistory (userId, eventId) {
+    const options = { sort: { modified: 1 } };
+    const query = { userId: userId, headId: eventId };
+    return await this.eventsCollection.deleteMany(query, options);
   },
 
   async get (userId, params) {

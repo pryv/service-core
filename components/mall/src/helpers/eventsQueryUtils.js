@@ -22,7 +22,6 @@ const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
  * @property {string} [headId] - for history querying the id of the event to get the history from (incompatible with id))
  * @property {Array<StreamQuery>} [streams] - an array of stream queries (see StreamQuery)
  * @property {('trashed'|'all'|null)} [state=null] - get only trashed, all document or non-trashed events (default is non-trashed)
- * @property {boolean} [includeHistory] - if true, returns the history of the event and the event if "id" is given - Otherwise all events, including their history (use by tests only)
  * @property {Array<EventType>} [types] - reduce scope of events to a set of types
  * @property {timestamp} [fromTime] - events with a time of endTime after this timestamp
  * @property {timestamp} [toTime] - events with a time of endTime before this timestamp

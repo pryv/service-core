@@ -122,10 +122,10 @@ describe('Versioning', function () {
               });
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted () {
-              const events = await mall.events.get(user.id, { id: trashedEventWithHistory.id, state: 'all', withDeletions: true, includeHistory: true });
-              events.length.should.be.eql(1); // only the event itself not the history
-              events[0].id.should.eql(trashedEventWithHistory.id);
-              assert.exists(events[0].deleted);
+              const event = await mall.events.getOne(user.id, trashedEventWithHistory.id);
+              const eventHistory = await mall.events.getHistory(user.id, trashedEventWithHistory.id);
+              eventHistory.length.should.be.eql(0); // empty history
+              assert.exists(event.deleted);
             }
           ], done);
         });
@@ -147,16 +147,12 @@ describe('Versioning', function () {
               });
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted () {
-              const events = await mall.events.get(user.id, { id: trashedEventWithHistory.id, state: 'all', withDeletions: true });
-              const eventHistory = await mall.events.get(user.id, { headId: trashedEventWithHistory.id, state: 'all', withDeletions: true });
-              events.push(...eventHistory);
+              const deletedEvent = await mall.events.getOne(user.id, trashedEventWithHistory.id);
+              assert.exists(deletedEvent);
+              const eventHistory = await mall.events.getHistory(user.id, trashedEventWithHistory.id);
 
-              events.length.should.be.eql(3);
+              eventHistory.length.should.be.eql(2);
 
-              // deleted event
-              const deletedEvents = events.filter(e => e.deleted);
-              deletedEvents.length.should.be.eql(1);
-              const deletedEvent = deletedEvents[0];
               (Object.keys(deletedEvent).length).should.eql(integrity.events.isActive ? 5 : 4);
               deletedEvent.id.should.eql(trashedEventWithHistory.id);
               assert.exists(deletedEvent.deleted);
@@ -164,10 +160,7 @@ describe('Versioning', function () {
               assert.exists(deletedEvent.modifiedBy);
               if (integrity.events.isActive) assert.exists(deletedEvent.integrity);
 
-              // history
-              const history = events.filter(e => e.headId);
-              history.length.should.be.eql(2);
-              history.forEach(function (event) {
+              eventHistory.forEach(function (event) {
                 (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
                 assert.exists(event.id);
                 assert.exists(event.headId);
@@ -208,7 +201,7 @@ describe('Versioning', function () {
             event.should.eql(expected);
           },
           async function checkThatHistoryIsUnchanged () {
-            const eventHistory = await mall.events.get(user.id, { headId: trashedEventWithHistory.id, state: 'all', withDeletions: true });
+            const eventHistory = await mall.events.getHistory(user.id, trashedEventWithHistory.id);
 
             // TODO clean this test
             const checked = { first: false, second: false };
@@ -482,8 +475,7 @@ describe('Versioning', function () {
           assert.exists(event.deleted);
         },
         async function checkThatHistoryIsDeleted () {
-          let events = await mall.events.get(user.id, { id: eventOnChildStream.id, state: 'all', includeHistory: true });
-          events = events.filter(e => e.headId); // only the history
+          const events = await mall.events.getHistory(user.id, eventOnChildStream.id);
           events.length.should.be.eql(0);
         }
       ], done);
@@ -520,7 +512,7 @@ describe('Versioning', function () {
           if (integrity.events.isActive) assert.exists(event.integrity);
         },
         async function verifyDeletedHistoryInStorage () {
-          const events = await mall.events.get(user.id, { headId: eventOnChildStream.id, state: 'all' });
+          const events = await mall.events.getHistory(user.id, eventOnChildStream.id);
 
           events.length.should.be.eql(1);
           events.forEach(function (event) {
@@ -567,7 +559,7 @@ describe('Versioning', function () {
           event.should.eql(expected);
         },
         async function checkThatHistoryIsUnchanged () {
-          const events = await mall.events.get(user.id, { headId: eventOnChildStream.id, state: 'all', withDeletions: true });
+          const events = await mall.events.getHistory(user.id, eventOnChildStream.id);
 
           (events.length).should.eql(1);
           events.forEach(function (event) {

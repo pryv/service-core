@@ -196,18 +196,12 @@ module.exports = async function (api) {
     // history is fetched in an extra step due to initial implementation,
     // now that mall.events.get return all in a single call, it coul be implement all at once
     try {
-      const events = await mall.events.get(context.user.id, {
-        state: 'all',
-        includeDeletions: true,
-        headId: params.id
-      });
+      const events = await mall.events.getHistory(context.user.id, params.id);
       result.history = [];
       events.forEach((e) => {
         // To remove when streamId not necessary
         _applyBackwardCompatibilityOnEvent(e, context);
-        if (e.headId != null) {
-          result.history.push(e);
-        }
+        result.history.push(e);
       });
       next();
     } catch (err) {
@@ -991,11 +985,7 @@ module.exports = async function (api) {
     async.series([
       async function deleteHistoryCompletely () {
         if (auditSettings.deletionMode !== 'keep-nothing') { return; }
-        await mall.events.delete(context.user.id, {
-          headId: params.id,
-          state: 'all',
-          includeDeletions: true
-        });
+        await mall.events.deleteHistory(context.user.id, params.id);
       },
       async function minimizeHistory () {
         if (auditSettings.deletionMode !== 'keep-authors') {
