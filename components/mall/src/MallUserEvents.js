@@ -77,7 +77,8 @@ class MallUserEvents {
   // ----------------- GET ----------------- //
 
   /**
-   * Specific to Mall, allow query of a single event
+   * Get one event without filtering
+   * Should also return eventual deleted events
    * @param {*} userId
    * @param {*} fullEventId
    * @returns {Promise<any>}
@@ -87,19 +88,30 @@ class MallUserEvents {
     const eventsStore = this.eventsStores.get(storeId);
     if (!eventsStore) { return null; }
     try {
-      const paramsForStore = eventsQueryUtils.getStoreQueryFromParams({
-        id: storeEventId,
-        state: 'all',
-        limit: 1,
-        withDeletions: true
-      });
-      const events = await eventsStore.get(userId, paramsForStore);
-      if (events?.length === 1) { return eventsUtils.convertEventFromStore(storeId, events[0]); }
+      const event = await eventsStore.getOne(userId, storeEventId);
+      if (event != null) { return eventsUtils.convertEventFromStore(storeId, event); }
     } catch (e) {
       storeDataUtils.throwAPIError(e, storeId);
     }
     return null;
   }
+
+  async getHistory (userId, fullEventId) {
+    const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
+    const eventsStore = this.eventsStores.get(storeId);
+    if (!eventsStore) { return null; }
+    const res = [];
+    try {
+      const events = await eventsStore.getHistory(userId, storeEventId);
+      for (const event of events) {
+        res.push(eventsUtils.convertEventFromStore(storeId, event));
+      }
+    } catch (e) {
+      storeDataUtils.throwAPIError(e, storeId);
+    }
+    return res;
+  }
+
 
   /**
    * @returns {Promise<any[]>}
@@ -188,6 +200,15 @@ class MallUserEvents {
       throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
     }
     return eventsStore.getDeletionsStreamed(userId, deletedSince, limit, skip, sortAscending);
+  }
+
+  async getDeletions (storeId, userId, deletedSince, limit, skip, sortAscending) {
+    const resultStream = await this.getDeletionsStreamed(storeId, userId, deletedSince, limit, skip, sortAscending);
+    const res = [];
+    for await (const item of resultStream) {
+      res.push(item);
+    }
+    return res;
   }
 
   // ----------------- CREATE ----------------- //

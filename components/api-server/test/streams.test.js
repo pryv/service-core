@@ -865,7 +865,7 @@ describe('[STRE] streams', function () {
         },
         async function verifyLinkedEvents () {
           let events = await mall.events.get(user.id, { state: 'all' });
-          const foundDeletedEvents = await (await mall.events.getDeletionsStreamed('local', user.id, 0)).getData();
+          const foundDeletedEvents = await mall.events.getDeletions('local', user.id, 0);
           // lets separate system events from all other events and validate them separately
           const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
           events = separatedEvents.events;

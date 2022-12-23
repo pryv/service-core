@@ -20,6 +20,21 @@ module.exports = ds.createUserEvents({
     this.eventsCollection = eventsCollection;
     this.eventsFileStorage = eventsFileStorage;
   },
+
+  async getOne (userId, eventId) {
+    const cursor = this._getCursor(userId, { _id: eventId }, {});
+    const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
+    return res[0];
+  },
+
+  async getHistory (userId, eventId) {
+    const options = { sort: { modified: -1 } };
+    const cursor = this._getCursor(userId, { _id: eventId }, options);
+    const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
+    $$({res, eventId});
+    return res;
+  },
+
   async get (userId, params) {
     const { query, options } = paramsToMongoquery(params);
     const cursor = this._getCursor(userId, query, options);
@@ -95,6 +110,7 @@ module.exports = ds.createUserEvents({
       throw errors.unexpectedError(err);
     }
   },
+
   async delete (userId, params, transaction) {
     const { query, options } = paramsToMongoquery(params);
     query.userId = userId;
@@ -108,6 +124,7 @@ module.exports = ds.createUserEvents({
     }
     return await this.eventsCollection.deleteMany(query, options);
   },
+
   _getCursor (userId, query, options) {
     query.userId = userId;
     const queryOptions = { projection: options.projection };
@@ -122,11 +139,13 @@ module.exports = ds.createUserEvents({
     }
     return cursor;
   },
+
   async _deleteUser (userId) {
     const query = { userId };
     const res = await this.eventsCollection.deleteMany(query, {});
     return res;
   },
+
   async _getUserStorageSize (userId) {
     // TODO: fix this total HACK
     return await this.eventsCollection.countDocuments({ userId });
@@ -135,7 +154,7 @@ module.exports = ds.createUserEvents({
 // --------------- helpers ------------//
 
 /**
- * change _id to id and remove userId from result
+ * change _id to id, remove userId and headId, from result
  * @param {any}
  * @returns {any}
  */
@@ -146,6 +165,7 @@ function cleanResult (result) {
     value.id = value._id;
     delete value._id;
     delete value.userId;
+    //delete value.headId;
   }
   return value;
 }
@@ -225,13 +245,6 @@ function readableStreamFromEventCursor (cursor) {
     highWaterMark: 4000
   });
   let performingReadRequest = false;
-  readableUnderPressure.getData = async function () {
-    const res = [];
-    for await (const item of this) {
-      res.push(item);
-    }
-    return res;
-  };
   readableUnderPressure._read = async () => {
     if (performingReadRequest) { return; } // avoid starting a 2nd read request when already pushing.
     performingReadRequest = true;

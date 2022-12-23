@@ -1759,7 +1759,7 @@ describe('events', function () {
           });
         },
         async function verifyEventData () {
-          const deletedEvents = await (await mall.events.getDeletionsStreamed('local', user.id, 0)).getData();
+          const deletedEvents = await mall.events.getDeletions('local', user.id, 0);
           const deletion = _.find(deletedEvents, function (event) {
             return event.id === id;
           });
