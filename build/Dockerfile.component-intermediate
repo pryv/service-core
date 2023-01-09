@@ -26,3 +26,7 @@ RUN mv /etc/runit/runit.sh /etc/init.d/
 # make a link to /etc/service (will be run with runit).
 RUN ln -s /etc/init.d/runit.sh /etc/service/runit/run
 # ============================ end runit ================================
+
+# Remove cron and sshd entirely, unless we use them
+RUN rm -r /etc/service/cron
+RUN rm -r /etc/service/sshd && rm /etc/my_init.d/00_regen_ssh_host_keys.sh
