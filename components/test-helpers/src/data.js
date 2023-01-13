@@ -77,7 +77,6 @@ const events = (exports.events = require('./data/events'));
 exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
-  const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
   const eventsToWrite = events.map((e) => {
     const eventToWrite = _.cloneDeep(e);
     delete eventToWrite.tags;
@@ -87,12 +86,7 @@ exports.resetEvents = function (done, user) {
   async.series([
     async function removeNonAccountEvents () {
       mall = await getMall();
-      await mall.events.delete(user.id, {
-        state: 'all',
-        withDeletions: true,
-        includeHistory: true,
-        streams: [{ any: '*', and: [{ not: allAccountStreamIds }] }]
-      });
+      await mall.events.localRemoveAllNonAccountEventsForUser(user.id);
     },
     async function createEvents () {
       await mall.events.createMany(user.id, eventsToWrite);

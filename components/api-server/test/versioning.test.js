@@ -150,7 +150,6 @@ describe('Versioning', function () {
               const deletedEvent = await mall.events.getOne(user.id, trashedEventWithHistory.id);
               assert.exists(deletedEvent);
               const eventHistory = await mall.events.getHistory(user.id, trashedEventWithHistory.id);
-
               eventHistory.length.should.be.eql(2);
 
               (Object.keys(deletedEvent).length).should.eql(integrity.events.isActive ? 5 : 4);
@@ -161,12 +160,12 @@ describe('Versioning', function () {
               if (integrity.events.isActive) assert.exists(deletedEvent.integrity);
 
               eventHistory.forEach(function (event) {
-                (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
+                // integrity is lost
+                (Object.keys(event).length).should.eql(3);
                 assert.exists(event.id);
-                assert.exists(event.headId);
+                assert.equal(event.id, trashedEventWithHistory.id);
                 assert.exists(event.modified);
                 assert.exists(event.modifiedBy);
-                if (integrity.events.isActive) assert.exists(event.integrity);
               });
             }
           ], done);
@@ -207,13 +206,17 @@ describe('Versioning', function () {
             const checked = { first: false, second: false };
             (eventHistory.length).should.eql(2);
             eventHistory.forEach(function (event) {
-              if (event.id === testData.events[20].id) {
+              if (event.modified === testData.events[20].modified) {
                 const expected = _.cloneDeep(testData.events[20]);
+                expected.id = expected.headId;
+                delete expected.headId;
                 delete expected.tags;// this comes from the storage .. no need to test tags
                 event.should.eql(expected);
                 checked.first = true;
-              } else if (event.id === testData.events[21].id) {
+              } else if (event.modified === testData.events[21].modified) {
                 const expected = _.cloneDeep(testData.events[21]);
+                expected.id = expected.headId;
+                delete expected.headId;
                 delete expected.tags;// this comes from the storage .. no need to test tags
                 event.should.eql(expected);
                 checked.second = true;
@@ -345,15 +348,15 @@ describe('Versioning', function () {
                   let time = 0;
                   history.forEach(function (previousVersion) {
                     delete previousVersion.streamId;
-                    (previousVersion.headId).should.eql(eventWithNoHistory.id);
+                    (previousVersion.id).should.eql(eventWithNoHistory.id);
                     // check sorted by modified field
                     if (time !== 0) {
                       (previousVersion.modified).should.be.above(time);
                     }
                     time = previousVersion.modified;
-                    (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags', 'integrity']))
+                    (_.omit(previousVersion, ['modified', 'modifiedBy', 'content', 'tags', 'integrity']))
                       .should.eql(_.omit(eventWithNoHistory,
-                        ['id', 'headId', 'modified', 'modifiedBy', 'content', 'tags', 'integrity']));
+                        ['modified', 'modifiedBy', 'content', 'tags', 'integrity']));
                   });
                   stepDone();
                 });
@@ -385,10 +388,10 @@ describe('Versioning', function () {
                   (res.body.history.length).should.eql(1);
                   const previousVersion = res.body.history[0];
                   delete previousVersion.streamId;
-                  (previousVersion.headId).should.eql(eventWithNoHistory.id);
-                  (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'trashed', 'integrity', 'tags']))
+                  (previousVersion.id).should.eql(eventWithNoHistory.id);
+                  (_.omit(previousVersion, ['modified', 'modifiedBy', 'trashed', 'integrity', 'tags']))
                     .should.eql(_.omit(eventWithNoHistory,
-                      ['id', 'headId', 'modified', 'modifiedBy', 'integrity', 'tags']));
+                      ['modified', 'modifiedBy', 'integrity', 'tags']));
                   stepDone();
                 });
           }
@@ -440,7 +443,7 @@ describe('Versioning', function () {
               assert.exists(history);
               history.length.should.eql(2);
               history.forEach(function (previousVersion) {
-                previousVersion.headId.should.eql(eventOnChildStream.id);
+                previousVersion.id.should.eql(eventOnChildStream.id);
                 previousVersion.streamId.should.eql(childStream.id);
               });
               stepDone();
@@ -516,9 +519,10 @@ describe('Versioning', function () {
 
           events.length.should.be.eql(1);
           events.forEach(function (event) {
-            (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
+            $$(event);
+            (Object.keys(event).length).should.eql(integrity.events.isActive ? 4 : 3);
             assert.exists(event.id);
-            assert.exists(event.headId);
+            assert.equal(event.id, eventOnChildStream.id);
             assert.exists(event.modified);
             assert.exists(event.modifiedBy);
             if (integrity.events.isActive) assert.exists(event.integrity);
@@ -563,7 +567,7 @@ describe('Versioning', function () {
 
           (events.length).should.eql(1);
           events.forEach(function (event) {
-            event.headId.should.eql(eventOnChildStream.id);
+            event.id.should.eql(eventOnChildStream.id);
             if (event.id === testData.events[26].id) {
               // we can remove tags as it comes from the db
               const expected = _.cloneDeep(testData.events[26]);

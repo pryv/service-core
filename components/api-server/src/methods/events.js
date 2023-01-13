@@ -983,21 +983,11 @@ module.exports = async function (api) {
   }
   function deleteWithData (context, params, result, next) {
     async.series([
-      async function deleteHistoryCompletely () {
-        if (auditSettings.deletionMode !== 'keep-nothing') { return; }
-        await mall.events.deleteHistory(context.user.id, params.id);
-      },
-      async function minimizeHistory () {
-        if (auditSettings.deletionMode !== 'keep-authors') {
-          return;
-        }
-        await mall.events.updateMinimizeEventHistory(context.user.id, params.id);
-      },
       async function deleteEvent () {
-        await mall.events.updateDeleteByMode(context.user.id, auditSettings.deletionMode, { id: params.id, state: 'all' });
+        await mall.events.delete(context.user.id, context.oldEvent);
         result.eventDeletion = { id: params.id };
       },
-      async function () {
+      async function updateStorage () {
         const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
         // If needed, approximately update account storage size
         if (!storagedUsed || !storagedUsed.attachedFiles) {
