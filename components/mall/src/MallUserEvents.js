@@ -78,21 +78,10 @@ class MallUserEvents {
         res.push(eventsUtils.convertEventFromStore(storeId, event));
       }
     } catch (e) {
+      $$(e);
       storeDataUtils.throwAPIError(e, storeId);
     }
     return res;
-  }
-
-  /**
-   * delete event's history
-   */
-  async deleteHistory (userId, fullEventId) {
-    const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
-    const eventsStore = this.eventsStores.get(storeId);
-    if (!eventsStore) {
-      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
-    }
-    await eventsStore.deleteHistory(userId, storeEventId);
   }
 
   /**

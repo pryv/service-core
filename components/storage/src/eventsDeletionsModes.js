@@ -5,7 +5,7 @@ const DELETION_MODES_FIELDS = {
   'keep-authors': [
     'streamIds',
     'time',
-    'duration',
+    'endTime',
     'type',
     'content',
     'description',
@@ -19,7 +19,7 @@ const DELETION_MODES_FIELDS = {
   'keep-nothing': [
     'streamIds',
     'time',
-    'duration',
+    'endTime',
     'type',
     'content',
     'description',

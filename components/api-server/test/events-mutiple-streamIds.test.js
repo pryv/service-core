@@ -723,7 +723,6 @@ describe('events.streamIds', function () {
                 .set('Authorization', manageAccessToken)
                 .query({ mergeEventsWithParent: false });
             }
-
             const res = await server.request()
               .get(pathEventId(eventIdAxAandB))
               .set('Authorization', manageAccessToken);

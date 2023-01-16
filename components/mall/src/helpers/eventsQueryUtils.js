@@ -114,6 +114,12 @@ function getStoreQueryFromParams (params) {
 
   const query = [];
 
+  // always exclude history data
+  query.push({ type: 'equal', content: { field: 'headId', value: null } });
+  if (params.headId) {
+    throw new Error('No headId in query');
+  }
+
   // trashed
   switch (params.state) {
     case 'trashed':

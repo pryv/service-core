@@ -137,7 +137,6 @@ module.exports = ds.createUserEvents({
 
   async delete (userId, originalEvent) {
     const deletedEventContent = Object.assign({}, originalEvent);
-
     // if attachments are to be deleted
     if (this.deletionSettings.removeAttachments && deletedEventContent.attachments != null && deletedEventContent.attachments.length > 0) {
       await this.eventsFileStorage.removeAllForEvent(userId, deletedEventContent.id);
@@ -159,7 +158,6 @@ module.exports = ds.createUserEvents({
     deletedEventContent._id = deletedEventContent.id;
     delete deletedEventContent.id;
     deletedEventContent.userId = userId;
-
     await this.eventsCollection.replaceOne({ userId, _id: deletedEventContent._id }, deletedEventContent);
   },
 

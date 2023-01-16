@@ -29,7 +29,8 @@ module.exports = ds.createDataStore({
     // events
     const eventFilesStorage = (await storage.getStorageLayer()).eventFiles;
     const userStorage = await getStorage('local');
-    this.events = new LocalUserEventsSQLite(userStorage, eventFilesStorage);
+    this.events = new LocalUserEventsSQLite(userStorage, eventFilesStorage, this.settings);
+    // forward settings to userEvents
     return this;
   },
   async newTransaction () {

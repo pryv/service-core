@@ -10,13 +10,24 @@
  */
 const errorFactory = require('errors').factory;
 
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const DELETION_MODES_FIELDS = require('../eventsDeletionsModes');
+const { integrity } = require('business');
+
 class LocalUserEvents {
   storage;
-
   eventsFileStorage;
-  constructor (storage, eventsFileStorage) {
+  deletionSettings;
+
+  constructor (storage, eventsFileStorage, settings) {
     this.storage = storage;
     this.eventsFileStorage = eventsFileStorage;
+    this.settings = settings;
+    this.deletionSettings = {
+      mode: this.settings.versioning?.deletionMode || 'keep-nothing'
+    };
+    this.deletionSettings.fields = DELETION_MODES_FIELDS[this.deletionSettings.mode] || ['integrity'];
+    this.deletionSettings.removeAttachments = this.deletionSettings.fields.includes('attachments');
   }
 
   /**
@@ -111,14 +122,6 @@ class LocalUserEvents {
   /**
    * @returns {Promise<any>}
    */
-  async deleteHistory (userId, eventId) {
-    const db = await this.storage.forUser(userId);
-    return await db.deleteEventsHistory(eventId);
-  }
-
-  /**
-   * @returns {Promise<any>}
-   */
   async get (userId, params) {
     const db = await this.storage.forUser(userId);
     return db.getEvents(params);
@@ -132,10 +135,40 @@ class LocalUserEvents {
   /**
    * @returns {Promise<any>}
    */
-  async delete (userId, params, transaction) {
+  async delete (userId, originalEvent, transaction) {
     const db = await this.storage.forUser(userId);
-    // here we should delete attachments linked to deleted events.
-    return await db.deleteEvents(params);
+    const deletedEventContent = Object.assign({}, originalEvent);
+    const eventId = deletedEventContent.id;
+
+    // if attachments are to be deleted
+    if (this.deletionSettings.removeAttachments && deletedEventContent.attachments != null && deletedEventContent.attachments.length > 0) {
+      await this.eventsFileStorage.removeAllForEvent(userId, eventId);
+    }
+    // eventually delete or update history
+    if (this.deletionSettings.mode === 'keep-nothing') await db.deleteEventsHistory(eventId);
+    if (this.deletionSettings.mode === 'keep-authors') {
+      await db.minimizeEventHistory(eventId, this.deletionSettings.fields);
+    }
+
+    // prepare event content for mongodb
+    deletedEventContent.deleted = Date.now() / 1000;
+    for (const field of this.deletionSettings.fields) {
+      delete deletedEventContent[field];
+    }
+    integrity.events.set(deletedEventContent);
+    delete deletedEventContent.id;
+    return await db.updateEvent(eventId, deletedEventContent);
+  }
+
+  /**
+    * LocalStores Only - as long as SystemStreams are embeded
+    */
+  async removeAllNonAccountEventsForUser (userId) {
+    const db = await this.storage.forUser(userId);
+    const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
+    const query = [{ type: 'streamsQuery', content: [{ any: ['*'], and: [{ not: allAccountStreamIds }] }] }];
+    const res = await db.deleteEvents({ query, options: {} });
+    return res;
   }
 
   /**
@@ -143,7 +176,8 @@ class LocalUserEvents {
    * @returns {Promise<void>}
    */
   async _deleteUser (userId) {
-    return await this.delete(userId, { query: [] });
+    const db = await this.storage.forUser(userId);
+    return await db.deleteEvents({ query: [] });
   }
 
   /**

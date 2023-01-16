@@ -519,13 +519,11 @@ describe('Versioning', function () {
 
           events.length.should.be.eql(1);
           events.forEach(function (event) {
-            $$(event);
-            (Object.keys(event).length).should.eql(integrity.events.isActive ? 4 : 3);
+            (Object.keys(event).length).should.eql(3);
             assert.exists(event.id);
             assert.equal(event.id, eventOnChildStream.id);
             assert.exists(event.modified);
             assert.exists(event.modifiedBy);
-            if (integrity.events.isActive) assert.exists(event.integrity);
           });
         }
       ], done);
