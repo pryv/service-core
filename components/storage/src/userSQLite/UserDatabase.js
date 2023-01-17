@@ -133,15 +133,10 @@ class UserDatabase {
 
   async createEvent (event) {
     const eventForDb = eventSchemas.eventToDB(event);
-    try {
     await this.concurentSafeWriteStatement(() => {
       this.logger.debug('(async) CREATE event:' + JSON.stringify(eventForDb));
       this.create.events.run(eventForDb);
     });
-  } catch (e) {
-    $$(e);
-    throw e; 
-  }
   }
 
   getAllActions () {
@@ -160,7 +155,7 @@ class UserDatabase {
   }
 
   async minimizeEventHistory (eventId, fieldsToRemove) {
-    const minimizeHistoryStatement = `UPDATE events SET ${fieldsToRemove.map(field => `${field} = NULL`).join(', ')} WHERE headId = ?`;
+    const minimizeHistoryStatement = `UPDATE events SET ${fieldsToRemove.map(field => `${field} = ${field === 'streamIds' ? '\'' + ALL_EVENTS_TAG + '\'' : 'NULL'}`).join(', ')} WHERE headId = ?`;
     await this.concurentSafeWriteStatement(() => {
       this.logger.debug('(async) Minimize event history :' + minimizeHistoryStatement);
       this.db.prepare(minimizeHistoryStatement).run(eventId);
@@ -172,7 +167,7 @@ class UserDatabase {
     if (queryString.indexOf('MATCH') > 0) {
       this.logger.debug('DELETE events one by one as queryString includes MATCH: ' + queryString);
       // SQLite does not know how to delete with "MATCH" statement
-      // going by the doddgy task of getting events that matches the query and deleteing them one by one
+      // going by the doddgy task of getting events that matches the query and deleting them one by one
       const selectEventsToBeDeleted = prepareEventsGetQuery(params);
 
       for (const event of this.db.prepare(selectEventsToBeDeleted).iterate()) {
@@ -181,7 +176,6 @@ class UserDatabase {
           this.delete.eventById.run(event.eventid);
         });
       }
-      $$(this.getAll['events'].all());
       return null;
     }
     // else

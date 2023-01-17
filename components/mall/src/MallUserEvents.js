@@ -78,7 +78,6 @@ class MallUserEvents {
         res.push(eventsUtils.convertEventFromStore(storeId, event));
       }
     } catch (e) {
-      $$(e);
       storeDataUtils.throwAPIError(e, storeId);
     }
     return res;
