@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2023 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -31,7 +31,7 @@ async function events () {
     }
 
     if (event.integrity === undefined) {
-      errors.push('event has no integrity property');
+      if (event.headId == null) errors.push('event has no integrity property');
     } else {
       const i = integrity.events.compute(event).integrity;
       if (i !== event.integrity) {

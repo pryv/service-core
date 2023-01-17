@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2023 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -16,39 +16,6 @@ const integrity = require('business/src/integrity');
 const { Readable } = require('stream');
 
 const cuid = require('cuid');
-
-const DELETION_MODES_FIELDS = {
-  'keep-authors': [
-    'streamIds',
-    'time',
-    'duration',
-    'type',
-    'content',
-    'description',
-    'attachments',
-    'clientData',
-    'trashed',
-    'created',
-    'createdBy',
-    'integrity'
-  ],
-  'keep-nothing': [
-    'streamIds',
-    'time',
-    'duration',
-    'type',
-    'content',
-    'description',
-    'attachments',
-    'clientData',
-    'trashed',
-    'created',
-    'createdBy',
-    'modified',
-    'modifiedBy',
-    'integrity'
-  ]
-};
 
 /**
  * Storage for events.
@@ -114,18 +81,6 @@ class MallUserEvents {
       storeDataUtils.throwAPIError(e, storeId);
     }
     return res;
-  }
-
-  /**
-   * delete event's history
-   */
-  async deleteHistory (userId, fullEventId) {
-    const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
-    const eventsStore = this.eventsStores.get(storeId);
-    if (!eventsStore) {
-      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
-    }
-    await eventsStore.deleteHistory(userId, storeEventId);
   }
 
   /**
@@ -478,37 +433,12 @@ class MallUserEvents {
 
   // ----------------- DELETE / UPDATE ----------------- //
 
-  /**
-   * Utility to remove data from event history (versions)
-   * @param {*} userId
-   * @param {string} deletionMode one of 'keep-nothing', 'keep-authors'
-   * @param {any} query get query
-   * @param {MallTransaction} mallTransaction
-   * @returns {Promise<void>}
-   **/
-  async updateDeleteByMode (userId, deletionMode, query, mallTransaction) {
-    const fieldsToSet = { deleted: Date.now() / 1000 };
-    const fieldsToDelete = DELETION_MODES_FIELDS[deletionMode] || ['integrity'];
-    await this.updateMany(userId, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
-  }
-
-  // ----------------- DELETE ----------------- //
-
-  /**
-   * @returns {Promise<void>}
-   */
-  async delete (userId, query) {
-    const paramsByStore = eventsQueryUtils.getParamsByStore(query);
-    for (const storeId of Object.keys(paramsByStore)) {
-      const eventsStore = this.eventsStores.get(storeId);
-      const params = paramsByStore[storeId];
-      try {
-        const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(params);
-        await eventsStore.delete(userId, paramsForStore);
-      } catch (e) {
-        storeDataUtils.throwAPIError(e, storeId);
-      }
-    }
+  async delete (userId, originalEvent, mallTransaction) {
+    const [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(originalEvent.id);
+    const originalStoreEvent = eventsUtils.convertEventToStore(storeId, originalEvent);
+    const eventsStore = this.eventsStores.get(storeId);
+    const storeTransaction = mallTransaction ? await mallTransaction.getStoreTransaction(storeId) : null;
+    await eventsStore.delete(userId, originalStoreEvent, storeTransaction);
   }
 
   // ----------------- UTILS -----------------
@@ -538,6 +468,13 @@ class MallUserEvents {
       ? await mallTransaction.getStoreTransaction(storeId)
       : null;
     return { storeId, eventsStore, storeEvent, storeTransaction };
+  }
+
+  // -------------- LOCAL SPECIFIC TO ACCOUNT & SYSTEM STREAMS ----- //
+
+  async localRemoveAllNonAccountEventsForUser (userId) {
+    const localEventsStore = this.eventsStores.get('local');
+    return await localEventsStore.removeAllNonAccountEventsForUser(userId);
   }
 }
 module.exports = MallUserEvents;

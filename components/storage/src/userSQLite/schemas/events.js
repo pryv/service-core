@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2023 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -80,10 +80,12 @@ function nullOrJSON (value) {
 /**
  * transform events out of db
  */
-function eventFromDB (event, addStorePrefix = false) {
-  event.streamIds = event.streamIds.split(' ');
-  event.streamIds.pop(); // pop removes the last element whihc is set on all events ALL_EVENTS_TAG
-  if (event.streamIds.length === 0) delete event.streamIds; // it was a "deleted" event
+function eventFromDB (event) {
+  if (event.streamIds != null) {
+    event.streamIds = event.streamIds.split(' ');
+    event.streamIds.pop(); // pop removes the last element whihc is set on all events ALL_EVENTS_TAG
+    if (event.streamIds.length === 0) delete event.streamIds; // it was a "deleted" event
+  }
 
   event.id = event.eventid;
   delete event.eventid;
@@ -113,6 +115,13 @@ function eventFromDB (event, addStorePrefix = false) {
   return event;
 }
 
+function historyEventFromDB (event) {
+  event = eventFromDB(event);
+  event.id = event.headId;
+  delete event.headId;
+  return event;
+}
+
 /**
  * - Add eventual '' to values that are not of type "REAL" and escape eventual '
  * - Transform booleans to 0/1
@@ -134,6 +143,7 @@ const coerces = {
 module.exports = {
   eventToDB,
   eventFromDB,
+  historyEventFromDB,
   dbSchema,
   coerceSelectValueForCollumn,
   ALL_EVENTS_TAG

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2023 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -10,15 +10,34 @@ const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUt
 const ds = require('@pryv/datastore');
 const errors = ds.errors;
 const handleDuplicateError = require('../Database').handleDuplicateError;
+
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const DELETION_MODES_FIELDS = require('../eventsDeletionsModes');
+const { integrity } = require('business');
 /**
  * Local data store: events implementation.
  */
 module.exports = ds.createUserEvents({
   eventsCollection: null,
   eventsFileStorage: null,
+  deletionSettings: {
+    mode: null,
+    fields: null,
+    removeAttachments: true,
+    updateOperatorForHistory: { $unset: {} }
+  },
+
   init (eventsCollection, eventsFileStorage) {
     this.eventsCollection = eventsCollection;
     this.eventsFileStorage = eventsFileStorage;
+
+    // prepare deletion settings
+    this.deletionSettings.mode = this.settings.versioning?.deletionMode || 'keep-nothing';
+    this.deletionSettings.fields = DELETION_MODES_FIELDS[this.deletionSettings.mode] || ['integrity'];
+    for (const field of this.deletionSettings.fields) {
+      this.deletionSettings.updateOperatorForHistory.$unset[field] = '';
+    }
+    this.deletionSettings.removeAttachments = this.deletionSettings.updateOperatorForHistory.$unset.attachments != null;
   },
 
   async getOne (userId, eventId) {
@@ -30,7 +49,7 @@ module.exports = ds.createUserEvents({
   async getHistory (userId, eventId) {
     const options = { sort: { modified: 1 } };
     const cursor = this._getCursor(userId, { headId: eventId }, options);
-    const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
+    const res = (await cursor.toArray()).map((value) => cleanHistoryResult({ value }));
     return res;
   },
 
@@ -116,18 +135,30 @@ module.exports = ds.createUserEvents({
     }
   },
 
-  async delete (userId, params, transaction) {
-    const { query, options } = paramsToMongoquery(params);
-    query.userId = userId;
-    options.transactionSession = transaction?.transactionSession;
-    // logic might be adapated, but in case of delete the attachments are removed by the store
-    const queryForAttachments = _.clone(query);
-    queryForAttachments.attachments = { $exists: true, $ne: [] };
-    const eventsWithAttachments = await this._getCursor(userId, queryForAttachments, options).toArray();
-    for (const eventWithAttachment of eventsWithAttachments) {
-      await this.eventsFileStorage.removeAllForEvent(userId, eventWithAttachment._id);
+  async delete (userId, originalEvent) {
+    const deletedEventContent = Object.assign({}, originalEvent);
+    // if attachments are to be deleted
+    if (this.deletionSettings.removeAttachments && deletedEventContent.attachments != null && deletedEventContent.attachments.length > 0) {
+      await this.eventsFileStorage.removeAllForEvent(userId, deletedEventContent.id);
     }
-    return await this.eventsCollection.deleteMany(query, options);
+    // eventually delete or update history
+    if (this.deletionSettings.mode === 'keep-nothing') await this.deleteHistory(userId, deletedEventContent.id);
+    if (this.deletionSettings.mode === 'keep-authors') {
+      await this.eventsCollection.updateMany(
+        { userId, headId: deletedEventContent.id },
+        this.deletionSettings.updateOperatorForHistory, {});
+    }
+
+    // prepare event content for mongodb
+    deletedEventContent.deleted = Date.now() / 1000;
+    for (const field of this.deletionSettings.fields) {
+      delete deletedEventContent[field];
+    }
+    integrity.events.set(deletedEventContent);
+    deletedEventContent._id = deletedEventContent.id;
+    delete deletedEventContent.id;
+    deletedEventContent.userId = userId;
+    await this.eventsCollection.replaceOne({ userId, _id: deletedEventContent._id }, deletedEventContent);
   },
 
   _getCursor (userId, query, options) {
@@ -154,13 +185,23 @@ module.exports = ds.createUserEvents({
   async _getUserStorageSize (userId) {
     // TODO: fix this total HACK
     return await this.eventsCollection.countDocuments({ userId });
+  },
+
+  /**
+   * LocalStores Only - as long as SystemStreams are embeded
+   */
+  async removeAllNonAccountEventsForUser (userId) {
+    const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
+    const query = { userId, streamIds: { $nin: allAccountStreamIds } };
+    const res = await this.eventsCollection.deleteMany(query, {});
+    return res;
   }
 });
 // --------------- helpers ------------//
 
 /**
- * change _id to id, remove userId and headId, from result
- * @param {any}
+ * change _id to id, remove userId, from result
+ * @param {any} result
  * @returns {any}
  */
 function cleanResult (result) {
@@ -170,7 +211,23 @@ function cleanResult (result) {
     value.id = value._id;
     delete value._id;
     delete value.userId;
-    //delete value.headId;
+  }
+  return value;
+}
+
+/**
+ * change remove _id to set id to headId, from result
+ * @param {any} result
+ * @returns {any}
+ */
+function cleanHistoryResult (result) {
+  if (result?.value == null) { return result; }
+  const value = result.value;
+  if (value != null) {
+    value.id = value.headId;
+    delete value._id;
+    delete value.userId;
+    delete value.headId;
   }
   return value;
 }

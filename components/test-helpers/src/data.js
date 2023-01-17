@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2023 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -77,7 +77,6 @@ const events = (exports.events = require('./data/events'));
 exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
-  const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
   const eventsToWrite = events.map((e) => {
     const eventToWrite = _.cloneDeep(e);
     delete eventToWrite.tags;
@@ -87,12 +86,7 @@ exports.resetEvents = function (done, user) {
   async.series([
     async function removeNonAccountEvents () {
       mall = await getMall();
-      await mall.events.delete(user.id, {
-        state: 'all',
-        withDeletions: true,
-        includeHistory: true,
-        streams: [{ any: '*', and: [{ not: allAccountStreamIds }] }]
-      });
+      await mall.events.localRemoveAllNonAccountEventsForUser(user.id);
     },
     async function createEvents () {
       await mall.events.createMany(user.id, eventsToWrite);

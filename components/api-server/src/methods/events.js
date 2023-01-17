@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2023 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -171,6 +171,12 @@ module.exports = async function (api) {
     delete context.event;
     const systemStreamIdsForbiddenForReading = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
     let canReadEvent = false;
+    // special case no streamIds on event && deleted
+    if (event.streamIds == null) { // event might be deleted - limit result to deleted property
+      result.event = { id: event.id, deleted: event.deleted };
+      return next();
+    }
+
     for (const streamId of event.streamIds) {
       // ok if at least one
       if (systemStreamIdsForbiddenForReading.includes(streamId)) {
@@ -201,7 +207,11 @@ module.exports = async function (api) {
       events.forEach((e) => {
         // To remove when streamId not necessary
         _applyBackwardCompatibilityOnEvent(e, context);
-        result.history.push(e);
+        if (result.event.streamIds == null) { // event might be deleted - limit result to modified property
+          result.event = { id: e.id, modified: e.modified };
+        } else {
+          result.history.push(e);
+        }
       });
       next();
     } catch (err) {
@@ -983,21 +993,11 @@ module.exports = async function (api) {
   }
   function deleteWithData (context, params, result, next) {
     async.series([
-      async function deleteHistoryCompletely () {
-        if (auditSettings.deletionMode !== 'keep-nothing') { return; }
-        await mall.events.deleteHistory(context.user.id, params.id);
-      },
-      async function minimizeHistory () {
-        if (auditSettings.deletionMode !== 'keep-authors') {
-          return;
-        }
-        await mall.events.updateMinimizeEventHistory(context.user.id, params.id);
-      },
       async function deleteEvent () {
-        await mall.events.updateDeleteByMode(context.user.id, auditSettings.deletionMode, { id: params.id, state: 'all' });
+        await mall.events.delete(context.user.id, context.oldEvent);
         result.eventDeletion = { id: params.id };
       },
-      async function () {
+      async function updateStorage () {
         const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
         // If needed, approximately update account storage size
         if (!storagedUsed || !storagedUsed.attachedFiles) {

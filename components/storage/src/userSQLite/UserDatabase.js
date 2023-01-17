@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2023 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -127,15 +127,15 @@ class UserDatabase {
    */
   createEventSync (event) {
     const eventForDb = eventSchemas.eventToDB(event);
-    this.create.events.run(eventForDb);
     this.logger.debug('(sync) CREATE event:' + JSON.stringify(eventForDb));
+    this.create.events.run(eventForDb);
   }
 
   async createEvent (event) {
     const eventForDb = eventSchemas.eventToDB(event);
     await this.concurentSafeWriteStatement(() => {
-      this.create.events.run(eventForDb);
       this.logger.debug('(async) CREATE event:' + JSON.stringify(eventForDb));
+      this.create.events.run(eventForDb);
     });
   }
 
@@ -149,20 +149,30 @@ class UserDatabase {
 
   async deleteEventsHistory (eventId) {
     await this.concurentSafeWriteStatement(() => {
+      this.logger.debug('(async) DELETE event history for eventId:' + eventId);
       return this.delete.eventsByHeadId.run(eventId);
+    });
+  }
+
+  async minimizeEventHistory (eventId, fieldsToRemove) {
+    const minimizeHistoryStatement = `UPDATE events SET ${fieldsToRemove.map(field => `${field} = ${field === 'streamIds' ? '\'' + ALL_EVENTS_TAG + '\'' : 'NULL'}`).join(', ')} WHERE headId = ?`;
+    await this.concurentSafeWriteStatement(() => {
+      this.logger.debug('(async) Minimize event history :' + minimizeHistoryStatement);
+      this.db.prepare(minimizeHistoryStatement).run(eventId);
     });
   }
 
   async deleteEvents (params) {
     const queryString = prepareEventsDeleteQuery(params);
-    this.logger.debug('DELETE events: ' + queryString);
     if (queryString.indexOf('MATCH') > 0) {
+      this.logger.debug('DELETE events one by one as queryString includes MATCH: ' + queryString);
       // SQLite does not know how to delete with "MATCH" statement
-      // going by the doddgy task of getting events that matches the query and deleteing them one by one
+      // going by the doddgy task of getting events that matches the query and deleting them one by one
       const selectEventsToBeDeleted = prepareEventsGetQuery(params);
 
       for (const event of this.db.prepare(selectEventsToBeDeleted).iterate()) {
         await this.concurentSafeWriteStatement(() => {
+          this.logger.debug('  > DELETE event: ' + event.eventid);
           this.delete.eventById.run(event.eventid);
         });
       }
@@ -171,12 +181,14 @@ class UserDatabase {
     // else
     let res = null;
     await this.concurentSafeWriteStatement(() => {
+      this.logger.debug('DELETE events: ' + queryString);
       res = this.db.prepare(queryString).run();
     });
     return res;
   }
 
   getOneEvent (eventId) {
+    this.logger.debug('GET ONE event: ' + eventId);
     const event = this.get.eventById.get(eventId);
     if (event == null) return null;
     return eventSchemas.eventFromDB(event);
@@ -207,7 +219,7 @@ class UserDatabase {
 
   getEventsHistory (eventId) {
     this.logger.debug('GET Events History for: ' + eventId);
-    return this.get.eventHistory.all(eventId).map(eventSchemas.eventFromDB);
+    return this.get.eventHistory.all(eventId).map(eventSchemas.historyEventFromDB);
   }
 
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
