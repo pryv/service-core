@@ -405,32 +405,6 @@ class MallUserEvents {
     return Readable.from(reader());
   }
 
-  /**
-   * Utility to remove data from event history (versions) used by methods 'events' and 'streams'
-   * @param {*} userId
-   * @param {*} eventId
-   * @returns {Promise<any>}
-   */
-  async updateMinimizeEventHistory (userId, eventId) {
-    const fieldsToDelete = [
-      'streamIds',
-      'time',
-      'endTime',
-      'type',
-      'content',
-      'tags',
-      'description',
-      'attachments',
-      'clientData',
-      'trashed',
-      'created',
-      'createdBy',
-      'integrity'
-    ];
-    const res = await this.updateMany(userId, { headId: eventId, state: 'all', withDeletions: true }, { fieldsToDelete });
-    return res;
-  }
-
   // ----------------- DELETE / UPDATE ----------------- //
 
   async delete (userId, originalEvent, mallTransaction) {

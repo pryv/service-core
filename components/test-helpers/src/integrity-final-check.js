@@ -31,6 +31,7 @@ async function events () {
     }
 
     if (event.integrity === undefined) {
+      // ignore missing integrity for events in histories
       if (event.headId == null) errors.push('event has no integrity property');
     } else {
       const i = integrity.events.compute(event).integrity;
