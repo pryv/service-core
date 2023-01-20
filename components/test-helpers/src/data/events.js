@@ -406,7 +406,18 @@ const events = [
     }
     // tags are deleted in resetEvents(), just before writing the fixtures in MongoDB
   }
-  integrity.events.set(event);
+
+  let origId = null;
+  if (event.headId) { // remove headId to compute integrity
+    origId = event.id;
+    event.id = event.headId;
+    delete event.headId;
+  }
+  integrity.events.set(event, false);
+  if (origId) {
+    event.headId = event.id;
+    event.id = origId;
+  }
   return event;
 });
 

@@ -89,7 +89,7 @@ exports.resetEvents = function (done, user) {
       await mall.events.localRemoveAllNonAccountEventsForUser(user.id);
     },
     async function createEvents () {
-      await mall.events.createMany(user.id, eventsToWrite);
+      await mall.events.createManyForTests(user.id, eventsToWrite);
     },
     function removeZerosDuration (done2) {
       events.forEach((e) => {

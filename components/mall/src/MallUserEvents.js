@@ -208,6 +208,19 @@ class MallUserEvents {
     }
   }
 
+  /**
+   * Support creating events with headId for history and already deleted events
+   * Implies that events have already integrity calculated
+   * @returns {Promise<void>}
+   */
+  async createManyForTests (userId, eventsData) {
+    const localStore = this.eventsStores.get('local');
+    for (const eventData of eventsData) {
+      const { storeId, eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, null, true);
+      await eventsStore.create(userId, storeEvent, storeTransaction);
+    }
+  }
+
   // ----------------- ATTACHMENTS ----------------- //
 
   /**
@@ -424,7 +437,7 @@ class MallUserEvents {
    * @private
    * @returns {Promise<{ storeId: any; eventsStore: any; storeEvent: any; storeTransaction: any; }>}
    */
-  async prepareForStore (eventData, mallTransaction) {
+  async prepareForStore (eventData, mallTransaction, isFromTests = false) {
     let storeId = null;
     // add eventual missing id and get storeId from first streamId then
     if (eventData.id == null) {
@@ -435,7 +448,11 @@ class MallUserEvents {
       [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     }
     // set integrity
-    integrity.events.set(eventData);
+    if (eventData.integrity != null) {
+      if (!isFromTests) integrity.events.set(eventData);
+    } else {
+      integrity.events.set(eventData);
+    }
     const storeEvent = eventsUtils.convertEventToStore(storeId, eventData);
     const eventsStore = this.eventsStores.get(storeId);
     const storeTransaction = mallTransaction

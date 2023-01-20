@@ -13,11 +13,13 @@ const errorFactory = require('errors').factory;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const DELETION_MODES_FIELDS = require('../eventsDeletionsModes');
 const { integrity } = require('business');
+const cuid = require('cuid');
 
 class LocalUserEvents {
   storage;
   eventsFileStorage;
   deletionSettings;
+  keepHistory;
 
   constructor (storage, eventsFileStorage, settings) {
     this.storage = storage;
@@ -28,6 +30,7 @@ class LocalUserEvents {
     };
     this.deletionSettings.fields = DELETION_MODES_FIELDS[this.deletionSettings.mode] || ['integrity'];
     this.deletionSettings.removeAttachments = this.deletionSettings.fields.includes('attachments');
+    this.keepHistory = this.settings.versioning?.forceKeepHistory || false;
   }
 
   /**
@@ -35,6 +38,7 @@ class LocalUserEvents {
    */
   async update (userId, eventData, transaction) {
     const db = await this.storage.forUser(userId);
+    await this._generateVersionIfNeeded(db, eventData.id, null, transaction);
     try {
       return db.updateEvent(eventData.id, eventData);
     } catch (err) {
@@ -137,6 +141,7 @@ class LocalUserEvents {
    */
   async delete (userId, originalEvent, transaction) {
     const db = await this.storage.forUser(userId);
+    await this._generateVersionIfNeeded(db, originalEvent.id, originalEvent, transaction);
     const deletedEventContent = Object.assign({}, originalEvent);
     const eventId = deletedEventContent.id;
 
@@ -169,6 +174,19 @@ class LocalUserEvents {
     const query = [{ type: 'streamsQuery', content: [{ any: ['*'], and: [{ not: allAccountStreamIds }] }] }];
     const res = await db.deleteEvents({ query, options: {} });
     return res;
+  }
+
+  async _generateVersionIfNeeded (db, eventId, originalEvent = null, transaction = null) {
+    if (!this.keepHistory) return;
+    let versionItem = null;
+    if (originalEvent != null) {
+      versionItem = Object.assign({}, originalEvent);
+    } else {
+      versionItem = await db.getOneEvent(eventId);
+    }
+    versionItem.headId = eventId;
+    versionItem.id = cuid();
+    await db.createEvent(versionItem);
   }
 
   /**

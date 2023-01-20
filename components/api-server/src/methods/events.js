@@ -61,7 +61,6 @@ module.exports = async function (api) {
   const config = await getConfig();
   const authSettings = config.get('auth');
   const eventTypesUrl = config.get('service:eventTypes');
-  const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
   const openSourceSettings = config.get('openSource');
   const usersRepository = await getUsersRepository();
@@ -492,7 +491,6 @@ module.exports = async function (api) {
     doesEventBelongToAccountStream,
     validateSystemStreamsContent,
     validateAccountStreamsForUpdate,
-    generateVersionIfNeeded,
     appendAccountStreamsDataForUpdate,
     updateOnPlatform,
     updateEvent,
@@ -576,33 +574,6 @@ module.exports = async function (api) {
     next();
     function hasStreamIdsModification (event) {
       return event.streamIds != null;
-    }
-  }
-  /**
-   * Depends on context.oldEvent
-   */
-  async function generateVersionIfNeeded (context, params, result, next) {
-    if (!auditSettings.forceKeepHistory) {
-      return next();
-    }
-    const versionEvent = _.clone(context.oldEvent);
-    versionEvent.headId = context.oldEvent.id;
-    delete versionEvent.id;
-    // otherwise the history value will squat
-    removeUniqueStreamId(versionEvent);
-    try {
-      await mall.events.create(context.user.id, versionEvent);
-    } catch (err) {
-      if (err instanceof APIError) { return next(err); }
-      return next(errors.unexpectedError(err));
-    }
-    return next();
-    function removeUniqueStreamId (event) {
-      const index = event.streamIds.indexOf(SystemStreamsSerializer.addPrivatePrefixToStreamId('unique'));
-      if (index > -1) {
-        event.streamIds.splice(index, 1);
-      }
-      return event;
     }
   }
   /**
@@ -932,7 +903,6 @@ module.exports = async function (api) {
     checkEventForDelete,
     doesEventBelongToAccountStream,
     validateAccountStreamsForDeletion,
-    generateVersionIfNeeded,
     function (context, params, result, next) {
       if (!context.oldEvent.trashed) {
         // move to trash

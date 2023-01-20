@@ -38,6 +38,7 @@ module.exports = ds.createUserEvents({
       this.deletionSettings.updateOperatorForHistory.$unset[field] = '';
     }
     this.deletionSettings.removeAttachments = this.deletionSettings.updateOperatorForHistory.$unset.attachments != null;
+    this.keepHistory = this.settings.versioning?.forceKeepHistory || false;
   },
 
   async getOne (userId, eventId) {
@@ -120,15 +121,15 @@ module.exports = ds.createUserEvents({
     return await this.eventsFileStorage.removeAttachedFile(userId, eventId, fileId);
   },
   async update (userId, eventData, transaction) {
+    const update = Object.assign({}, eventData);
+    update._id = update.id;
+    update.userId = userId;
+    delete update.id;
+    const query = { userId, _id: update._id };
+    const options = { transactionSession: transaction?.transactionSession };
     try {
-      const update = Object.assign({}, eventData);
-      update._id = update.id;
-      update.userId = userId;
-      delete update.id;
-      const query = { userId, _id: update._id };
-      const options = { transactionSession: transaction?.transactionSession };
+      await this._generateVersionIfNeeded(userId, update._id, null, transaction);
       const res = await this.eventsCollection.replaceOne(query, update, options);
-      await this.eventsCollection.findOne({ userId, _id: update._id });
       return res.modifiedCount === 1; // true if an event was updated
     } catch (err) {
       throw errors.unexpectedError(err);
@@ -137,6 +138,7 @@ module.exports = ds.createUserEvents({
 
   async delete (userId, originalEvent) {
     const deletedEventContent = Object.assign({}, originalEvent);
+    await this._generateVersionIfNeeded(userId, originalEvent.id, originalEvent);
     // if attachments are to be deleted
     if (this.deletionSettings.removeAttachments && deletedEventContent.attachments != null && deletedEventContent.attachments.length > 0) {
       await this.eventsFileStorage.removeAllForEvent(userId, deletedEventContent.id);
@@ -159,6 +161,22 @@ module.exports = ds.createUserEvents({
     delete deletedEventContent.id;
     deletedEventContent.userId = userId;
     await this.eventsCollection.replaceOne({ userId, _id: deletedEventContent._id }, deletedEventContent);
+  },
+
+  async _generateVersionIfNeeded (userId, eventId, originalEvent = null, transaction = null) {
+    if (!this.keepHistory) return;
+    const query = { userId, _id: eventId };
+    const options = { transactionSession: transaction?.transactionSession };
+    let versionItem = null;
+    if (originalEvent != null) {
+      versionItem = Object.assign({}, originalEvent);
+      delete versionItem.id;
+    } else {
+      versionItem = await this.eventsCollection.findOne(query, options);
+      delete versionItem._id;
+    }
+    versionItem.headId = eventId;
+    await this.eventsCollection.insertOne(versionItem);
   },
 
   _getCursor (userId, query, options) {

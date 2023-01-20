@@ -149,8 +149,6 @@ describe('Versioning', function () {
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted () {
               const deletedEvent = await mall.events.getOne(user.id, trashedEventWithHistory.id);
               assert.exists(deletedEvent);
-              const eventHistory = await mall.events.getHistory(user.id, trashedEventWithHistory.id);
-              eventHistory.length.should.be.eql(2);
 
               (Object.keys(deletedEvent).length).should.eql(integrity.events.isActive ? 5 : 4);
               deletedEvent.id.should.eql(trashedEventWithHistory.id);
@@ -159,6 +157,8 @@ describe('Versioning', function () {
               assert.exists(deletedEvent.modifiedBy);
               if (integrity.events.isActive) assert.exists(deletedEvent.integrity);
 
+              const eventHistory = await mall.events.getHistory(user.id, trashedEventWithHistory.id);
+              eventHistory.length.should.be.eql(2);
               eventHistory.forEach(function (event) {
                 // integrity is lost
                 (Object.keys(event).length).should.eql(3);

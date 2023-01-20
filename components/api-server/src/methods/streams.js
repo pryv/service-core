@@ -369,15 +369,6 @@ module.exports = async function (api) {
       }
       if (params.mergeEventsWithParent) {
         // -- Case 1 -- Merge events with parent
-        if (auditSettings.forceKeepHistory) {
-          // generateLogIfNecessary
-          const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{ any: cleanDescendantIds }] } });
-          for await (const event of eventsStream) {
-            const eventToVersion = _.extend(event, { headId: event.id });
-            delete eventToVersion.id;
-            await mall.events.create(context.user.id, eventToVersion);
-          }
-        }
         // add parent stream Id if needed and remove deleted stream ids
         // the following add "parentId" if not present and remove "streamAndDescendantIds"
         const query = { streams: [{ any: streamAndDescendantIds }] };

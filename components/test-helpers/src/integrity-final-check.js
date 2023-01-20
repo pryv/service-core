@@ -23,6 +23,11 @@ async function events () {
     event.id = event._id;
     delete event._id;
     delete event.userId;
+    if (event.headId != null) {
+      if (!event.integrity) return; // ignore missing integrity on history
+      event.id = event.headId;
+      delete event.headId;
+    }
 
     const errors = [];
 
@@ -31,8 +36,7 @@ async function events () {
     }
 
     if (event.integrity === undefined) {
-      // ignore missing integrity for events in histories
-      if (event.headId == null) errors.push('event has no integrity property');
+      errors.push('event has no integrity property');
     } else {
       const i = integrity.events.compute(event).integrity;
       if (i !== event.integrity) {
