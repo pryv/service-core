@@ -47,24 +47,17 @@ module.exports = ds.createUserEvents({
     return res[0];
   },
 
-  async getHistory (userId, eventId) {
-    const options = { sort: { modified: 1 } };
-    const cursor = this._getCursor(userId, { headId: eventId }, options);
-    const res = (await cursor.toArray()).map((value) => cleanHistoryResult({ value }));
-    return res;
-  },
-
-  async deleteHistory (userId, eventId) {
-    const options = { sort: { modified: 1 } };
-    const query = { userId: userId, headId: eventId };
-    return await this.eventsCollection.deleteMany(query, options);
-  },
-
   async get (userId, params) {
     const { query, options } = paramsToMongoquery(params);
     const cursor = this._getCursor(userId, query, options);
     const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
     return res;
+  },
+
+  async getStreamed (userId, params) {
+    const { query, options } = paramsToMongoquery(params);
+    const cursor = this._getCursor(userId, query, options);
+    return readableStreamFromEventCursor(cursor);
   },
 
   /**
@@ -84,11 +77,13 @@ module.exports = ds.createUserEvents({
     return readableStreamFromEventCursor(cursor);
   },
 
-  async getStreamed (userId, params) {
-    const { query, options } = paramsToMongoquery(params);
-    const cursor = this._getCursor(userId, query, options);
-    return readableStreamFromEventCursor(cursor);
+  async getHistory (userId, eventId) {
+    const options = { sort: { modified: 1 } };
+    const cursor = this._getCursor(userId, { headId: eventId }, options);
+    const res = (await cursor.toArray()).map((value) => cleanHistoryResult({ value }));
+    return res;
   },
+
   async create (userId, event, transaction) {
     try {
       const options = { transactionSession: transaction?.transactionSession };
@@ -144,7 +139,7 @@ module.exports = ds.createUserEvents({
       await this.eventsFileStorage.removeAllForEvent(userId, deletedEventContent.id);
     }
     // eventually delete or update history
-    if (this.deletionSettings.mode === 'keep-nothing') await this.deleteHistory(userId, deletedEventContent.id);
+    if (this.deletionSettings.mode === 'keep-nothing') await this._deleteHistory(userId, deletedEventContent.id);
     if (this.deletionSettings.mode === 'keep-authors') {
       await this.eventsCollection.updateMany(
         { userId, headId: deletedEventContent.id },
@@ -161,6 +156,12 @@ module.exports = ds.createUserEvents({
     delete deletedEventContent.id;
     deletedEventContent.userId = userId;
     await this.eventsCollection.replaceOne({ userId, _id: deletedEventContent._id }, deletedEventContent);
+  },
+
+  async _deleteHistory (userId, eventId) {
+    const options = { sort: { modified: 1 } };
+    const query = { userId: userId, headId: eventId };
+    return await this.eventsCollection.deleteMany(query, options);
   },
 
   async _generateVersionIfNeeded (userId, eventId, originalEvent = null, transaction = null) {
