@@ -285,29 +285,29 @@ const converters = {
   equal: (content) => {
     const realField = (content.field === 'id') ? 'eventid' : content.field;
     if (content.value === null) return `${realField} IS NULL`;
-    const value = events.coerceSelectValueForCollumn(realField, content.value);
+    const value = events.coerceSelectValueForColumn(realField, content.value);
     return `${realField} = ${value}`;
   },
   greater: (content) => {
-    const value = events.coerceSelectValueForCollumn(content.field, content.value);
+    const value = events.coerceSelectValueForColumn(content.field, content.value);
     return `${content.field} > ${value}`;
   },
   greaterOrEqual: (content) => {
-    const value = events.coerceSelectValueForCollumn(content.field, content.value);
+    const value = events.coerceSelectValueForColumn(content.field, content.value);
     return `${content.field} >= ${value}`;
   },
   lowerOrEqual: (content) => {
-    const value = events.coerceSelectValueForCollumn(content.field, content.value);
+    const value = events.coerceSelectValueForColumn(content.field, content.value);
     return `${content.field} <= ${value}`;
   },
   greaterOrEqualOrNull: (content) => {
-    const value = events.coerceSelectValueForCollumn(content.field, content.value);
+    const value = events.coerceSelectValueForColumn(content.field, content.value);
     return `(${content.field} >= ${value} OR ${content.field} IS NULL)`;
   },
   typesList: (list) => {
     if (list.length === 0) return null;
     const lt = list.map((type) => {
-      const typeCorced = events.coerceSelectValueForCollumn('type', type);
+      const typeCorced = events.coerceSelectValueForColumn('type', type);
       // unsupported "*" query for types
       const starPos = typeCorced.indexOf('/*');
       if (starPos > 0) {

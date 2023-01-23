@@ -4,9 +4,13 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const DELETION_MODES_FIELDS = {
+
+/**
+ * For versioning: what fields to keep for each of the possible deletion modes.
+ */
+module.exports = {
   'keep-everything': [
-    'intergrity'
+    'integrity'
   ],
   'keep-authors': [
     'streamIds',
@@ -39,5 +43,3 @@ const DELETION_MODES_FIELDS = {
     'integrity'
   ]
 };
-
-module.exports = DELETION_MODES_FIELDS;

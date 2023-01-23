@@ -28,7 +28,7 @@ const dbSchema = {
 };
 
 /**
- * @param {Object} event -- An event object
+ * @param {Object} sourceEvent -- An event object
  */
 function eventToDB (sourceEvent) {
   const event = {};
@@ -78,7 +78,7 @@ function nullOrJSON (value) {
 }
 
 /**
- * transform events out of db
+ * Transform event out of DB
  */
 function eventFromDB (event) {
   if (event.streamIds != null) {
@@ -130,7 +130,7 @@ function historyEventFromDB (event) {
  * @param {*} column
  * @param {*} value
  */
-function coerceSelectValueForCollumn (column, value) {
+function coerceSelectValueForColumn (column, value) {
   return coerces[dbSchema[column].coerce](value);
 }
 
@@ -145,6 +145,6 @@ module.exports = {
   eventFromDB,
   historyEventFromDB,
   dbSchema,
-  coerceSelectValueForCollumn,
+  coerceSelectValueForColumn,
   ALL_EVENTS_TAG
 };

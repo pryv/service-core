@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Local Data Store.
  */
@@ -13,17 +14,22 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const userStreams = require('./localUserStreams');
 const userEvents = require('./localUserEvents');
 const LocalTransaction = require('./LocalTransaction');
+
 module.exports = ds.createDataStore({
   id: 'local',
+
   name: 'Local store',
+
   settings: {
     attachments: {
       setFileReadToken: true // methods/events will add a readFileToken
     }
   },
+
   async init () {
     await SystemStreamsSerializer.init();
     const database = await storage.getDatabase();
+
     // init events
     const eventsCollection = await database.getCollection({ name: 'events' });
     const eventFilesStorage = (await storage.getStorageLayer()).eventFiles;
@@ -33,8 +39,8 @@ module.exports = ds.createDataStore({
     }
     // forward settings to userEvents
     userEvents.settings = this.settings;
-
     userEvents.init(eventsCollection, eventFilesStorage);
+
     // init streams
     const streamsCollection = await database.getCollection({ name: 'streams' });
     for (const item of streamIndexes) {
@@ -43,25 +49,32 @@ module.exports = ds.createDataStore({
     }
     const userStreamsStorage = (await storage.getStorageLayer()).streams;
     userStreams.init(streamsCollection, userStreamsStorage);
+
     return this;
   },
+
   streams: userStreams,
+
   events: userEvents,
+
   async newTransaction () {
     const transaction = new LocalTransaction();
     await transaction.init();
     return transaction;
   },
+
   async deleteUser (userId) {
     await userStreams._deleteUser(userId);
     await userEvents._deleteUser(userId);
   },
+
   async getUserStorageSize (userId) {
     const streamsSize = await userStreams._getUserStorageSize(userId);
     const eventsSize = await userEvents._getUserStorageSize(userId);
     return streamsSize + eventsSize;
   }
 });
+
 const eventsIndexes = [
   {
     index: { userId: 1 },
@@ -97,6 +110,7 @@ const eventsIndexes = [
     options: { partialFilterExpression: { endTime: { $exists: true } } }
   }
 ];
+
 const streamIndexes = [
   {
     index: { userId: 1 },

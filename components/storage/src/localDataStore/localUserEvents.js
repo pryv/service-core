@@ -10,10 +10,10 @@ const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUt
 const ds = require('@pryv/datastore');
 const errors = ds.errors;
 const handleDuplicateError = require('../Database').handleDuplicateError;
-
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const DELETION_MODES_FIELDS = require('../eventsDeletionsModes');
+const DeletionModesFields = require('../DeletionModesFields');
 const { integrity } = require('business');
+
 /**
  * Local data store: events implementation.
  */
@@ -33,7 +33,7 @@ module.exports = ds.createUserEvents({
 
     // prepare deletion settings
     this.deletionSettings.mode = this.settings.versioning?.deletionMode || 'keep-nothing';
-    this.deletionSettings.fields = DELETION_MODES_FIELDS[this.deletionSettings.mode] || ['integrity'];
+    this.deletionSettings.fields = DeletionModesFields[this.deletionSettings.mode] || ['integrity'];
     for (const field of this.deletionSettings.fields) {
       this.deletionSettings.updateOperatorForHistory.$unset[field] = '';
     }
@@ -216,6 +216,7 @@ module.exports = ds.createUserEvents({
     return res;
   }
 });
+
 // --------------- helpers ------------//
 
 /**
@@ -281,6 +282,7 @@ const converters = {
     return streamsQueryUtils.toMongoDBQuery(content);
   }
 };
+
 /**
  * transform params to mongoQuery
  * @param {*} requestedType
@@ -302,6 +304,7 @@ function paramsToMongoquery (params) {
   if (query.$and.length === 0) { delete query.$and; } // remove empty $and
   return { query, options };
 }
+
 /**
  * Returns the query value to use for the given type, handling possible wildcards.
  *

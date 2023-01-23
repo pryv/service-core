@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Local Data Store.
  * Events implementation
@@ -11,7 +12,7 @@
 const errorFactory = require('errors').factory;
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const DELETION_MODES_FIELDS = require('../eventsDeletionsModes');
+const DeletionModesFields = require('../DeletionModesFields');
 const { integrity } = require('business');
 const cuid = require('cuid');
 
@@ -28,7 +29,7 @@ class LocalUserEvents {
     this.deletionSettings = {
       mode: this.settings.versioning?.deletionMode || 'keep-nothing'
     };
-    this.deletionSettings.fields = DELETION_MODES_FIELDS[this.deletionSettings.mode] || ['integrity'];
+    this.deletionSettings.fields = DeletionModesFields[this.deletionSettings.mode] || ['integrity'];
     this.deletionSettings.removeAttachments = this.deletionSettings.fields.includes('attachments');
     this.keepHistory = this.settings.versioning?.forceKeepHistory || false;
   }
