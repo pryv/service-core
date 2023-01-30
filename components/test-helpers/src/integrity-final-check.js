@@ -11,7 +11,6 @@ const { getDatabase } = require('storage');
 const { integrity } = require('business');
 const bluebird = require('bluebird');
 const { getConfig } = require('@pryv/boiler');
-const { getVersionOf } = require('storage').Versions;
 
 async function events () {
   if (!integrity.events.isActive) return;
