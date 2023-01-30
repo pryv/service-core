@@ -43,10 +43,15 @@ function Versions (database, attachmentsDirPath, logger, migrationsOverride) {
   this.logger = logger;
 }
 
-Versions.prototype.getCurrent = async function () {
+Versions.getVersionOf = async function getVersionOf (database) {
   return await bluebird.fromCallback(function (cb) {
-    this.database.findOne(collectionInfo, {}, { sort: { migrationCompleted: -1 } }, cb);
-  }.bind(this));
+    database.findOne(collectionInfo, {}, { sort: { migrationCompleted: -1 } }, cb);
+  });
+};
+
+Versions.prototype.getCurrent = async function () {
+  const version = await Versions.getVersionOf(this.database);
+  return version;
 };
 
 Versions.prototype.migrateIfNeeded = async function () {
