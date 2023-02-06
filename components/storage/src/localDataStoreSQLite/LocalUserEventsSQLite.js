@@ -156,7 +156,7 @@ class LocalUserEvents {
       await db.minimizeEventHistory(eventId, this.deletionSettings.fields);
     }
 
-    // prepare event content for mongodb
+    // prepare event content for DB
     deletedEventContent.deleted = Date.now() / 1000;
     for (const field of this.deletionSettings.fields) {
       delete deletedEventContent[field];

@@ -39,7 +39,8 @@ async function getMall () {
   }
   // Load built-in stores
   if (config.get('database:engine') === 'sqlite') {
-    const sqlite = require('storage/src/LocalDataStoreSQLite'); // change to LocalDataStoreSQLite for SQLite PoC
+    // use PoC SQLite storage
+    const sqlite = require('storage/src/localDataStoreSQLite');
     sqlite.settings.versioning = config.get('versioning');
     mall.addStore(sqlite);
     logger.info('Using SQLite PoC Datastore');
