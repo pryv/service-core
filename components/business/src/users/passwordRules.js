@@ -96,7 +96,7 @@ async function init () {
       return;
     }
     const length = password.length;
-    if (length <= minLength) {
+    if (length < minLength) {
       const msg = `Password is ${length} characters long, but at least ${minLength} are required`;
       throw errors.invalidParametersFormat(`The new password does not follow complexity rules: ${msg}`, [msg]);
     }
