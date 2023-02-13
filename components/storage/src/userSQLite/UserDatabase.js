@@ -24,16 +24,22 @@ const ALL_EVENTS_TAG = events.ALL_EVENTS_TAG;
 
 const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25, 25, 50, 50, 100];
 
+/**
+ * TODO: refactor the structure of tables and queries
+ *       (currently not consistent, either internally or with the Mongo code)
+ */
 class UserDatabase {
   /**
    * SQLite3 instance
    */
   db;
+
   create;
   get;
   getAll;
+
   queryGetTerms;
-  columnNames;
+
   logger;
   version;
 
@@ -49,7 +55,7 @@ class UserDatabase {
 
   async init () {
     this.db.pragma('journal_mode = WAL');
-    this.db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go bellow the second
+    this.db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go below the second
     this.db.unsafeMode(true);
 
     // here we might want to skip DB initialization if version is not null
@@ -58,9 +64,8 @@ class UserDatabase {
     this.getAll = {};
     this.get = {};
     this.delete = {};
-    this.columnNames = {};
 
-    // --- Create all Tables
+    // create all tables
     Object.keys(tables).forEach((tableName) => {
       const columnsTypes = [];
       const indexes = [];
@@ -68,7 +73,7 @@ class UserDatabase {
       columnNames.forEach((columnName) => {
         const column = tables[tableName][columnName];
         columnsTypes.push(`${columnName} ${column.type}`);
-        if (column.index) indexes.push(columnName);
+        if (column.index) { indexes.push(columnName); }
       });
 
       this.db.prepare('CREATE TABLE IF NOT EXISTS events ( ' +

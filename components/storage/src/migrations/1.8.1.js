@@ -54,7 +54,7 @@ module.exports = async function (context, callback) {
   callback();
 
   async function flushToDb (requests, eventsCollection) {
-    if (requests.length === 0) return;
+    if (requests.length === 0) { return; }
     const result = await eventsCollection.bulkWrite(requests);
     logger.info(`flushed ${result.nModified} modifications into database`);
     return [];

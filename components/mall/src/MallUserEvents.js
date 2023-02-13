@@ -214,9 +214,8 @@ class MallUserEvents {
    * @returns {Promise<void>}
    */
   async createManyForTests (userId, eventsData) {
-    const localStore = this.eventsStores.get('local');
     for (const eventData of eventsData) {
-      const { storeId, eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, null, true);
+      const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, null, true);
       await eventsStore.create(userId, storeEvent, storeTransaction);
     }
   }

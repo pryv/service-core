@@ -42,13 +42,16 @@ class Database {
   databaseName;
   options;
 
+  /**
+   * @type {boolean}
+   */
+  connecting;
   db;
   client;
 
   initializedCollections;
 
   logger;
-  _connecting;
 
   constructor (settings) {
     const authPart = getAuthPart(settings);
@@ -65,7 +68,7 @@ class Database {
       appname: 'pryv.io core'
     };
     this.db = null;
-    this._connecting = false;
+    this.connecting = false;
     this.initializedCollections = {};
     this.collectionConnectionsCache = {};
   }
@@ -93,12 +96,14 @@ class Database {
    * @returns {Promise<void>}
    */
   async ensureConnect () {
-    if (this.db) { return; }
-    while (this._connecting) {
-      this.logger.debug('Already connecting');
+    while (this.connecting) {
+      this.logger.debug('Connection already in progress, retrying…');
       await setTimeout(100);
     }
-    this._connecting = true;
+
+    if (this.db) { return; }
+
+    this.connecting = true;
     this.logger.debug('Connecting to ' + this.connectionString);
     this.client = new MongoClient(this.connectionString, this.options);
     try {
@@ -108,10 +113,10 @@ class Database {
         .db('admin')
         .command({ setFeatureCompatibilityVersion: '4.2' }, {});
       this.db = this.client.db(this.databaseName);
-      this._connecting = false;
+      this.connecting = false;
     } catch (err) {
       this.logger.debug(err);
-      this._connecting = false;
+      this.connecting = false;
       throw err;
     }
   }

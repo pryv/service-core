@@ -101,6 +101,7 @@ module.exports = ds.createUserEvents({
       throw errors.unexpectedError(err);
     }
   },
+
   async saveAttachedFiles (userId, eventId, attachmentsItems, transaction) {
     const attachmentsResponse = [];
     for (const attachment of attachmentsItems) {
@@ -109,12 +110,15 @@ module.exports = ds.createUserEvents({
     }
     return attachmentsResponse;
   },
+
   async getAttachedFile (userId, eventId, fileId) {
     return this.eventsFileStorage.getAttachedFileStream(userId, eventId, fileId);
   },
+
   async deleteAttachedFile (userId, eventId, fileId, transaction) {
     return await this.eventsFileStorage.removeAttachedFile(userId, eventId, fileId);
   },
+
   async update (userId, eventData, transaction) {
     const update = Object.assign({}, eventData);
     update._id = update.id;
@@ -160,7 +164,7 @@ module.exports = ds.createUserEvents({
 
   async _deleteHistory (userId, eventId) {
     const options = { sort: { modified: 1 } };
-    const query = { userId: userId, headId: eventId };
+    const query = { userId, headId: eventId };
     return await this.eventsCollection.deleteMany(query, options);
   },
 
@@ -207,7 +211,7 @@ module.exports = ds.createUserEvents({
   },
 
   /**
-   * LocalStores Only - as long as SystemStreams are embeded
+   * Local stores only - as long as SystemStreams are embedded
    */
   async removeAllNonAccountEventsForUser (userId) {
     const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();

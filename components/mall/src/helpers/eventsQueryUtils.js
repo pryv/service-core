@@ -18,7 +18,7 @@ const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 /**
  * A generic query for events.get, events.updateMany, events.delete
  * @typedef {Object} EventsGetQuery
- * @property {string} [id] - an event id 
+ * @property {string} [id] - an event id
  * @property {Array<StreamQuery>} [streams] - an array of stream queries (see StreamQuery)
  * @property {('trashed'|'all'|null)} [state=null] - get only trashed, all document or non-trashed events (default is non-trashed)
  * @property {Array<EventType>} [types] - reduce scope of events to a set of types

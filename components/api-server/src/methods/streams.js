@@ -33,7 +33,6 @@ const { pubsub } = require('messages');
  */
 module.exports = async function (api) {
   const config = await getConfig();
-  const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
   const mall = await getMall();
   const isStreamIdPrefixBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');

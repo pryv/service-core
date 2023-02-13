@@ -5,24 +5,23 @@
  * Proprietary and confidential
  */
 
-/**
- * Local Data Store.
- * Events implementation
- */
-const errorFactory = require('errors').factory;
-
+const cuid = require('cuid');
+const ds = require('@pryv/datastore');
+const errors = ds.errors;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const DeletionModesFields = require('../DeletionModesFields');
 const { integrity } = require('business');
-const cuid = require('cuid');
 
-class LocalUserEvents {
-  storage;
-  eventsFileStorage;
-  deletionSettings;
-  keepHistory;
+/**
+ * Local data store: events implementation.
+ */
+module.exports = ds.createUserEvents({
+  storage: null,
+  eventsFileStorage: null,
+  deletionSettings: null,
+  keepHistory: null,
 
-  constructor (storage, eventsFileStorage, settings) {
+  init (storage, eventsFileStorage, settings) {
     this.storage = storage;
     this.eventsFileStorage = eventsFileStorage;
     this.settings = settings;
@@ -32,23 +31,44 @@ class LocalUserEvents {
     this.deletionSettings.fields = DeletionModesFields[this.deletionSettings.mode] || ['integrity'];
     this.deletionSettings.removeAttachments = this.deletionSettings.fields.includes('attachments');
     this.keepHistory = this.settings.versioning?.forceKeepHistory || false;
-  }
+  },
+
+  async getOne (userId, eventId) {
+    const db = await this.storage.forUser(userId);
+    return db.getOneEvent(eventId);
+  },
 
   /**
    * @returns {Promise<any>}
    */
-  async update (userId, eventData, transaction) {
+  async get (userId, params) {
     const db = await this.storage.forUser(userId);
-    await this._generateVersionIfNeeded(db, eventData.id, null, transaction);
-    try {
-      return db.updateEvent(eventData.id, eventData);
-    } catch (err) {
-      if (err.message === 'UNIQUE constraint failed: events.eventid') {
-        throw errorFactory.itemAlreadyExists('event', { id: eventData.id }, err);
-      }
-      throw errorFactory.unexpectedError(err);
-    }
-  }
+    return db.getEvents(params);
+  },
+
+  /**
+   * @returns {Promise<any>}
+   */
+  async getStreamed (userId, params) {
+    const db = await this.storage.forUser(userId);
+    return db.getEventsStream(params);
+  },
+
+  /**
+   * @returns {Promise<any>}
+   */
+  async getDeletionsStreamed (userId, params) {
+    const db = await this.storage.forUser(userId);
+    return db.getEventsDeletionsStream(params);
+  },
+
+  /**
+   * @returns {Promise<any>}
+   */
+  async getHistory (userId, eventId) {
+    const db = await this.storage.forUser(userId);
+    return db.getEventsHistory(eventId);
+  },
 
   /**
    * @returns {Promise<any>}
@@ -60,11 +80,11 @@ class LocalUserEvents {
       return event;
     } catch (err) {
       if (err.message === 'UNIQUE constraint failed: events.eventid') {
-        throw errorFactory.itemAlreadyExists('event', { id: event.id }, err);
+        throw errors.itemAlreadyExists('event', { id: event.id }, err);
       }
-      throw errorFactory.unexpectedError(err);
+      throw errors.unexpectedError(err);
     }
-  }
+  },
 
   /**
    * @param {string} userId
@@ -79,7 +99,7 @@ class LocalUserEvents {
       attachmentsResponse.push({ id: fileId });
     }
     return attachmentsResponse;
-  }
+  },
 
   /**
    * @param {string} userId
@@ -88,7 +108,7 @@ class LocalUserEvents {
    */
   async getAttachedFile (userId, eventId, fileId) {
     return this.eventsFileStorage.getAttachedFileStream(userId, eventId, fileId);
-  }
+  },
 
   /**
    * @param {string} userId
@@ -98,44 +118,23 @@ class LocalUserEvents {
    */
   async deleteAttachedFile (userId, eventId, fileId, transaction) {
     return await this.eventsFileStorage.removeAttachedFile(userId, eventId, fileId);
-  }
+  },
 
   /**
    * @returns {Promise<any>}
    */
-  async getStreamed (userId, params) {
+  async update (userId, eventData, transaction) {
     const db = await this.storage.forUser(userId);
-    return db.getEventsStream(params);
-  }
-
-  /**
-   * @returns {Promise<any>}
-   */
-  async getDeletionsStreamed (userId, params) {
-    const db = await this.storage.forUser(userId);
-    return db.getEventsDeletionsStream(params);
-  }
-
-  /**
-   * @returns {Promise<any>}
-   */
-  async getHistory (userId, eventId) {
-    const db = await this.storage.forUser(userId);
-    return db.getEventsHistory(eventId);
-  }
-
-  /**
-   * @returns {Promise<any>}
-   */
-  async get (userId, params) {
-    const db = await this.storage.forUser(userId);
-    return db.getEvents(params);
-  }
-
-  async getOne (userId, eventId) {
-    const db = await this.storage.forUser(userId);
-    return db.getOneEvent(eventId);
-  }
+    await this._generateVersionIfNeeded(db, eventData.id, null, transaction);
+    try {
+      return db.updateEvent(eventData.id, eventData);
+    } catch (err) {
+      if (err.message === 'UNIQUE constraint failed: events.eventid') {
+        throw errors.itemAlreadyExists('event', { id: eventData.id }, err);
+      }
+      throw errors.unexpectedError(err);
+    }
+  },
 
   /**
    * @returns {Promise<any>}
@@ -164,18 +163,7 @@ class LocalUserEvents {
     integrity.events.set(deletedEventContent);
     delete deletedEventContent.id;
     return await db.updateEvent(eventId, deletedEventContent);
-  }
-
-  /**
-    * LocalStores Only - as long as SystemStreams are embeded
-    */
-  async removeAllNonAccountEventsForUser (userId) {
-    const db = await this.storage.forUser(userId);
-    const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
-    const query = [{ type: 'streamsQuery', content: [{ any: ['*'], and: [{ not: allAccountStreamIds }] }] }];
-    const res = await db.deleteEvents({ query, options: {} });
-    return res;
-  }
+  },
 
   async _generateVersionIfNeeded (db, eventId, originalEvent = null, transaction = null) {
     if (!this.keepHistory) return;
@@ -188,7 +176,7 @@ class LocalUserEvents {
     versionItem.headId = eventId;
     versionItem.id = cuid();
     await db.createEvent(versionItem);
-  }
+  },
 
   /**
    * @param {string} userId
@@ -197,15 +185,26 @@ class LocalUserEvents {
   async _deleteUser (userId) {
     const db = await this.storage.forUser(userId);
     return await db.deleteEvents({ query: [] });
-  }
+  },
 
   /**
    * @param {string} userId
    * @returns {Promise<any>}
    */
-  async _storageUsedForUser (userId) {
+  async _getUserStorageSize (userId) {
     const db = await this.storage.forUser(userId);
+    // TODO: fix this total HACK
     return db.eventsCount();
+  },
+
+  /**
+    * Local stores only - as long as SystemStreams are embedded
+    */
+  async removeAllNonAccountEventsForUser (userId) {
+    const db = await this.storage.forUser(userId);
+    const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
+    const query = [{ type: 'streamsQuery', content: [{ any: ['*'], and: [{ not: allAccountStreamIds }] }] }];
+    const res = await db.deleteEvents({ query, options: {} });
+    return res;
   }
-}
-module.exports = LocalUserEvents;
+});

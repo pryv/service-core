@@ -9,11 +9,9 @@
  * Tests data migration between versions.
  */
 
-const bluebird = require('bluebird');
+const util = require('util');
 require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
-const storage = helpers.dependencies.storage;
-const database = storage.database;
 const testData = helpers.data;
 
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
@@ -30,7 +28,7 @@ describe('Migration - 1.8.1', function () {
   before(async function () {
     const newVersion = getVersions('1.8.1');
     await SystemStreamsSerializer.init();
-    await bluebird.fromCallback(cb => testData.restoreFromDump('1.8.0', mongoFolder, cb));
+    await util.promisify(testData.restoreFromDump)('1.8.0', mongoFolder);
 
     // perform migration
     await newVersion.migrateIfNeeded();
