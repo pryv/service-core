@@ -61,7 +61,6 @@ module.exports = async function (api) {
   const config = await getConfig();
   const authSettings = config.get('auth');
   const eventTypesUrl = config.get('service:eventTypes');
-  const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
   const openSourceSettings = config.get('openSource');
   const usersRepository = await getUsersRepository();
@@ -140,16 +139,9 @@ module.exports = async function (api) {
     if (params.modifiedSince == null || !params.includeDeletions) {
       return next();
     }
-    // to be implemented also for stores that support deletion later on
-    const localDeletionsStreams = await mall.events.getStreamedWithParamsByStore(context.user.id, {
-      local: {
-        skip: params.skip,
-        limit: params.limit,
-        deletedSince: params.modifiedSince
-      }
-    });
+    const deletedEvents = await mall.events.getDeletionsStreamed('local', context.user.id, params.modifiedSince, params.limit, params.skip, params.sortAscending);
     // remove properties of events that shouldn't be exposed
-    result.addStream('eventDeletions', localDeletionsStreams.pipe(new CleanDeletedEventsStream()));
+    result.addStream('eventDeletions', deletedEvents.pipe(new CleanDeletedEventsStream()));
     next();
   }
 
@@ -178,6 +170,12 @@ module.exports = async function (api) {
     delete context.event;
     const systemStreamIdsForbiddenForReading = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
     let canReadEvent = false;
+    // special case no streamIds on event && deleted
+    if (event.streamIds == null) { // event might be deleted - limit result to deleted property
+      result.event = { id: event.id, deleted: event.deleted };
+      return next();
+    }
+
     for (const streamId of event.streamIds) {
       // ok if at least one
       if (systemStreamIdsForbiddenForReading.includes(streamId)) {
@@ -203,16 +201,14 @@ module.exports = async function (api) {
     // history is fetched in an extra step due to initial implementation,
     // now that mall.events.get return all in a single call, it coul be implement all at once
     try {
-      const events = await mall.events.get(context.user.id, {
-        state: 'all',
-        includeDeletions: true,
-        headId: params.id
-      });
+      const events = await mall.events.getHistory(context.user.id, params.id);
       result.history = [];
       events.forEach((e) => {
         // To remove when streamId not necessary
         _applyBackwardCompatibilityOnEvent(e, context);
-        if (e.headId != null) {
+        if (result.event.streamIds == null) { // event might be deleted - limit result to modified property
+          result.event = { id: e.id, modified: e.modified };
+        } else {
           result.history.push(e);
         }
       });
@@ -495,7 +491,6 @@ module.exports = async function (api) {
     doesEventBelongToAccountStream,
     validateSystemStreamsContent,
     validateAccountStreamsForUpdate,
-    generateVersionIfNeeded,
     appendAccountStreamsDataForUpdate,
     updateOnPlatform,
     updateEvent,
@@ -579,33 +574,6 @@ module.exports = async function (api) {
     next();
     function hasStreamIdsModification (event) {
       return event.streamIds != null;
-    }
-  }
-  /**
-   * Depends on context.oldEvent
-   */
-  async function generateVersionIfNeeded (context, params, result, next) {
-    if (!auditSettings.forceKeepHistory) {
-      return next();
-    }
-    const versionEvent = _.clone(context.oldEvent);
-    versionEvent.headId = context.oldEvent.id;
-    delete versionEvent.id;
-    // otherwise the history value will squat
-    removeUniqueStreamId(versionEvent);
-    try {
-      await mall.events.create(context.user.id, versionEvent);
-    } catch (err) {
-      if (err instanceof APIError) { return next(err); }
-      return next(errors.unexpectedError(err));
-    }
-    return next();
-    function removeUniqueStreamId (event) {
-      const index = event.streamIds.indexOf(SystemStreamsSerializer.addPrivatePrefixToStreamId('unique'));
-      if (index > -1) {
-        event.streamIds.splice(index, 1);
-      }
-      return event;
     }
   }
   /**
@@ -935,7 +903,6 @@ module.exports = async function (api) {
     checkEventForDelete,
     doesEventBelongToAccountStream,
     validateAccountStreamsForDeletion,
-    generateVersionIfNeeded,
     function (context, params, result, next) {
       if (!context.oldEvent.trashed) {
         // move to trash
@@ -996,25 +963,11 @@ module.exports = async function (api) {
   }
   function deleteWithData (context, params, result, next) {
     async.series([
-      async function deleteHistoryCompletely () {
-        if (auditSettings.deletionMode !== 'keep-nothing') { return; }
-        await mall.events.delete(context.user.id, {
-          headId: params.id,
-          state: 'all',
-          includeDeletions: true
-        });
-      },
-      async function minimizeHistory () {
-        if (auditSettings.deletionMode !== 'keep-authors') {
-          return;
-        }
-        await mall.events.updateMinimizeEventHistory(context.user.id, params.id);
-      },
       async function deleteEvent () {
-        await mall.events.updateDeleteByMode(context.user.id, auditSettings.deletionMode, { id: params.id, state: 'all' });
+        await mall.events.delete(context.user.id, context.oldEvent);
         result.eventDeletion = { id: params.id };
       },
-      async function () {
+      async function updateStorage () {
         const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
         // If needed, approximately update account storage size
         if (!storagedUsed || !storagedUsed.attachedFiles) {

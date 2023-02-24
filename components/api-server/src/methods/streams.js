@@ -33,7 +33,6 @@ const { pubsub } = require('messages');
  */
 module.exports = async function (api) {
   const config = await getConfig();
-  const auditSettings = config.get('versioning');
   const updatesSettings = config.get('updates');
   const mall = await getMall();
   const isStreamIdPrefixBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
@@ -369,15 +368,6 @@ module.exports = async function (api) {
       }
       if (params.mergeEventsWithParent) {
         // -- Case 1 -- Merge events with parent
-        if (auditSettings.forceKeepHistory) {
-          // generateLogIfNecessary
-          const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{ any: cleanDescendantIds }] } });
-          for await (const event of eventsStream) {
-            const eventToVersion = _.extend(event, { headId: event.id });
-            delete eventToVersion.id;
-            await mall.events.create(context.user.id, eventToVersion);
-          }
-        }
         // add parent stream Id if needed and remove deleted stream ids
         // the following add "parentId" if not present and remove "streamAndDescendantIds"
         const query = { streams: [{ any: streamAndDescendantIds }] };
@@ -389,31 +379,12 @@ module.exports = async function (api) {
         // case  mergeEventsWithParent = false
         const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{ any: cleanDescendantIds }] } });
         for await (const event of eventsStream) {
-          if (auditSettings.deletionMode === 'keep-everything') {
-            await mall.events.updateDeleteByMode(context.user.id, 'keep-everything', { id: event.id, state: 'all' });
-            // history is untouched
-          } else if (auditSettings.deletionMode === 'keep-authors') {
-            // update event history
-            await mall.events.updateMinimizeEventHistory(context.user.id, event.id);
-            await mall.events.updateDeleteByMode(context.user.id, 'keep-authors', { id: event.id, state: 'all' });
-          } else {
-            // default: deletionMode='keep-nothing'
-            const remaningStreamsIds = _.difference(event.streamIds, streamAndDescendantIds);
-            if (remaningStreamsIds.length > 0) {
-              // event is still attached to existing streamId(s)
-              // update the event without the streamIds
-              event.streamIds = remaningStreamsIds;
-              await mall.events.update(context.user.id, event);
-            } else {
-              // remove the event and any attached data
-              // remove the event's history
-              await mall.events.delete(context.user.id, {
-                headId: event.id,
-                state: 'all'
-              });
-              // remove the event itself (update)
-              await mall.events.updateDeleteByMode(context.user.id, 'keep-nothing', { id: event.id, state: 'all' });
-            }
+          const remaningStreamsIds = _.difference(event.streamIds, streamAndDescendantIds);
+          if (remaningStreamsIds.length === 0) { // no more streams deleted event
+            await mall.events.delete(context.user.id, event);
+          } else { // update event without these streams
+            event.streamIds = remaningStreamsIds;
+            await mall.events.update(context.user.id, event);
           }
         }
       }

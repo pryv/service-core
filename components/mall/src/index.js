@@ -39,12 +39,15 @@ async function getMall () {
   }
   // Load built-in stores
   if (config.get('database:engine') === 'sqlite') {
-    const LocalStore = require('storage/src/LocalDataStoreSQLite'); // change to LocalDataStoreSQLite for SQLite PoC
-    mall.addStore(LocalStore);
+    // use PoC SQLite storage
+    const sqlite = require('storage/src/localDataStoreSQLite');
+    sqlite.settings.versioning = config.get('versioning');
+    mall.addStore(sqlite);
     logger.info('Using SQLite PoC Datastore');
   } else {
-    const localStore = require('storage/src/localDataStore');
-    mall.addStore(localStore);
+    const mongo = require('storage/src/localDataStore');
+    mongo.settings.versioning = config.get('versioning');
+    mall.addStore(mongo);
   }
   if (!config.get('openSource:isActive') && config.get('audit:active')) {
     const auditDataStore = require('audit/src/datastore/auditDataStore');

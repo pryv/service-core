@@ -58,7 +58,7 @@ class UsersRepository {
     for (const [username, userId] of Object.entries(usersMap)) {
       const user = await this.getUserById(userId);
       if (user == null) {
-        throw new Error(`Repository inconsistency, userIndex list user id: "${userId}" username: "${username}" but cann get it with getUserById(userId)`);
+        throw new Error(`Repository inconsistency: user index lists user with id: "${userId}" and username: "${username}", but cannot get it with getUserById()`);
       }
       users.push(user);
     }

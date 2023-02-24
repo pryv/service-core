@@ -17,39 +17,6 @@ const { Readable } = require('stream');
 
 const cuid = require('cuid');
 
-const DELETION_MODES_FIELDS = {
-  'keep-authors': [
-    'streamIds',
-    'time',
-    'duration',
-    'type',
-    'content',
-    'description',
-    'attachments',
-    'clientData',
-    'trashed',
-    'created',
-    'createdBy',
-    'integrity'
-  ],
-  'keep-nothing': [
-    'streamIds',
-    'time',
-    'duration',
-    'type',
-    'content',
-    'description',
-    'attachments',
-    'clientData',
-    'trashed',
-    'created',
-    'createdBy',
-    'modified',
-    'modifiedBy',
-    'integrity'
-  ]
-};
-
 /**
  * Storage for events.
  * Dispatches requests to each data store's events.
@@ -77,7 +44,8 @@ class MallUserEvents {
   // ----------------- GET ----------------- //
 
   /**
-   * Specific to Mall, allow query of a single event
+   * Get one event without filtering
+   * Should also return eventual deleted events
    * @param {*} userId
    * @param {*} fullEventId
    * @returns {Promise<any>}
@@ -85,20 +53,34 @@ class MallUserEvents {
   async getOne (userId, fullEventId) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
     const eventsStore = this.eventsStores.get(storeId);
-    if (!eventsStore) { return null; }
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
     try {
-      const paramsForStore = eventsQueryUtils.getStoreQueryFromParams({
-        id: storeEventId,
-        state: 'all',
-        limit: 1,
-        withDeletions: true
-      });
-      const events = await eventsStore.get(userId, paramsForStore);
-      if (events?.length === 1) { return eventsUtils.convertEventFromStore(storeId, events[0]); }
+      const event = await eventsStore.getOne(userId, storeEventId);
+      if (event != null) { return eventsUtils.convertEventFromStore(storeId, event); }
     } catch (e) {
       storeDataUtils.throwAPIError(e, storeId);
     }
     return null;
+  }
+
+  async getHistory (userId, fullEventId) {
+    const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(fullEventId);
+    const eventsStore = this.eventsStores.get(storeId);
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
+    const res = [];
+    try {
+      const events = await eventsStore.getHistory(userId, storeEventId);
+      for (const event of events) {
+        res.push(eventsUtils.convertEventFromStore(storeId, event));
+      }
+    } catch (e) {
+      storeDataUtils.throwAPIError(e, storeId);
+    }
+    return res;
   }
 
   /**
@@ -173,6 +155,32 @@ class MallUserEvents {
     }
   }
 
+  /**
+   * @param {string} storeId
+   * @param {string} userId
+   * @param {timestamp} deletedSince
+   * @param {number} [limit]
+   * @param {number} [skip]
+   * @param {boolean} [sortAscending]
+   * @returns {Promise<Readable>}
+   */
+  async getDeletionsStreamed (storeId, userId, deletedSince, limit = null, skip = null, sortAscending = false) {
+    const eventsStore = this.eventsStores.get(storeId);
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
+    return eventsStore.getDeletionsStreamed(userId, deletedSince, limit, skip, sortAscending);
+  }
+
+  async getDeletions (storeId, userId, deletedSince, limit, skip, sortAscending) {
+    const resultStream = await this.getDeletionsStreamed(storeId, userId, deletedSince, limit, skip, sortAscending);
+    const res = [];
+    for await (const item of resultStream) {
+      res.push(item);
+    }
+    return res;
+  }
+
   // ----------------- CREATE ----------------- //
 
   /**
@@ -200,6 +208,18 @@ class MallUserEvents {
     }
   }
 
+  /**
+   * Support creating events with headId for history and already deleted events
+   * Implies that events have already integrity calculated
+   * @returns {Promise<void>}
+   */
+  async createManyForTests (userId, eventsData) {
+    for (const eventData of eventsData) {
+      const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, null, true);
+      await eventsStore.create(userId, storeEvent, storeTransaction);
+    }
+  }
+
   // ----------------- ATTACHMENTS ----------------- //
 
   /**
@@ -223,7 +243,9 @@ class MallUserEvents {
   async getAttachedFile (userId, eventData, fileId) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     const eventsStore = this.eventsStores.get(storeId);
-    if (!eventsStore) { return null; }
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
     return await eventsStore.getAttachedFile(userId, storeEventId, fileId);
   }
 
@@ -395,65 +417,14 @@ class MallUserEvents {
     return Readable.from(reader());
   }
 
-  /**
-   * Utility to remove data from event history (versions) used by methods 'events' and 'streams'
-   * @param {*} userId
-   * @param {*} eventId
-   * @returns {Promise<any>}
-   */
-  async updateMinimizeEventHistory (userId, eventId) {
-    const fieldsToDelete = [
-      'streamIds',
-      'time',
-      'endTime',
-      'type',
-      'content',
-      'tags',
-      'description',
-      'attachments',
-      'clientData',
-      'trashed',
-      'created',
-      'createdBy',
-      'integrity'
-    ];
-    const res = await this.updateMany(userId, { headId: eventId, state: 'all', withDeletions: true }, { fieldsToDelete });
-    return res;
-  }
-
   // ----------------- DELETE / UPDATE ----------------- //
 
-  /**
-   * Utility to remove data from event history (versions)
-   * @param {*} userId
-   * @param {string} deletionMode one of 'keep-nothing', 'keep-authors'
-   * @param {any} query get query
-   * @param {MallTransaction} mallTransaction
-   * @returns {Promise<void>}
-   **/
-  async updateDeleteByMode (userId, deletionMode, query, mallTransaction) {
-    const fieldsToSet = { deleted: Date.now() / 1000 };
-    const fieldsToDelete = DELETION_MODES_FIELDS[deletionMode] || ['integrity'];
-    await this.updateMany(userId, query, { fieldsToSet, fieldsToDelete }, mallTransaction);
-  }
-
-  // ----------------- DELETE ----------------- //
-
-  /**
-   * @returns {Promise<void>}
-   */
-  async delete (userId, query) {
-    const paramsByStore = eventsQueryUtils.getParamsByStore(query);
-    for (const storeId of Object.keys(paramsByStore)) {
-      const eventsStore = this.eventsStores.get(storeId);
-      const params = paramsByStore[storeId];
-      try {
-        const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(params);
-        await eventsStore.delete(userId, paramsForStore);
-      } catch (e) {
-        storeDataUtils.throwAPIError(e, storeId);
-      }
-    }
+  async delete (userId, originalEvent, mallTransaction) {
+    const [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(originalEvent.id);
+    const originalStoreEvent = eventsUtils.convertEventToStore(storeId, originalEvent);
+    const eventsStore = this.eventsStores.get(storeId);
+    const storeTransaction = mallTransaction ? await mallTransaction.getStoreTransaction(storeId) : null;
+    await eventsStore.delete(userId, originalStoreEvent, storeTransaction);
   }
 
   // ----------------- UTILS -----------------
@@ -465,7 +436,7 @@ class MallUserEvents {
    * @private
    * @returns {Promise<{ storeId: any; eventsStore: any; storeEvent: any; storeTransaction: any; }>}
    */
-  async prepareForStore (eventData, mallTransaction) {
+  async prepareForStore (eventData, mallTransaction, isFromTests = false) {
     let storeId = null;
     // add eventual missing id and get storeId from first streamId then
     if (eventData.id == null) {
@@ -476,13 +447,24 @@ class MallUserEvents {
       [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
     }
     // set integrity
-    integrity.events.set(eventData);
+    if (eventData.integrity != null) {
+      if (!isFromTests) integrity.events.set(eventData);
+    } else {
+      integrity.events.set(eventData);
+    }
     const storeEvent = eventsUtils.convertEventToStore(storeId, eventData);
     const eventsStore = this.eventsStores.get(storeId);
     const storeTransaction = mallTransaction
       ? await mallTransaction.getStoreTransaction(storeId)
       : null;
     return { storeId, eventsStore, storeEvent, storeTransaction };
+  }
+
+  // -------------- LOCAL SPECIFIC TO ACCOUNT & SYSTEM STREAMS ----- //
+
+  async localRemoveAllNonAccountEventsForUser (userId) {
+    const localEventsStore = this.eventsStores.get('local');
+    return await localEventsStore.removeAllNonAccountEventsForUser(userId);
   }
 }
 module.exports = MallUserEvents;

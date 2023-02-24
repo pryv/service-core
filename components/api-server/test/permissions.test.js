@@ -103,7 +103,6 @@ describe('[ACCP] Access permissions', function () {
             filesReadTokenSecret);
           validation.sanitizeEvents(res.body.events);
           res.body.events = validation.removeAccountStreamsEvents(res.body.events);
-          testData.events.forEach(integrity.events.set);
           res.body.events.should.eql(validation.removeDeletionsAndHistory(testData.events).sort(
             function (a, b) {
               return b.time - a.time;

@@ -47,7 +47,6 @@ exports = module.exports = function (action) {
 
   if (action !== Action.CREATE) {
     schema.properties.id = string();
-    schema.properties.headId = string();
   }
 
   if (action === Action.CREATE) {

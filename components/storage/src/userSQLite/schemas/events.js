@@ -28,7 +28,7 @@ const dbSchema = {
 };
 
 /**
- * @param {Object} event -- An event object
+ * @param {Object} sourceEvent -- An event object
  */
 function eventToDB (sourceEvent) {
   const event = {};
@@ -78,12 +78,14 @@ function nullOrJSON (value) {
 }
 
 /**
- * transform events out of db
+ * Transform event out of DB
  */
-function eventFromDB (event, addStorePrefix = false) {
-  event.streamIds = event.streamIds.split(' ');
-  event.streamIds.pop(); // pop removes the last element whihc is set on all events ALL_EVENTS_TAG
-  if (event.streamIds.length === 0) delete event.streamIds; // it was a "deleted" event
+function eventFromDB (event) {
+  if (event.streamIds != null) {
+    event.streamIds = event.streamIds.split(' ');
+    event.streamIds.pop(); // pop removes the last element whihc is set on all events ALL_EVENTS_TAG
+    if (event.streamIds.length === 0) delete event.streamIds; // it was a "deleted" event
+  }
 
   event.id = event.eventid;
   delete event.eventid;
@@ -113,6 +115,13 @@ function eventFromDB (event, addStorePrefix = false) {
   return event;
 }
 
+function historyEventFromDB (event) {
+  event = eventFromDB(event);
+  event.id = event.headId;
+  delete event.headId;
+  return event;
+}
+
 /**
  * - Add eventual '' to values that are not of type "REAL" and escape eventual '
  * - Transform booleans to 0/1
@@ -121,7 +130,7 @@ function eventFromDB (event, addStorePrefix = false) {
  * @param {*} column
  * @param {*} value
  */
-function coerceSelectValueForCollumn (column, value) {
+function coerceSelectValueForColumn (column, value) {
   return coerces[dbSchema[column].coerce](value);
 }
 
@@ -134,7 +143,8 @@ const coerces = {
 module.exports = {
   eventToDB,
   eventFromDB,
+  historyEventFromDB,
   dbSchema,
-  coerceSelectValueForCollumn,
+  coerceSelectValueForColumn,
   ALL_EVENTS_TAG
 };
