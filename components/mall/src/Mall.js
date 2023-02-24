@@ -8,6 +8,7 @@ const storeDataUtils = require('./helpers/storeDataUtils');
 const MallUserStreams = require('./MallUserStreams');
 const MallUserEvents = require('./MallUserEvents');
 const MallTransaction = require('./MallTransaction');
+
 /**
  * Storage for streams and events.
  * Under the hood, manages the different data stores (built-in and custom),
@@ -53,8 +54,14 @@ class Mall {
   async init () {
     if (this.initialized) { throw new Error('init() can only be called once.'); }
     this.initialized = true;
+    // placed here otherwise create a circular dependency .. pfff
+    const { getUserAccountStorage } = require('storage');
+    const userAccountStorage = await getUserAccountStorage();
     for (const store of this.stores.values()) {
-      await store.init();
+      const params = {
+        keyValueStorage: userAccountStorage.keyValuesForDataStore(store.id)
+      };
+      await store.init(params);
     }
     this._streams = new MallUserStreams(this.stores.values());
     this._events = new MallUserEvents(this.stores.values());

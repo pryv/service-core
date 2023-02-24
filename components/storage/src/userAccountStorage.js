@@ -43,7 +43,8 @@ module.exports = {
   getPasswordHash,
   getCurrentPasswordTime,
   passwordExistsInHistory,
-  clearHistory
+  clearHistory,
+  keyValuesForDataStore
 };
 
 async function init () {
@@ -98,6 +99,46 @@ async function passwordExistsInHistory (userId, password, historyLength) {
   return false;
 }
 
+// *********************** datastoresKeyValues  *****************
+
+async function setDSKeyValue (storeId, userId, key, value) {
+  const db = await getUserDB(userId);
+  if (value == null) {
+    db.prepare('DELETE FROM datastoresKeyValues WHERE storeId = @storeId AND key = @key)').run({
+      storeId, key
+    });
+  } else {
+    const valueStr = JSON.stringify(value);
+    db.prepare('REPLACE INTO datastoresKeyValues (storeId, key, value) VALUES (@storeId, @key, @value)').run({
+      storeId, key, value: valueStr
+    });
+  }
+}
+
+async function getDSKeyValue (storeId, userId, key) {
+  const db = await getUserDB(userId);
+  const res = db.prepare('SELECT value FROM datastoresKeyValues WHERE storeId = @storeId AND key = @key').get({ storeId, key });
+  if (res?.value == null) return null;
+  return JSON.parse(res.value);
+}
+
+async function getDSKeyValues (storeId, userId) {
+  const db = await getUserDB(userId);
+  const query = db.prepare('SELECT key, value FROM datastoresKeyValues WHERE storeId = @storeId');
+  const res = {};
+  for (const item of query.iterate({ storeId })) {
+    res[item.key] = JSON.parse(item.value);
+  }
+  return res;
+}
+
+function keyValuesForDataStore (storeId) {
+  async function getAll (userId) { return getDSKeyValues(storeId, userId); }
+  async function get (userId, key) { return getDSKeyValue(storeId, userId, key); }
+  async function set (userId, key, value) { return setDSKeyValue(storeId, userId, key, value); }
+  return { getAll, get, set };
+}
+
 /**
  * For tests
  */
@@ -119,6 +160,8 @@ async function openUserDB (userId) {
   db.unsafeMode(true);
   db.prepare('CREATE TABLE IF NOT EXISTS passwords (time REAL PRIMARY KEY, hash TEXT NOT NULL, createdBy TEXT NOT NULL);').run();
   db.prepare('CREATE INDEX IF NOT EXISTS passwords_hash ON passwords(hash);').run();
+  db.prepare('CREATE TABLE IF NOT EXISTS datastoresKeyValues (storeId TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (storeId, key));').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS datastoresKeyValues_storeId ON datastoresKeyValues(storeId);').run();
   dbCache.set(userId, db);
   return db;
 }
