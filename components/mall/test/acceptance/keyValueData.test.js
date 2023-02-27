@@ -16,7 +16,7 @@ describe('Per-store key-value DB', () => {
   let user, username, password, access;
   let personalToken;
   let mongoFixtures;
-  let streamsPath;
+  let streamsPath, eventsPath;
 
   before(async () => {
     await initTests();
@@ -35,11 +35,30 @@ describe('Per-store key-value DB', () => {
     await user.session(personalToken);
     user = user.attrs;
     streamsPath = '/' + username + '/streams/';
+    eventsPath = '/' + username + '/events/';
   });
 
   after(async () => {
     await mongoFixtures.clean();
   });
 
-  it('[2Z7L] Must set and get key-value data');
+  it('[2Z7L] Must set and get key-value data', async () => {
+    // requesting stream will update "lastStreamCall" event
+    const resStream = await coreRequest
+      .get(streamsPath)
+      .set('Authorization', personalToken)
+      .query({ parentId: ':dummy:myself' });
+    const streams = resStream.body?.streams;
+    assert.exists(streams);
+    assert.equal(streams.length, 2);
+
+    const resEvent = await coreRequest
+      .get(eventsPath)
+      .set('Authorization', personalToken)
+      .query({ streams: [':dummy:antonia'] });
+    const events = resEvent.body?.events;
+    assert.exists(events);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].content?.id, 'antonia');
+  });
 });

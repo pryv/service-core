@@ -6,6 +6,8 @@
  */
 
 const ds = require('@pryv/datastore');
+const { read } = require('fs');
+const { Readable } = require('stream');
 
 let keyValueData;
 
@@ -50,7 +52,6 @@ function createUserStreams () {
         // filter tree
         streams = findStream(params.id, streams);
       }
-
       return streams;
     }
   });
@@ -58,11 +59,11 @@ function createUserStreams () {
   function findStream (streamId, streams) {
     for (const stream of streams) {
       if (stream.id === streamId) {
-        return stream;
+        return [stream];
       }
       if (stream.children) {
         const found = findStream(streamId, stream.children);
-        if (found) {
+        if (found.length > 0) {
           return found;
         }
       }
@@ -73,19 +74,38 @@ function createUserStreams () {
 
 function createUserEvents () {
   return ds.createUserEvents({
+
+    async getStreamed (userId, params) {
+      const events = await this.get(userId, params);
+      const readable = Readable.from(events);
+      return readable;
+    },
+
+    /**
+     * @returns Array
+     */
     async get (userId, params) { // eslint-disable-line no-unused-vars
       const lastStreamCall = await keyValueData.get(userId, 'lastStreamCall');
-      const events = [{
+      let events = [{
         id: 'dummyevent0',
         type: 'note/txt',
+        streamIds: ['mariana'],
         content: 'hello',
         time: Date.now() / 1000
       }, {
         id: 'laststreamcall',
         type: 'data/json',
+        streamIds: ['antonia'],
         content: lastStreamCall,
         time: Date.now() / 1000
       }];
+
+      // support stream filtering (only for one "any")
+      const streamQuery = params.query.filter((i) => { return i.type === 'streamsQuery'; });
+      if (streamQuery.length > 0 && streamQuery[0].content[0]?.any) {
+        const filterByStreamId = streamQuery[0].content[0]?.any[0];
+        events = events.filter((e) => e.streamIds.includes(filterByStreamId));
+      }
       ds.defaults.applyOnEvents(events);
       return events;
     }

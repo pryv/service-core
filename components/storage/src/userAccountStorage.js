@@ -150,7 +150,6 @@ StoreKeyValueData.prototype.set = async function (userId, key, value) {
       value: valueStr
     });
   }
-  // $$({storeId, userId, key, value});
 };
 
 // COMMON FUNCTIONS
