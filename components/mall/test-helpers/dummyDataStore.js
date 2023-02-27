@@ -6,7 +6,6 @@
  */
 
 const ds = require('@pryv/datastore');
-const { read } = require('fs');
 const { Readable } = require('stream');
 
 let keyValueData;
