@@ -4,28 +4,41 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
- * Data Store aggregator.
- * Pack configured datastores into one
+ * “Data stores aggregator”.
+ * Provides a uniform interface to all data stores (built-in and custom).
  */
+
+const { setTimeout } = require('timers/promises');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const Mall = require('./Mall');
+
+module.exports = {
+  getMall,
+  // TODO: eventually remove this once all the store id logic is safely contained within the mall
+  storeDataUtils: require('./helpers/storeDataUtils')
+};
+
 let mall;
 let initializing = false;
+
 /**
  * @returns {Promise<any>}
  */
 async function getMall () {
   // eslint-disable-next-line no-unmodified-loop-condition
   while (initializing) {
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    await setTimeout(5);
   }
   if (mall != null) { return mall; }
   initializing = true;
+
   const config = await getConfig();
   const logger = getLogger('mall');
   mall = new Mall();
-  // load external stores from config (Imported After to avoid cycles);
+
+  // load external stores from config (imported after to avoid cycles);
   const customStoresDef = config.get('custom:dataStores');
   if (customStoresDef) {
     for (const storeDef of customStoresDef) {
@@ -37,10 +50,11 @@ async function getMall () {
       mall.addStore(newStore);
     }
   }
+
   // Load built-in stores
   if (config.get('database:engine') === 'sqlite') {
-    const LocalStore = require('storage/src/LocalDataStoreSQLite'); // change to LocalDataStoreSQLite for SQLite PoC
-    mall.addStore(LocalStore);
+    const localStoreSQLite = require('storage/src/LocalDataStoreSQLite'); // change to LocalDataStoreSQLite for SQLite PoC
+    mall.addStore(localStoreSQLite);
     logger.info('Using SQLite PoC Datastore');
   } else {
     const localStore = require('storage/src/localDataStore');
@@ -50,14 +64,11 @@ async function getMall () {
     const auditDataStore = require('audit/src/datastore/auditDataStore');
     mall.addStore(auditDataStore);
   }
+
   await mall.init();
+
   initializing = false;
   return mall;
 }
-module.exports = {
-  getMall,
-  // TODO: eventually remove this once all the store id logic is safely contained within the mall
-  storeDataUtils: require('./helpers/storeDataUtils')
-};
 
 /** @typedef {Class<import>} DataStore */

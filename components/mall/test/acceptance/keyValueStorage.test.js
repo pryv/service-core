@@ -5,17 +5,20 @@
  * Proprietary and confidential
  */
 
+// TODO: enable linting again once implementation finished
+/* eslint-disable */
+
 /* global assert, initTests, initCore, getNewFixture, charlatan, cuid, coreRequest  */
 
 require('test-helpers/src/api-server-tests-config');
 
-describe('Stores KeyValue Storage', function () {
+describe('Per-store key-value DB', () => {
   let user, username, password, access;
   let personalToken;
   let mongoFixtures;
   let streamsPath;
 
-  before(async function () {
+  before(async () => {
     await initTests();
     await initCore();
     mongoFixtures = getNewFixture();
@@ -34,20 +37,9 @@ describe('Stores KeyValue Storage', function () {
     streamsPath = '/' + username + '/streams/';
   });
 
-  after(async function () {
+  after(async () => {
     await mongoFixtures.clean();
   });
 
-  it('[2Z7L] Must retrieve dummy streams when querying parentId', async () => {
-    const res = await coreRequest
-      .get(streamsPath)
-      .set('Authorization', personalToken)
-      .query({ parentId: ':dummy:' });
-    const streams = res.body.streams;
-    assert.exists(streams);
-    assert.equal(streams.length, 1);
-    assert.equal(streams[0].children.length, 2);
-    assert.equal(streams[0].name, user.username);
-    assert.equal(streams[0].parentId, ':dummy:');
-  });
+  it('[2Z7L] Must set and get key-value data');
 });

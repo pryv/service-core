@@ -7,24 +7,16 @@
 
 const ds = require('@pryv/datastore');
 
-const dummyStreams = createUserStreams();
-const dummyEvents = createUserEvents();
+let keyValueDB;
 
 /**
  * Dummy data store serving predictable static data.
  */
 module.exports = ds.createDataStore({
-  id: 'dummy',
-  name: 'Dummy store',
-  keyValueStorage: null,
-
-  streams: dummyStreams,
-  events: dummyEvents,
-
-  async init (params) {
-    this.keyValueStorage = params.keyValueStorage;
-    this.streams = createUserStreams(this.keyValueStorage);
-    this.events = createUserEvents(this.keyValueStorage);
+  async init (storeKeyValueDB) {
+    keyValueDB = storeKeyValueDB;
+    this.streams = createUserStreams();
+    this.events = createUserEvents();
     return this;
   },
 
@@ -33,11 +25,11 @@ module.exports = ds.createDataStore({
   async getUserStorageSize (userId) { return 0; } // eslint-disable-line no-unused-vars
 });
 
-function createUserStreams (keyValueStorage) {
+function createUserStreams () {
   return ds.createUserStreams({
     async get (userId, params) {
       // store last call in keyValueStore for tests
-      await keyValueStorage.set(userId, 'lastStreamCall', params);
+      await keyValueDB.set(userId, 'lastStreamCall', params);
       let streams = [{
         id: 'myself',
         name: userId,
@@ -79,10 +71,10 @@ function createUserStreams (keyValueStorage) {
   }
 }
 
-function createUserEvents (keyValueStorage) {
+function createUserEvents () {
   return ds.createUserEvents({
     async get (userId, params) { // eslint-disable-line no-unused-vars
-      const lastStreamCall = await keyValueStorage.get(userId, 'lastStreamCall');
+      const lastStreamCall = await keyValueDB.get(userId, 'lastStreamCall');
       const events = [{
         id: 'dummyevent0',
         type: 'note/txt',
