@@ -23,6 +23,13 @@ async function events () {
     event.id = event._id;
     delete event._id;
     delete event.userId;
+    let originalId = null;
+    if (event.headId != null) {
+      if (!event.integrity) return; // ignore missing integrity on history
+      originalId = event.id;
+      event.id = event.headId;
+      delete event.headId;
+    }
 
     const errors = [];
 
@@ -41,6 +48,7 @@ async function events () {
 
     if (errors.length !== 0) {
       if (erroneousEvents.length < 3) {
+        if (originalId != null) { event._originalId = originalId; }
         erroneousEvents.push({ event, errors });
       } else {
         andNMore++;

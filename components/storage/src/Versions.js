@@ -44,9 +44,10 @@ function Versions (database, attachmentsDirPath, logger, migrationsOverride) {
 }
 
 Versions.prototype.getCurrent = async function () {
-  return await bluebird.fromCallback(function (cb) {
+  const version = await bluebird.fromCallback((cb) => {
     this.database.findOne(collectionInfo, {}, { sort: { migrationCompleted: -1 } }, cb);
-  }.bind(this));
+  });
+  return version;
 };
 
 Versions.prototype.migrateIfNeeded = async function () {
@@ -55,12 +56,12 @@ Versions.prototype.migrateIfNeeded = async function () {
   if (!v) {
     // new install: init to package version
     currentVNum = packageFile.version;
-    await bluebird.fromCallback(function (cb) {
+    await bluebird.fromCallback((cb) => {
       this.database.insertOne(collectionInfo, {
         _id: currentVNum,
         initialInstall: timestamp.now()
       }, cb);
-    }.bind(this));
+    });
   }
   const migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {
     return vNum > currentVNum;
@@ -78,15 +79,15 @@ Versions.prototype.migrateIfNeeded = async function () {
    * @this {Versions}
    */
   async function migrate (vNum) {
-    await bluebird.fromCallback(function (cb) {
+    await bluebird.fromCallback((cb) => {
       this.database.upsertOne(collectionInfo, { _id: vNum }, { $set: { migrationStarted: timestamp.now() } }, cb);
-    }.bind(this));
-    await bluebird.fromCallback(function (cb) {
+    });
+    await bluebird.fromCallback((cb) => {
       this.migrations[vNum](context, cb);
-    }.bind(this));
-    await bluebird.fromCallback(function (cb) {
+    });
+    await bluebird.fromCallback((cb) => {
       this.database.updateOne(collectionInfo, { _id: vNum }, { $set: { migrationCompleted: timestamp.now() } }, cb);
-    }.bind(this));
+    });
   }
 };
 
@@ -94,7 +95,7 @@ Versions.prototype.migrateIfNeeded = async function () {
  * For tests only.
  */
 Versions.prototype.removeAll = async function () {
-  await bluebird.fromCallback(function (cb) {
+  await bluebird.fromCallback((cb) => {
     this.database.deleteMany(collectionInfo, {}, cb);
-  }.bind(this));
+  });
 };

@@ -18,13 +18,9 @@ const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 /**
  * A generic query for events.get, events.updateMany, events.delete
  * @typedef {Object} EventsGetQuery
- * @property {string} [id] - an event id (incompatible with headId)
- * @property {string} [headId] - for history querying the id of the event to get the history from (incompatible with id))
+ * @property {string} [id] - an event id
  * @property {Array<StreamQuery>} [streams] - an array of stream queries (see StreamQuery)
  * @property {('trashed'|'all'|null)} [state=null] - get only trashed, all document or non-trashed events (default is non-trashed)
- * @property {boolean} [withDeletions=false] - also returns deleted events (default is false) !! used by tests and internals !!
- * @property {timestamp} [deletedSince] - return deleted events since this timestamp
- * @property {boolean} [includeHistory] - if true, returns the history of the event and the event if "id" is given - Otherwise all events, including their history (use by tests only)
  * @property {Array<EventType>} [types] - reduce scope of events to a set of types
  * @property {timestamp} [fromTime] - events with a time of endTime after this timestamp
  * @property {timestamp} [toTime] - events with a time of endTime before this timestamp
@@ -36,19 +32,18 @@ const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
  * Get per-store query params from the given API query params.
  * @param {EventsGetQuery} params - a query object
  * @returns {Object.<String, EventsGetQuery>}
- * @throws {Error} if query.id and params.headId are both set
+ * @throws {Error} if params.headId is set
  * @throws {Error} if query.id is set and params.streams is querying a different store
  * @throws {Error} if query.streams contains stream queries that implies different stores
  */
 function getParamsByStore (params) {
-  let singleStoreId, singleStoreEventId, storeHeadId;
+  let singleStoreId, singleStoreEventId;
   if (params.id) { // a specific event is queried so we have a singleStore query;
     [singleStoreId, singleStoreEventId] = storeDataUtils.parseStoreIdAndStoreItemId(params.id);
   }
 
   if (params.headId) { // a specific "head" is queried so we have a singleStore query;
-    if (params.id) throw new Error('Cannot mix headId and id in query');
-    [singleStoreId, storeHeadId] = storeDataUtils.parseStoreIdAndStoreItemId(params.headId);
+    throw new Error('Cannot use headId and id in query');
   }
 
   // repack stream queries by store
@@ -74,11 +69,7 @@ function getParamsByStore (params) {
 
   if (singleStoreId) {
     paramsByStore[singleStoreId] ??= _.cloneDeep(params);
-    if (storeHeadId) {
-      paramsByStore[singleStoreId].headId = storeHeadId;
-    } else { // we have a singleStoreEventId
-      paramsByStore[singleStoreId].id = singleStoreEventId;
-    }
+    paramsByStore[singleStoreId].id = singleStoreEventId;
   }
 
   if (Object.keys(paramsByStore).length === 0) { // default is local
@@ -123,6 +114,14 @@ function getStoreQueryFromParams (params) {
 
   const query = [];
 
+  // always exclude history data
+  query.push({ type: 'equal', content: { field: 'headId', value: null } });
+  // always exclude deleted items
+  query.push({ type: 'equal', content: { field: 'deleted', value: null } });
+  if (params.headId) {
+    throw new Error('No headId in query');
+  }
+
   // trashed
   switch (params.state) {
     case 'trashed':
@@ -131,24 +130,12 @@ function getStoreQueryFromParams (params) {
     case 'all':
       break;
     default:
-      // trashed must be false, unless loooking for deletedSince (then we don't care)
-      if (params.deletedSince != null) break;
       query.push({ type: 'equal', content: { field: 'trashed', value: false } });
   }
 
   // if getOne
   if (params.id) {
     query.push({ type: 'equal', content: { field: 'id', value: params.id } });
-  }
-
-  if (params.deletedSince != null) {
-    query.push({ type: 'greater', content: { field: 'deleted', value: params.deletedSince } });
-    options.sort = { deleted: -1 };
-  } else {
-    // all deletions (tests only)
-    if (!params.withDeletions) {
-      query.push({ type: 'equal', content: { field: 'deleted', value: null } }); // <<== actual default value
-    }
   }
 
   // modified since
@@ -159,14 +146,6 @@ function getStoreQueryFromParams (params) {
   // types
   if (params.types && params.types.length > 0) {
     query.push({ type: 'typesList', content: params.types });
-  }
-
-  // history
-  if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
-    query.push({ type: 'equal', content: { field: 'headId', value: params.headId } });
-    options.sort.modified = 1; // also sort by modified time when history is requested
-  } else if (!params.includeHistory) { // no history;
-    query.push({ type: 'equal', content: { field: 'headId', value: null } });
   }
 
   // if streams are defined

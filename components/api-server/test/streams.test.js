@@ -864,19 +864,20 @@ describe('[STRE] streams', function () {
             });
         },
         async function verifyLinkedEvents () {
-          let events = await mall.events.get(user.id, { withDeletions: true, state: 'all', includeHistory: true });
-
+          let events = await mall.events.get(user.id, { state: 'all' });
+          const foundDeletedEvents = await mall.events.getDeletions('local', user.id, 0);
           // lets separate system events from all other events and validate them separately
           const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
           events = separatedEvents.events;
-          events.length.should.eql(testData.events.length, 'events');
+          const eventsWithoutHistory = testData.events.filter(e => e.headId == null);
+          (events.length + foundDeletedEvents.length).should.eql(eventsWithoutHistory.length, 'events');
 
           // validate account streams events
           const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
           validation.validateAccountEvents(actualAccountStreamsEvents);
 
           deletedEvents.forEach(function (e) {
-            const actual = _.find(events, { id: e.id });
+            const actual = _.find(foundDeletedEvents, { id: e.id });
             assert.approximately(
               actual.deleted, deletionTime, 2,
               'Deletion time must be correct.');
