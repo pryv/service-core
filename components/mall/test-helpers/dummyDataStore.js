@@ -16,22 +16,28 @@ const dummyEvents = createUserEvents();
 module.exports = ds.createDataStore({
   id: 'dummy',
   name: 'Dummy store',
+  keyValueStorage: null,
 
-  async init () {
+  streams: null,
+  events: null,
+
+  async init (params) {
+    this.keyValueStorage = params.keyValueStorage;
+    this.streams = createUserStreams(this.keyValueStorage);
+    this.events = createUserEvents(this.keyValueStorage);
     return this;
   },
-
-  streams: dummyStreams,
-  events: dummyEvents,
 
   async deleteUser (userId) {}, // eslint-disable-line no-unused-vars
 
   async getUserStorageSize (userId) { return 0; } // eslint-disable-line no-unused-vars
 });
 
-function createUserStreams () {
+function createUserStreams (keyValueStorage) {
   return ds.createUserStreams({
     async get (userId, params) {
+      // store last call in keyValueStore for tests
+      await keyValueStorage.set(userId, 'lastStreamCall', params);
       let streams = [{
         id: 'myself',
         name: userId,
@@ -73,13 +79,19 @@ function createUserStreams () {
   }
 }
 
-function createUserEvents () {
+function createUserEvents (keyValueStorage) {
   return ds.createUserEvents({
     async get (userId, params) { // eslint-disable-line no-unused-vars
+      const lastStreamCall = await keyValueStorage.get(userId, 'lastStreamCall');
       const events = [{
         id: 'dummyevent0',
         type: 'note/txt',
         content: 'hello',
+        time: Date.now() / 1000
+      }, {
+        id: 'laststreamcall',
+        type: 'data/json',
+        content: lastStreamCall,
         time: Date.now() / 1000
       }];
       ds.defaults.applyOnEvents(events);

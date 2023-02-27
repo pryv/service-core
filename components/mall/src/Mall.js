@@ -19,6 +19,10 @@ class Mall {
    * @type {Map<string, DataStore>}
    */
   stores;
+  /**
+   * @type {Map<string, DataStore>}
+   */
+  stores;
 
   initialized;
 
@@ -43,7 +47,7 @@ class Mall {
    * @param {DataStore} store
    * @returns {void}
    */
-  addStore (store) {
+  addStore (store, params) {
     if (this.initialized) { throw new Error('Sources cannot be added after init()'); }
     this.stores.set(store.id, store);
   }
