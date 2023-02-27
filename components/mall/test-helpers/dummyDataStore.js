@@ -7,9 +7,6 @@
 
 const ds = require('@pryv/datastore');
 
-const dummyStreams = createUserStreams();
-const dummyEvents = createUserEvents();
-
 /**
  * Dummy data store serving predictable static data.
  */
@@ -18,8 +15,8 @@ module.exports = ds.createDataStore({
   name: 'Dummy store',
   keyValueStorage: null,
 
-  streams: dummyStreams,
-  events: dummyEvents,
+  streams: null,
+  events: null,
 
   async init (params) {
     this.keyValueStorage = params.keyValueStorage;
