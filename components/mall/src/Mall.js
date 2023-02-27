@@ -19,10 +19,6 @@ class Mall {
    * @type {Map<string, DataStore>}
    */
   stores;
-  /**
-   * @type {Map<string, DataStore>}
-   */
-  stores;
 
   initialized;
 

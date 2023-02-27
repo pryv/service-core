@@ -10,8 +10,7 @@
  */
 
 const path = require('path');
-const rimraf = require('rimraf');
-const bluebird = require('bluebird');
+const fs = require('fs/promises');
 const mkdirp = require('mkdirp');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
@@ -106,7 +105,7 @@ function pathForAttachment (userId, eventId, fileId, ensureDirs = false) {
  */
 async function deleteUserDirectory (userId) {
   const userFolder = getPathForUser(userId);
-  await bluebird.fromCallback(cb => rimraf(userFolder, { disableGlob: true }, cb));
+  await fs.rm(userFolder, { recursive: true, force: true });
 }
 
 function getBasePath () {

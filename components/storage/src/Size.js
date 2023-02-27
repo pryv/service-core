@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const bluebird = require('bluebird');
 
 const { getUsersRepository, UserRepositoryOptions, User } = require('business/src/users');
 const { getMall } = require('mall');
@@ -15,7 +14,7 @@ class Size {
 
   /**
    * Computes storage size used by user accounts.
-   * Will sum sizes returned by `getTotalSize(user, callback)` on the given storage objects,
+   * Will sum sizes returned by `getTotalSize(user)` on the given storage objects,
    * if function is present.
    *
    * @param {Array} dbDocumentsItems
@@ -51,9 +50,10 @@ class Size {
 
     async function computeCategory (storageItems) {
       let total = 0;
+
       for (let i = 0; i < storageItems.length; i++) {
         if (typeof storageItems[i].getTotalSize !== 'function') { return; }
-        const size = await bluebird.fromCallback(cb => storageItems[i].getTotalSize(user, cb));
+        const size = await storageItems[i].getTotalSize(user);
         total += size;
       }
       return total;

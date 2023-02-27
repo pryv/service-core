@@ -8,10 +8,8 @@ const cuid = require('cuid');
 const fs = require('fs');
 const mkdirp = require('mkdirp');
 const path = require('path');
-const rimraf = require('rimraf');
 const toString = require('utils').toString;
 
-const bluebird = require('bluebird');
 const { pipeline } = require('stream/promises');
 
 module.exports = EventFiles;
@@ -28,54 +26,40 @@ function EventFiles (settings, logger) {
  * Computes the total storage size of the given user's attached files, in bytes.
  *
  * @param {Object} user
- * @param {Function} callback
+ * @returns {Promise<number>}
  */
-EventFiles.prototype.getTotalSize = function (user, callback) {
+EventFiles.prototype.getTotalSize = async function (user) {
   const userPath = this.getAttachmentPath(user.id);
-  fs.access(userPath, fs.constants.R_OK, function (err) {
-    const readable = err == null;
-    if (!readable) {
-      this.logger.debug('No attachments dir for user ' + toString.user(user));
-      return callback(null, 0);
-    }
-    getSizeRecursive.call(this, userPath, callback);
-  }.bind(this));
+  try {
+    await fs.promises.access(userPath);
+  } catch (err) {
+    this.logger.debug('No attachments dir for user ' + toString.user(user));
+    return 0;
+  }
+  return getDirectorySize(userPath);
 };
 
 /**
- * Gets all files sizes assyncronously using generators
+ *
+ * @param {string} dirPath
+ * @returns {Promise<number>}
  */
-async function * recursiveReadDirAsync (dir) {
-  const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
-  for (const dirent of dirents) {
-    const filePath = path.resolve(dir, dirent.name);
-    if (dirent.isDirectory()) {
-      yield * recursiveReadDirAsync(filePath);
-    } else {
-      try {
-        const fileStats = await fs.promises.stat(filePath);
-        yield fileStats.size;
-      } catch (err) {
-        this.logger.error('Data corrupted; expected ' + toString.path(filePath) + ' to exist');
-        yield 0;
-      }
-    }
-  }
-}
+async function getDirectorySize (dirPath) {
+  const files = await fs.promises.readdir(dirPath, { withFileTypes: true });
 
-/**
- * @param filePath
- * @param callback
- * @this {EventFiles}
- */
-function getSizeRecursive (filePath, callback) {
-  (async () => {
-    let total = 0;
-    for await (const f of recursiveReadDirAsync(filePath)) {
-      total += f;
+  const paths = files.map(async file => {
+    const filePath = path.join(dirPath, file.name);
+    if (file.isDirectory()) {
+      return await getDirectorySize(filePath);
     }
-    callback(null, total);
-  })();
+    if (file.isFile()) {
+      const { size } = await fs.promises.stat(filePath);
+      return size;
+    }
+    return 0;
+  });
+
+  return (await Promise.all(paths)).flat(Infinity).reduce((i, size) => i + size, 0);
 }
 
 /**
@@ -106,44 +90,49 @@ EventFiles.prototype.getAttachedFileStream = function (userId, eventId, fileId) 
 EventFiles.prototype.removeAttachedFile = async function (userId, eventId, fileId) {
   const filePath = this.getAttachmentPath(userId, eventId, fileId);
   await fs.promises.unlink(filePath);
-  await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(filePath), cb));
+  await this.cleanupStructure(path.dirname(filePath));
 };
 
 EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
   const dirPath = this.getAttachmentPath(userId, eventId);
-  await bluebird.fromCallback((cb) => rimraf(dirPath, cb));
-  await bluebird.fromCallback((cb) => this.cleanupStructure(path.dirname(dirPath), cb));
+  await fs.promises.rm(dirPath, { recursive: true, force: true });
+  await this.cleanupStructure(path.dirname(dirPath));
 };
 
-EventFiles.prototype.removeAllForUser = function (user, callback) {
-  rimraf(this.getAttachmentPath(user.id), callback);
+/**
+ * Synchronous until all related code is async/await.
+ */
+EventFiles.prototype.removeAllForUser = function (user) {
+  fs.rmSync(this.getAttachmentPath(user.id), { recursive: true, force: true });
 };
 
 /**
  * Primarily meant for tests.
- *
- * @param callback
+ * Synchronous until all related code is async/await.
  */
-EventFiles.prototype.removeAll = function (callback) {
-  rimraf(this.settings.attachmentsDirPath, callback);
+EventFiles.prototype.removeAll = function () {
+  fs.rmSync(this.settings.attachmentsDirPath, { recursive: true, force: true });
 };
 
 /**
  * @param {Object} user
- * @param {String} eventId
- * @param {String} fileId Optional
+ * @param {String} [eventId]
+ * @param {String} [fileId]
  * @returns {String}
  */
-EventFiles.prototype.getAttachedFilePath = function (user /*, eventId, fileId */) {
+EventFiles.prototype.getAttachedFilePath = function (user, eventId, fileId) {
   const args = [].slice.call(arguments);
   args[0] = user.id;
   return this.getAttachmentPath.apply(this, args);
 };
 
 /**
- * @private
+ * @param {String} userId
+ * @param {String} [eventId]
+ * @param {String} [fileId]
+ * @internal
  */
-EventFiles.prototype.getAttachmentPath = function (/* userId, eventId, fileId */) {
+EventFiles.prototype.getAttachmentPath = function (userId, eventId, fileId) {
   const args = [].slice.call(arguments);
   args.unshift(this.settings.attachmentsDirPath);
   return path.join.apply(null, args);
@@ -181,21 +170,29 @@ function getPreviewFileName (dimension) {
 }
 
 /**
+ * Primarily meant for tests.
+ * Synchronous until all related code is async/await.
+ */
+EventFiles.prototype.removeAllPreviews = function () {
+  fs.rmSync(this.settings.previewsDirPath, { recursive: true, force: true });
+};
+
+/**
  * Attempts to remove the given directory and its parents (if empty) until the root attachments
  * directory is reached.
- *
- * @private
+ * @internal
  */
-EventFiles.prototype.cleanupStructure = function cleanupStructure (dirPath, callback) {
+EventFiles.prototype.cleanupStructure = async function cleanupStructure (dirPath) {
   if (dirPath === this.settings.attachmentsDirPath) {
-    return callback();
+    return;
   }
 
-  fs.rmdir(dirPath, function (err) {
-    if (err) {
-      // assume the dir is not empty
-      return callback();
-    }
-    cleanupStructure.call(this, path.dirname(dirPath), callback);
-  }.bind(this));
+  try {
+    await fs.promises.rmdir(dirPath);
+  } catch (err) {
+    // assume the dir is not empty
+    return;
+  }
+
+  await this.cleanupStructure(path.dirname(dirPath));
 };

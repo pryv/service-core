@@ -408,10 +408,9 @@ BaseStorage.prototype.insertMany = function (userOrUserId, items, callback, opti
  * Gets the total size of the collection, in bytes.
  *
  * @param {Object} userOrUserId
- * @param {Function} callback
  */
-BaseStorage.prototype.getTotalSize = function (userOrUserId, callback) {
-  this.database.totalSize(this.getCollectionInfo(userOrUserId), callback);
+BaseStorage.prototype.getTotalSize = async function (userOrUserId) {
+  return await this.database.totalSize(this.getCollectionInfo(userOrUserId));
 };
 
 /**

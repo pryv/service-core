@@ -18,8 +18,8 @@ module.exports = ds.createDataStore({
   name: 'Dummy store',
   keyValueStorage: null,
 
-  streams: null,
-  events: null,
+  streams: dummyStreams,
+  events: dummyEvents,
 
   async init (params) {
     this.keyValueStorage = params.keyValueStorage;

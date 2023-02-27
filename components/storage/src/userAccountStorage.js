@@ -113,7 +113,7 @@ async function setDSKeyValue (storeId, userId, key, value) {
       storeId, key, value: valueStr
     });
   }
-  $$({storeId, userId, key, value});
+  // $$({storeId, userId, key, value});
 }
 
 async function getDSKeyValue (storeId, userId, key) {

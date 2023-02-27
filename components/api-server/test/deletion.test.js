@@ -65,7 +65,7 @@ describe('[PGTD] DELETE /users/:username', () => {
     influx = produceInfluxConnection(app.config);
     influxRepository = new InfluxRepository(influx);
     usersRepository = await getUsersRepository();
-    await bluebird.fromCallback((cb) => app.storageLayer.eventFiles.removeAll(cb));
+    app.storageLayer.eventFiles.removeAll();
     username1 = charlatan.Internet.userName();
     username2 = charlatan.Internet.userName();
     authKey = config.get('auth:adminAccessKey');
@@ -74,7 +74,7 @@ describe('[PGTD] DELETE /users/:username', () => {
   after(async function () {
     config.injectTestConfig({});
     await mongoFixtures.context.cleanEverything();
-    await bluebird.fromCallback((cb) => app.storageLayer.eventFiles.removeAll(cb));
+    app.storageLayer.eventFiles.removeAll();
   });
   describe('[USAD] depending on "user-account:delete"  config parameter', function () {
     let personalAccessToken;
@@ -300,7 +300,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert(sessions !== null || sessions !== []);
         });
         it(`[${testIDs[i][4]}] should not delete other user event files`, async function () {
-          const totalFilesSize = await bluebird.fromCallback((cb) => app.storageLayer.eventFiles.getTotalSize({ id: username2 }, cb));
+          const totalFilesSize = await app.storageLayer.eventFiles.getTotalSize({ id: username2 });
           assert.notEqual(totalFilesSize, 0);
         });
         it(`[${testIDs[i][7]}] should delete on register`, async function () {

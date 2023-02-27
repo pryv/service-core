@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const bluebird = require('bluebird');
-const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
 const { getUsersRepository } = require('business/src/users');
@@ -14,6 +13,9 @@ const { getLogger } = require('@pryv/boiler');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 const setAdminAuditAccessId = setAuditAccessId(AuditAccessIds.ADMIN_TOKEN);
 
+/**
+ * TODO: cleanup this class… it breaks encapsulation (e.g. with event files) and its scope is unclear
+ */
 class Deletion {
   logger;
 
@@ -81,7 +83,7 @@ class Deletion {
    * @returns {Promise<any>}
    */
   async validateUserFilepaths (context, params, result, next) {
-    const paths = [
+    const dirPaths = [
       this.config.get('eventFiles:attachmentsDirPath'),
       this.config.get('eventFiles:previewsDirPath')
     ];
@@ -91,7 +93,7 @@ class Deletion {
     // NOTE Since user specific paths are created lazily, we should not expect
     //  them to be there. But _if_ they are, they need be accessible.
     // Let's check if we can change into and write into the user's paths:
-    const inaccessibleDirectory = findNotAccessibleDir(paths.map((p) => path.join(p, context.user.id)));
+    const inaccessibleDirectory = findNotAccessibleDir(dirPaths.map((p) => path.join(p, context.user.id)));
     if (inaccessibleDirectory) {
       const error = new Error(`Directory '${inaccessibleDirectory}' is inaccessible or missing.`);
       this.logger.error(error, error);
@@ -108,15 +110,13 @@ class Deletion {
    * @returns {Promise<void>}
    */
   async deleteUserFiles (context, params, result, next) {
-    const paths = [
+    const dirPaths = [
       this.config.get('eventFiles:attachmentsDirPath'),
       this.config.get('eventFiles:previewsDirPath')
     ];
-    const userPaths = paths.map((p) => path.join(p, context.user.id));
-    const opts = {
-      disableGlob: true
-    };
-    await bluebird.map(userPaths, (path) => bluebird.fromCallback((cb) => rimraf(path, opts, cb)));
+    for (const dirPath of dirPaths) {
+      await fs.promises.rm(path.join(dirPath, context.user.id), { recursive: true, force: true });
+    }
     next();
   }
 

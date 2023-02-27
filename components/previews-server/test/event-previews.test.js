@@ -15,7 +15,6 @@ const errors = require('errors');
 const fs = require('fs');
 const bluebird = require('bluebird');
 const gm = require('gm');
-const rimraf = require('rimraf');
 const { assert } = require('chai');
 const storage = helpers.dependencies.storage;
 const testData = helpers.data;
@@ -56,8 +55,8 @@ describe('event previews', function () {
   });
 
   describe('GET /<event id>/preview', function () {
-    beforeEach(function (done) {
-      rimraf(storage.user.eventFiles.settings.previewsDirPath, done);
+    beforeEach(function () {
+      storage.user.eventFiles.removeAllPreviews();
     });
 
     it('[NRT9] must return JPEG previews for "picture/attached" events and cache the result',
