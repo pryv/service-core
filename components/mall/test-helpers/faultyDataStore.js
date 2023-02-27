@@ -12,7 +12,7 @@ const ds = require('@pryv/datastore');
  * (Implements no data methods, so all calls will throw "not supported" errors.)
  */
 module.exports = ds.createDataStore({
-  async init (keyValueDB) { // eslint-disable-line no-unused-vars
+  async init (keyValueData) { // eslint-disable-line no-unused-vars
     this.streams = createUserStreams();
     this.events = createUserEvents();
     return this;

@@ -58,8 +58,8 @@ class Mall {
     const { getUserAccountStorage } = require('storage');
     const userAccountStorage = await getUserAccountStorage();
     for (const store of this.stores.values()) {
-      const storeKeyValueDB = userAccountStorage.getKeyValueDBForStore(store.id);
-      await store.init(storeKeyValueDB);
+      const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(store.id);
+      await store.init(storeKeyValueData);
     }
     this._streams = new MallUserStreams(this.stores.values());
     this._events = new MallUserEvents(this.stores.values());

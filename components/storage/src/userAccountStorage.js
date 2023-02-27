@@ -44,7 +44,7 @@ module.exports = {
   getCurrentPasswordTime,
   passwordExistsInHistory,
   clearHistory,
-  getKeyValueDBForStore
+  getKeyValueDataForStore
 };
 
 async function init () {
@@ -103,21 +103,21 @@ async function passwordExistsInHistory (userId, password, historyLength) {
 
 // PER-STORE KEY-VALUE DB
 
-function getKeyValueDBForStore (storeId) {
-  return new StoreKeyValueDB(storeId);
+function getKeyValueDataForStore (storeId) {
+  return new StoreKeyValueData(storeId);
 }
 
 /**
  * @constructor
  * @param {string} storeId
  */
-function StoreKeyValueDB (storeId) {
+function StoreKeyValueData (storeId) {
   this.storeId = storeId;
 }
 
-StoreKeyValueDB.prototype.getAll = async function (userId) {
+StoreKeyValueData.prototype.getAll = async function (userId) {
   const db = await getUserDB(userId);
-  const query = db.prepare('SELECT key, value FROM datastoresKeyValues WHERE storeId = @storeId');
+  const query = db.prepare('SELECT key, value FROM storeKeyValueData WHERE storeId = @storeId');
   const res = {};
   for (const item of query.iterate({ storeId: this.storeId })) {
     res[item.key] = JSON.parse(item.value);
@@ -125,9 +125,9 @@ StoreKeyValueDB.prototype.getAll = async function (userId) {
   return res;
 };
 
-StoreKeyValueDB.prototype.get = async function (userId, key) {
+StoreKeyValueData.prototype.get = async function (userId, key) {
   const db = await getUserDB(userId);
-  const res = db.prepare('SELECT value FROM datastoresKeyValues WHERE storeId = @storeId AND key = @key').get({
+  const res = db.prepare('SELECT value FROM storeKeyValueData WHERE storeId = @storeId AND key = @key').get({
     storeId: this.storeId,
     key
   });
@@ -135,16 +135,16 @@ StoreKeyValueDB.prototype.get = async function (userId, key) {
   return JSON.parse(res.value);
 };
 
-StoreKeyValueDB.prototype.set = async function (userId, key, value) {
+StoreKeyValueData.prototype.set = async function (userId, key, value) {
   const db = await getUserDB(userId);
   if (value == null) {
-    db.prepare('DELETE FROM datastoresKeyValues WHERE storeId = @storeId AND key = @key)').run({
+    db.prepare('DELETE FROM storeKeyValueData WHERE storeId = @storeId AND key = @key)').run({
       storeId: this.storeId,
       key
     });
   } else {
     const valueStr = JSON.stringify(value);
-    db.prepare('REPLACE INTO datastoresKeyValues (storeId, key, value) VALUES (@storeId, @key, @value)').run({
+    db.prepare('REPLACE INTO storeKeyValueData (storeId, key, value) VALUES (@storeId, @key, @value)').run({
       storeId: this.storeId,
       key,
       value: valueStr
@@ -176,8 +176,8 @@ async function openUserDB (userId) {
   db.unsafeMode(true);
   db.prepare('CREATE TABLE IF NOT EXISTS passwords (time REAL PRIMARY KEY, hash TEXT NOT NULL, createdBy TEXT NOT NULL);').run();
   db.prepare('CREATE INDEX IF NOT EXISTS passwords_hash ON passwords(hash);').run();
-  db.prepare('CREATE TABLE IF NOT EXISTS datastoresKeyValues (storeId TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (storeId, key));').run();
-  db.prepare('CREATE INDEX IF NOT EXISTS datastoresKeyValues_storeId ON datastoresKeyValues(storeId);').run();
+  db.prepare('CREATE TABLE IF NOT EXISTS storeKeyValueData (storeId TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (storeId, key));').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS storeKeyValueData_storeId ON storeKeyValueData(storeId);').run();
   dbCache.set(userId, db);
   return db;
 }

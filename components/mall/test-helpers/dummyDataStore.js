@@ -7,14 +7,14 @@
 
 const ds = require('@pryv/datastore');
 
-let keyValueDB;
+let keyValueData;
 
 /**
  * Dummy data store serving predictable static data.
  */
 module.exports = ds.createDataStore({
-  async init (storeKeyValueDB) {
-    keyValueDB = storeKeyValueDB;
+  async init (storeKeyValueData) {
+    keyValueData = storeKeyValueData;
     this.streams = createUserStreams();
     this.events = createUserEvents();
     return this;
@@ -29,7 +29,7 @@ function createUserStreams () {
   return ds.createUserStreams({
     async get (userId, params) {
       // store last call in keyValueStore for tests
-      await keyValueDB.set(userId, 'lastStreamCall', params);
+      await keyValueData.set(userId, 'lastStreamCall', params);
       let streams = [{
         id: 'myself',
         name: userId,
@@ -74,7 +74,7 @@ function createUserStreams () {
 function createUserEvents () {
   return ds.createUserEvents({
     async get (userId, params) { // eslint-disable-line no-unused-vars
-      const lastStreamCall = await keyValueDB.get(userId, 'lastStreamCall');
+      const lastStreamCall = await keyValueData.get(userId, 'lastStreamCall');
       const events = [{
         id: 'dummyevent0',
         type: 'note/txt',
