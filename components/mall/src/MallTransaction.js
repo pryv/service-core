@@ -25,9 +25,9 @@ class MallTransaction {
     if (this.storeTransactions.has(storeId)) {
       return this.storeTransactions.get(storeId);
     }
-    const store = this.mall.stores.get(storeId);
-    const transaction = await store.newTransaction();
-    this.storeTransactions.set(store.id, transaction);
+    const storeEnvelope = this.mall.storesEnvelopes.get(storeId);
+    const transaction = await storeEnvelope.store.newTransaction();
+    this.storeTransactions.set(storeId, transaction);
     return transaction;
   }
 }

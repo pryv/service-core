@@ -27,12 +27,12 @@ class MallUserStreams {
    */
   storeNames = new Map();
   /**
-   * @param {DataStore[]} stores
+   * @param {DataStore[]} storesEnvelopes
    */
-  constructor (stores) {
-    for (const store of stores) {
-      this.streamsStores.set(store.id, store.streams);
-      this.storeNames.set(store.id, store.name);
+  constructor (storesEnvelopes) {
+    for (const storeEnvelope of storesEnvelopes) {
+      this.streamsStores.set(storeEnvelope.id, storeEnvelope.store.streams);
+      this.storeNames.set(storeEnvelope.id, storeEnvelope.name);
     }
   }
 

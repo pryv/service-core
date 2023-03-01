@@ -12,14 +12,14 @@ module.exports = {
 };
 /**
  * Create a pseudo-stream representing a data store's root.
- * @param {{id: string, name: string}} storeInfo - Data store or similar object
+ * @param {{id: string, name: string}} storeIdAndName - Data store or similar object
  * @param {Object} extraProperties
  * @returns {any}
  */
-function createStoreRootStream (storeInfo, extraProperties) {
+function createStoreRootStream (storeIdAndName, extraProperties) {
   return Object.assign({
-    id: ':' + storeInfo.id + ':',
-    name: storeInfo.name,
+    id: ':' + storeIdAndName.id + ':',
+    name: storeIdAndName.name,
     parentId: null,
     created: dataStoreDefaults.UnknownDate + 1,
     modified: dataStoreDefaults.UnknownDate,

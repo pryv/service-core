@@ -32,12 +32,12 @@ class MallUserEvents {
   storeSettings = new Map();
 
   /**
-   * @param {DataStore[]} stores
+   * @param {DataStore[]} storesEnvelopes
    */
-  constructor (stores) {
-    for (const store of stores) {
-      this.eventsStores.set(store.id, store.events);
-      this.storeSettings.set(store.id, store.settings);
+  constructor (storesEnvelopes) {
+    for (const storeEnvelope of storesEnvelopes) {
+      this.eventsStores.set(storeEnvelope.id, storeEnvelope.store.events);
+      this.storeSettings.set(storeEnvelope.id, storeEnvelope.config);
     }
   }
 

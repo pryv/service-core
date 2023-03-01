@@ -47,7 +47,7 @@ async function getMall () {
       newStore.id = storeDef.id;
       newStore.name = storeDef.name;
       newStore.settings = storeDef.config;
-      mall.addStore(newStore);
+      mall.addStore(newStore, storeDef);
     }
   }
 
@@ -56,15 +56,15 @@ async function getMall () {
     logger.info('Using PoC SQLite data store');
     const sqlite = require('storage/src/localDataStoreSQLite');
     sqlite.settings.versioning = config.get('versioning');
-    mall.addStore(sqlite);
+    mall.addStore(sqlite, { id: 'local', name: 'SQLITE', config: {} });
   } else {
     const mongo = require('storage/src/localDataStore');
     mongo.settings.versioning = config.get('versioning');
-    mall.addStore(mongo);
+    mall.addStore(mongo, { id: 'local', name: 'SQLITE', config: {} });
   }
   if (!config.get('openSource:isActive') && config.get('audit:active')) {
     const auditDataStore = require('audit/src/datastore/auditDataStore');
-    mall.addStore(auditDataStore);
+    mall.addStore(auditDataStore, { id: '_audit', name: 'Audit', config: {} });
   }
 
   await mall.init();

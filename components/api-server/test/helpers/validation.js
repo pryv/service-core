@@ -437,9 +437,9 @@ exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
 
   // -- ADD stores
   const mall = await getMall();
-  for (const store of [...mall.stores.values()].reverse()) { // cloning array before reversing it!
-    if (isShown(store.id)) {
-      const stream = streamsUtils.createStoreRootStream(store, {
+  for (const storeEnvelope of [...mall.storesEnvelopes.values()].reverse()) { // cloning array before reversing it!
+    if (isShown(storeEnvelope.id)) {
+      const stream = streamsUtils.createStoreRootStream(storeEnvelope, {
         children: [],
         childrenHidden: true // To be discussed
       });

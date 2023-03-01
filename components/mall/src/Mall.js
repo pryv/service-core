@@ -18,7 +18,7 @@ class Mall {
   /**
    * @type {Map<string, DataStore>}
    */
-  stores;
+  storesEnvelopes;
 
   initialized;
 
@@ -26,7 +26,7 @@ class Mall {
 
   _events;
   constructor () {
-    this.stores = new Map();
+    this.storesEnvelopes = new Map();
     this.initialized = false;
   }
 
@@ -43,9 +43,9 @@ class Mall {
    * @param {DataStore} store
    * @returns {void}
    */
-  addStore (store, params) {
+  addStore (store, storeDef) {
     if (this.initialized) { throw new Error('Sources cannot be added after init()'); }
-    this.stores.set(store.id, store);
+    this.storesEnvelopes.set(storeDef.id, { store, id: storeDef.id, name: storeDef.name, config: storeDef.config });
   }
 
   /**
@@ -57,12 +57,12 @@ class Mall {
     // placed here otherwise create a circular dependency .. pfff
     const { getUserAccountStorage } = require('storage');
     const userAccountStorage = await getUserAccountStorage();
-    for (const store of this.stores.values()) {
-      const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(store.id);
-      await store.init(storeKeyValueData);
+    for (const storeEnvelope of this.storesEnvelopes.values()) {
+      const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeEnvelope.id);
+      await storeEnvelope.store.init(storeKeyValueData);
     }
-    this._streams = new MallUserStreams(this.stores.values());
-    this._events = new MallUserEvents(this.stores.values());
+    this._streams = new MallUserStreams(this.storesEnvelopes.values());
+    this._events = new MallUserEvents(this.storesEnvelopes.values());
     return this;
   }
 
@@ -70,11 +70,11 @@ class Mall {
    * @returns {Promise<void>}
    */
   async deleteUser (userId) {
-    for (const store of this.stores.values()) {
+    for (const storeEnvelope of this.storesEnvelopes.values()) {
       try {
-        await store.deleteUser(userId);
+        await storeEnvelope.store.deleteUser(userId);
       } catch (error) {
-        storeDataUtils.throwAPIError(error, store.id);
+        storeDataUtils.throwAPIError(error, storeEnvelope.id);
       }
     }
   }
@@ -86,11 +86,11 @@ class Mall {
    */
   async getUserStorageSize (userId) {
     let storageUsed = 0;
-    for (const store of this.stores.values()) {
+    for (const storeEnvelope of this.storesEnvelopes.values()) {
       try {
-        storageUsed += await store.getUserStorageSize(userId);
+        storageUsed += await storeEnvelope.store.getUserStorageSize(userId);
       } catch (error) {
-        storeDataUtils.throwAPIError(error, store.id);
+        storeDataUtils.throwAPIError(error, storeEnvelope.id);
       }
     }
     return storageUsed;
