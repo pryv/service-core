@@ -8,6 +8,7 @@ const storeDataUtils = require('./helpers/storeDataUtils');
 const MallUserStreams = require('./MallUserStreams');
 const MallUserEvents = require('./MallUserEvents');
 const MallTransaction = require('./MallTransaction');
+const { getLogger } = require('@pryv/boiler');
 
 /**
  * Storage for streams and events.
@@ -59,7 +60,14 @@ class Mall {
     const userAccountStorage = await getUserAccountStorage();
     for (const storeEnvelope of this.storesEnvelopes.values()) {
       const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeEnvelope.id);
-      await storeEnvelope.store.init(storeKeyValueData);
+      const params = {
+        id: storeEnvelope.id,
+        name: storeEnvelope.name,
+        config: storeEnvelope.config,
+        storeKeyValueData,
+        logger: getLogger(`mall:${storeEnvelope.id}`)
+      };
+      await storeEnvelope.store.init(params);
     }
     this._streams = new MallUserStreams(this.storesEnvelopes.values());
     this._events = new MallUserEvents(this.storesEnvelopes.values());

@@ -16,17 +16,9 @@ const userEvents = require('./localUserEvents');
 const LocalTransaction = require('./LocalTransaction');
 
 module.exports = ds.createDataStore({
-  id: 'local',
 
-  name: 'Local store',
-
-  settings: {
-    attachments: {
-      setFileReadToken: true // methods/events will add a readFileToken
-    }
-  },
-
-  async init () {
+  async init (params) {
+    this.settings = params.config;
     await SystemStreamsSerializer.init();
     const database = await storage.getDatabase();
 
