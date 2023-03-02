@@ -19,17 +19,16 @@ class Mall {
   /**
    * @type {Map<string, DataStore>}
    */
-  storesEnvelopes;
-
-  initialized;
-
-  _streams;
+  storesById = new Map();
+  /**
+   * @type {Map<DataStore, {id: string, name: string, settings: object}>}
+   */
+  storeDescriptionsByStore = new Map();
 
   _events;
-  constructor () {
-    this.storesEnvelopes = new Map();
-    this.initialized = false;
-  }
+  _streams;
+
+  initialized = false;
 
   get streams () {
     return this._streams;
@@ -40,13 +39,15 @@ class Mall {
   }
 
   /**
-   * Register a new DataStore
+   * Register a DataStore
    * @param {DataStore} store
+   * @param {{ id: string, name: string, settings: object}} storeDescription
    * @returns {void}
    */
-  addStore (store, storeDef) {
+  addStore (store, storeDescription) {
     if (this.initialized) { throw new Error('Sources cannot be added after init()'); }
-    this.storesEnvelopes.set(storeDef.id, { store, id: storeDef.id, name: storeDef.name, settings: storeDef.settings });
+    this.storesById.set(storeDescription.id, store);
+    this.storeDescriptionsByStore.set(store, storeDescription);
   }
 
   /**
@@ -58,19 +59,17 @@ class Mall {
     // placed here otherwise create a circular dependency .. pfff
     const { getUserAccountStorage } = require('storage');
     const userAccountStorage = await getUserAccountStorage();
-    for (const storeEnvelope of this.storesEnvelopes.values()) {
-      const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeEnvelope.id);
+    for (const [storeId, store] of this.storesById) {
+      const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);
       const params = {
-        id: storeEnvelope.id,
-        name: storeEnvelope.name,
-        settings: storeEnvelope.settings,
+        ...this.storeDescriptionsByStore.get(store),
         storeKeyValueData,
-        logger: getLogger(`mall:${storeEnvelope.id}`)
+        logger: getLogger(`mall:${storeId}`)
       };
-      await storeEnvelope.store.init(params);
+      await store.init(params);
     }
-    this._streams = new MallUserStreams(this.storesEnvelopes.values());
-    this._events = new MallUserEvents(this.storesEnvelopes.values());
+    this._streams = new MallUserStreams(this);
+    this._events = new MallUserEvents(this);
     return this;
   }
 
@@ -78,11 +77,11 @@ class Mall {
    * @returns {Promise<void>}
    */
   async deleteUser (userId) {
-    for (const storeEnvelope of this.storesEnvelopes.values()) {
+    for (const [storeId, store] of this.storesById) {
       try {
-        await storeEnvelope.store.deleteUser(userId);
+        await store.deleteUser(userId);
       } catch (error) {
-        storeDataUtils.throwAPIError(error, storeEnvelope.id);
+        storeDataUtils.throwAPIError(error, storeId);
       }
     }
   }
@@ -94,11 +93,11 @@ class Mall {
    */
   async getUserStorageSize (userId) {
     let storageUsed = 0;
-    for (const storeEnvelope of this.storesEnvelopes.values()) {
+    for (const [storeId, store] of this.storesById) {
       try {
-        storageUsed += await storeEnvelope.store.getUserStorageSize(userId);
+        storageUsed += await store.getUserStorageSize(userId);
       } catch (error) {
-        storeDataUtils.throwAPIError(error, storeEnvelope.id);
+        storeDataUtils.throwAPIError(error, storeId);
       }
     }
     return storageUsed;

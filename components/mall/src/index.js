@@ -43,31 +43,33 @@ async function getMall () {
   if (customStoresDef) {
     for (const storeDef of customStoresDef) {
       logger.info(`Loading store "${storeDef.name}" with id "${storeDef.id}" from ${storeDef.path}`);
-      const newStore = require(storeDef.path);
-      const newStoreDef = Object.assign({}, storeDef);
-      newStoreDef.settings = newStoreDef.config;
-      delete newStoreDef.config;
-      mall.addStore(newStore, newStoreDef);
+      const store = require(storeDef.path);
+      const storeDescription = {
+        id: storeDef.id,
+        name: storeDef.name,
+        settings: storeDef.settings
+      };
+      mall.addStore(store, storeDescription);
     }
   }
 
   // Load built-in stores
-  const localConfig = {
+  const localSettings = {
     attachments: { setFileReadToken: true },
     versioning: config.get('versioning')
   };
   if (config.get('database:engine') === 'sqlite') {
     logger.info('Using PoC SQLite data store');
     const sqlite = require('storage/src/localDataStoreSQLite');
-    mall.addStore(sqlite, { id: 'local', name: 'SQLITE', settings: localConfig });
+    mall.addStore(sqlite, { id: 'local', name: 'Local', settings: localSettings });
   } else {
     const mongo = require('storage/src/localDataStore');
-    mall.addStore(mongo, { id: 'local', name: 'SQLITE', settings: localConfig });
+    mall.addStore(mongo, { id: 'local', name: 'Local', settings: localSettings });
   }
   // audit
   if (!config.get('openSource:isActive') && config.get('audit:active')) {
     const auditDataStore = require('audit/src/datastore/auditDataStore');
-    mall.addStore(auditDataStore, { id: '_audit', name: 'Audit', config: {} });
+    mall.addStore(auditDataStore, { id: '_audit', name: 'Audit', settings: {} });
   }
 
   await mall.init();

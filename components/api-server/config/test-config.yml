@@ -73,11 +73,11 @@ custom:
     - id: dummy
       name: Dummy Store
       path: ../../mall/test-helpers/dummyDataStore # should be fully qualified path
-      config: null
+      settings: null
     - id: faulty
       name: Faulty Store
       path: ../../mall/test-helpers/faultyDataStore # should be fully qualified path
-      config: null
+      settings: null
 backwardCompatibility:
   systemStreams:
     prefix:
