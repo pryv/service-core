@@ -18,7 +18,7 @@ const LocalTransaction = require('./LocalTransaction');
 module.exports = ds.createDataStore({
 
   async init (params) {
-    this.settings = params.config;
+    this.settings = params.settings;
     await SystemStreamsSerializer.init();
     const database = await storage.getDatabase();
 

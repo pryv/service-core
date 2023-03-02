@@ -37,7 +37,7 @@ class MallUserEvents {
   constructor (storesEnvelopes) {
     for (const storeEnvelope of storesEnvelopes) {
       this.eventsStores.set(storeEnvelope.id, storeEnvelope.store.events);
-      this.storeSettings.set(storeEnvelope.id, storeEnvelope.config);
+      this.storeSettings.set(storeEnvelope.id, storeEnvelope.settings);
     }
   }
 

@@ -46,7 +46,7 @@ class Mall {
    */
   addStore (store, storeDef) {
     if (this.initialized) { throw new Error('Sources cannot be added after init()'); }
-    this.storesEnvelopes.set(storeDef.id, { store, id: storeDef.id, name: storeDef.name, config: storeDef.config });
+    this.storesEnvelopes.set(storeDef.id, { store, id: storeDef.id, name: storeDef.name, settings: storeDef.settings });
   }
 
   /**
@@ -63,7 +63,7 @@ class Mall {
       const params = {
         id: storeEnvelope.id,
         name: storeEnvelope.name,
-        config: storeEnvelope.config,
+        settings: storeEnvelope.settings,
         storeKeyValueData,
         logger: getLogger(`mall:${storeEnvelope.id}`)
       };

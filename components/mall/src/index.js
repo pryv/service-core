@@ -44,7 +44,10 @@ async function getMall () {
     for (const storeDef of customStoresDef) {
       logger.info(`Loading store "${storeDef.name}" with id "${storeDef.id}" from ${storeDef.path}`);
       const newStore = require(storeDef.path);
-      mall.addStore(newStore, storeDef);
+      const newStoreDef = Object.assign({}, storeDef);
+      newStoreDef.settings = newStoreDef.config;
+      delete newStoreDef.config;
+      mall.addStore(newStore, newStoreDef);
     }
   }
 
@@ -56,10 +59,10 @@ async function getMall () {
   if (config.get('database:engine') === 'sqlite') {
     logger.info('Using PoC SQLite data store');
     const sqlite = require('storage/src/localDataStoreSQLite');
-    mall.addStore(sqlite, { id: 'local', name: 'SQLITE', config: localConfig });
+    mall.addStore(sqlite, { id: 'local', name: 'SQLITE', settings: localConfig });
   } else {
     const mongo = require('storage/src/localDataStore');
-    mall.addStore(mongo, { id: 'local', name: 'SQLITE', config: localConfig });
+    mall.addStore(mongo, { id: 'local', name: 'SQLITE', settings: localConfig });
   }
   // audit
   if (!config.get('openSource:isActive') && config.get('audit:active')) {
