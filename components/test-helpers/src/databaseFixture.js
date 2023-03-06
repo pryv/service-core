@@ -129,13 +129,13 @@ class DependentsList {
 class FixtureItem {
   dependents;
   context;
-  storageItems;
+  storage;
   attrs;
 
   constructor (context, attrs) {
     this.dependents = new DependentsList();
     this.context = context;
-    this.storageItems = this.context.initStorage();
+    this.storage = this.context.initStorage();
     this.attrs = this.attributes(attrs);
   }
 
@@ -316,7 +316,7 @@ class FixtureUser extends FixtureItem {
    * @returns {Promise<FixtureUser>}
    */
   async remove () {
-    const storageItems = this.storageItems;
+    const storageItems = this.storage;
     const username = this.context.userName;
     const collections = [storageItems.accesses, storageItems.webhooks];
     const usersRepository = await getUsersRepository();
@@ -446,7 +446,7 @@ class FixtureAccess extends FixtureItem {
    * @returns {Promise<any>}
    */
   async create () {
-    const storageItems = this.storageItems;
+    const storageItems = this.storage;
     const user = this.context.user;
     const attributes = _.merge(this.fakeAttributes(), this.attrs);
     return await bluebird.fromCallback((cb) => storageItems.accesses.insertOne(user, attributes, cb));
@@ -474,7 +474,7 @@ class FixtureWebhook extends FixtureItem {
    * @returns {Promise<any>}
    */
   async create () {
-    const storageItems = this.storageItems;
+    const storageItems = this.storage;
     const user = this.context.user;
     const attributes = this.attrs;
     const webhook = new Webhook(attributes).forStorage();
@@ -505,7 +505,7 @@ class FixtureSession extends FixtureItem {
    * @returns {Promise<any>}
    */
   async create () {
-    const storageItems = this.storageItems;
+    const storageItems = this.storage;
     const user = this.context.user;
     const attributes = this.attrs;
     return await bluebird.fromCallback((cb) => storageItems.sessions.insertOne(user, attributes, cb));
