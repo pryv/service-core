@@ -126,7 +126,7 @@ clean-data:
     killall mongod
     sleep 2
     yes | rm -rf ./var-pryv/mongodb-data/*
-    ./scripts/start-mongo
+    DEVELOPMENT=true ./scripts/start-mongo
 
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
