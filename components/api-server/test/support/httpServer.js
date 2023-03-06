@@ -8,10 +8,10 @@
 // TODO remove this (use a single mocking tool if possible)
 
 const EventEmitter = require('events');
-const bluebird = require('bluebird');
 const express = require('express');
 const bodyParser = require('body-parser');
 const PORT = 6123;
+
 /*
  * Create a local HTTP server for the purpose of answering
  * query on localhost:PORT/service/info or localhost:PORT/reports
@@ -19,7 +19,6 @@ const PORT = 6123;
  *
  * No logger available here. Using console.debug
  */
-/** @extends EventEmitter */
 class HttpServer extends EventEmitter {
   app;
 
@@ -52,12 +51,10 @@ class HttpServer extends EventEmitter {
   }
 
   /**
-   * @returns {any}
+   * @returns {Promise<void>}
    */
-  close () {
-    return bluebird.fromCallback(() => {
-      this.server.close();
-    });
+  async close () {
+    await this.server.close();
   }
 
   /**
