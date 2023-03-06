@@ -4,12 +4,14 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const storeDataUtils = require('./helpers/storeDataUtils');
 const streamsUtils = require('./helpers/streamsUtils');
 const { treeUtils } = require('utils');
 const cuid = require('cuid');
 const _ = require('lodash');
 const errorFactory = require('errors').factory;
+
 /**
  * Storage for streams.
  * Dispatches requests to each data store's streams.
@@ -26,13 +28,14 @@ class MallUserStreams {
    * @default new Map()
    */
   storeNames = new Map();
+
   /**
-   * @param {DataStore[]} stores
+   * @param {{ storesById: Map, storeDescriptionsByStore: Map }} storesHolder
    */
-  constructor (stores) {
-    for (const store of stores) {
-      this.streamsStores.set(store.id, store.streams);
-      this.storeNames.set(store.id, store.name);
+  constructor (storesHolder) {
+    for (const [storeId, store] of storesHolder.storesById) {
+      this.streamsStores.set(storeId, store.streams);
+      this.storeNames.set(storeId, storesHolder.storeDescriptionsByStore.get(store).name);
     }
   }
 
@@ -143,7 +146,7 @@ class MallUserStreams {
     // TODO: move utility func out of object
     function getChildlessRootStreamsForOtherStores (storeNames) {
       const res = [];
-      for (const [storeId, storeName] of storeNames.entries()) {
+      for (const [storeId, storeName] of storeNames) {
         if (storeId !== storeDataUtils.LocalStoreId) {
           res.push(streamsUtils.createStoreRootStream({
             id: storeId,

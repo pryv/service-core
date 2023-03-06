@@ -6,7 +6,7 @@
  */
 const http = require('http');
 const express = require('express');
-const bluebird = require('bluebird');
+const util = require('util');
 const bodyParser = require('body-parser');
 const middleware = require('middleware');
 const errorsMiddleware = require('./middleware/errors');
@@ -67,7 +67,7 @@ class Server {
     const app = await this.setupExpress();
     this.expressApp = app;
     const server = (this.server = http.createServer(app));
-    const serverListen = bluebird.promisify(server.listen, { context: server });
+    const serverListen = util.promisify(server.listen).bind(server);
     return serverListen(port, ip).then(this.logStarted.bind(this));
   }
 
@@ -88,10 +88,10 @@ class Server {
    * @return {Promise<true>} A promise that will resolve once the server has
     stopped.
    */
-  stop () {
+  async stop () {
     const server = this.server;
     this.logger.info('stopping...');
-    const serverClose = bluebird.promisify(server.close, { context: server });
+    const serverClose = util.promisify(server.close).bind(server);
     return serverClose();
   }
 

@@ -11,7 +11,7 @@ exports = module.exports = {
   spawner: require('./spawner'),
   child_process: require('./child_process'),
   syncPrimitives: require('./condition_variable'),
-  databaseFixture: require('./database_fixture')
+  databaseFixture: require('./databaseFixture')
 };
 // ---------------------------------------------------------- deprecated helpers
 // NOTE Below we define a few helpers as being lazily loaded attributes on the

@@ -8,6 +8,7 @@ const storeDataUtils = require('./helpers/storeDataUtils');
 const MallUserStreams = require('./MallUserStreams');
 const MallUserEvents = require('./MallUserEvents');
 const MallTransaction = require('./MallTransaction');
+const { getLogger } = require('@pryv/boiler');
 
 /**
  * Storage for streams and events.
@@ -18,17 +19,16 @@ class Mall {
   /**
    * @type {Map<string, DataStore>}
    */
-  stores;
-
-  initialized;
-
-  _streams;
+  storesById = new Map();
+  /**
+   * @type {Map<DataStore, {id: string, name: string, settings: object}>}
+   */
+  storeDescriptionsByStore = new Map();
 
   _events;
-  constructor () {
-    this.stores = new Map();
-    this.initialized = false;
-  }
+  _streams;
+
+  initialized = false;
 
   get streams () {
     return this._streams;
@@ -39,13 +39,15 @@ class Mall {
   }
 
   /**
-   * Register a new DataStore
+   * Register a DataStore
    * @param {DataStore} store
+   * @param {{ id: string, name: string, settings: object}} storeDescription
    * @returns {void}
    */
-  addStore (store, params) {
+  addStore (store, storeDescription) {
     if (this.initialized) { throw new Error('Sources cannot be added after init()'); }
-    this.stores.set(store.id, store);
+    this.storesById.set(storeDescription.id, store);
+    this.storeDescriptionsByStore.set(store, storeDescription);
   }
 
   /**
@@ -57,12 +59,17 @@ class Mall {
     // placed here otherwise create a circular dependency .. pfff
     const { getUserAccountStorage } = require('storage');
     const userAccountStorage = await getUserAccountStorage();
-    for (const store of this.stores.values()) {
-      const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(store.id);
-      await store.init(storeKeyValueData);
+    for (const [storeId, store] of this.storesById) {
+      const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);
+      const params = {
+        ...this.storeDescriptionsByStore.get(store),
+        storeKeyValueData,
+        logger: getLogger(`mall:${storeId}`)
+      };
+      await store.init(params);
     }
-    this._streams = new MallUserStreams(this.stores.values());
-    this._events = new MallUserEvents(this.stores.values());
+    this._streams = new MallUserStreams(this);
+    this._events = new MallUserEvents(this);
     return this;
   }
 
@@ -70,11 +77,11 @@ class Mall {
    * @returns {Promise<void>}
    */
   async deleteUser (userId) {
-    for (const store of this.stores.values()) {
+    for (const [storeId, store] of this.storesById) {
       try {
         await store.deleteUser(userId);
       } catch (error) {
-        storeDataUtils.throwAPIError(error, store.id);
+        storeDataUtils.throwAPIError(error, storeId);
       }
     }
   }
@@ -86,11 +93,11 @@ class Mall {
    */
   async getUserStorageSize (userId) {
     let storageUsed = 0;
-    for (const store of this.stores.values()) {
+    for (const [storeId, store] of this.storesById) {
       try {
         storageUsed += await store.getUserStorageSize(userId);
       } catch (error) {
-        storeDataUtils.throwAPIError(error, store.id);
+        storeDataUtils.throwAPIError(error, storeId);
       }
     }
     return storageUsed;

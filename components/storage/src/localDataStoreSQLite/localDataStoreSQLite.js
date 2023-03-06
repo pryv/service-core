@@ -17,13 +17,9 @@ const LocalTransaction = require('../localDataStore/LocalTransaction');
 const { getStorage } = require('../userSQLite');
 
 module.exports = ds.createDataStore({
-  id: 'local',
 
-  name: 'Local Store',
-
-  settings: { attachments: { setFileReadToken: true } },
-
-  async init () {
+  async init (params) {
+    this.settings = params.settings;
     await SystemStreamsSerializer.init();
     const database = await storage.getDatabase();
 

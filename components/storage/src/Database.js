@@ -708,10 +708,9 @@ module.exports = Database;
 /** @typedef {(coll: Collection) => unknown} CollectionCallback */
 
 /**
- * @typedef {{
- *   name: string;
- *   indexes: Array<IndexDefinition>;
- * }} CollectionInfo
+ * @typedef {object} CollectionInfo
+ * @property {string } name
+ * @property {Array<IndexDefinition>} [indexes]
  */
 
 /**

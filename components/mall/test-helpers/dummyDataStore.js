@@ -14,8 +14,8 @@ let keyValueData;
  * Dummy data store serving predictable static data.
  */
 module.exports = ds.createDataStore({
-  async init (storeKeyValueData) {
-    keyValueData = storeKeyValueData;
+  async init (params) {
+    keyValueData = params.storeKeyValueData;
     this.streams = createUserStreams();
     this.events = createUserEvents();
     return this;
