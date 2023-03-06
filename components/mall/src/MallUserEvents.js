@@ -36,7 +36,7 @@ class MallUserEvents {
    */
   constructor (storesHolder) {
     for (const [storeId, store] of storesHolder.storesById) {
-      this.eventsStores.set(storeId, store.streams);
+      this.eventsStores.set(storeId, store.events);
       this.storeSettings.set(storeId, storesHolder.storeDescriptionsByStore.get(store).settings);
     }
   }
