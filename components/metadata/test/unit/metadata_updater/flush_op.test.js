@@ -38,32 +38,30 @@ describe('Flush', () => {
     parentStreamId = cuid();
     eventId = cuid();
     eventWithContentId = cuid();
-    await pryv.user(userId, {}, (user) => {
-      user.stream({ id: parentStreamId }, (stream) => {
-        stream.event({
-          time: now,
-          id: eventId,
-          type: 'series:mass/kg',
-          description: 'no initial data',
-          content: {
-            elementType: 'mass/kg',
-            fields: ['value'],
-            required: ['value']
-          }
-        });
-        stream.event({
-          time: now,
-          id: eventWithContentId,
-          type: 'series:mass/kg',
-          description: 'with initial ' + initialDuration + ' seconds off data ',
-          content: {
-            elementType: 'mass/kg',
-            fields: ['value'],
-            required: ['value']
-          },
-          duration: initialDuration
-        });
-      });
+    const user = await pryv.user(userId, {}, (user) => { });
+    const stream = await user.stream({ id: parentStreamId }, async (stream) => {});
+    stream.event({
+      time: now,
+      id: eventId,
+      type: 'series:mass/kg',
+      description: 'no initial data',
+      content: {
+        elementType: 'mass/kg',
+        fields: ['value'],
+        required: ['value']
+      }
+    });
+    await stream.event({
+      time: now,
+      id: eventWithContentId,
+      type: 'series:mass/kg',
+      description: 'with initial ' + initialDuration + ' seconds off data ',
+      content: {
+        elementType: 'mass/kg',
+        fields: ['value'],
+        required: ['value']
+      },
+      duration: initialDuration
     });
   });
   describe('event with no existing metadata', () => {
