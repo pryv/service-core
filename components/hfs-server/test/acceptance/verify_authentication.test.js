@@ -32,19 +32,16 @@ describe('Metadata Loader', function () {
   const USER_NAME = 'foo';
   const EVENT_ID = 'c1';
   const ACCESS_TOKEN = 'a1';
-  afterEach(function () {
-    pryv.clean();
+  afterEach(async function () {
+    await pryv.clean();
   });
   // Build the database fixture
-  beforeEach(() => {
-    return pryv.user(USER_NAME, {}, function (user) {
-      user.stream({ id: 'something' }, function (stream) {
-        stream.event({ id: EVENT_ID });
-      });
-
-      user.session(ACCESS_TOKEN);
-      user.access({ token: ACCESS_TOKEN, type: 'personal' });
-    });
+  beforeEach(async () => {
+    const user = await pryv.user(USER_NAME, {}, function (user) {});
+    const stream = await user.stream({ id: 'something' }, function (stream) {});
+    await stream.event({ id: EVENT_ID });
+    await user.session(ACCESS_TOKEN);
+    await user.access({ token: ACCESS_TOKEN, type: 'personal' });
   });
 
   it('[U6F2] should allow write access to series', function () {
