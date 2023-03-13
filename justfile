@@ -122,10 +122,9 @@ test-data command version:
 
 # Cleanup users data and MongoDB data in `var-pryv/`
 clean-data:
-    yes | rm -rf ./var-pryv/users/*
-    killall mongod
-    sleep 2
-    yes | rm -rf ./var-pryv/mongodb-data/*
+    rm -rf ./var-pryv/users/*
+    (killall mongod && sleep 2) || echo "MongoDB was not running"
+    rm -rf ./var-pryv/mongodb-data/*
     DEVELOPMENT=true ./scripts/start-mongo
 
 # –––––––––––––----------------------------------------------------------------
