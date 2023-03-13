@@ -74,8 +74,8 @@ function createUserStreams () {
 function createUserEvents () {
   return ds.createUserEvents({
 
-    async getStreamed (userId, params) {
-      const events = await this.get(userId, params);
+    async getStreamed (userId, query, options) {
+      const events = await this.get(userId, query, options);
       const readable = Readable.from(events);
       return readable;
     },
@@ -83,7 +83,7 @@ function createUserEvents () {
     /**
      * @returns Array
      */
-    async get (userId, params) { // eslint-disable-line no-unused-vars
+    async get (userId, query, options) { // eslint-disable-line no-unused-vars
       const lastStreamCall = await keyValueData.get(userId, 'lastStreamCall');
       let events = [{
         id: 'dummyevent0',
@@ -100,7 +100,7 @@ function createUserEvents () {
       }];
 
       // support stream filtering (only for one "any")
-      const streamQuery = params.query.filter((i) => { return i.type === 'streamsQuery'; });
+      const streamQuery = query.filter((i) => { return i.type === 'streamsQuery'; });
       if (streamQuery.length > 0 && streamQuery[0].content[0]?.any) {
         const filterByStreamId = streamQuery[0].content[0]?.any[0];
         events = events.filter((e) => e.streamIds.includes(filterByStreamId));

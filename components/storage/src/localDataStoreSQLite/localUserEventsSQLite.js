@@ -41,25 +41,25 @@ module.exports = ds.createUserEvents({
   /**
    * @returns {Promise<any>}
    */
-  async get (userId, params) {
+  async get (userId, query, options) {
     const db = await this.storage.forUser(userId);
-    return db.getEvents(params);
+    return db.getEvents({ query, options });
   },
 
   /**
    * @returns {Promise<any>}
    */
-  async getStreamed (userId, params) {
+  async getStreamed (userId, query, options) {
     const db = await this.storage.forUser(userId);
-    return db.getEventsStream(params);
+    return db.getEventsStream({ query, options });
   },
 
   /**
    * @returns {Promise<any>}
    */
-  async getDeletionsStreamed (userId, params) {
+  async getDeletionsStreamed (userId, query, options) {
     const db = await this.storage.forUser(userId);
-    return db.getEventsDeletionsStream(params);
+    return db.getEventsDeletionsStream(query.deletedSince);
   },
 
   /**

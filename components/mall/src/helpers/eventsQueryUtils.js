@@ -170,10 +170,8 @@ function getStoreQueryFromParams (params) {
     }
   }
 
-  const res = {
-    options,
-    query
+  return {
+    query,
+    options
   };
-
-  return res;
 }

@@ -47,33 +47,29 @@ module.exports = ds.createUserEvents({
     return res[0];
   },
 
-  async get (userId, params) {
-    const { query, options } = paramsToMongoquery(params);
-    const cursor = this._getCursor(userId, query, options);
+  async get (userId, query, options) {
+    const cursor = this._getCursor(userId, getMongoQuery(query), options);
     const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
     return res;
   },
 
-  async getStreamed (userId, params) {
-    const { query, options } = paramsToMongoquery(params);
-    const cursor = this._getCursor(userId, query, options);
+  async getStreamed (userId, query, options) {
+    const cursor = this._getCursor(userId, getMongoQuery(query), options);
     return readableStreamFromEventCursor(cursor);
   },
 
   /**
    * @param {identifier} userId
-   * @param {timestamp} deletedSince
-   * @param {number} [limit]
-   * @param {number} [skip]
-   * @param {boolean} [sortAscending]
+   * @param {{deletedSince: timestamp}} query
+   * @param {{skip: number, limit: number, sortAscending: boolean}} [options]
    * @returns {Promise<Readable>}
    */
-  async getDeletionsStreamed (userId, deletedSince, limit = null, skip = null, sortAscending = false) {
-    const query = { deleted: { $gt: deletedSince } };
-    const options = { sort: { deleted: sortAscending ? 1 : -1 } };
-    if (skip != null) options.skip = skip;
-    if (limit != null) options.limit = limit;
-    const cursor = this._getCursor(userId, query, options);
+  async getDeletionsStreamed (userId, query, options) {
+    const mongoQuery = { deleted: { $gt: query.deletedSince } };
+    const mongoOptions = { sort: { deleted: options?.sortAscending ? 1 : -1 } };
+    if (options?.limit != null) mongoOptions.limit = options.limit;
+    if (options?.skip != null) mongoOptions.skip = options.skip;
+    const cursor = this._getCursor(userId, mongoQuery, mongoOptions);
     return readableStreamFromEventCursor(cursor);
   },
 
@@ -288,25 +284,20 @@ const converters = {
 };
 
 /**
- * transform params to mongoQuery
- * @param {*} requestedType
- * @returns {{ query: { $and: any[]; }; options: { skip: any; limit: any; sort: any; }; }}
+ * Transform the given events query to the MongoDB format.
+ * @param {any[]} query
+ * @returns {{ $and: any[] }}}
  */
-function paramsToMongoquery (params) {
-  const options = {
-    skip: params.options.skip,
-    limit: params.options.limit,
-    sort: params.options.sort
-  };
-  const query = { $and: [] };
-  for (const item of params.query) {
+function getMongoQuery (query) {
+  const mongoQuery = { $and: [] };
+  for (const item of query) {
     const newCondition = converters[item.type](item.content);
     if (newCondition != null) {
-      query.$and.push(newCondition);
+      mongoQuery.$and.push(newCondition);
     }
   }
-  if (query.$and.length === 0) { delete query.$and; } // remove empty $and
-  return { query, options };
+  if (mongoQuery.$and.length === 0) { delete mongoQuery.$and; } // remove empty $and
+  return mongoQuery;
 }
 
 /**

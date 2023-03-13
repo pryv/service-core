@@ -100,8 +100,8 @@ class MallUserEvents {
       const eventsStore = this.eventsStores.get(storeId);
       const params = paramsByStore[storeId];
       try {
-        const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(params);
-        const events = await eventsStore.get(userId, paramsForStore);
+        const { query, options } = eventsQueryUtils.getStoreQueryFromParams(params);
+        const events = await eventsStore.get(userId, query, options);
         for (const event of events) {
           res.push(eventsUtils.convertEventFromStore(storeId, event));
         }
@@ -130,8 +130,8 @@ class MallUserEvents {
     const storeId = Object.keys(paramsByStore)[0];
     const eventsStore = this.eventsStores.get(storeId);
     try {
-      const paramsForStore = eventsQueryUtils.getStoreQueryFromParams(paramsByStore[storeId]);
-      const eventsStreamFromDB = await eventsStore.getStreamed(userId, paramsForStore);
+      const { query, options } = eventsQueryUtils.getStoreQueryFromParams(paramsByStore[storeId]);
+      const eventsStreamFromDB = await eventsStore.getStreamed(userId, query, options);
       return eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream(storeId));
     } catch (e) {
       storeDataUtils.throwAPIError(e, storeId);
@@ -158,22 +158,26 @@ class MallUserEvents {
   /**
    * @param {string} storeId
    * @param {string} userId
-   * @param {timestamp} deletedSince
-   * @param {number} [limit]
-   * @param {number} [skip]
-   * @param {boolean} [sortAscending]
+   * @param {{deletedSince: timestamp}} query
+   * @param {{skip: number, limit: number, sortAscending: boolean}} [options]
    * @returns {Promise<Readable>}
    */
-  async getDeletionsStreamed (storeId, userId, deletedSince, limit = null, skip = null, sortAscending = false) {
+  async getDeletionsStreamed (storeId, userId, query, options) {
     const eventsStore = this.eventsStores.get(storeId);
     if (!eventsStore) {
       throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
     }
-    return eventsStore.getDeletionsStreamed(userId, deletedSince, limit, skip, sortAscending);
+    return eventsStore.getDeletionsStreamed(userId, query, options);
   }
 
-  async getDeletions (storeId, userId, deletedSince, limit, skip, sortAscending) {
-    const resultStream = await this.getDeletionsStreamed(storeId, userId, deletedSince, limit, skip, sortAscending);
+  /**
+   * @param {string} storeId
+   * @param {string} userId
+   * @param {{deletedSince: timestamp}} query
+   * @param {{skip: number, limit: number, sortAscending: boolean}} [options]
+   */
+  async getDeletions (storeId, userId, query, options) {
+    const resultStream = await this.getDeletionsStreamed(storeId, userId, query, options);
     const res = [];
     for await (const item of resultStream) {
       res.push(item);

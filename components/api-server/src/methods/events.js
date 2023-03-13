@@ -139,7 +139,8 @@ module.exports = async function (api) {
     if (params.modifiedSince == null || !params.includeDeletions) {
       return next();
     }
-    const deletedEvents = await mall.events.getDeletionsStreamed('local', context.user.id, params.modifiedSince, params.limit, params.skip, params.sortAscending);
+    const deletedEvents = await mall.events.getDeletionsStreamed('local', context.user.id, { deletedSince: params.modifiedSince },
+      { limit: params.limit, skip: params.skip, sortAscending: params.sortAscending });
     // remove properties of events that shouldn't be exposed
     result.addStream('eventDeletions', deletedEvents.pipe(new CleanDeletedEventsStream()));
     next();
