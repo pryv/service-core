@@ -24,7 +24,10 @@ const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
 const { getUsersRepository } = require('business/src/users');
 const { getUserAccountStorage } = require('storage');
+const { getConfig } = require('@pryv/boiler');
 const encryption = require('utils').encryption;
+
+let isOpenSource = false;
 
 describe('[ACCO] account', function () {
   const user = Object.assign({}, testData.users[0]);
@@ -32,6 +35,8 @@ describe('[ACCO] account', function () {
   let userAccountStorage = null;
 
   before(async () => {
+    const config = await getConfig();
+    isOpenSource = config.get('openSource:isActive');
     usersRepository = await getUsersRepository();
     userAccountStorage = await getUserAccountStorage();
   });
@@ -143,7 +148,9 @@ describe('[ACCO] account', function () {
           server.ensureStarted.bind(server, settings),
           function update (stepDone) {
             request.put(basePath).send(updatedData).end(function (res) {
-              assert.isOk(regServerCalled);
+              if (!isOpenSource) { // no notification in openSource
+                assert.isOk(regServerCalled);
+              }
               const expected = _.defaults(updatedData, user);
               delete expected.id;
               delete expected.password;
