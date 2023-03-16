@@ -9,8 +9,8 @@ const ds = require('@pryv/datastore');
 const audit = require('audit');
 
 module.exports = ds.createUserEvents({
-  async getStreamed (userId, params) {
+  async getStreamed (userId, query, options) {
     const userStorage = await audit.storage.forUser(userId);
-    return userStorage.getEventsStream(params);
+    return userStorage.getEventsStream({ query, options });
   }
 });
