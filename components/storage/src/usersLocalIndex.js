@@ -93,9 +93,9 @@ class UsersLocalIndex {
     return res;
   }
 
-  async getAllByUsername () {
-    logger.debug('getAllByUsername');
-    return this.db.getAllByUsername();
+  async getAllMapUserIdByUsername () {
+    logger.debug('getAllMapUserIdByUsername');
+    return this.db.getAllMapUserIdByUsername();
   }
 
   /**
@@ -165,7 +165,7 @@ class DBIndex {
     return this.queryDeleteById.run({ userId });
   }
 
-  getAllByUsername () {
+  getAllMapUserIdByUsername () {
     const users = {};
     for (const user of this.queryGetAll.iterate()) {
       users[user.username] = user.userId;

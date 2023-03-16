@@ -57,7 +57,7 @@ describe('Migration - 1.8.0', function () {
 
   it('[WBIK] must handle userIndex/events  migration from 1.7.5 to 1.8.0', async () => {
     // check that all users are migrated
-    const newUsers = await usersIndex.getAllByUsername();
+    const newUsers = await usersIndex.getAllMapUserIdByUsername();
     for (const [username, userId] of Object.entries(initialEventsUsers)) {
       if (newUsers[username]) {
         assert.equal(newUsers[username], userId, `User ${username} migrated but with wrong id`);

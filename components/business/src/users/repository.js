@@ -53,7 +53,7 @@ class UsersRepository {
    * @returns {Promise<UsersInfo[]>}
    */
   async getAllBuiltOnSystemStreams () {
-    const usersMap = await this.usersIndex.getAllByUsername();
+    const usersMap = await this.usersIndex.getAllMapUserIdByUsername();
     const users = [];
     for (const [username, userId] of Object.entries(usersMap)) {
       const user = await this.getUserBuiltOnSystemStreamsById(userId);
@@ -70,7 +70,7 @@ class UsersRepository {
    * @returns {Promise<void>}
    */
   async deleteAll () {
-    const usersMap = await this.usersIndex.getAllByUsername();
+    const usersMap = await this.usersIndex.getAllMapUserIdByUsername();
     for (const [, userId] of Object.entries(usersMap)) {
       await this.mall.deleteUser(userId);
     }
@@ -84,7 +84,7 @@ class UsersRepository {
    * @returns {Promise<any[]>}
    */
   async getAllUsersNamesAndId () {
-    const usersMap = await this.usersIndex.getAllByUsername();
+    const usersMap = await this.usersIndex.getAllMapUserIdByUsername();
     const users = [];
     for (const [username, userId] of Object.entries(usersMap)) {
       users.push({ id: userId, username });
@@ -362,7 +362,7 @@ class UsersRepository {
    * @returns {Promise<number>}
    */
   async count () {
-    const users = await this.usersIndex.getAllByUsername();
+    const users = await this.usersIndex.getAllMapUserIdByUsername();
     return Object.keys(users).length;
   }
 
