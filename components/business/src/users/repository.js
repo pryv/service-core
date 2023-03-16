@@ -49,16 +49,16 @@ class UsersRepository {
   }
 
   /**
-   * only for testing
-   * @returns {Promise<any[]>}
+   * only for testing and built-in register
+   * @returns {Promise<UsersInfo[]>}
    */
-  async getAll () {
+  async getAllBuiltOnSystemStreams () {
     const usersMap = await this.usersIndex.getAllByUsername();
     const users = [];
     for (const [username, userId] of Object.entries(usersMap)) {
-      const user = await this.getUserById(userId);
+      const user = await this.getUserBuiltOnSystemStreamsById(userId);
       if (user == null) {
-        throw new Error(`Repository inconsistency: user index lists user with id: "${userId}" and username: "${username}", but cannot get it with getUserById()`);
+        throw new Error(`Repository inconsistency: user index lists user with id: "${userId}" and username: "${username}", but cannot get it with getUserBuiltOnSystemStreamsById()`);
       }
       users.push(user);
     }
@@ -79,9 +79,11 @@ class UsersRepository {
   }
 
   /**
+   * Get an array of objects {id, username}
+   * Used only by webhooks could be refactored
    * @returns {Promise<any[]>}
    */
-  async getAllUsernames () {
+  async getAllUsersNamesAndId () {
     const usersMap = await this.usersIndex.getAllByUsername();
     const users = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -102,7 +104,7 @@ class UsersRepository {
    * @param {string} userId
    * @returns {Promise<any>}
    */
-  async getUserById (userId) {
+  async getUserBuiltOnSystemStreamsById (userId) {
     const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
     const query = {
       state: 'all',
@@ -149,7 +151,7 @@ class UsersRepository {
   async getUserByUsername (username) {
     const userId = await this.getUserIdForUsername(username);
     if (userId) {
-      const user = await this.getUserById(userId);
+      const user = await this.getUserBuiltOnSystemStreamsById(userId);
       return user;
     }
     return null;
@@ -341,7 +343,7 @@ class UsersRepository {
    * @returns {Promise<number>}
    */
   async deleteOne (userId, username, skipFowardToRegister) {
-    const user = await this.getUserById(userId);
+    const user = await this.getUserBuiltOnSystemStreamsById(userId);
     if (username == null) {
       username = user?.username;
     }

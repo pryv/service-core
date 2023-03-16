@@ -222,7 +222,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert.equal(res.body.userDeletion.username, username1);
         });
         it(`[${testIDs[i][1]}] should delete user entries from impacted collections`, async function () {
-          const user = await usersRepository.getUserById(username1);
+          const user = await usersRepository.getUserBuiltOnSystemStreamsById(username1);
           assert.notExists(user);
           const dbCollections = [
             app.storageLayer.accesses,
@@ -276,7 +276,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           }
         });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function () {
-          const user = await usersRepository.getUserById(username2);
+          const user = await usersRepository.getUserBuiltOnSystemStreamsById(username2);
           assert.exists(user);
           const dbCollections = [app.storageLayer.accesses];
           if (!isOpenSource) { dbCollections.push(app.storageLayer.webhooks); }

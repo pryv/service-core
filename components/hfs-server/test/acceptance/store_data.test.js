@@ -205,7 +205,7 @@ describe('[SDHF] Storing data in a HF series', function () {
     async function tryStore (attrs, header, data) {
       const effectiveAttrs = lodash.merge({ streamIds: [parentStreamId], time: Date.now() / 1000 }, attrs);
       const usersRepository = await getUsersRepository();
-      const user = await usersRepository.getUserById(userId);
+      const user = await usersRepository.getUserBuiltOnSystemStreamsById(userId);
       assert.isNotNull(user);
       const event = await mall.events.create(user.id, effectiveAttrs);
       const requestData = {
@@ -603,7 +603,7 @@ describe('[SDHF] Storing data in a HF series', function () {
       async function tryStore (attrs, header, data) {
         const effectiveAttrs = lodash.merge({ streamIds: [parentStreamId], time: Date.now() / 1000 }, attrs);
         const usersRepository = await getUsersRepository();
-        const user = await usersRepository.getUserById(userId);
+        const user = await usersRepository.getUserBuiltOnSystemStreamsById(userId);
         assert.isNotNull(user);
         const event = await mall.events.create(user.id, effectiveAttrs);
         const requestData = {

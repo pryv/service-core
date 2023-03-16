@@ -196,7 +196,7 @@ describe('[SYER] system (ex-register)', function () {
         await (new Promise(server.ensureStarted.bind(server, settings)));
 
         const usersRepository = await getUsersRepository();
-        const originalUsers = await usersRepository.getAll();
+        const originalUsers = await usersRepository.getAllBuiltOnSystemStreams();
 
         const originalCount = originalUsers.length;
         // create user
@@ -209,7 +209,7 @@ describe('[SYER] system (ex-register)', function () {
         mailSent.should.eql(true);
 
         // getUpdatedUsers
-        const users = await usersRepository.getAll(true);
+        const users = await usersRepository.getAllBuiltOnSystemStreams(true);
         users.length.should.eql(originalCount + 1, 'users');
 
         const expected = _.cloneDeep(newUserData);
@@ -295,7 +295,7 @@ describe('[SYER] system (ex-register)', function () {
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
           const usersRepository = await getUsersRepository();
-          const originalUsers = await usersRepository.getAll();
+          const originalUsers = await usersRepository.getAllBuiltOnSystemStreams();
           const originalCount = originalUsers.length;
 
           // create user
@@ -314,7 +314,7 @@ describe('[SYER] system (ex-register)', function () {
           const createdUserId = res.body.id;
 
           // getUpdatedUsers
-          const users = await usersRepository.getAll();
+          const users = await usersRepository.getAllBuiltOnSystemStreams();
           users.length.should.eql(originalCount, 'users');
           should.not.exist(_.find(users, { id: createdUserId }));
         });
