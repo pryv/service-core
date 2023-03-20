@@ -19,33 +19,35 @@ const audit = require('audit');
  *
  */
 
+const streams = [
+  {
+    id: 'accesses',
+    name: 'Accesses',
+    parentId: null,
+    children: [],
+    childrenHidden: true
+  }, {
+    id: 'actions',
+    name: 'Actions',
+    parentId: null,
+    children: [],
+    childrenHidden: true
+  }];
+
 module.exports = ds.createUserStreams({
 
   async get (userId, query) {
     const parentId = query.parentId || '*';
+    if (parentId === '*' || parentId == null) return streams;
     const foundStream = await this.getOne(userId, parentId, query);
     if (foundStream == null) return [];
     return foundStream.children;
   },
 
-  async getOne (userId, streamId, params) {
+  async getOne (userId, streamId, query) {
     // -- List root streams (accesses & actions)
     if (streamId === '*') {
-      return {
-        children: [{
-          id: 'accesses',
-          name: 'Accesses',
-          parentId: null,
-          children: [],
-          childrenHidden: true
-        }, {
-          id: 'actions',
-          name: 'Actions',
-          parentId: null,
-          children: [],
-          childrenHidden: true
-        }]
-      };
+      throw new Error('Dumb');
     }
 
     // list accesses

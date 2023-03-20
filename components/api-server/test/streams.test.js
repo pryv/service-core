@@ -218,7 +218,7 @@ describe('[STRE] streams', function () {
           validation.checkObjectEquality(actual, expected);
         },
         async function verifyStoredItem () {
-          const stream = await mall.streams.getOne(user.id, createdStream.id);
+          const stream = await mall.streams.getOnlyOneWithNoChildren(user.id, createdStream.id);
           validation.checkStoredItem(stream, 'stream');
         }
       ], done);

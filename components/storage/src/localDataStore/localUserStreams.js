@@ -24,6 +24,12 @@ module.exports = ds.createUserStreams({
     this.streamsCollection = streamsCollection;
     loadVisibleStreamsTree();
   },
+  async get (userId, query) {
+    const parentId = query.parentId || '*';
+    const foundStream = await this.getOne(userId, parentId, query);
+    if (foundStream == null) return [];
+    return foundStream.children;
+  },
   async getOne (userId, streamId, query) {
     let allStreamsForAccount = cache.getStreams(userId, 'local');
     if (allStreamsForAccount == null) {

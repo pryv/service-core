@@ -274,7 +274,7 @@ class MethodContext {
    * @returns {Promise<any>}
    */
   async streamForStreamId (streamId, storeId) {
-    return await this.mall.streams.getOne(this.user.id, streamId, storeId);
+    return await this.mall.streams.getOnlyOneWithNoChildren(this.user.id, streamId, storeId);
   }
 
   /**
