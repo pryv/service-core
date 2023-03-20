@@ -53,12 +53,10 @@ class MallUserStreams {
     }
     const streamsStore = this.streamsStores.get(storeId);
     if (!streamsStore) { return null; }
-    const streams = await streamsStore.get(userId, {
-      id: streamId,
+    const stream = await streamsStore.getOne(userId, streamId, {
       includeTrashed: true
     });
-    if (streams?.length === 1) { return streams[0]; }
-    return null;
+    return stream;
   }
 
   /**
@@ -109,7 +107,6 @@ class MallUserStreams {
     // ------ Query Store -------------//
     const streamsStore = this.streamsStores.get(storeId);
     const myParams = {
-      id: streamId,
       includeTrashed: params.includeTrashed,
       expandChildren: params.expandChildren,
       excludedIds: streamsStore.hasFeatureGetParamsExcludedIds
@@ -117,11 +114,15 @@ class MallUserStreams {
         : [],
       storeId: null // we'll address this request to the store directly
     };
-    // add it to parameters if feature is supported by store
-    if (streamsStore.hasFeatureGetParamsExcludedIds) { myParams.excludedIds = excludedIds; }
-    const storeStreams = await streamsStore.get(userId, myParams);
-    // add storeStreams to result
-    res.push(...storeStreams);
+    const storeStream = await streamsStore.getOne(userId, streamId, myParams);
+
+    if (streamId !== '*') {
+      // add storeStreams to result
+      if (storeStream != null) res.push(storeStream);
+    } else {
+      res.push(...storeStream.children);
+    }
+
     // if store does not support excludeIds, perform it here
     if (!streamsStore.hasFeatureGetParamsExcludedIds &&
             excludedIds.length > 0) {
@@ -220,8 +221,8 @@ class MallUserStreams {
     }
     const streamsStore = this.streamsStores.get(storeId);
     // 3 - Check if this Id has already been taken
-    const existingStreams = await streamsStore.get(userId, { id: storeStreamId });
-    if (existingStreams.length > 0) {
+    const existingStream = await streamsStore.getOne(userId, streamForStore.id, { includeTrashed: true });
+    if (existingStream != null) {
       throw errorFactory.itemAlreadyExists('stream', { id: streamData.id });
     }
 

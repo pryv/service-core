@@ -20,29 +20,39 @@ const audit = require('audit');
  */
 
 module.exports = ds.createUserStreams({
-  async get (userId, params) {
+
+  async get (userId, query) {
+    const parentId = query.parentId || '*';
+    const foundStream = await this.getOne(userId, parentId, query);
+    if (foundStream == null) return [];
+    return foundStream.children;
+  },
+
+  async getOne (userId, streamId, params) {
     // -- List root streams (accesses & actions)
-    if (params.id === '*') {
-      return [{
-        id: 'accesses',
-        name: 'Accesses',
-        parentId: null,
-        children: [],
-        childrenHidden: true
-      }, {
-        id: 'actions',
-        name: 'Actions',
-        parentId: null,
-        children: [],
-        childrenHidden: true
-      }];
+    if (streamId === '*') {
+      return {
+        children: [{
+          id: 'accesses',
+          name: 'Accesses',
+          parentId: null,
+          children: [],
+          childrenHidden: true
+        }, {
+          id: 'actions',
+          name: 'Actions',
+          parentId: null,
+          children: [],
+          childrenHidden: true
+        }]
+      };
     }
 
     // list accesses
-    if (params.id === 'accesses') {
+    if (streamId === 'accesses') {
       const userStorage = await audit.storage.forUser(userId);
       const accesses = userStorage.getAllAccesses();
-      if (accesses == null) return [];
+      if (accesses == null) return null;
       const res = accesses.map((access) => {
         return {
           id: access.term,
@@ -51,19 +61,19 @@ module.exports = ds.createUserStreams({
           parentId: 'accesses'
         };
       });
-      return [{
+      return {
         id: 'accesses',
         name: 'Accesses',
         parentId: null,
         children: res
-      }];
+      };
     }
 
     // list actions
-    if (params.id === 'actions') {
+    if (streamId === 'actions') {
       const userStorage = await audit.storage.forUser(userId);
       const actions = userStorage.getAllActions();
-      if (actions == null) return [];
+      if (actions == null) return null;
       const res = actions.map((action) => {
         return {
           id: action.term,
@@ -72,31 +82,31 @@ module.exports = ds.createUserStreams({
           parentId: 'actions'
         };
       });
-      return [{
+      return {
         id: 'actions',
         name: 'Actions',
         parentId: null,
         children: res
-      }];
+      };
     }
 
-    if (params.id) {
+    if (streamId) {
       let parentId = null;
-      if (params.id.startsWith('access-')) {
+      if (streamId.startsWith('access-')) {
         parentId = 'accesses';
-      } else if (params.id.startsWith('action-')) {
+      } else if (streamId.startsWith('action-')) {
         parentId = 'actions';
       }
       // here check that this action or streams exists
-      return [{
-        id: params.id,
-        name: params.id,
+      return {
+        id: streamId,
+        name: streamId,
         parentId,
         children: [],
         trashed: false
-      }];
+      };
     }
 
-    return [];
+    return null;
   }
 });

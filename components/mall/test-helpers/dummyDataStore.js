@@ -28,10 +28,18 @@ module.exports = ds.createDataStore({
 
 function createUserStreams () {
   return ds.createUserStreams({
-    async get (userId, params) {
+
+    async get (userId, query) {
+      const parentId = query.parentId || '*';
+      const foundStream = await this.getOne(userId, parentId, query);
+      if (foundStream == null) return [];
+      return foundStream.children;
+    },
+
+    async getOne (userId, streamId, params) {
       // store last call in keyValueStore for tests
-      await keyValueData.set(userId, 'lastStreamCall', params);
-      let streams = [{
+      await keyValueData.set(userId, 'lastStreamCall', Object.assign({ id: streamId }, params));
+      const streams = [{
         id: 'myself',
         name: userId,
         children: [
@@ -46,28 +54,26 @@ function createUserStreams () {
         ]
       }];
       ds.defaults.applyOnStreams(streams);
+      if (streamId === '*') return { children: streams };
 
-      if (params.id && params.id !== '*') {
-        // filter tree
-        streams = findStream(params.id, streams);
-      }
-      return streams;
+      const stream = findStream(streamId, streams);
+      return stream;
     }
   });
 
   function findStream (streamId, streams) {
     for (const stream of streams) {
       if (stream.id === streamId) {
-        return [stream];
+        return stream;
       }
       if (stream.children) {
         const found = findStream(streamId, stream.children);
-        if (found.length > 0) {
+        if (found) {
           return found;
         }
       }
     }
-    return [];
+    return null;
   }
 }
 

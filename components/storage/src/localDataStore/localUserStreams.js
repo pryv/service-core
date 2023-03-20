@@ -24,7 +24,7 @@ module.exports = ds.createUserStreams({
     this.streamsCollection = streamsCollection;
     loadVisibleStreamsTree();
   },
-  async get (userId, params) {
+  async getOne (userId, streamId, query) {
     let allStreamsForAccount = cache.getStreams(userId, 'local');
     if (allStreamsForAccount == null) {
       // get from DB
@@ -33,25 +33,29 @@ module.exports = ds.createUserStreams({
       allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
       cache.setStreams(userId, 'local', allStreamsForAccount);
     }
-    let streams = [];
-    if (params?.id === '*') {
+    let stream = null;
+    if (streamId === '*' || streamId == null) {
       // assert: params.expandChildren === -1, see "#*" case
-      streams = clone(allStreamsForAccount); // clone to be sure they can be mutated without touching the cache
+      stream = {
+        children: clone(allStreamsForAccount) // clone to be sure they can be mutated without touching the cache
+      };
     } else {
-      const stream = treeUtils.findById(allStreamsForAccount, params.id); // find the stream
-      const includeChildren = params.expandChildren !== 0;
-      if (stream != null) { streams = [cloneStream(stream, includeChildren)]; } // clone to be sure they can be mutated without touching the cache
+      const foundStream = treeUtils.findById(allStreamsForAccount, streamId); // find the stream
+      const includeChildren = query.expandChildren !== 0;
+      if (foundStream != null) { stream = cloneStream(foundStream, includeChildren); } // clone to be sure they can be mutated without touching the cache
     }
-    if (!params.includeTrashed) {
+    if (stream == null) return null;
+    if (stream.deleted) return null;
+
+    // filtering ---
+    if (!query.includeTrashed) {
+      if (stream.trashed) return null;
       // i.e. === 'default' (return non-trashed items)
-      streams = treeUtils.filterTree(streams, false /* no orphans */, (stream) => !stream.trashed);
-    }
-    if (params.includeDeletions) {
-      throw new Error('I shouldn t be here');
+      stream.children = treeUtils.filterTree(stream.children, false /* no orphans */, (stream) => !stream.trashed);
     }
     // return non-deleted items
-    streams = treeUtils.filterTree(streams, false /* no orphans */, (stream) => stream.deleted == null);
-    return streams;
+    stream.children = treeUtils.filterTree(stream.children, false /* no orphans */, (stream) => stream.deleted == null);
+    return stream;
   },
   async getDeletions (userId, deletionsSince) {
     const options = { sort: { deleted: -1 } };
