@@ -56,7 +56,7 @@ class MallUserStreams {
     if (!streamsStore) { return null; }
     const stream = await streamsStore.getOne(userId, streamId, {
       includeTrashed: true,
-      expandChildren: 0
+      childrenDepth: 0
     });
     return stream;
   }
@@ -76,7 +76,7 @@ class MallUserStreams {
       // TODO: clarify smelly code (replace full stream id with in-store id?)
       [storeId, streamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
     }
-    params.expandChildren = params.expandChildren || 0;
+    params.childrenDepth = params.childrenDepth || 0;
     const excludedIds = params.excludedIds || [];
     const hideStoreRoots = params.hideStoreRoots || false;
     // ------- create result ------//
@@ -92,7 +92,7 @@ class MallUserStreams {
     const streamsStore = this.streamsStores.get(storeId);
     const storeQuery = {
       includeTrashed: params.includeTrashed,
-      expandChildren: params.expandChildren,
+      childrenDepth: params.childrenDepth,
       excludedIds: streamsStore.hasFeatureGetParamsExcludedIds
         ? excludedIds
         : []
@@ -309,7 +309,7 @@ class MallUserStreams {
   async getNamesOfChildren (userId, streamId, exludedIds) {
     const streams = await this.get(userId, {
       id: streamId,
-      expandChildren: 1,
+      childrenDepth: 1,
       includeTrashed: true
     });
     let streamsToCheck = [];

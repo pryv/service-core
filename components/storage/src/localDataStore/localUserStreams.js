@@ -35,13 +35,13 @@ module.exports = ds.createUserStreams({
     let stream = null;
 
     if (streamId === '*' || streamId == null) {
-      // assert: params.expandChildren === -1, see "#*" case
+      // assert: params.childrenDepth === -1, see "#*" case
       stream = {
         children: clone(allStreamsForAccount) // clone to be sure they can be mutated without touching the cache
       };
     } else {
       const foundStream = treeUtils.findById(allStreamsForAccount, streamId); // find the stream
-      const includeChildren = query.expandChildren !== 0;
+      const includeChildren = query.childrenDepth !== 0;
       if (foundStream != null) { stream = cloneStream(foundStream, includeChildren); } // clone to be sure they can be mutated without touching the cache
     }
 
