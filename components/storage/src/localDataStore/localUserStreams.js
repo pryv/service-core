@@ -31,15 +31,9 @@ module.exports = ds.createUserStreams({
     return foundStream.children;
   },
   async getOne (userId, streamId, query) {
-    let allStreamsForAccount = cache.getStreams(userId, 'local');
-    if (allStreamsForAccount == null) {
-      // get from DB
-      allStreamsForAccount = await bluebird.fromCallback((cb) => this.userStreamsStorage.findIncludingDeletionsAndVersions({ id: userId }, {}, null, cb));
-      // add system streams
-      allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
-      cache.setStreams(userId, 'local', allStreamsForAccount);
-    }
+    const allStreamsForAccount = await this._getAllStreamsFromAccountAndCache(userId);
     let stream = null;
+
     if (streamId === '*' || streamId == null) {
       // assert: params.expandChildren === -1, see "#*" case
       stream = {
@@ -50,6 +44,7 @@ module.exports = ds.createUserStreams({
       const includeChildren = query.expandChildren !== 0;
       if (foundStream != null) { stream = cloneStream(foundStream, includeChildren); } // clone to be sure they can be mutated without touching the cache
     }
+
     if (stream == null) return null;
     if (stream.deleted) return null;
 
@@ -99,6 +94,17 @@ module.exports = ds.createUserStreams({
   },
   async _getUserStorageSize (userId) {
     return await this.userStreamsStorage.getTotalSize(userId);
+  },
+  async _getAllStreamsFromAccountAndCache (userId) {
+    let allStreamsForAccount = cache.getStreams(userId, 'local');
+    if (allStreamsForAccount != null) return allStreamsForAccount;
+
+    // get from DB
+    allStreamsForAccount = await bluebird.fromCallback((cb) => this.userStreamsStorage.findIncludingDeletionsAndVersions({ id: userId }, {}, null, cb));
+    // add system streams
+    allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
+    cache.setStreams(userId, 'local', allStreamsForAccount);
+    return allStreamsForAccount;
   }
 });
 /**

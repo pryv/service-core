@@ -45,11 +45,6 @@ module.exports = ds.createUserStreams({
   },
 
   async getOne (userId, streamId, query) {
-    // -- List root streams (accesses & actions)
-    if (streamId === '*') {
-      throw new Error('Dumb');
-    }
-
     // list accesses
     if (streamId === 'accesses') {
       const userStorage = await audit.storage.forUser(userId);

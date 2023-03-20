@@ -31,32 +31,17 @@ function createUserStreams () {
 
     async get (userId, query) {
       const parentId = query.parentId || '*';
+      if (parentId === '*') return genStreams(userId);
+
       const foundStream = await this.getOne(userId, parentId, query);
       if (foundStream == null) return [];
       return foundStream.children;
     },
 
-    async getOne (userId, streamId, params) {
+    async getOne (userId, streamId, query) {
       // store last call in keyValueStore for tests
-      await keyValueData.set(userId, 'lastStreamCall', Object.assign({ id: streamId }, params));
-      const streams = [{
-        id: 'myself',
-        name: userId,
-        children: [
-          {
-            id: 'mariana',
-            name: 'Mariana'
-          },
-          {
-            id: 'antonia',
-            name: 'Antonia'
-          }
-        ]
-      }];
-      ds.defaults.applyOnStreams(streams);
-      if (streamId === '*') return { children: streams };
-
-      const stream = findStream(streamId, streams);
+      await keyValueData.set(userId, 'lastStreamCall', Object.assign({ id: streamId }, query));
+      const stream = findStream(streamId, genStreams(userId));
       return stream;
     }
   });
@@ -115,4 +100,27 @@ function createUserEvents () {
       return events;
     }
   });
+}
+
+/**
+ * create a set of streams with a rootstream named with the userId;
+ * */
+function genStreams (userId) {
+  const streams = [
+    {
+      id: 'myself',
+      name: userId,
+      children: [
+        {
+          id: 'mariana',
+          name: 'Mariana'
+        },
+        {
+          id: 'antonia',
+          name: 'Antonia'
+        }
+      ]
+    }];
+  ds.defaults.applyOnStreams(streams);
+  return streams;
 }
