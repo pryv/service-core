@@ -40,43 +40,25 @@ class MallUserStreams {
   }
 
   /**
-   * Helper to get a single stream
+   * Get a single stream from id and optional storeId.
+   * Will not expand children.
    * @param {string} userId
    * @param {string} streamId
-   * @param {string} storeId
+   * @param {string} [storeId]
    * @returns {Promise<any>}
    */
-  async getOne (userId, streamId, storeId) {
+  async getOneWithNoChildren (userId, streamId, storeId) {
     if (storeId == null) {
       // TODO: clarify smelly code (replace full stream id with in-store id?)
       [storeId, streamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
     }
     const streamsStore = this.streamsStores.get(storeId);
     if (!streamsStore) { return null; }
-    const streams = await streamsStore.get(userId, {
-      id: streamId,
-      includeTrashed: true
+    const stream = await streamsStore.getOne(userId, streamId, {
+      includeTrashed: true,
+      childrenDepth: 0
     });
-    if (streams?.length === 1) { return streams[0]; }
-    return null;
-  }
-
-  /**
-   * @param {String} userId
-   * @param {timestamp} deletionsSince
-   * @param {Array<string>} storeIds
-   * @returns {Promise<any[]>}
-   */
-  async getDeletions (userId, deletionsSince, storeIds) {
-    if (deletionsSince == null) { deletionsSince = Number.MIN_SAFE_INTEGER; }
-    storeIds = storeIds || [storeDataUtils.LocalStoreId];
-    const result = [];
-    for (const storeId of storeIds) {
-      const streamsStore = this.streamsStores.get(storeId);
-      const deletedStreams = await streamsStore.getDeletions(userId, deletionsSince);
-      result.push(...deletedStreams);
-    }
-    return result;
+    return stream;
   }
 
   /**
@@ -94,7 +76,7 @@ class MallUserStreams {
       // TODO: clarify smelly code (replace full stream id with in-store id?)
       [storeId, streamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
     }
-    params.expandChildren = params.expandChildren || 0;
+    params.childrenDepth = params.childrenDepth || 0;
     const excludedIds = params.excludedIds || [];
     const hideStoreRoots = params.hideStoreRoots || false;
     // ------- create result ------//
@@ -108,20 +90,22 @@ class MallUserStreams {
     }
     // ------ Query Store -------------//
     const streamsStore = this.streamsStores.get(storeId);
-    const myParams = {
-      id: streamId,
+    const storeQuery = {
       includeTrashed: params.includeTrashed,
-      expandChildren: params.expandChildren,
+      childrenDepth: params.childrenDepth,
       excludedIds: streamsStore.hasFeatureGetParamsExcludedIds
         ? excludedIds
-        : [],
-      storeId: null // we'll address this request to the store directly
+        : []
     };
-    // add it to parameters if feature is supported by store
-    if (streamsStore.hasFeatureGetParamsExcludedIds) { myParams.excludedIds = excludedIds; }
-    const storeStreams = await streamsStore.get(userId, myParams);
-    // add storeStreams to result
-    res.push(...storeStreams);
+
+    if (streamId !== '*') {
+      const stream = await streamsStore.getOne(userId, streamId, storeQuery);
+      if (stream != null) res.push(stream);
+    } else { // root query
+      const streams = await streamsStore.get(userId, storeQuery);
+      res.push(...streams);
+    }
+
     // if store does not support excludeIds, perform it here
     if (!streamsStore.hasFeatureGetParamsExcludedIds &&
             excludedIds.length > 0) {
@@ -163,6 +147,24 @@ class MallUserStreams {
     function performExclusion (res, excludedIds) {
       return treeUtils.filterTree(res, false, (stream) => !excludedIds.includes(stream.id));
     }
+  }
+
+  /**
+   * @param {String} userId
+   * @param {timestamp} [deletedSince]
+   * @param {Array<string>} [storeIds]
+   * @returns {Promise<any[]>}
+   */
+  async getDeletions (userId, deletedSince, storeIds) {
+    if (deletedSince == null) { deletedSince = Number.MIN_SAFE_INTEGER; }
+    storeIds = storeIds || [storeDataUtils.LocalStoreId];
+    const result = [];
+    for (const storeId of storeIds) {
+      const streamsStore = this.streamsStores.get(storeId);
+      const deletedStreams = await streamsStore.getDeletions(userId, { deletedSince });
+      result.push(...deletedStreams);
+    }
+    return result;
   }
 
   /**
@@ -220,8 +222,8 @@ class MallUserStreams {
     }
     const streamsStore = this.streamsStores.get(storeId);
     // 3 - Check if this Id has already been taken
-    const existingStreams = await streamsStore.get(userId, { id: storeStreamId });
-    if (existingStreams.length > 0) {
+    const existingStream = await streamsStore.getOne(userId, streamForStore.id, { includeTrashed: true });
+    if (existingStream != null) {
       throw errorFactory.itemAlreadyExists('stream', { id: streamData.id });
     }
 
@@ -307,7 +309,7 @@ class MallUserStreams {
   async getNamesOfChildren (userId, streamId, exludedIds) {
     const streams = await this.get(userId, {
       id: streamId,
-      expandChildren: 1,
+      childrenDepth: 1,
       includeTrashed: true
     });
     let streamsToCheck = [];

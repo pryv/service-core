@@ -28,52 +28,41 @@ module.exports = ds.createDataStore({
 
 function createUserStreams () {
   return ds.createUserStreams({
-    async get (userId, params) {
-      // store last call in keyValueStore for tests
-      await keyValueData.set(userId, 'lastStreamCall', params);
-      let streams = [{
-        id: 'myself',
-        name: userId,
-        children: [
-          {
-            id: 'mariana',
-            name: 'Mariana'
-          },
-          {
-            id: 'antonia',
-            name: 'Antonia'
-          }
-        ]
-      }];
-      ds.defaults.applyOnStreams(streams);
-
-      if (params.id && params.id !== '*') {
-        // filter tree
-        streams = findStream(params.id, streams);
+    async get (userId, query) {
+      if (query.parentId === '*' || query.parentId == null) {
+        return genStreams(userId);
       }
-      return streams;
+      const parent = await this.getOne(userId, query.parentId, query);
+      if (parent == null) return [];
+      return parent.children;
+    },
+
+    async getOne (userId, streamId, query) {
+      // store last call in keyValueStore for tests
+      await keyValueData.set(userId, 'lastStreamCall', Object.assign({ id: streamId }, query));
+      const stream = findStream(streamId, genStreams(userId));
+      return stream;
     }
   });
 
   function findStream (streamId, streams) {
     for (const stream of streams) {
       if (stream.id === streamId) {
-        return [stream];
+        return stream;
       }
       if (stream.children) {
         const found = findStream(streamId, stream.children);
-        if (found.length > 0) {
+        if (found) {
           return found;
         }
       }
     }
-    return [];
+    return null;
   }
 }
 
 function createUserEvents () {
   return ds.createUserEvents({
-
     async getStreamed (userId, query, options) {
       const events = await this.get(userId, query, options);
       const readable = Readable.from(events);
@@ -109,4 +98,27 @@ function createUserEvents () {
       return events;
     }
   });
+}
+
+/**
+ * create a set of streams with a rootstream named with the userId;
+ * */
+function genStreams (userId) {
+  const streams = [
+    {
+      id: 'myself',
+      name: userId,
+      children: [
+        {
+          id: 'mariana',
+          name: 'Mariana'
+        },
+        {
+          id: 'antonia',
+          name: 'Antonia'
+        }
+      ]
+    }];
+  ds.defaults.applyOnStreams(streams);
+  return streams;
 }

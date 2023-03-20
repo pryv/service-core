@@ -510,7 +510,7 @@ class AccessLogic {
       if (permissions != null) return permissions; // found
 
       // not found, look for parent
-      const stream = await mall.streams.getOne(this._userId, currentStream, storeId); // TODO dont fetch children
+      const stream = await mall.streams.getOneWithNoChildren(this._userId, currentStream, storeId);
       currentStream = stream ? stream.parentId : null;
     }
 

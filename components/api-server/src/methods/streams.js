@@ -78,7 +78,7 @@ module.exports = async function (api) {
     let streams = await mall.streams.get(context.user.id, {
       id: streamId,
       storeId,
-      expandChildren: -1,
+      childrenDepth: -1,
       includeTrashed: params.includeTrashed || params.state === 'all',
       excludedIds: context.access.getCannotListStreamsStreamIds(storeId)
     });
@@ -112,7 +112,7 @@ module.exports = async function (api) {
             const listableStreamAndChilds = await mall.streams.get(context.user.id, {
               id: listable.streamId,
               storeId: listable.storeId,
-              expandChildren: -1,
+              childrenDepth: -1,
               includeTrashed: params.includeTrashed || params.state === 'all',
               excludedIds: context.access.getCannotListStreamsStreamIds(listable.storeId)
             });
@@ -173,7 +173,7 @@ module.exports = async function (api) {
       const parentResults = await mall.streams.get(context.user.id, {
         id: params.parentId,
         includeTrashed: true,
-        expandChildren: 1
+        childrenDepth: 1
       });
       if (parentResults.length === 0) {
         return next(errors.unknownReferencedResource('unknown Stream:', 'parentId', params.parentId, null));
@@ -262,7 +262,7 @@ module.exports = async function (api) {
       const targetParentArray = await mall.streams.get(context.user.id, {
         id: params.update.parentId,
         includeTrashed: true,
-        expandChildren: 1
+        childrenDepth: 1
       });
       if (targetParentArray.length === 0) {
         // no parent
@@ -342,7 +342,7 @@ module.exports = async function (api) {
     const streamToDeleteSingleArray = await mall.streams.get(context.user.id, {
       id: storeStreamId,
       includeTrashed: true,
-      expandChildren: -1,
+      childrenDepth: -1,
       storeId
     });
     const streamToDelete = streamToDeleteSingleArray[0]; // no need to check existence: done before in verifyStreamExistenceAndPermissions

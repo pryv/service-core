@@ -311,7 +311,7 @@ async function streamQueryExpandStreams (context, params, result, next) {
       id: streamId,
       storeId,
       includeTrashed: params.state === 'all' || params.state === 'trashed',
-      expandChildren: -1,
+      childrenDepth: -1,
       excludedIds,
       hideStoreRoots: true
     };
@@ -361,7 +361,7 @@ async function streamQueryAddHiddenStreams (context, params, result, next) {
       const rootStreams = await mall.streams.get(context.user.id, {
         id: '*',
         storeId: streamQuery.storeId,
-        expandChildren: 0,
+        childrenDepth: 0,
         includeTrashed: true,
         excludedIds: []
       });
@@ -476,7 +476,7 @@ module.exports = {
  *   id: string;
  *   storeId: string;
  *   includeTrashed: boolean;
- *   expandChildren: integer;
+ *   childrenDepth: integer;
  *   excludedIds: Array<string>;
  *   hideStoreRoots?: boolean;
  * }} StoreQuery

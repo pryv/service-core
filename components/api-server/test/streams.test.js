@@ -218,7 +218,7 @@ describe('[STRE] streams', function () {
           validation.checkObjectEquality(actual, expected);
         },
         async function verifyStoredItem () {
-          const stream = await mall.streams.getOne(user.id, createdStream.id);
+          const stream = await mall.streams.getOneWithNoChildren(user.id, createdStream.id);
           validation.checkStoredItem(stream, 'stream');
         }
       ], done);
@@ -303,7 +303,7 @@ describe('[STRE] streams', function () {
 
         async.series([
           async function _countInitialChildStreams () {
-            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', expandChildren: -1 });
+            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', childrenDepth: -1 });
             originalCount = streams[0].children.length;
           },
           function _addNewStream (stepDone) {
@@ -326,7 +326,7 @@ describe('[STRE] streams', function () {
           async function _recountChildStreams () {
             // server and current "mall" instance are not running on the same instance and cache must me invalidated manually
             cache.unsetStreams(user.id, 'local');
-            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', expandChildren: -1 });
+            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', childrenDepth: -1 });
             const count = streams[0].children.length;
             assert.strictEqual(count, originalCount + 1, 'Created a child stream.');
           }
@@ -724,7 +724,7 @@ describe('[STRE] streams', function () {
         },
         async function verifyStreamData () {
           // parent
-          const parentStream = await mall.streams.get(user.id, { id: parent.id, storeId: 'local', expandChildren: -1, includeTrashed: true });
+          const parentStream = await mall.streams.get(user.id, { id: parent.id, storeId: 'local', childrenDepth: -1, includeTrashed: true });
           const parentChildren = parentStream[0].children;
           parentChildren.length.should.eql(testData.streams[2].children.length - 1, 'child streams');
 
