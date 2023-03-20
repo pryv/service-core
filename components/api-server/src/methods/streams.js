@@ -393,7 +393,7 @@ module.exports = async function (api) {
     // finally delete stream
     for (const streamIdToDelete of context.streamToDeleteAndDescendantIds) {
       try {
-        await mall.streams.updateDelete(context.user.id, streamIdToDelete);
+        await mall.streams.delete(context.user.id, streamIdToDelete);
       } catch (err) {
         logger.error('Failed deleted some streams', err);
       }

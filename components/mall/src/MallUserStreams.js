@@ -219,19 +219,12 @@ class MallUserStreams {
       streamForStore.id = storeStreamId;
     }
     const streamsStore = this.streamsStores.get(storeId);
-    // 3- Check if this Id has already been taken
-    const existingStreams = await streamsStore.get(userId, {
-      id: storeStreamId,
-      includeDeletions: true
-    });
+    // 3 - Check if this Id has already been taken
+    const existingStreams = await streamsStore.get(userId, { id: storeStreamId });
     if (existingStreams.length > 0) {
-      if (existingStreams[0].deleted != null) {
-        // deleted stream - we can fully remove it
-        await streamsStore.delete(userId, storeStreamId);
-      } else {
-        throw errorFactory.itemAlreadyExists('stream', { id: streamData.id });
-      }
+      throw errorFactory.itemAlreadyExists('stream', { id: streamData.id });
     }
+
     // 4- Check if a sibbling stream with the same name exists
     const siblingNames = await this.getNamesOfChildren(userId, streamData.parentId, []);
     if (siblingNames.includes(streamForStore.name)) {
@@ -239,19 +232,6 @@ class MallUserStreams {
     }
     // 3 - Insert stream
     const res = await streamsStore.create(userId, streamForStore);
-    return res;
-  }
-
-  /**
-   * Temporary implementation
-   * TODO: cleanup
-   * @param {string} userId
-   * @param {{}} update
-   * @returns {Promise<any>}
-   */
-  async updateTemp (userId, streamId, update) {
-    const streamsStore = this.streamsStores.get(storeDataUtils.LocalStoreId);
-    const res = await streamsStore.updateTemp(userId, streamId, update);
     return res;
   }
 
@@ -297,10 +277,10 @@ class MallUserStreams {
   /**
    * @returns {Promise<any>}
    */
-  async updateDelete (userId, streamId) {
+  async delete (userId, streamId) {
     const [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
     const streamsStore = this.streamsStores.get(storeId);
-    return await streamsStore.updateDelete(userId, storeStreamId);
+    return await streamsStore.delete(userId, storeStreamId);
   }
 
   /**
