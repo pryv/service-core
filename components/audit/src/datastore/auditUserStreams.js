@@ -18,6 +18,7 @@ const accessesStream = {
   children: [],
   childrenHidden: true
 };
+Object.freeze(accessesStream);
 /**
  * Children id: `action-{actionId}`
  */
@@ -28,8 +29,10 @@ const actionsStream = {
   children: [],
   childrenHidden: true
 };
+Object.freeze(actionsStream);
 
 const auditStreams = [accessesStream, actionsStream];
+Object.freeze(auditStreams);
 
 module.exports = ds.createUserStreams({
   async get (userId, query) {
