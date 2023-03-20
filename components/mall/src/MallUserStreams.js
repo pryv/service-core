@@ -151,17 +151,17 @@ class MallUserStreams {
 
   /**
    * @param {String} userId
-   * @param {timestamp} deletionsSince
-   * @param {Array<string>} storeIds
+   * @param {timestamp} [deletedSince]
+   * @param {Array<string>} [storeIds]
    * @returns {Promise<any[]>}
    */
-  async getDeletions (userId, deletionsSince, storeIds) {
-    if (deletionsSince == null) { deletionsSince = Number.MIN_SAFE_INTEGER; }
+  async getDeletions (userId, deletedSince, storeIds) {
+    if (deletedSince == null) { deletedSince = Number.MIN_SAFE_INTEGER; }
     storeIds = storeIds || [storeDataUtils.LocalStoreId];
     const result = [];
     for (const storeId of storeIds) {
       const streamsStore = this.streamsStores.get(storeId);
-      const deletedStreams = await streamsStore.getDeletions(userId, deletionsSince);
+      const deletedStreams = await streamsStore.getDeletions(userId, { deletedSince });
       result.push(...deletedStreams);
     }
     return result;

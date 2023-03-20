@@ -63,9 +63,17 @@ module.exports = ds.createUserStreams({
     return stream;
   },
 
-  async getDeletions (userId, deletionsSince) {
-    const options = { sort: { deleted: -1 } };
-    const deletedStreams = await bluebird.fromCallback((cb) => this.userStreamsStorage.findDeletions({ id: userId }, deletionsSince, options, cb));
+  /**
+   * @param {string} userId
+   * @param {{deletedSince: timestamp}} query
+   * @param {{skip: number, limit: number, sortAscending: boolean}} [options]
+   * @returns {Promise<any[]>}
+   */
+  async getDeletions (userId, query, options) {
+    const dbOptions = { sort: { deleted: options?.sortAscending ? 1 : -1 } };
+    if (options?.limit != null) dbOptions.limit = options.limit;
+    if (options?.skip != null) dbOptions.skip = options.skip;
+    const deletedStreams = await bluebird.fromCallback((cb) => this.userStreamsStorage.findDeletions({ id: userId }, query.deletedSince, options, cb));
     return deletedStreams;
   },
 
