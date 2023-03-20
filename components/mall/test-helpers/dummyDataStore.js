@@ -28,14 +28,13 @@ module.exports = ds.createDataStore({
 
 function createUserStreams () {
   return ds.createUserStreams({
-
     async get (userId, query) {
-      const parentId = query.parentId || '*';
-      if (parentId === '*') return genStreams(userId);
-
-      const foundStream = await this.getOne(userId, parentId, query);
-      if (foundStream == null) return [];
-      return foundStream.children;
+      if (query.parentId === '*' || query.parentId == null) {
+        return genStreams(userId);
+      }
+      const parent = await this.getOne(userId, query.parentId, query);
+      if (parent == null) return [];
+      return parent.children;
     },
 
     async getOne (userId, streamId, query) {
@@ -64,7 +63,6 @@ function createUserStreams () {
 
 function createUserEvents () {
   return ds.createUserEvents({
-
     async getStreamed (userId, query, options) {
       const events = await this.get(userId, query, options);
       const readable = Readable.from(events);

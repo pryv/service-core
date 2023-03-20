@@ -9,44 +9,41 @@ const ds = require('@pryv/datastore');
 const audit = require('audit');
 
 /**
- *
- * Stream structure
- * accesses:
- *    access-{accessid}
- *
- * actions:
- *    action-{actionId}
- *
+ * Children id: `access-{accessId}`
  */
+const accessesStream = {
+  id: 'accesses',
+  name: 'Accesses',
+  parentId: null,
+  children: [],
+  childrenHidden: true
+};
+/**
+ * Children id: `action-{actionId}`
+ */
+const actionsStream = {
+  id: 'actions',
+  name: 'Actions',
+  parentId: null,
+  children: [],
+  childrenHidden: true
+};
 
-const streams = [
-  {
-    id: 'accesses',
-    name: 'Accesses',
-    parentId: null,
-    children: [],
-    childrenHidden: true
-  }, {
-    id: 'actions',
-    name: 'Actions',
-    parentId: null,
-    children: [],
-    childrenHidden: true
-  }];
+const auditStreams = [accessesStream, actionsStream];
 
 module.exports = ds.createUserStreams({
-
   async get (userId, query) {
-    const parentId = query.parentId || '*';
-    if (parentId === '*' || parentId == null) return streams;
-    const foundStream = await this.getOne(userId, parentId, query);
-    if (foundStream == null) return [];
-    return foundStream.children;
+    if (query.parentId === '*' || query.parentId == null) {
+      return auditStreams;
+    }
+    const parent = await this.getOne(userId, query.parentId, query);
+    if (parent == null) return [];
+    return parent.children;
   },
 
   async getOne (userId, streamId, query) {
     // list accesses
-    if (streamId === 'accesses') {
+    if (streamId === accessesStream.id) {
       const userStorage = await audit.storage.forUser(userId);
       const accesses = userStorage.getAllAccesses();
       if (accesses == null) return null;
@@ -55,19 +52,17 @@ module.exports = ds.createUserStreams({
           id: access.term,
           name: access.term,
           children: [],
-          parentId: 'accesses'
+          parentId: accessesStream.id
         };
       });
-      return {
-        id: 'accesses',
-        name: 'Accesses',
-        parentId: null,
-        children: res
-      };
+      return Object.assign({}, accessesStream, {
+        children: res,
+        childrenHidden: false
+      });
     }
 
     // list actions
-    if (streamId === 'actions') {
+    if (streamId === actionsStream.id) {
       const userStorage = await audit.storage.forUser(userId);
       const actions = userStorage.getAllActions();
       if (actions == null) return null;
@@ -76,25 +71,23 @@ module.exports = ds.createUserStreams({
           id: action.term,
           name: action.term,
           children: [],
-          parentId: 'actions'
+          parentId: actionsStream.id
         };
       });
-      return {
-        id: 'actions',
-        name: 'Actions',
-        parentId: null,
-        children: res
-      };
+      return Object.assign({}, actionsStream, {
+        children: res,
+        childrenHidden: false
+      });
     }
 
     if (streamId) {
       let parentId = null;
       if (streamId.startsWith('access-')) {
-        parentId = 'accesses';
+        parentId = accessesStream.id;
       } else if (streamId.startsWith('action-')) {
-        parentId = 'actions';
+        parentId = actionsStream.id;
       }
-      // here check that this action or streams exists
+      // here check that this access or action stream exists
       return {
         id: streamId,
         name: streamId,

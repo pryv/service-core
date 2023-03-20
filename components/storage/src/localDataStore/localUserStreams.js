@@ -19,17 +19,21 @@ let visibleStreamsTree = [];
 module.exports = ds.createUserStreams({
   userStreamsStorage: null,
   streamsCollection: null,
+
   init (streamsCollection, userStreamsStorage) {
     this.userStreamsStorage = userStreamsStorage;
     this.streamsCollection = streamsCollection;
     loadVisibleStreamsTree();
   },
+
   async get (userId, query) {
     const parentId = query.parentId || '*';
-    const foundStream = await this.getOne(userId, parentId, query);
-    if (foundStream == null) return [];
-    return foundStream.children;
+    const parent = await this.getOne(userId, parentId, query);
+    if (parent == null) return [];
+    return parent.children;
   },
+
+  // TODO refactor: this method shouldn't deal with "*" – seems clearer to move the children stuff over to `get()`
   async getOne (userId, streamId, query) {
     const allStreamsForAccount = await this._getAllStreamsFromAccountAndCache(userId);
     let stream = null;
@@ -58,17 +62,20 @@ module.exports = ds.createUserStreams({
     stream.children = treeUtils.filterTree(stream.children, false /* no orphans */, (stream) => stream.deleted == null);
     return stream;
   },
+
   async getDeletions (userId, deletionsSince) {
     const options = { sort: { deleted: -1 } };
     const deletedStreams = await bluebird.fromCallback((cb) => this.userStreamsStorage.findDeletions({ id: userId }, deletionsSince, options, cb));
     return deletedStreams;
   },
+
   async createDeleted (userId, streamData) {
     streamData.userId = userId;
     streamData.streamId = streamData.id;
     delete streamData.id;
     return await this.streamsCollection.replaceOne({ userId, streamId: streamData.streamId }, streamData, { upsert: true }); // replace of create deleted streams
   },
+
   async create (userId, streamData) {
     // as we have mixed deletions and non deleted in the same table
     // remove eventual deleted items matching this id.
@@ -79,22 +86,28 @@ module.exports = ds.createUserStreams({
     }
     return await bluebird.fromCallback((cb) => this.userStreamsStorage.insertOne({ id: userId }, streamData, cb));
   },
+
   async update (userId, streamData) {
     return await bluebird.fromCallback((cb) => this.userStreamsStorage.updateOne({ id: userId }, { id: streamData.id }, streamData, cb));
   },
+
   async delete (userId, streamId) {
     return await bluebird.fromCallback((cb) => this.userStreamsStorage.delete({ id: userId }, { id: streamId }, cb));
   },
+
   async deleteAll (userId) {
     await bluebird.fromCallback((cb) => this.userStreamsStorage.removeAll({ id: userId }, cb));
     cache.unsetUserData(userId);
   },
+
   async _deleteUser (userId) {
     return await bluebird.fromCallback((cb) => this.userStreamsStorage.removeMany(userId, {}, cb));
   },
+
   async _getUserStorageSize (userId) {
     return await this.userStreamsStorage.getTotalSize(userId);
   },
+
   async _getAllStreamsFromAccountAndCache (userId) {
     let allStreamsForAccount = cache.getStreams(userId, 'local');
     if (allStreamsForAccount != null) return allStreamsForAccount;
@@ -107,6 +120,7 @@ module.exports = ds.createUserStreams({
     return allStreamsForAccount;
   }
 });
+
 /**
  * @param {any} obj
  * @returns {any}
@@ -115,6 +129,7 @@ function clone (obj) {
   // Clone streams -- BAd BaD -- To be optimized
   return _.cloneDeep(obj);
 }
+
 /**
  * @param {Stream} storeStream
  * @param {boolean} includeChildren
@@ -131,6 +146,7 @@ function cloneStream (storeStream, includeChildren) {
     return stream;
   }
 }
+
 /**
  * @returns {void}
  */

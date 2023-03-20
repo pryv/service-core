@@ -40,14 +40,14 @@ class MallUserStreams {
   }
 
   /**
-   * Helper to get a single stream from id and optional streamId
-   * Will not expand children
+   * Get a single stream from id and optional storeId.
+   * Will not expand children.
    * @param {string} userId
    * @param {string} streamId
-   * @param {string} storeId
+   * @param {string} [storeId]
    * @returns {Promise<any>}
    */
-  async getOnlyOneWithNoChildren (userId, streamId, storeId) {
+  async getOneWithNoChildren (userId, streamId, storeId) {
     if (storeId == null) {
       // TODO: clarify smelly code (replace full stream id with in-store id?)
       [storeId, streamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamId);
