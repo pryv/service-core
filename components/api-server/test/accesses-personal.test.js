@@ -247,12 +247,12 @@ describe('accesses (personal)', function () {
             });
         },
         async function verifyNewStream () {
-          const newStream = await mall.streams.getOne(user.id, data.permissions[1].streamId);
+          const newStream = await mall.streams.getOneWithNoChildren(user.id, data.permissions[1].streamId);
           should.exist(newStream);
           validation.checkStoredItem(newStream, 'stream');
           newStream.name.should.eql(data.permissions[1].defaultName);
 
-          const undeletedStream = await mall.streams.getOne(user.id, data.permissions[3].streamId);
+          const undeletedStream = await mall.streams.getOneWithNoChildren(user.id, data.permissions[3].streamId);
           should.exist(undeletedStream);
           validation.checkStoredItem(undeletedStream, 'stream');
           undeletedStream.name.should.eql(data.permissions[3].defaultName);
@@ -657,6 +657,11 @@ describe('accesses (personal)', function () {
             streamId: 'new-stream',
             level: 'manage',
             defaultName: 'The New Stream, Sir.'
+          },
+          {
+            streamId: testData.streams[4].id,
+            level: 'read',
+            defaultName: 'Undeleted stream'
           }
         ]
       };
@@ -664,10 +669,7 @@ describe('accesses (personal)', function () {
         .post(path)
         .send(data)
         .end(function (res) {
-          validation.check(res, {
-            status: 200,
-            schema: methodsSchema.checkApp.result
-          });
+          validation.check(res, { status: 200, schema: methodsSchema.checkApp.result });
           should.exist(res.body.checkedPermissions);
           const expected = _.cloneDeep(data.requestedPermissions);
           expected[0].name = testData.streams[0].name;
