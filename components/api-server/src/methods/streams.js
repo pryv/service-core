@@ -22,6 +22,7 @@ const logger = getLogger('methods:streams');
 const { getMall, storeDataUtils } = require('mall');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 const { pubsub } = require('messages');
+const Readable = require('stream').Readable;
 /**
  * Event streams API methods implementation.
  *
@@ -345,6 +346,9 @@ module.exports = async function (api) {
       childrenDepth: -1,
       storeId
     });
+    const deletedEventsStream = new ItemsStream();
+    result.addStream('deletedEvents', deletedEventsStream);
+
     const streamToDelete = streamToDeleteSingleArray[0]; // no need to check existence: done before in verifyStreamExistenceAndPermissions
     const streamAndDescendantIds = treeUtils.collectPluckFromRootItem(streamToDelete, 'id');
     // keep stream and children to delete in next step
@@ -382,6 +386,7 @@ module.exports = async function (api) {
           const remaningStreamsIds = _.difference(event.streamIds, streamAndDescendantIds);
           if (remaningStreamsIds.length === 0) { // no more streams deleted event
             await mall.events.delete(context.user.id, event);
+            deletedEventsStream.add({ id: event.id });
           } else { // update event without these streams
             event.streamIds = remaningStreamsIds;
             await mall.events.update(context.user.id, event);
@@ -398,8 +403,26 @@ module.exports = async function (api) {
         logger.error('Failed deleted some streams', err);
       }
     }
-    result.streamDeletion = { id: params.id };
+    deletedEventsStream.add(null); // close
+    result.addItemToStream('streamDeletion', { id: params.id });
     pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
     next();
   }
 };
+
+class ItemsStream extends Readable {
+  buffer;
+  constructor () {
+    super({ objectMode: true });
+    this.buffer = [];
+  }
+
+  add (item) { this.push(item); }
+
+  _read () {
+    let push = true;
+    while (this.buffer.length > 0 && push) {
+      push = this.push(this.buffer.shift());
+    }
+  }
+}

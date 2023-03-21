@@ -78,6 +78,7 @@ class Result {
       arrayLimit: 10000,
       isStreamResult: false,
       streamsArray: [],
+      itemsToStream: [],
       onEndCallback: null,
       streamsConcatArrays: {},
       tracing: params?.tracing || new DummyTracing(),
@@ -134,6 +135,16 @@ class Result {
   addStream (arrayName, stream) {
     this._private.isStreamResult = true;
     this._private.streamsArray.push({ name: arrayName, stream });
+  }
+
+  /**
+   * @param {string} itemName
+   * @param {Object} item
+   * @returns {void}
+   */
+  addItemToStream (itemName, item) {
+    this._private.isStreamResult = true;
+    this._private.itemsToStream.push({ name: itemName, value: item });
   }
 
   // Returns true if the Result holds any streams, false otherwise.
@@ -196,7 +207,7 @@ class Result {
       const first = streamsArray[0];
       return first.stream
         .pipe(new ArrayStream(first.name, true))
-        .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
+        .pipe(new ResultStream(this._private.itemsToStream, this._private.tracing, this._private.tracingId))
         .pipe(res);
     }
     // assert: streamsArray.length > 1
@@ -206,7 +217,7 @@ class Result {
       streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
     }
     return new MultiStream(streams)
-      .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
+      .pipe(new ResultStream(this._private.itemsToStream, this._private.tracing, this._private.tracingId))
       .pipe(res);
   }
 
@@ -275,15 +286,15 @@ class Result {
 /** @extends Transform */
 class ResultStream extends Transform {
   isStart;
-
   tracing;
-
   tracingId;
-  constructor (tracing, parentTracingId) {
+  itemsToStream;
+  constructor (itemsToStream, tracing, parentTracingId) {
     super({ objectMode: true });
     this.isStart = true;
     this.tracing = tracing;
     this.tracingId = this.tracing.startSpan('resultStream', {}, parentTracingId);
+    this.itemsToStream = itemsToStream;
   }
 
   /**
@@ -300,10 +311,17 @@ class ResultStream extends Transform {
     callback();
   }
 
+  // uncomment to debug
+  // push (data) { console.log(data); super.push(data); }
+
   /**
    * @returns {void}
    */
   _flush (callback) {
+    // add object items to stream.
+    for (const item of this.itemsToStream) {
+      this.push(', "' + item.name + '": ' + JSON.stringify(item.value));
+    }
     const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
     this.push(thing + '}');
     this.tracing.finishSpan('resultStream');

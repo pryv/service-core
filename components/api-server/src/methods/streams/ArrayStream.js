@@ -14,7 +14,6 @@ const SERIALIZATION_STACK_SIZE = 1000;
 /**
  * Stream that encapsulates the items it receives in a stringified array.
  *
- * @param result    {Object} Result object for the API request
  * @param arrayName {String} array name that will prefix the array
  * @constructor
  */
