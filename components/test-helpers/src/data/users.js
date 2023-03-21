@@ -4,8 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+const { runIdMap } = require('../runid');
 
-module.exports = [
+module.exports = runIdMap([
   {
     id: 'u_0',
     username: 'userzero',
@@ -56,4 +57,4 @@ module.exports = [
     email: 'user-system@pryv.com',
     language: 'en',
   }, */
-];
+]);

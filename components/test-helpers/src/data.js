@@ -25,6 +25,8 @@ const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
 
+const { runId } = require('./runid');
+
 // users
 
 const users = (exports.users = require('./data/users'));
@@ -160,12 +162,12 @@ function resetData (storage, user, items, done) {
 const attachmentsDirPath = (exports.attachmentsDirPath = path.join(__dirname, '/data/attachments/'));
 
 const attachments = (exports.attachments = {
-  animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
-  document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
-  document_modified: getAttachmentInfo('document', 'document.modified.pdf', 'application/pdf'),
-  image: getAttachmentInfo('image', 'image (space and special chars)é__.png', 'image/png'),
-  imageBigger: getAttachmentInfo('imageBigger', 'image-bigger.jpg', 'image/jpeg'),
-  text: getAttachmentInfo('text', 'text.txt', 'text/plain')
+  animatedGif: getAttachmentInfo('animatedGif-' + runId, 'animated.gif', 'image/gif'),
+  document: getAttachmentInfo('document-' + runId, 'document.pdf', 'application/pdf'),
+  document_modified: getAttachmentInfo('document-' + runId, 'document.modified.pdf', 'application/pdf'),
+  image: getAttachmentInfo('image-' + runId, 'image (space and special chars)é__.png', 'image/png'),
+  imageBigger: getAttachmentInfo('imageBigger-' + runId, 'image-bigger.jpg', 'image/jpeg'),
+  text: getAttachmentInfo('text-' + runId, 'text.txt', 'text/plain')
 });
 
 // following https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity

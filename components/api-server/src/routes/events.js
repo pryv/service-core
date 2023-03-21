@@ -80,7 +80,10 @@ module.exports = async function (expressApp, app) {
         if (!hmacValid) { return next(errors.invalidAccessToken('Invalid read token.')); }
         next();
       })
-      .catch((err) => next(errors.unexpectedError(err)));
+      .catch((err) => {
+        if (err.id === 'invalid-access-token') return next(errors.invalidAccessToken('Invalid read token.'));
+        next(errors.unexpectedError(err));
+      });
     // The promise chain above calls next on all branches.
   }
   // Create an event.

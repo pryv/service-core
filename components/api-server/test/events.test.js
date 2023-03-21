@@ -526,7 +526,6 @@ describe('events', function () {
     it('[F29M] must return the attached file with the correct headers', function (done) {
       const event = testData.events[0];
       const attachment = event.attachments[0];
-
       request.get(path(event.id) + '/' + attachment.id).end(function (res) {
         res.statusCode.should.eql(200);
 
@@ -1326,7 +1325,7 @@ describe('events', function () {
 
     it('[8GSS] allows access at level=read', async () => {
       const request = supertest(server.url);
-      const access = _.find(testData.accesses, (v) => v.id === 'a_2');
+      const access = testData.accesses[2];
       const event = testData.events[0];
 
       const response = await request.get(path(event.id))
