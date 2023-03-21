@@ -206,6 +206,11 @@ describe('accesses (personal)', function () {
             defaultName: 'Trashed stream to restore (this should be ignored)'
           },
           {
+            streamId: testData.streams[4].id,
+            level: 'read',
+            defaultName: 'Deleted stream must be recreated'
+          },
+          {
             streamId: '*',
             level: 'read',
             defaultName: 'Ignored, must be cleaned up'
@@ -230,6 +235,7 @@ describe('accesses (personal)', function () {
               delete expected.permissions[1].defaultName;
               delete expected.permissions[2].defaultName;
               delete expected.permissions[3].defaultName;
+              delete expected.permissions[4].defaultName;
               expected.created = res.body.access.created;
               expected.createdBy = res.body.access.createdBy;
               expected.modified = res.body.access.modified;
@@ -241,13 +247,15 @@ describe('accesses (personal)', function () {
             });
         },
         async function verifyNewStream () {
-          const streams = await mall.streams.get(user.id, {
-            id: data.permissions[1].streamId
-          });
-          should.exist(streams[0]);
-          const stream = streams[0];
-          validation.checkStoredItem(stream, 'stream');
-          stream.name.should.eql(data.permissions[1].defaultName);
+          const newStream = await mall.streams.getOne(user.id, data.permissions[1].streamId);
+          should.exist(newStream);
+          validation.checkStoredItem(newStream, 'stream');
+          newStream.name.should.eql(data.permissions[1].defaultName);
+
+          const undeletedStream = await mall.streams.getOne(user.id, data.permissions[3].streamId);
+          should.exist(undeletedStream);
+          validation.checkStoredItem(undeletedStream, 'stream');
+          undeletedStream.name.should.eql(data.permissions[3].defaultName);
         },
         async function verifyRestoredStream () {
           const streams = await mall.streams.get(user.id, {
