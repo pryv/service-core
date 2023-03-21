@@ -149,6 +149,7 @@ describe('[SYER] system (ex-register)', function () {
       return basePath() + '/create-user';
     }
     function post (data, callback) {
+      testData.addUserToBeErased(data.username);
       return request.post(path())
         .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
         .send(data)

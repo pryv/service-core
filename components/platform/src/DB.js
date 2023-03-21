@@ -21,9 +21,12 @@ class DB {
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/platform-wide.db');
-    this.db.pragma('journal_mode = WAL');
-
-    this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
+    await concurentSafeWriteStatement(() => {
+      this.db.pragma('journal_mode = WAL');
+    });
+    await concurentSafeWriteStatement(() => {
+      this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
+    });
 
     this.queries = {};
     this.queries.getValueWithKey = this.db.prepare('SELECT key, value FROM keyValue WHERE key = ?');
@@ -107,6 +110,28 @@ class DB {
   async close () {
     this.db.close();
   }
+}
+
+const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25, 25, 50, 50, 100];
+/**
+   * Will look "retries" times, in case of "SQLITE_BUSY".
+   * This is CPU intensive, but tests have shown this solution to be efficient
+   */
+async function concurentSafeWriteStatement (statement, retries = 100) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      statement();
+      return;
+    } catch (error) {
+      if (error.code !== 'SQLITE_BUSY') { // ignore
+        throw error;
+      }
+      const waitTime = i > (WAIT_LIST_MS.length - 1) ? 100 : WAIT_LIST_MS[i];
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+      this.logger.debug('SQLITE_BUSY, retrying in ' + waitTime + 'ms');
+    }
+  }
+  throw new Error('Failed write action on Audit after ' + retries + ' retries');
 }
 
 /**

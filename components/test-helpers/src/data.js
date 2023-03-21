@@ -32,13 +32,26 @@ const { runId } = require('./runid');
 const users = (exports.users = require('./data/users'));
 const defaultUser = users[0];
 
+const userNamesToErase = [];
+exports.addUserToBeErased = function (userId) {
+  userNamesToErase.push(userId);
+};
+
 exports.resetUsers = async () => {
   logger.debug('resetUsers');
   await getConfig(); // lock up to the time config is ready
   await SystemStreamsSerializer.init();
   const customAccountProperties = buildCustomAccountProperties();
   const usersRepository = await getUsersRepository();
-  await usersRepository.deleteAll();
+  for (const user of users) {
+    await usersRepository.deleteOne(user.id);
+  }
+  while (userNamesToErase.length > 0) {
+    const userName = userNamesToErase.pop();
+    const userId = await usersRepository.getUserIdForUsername(userName);
+    if (userId != null) await usersRepository.deleteOne(userId);
+  }
+  // await usersRepository.deleteAll();
   for (const user of users) {
     const userObj = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
     await usersRepository.insertOne(userObj, false, true);

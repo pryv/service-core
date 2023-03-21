@@ -14,11 +14,16 @@ exports.runId = runId;
  * @param {Array} array
  * @param {string} [property='id'] the property to change (default: 'id')
  * @param {string} [space='-'] spacer between original property value and runId (default '-')
+ * @param {boolean} [head=false] if true happend at the begging, false at the end (default false)
  * @returns array
  */
-exports.runIdMap = function runIdMap (array, property = 'id', space = '-') {
+exports.runIdMap = function runIdMap (array, property = 'id', space = '-', head = false) {
   for (const item of array) {
-    item[property] += space + runId;
+    if (head) {
+      item[property] = runId + space + item[property];
+    } else {
+      item[property] += space + runId;
+    }
   }
   return array;
 };

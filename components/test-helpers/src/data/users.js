@@ -6,7 +6,7 @@
  */
 const { runIdMap } = require('../runid');
 
-module.exports = runIdMap([
+const events = [
   {
     id: 'u_0',
     username: 'userzero',
@@ -57,4 +57,8 @@ module.exports = runIdMap([
     email: 'user-system@pryv.com',
     language: 'en',
   }, */
-]);
+];
+
+runIdMap(events);
+runIdMap(events, 'email', '-', true);
+module.exports = events;
