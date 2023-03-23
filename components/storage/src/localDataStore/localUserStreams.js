@@ -50,7 +50,6 @@ module.exports = ds.createUserStreams({
     }
 
     if (stream == null) return null;
-    if (stream.deleted) return null;
 
     // filtering ---
     if (!query.includeTrashed) {
@@ -58,8 +57,6 @@ module.exports = ds.createUserStreams({
       // i.e. === 'default' (return non-trashed items)
       stream.children = treeUtils.filterTree(stream.children, false /* no orphans */, (stream) => !stream.trashed);
     }
-    // return non-deleted items
-    stream.children = treeUtils.filterTree(stream.children, false /* no orphans */, (stream) => stream.deleted == null);
     return stream;
   },
 
@@ -87,7 +84,7 @@ module.exports = ds.createUserStreams({
   async create (userId, streamData) {
     // as we have mixed deletions and non deleted in the same table
     // remove eventual deleted items matching this id.
-    const deletedStreams = await this.getDeletions(userId, Number.MIN_SAFE_INTEGER);
+    const deletedStreams = await this.getDeletions(userId, { deletedSince: Number.MIN_SAFE_INTEGER });
     const deletedStream = deletedStreams.filter(s => s.id === streamData.id);
     if (deletedStream.length > 0) {
       await bluebird.fromCallback((cb) => this.userStreamsStorage.removeOne({ id: userId }, { id: deletedStream[0].id }, cb));
@@ -121,7 +118,7 @@ module.exports = ds.createUserStreams({
     if (allStreamsForAccount != null) return allStreamsForAccount;
 
     // get from DB
-    allStreamsForAccount = await bluebird.fromCallback((cb) => this.userStreamsStorage.findIncludingDeletionsAndVersions({ id: userId }, {}, null, cb));
+    allStreamsForAccount = await bluebird.fromCallback((cb) => this.userStreamsStorage.find({ id: userId }, {}, null, cb));
     // add system streams
     allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
     cache.setStreams(userId, 'local', allStreamsForAccount);
