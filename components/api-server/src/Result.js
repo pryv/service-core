@@ -281,7 +281,7 @@ class ResultStream extends Transform {
   tracingId;
   debugString;
   constructor (tracing, parentTracingId) {
-    super({ objectMode: true });
+    super({ writableObjectMode: true });
     this.isStart = true;
     this.tracing = tracing;
     this.tracingId = this.tracing.startSpan('resultStream', {}, parentTracingId);
