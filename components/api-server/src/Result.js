@@ -7,7 +7,7 @@
 const commonMeta = require('./methods/helpers/setCommonMeta');
 const MultiStream = require('multistream');
 const DrainStream = require('./methods/streams/DrainStream');
-const ArrayStream = require('./methods/streams/ArrayStream');
+const ArraySerializationStream = require('./methods/streams/ArraySerializationStream');
 const SingleObjectSerializationStream = require('./methods/streams/SingleObjectSerializationStream');
 const async = require('async');
 
@@ -192,21 +192,13 @@ class Result {
     const streamsArray = this._private.streamsArray;
     if (!this._private.isStreamResult) { throw new Error('AF: not a stream result.'); }
     if (streamsArray.length < 1) { throw new Error('streams array empty'); }
-    // Are we handling a single stream?
-    if (streamsArray.length === 1) {
-      const first = streamsArray[0];
-      return first.stream
-        .pipe(first.isArray ? new ArrayStream(first.name, true) : new SingleObjectSerializationStream(first.name, true))
-        .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
-        .pipe(res);
-    }
-    // assert: streamsArray.length > 1
+
     const streams = [];
     for (let i = 0; i < streamsArray.length; i++) {
-      const isFirst = (i === 0);
       const s = streamsArray[i];
-      streams.push(s.stream.pipe(s.isArray ? new ArrayStream(s.name, isFirst) : new SingleObjectSerializationStream(s.name, isFirst)));
+      streams.push(s.stream.pipe(s.isArray ? new ArraySerializationStream(s.name) : new SingleObjectSerializationStream(s.name)));
     }
+
     return new MultiStream(streams)
       .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
       .pipe(res);
@@ -309,7 +301,7 @@ class ResultStream extends Transform {
    * @returns {void}
    */
   _flush (callback) {
-    const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
+    const thing = ' "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
     this.push(thing + '}');
     this.tracing.finishSpan('resultStream');
 

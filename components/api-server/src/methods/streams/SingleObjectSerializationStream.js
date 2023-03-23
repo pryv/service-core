@@ -14,16 +14,13 @@ const Transform = require('stream').Transform;
  */
 module.exports = class SingleObjectSerializationStream extends Transform {
   name;
-  isFirst;
-  constructor (objectName, isFirst) {
+  constructor (objectName) {
     super({ writableObjectMode: true });
     this.name = objectName;
-    this.isFirst = isFirst;
   }
 
   _transform = function (item, encoding, callback) {
-    if (!this.isFirst) this.push(', ');
-    this.push('"' + this.name + '": ' + JSON.stringify(item));
+    this.push('"' + this.name + '": ' + JSON.stringify(item) + ', ');
     callback();
   };
 
