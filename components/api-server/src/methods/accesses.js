@@ -523,11 +523,9 @@ module.exports = async function produceAccessesApiMethods (api) {
       let permissionStream;
       async.series([
         async function checkId () {
-          // NOT-OPTIMIZED: could return only necessary fields
-          const existingStreamArray = await mall.streams.get(context.user.id, { id: permission.streamId });
-          if (existingStreamArray.length === 1) {
-            permissionStream = existingStreamArray[0];
-            permission.name = permissionStream.name;
+          const existingStream = await mall.streams.getOneWithNoChildren(context.user.id, permission.streamId);
+          if (existingStream != null) {
+            permission.name = existingStream.name;
             delete permission.defaultName;
           }
         },
