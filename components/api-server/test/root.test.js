@@ -626,5 +626,45 @@ describe('[ROOT] root', function () {
         .set('authorization', appAccessToken1);
       validation.checkErrorInvalidParams(res);
     });
+
+    it('[TV17] streamed results such as stream.delete should be serialiazed', async function () {
+      const calls = [
+        {
+          method: 'streams.create',
+          params: {
+            parentId: stream.id,
+            id: 'blop',
+            name: 'Blop'
+          }
+        },
+        {
+          method: 'events.create',
+          params: {
+            streamIds: ['blop'],
+            type: 'actvity/plain'
+          }
+        },
+        {
+          method: 'streams.delete',
+          params: {
+            id: 'blop'
+          }
+        },
+        {
+          method: 'streams.delete',
+          params: {
+            mergeEventsWithParent: false,
+            id: 'blop'
+          }
+        }
+      ];
+      const res = await server.request()
+        .post('/' + username)
+        .send(calls)
+        .set('authorization', appAccessToken1);
+      const deleteStreamResult = res.body?.results[3];
+      assert.exists(deleteStreamResult?.updatedEvents);
+      assert.exists(deleteStreamResult?.streamDeletion);
+    });
   });
 });

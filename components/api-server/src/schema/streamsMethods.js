@@ -18,6 +18,15 @@ const string = helpers.string;
 const number = helpers.number;
 const boolean = helpers.boolean;
 
+const updatedEvent = helpers.object({
+  id: helpers.string(),
+  action: helpers.string()
+}, {
+  id: 'updatedEvent',
+  required: ['id', 'action'],
+  additionalProperties: false
+});
+
 module.exports = {
   get: {
     params: object({
@@ -83,7 +92,7 @@ module.exports = {
           required: ['stream'],
           additionalProperties: false
         }),
-        object({ streamDeletion: itemDeletion }, {
+        object({ streamDeletion: itemDeletion, updatedEvents: array(updatedEvent) }, {
           required: ['streamDeletion'],
           additionalProperties: false
         })

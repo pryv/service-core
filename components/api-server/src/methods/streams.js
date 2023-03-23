@@ -346,8 +346,6 @@ module.exports = async function (api) {
       childrenDepth: -1,
       storeId
     });
-    const deletedEventsStream = new ItemsStream();
-    result.addStream('deletedEvents', deletedEventsStream);
 
     const streamToDelete = streamToDeleteSingleArray[0]; // no need to check existence: done before in verifyStreamExistenceAndPermissions
     const streamAndDescendantIds = treeUtils.collectPluckFromRootItem(streamToDelete, 'id');
@@ -363,6 +361,7 @@ module.exports = async function (api) {
     const events = await mall.events.getWithParamsByStore(context.user.id, {
       [storeId]: { streams: [{ any: cleanDescendantIds }], limit: 1 }
     });
+
     const hasLinkedEvents = !!events.length;
     if (hasLinkedEvents) {
       // has linked events -----------------
@@ -370,6 +369,17 @@ module.exports = async function (api) {
         return next(errors.invalidParametersFormat('There are events referring to the deleted items ' +
                     'and the `mergeEventsWithParent` parameter is missing.'));
       }
+    }
+
+    // --- all tests are passed
+    // --- create result streams and start send result as they come
+    const updatedEventsStream = new ItemsStream();
+    result.addStream('updatedEvents', updatedEventsStream);
+    const singleItemDeletedStream = new ItemsStream();
+    result.addStream('streamDeletion', singleItemDeletedStream, false);
+    next(); // <== call next here to avoid await blocking
+
+    if (hasLinkedEvents) {
       if (params.mergeEventsWithParent) {
         // -- Case 1 -- Merge events with parent
         // add parent stream Id if needed and remove deleted stream ids
@@ -378,6 +388,9 @@ module.exports = async function (api) {
         await mall.events.updateMany(context.user.id, query, {
           addStreams: [parentId],
           removeStreams: streamAndDescendantIds
+        }, function (event) {
+          if (event == null) return;
+          updatedEventsStream.add({ action: 'mergedToParent', id: event.id });
         });
       } else {
         // case  mergeEventsWithParent = false
@@ -386,15 +399,17 @@ module.exports = async function (api) {
           const remaningStreamsIds = _.difference(event.streamIds, streamAndDescendantIds);
           if (remaningStreamsIds.length === 0) { // no more streams deleted event
             await mall.events.delete(context.user.id, event);
-            deletedEventsStream.add({ id: event.id });
+            updatedEventsStream.add({ action: 'deleted', id: event.id });
           } else { // update event without these streams
             event.streamIds = remaningStreamsIds;
             await mall.events.update(context.user.id, event);
+            updatedEventsStream.add({ action: 'updatedStreamIds', id: event.id });
           }
         }
       }
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     }
+    updatedEventsStream.add(null); // close stream
     // finally delete stream
     for (const streamIdToDelete of context.streamToDeleteAndDescendantIds) {
       try {
@@ -403,10 +418,9 @@ module.exports = async function (api) {
         logger.error('Failed deleted some streams', err);
       }
     }
-    deletedEventsStream.add(null); // close
-    result.addItemToStream('streamDeletion', { id: params.id });
+    singleItemDeletedStream.push({ id: params.id });
+    singleItemDeletedStream.push(null); // close stream
     pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
-    next();
   }
 };
 

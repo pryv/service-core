@@ -8,6 +8,7 @@ const commonMeta = require('./methods/helpers/setCommonMeta');
 const MultiStream = require('multistream');
 const DrainStream = require('./methods/streams/DrainStream');
 const ArrayStream = require('./methods/streams/ArrayStream');
+const SingleObjectSerializationStream = require('./methods/streams/SingleObjectSerializationStream');
 const async = require('async');
 
 const { Transform } = require('stream');
@@ -78,7 +79,6 @@ class Result {
       arrayLimit: 10000,
       isStreamResult: false,
       streamsArray: [],
-      itemsToStream: [],
       onEndCallback: null,
       streamsConcatArrays: {},
       tracing: params?.tracing || new DummyTracing(),
@@ -132,19 +132,9 @@ class Result {
    * @param {Readable} stream
    * @returns {void}
    */
-  addStream (arrayName, stream) {
+  addStream (arrayName, stream, isArray = true) {
     this._private.isStreamResult = true;
-    this._private.streamsArray.push({ name: arrayName, stream });
-  }
-
-  /**
-   * @param {string} itemName
-   * @param {Object} item
-   * @returns {void}
-   */
-  addItemToStream (itemName, item) {
-    this._private.isStreamResult = true;
-    this._private.itemsToStream.push({ name: itemName, value: item });
+    this._private.streamsArray.push({ name: arrayName, stream, isArray });
   }
 
   // Returns true if the Result holds any streams, false otherwise.
@@ -206,18 +196,19 @@ class Result {
     if (streamsArray.length === 1) {
       const first = streamsArray[0];
       return first.stream
-        .pipe(new ArrayStream(first.name, true))
-        .pipe(new ResultStream(this._private.itemsToStream, this._private.tracing, this._private.tracingId))
+        .pipe(first.isArray ? new ArrayStream(first.name, true) : new SingleObjectSerializationStream(first.name, true))
+        .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
         .pipe(res);
     }
     // assert: streamsArray.length > 1
     const streams = [];
     for (let i = 0; i < streamsArray.length; i++) {
+      const isFirst = (i === 0);
       const s = streamsArray[i];
-      streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
+      streams.push(s.stream.pipe(s.isArray ? new ArrayStream(s.name, isFirst) : new SingleObjectSerializationStream(s.name, isFirst)));
     }
     return new MultiStream(streams)
-      .pipe(new ResultStream(this._private.itemsToStream, this._private.tracing, this._private.tracingId))
+      .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
       .pipe(res);
   }
 
@@ -256,7 +247,7 @@ class Result {
     const streamsArray = _private.streamsArray;
     const resultObj = {};
     async.forEachOfSeries(streamsArray, (elementDef, i, done) => {
-      const drain = new DrainStream({ limit: _private.arrayLimit }, (err, list) => {
+      const drain = new DrainStream({ limit: _private.arrayLimit, isArray: elementDef.isArray }, (err, list) => {
         if (err) {
           return done(err);
         }
@@ -288,13 +279,13 @@ class ResultStream extends Transform {
   isStart;
   tracing;
   tracingId;
-  itemsToStream;
-  constructor (itemsToStream, tracing, parentTracingId) {
+  debugString;
+  constructor (tracing, parentTracingId) {
     super({ objectMode: true });
     this.isStart = true;
     this.tracing = tracing;
     this.tracingId = this.tracing.startSpan('resultStream', {}, parentTracingId);
-    this.itemsToStream = itemsToStream;
+    this.debugString = '';
   }
 
   /**
@@ -312,19 +303,17 @@ class ResultStream extends Transform {
   }
 
   // uncomment to debug
-  // push (data) { console.log(data); super.push(data); }
+  // push (data) { this.debugString += data; super.push(data); }
 
   /**
    * @returns {void}
    */
   _flush (callback) {
-    // add object items to stream.
-    for (const item of this.itemsToStream) {
-      this.push(', "' + item.name + '": ' + JSON.stringify(item.value));
-    }
     const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
     this.push(thing + '}');
     this.tracing.finishSpan('resultStream');
+
+    if (this.debugString !== '') { console.log('***** RESULT DATA **********\n' + this.debugString + '\n*********************'); }
     callback();
   }
 }

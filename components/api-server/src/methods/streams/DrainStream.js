@@ -34,7 +34,13 @@ function DrainStream (params, callback) {
 
   if (callback) {
     this.on('finish', function () {
-      callback(null, this.array);
+      if (params.isArray) {
+        return callback(null, this.array);
+      }
+      if (this.array.length !== 1) {
+        return callback(new Error('Expected to find 1 item in array got: ' + JSON.stringify(this.array)));
+      }
+      callback(null, this.array[0]);
     });
   }
 
