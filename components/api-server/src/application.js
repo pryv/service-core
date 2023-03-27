@@ -213,7 +213,7 @@ class Application {
     require('./routes/auth/register')(this.expressApp, this);
     if (this.isOpenSource) {
       require('www')(this.expressApp, this);
-      require('register')(this.expressApp, this);
+      await require('register')(this.expressApp, this);
     }
 
     require('./routes/system')(this.expressApp, this);

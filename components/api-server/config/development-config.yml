@@ -16,7 +16,7 @@ auth:
 serviceInfoUrl: file://test/service-info.json
 services:
   email:
-    enabled: 
+    enabled:
       welcome: false
       resetPassword: false
   register:
@@ -31,11 +31,11 @@ openSource:
   isActive: false
 dnsLess:
   isActive: true
-  publicUrl: http://localhost:3000/
+  publicUrl: http://127.0.0.1:3000/
 custom:
   systemStreams:
     account:
-      - 
+      -
         isIndexed: true
         isUnique: true
         isShown: true
@@ -45,7 +45,7 @@ custom:
         id: email
         isRequiredInValidation: true
     other:
-      - 
+      -
         isShown: true
         isEditable: true
         type: my-custom-stream/string

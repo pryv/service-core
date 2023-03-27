@@ -27,7 +27,7 @@ describe('Webhook', () => {
     const repository = new WebhooksRepository(storage, userStorage);
     let notificationsServer;
     let postPath = '/notifications';
-    let url = 'http://localhost:' + PORT + postPath;
+    let url = 'http://127.0.0.1:' + PORT + postPath;
     const user = {
       username: 'doesnotmatter'
     };
@@ -201,7 +201,7 @@ describe('Webhook', () => {
       describe('when the notifications service is down', () => {
         before(async () => {
           postPath = '/notifs2222';
-          url = 'http://localhost:' + PORT + postPath;
+          url = 'http://127.0.0.1:' + PORT + postPath;
           notificationsServer = new HttpServer(postPath, 503);
           await notificationsServer.listen();
         });
@@ -266,7 +266,7 @@ describe('Webhook', () => {
     describe('when throttling frequent calls', () => {
       before(async () => {
         postPath = '/notifs3';
-        url = 'http://localhost:' + PORT + postPath;
+        url = 'http://127.0.0.1:' + PORT + postPath;
         notificationsServer = new HttpServer(postPath, 200);
         await notificationsServer.listen();
       });
@@ -328,7 +328,7 @@ describe('Webhook', () => {
       let webhook, storedWebhook;
       before(async () => {
         postPath = '/notifs5';
-        url = 'http://localhost:' + PORT + postPath;
+        url = 'http://127.0.0.1:' + PORT + postPath;
         notificationsServer = new HttpServer(postPath, 400);
         await notificationsServer.listen();
       });
@@ -378,7 +378,7 @@ describe('Webhook', () => {
       let webhook;
       before(async () => {
         postPath = '/notifs4';
-        url = 'http://localhost:' + PORT + postPath;
+        url = 'http://127.0.0.1:' + PORT + postPath;
         notificationsServer = new HttpServer(postPath, 200);
         await notificationsServer.listen();
       });
@@ -432,5 +432,5 @@ describe('Webhook', () => {
 });
 
 function makeUrl (path) {
-  return 'http://localhost:' + PORT + path;
+  return 'http://127.0.0.1:' + PORT + path;
 }

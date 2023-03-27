@@ -3,7 +3,7 @@ serviceInfoUrl: file://test/service-info.json
 openSource:
   isActive: false
 database:
-  host: localhost
+  host: 127.0.0.1
   name: pryv-node-test
 services:
   register:

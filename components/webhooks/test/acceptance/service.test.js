@@ -46,7 +46,7 @@ describe('webhooks', function () {
   const port = 5123;
   const port2 = 5124;
   const postPath = '/notifications';
-  const mockServerHostname = 'http://localhost:';
+  const mockServerHostname = 'http://127.0.0.1:';
 
   before(function () {
     url = mockServerHostname + port + postPath;

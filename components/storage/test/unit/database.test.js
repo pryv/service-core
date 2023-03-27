@@ -11,7 +11,7 @@ const Database = require('../../src/Database');
 
 describe('Database', () => {
   const connectionSettings = {
-    host: 'localhost',
+    host: '127.0.0.1',
     port: 27017,
     name: 'pryv-node-test'
   };

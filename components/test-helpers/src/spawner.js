@@ -124,7 +124,7 @@ class SpawnContext {
         // connects to it. It's the inverse for InstanceManager
         pubConnectInsteadOfBind: false,
         port: axonPort,
-        host: 'localhost'
+        host: '127.0.0.1'
       }
     }, customSettings);
 
@@ -417,7 +417,7 @@ class Server extends EventEmitter {
     super();
     this.port = port;
     this.axonPort = axonPort;
-    this.host = 'localhost';
+    this.host = '127.0.0.1';
     this.baseUrl = `http://${this.host}:${port}`;
     this.process = proxy;
     this.listen();

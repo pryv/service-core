@@ -25,17 +25,17 @@ describe('config: serviceInfo', () => {
           assert.deepEqual(serviceInfo, testServiceInfo);
         } else {
           assert.deepEqual(serviceInfo, {
-            access: 'http://localhost:3000/reg/access/',
-            api: 'http://localhost:3000/{username}/',
+            access: 'http://127.0.0.1:3000/reg/access/',
+            api: 'http://127.0.0.1:3000/{username}/',
             serial: '2019061301',
-            register: 'http://localhost:3000/reg/',
+            register: 'http://127.0.0.1:3000/reg/',
             name: 'Pryv Lab',
             home: 'https://sw.pryv.me',
             support: 'https://pryv.com/helpdesk',
             terms: 'https://pryv.com/terms-of-use/',
             eventTypes: 'https://api.pryv.com/event-types/flat.json',
             assets: {
-              definitions: 'http://localhost:3000/www/assets/index.json'
+              definitions: 'http://127.0.0.1:3000/www/assets/index.json'
             }
           });
         }

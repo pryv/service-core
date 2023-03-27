@@ -13,13 +13,13 @@ reporting:
 http:
   ip: '127.0.0.1'
   port: 3000
-  
+
 
 database:
   engine: 'mongodb' # set to sqlite for poc sqlite storage for events
   authUser: ''
   authPassword: ''
-  host: 'localhost'
+  host: '127.0.0.1'
   port: 27017
   name: 'pryv-node'
   connectTimeoutMS: 60000
@@ -46,7 +46,7 @@ customExtensions:
 
 axonMessaging:
   enabled: false
-  host: 'localhost'
+  host: '127.0.0.1'
   port: 4000
   pubConnectInsteadOfBind: false
 

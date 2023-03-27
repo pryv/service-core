@@ -18,6 +18,9 @@ const logger = getLogger('users:local-index');
 
 class UsersLocalIndex {
   initialized;
+  /**
+   * @type {DBIndex}
+   */
   db;
 
   constructor () {
@@ -93,6 +96,9 @@ class UsersLocalIndex {
     return res;
   }
 
+  /**
+   * @returns {Promise<Object>} An object whose keys are the usernames and values are the user ids.
+   */
   async getAllByUsername () {
     logger.debug('getAllByUsername');
     return this.db.getAllByUsername();
@@ -165,6 +171,9 @@ class DBIndex {
     return this.queryDeleteById.run({ userId });
   }
 
+  /**
+   * @returns {Object} An object whose keys are the usernames and values are the user ids.
+   */
   getAllByUsername () {
     const users = {};
     for (const user of this.queryGetAll.iterate()) {

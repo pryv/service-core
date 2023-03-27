@@ -1,6 +1,6 @@
 ---
 http:
-  ip: localhost
+  ip: 127.0.0.1
   port: 4000
 trace:
   enable: false
@@ -9,7 +9,7 @@ logs:
     active: true
     level: debug
 database:
-  host: 'localhost'
+  host: '127.0.0.1'
   port: 27017
   name: 'pryv-node'
 influxdb:

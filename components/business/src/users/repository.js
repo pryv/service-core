@@ -49,8 +49,8 @@ class UsersRepository {
   }
 
   /**
-   * only for testing
-   * @returns {Promise<any[]>}
+   * only for testing and built-in register
+   * @returns {Promise<{ id: string, username: string, events: any[] }[]>}
    */
   async getAll () {
     const usersMap = await this.usersIndex.getAllByUsername();
@@ -79,9 +79,10 @@ class UsersRepository {
   }
 
   /**
-   * @returns {Promise<any[]>}
+   * Used only by webhooks could be refactored
+   * @returns {Promise<{ id: string, username: string }[]>}
    */
-  async getAllUsernames () {
+  async getAllUsersIdAndName () {
     const usersMap = await this.usersIndex.getAllByUsername();
     const users = [];
     for (const [username, userId] of Object.entries(usersMap)) {
@@ -100,7 +101,7 @@ class UsersRepository {
 
   /**
    * @param {string} userId
-   * @returns {Promise<any>}
+   * @returns {Promise<{ id: string, username: string, events: any[] }>}
    */
   async getUserById (userId) {
     const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
