@@ -365,7 +365,7 @@ New feature:
 - We've rehauled the 'delete-user' command of the Pryv.IO cli admin tool. It
   now operates more explicitly and allows automation.
 
-- Improvements related to mongoDB:
+- Improvements related to MongoDB:
   - We now use j:true as write concern, which requests acknowledgement that
     write operations has been written to the journal. This measure improves our
     persistence story in the face of a crash.

@@ -256,9 +256,9 @@ async function expandAndTransformStreamQuery (streamQuery, expandSet) {
   return containsAtLeastOneInclusion ? res : null;
 }
 /**
- * Transform queries for mongoDB - to be run on
+ * Transform queries for MongoDB - to be run on
  * @param {Array.<StreamQuery>} streamQueriesArray - array of streamQuery
- * @returns {MongoQuey} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
+ * @returns {mongoQuery} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
  */
 exports.toMongoDBQuery = function toMongoDBQuery (streamQueriesArray) {
   let mongoQuery = null; // no streams
