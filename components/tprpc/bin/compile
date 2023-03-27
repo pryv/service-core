@@ -9,7 +9,7 @@
 const path = require('path');
 const rpc = require('tprpc');
 
-async function compile(sourcePath) {
+async function compile (sourcePath) {
   const source = path.parse(sourcePath);
 
   const definition = await rpc.load(sourcePath);
