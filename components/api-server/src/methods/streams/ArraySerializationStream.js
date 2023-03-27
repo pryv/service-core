@@ -6,7 +6,10 @@
  */
 const Transform = require('stream').Transform;
 
-const SERIALIZATION_STACK_SIZE = 2048;
+// serialize every n objects
+const OBJECT_BUFFER_SIZE = 100;
+// event if OBJECT_BUFFER_SIZE is not reach, serialize if MAX_WAIT_MS is reached
+const MAX_WAIT_MS = 100;
 
 /**
  * Stream that encapsulates the items it receives in a stringified array.
@@ -19,20 +22,22 @@ module.exports = class ArraySerializationStream extends Transform {
     super({ writableObjectMode: true });
     this.isStart = true;
     this.prefix = '"' + arrayName + '":';
-    this.size = SERIALIZATION_STACK_SIZE;
+    this.size = OBJECT_BUFFER_SIZE;
     this.stack = [];
+    this.lastSerialization = Date.now();
   }
 
   _transform (item, encoding, callback) {
     this.stack.push(item);
 
-    if (this.stack.length >= this.size) {
+    if (this.stack.length >= this.size || (Date.now() - this.lastSerialization) > MAX_WAIT_MS) {
       if (this.isStart) {
         this.isStart = false;
         this.push((this.prefix + JSON.stringify(this.stack)).slice(0, -1));
       } else {
         this.push(',' + (JSON.stringify(this.stack)).slice(1, -1));
       }
+      this.lastSerialization = Date.now();
       this.stack = [];
     }
     callback();

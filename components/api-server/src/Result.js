@@ -196,7 +196,8 @@ class Result {
     const streams = [];
     for (let i = 0; i < streamsArray.length; i++) {
       const s = streamsArray[i];
-      streams.push(s.stream.pipe(s.isArray ? new ArraySerializationStream(s.name) : new SingleObjectSerializationStream(s.name)));
+      const serializedStream = s.stream.pipe(s.isArray ? new ArraySerializationStream(s.name) : new SingleObjectSerializationStream(s.name));
+      streams.push(serializedStream);
     }
 
     return new MultiStream(streams)
