@@ -50,10 +50,10 @@ class UsersRepository {
 
   /**
    * only for testing and built-in register
-   * @returns {Promise<UsersInfo[]>}
+   * @returns {Promise<{ id: string, username: string, events: any[] }[]>}
    */
   async getAllBuiltOnSystemStreams () {
-    const usersMap = await this.usersIndex.getAllMapUserIdByUsername();
+    const usersMap = await this.usersIndex.getAllByUsername();
     const users = [];
     for (const [username, userId] of Object.entries(usersMap)) {
       const user = await this.getUserBuiltOnSystemStreamsById(userId);
@@ -70,7 +70,7 @@ class UsersRepository {
    * @returns {Promise<void>}
    */
   async deleteAll () {
-    const usersMap = await this.usersIndex.getAllMapUserIdByUsername();
+    const usersMap = await this.usersIndex.getAllByUsername();
     for (const [, userId] of Object.entries(usersMap)) {
       await this.mall.deleteUser(userId);
     }
@@ -79,12 +79,11 @@ class UsersRepository {
   }
 
   /**
-   * Get an array of objects {id, username}
    * Used only by webhooks could be refactored
-   * @returns {Promise<any[]>}
+   * @returns {Promise<{ id: string, username: string }[]>}
    */
-  async getAllUsersNamesAndId () {
-    const usersMap = await this.usersIndex.getAllMapUserIdByUsername();
+  async getAllUsersIdAndName () {
+    const usersMap = await this.usersIndex.getAllByUsername();
     const users = [];
     for (const [username, userId] of Object.entries(usersMap)) {
       users.push({ id: userId, username });
@@ -102,7 +101,7 @@ class UsersRepository {
 
   /**
    * @param {string} userId
-   * @returns {Promise<any>}
+   * @returns {Promise<{ id: string, username: string, events: any[] }>}
    */
   async getUserBuiltOnSystemStreamsById (userId) {
     const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
@@ -362,7 +361,7 @@ class UsersRepository {
    * @returns {Promise<number>}
    */
   async count () {
-    const users = await this.usersIndex.getAllMapUserIdByUsername();
+    const users = await this.usersIndex.getAllByUsername();
     return Object.keys(users).length;
   }
 
