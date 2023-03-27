@@ -52,6 +52,10 @@ class Tracing {
    * index of the top stack element. To avoid using length-1
    */
   lastIndex;
+  /**
+   * keep timestamp when it was last used
+   */
+  lastUsedAt;
 
   history;
   constructor () {
@@ -59,8 +63,12 @@ class Tracing {
     this.spansStack = [];
     this.lastIndex = -1;
     this.history = [];
+    this.lastUsedAt = Date.now();
     // register tracer to Asynchronous Hooks
     ah.createRequestContext({ tracing: this });
+    setTimeout(() => {
+      this.checkIfFinished();
+    }, 100);
   }
 
   /**
@@ -98,6 +106,7 @@ class Tracing {
     const newSpan = this.tracer.startSpan(name, options);
     this.spansStack.push(newSpan);
     this.lastIndex++;
+    this.lastUsedAt = Date.now();
     return name;
   }
 
@@ -121,6 +130,7 @@ class Tracing {
     } else {
       span.setTag(key, value);
     }
+    this.lastUsedAt = Date.now();
   }
 
   /**
@@ -142,6 +152,7 @@ class Tracing {
     } else {
       span.log(data);
     }
+    this.lastUsedAt = Date.now();
   }
 
   /**
@@ -163,6 +174,7 @@ class Tracing {
     if (forceName != null) { span._operationName = forceName; }
     span.finish();
     this.lastIndex--;
+    this.lastUsedAt = Date.now();
     /// console.log('finishin span wid name', name, ', spans left:', this.lastIndex+1);
   }
 
@@ -175,16 +187,27 @@ class Tracing {
     this.tagSpan(name, Tags.ERROR, true);
     this.tagSpan(name, 'errorId', err.id);
     this.tagSpan(name, Tags.HTTP_STATUS_CODE, err.httpStatus || 500);
+    this.lastUsedAt = Date.now();
   }
 
   /**
    * @returns {void}
    */
   checkIfFinished () {
-    if (this.spansStack.length !== 0) {
+    if (this.spansStack.length === 0) return;
+    if (this.spansStack.length > 100) { // check envent infinite loops loops
       const remaining = this.spansStack.map((x) => x._operationName);
-      console.log(' Not done ', this.history, remaining);
+      console.log(' Tracing stack over 100 items ', this.history, remaining);
+      return;
     }
+    if (Date.now() - this.lastUsedAt > 500) { // check for non-closed trace
+      const remaining = this.spansStack.map((x) => x._operationName);
+      console.log(' Tracing last call was 500ms ago ', this.history, remaining);
+      return;
+    }
+    setTimeout(() => {
+      this.checkIfFinished();
+    }, 100); // recheck in 100ms
   }
 }
 

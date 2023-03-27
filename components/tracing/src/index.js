@@ -24,9 +24,6 @@ function initRootSpan (name, tags = {}) {
   const myTags = Object.assign(Object.assign({}, launchTags), tags);
   const tracing = new Tracing();
   tracing.startSpan(name, { tags: myTags });
-  setTimeout(() => {
-    tracing.checkIfFinished();
-  }, 5000);
   return tracing;
 }
 module.exports.initRootSpan = initRootSpan;
