@@ -47,7 +47,7 @@ module.exports = async function (context, callback) {
     await platformWideDB.init();
     // Retrieve all existing users
     const usersRepository = await getUsersRepository();
-    const users = await usersRepository.getAllBuiltOnSystemStreams();
+    const users = await usersRepository.getAll();
     const indexedFields = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix();
     for (let i = 0; i < users.length; i++) {
       const user = users[i];

@@ -52,13 +52,13 @@ class UsersRepository {
    * only for testing and built-in register
    * @returns {Promise<{ id: string, username: string, events: any[] }[]>}
    */
-  async getAllBuiltOnSystemStreams () {
+  async getAll () {
     const usersMap = await this.usersIndex.getAllByUsername();
     const users = [];
     for (const [username, userId] of Object.entries(usersMap)) {
-      const user = await this.getUserBuiltOnSystemStreamsById(userId);
+      const user = await this.getUserById(userId);
       if (user == null) {
-        throw new Error(`Repository inconsistency: user index lists user with id: "${userId}" and username: "${username}", but cannot get it with getUserBuiltOnSystemStreamsById()`);
+        throw new Error(`Repository inconsistency: user index lists user with id: "${userId}" and username: "${username}", but cannot get it with getUserById()`);
       }
       users.push(user);
     }
@@ -103,7 +103,7 @@ class UsersRepository {
    * @param {string} userId
    * @returns {Promise<{ id: string, username: string, events: any[] }>}
    */
-  async getUserBuiltOnSystemStreamsById (userId) {
+  async getUserById (userId) {
     const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
     const query = {
       state: 'all',
@@ -150,7 +150,7 @@ class UsersRepository {
   async getUserByUsername (username) {
     const userId = await this.getUserIdForUsername(username);
     if (userId) {
-      const user = await this.getUserBuiltOnSystemStreamsById(userId);
+      const user = await this.getUserById(userId);
       return user;
     }
     return null;
@@ -342,7 +342,7 @@ class UsersRepository {
    * @returns {Promise<number>}
    */
   async deleteOne (userId, username, skipFowardToRegister) {
-    const user = await this.getUserBuiltOnSystemStreamsById(userId);
+    const user = await this.getUserById(userId);
     if (username == null) {
       username = user?.username;
     }

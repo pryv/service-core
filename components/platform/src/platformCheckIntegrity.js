@@ -21,7 +21,7 @@ module.exports = async function platformCheckIntegrity (platformWideDB) {
   const errors = [];
   // Retrieve all existing users
   const usersRepository = await getUsersRepository();
-  const usersFromRepository = await usersRepository.getAllBuiltOnSystemStreams();
+  const usersFromRepository = await usersRepository.getAll();
   const indexedFields = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix();
 
   const infos = {

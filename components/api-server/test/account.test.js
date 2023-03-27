@@ -256,7 +256,7 @@ describe('[ACCO] account', function () {
       assert.approximately(storageUsed.attachedFiles, initialStorageUsed.attachedFiles +
         newAtt.size, filesystemBlockSize);
       const updatedStorageUsed = storageUsed;
-      const retrievedUser = await usersRepository.getUserBuiltOnSystemStreamsById(user.id);
+      const retrievedUser = await usersRepository.getUserById(user.id);
       assert.deepEqual(retrievedUser.storageUsed, updatedStorageUsed);
     });
 
@@ -302,7 +302,7 @@ describe('[ACCO] account', function () {
       const newAtt = testData.attachments.image;
       async.series([
         async function checkInitial () {
-          const retrievedUser = await usersRepository.getUserBuiltOnSystemStreamsById(user.id);
+          const retrievedUser = await usersRepository.getUserById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
         },
         function addAttachment (stepDone) {
@@ -314,7 +314,7 @@ describe('[ACCO] account', function () {
             });
         },
         async function checkUpdated () {
-          const retrievedUser = await usersRepository.getUserBuiltOnSystemStreamsById(user.id);
+          const retrievedUser = await usersRepository.getUserById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
           retrievedUser.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
           retrievedUser.storageUsed.attachedFiles.should.be.approximately(
