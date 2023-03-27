@@ -36,7 +36,7 @@ const business = require('business');
  * @returns {any}
  */
 function produceInfluxConnection () {
-  return new business.series.InfluxConnection({ host: 'localhost' });
+  return new business.series.InfluxConnection({ host: '127.0.0.1' });
 }
 exports.produceInfluxConnection = produceInfluxConnection;
 // Produces and returns a connection to MongoDB.

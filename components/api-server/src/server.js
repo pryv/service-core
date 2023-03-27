@@ -191,7 +191,7 @@ class Server {
     }
     const reportingSettings = this.config.get('reporting');
     const templateVersion = reportingSettings.templateVersion;
-    const reportingUrl = process.env.NODE_ENV === 'test' ? 'http://localhost:4001' : null;
+    const reportingUrl = process.env.NODE_ENV === 'test' ? 'http://127.0.0.1:4001' : null;
     const licenseName = reportingSettings.licenseName;
     const role = 'api-server';
     const mylog = function (str) {

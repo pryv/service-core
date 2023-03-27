@@ -25,7 +25,7 @@ describe('Mailing helper methods', () => {
   it('[HGVD] should throw an error if mailing method is invalid', () => {
     const emailSettings = {
       method: 'invalid',
-      url: 'https://localhost:9000/sendmail',
+      url: 'https://127.0.0.1:9000/sendmail',
       key: 'v3ryStrongK3y'
     };
 
@@ -36,7 +36,7 @@ describe('Mailing helper methods', () => {
 
   it('[OKQ2] should throw an error if mailing method is missing', () => {
     const emailSettings = {
-      url: 'https://localhost:9000/sendmail',
+      url: 'https://127.0.0.1:9000/sendmail',
       key: 'v3ryStrongK3y'
     };
 
@@ -91,7 +91,7 @@ describe('Mailing helper methods', () => {
   });
 
   describe('using Microservice', () => {
-    const baseURL = 'https://localhost:9000/sendmail/';
+    const baseURL = 'https://127.0.0.1:9000/sendmail/';
     const path = '/' + template + '/' + lang;
     const emailSettings = {
       method: 'microservice',
