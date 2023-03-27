@@ -358,14 +358,23 @@ class MallUserEvents {
    * @param {Array<string>} update.addStreams - array of streams ids to add to the events streamIds
    * @param {Array<string>} update.removeStreams - array of streams ids to be remove from the events streamIds
    * @param {Function} update.filter - function to filter events to update (return true to update)
+   * @param {Function} [forEachEvent] - each updated event is passed as parameter, null is passed after last event.
    * @param {MallTransaction} mallTransaction
-   * @returns {any} Array of updated events
+   * @returns {Array<Event>|null} Array of updated events or null if forEachEvent is provided
    */
-  async updateMany (userId, query, update, mallTransaction) {
-    const streamedUpdate = await this.updateStreamedMany(userId, query, update, mallTransaction);
+  async updateMany (userId, query, update, forEachEvent, mallTransaction) {
     const result = [];
+    const streamedUpdate = await this.updateStreamedMany(userId, query, update, mallTransaction);
     for await (const event of streamedUpdate) {
-      result.push(event);
+      if (forEachEvent != null) {
+        forEachEvent(event);
+      } else {
+        result.push(event);
+      }
+    }
+    if (forEachEvent != null) {
+      forEachEvent(null);
+      return null;
     }
     return result;
   }

@@ -664,7 +664,7 @@ describe('[STRE] streams', function () {
     });
   });
 
-  describe('DELETE /<id>', function () {
+  describe('[STRD] DELETE /<id>', function () {
     this.timeout(5000);
 
     beforeEach(resetData);
@@ -833,6 +833,8 @@ describe('[STRE] streams', function () {
       const deletedEventWithAtt = deletedEvents[0];
       let deletionTime;
 
+      const ADD_N_EVENTS = 100;
+
       async.series([
         function addEventAttachment (stepDone) {
           request.post('/' + user.username + '/events/' + deletedEventWithAtt.id)
@@ -843,6 +845,22 @@ describe('[STRE] streams', function () {
               eventsNotifCount = 0; // reset
               stepDone();
             });
+        },
+        async function fillStreamWithALotOfEvent () {
+          const mall = await getMall();
+          for (let i = 0; i < ADD_N_EVENTS; i++) {
+            await mall.events.create(user.id, {
+              id: 'cxxxxxxx' + i,
+              type: 'note/txt',
+              streamIds: [testData.streams[8].id],
+              content: '' + i,
+              time: timestamp.now(),
+              created: timestamp.now(),
+              createdBy: 'test',
+              modified: timestamp.now(),
+              modifiedBy: 'test'
+            });
+          }
         },
         async function trashStream () {
           await mall.streams.update(user.id, { id, trashed: true });
@@ -870,7 +888,7 @@ describe('[STRE] streams', function () {
           const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
           events = separatedEvents.events;
           const eventsWithoutHistory = testData.events.filter(e => e.headId == null);
-          (events.length + foundDeletedEvents.length).should.eql(eventsWithoutHistory.length, 'events');
+          (events.length + foundDeletedEvents.length).should.eql(eventsWithoutHistory.length + ADD_N_EVENTS, 'events');
 
           // validate account streams events
           const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
