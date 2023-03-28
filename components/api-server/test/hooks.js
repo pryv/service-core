@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+require('test-helpers/src/api-server-tests-config');
 const fs = require('fs');
 const { getConfig } = require('@pryv/boiler');
 const util = require('util');
@@ -21,7 +22,6 @@ async function initIndexPlatform () {
 exports.mochaHooks = {
   async beforeAll () {
     const config = await getConfig();
-
     // create preview directories that would normally be created in normal setup
     const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
     const previewsDirPath = config.get('eventFiles:previewsDirPath');

@@ -96,7 +96,7 @@ describe('accesses (personal)', function () {
             integrity.accesses.set(e);
           }
           for (const e of res.body.accesses) {
-            if (e.id === 'a_0') { e.lastUsed = 0; }
+            if (e.id === testData.accesses[0].id) { e.lastUsed = 0; }
           }
           validation.check(res, {
             status: 200,

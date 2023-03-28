@@ -6,8 +6,8 @@
  */
 const streams = require('./streams');
 const timestamp = require('unix-timestamp');
-
-module.exports = [
+const { runIdMap } = require('../runid');
+module.exports = runIdMap([
   {
     id: 'a_0',
     token: 'a_0_token',
@@ -164,4 +164,4 @@ module.exports = [
     calls: {},
     deleted: timestamp.now('-1m')
   } */
-];
+]);

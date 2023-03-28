@@ -186,10 +186,11 @@ describe('[ACCP] Access permissions', function () {
     // note: personal (i.e. full) access is implicitly covered by streams/events tests
 
     it('[BSFP] `get` must only return streams for which permissions are defined', function (done) {
+      const { runId } = require('test-helpers/src/runid');
       request.get(basePath, token(1)).query({ state: 'all' }).end(async function (res) {
         const expectedStreamids = [testData.streams[0].id, testData.streams[1].id, testData.streams[2].children[0].id];
         if (isAuditActive) {
-          expectedStreamids.push(':_audit:access-a_1');
+          expectedStreamids.push(':_audit:access-a_1-' + runId);
         }
         assert.exists(res.body.streams);
         res.body.streams.length.should.eql(expectedStreamids.length);

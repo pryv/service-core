@@ -4,8 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+const { runIdMap } = require('../runid');
 
-module.exports = [
+const events = [
   {
     id: 'u_0',
     username: 'userzero',
@@ -57,3 +58,7 @@ module.exports = [
     language: 'en',
   }, */
 ];
+
+runIdMap(events);
+runIdMap(events, 'email', '-', true);
+module.exports = events;

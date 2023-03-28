@@ -8,7 +8,7 @@ const streams = require('./streams');
 const timestamp = require('unix-timestamp');
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { integrity } = require('business');
-
+const { runId } = require('../runid');
 const events = [
   {
     id: getTestEventId(0),
@@ -20,13 +20,13 @@ const events = [
     description: 'First period event, with attachments',
     attachments: [
       {
-        id: 'document',
+        id: 'document-' + runId,
         fileName: 'document.pdf',
         type: 'application/pdf',
         size: 6701
       },
       {
-        id: 'image',
+        id: 'image-' + runId,
         fileName: 'image (space and special chars)é__.png',
         type: 'image/png',
         size: 2765
@@ -64,7 +64,7 @@ const events = [
     description: '陳容龍',
     attachments: [
       {
-        id: 'imageBigger',
+        id: 'imageBigger-' + runId,
         fileName: 'image-bigger.jpg',
         type: 'image/jpeg',
         size: 177476
@@ -196,7 +196,7 @@ const events = [
     tags: [],
     attachments: [
       {
-        id: 'animatedGif',
+        id: 'animatedGif-' + runId,
         fileName: 'animated.gif',
         type: 'image/gif',
         size: 88134
@@ -429,5 +429,5 @@ module.exports = events;
  */
 function getTestEventId (n) {
   n = n + '';
-  return 'cthisistesteventno' + (n.length >= 7 ? n : new Array(7 - n.length + 1).join('0') + n);
+  return 'cth' + runId + 'testeventno' + (n.length >= 7 ? n : new Array(7 - n.length + 1).join('0') + n);
 }

@@ -341,7 +341,7 @@ class UsersRepository {
    * @param {boolean | null} skipFowardToRegister
    * @returns {Promise<number>}
    */
-  async deleteOne (userId, username, skipFowardToRegister) {
+  async deleteOne (userId, username = null, skipFowardToRegister = false) {
     const user = await this.getUserById(userId);
     if (username == null) {
       username = user?.username;

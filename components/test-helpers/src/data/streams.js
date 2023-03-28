@@ -6,8 +6,8 @@
  */
 const timestamp = require('unix-timestamp');
 const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
-
-module.exports = [
+const { runIdStreamTree } = require('../runid');
+module.exports = runIdStreamTree([
   {
     id: 's_0',
     name: 'Root Stream 0',
@@ -248,4 +248,4 @@ module.exports = [
       }
     ]
   }
-];
+]);

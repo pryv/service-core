@@ -5,9 +5,9 @@
  * Proprietary and confidential
  */
 const accesses = require('./accesses');
-
+const { runIdMap } = require('../runid');
 module.exports = function (url) {
-  return [
+  return runIdMap([
     {
       id: 'b_0',
       name: 'Zero\'s First Access',
@@ -26,5 +26,5 @@ module.exports = function (url) {
       url,
       accessToken: accesses[3].token
     }
-  ];
+  ]);
 };

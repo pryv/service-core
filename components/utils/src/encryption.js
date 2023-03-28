@@ -49,7 +49,7 @@ exports.fileReadToken = function (fileId, accessId, accessToken, secret) {
  * @returns {Object} Contains `accessId` and `hmac` parts if successful; empty otherwise.
  */
 exports.parseFileReadToken = function (fileReadToken) {
-  const sepIndex = fileReadToken.indexOf('-');
+  const sepIndex = fileReadToken.lastIndexOf('-'); // take the lastIndexOf as "-" might appear un the accesId.
   if (sepIndex <= 0) {
     return {};
   }
@@ -74,6 +74,6 @@ function getFileHMAC (fileId, token, secret) {
   return base64HMAC
     .toString() // function signature says we might have a buffer here.
     .replace(/\//g, '_')
-    .replace(/\+/g, '-')
+    .replace(/\+/g, '_') // don't use '-' as it will be the seprator with the accesId
     .replace(/=/g, '');
 }

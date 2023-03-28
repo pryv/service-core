@@ -25,10 +25,17 @@ const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
 
+const { runId } = require('./runid');
+
 // users
 
 const users = (exports.users = require('./data/users'));
 const defaultUser = users[0];
+
+const userNamesToErase = [];
+exports.addUserToBeErased = function (userId) {
+  userNamesToErase.push(userId);
+};
 
 exports.resetUsers = async () => {
   logger.debug('resetUsers');
@@ -36,7 +43,15 @@ exports.resetUsers = async () => {
   await SystemStreamsSerializer.init();
   const customAccountProperties = buildCustomAccountProperties();
   const usersRepository = await getUsersRepository();
-  await usersRepository.deleteAll();
+  for (const user of users) {
+    await usersRepository.deleteOne(user.id);
+  }
+  while (userNamesToErase.length > 0) {
+    const userName = userNamesToErase.pop();
+    const userId = await usersRepository.getUserIdForUsername(userName);
+    if (userId != null) await usersRepository.deleteOne(userId);
+  }
+  // await usersRepository.deleteAll();
   for (const user of users) {
     const userObj = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
     await usersRepository.insertOne(userObj, false, true);
@@ -160,12 +175,12 @@ function resetData (storage, user, items, done) {
 const attachmentsDirPath = (exports.attachmentsDirPath = path.join(__dirname, '/data/attachments/'));
 
 const attachments = (exports.attachments = {
-  animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
-  document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
-  document_modified: getAttachmentInfo('document', 'document.modified.pdf', 'application/pdf'),
-  image: getAttachmentInfo('image', 'image (space and special chars)é__.png', 'image/png'),
-  imageBigger: getAttachmentInfo('imageBigger', 'image-bigger.jpg', 'image/jpeg'),
-  text: getAttachmentInfo('text', 'text.txt', 'text/plain')
+  animatedGif: getAttachmentInfo('animatedGif-' + runId, 'animated.gif', 'image/gif'),
+  document: getAttachmentInfo('document-' + runId, 'document.pdf', 'application/pdf'),
+  document_modified: getAttachmentInfo('document-' + runId, 'document.modified.pdf', 'application/pdf'),
+  image: getAttachmentInfo('image-' + runId, 'image (space and special chars)é__.png', 'image/png'),
+  imageBigger: getAttachmentInfo('imageBigger-' + runId, 'image-bigger.jpg', 'image/jpeg'),
+  text: getAttachmentInfo('text-' + runId, 'text.txt', 'text/plain')
 });
 
 // following https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
