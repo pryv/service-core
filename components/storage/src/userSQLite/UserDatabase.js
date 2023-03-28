@@ -5,6 +5,7 @@
  * Proprietary and confidential
  */
 
+const { concurentSafeWriteStatement, initWALLAndConcurentSafeWriteCapabilities } = require('../sqliteUtils/concurentSafeWriteStatement');
 const SQLite3 = require('better-sqlite3');
 const { Readable } = require('stream');
 
@@ -21,8 +22,6 @@ const tables = {
 };
 
 const ALL_EVENTS_TAG = events.ALL_EVENTS_TAG;
-
-const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25, 25, 50, 50, 100];
 
 /**
  * TODO: refactor the structure of tables and queries
@@ -54,10 +53,7 @@ class UserDatabase {
   }
 
   async init () {
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go below the second
-    this.db.unsafeMode(true);
-
+    await initWALLAndConcurentSafeWriteCapabilities(this.db);
     // here we might want to skip DB initialization if version is not null
 
     this.create = {};
@@ -66,7 +62,7 @@ class UserDatabase {
     this.delete = {};
 
     // create all tables
-    Object.keys(tables).forEach((tableName) => {
+    for (const tableName of Object.keys(tables)) {
       const columnsTypes = [];
       const indexes = [];
       const columnNames = Object.keys(tables[tableName]);
@@ -76,20 +72,24 @@ class UserDatabase {
         if (column.index) { indexes.push(columnName); }
       });
 
-      this.db.prepare('CREATE TABLE IF NOT EXISTS events ( ' +
-        columnsTypes.join(', ') +
-      ');').run();
-
-      indexes.forEach((columnName) => {
-        this.db.prepare(`CREATE INDEX IF NOT EXISTS ${tableName}_${columnName} ON ${tableName}(${columnName})`).run();
+      await concurentSafeWriteStatement(() => {
+        this.db.prepare('CREATE TABLE IF NOT EXISTS events ( ' +
+          columnsTypes.join(', ') +
+        ');').run();
       });
+
+      for (const columnName of indexes) {
+        await concurentSafeWriteStatement(() => {
+          this.db.prepare(`CREATE INDEX IF NOT EXISTS ${tableName}_${columnName} ON ${tableName}(${columnName})`).run();
+        });
+      }
 
       this.create[tableName] = this.db.prepare(`INSERT INTO ${tableName} (` +
         columnNames.join(', ') + ') VALUES (@' +
         columnNames.join(', @') + ')');
 
       this.getAll[tableName] = this.db.prepare(`SELECT * FROM ${tableName}`);
-    });
+    }
 
     // -- create FTS for streamIds on events
     createFTSFor(this.db, 'events', tables.events, ['streamIds']);
@@ -114,7 +114,7 @@ class UserDatabase {
     eventForDb.eventid = eventId;
     const update = this.db.prepare(queryString);
 
-    await this.concurentSafeWriteStatement(() => {
+    await concurentSafeWriteStatement(() => {
       const res = update.run(eventForDb);
       this.logger.debug('UPDATE events changes:' + res.changes + ' eventId:' + eventId + ' event:' + JSON.stringify(eventForDb));
       if (res.changes !== 1) {
@@ -138,7 +138,7 @@ class UserDatabase {
 
   async createEvent (event) {
     const eventForDb = eventSchemas.eventToDB(event);
-    await this.concurentSafeWriteStatement(() => {
+    await concurentSafeWriteStatement(() => {
       this.logger.debug('(async) CREATE event:' + JSON.stringify(eventForDb));
       this.create.events.run(eventForDb);
     });
@@ -153,7 +153,7 @@ class UserDatabase {
   }
 
   async deleteEventsHistory (eventId) {
-    await this.concurentSafeWriteStatement(() => {
+    await concurentSafeWriteStatement(() => {
       this.logger.debug('(async) DELETE event history for eventId:' + eventId);
       return this.delete.eventsByHeadId.run(eventId);
     });
@@ -161,7 +161,7 @@ class UserDatabase {
 
   async minimizeEventHistory (eventId, fieldsToRemove) {
     const minimizeHistoryStatement = `UPDATE events SET ${fieldsToRemove.map(field => `${field} = ${field === 'streamIds' ? '\'' + ALL_EVENTS_TAG + '\'' : 'NULL'}`).join(', ')} WHERE headId = ?`;
-    await this.concurentSafeWriteStatement(() => {
+    await concurentSafeWriteStatement(() => {
       this.logger.debug('(async) Minimize event history :' + minimizeHistoryStatement);
       this.db.prepare(minimizeHistoryStatement).run(eventId);
     });
@@ -176,7 +176,7 @@ class UserDatabase {
       const selectEventsToBeDeleted = prepareEventsGetQuery(params);
 
       for (const event of this.db.prepare(selectEventsToBeDeleted).iterate()) {
-        await this.concurentSafeWriteStatement(() => {
+        await concurentSafeWriteStatement(() => {
           this.logger.debug('  > DELETE event: ' + event.eventid);
           this.delete.eventById.run(event.eventid);
         });
@@ -185,7 +185,7 @@ class UserDatabase {
     }
     // else
     let res = null;
-    await this.concurentSafeWriteStatement(() => {
+    await concurentSafeWriteStatement(() => {
       this.logger.debug('DELETE events: ' + queryString);
       res = this.db.prepare(queryString).run();
     });
@@ -253,27 +253,6 @@ class UserDatabase {
 
   close () {
     this.db.close();
-  }
-
-  /**
-   * Will look "retries" times, in case of "SQLITE_BUSY".
-   * This is CPU intensive, but tests have shown this solution to be efficient
-   */
-  async concurentSafeWriteStatement (statement, retries = 100) {
-    for (let i = 0; i < retries; i++) {
-      try {
-        statement();
-        return;
-      } catch (error) {
-        if (error.code !== 'SQLITE_BUSY') { // ignore
-          throw error;
-        }
-        const waitTime = i > (WAIT_LIST_MS.length - 1) ? 100 : WAIT_LIST_MS[i];
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
-        this.logger.debug('SQLITE_BUSY, retrying in ' + waitTime + 'ms');
-      }
-    }
-    throw new Error('Failed write action on Audit after ' + retries + ' retries');
   }
 }
 

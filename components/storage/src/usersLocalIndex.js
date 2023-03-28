@@ -10,6 +10,7 @@
 
 const mkdirp = require('mkdirp');
 const SQLite3 = require('better-sqlite3');
+const { concurentSafeWriteStatement, initWALLAndConcurentSafeWriteCapabilities } = require('storage/src/sqliteUtils/concurentSafeWriteStatement');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const cache = require('cache');
@@ -68,7 +69,7 @@ class UsersLocalIndex {
   }
 
   async addUser (username, userId) {
-    this.db.addUser(username, userId);
+    await this.db.addUser(username, userId);
     logger.debug('addUser', username, userId);
   }
 
@@ -110,12 +111,12 @@ class UsersLocalIndex {
   async deleteAll () {
     logger.debug('deleteAll');
     cache.clear();
-    return this.db.deleteAll();
+    return await this.db.deleteAll();
   }
 
   async deleteById (userId) {
     logger.debug('deleteById', userId);
-    return this.db.deleteById(userId);
+    return await this.db.deleteById(userId);
   }
 }
 
@@ -142,10 +143,14 @@ class DBIndex {
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/user-index.db');
-    this.db.pragma('journal_mode = WAL');
+    await initWALLAndConcurentSafeWriteCapabilities(this.db);
 
-    this.db.prepare('CREATE TABLE IF NOT EXISTS id4name (username TEXT PRIMARY KEY, userId TEXT NOT NULL);').run();
-    this.db.prepare('CREATE INDEX IF NOT EXISTS id4name_id ON id4name(userId);').run();
+    concurentSafeWriteStatement(() => {
+      this.db.prepare('CREATE TABLE IF NOT EXISTS id4name (username TEXT PRIMARY KEY, userId TEXT NOT NULL);').run();
+    });
+    concurentSafeWriteStatement(() => {
+      this.db.prepare('CREATE INDEX IF NOT EXISTS id4name_id ON id4name(userId);').run();
+    });
 
     this.queryGetIdForName = this.db.prepare('SELECT userId FROM id4name WHERE username = ?');
     this.queryGetNameForId = this.db.prepare('SELECT username FROM id4name WHERE userId = ?');
@@ -163,12 +168,18 @@ class DBIndex {
     return this.queryGetNameForId.get(userId)?.username;
   }
 
-  addUser (username, userId) {
-    return this.queryInsert.run({ username, userId });
+  async addUser (username, userId) {
+    let res = null;
+    await concurentSafeWriteStatement(() => {
+      res = this.queryInsert.run({ username, userId });
+    });
+    return res;
   }
 
-  deleteById (userId) {
-    return this.queryDeleteById.run({ userId });
+  async deleteById (userId) {
+    await concurentSafeWriteStatement(() => {
+      return this.queryDeleteById.run({ userId });
+    });
   }
 
   /**
@@ -182,8 +193,10 @@ class DBIndex {
     return users;
   }
 
-  deleteAll () {
-    return this.queryDeleteAll.run();
+  async deleteAll () {
+    concurentSafeWriteStatement(() => {
+      return this.queryDeleteAll.run();
+    });
   }
 }
 

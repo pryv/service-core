@@ -10,6 +10,7 @@ const SQLite3 = require('better-sqlite3');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform:db');
+const { concurentSafeWriteStatement, initWALLAndConcurentSafeWriteCapabilities } = require('storage/src/sqliteUtils/concurentSafeWriteStatement');
 
 class DB {
   db;
@@ -21,10 +22,11 @@ class DB {
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/platform-wide.db');
-    this.db.pragma('journal_mode = WAL');
+    await initWALLAndConcurentSafeWriteCapabilities(this.db);
 
-    this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
-
+    await concurentSafeWriteStatement(() => {
+      this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
+    });
     this.queries = {};
     this.queries.getValueWithKey = this.db.prepare('SELECT key, value FROM keyValue WHERE key = ?');
     this.queries.upsertUniqueKeyValue = this.db.prepare('INSERT OR REPLACE INTO keyValue (key, value) VALUES (@key, @value);');
@@ -76,17 +78,23 @@ class DB {
 
   async setUserUniqueField (username, field, value) {
     const key = getUserUniqueKey(field, value);
-    this.set(key, username);
+    await concurentSafeWriteStatement(() => {
+      this.set(key, username);
+    });
   }
 
   async deleteUserUniqueField (field, value) {
     const key = getUserUniqueKey(field, value);
-    this.delete(key);
+    await concurentSafeWriteStatement(() => {
+      this.delete(key);
+    });
   }
 
   async setUserIndexedField (username, field, value) {
     const key = getUserIndexedKey(username, field);
-    this.set(key, value);
+    await concurentSafeWriteStatement(() => {
+      this.set(key, value);
+    });
   }
 
   async deleteUserIndexedField (username, field) {
