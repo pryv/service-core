@@ -10,6 +10,7 @@ const SQLite3 = require('better-sqlite3');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform:db');
+const concurrentSafeWrite = require('storage/src/sqliteUtils/concurrentSafeWrite');
 
 class DB {
   db;
@@ -21,10 +22,11 @@ class DB {
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/platform-wide.db');
-    this.db.pragma('journal_mode = WAL');
+    await concurrentSafeWrite.initWALAndConcurrentSafeWriteCapabilities(this.db);
 
-    this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
-
+    await concurrentSafeWrite.execute(() => {
+      this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
+    });
     this.queries = {};
     this.queries.getValueWithKey = this.db.prepare('SELECT key, value FROM keyValue WHERE key = ?');
     this.queries.upsertUniqueKeyValue = this.db.prepare('INSERT OR REPLACE INTO keyValue (key, value) VALUES (@key, @value);');
@@ -52,46 +54,59 @@ class DB {
   }
 
   /**
-   *
    * @param {string} key
    * @param {string} value
    * @returns
    */
-  set (key, value) {
+  async set (key, value) {
     logger.debug('set', key, value);
-    return this.queries.upsertUniqueKeyValue.run({ key, value });
+    let result;
+    await concurrentSafeWrite.execute(() => {
+      result = this.queries.upsertUniqueKeyValue.run({ key, value });
+    });
+    return result;
   }
 
-  delete (key) {
+  /**
+   * @param {string} key
+   * @returns
+   */
+  async delete (key) {
     logger.debug('delete', key);
-    return this.queries.deleteWithKey.run(key);
+    let result;
+    await concurrentSafeWrite.execute(() => {
+      result = this.queries.deleteWithKey.run(key);
+    });
+    return result;
   }
 
-  deleteAll () {
+  async deleteAll () {
     logger.debug('deleteAll');
-    this.queries.deleteAll.run();
+    await concurrentSafeWrite.execute(() => {
+      this.queries.deleteAll.run();
+    });
   }
 
   // ----- utilities ------- //
 
   async setUserUniqueField (username, field, value) {
     const key = getUserUniqueKey(field, value);
-    this.set(key, username);
+    await this.set(key, username);
   }
 
   async deleteUserUniqueField (field, value) {
     const key = getUserUniqueKey(field, value);
-    this.delete(key);
+    await this.delete(key);
   }
 
   async setUserIndexedField (username, field, value) {
     const key = getUserIndexedKey(username, field);
-    this.set(key, value);
+    await this.set(key, value);
   }
 
   async deleteUserIndexedField (username, field) {
     const key = getUserIndexedKey(username, field);
-    this.delete(key);
+    await this.delete(key);
   }
 
   async getUserIndexedField (username, field) {

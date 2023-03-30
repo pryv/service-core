@@ -5,16 +5,11 @@
  * Proprietary and confidential
  */
 
-const userSQLite = require('../../src/userSQLite');
+const concurrentSafeWrite = require('../../src/sqliteUtils/concurrentSafeWrite');
 const { assert } = require('chai');
-const cuid = require('cuid');
 
 describe('[UCSQ] userSQLite Storage concurent Writes', () => {
-  let userStorage;
-
   before(async () => {
-    const sqliteStorageManager = await userSQLite.getStorage('test');
-    userStorage = await sqliteStorageManager.forUser(cuid());
   });
 
   it('[69AH] should retry when SQLITE_BUSY', async () => {
@@ -23,10 +18,9 @@ describe('[UCSQ] userSQLite Storage concurent Writes', () => {
     function statement () {
       callCount++;
       if (callCount > 20) return true;
-      // eslint-disable-next-line no-throw-literal
-      throw { code: 'SQLITE_BUSY' };
+      throw mockBusyError();
     }
-    await userStorage.concurentSafeWriteStatement(statement, 21);
+    await concurrentSafeWrite.execute(statement, 21);
     assert.equal(callCount, 21);
   });
 
@@ -36,14 +30,17 @@ describe('[UCSQ] userSQLite Storage concurent Writes', () => {
     function statement () {
       callCount++;
       if (callCount > 20) return true;
-      // eslint-disable-next-line no-throw-literal
-      throw { code: 'SQLITE_BUSY' };
+      throw mockBusyError();
     }
     try {
-      await userStorage.concurentSafeWriteStatement(statement, 5);
+      await concurrentSafeWrite.execute(statement, 5);
       assert.isTrue(false, 'should not be reached');
     } catch (err) {
-      assert.equal(err.message, 'Failed write action on Audit after 5 retries');
+      assert.equal(err.message, 'Failed write action on SQLite after 5 retries');
     }
   });
 });
+
+function mockBusyError () {
+  return Object.assign(new Error(), { code: 'SQLITE_BUSY' });
+}
