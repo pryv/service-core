@@ -116,7 +116,7 @@ class UserDatabase {
 
     await concurrentSafeWrite.execute(() => {
       const res = update.run(eventForDb);
-      this.logger.debug('UPDATE events changes:' + res.changes + ' eventId:' + eventId + ' event:' + JSON.stringify(eventForDb));
+      this.logger.debug(`UPDATE events changes: ${res.changes} eventId: ${eventId} event: ${JSON.stringify(eventForDb)}`);
       if (res.changes !== 1) {
         throw new Error('Event not found');
       }
@@ -132,14 +132,14 @@ class UserDatabase {
    */
   createEventSync (event) {
     const eventForDb = eventSchemas.eventToDB(event);
-    this.logger.debug('(sync) CREATE event:' + JSON.stringify(eventForDb));
+    this.logger.debug(`(sync) CREATE event: ${JSON.stringify(eventForDb)}`);
     this.create.events.run(eventForDb);
   }
 
   async createEvent (event) {
     const eventForDb = eventSchemas.eventToDB(event);
+    this.logger.debug(`(async) CREATE event: ${JSON.stringify(eventForDb)}`);
     await concurrentSafeWrite.execute(() => {
-      this.logger.debug('(async) CREATE event:' + JSON.stringify(eventForDb));
       this.create.events.run(eventForDb);
     });
   }
@@ -153,16 +153,16 @@ class UserDatabase {
   }
 
   async deleteEventsHistory (eventId) {
+    this.logger.debug(`(async) DELETE event history for eventId: ${eventId}`);
     await concurrentSafeWrite.execute(() => {
-      this.logger.debug('(async) DELETE event history for eventId:' + eventId);
       return this.delete.eventsByHeadId.run(eventId);
     });
   }
 
   async minimizeEventHistory (eventId, fieldsToRemove) {
     const minimizeHistoryStatement = `UPDATE events SET ${fieldsToRemove.map(field => `${field} = ${field === 'streamIds' ? '\'' + ALL_EVENTS_TAG + '\'' : 'NULL'}`).join(', ')} WHERE headId = ?`;
+    this.logger.debug(`(async) Minimize event history: ${minimizeHistoryStatement}`);
     await concurrentSafeWrite.execute(() => {
-      this.logger.debug('(async) Minimize event history :' + minimizeHistoryStatement);
       this.db.prepare(minimizeHistoryStatement).run(eventId);
     });
   }
@@ -170,14 +170,14 @@ class UserDatabase {
   async deleteEvents (params) {
     const queryString = prepareEventsDeleteQuery(params);
     if (queryString.indexOf('MATCH') > 0) {
-      this.logger.debug('DELETE events one by one as queryString includes MATCH: ' + queryString);
+      this.logger.debug(`DELETE events one by one as queryString includes MATCH: ${queryString}`);
       // SQLite does not know how to delete with "MATCH" statement
       // going by the doddgy task of getting events that matches the query and deleting them one by one
       const selectEventsToBeDeleted = prepareEventsGetQuery(params);
 
       for (const event of this.db.prepare(selectEventsToBeDeleted).iterate()) {
+        this.logger.debug(`  > DELETE event: ${event.eventid}`);
         await concurrentSafeWrite.execute(() => {
-          this.logger.debug('  > DELETE event: ' + event.eventid);
           this.delete.eventById.run(event.eventid);
         });
       }
@@ -185,15 +185,15 @@ class UserDatabase {
     }
     // else
     let res = null;
+    this.logger.debug(`DELETE events: ${queryString}`);
     await concurrentSafeWrite.execute(() => {
-      this.logger.debug('DELETE events: ' + queryString);
       res = this.db.prepare(queryString).run();
     });
     return res;
   }
 
   getOneEvent (eventId) {
-    this.logger.debug('GET ONE event: ' + eventId);
+    this.logger.debug(`GET ONE event: ${eventId}`);
     const event = this.get.eventById.get(eventId);
     if (event == null) return null;
     return eventSchemas.eventFromDB(event);
@@ -202,7 +202,7 @@ class UserDatabase {
   getEvents (params) {
     const queryString = prepareEventsGetQuery(params);
 
-    this.logger.debug('GET Events:' + queryString);
+    this.logger.debug(`GET Events: ${queryString}`);
     const res = this.db.prepare(queryString).all();
     if (res != null) {
       return res.map(eventSchemas.eventFromDB);
@@ -212,18 +212,18 @@ class UserDatabase {
 
   getEventsStream (params) {
     const queryString = prepareEventsGetQuery(params);
-    this.logger.debug('GET Events Stream: ' + queryString);
+    this.logger.debug(`GET Events Stream: ${queryString}`);
     const query = this.db.prepare(queryString);
     return this.readableEventsStreamForIterator(query.iterate());
   }
 
   getEventsDeletionsStream (deletedSince) {
-    this.logger.debug('GET Events Deletions since: ' + deletedSince);
+    this.logger.debug(`GET Events Deletions since: ${deletedSince}`);
     return this.readableEventsStreamForIterator(this.get.eventsDeletedSince.iterate(deletedSince));
   }
 
   getEventsHistory (eventId) {
-    this.logger.debug('GET Events History for: ' + eventId);
+    this.logger.debug(`GET Events History for: ${eventId}`);
     return this.get.eventHistory.all(eventId).map(eventSchemas.historyEventFromDB);
   }
 
@@ -257,7 +257,7 @@ class UserDatabase {
 }
 
 function prepareEventsDeleteQuery (params) {
-  if (params.streams) { throw new Error('events DELETE with stream query not supported yet: ' + JSON.stringify(params)); }
+  if (params.streams) { throw new Error(`Events DELETE with stream query not supported yet: ${JSON.stringify(params)}`); }
   return 'DELETE FROM events ' + prepareQuery(params, true);
 }
 

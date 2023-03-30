@@ -169,11 +169,11 @@ class DBIndex {
   }
 
   async addUser (username, userId) {
-    let res = null;
+    let result = null;
     await concurrentSafeWrite.execute(() => {
-      res = this.queryInsert.run({ username, userId });
+      result = this.queryInsert.run({ username, userId });
     });
-    return res;
+    return result;
   }
 
   async deleteById (userId) {

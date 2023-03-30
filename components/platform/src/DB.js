@@ -54,52 +54,59 @@ class DB {
   }
 
   /**
-   *
    * @param {string} key
    * @param {string} value
    * @returns
    */
-  set (key, value) {
+  async set (key, value) {
     logger.debug('set', key, value);
-    return this.queries.upsertUniqueKeyValue.run({ key, value });
+    let result;
+    await concurrentSafeWrite.execute(() => {
+      result = this.queries.upsertUniqueKeyValue.run({ key, value });
+    });
+    return result;
   }
 
-  delete (key) {
+  /**
+   * @param {string} key
+   * @returns
+   */
+  async delete (key) {
     logger.debug('delete', key);
-    return this.queries.deleteWithKey.run(key);
+    let result;
+    await concurrentSafeWrite.execute(() => {
+      result = this.queries.deleteWithKey.run(key);
+    });
+    return result;
   }
 
-  deleteAll () {
+  async deleteAll () {
     logger.debug('deleteAll');
-    this.queries.deleteAll.run();
+    await concurrentSafeWrite.execute(() => {
+      this.queries.deleteAll.run();
+    });
   }
 
   // ----- utilities ------- //
 
   async setUserUniqueField (username, field, value) {
     const key = getUserUniqueKey(field, value);
-    await concurrentSafeWrite.execute(() => {
-      this.set(key, username);
-    });
+    await this.set(key, username);
   }
 
   async deleteUserUniqueField (field, value) {
     const key = getUserUniqueKey(field, value);
-    await concurrentSafeWrite.execute(() => {
-      this.delete(key);
-    });
+    await this.delete(key);
   }
 
   async setUserIndexedField (username, field, value) {
     const key = getUserIndexedKey(username, field);
-    await concurrentSafeWrite.execute(() => {
-      this.set(key, value);
-    });
+    await this.set(key, value);
   }
 
   async deleteUserIndexedField (username, field) {
     const key = getUserIndexedKey(username, field);
-    this.delete(key);
+    await this.delete(key);
   }
 
   async getUserIndexedField (username, field) {
