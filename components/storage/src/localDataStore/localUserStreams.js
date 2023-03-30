@@ -27,9 +27,7 @@ module.exports = ds.createUserStreams({
   },
 
   async get (userId, query) {
-    if (query.parentId != null) throw new Error('Should not happen');
-    const parentId = query.parentId || '*';
-    const parent = await this._genericGet(userId, parentId, query);
+    const parent = await this._genericGet(userId, '*', query);
     if (parent == null) return [];
     return parent.children;
   },
