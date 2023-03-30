@@ -27,14 +27,20 @@ module.exports = ds.createUserStreams({
   },
 
   async get (userId, query) {
+    if (query.parentId != null) throw new Error('Should not happen');
     const parentId = query.parentId || '*';
-    const parent = await this.getOne(userId, parentId, query);
+    const parent = await this._genericGet(userId, parentId, query);
     if (parent == null) return [];
     return parent.children;
   },
 
-  // TODO refactor: this method shouldn't deal with "*" – seems clearer to move the children stuff over to `get()`
   async getOne (userId, streamId, query) {
+    if (streamId === '*' || streamId == null) throw new Error('Should not happen');
+    return this._genericGet(userId, streamId, query);
+  },
+
+  // TODO refactor: this method shouldn't deal with "*" – seems clearer to move the children stuff over to `get()`
+  async _genericGet (userId, streamId, query) {
     const allStreamsForAccount = await this._getAllStreamsFromAccountAndCache(userId);
     let stream = null;
 
