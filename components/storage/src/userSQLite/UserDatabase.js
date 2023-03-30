@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-const { concurentSafeWriteStatement, initWALLAndConcurentSafeWriteCapabilities } = require('../sqliteUtils/concurentSafeWriteStatement');
+const concurrentSafeWrite = require('../sqliteUtils/concurrentSafeWrite');
 const SQLite3 = require('better-sqlite3');
 const { Readable } = require('stream');
 
@@ -53,7 +53,7 @@ class UserDatabase {
   }
 
   async init () {
-    await initWALLAndConcurentSafeWriteCapabilities(this.db);
+    await concurrentSafeWrite.initWALAndConcurrentSafeWriteCapabilities(this.db);
     // here we might want to skip DB initialization if version is not null
 
     this.create = {};
@@ -72,14 +72,14 @@ class UserDatabase {
         if (column.index) { indexes.push(columnName); }
       });
 
-      await concurentSafeWriteStatement(() => {
+      await concurrentSafeWrite.execute(() => {
         this.db.prepare('CREATE TABLE IF NOT EXISTS events ( ' +
           columnsTypes.join(', ') +
         ');').run();
       });
 
       for (const columnName of indexes) {
-        await concurentSafeWriteStatement(() => {
+        await concurrentSafeWrite.execute(() => {
           this.db.prepare(`CREATE INDEX IF NOT EXISTS ${tableName}_${columnName} ON ${tableName}(${columnName})`).run();
         });
       }
@@ -114,7 +114,7 @@ class UserDatabase {
     eventForDb.eventid = eventId;
     const update = this.db.prepare(queryString);
 
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       const res = update.run(eventForDb);
       this.logger.debug('UPDATE events changes:' + res.changes + ' eventId:' + eventId + ' event:' + JSON.stringify(eventForDb));
       if (res.changes !== 1) {
@@ -138,7 +138,7 @@ class UserDatabase {
 
   async createEvent (event) {
     const eventForDb = eventSchemas.eventToDB(event);
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       this.logger.debug('(async) CREATE event:' + JSON.stringify(eventForDb));
       this.create.events.run(eventForDb);
     });
@@ -153,7 +153,7 @@ class UserDatabase {
   }
 
   async deleteEventsHistory (eventId) {
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       this.logger.debug('(async) DELETE event history for eventId:' + eventId);
       return this.delete.eventsByHeadId.run(eventId);
     });
@@ -161,7 +161,7 @@ class UserDatabase {
 
   async minimizeEventHistory (eventId, fieldsToRemove) {
     const minimizeHistoryStatement = `UPDATE events SET ${fieldsToRemove.map(field => `${field} = ${field === 'streamIds' ? '\'' + ALL_EVENTS_TAG + '\'' : 'NULL'}`).join(', ')} WHERE headId = ?`;
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       this.logger.debug('(async) Minimize event history :' + minimizeHistoryStatement);
       this.db.prepare(minimizeHistoryStatement).run(eventId);
     });
@@ -176,7 +176,7 @@ class UserDatabase {
       const selectEventsToBeDeleted = prepareEventsGetQuery(params);
 
       for (const event of this.db.prepare(selectEventsToBeDeleted).iterate()) {
-        await concurentSafeWriteStatement(() => {
+        await concurrentSafeWrite.execute(() => {
           this.logger.debug('  > DELETE event: ' + event.eventid);
           this.delete.eventById.run(event.eventid);
         });
@@ -185,7 +185,7 @@ class UserDatabase {
     }
     // else
     let res = null;
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       this.logger.debug('DELETE events: ' + queryString);
       res = this.db.prepare(queryString).run();
     });

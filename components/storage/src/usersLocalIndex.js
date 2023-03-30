@@ -10,7 +10,7 @@
 
 const mkdirp = require('mkdirp');
 const SQLite3 = require('better-sqlite3');
-const { concurentSafeWriteStatement, initWALLAndConcurentSafeWriteCapabilities } = require('storage/src/sqliteUtils/concurentSafeWriteStatement');
+const concurrentSafeWrite = require('./sqliteUtils/concurrentSafeWrite');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const cache = require('cache');
@@ -40,7 +40,7 @@ class UsersLocalIndex {
 
   /**
    * Check the integrity of the userIndex compared to the username events in SystemStreams
-   * @returns {Object} With `errors` an array of error messages if discrepencies are found
+   * @returns {Promise<Object>} With `errors` an array of error messages if discrepencies are found
    */
   async checkIntegrity () {
     const errors = [];
@@ -143,12 +143,12 @@ class DBIndex {
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/user-index.db');
-    await initWALLAndConcurentSafeWriteCapabilities(this.db);
+    await concurrentSafeWrite.initWALAndConcurrentSafeWriteCapabilities(this.db);
 
-    concurentSafeWriteStatement(() => {
+    concurrentSafeWrite.execute(() => {
       this.db.prepare('CREATE TABLE IF NOT EXISTS id4name (username TEXT PRIMARY KEY, userId TEXT NOT NULL);').run();
     });
-    concurentSafeWriteStatement(() => {
+    concurrentSafeWrite.execute(() => {
       this.db.prepare('CREATE INDEX IF NOT EXISTS id4name_id ON id4name(userId);').run();
     });
 
@@ -170,14 +170,14 @@ class DBIndex {
 
   async addUser (username, userId) {
     let res = null;
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       res = this.queryInsert.run({ username, userId });
     });
     return res;
   }
 
   async deleteById (userId) {
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       return this.queryDeleteById.run({ userId });
     });
   }
@@ -194,7 +194,7 @@ class DBIndex {
   }
 
   async deleteAll () {
-    concurentSafeWriteStatement(() => {
+    concurrentSafeWrite.execute(() => {
       return this.queryDeleteAll.run();
     });
   }

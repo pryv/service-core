@@ -10,7 +10,7 @@ const SQLite3 = require('better-sqlite3');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform:db');
-const { concurentSafeWriteStatement, initWALLAndConcurentSafeWriteCapabilities } = require('storage/src/sqliteUtils/concurentSafeWriteStatement');
+const concurrentSafeWrite = require('storage/src/sqliteUtils/concurrentSafeWrite');
 
 class DB {
   db;
@@ -22,9 +22,9 @@ class DB {
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/platform-wide.db');
-    await initWALLAndConcurentSafeWriteCapabilities(this.db);
+    await concurrentSafeWrite.initWALAndConcurrentSafeWriteCapabilities(this.db);
 
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       this.db.prepare('CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
     });
     this.queries = {};
@@ -78,21 +78,21 @@ class DB {
 
   async setUserUniqueField (username, field, value) {
     const key = getUserUniqueKey(field, value);
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       this.set(key, username);
     });
   }
 
   async deleteUserUniqueField (field, value) {
     const key = getUserUniqueKey(field, value);
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       this.delete(key);
     });
   }
 
   async setUserIndexedField (username, field, value) {
     const key = getUserIndexedKey(username, field);
-    await concurentSafeWriteStatement(() => {
+    await concurrentSafeWrite.execute(() => {
       this.set(key, value);
     });
   }
