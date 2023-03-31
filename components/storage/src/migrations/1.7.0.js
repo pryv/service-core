@@ -72,7 +72,12 @@ module.exports = async function (context, callback) {
           }
         }
       };
-      if (isUniqueEvent(event.streamIds)) { request.updateOne.update.$unset = buildUniquePropsToDelete(event); }
+      if (isUniqueEvent(event.streamIds)) {
+        request.updateOne.update.$unset = buildUniquePropsToDelete(event);
+      }
+      if (request.updateOne.update.$unset != null && Object.keys(request.updateOne.update.$unset).length === 0) {
+        delete request.updateOne.update.$unset; // happend on partially migrated items.
+      }
       // console.log('translated to', JSON.stringify(request,null,2));
       requests.push(request);
       if (requests.length > BUFFER_SIZE) { requests = await flushToDb(requests, eventsCollection); }
