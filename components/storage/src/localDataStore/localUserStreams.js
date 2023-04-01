@@ -4,7 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const bluebird = require('bluebird');
+const assert = require('assert');
 const _ = require('lodash');
 const cache = require('cache');
 const ds = require('@pryv/datastore');
@@ -13,6 +15,7 @@ const { StreamProperties } = require('business/src/streams');
 const StreamPropsWithoutChildren = StreamProperties.filter((p) => p !== 'children');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
 let visibleStreamsTree = [];
+
 /**
  * Local data store: streams implementation.
  */
@@ -27,41 +30,48 @@ module.exports = ds.createUserStreams({
   },
 
   async get (userId, query) {
-    const parent = await this._genericGet(userId, '*', query);
-    if (parent == null) return [];
-    return parent.children;
+    const allStreams = await this._getAllFromAccountAndCache(userId);
+    if (query.includeTrashed) {
+      return structuredClone(allStreams);
+    } else {
+      // i.e. default behavior (return non-trashed items)
+      return treeUtils.filterTree(allStreams, false /* no orphans */, (stream) => !stream.trashed);
+    }
   },
 
   async getOne (userId, streamId, query) {
-    if (streamId === '*' || streamId == null) throw new Error('Should not happen');
-    return this._genericGet(userId, streamId, query);
-  },
+    assert.ok(streamId !== '*' && streamId != null);
 
-  // TODO refactor: this method shouldn't deal with "*" – seems clearer to move the children stuff over to `get()`
-  async _genericGet (userId, streamId, query) {
-    const allStreamsForAccount = await this._getAllStreamsFromAccountAndCache(userId);
+    const allStreams = await this._getAllFromAccountAndCache(userId);
     let stream = null;
 
-    if (streamId === '*' || streamId == null) {
-      // assert: params.childrenDepth === -1, see "#*" case
-      stream = {
-        children: clone(allStreamsForAccount) // clone to be sure they can be mutated without touching the cache
-      };
-    } else {
-      const foundStream = treeUtils.findById(allStreamsForAccount, streamId); // find the stream
-      const includeChildren = query.childrenDepth !== 0;
-      if (foundStream != null) { stream = cloneStream(foundStream, includeChildren); } // clone to be sure they can be mutated without touching the cache
+    const foundStream = treeUtils.findById(allStreams, streamId); // find the stream
+    if (foundStream != null) {
+      const childrenDepth = Object.hasOwnProperty.call(query, 'childrenDepth') ? query.childrenDepth : -1;
+      stream = cloneStream(foundStream, childrenDepth);
     }
 
     if (stream == null) return null;
 
-    // filtering ---
     if (!query.includeTrashed) {
       if (stream.trashed) return null;
-      // i.e. === 'default' (return non-trashed items)
+      // i.e. default behavior (return non-trashed items)
       stream.children = treeUtils.filterTree(stream.children, false /* no orphans */, (stream) => !stream.trashed);
     }
+
     return stream;
+  },
+
+  async _getAllFromAccountAndCache (userId) {
+    let allStreamsForAccount = cache.getStreams(userId, 'local');
+    if (allStreamsForAccount != null) return allStreamsForAccount;
+
+    // get from DB
+    allStreamsForAccount = await bluebird.fromCallback((cb) => this.userStreamsStorage.find({ id: userId }, {}, null, cb));
+    // add system streams
+    allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
+    cache.setStreams(userId, 'local', allStreamsForAccount);
+    return allStreamsForAccount;
   },
 
   /**
@@ -115,44 +125,26 @@ module.exports = ds.createUserStreams({
 
   async _getUserStorageSize (userId) {
     return await this.userStreamsStorage.getTotalSize(userId);
-  },
-
-  async _getAllStreamsFromAccountAndCache (userId) {
-    let allStreamsForAccount = cache.getStreams(userId, 'local');
-    if (allStreamsForAccount != null) return allStreamsForAccount;
-
-    // get from DB
-    allStreamsForAccount = await bluebird.fromCallback((cb) => this.userStreamsStorage.find({ id: userId }, {}, null, cb));
-    // add system streams
-    allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
-    cache.setStreams(userId, 'local', allStreamsForAccount);
-    return allStreamsForAccount;
   }
 });
 
 /**
- * @param {any} obj
- * @returns {any}
+ * @param {object} stream
+ * @param {number} childrenDepth
+ * @returns {object}
  */
-function clone (obj) {
-  // Clone streams -- BAd BaD -- To be optimized
-  return _.cloneDeep(obj);
-}
-
-/**
- * @param {Stream} storeStream
- * @param {boolean} includeChildren
- * @returns {any}
- */
-function cloneStream (storeStream, includeChildren) {
-  if (includeChildren) {
-    return clone(storeStream);
+function cloneStream (stream, childrenDepth) {
+  if (childrenDepth === -1) {
+    return structuredClone(stream);
   } else {
-    // _.pick() creates a copy
-    const stream = _.pick(storeStream, StreamPropsWithoutChildren);
-    stream.childrenHidden = true;
-    stream.children = [];
-    return stream;
+    const copy = _.pick(stream, StreamPropsWithoutChildren);
+    if (childrenDepth === 0) {
+      copy.childrenHidden = true;
+      copy.children = [];
+    } else if (stream.children) {
+      copy.children = stream.children.map((s) => cloneStream(s, childrenDepth - 1));
+    }
+    return copy;
   }
 }
 
