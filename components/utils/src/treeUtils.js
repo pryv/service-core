@@ -5,25 +5,27 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Helper methods for handling tree object structures.
  * Here 'tree' means a recursive array of objects with a 'children' property.
  */
-const _ = require('lodash');
+
 /**
  * Items whose parent id refer to an item absent from the array are filtered out.
  * Items with no parent id are just left as they are.
+ * The result is made from copies of the original items (which are left untouched).
  *
  * @param {Boolean} stripParentIds Optional, default: false
  */
 exports.buildTree = function (array, stripParentIds) {
-  if (!_.isArray(array)) {
+  if (!Array.isArray(array)) {
     throw new Error('Invalid argument: expected an array');
   }
   const map = {};
   array.forEach(function (item) {
     verifyFlatItem(item);
-    const clone = _.clone(item);
+    const clone = structuredClone(item);
     if (item.hasOwnProperty('parentId')) {
       clone.children = [];
     }
@@ -50,6 +52,7 @@ exports.buildTree = function (array, stripParentIds) {
   });
   return result;
 };
+
 /**
  * @returns {void}
  */
@@ -58,20 +61,27 @@ function verifyFlatItem (item) {
     throw new Error('Invalid object structure: expected property "id"');
   }
 }
+
+/**
+ * The result is made from copies of the original items (which are left untouched).
+ * @param {any[]} array
+ * @returns {any[]}
+ */
 exports.flattenTreeWithoutParents = function (array) {
-  if (!_.isArray(array)) {
+  if (!Array.isArray(array)) {
     throw new Error('Invalid argument: expected an array');
   }
   const result = [];
   flattenRecursiveWithoutParents(array, null, result);
   return result;
 };
+
 /**
  * @returns {void}
  */
 function flattenRecursiveWithoutParents (originalArray, parentId, resultArray) {
   originalArray.forEach(function (item) {
-    const clone = _.clone(item);
+    const clone = structuredClone(item);
     clone.parentId = parentId; // WTF
     const children = clone.children;
     if (Array.isArray(children) && children.length > 0) {
@@ -82,6 +92,7 @@ function flattenRecursiveWithoutParents (originalArray, parentId, resultArray) {
     }
   });
 }
+
 /**
  * Takes object in structure like this:
  * {
@@ -100,20 +111,21 @@ function flattenRecursiveWithoutParents (originalArray, parentId, resultArray) {
  * @param {*} object
  */
 exports.flattenSimpleObject = function (object) {
-  if (!_.isObject(object)) {
+  if (!(object instanceof Object)) {
     throw new Error('Invalid argument: expected an object');
   }
   const result = [];
   flattenRecursiveSimpleObject(object, result);
   return result;
 };
+
 /**
- * @param {[]} resultArray
+ * @param {any[]} resultArray
  * @returns {void}
  */
 function flattenRecursiveSimpleObject (originalObject, resultArray) {
   Object.keys(originalObject).forEach(function (key) {
-    const value = _.clone(originalObject[key]);
+    const value = structuredClone(originalObject[key]);
     if (typeof value === 'object') {
       flattenRecursiveSimpleObject(value, resultArray);
     } else {
@@ -121,20 +133,27 @@ function flattenRecursiveSimpleObject (originalObject, resultArray) {
     }
   });
 }
+
+/**
+ * The result is made from copies of the original items (which are left untouched).
+ * @param {any[]} array
+ * @returns {any[]}
+ */
 exports.flattenTree = function (array) {
-  if (!_.isArray(array)) {
+  if (!Array.isArray(array)) {
     throw new Error('Invalid argument: expected an array');
   }
   const result = [];
   flattenRecursive(array, null, result);
   return result;
 };
+
 /**
  * @returns {void}
  */
 function flattenRecursive (originalArray, parentId, resultArray) {
   originalArray.forEach(function (item) {
-    const clone = _.clone(item);
+    const clone = structuredClone(item);
     clone.parentId = parentId;
     resultArray.push(clone);
     if (clone.hasOwnProperty('children')) {
@@ -143,11 +162,13 @@ function flattenRecursive (originalArray, parentId, resultArray) {
     }
   });
 }
+
 const findById = (exports.findById = function (array, id) {
   return findInTree(array, function (item) {
     return item.id === id;
   });
 });
+
 /**
  * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
  */
@@ -169,6 +190,7 @@ const findInTree = (exports.findInTree = function (array, iterator) {
   // not found
   return null;
 });
+
 /**
  * Iterate on Tree, if iterator returns false, do not inspect children
  * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
@@ -179,6 +201,7 @@ const iterateOnPromise = (exports.iterateOnPromise = async function (array, iter
     if ((await iterator(stream)) && stream.children) { await iterateOnPromise(stream.children, iterator); }
   }
 });
+
 /**
  * @async
  * @param {Boolean} keepOrphans Whether to take into account the children of filtered-out items
@@ -190,7 +213,7 @@ const filterTreeOnPromise = (exports.filterTreeOnPromise = async function (array
   for (let i = 0, n = array.length; i < n; i++) {
     const item = array[i];
     if (await iterator(item)) {
-      const clone = _.clone(item);
+      const clone = structuredClone(item);
       filteredArray.push(clone);
       if (clone.hasOwnProperty('children')) {
         clone.children = await filterTreeOnPromise(clone.children, keepOrphans, iterator);
@@ -202,7 +225,9 @@ const filterTreeOnPromise = (exports.filterTreeOnPromise = async function (array
   }
   return filteredArray;
 });
+
 /**
+ * The result is made from copies of the original items (which are left untouched).
  * @param {Boolean} keepOrphans Whether to take into account the children of filtered-out items
  *                              (if yes, the tree structure may be modified)
  * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
@@ -212,7 +237,7 @@ const filterTree = (exports.filterTree = function (array, keepOrphans, iterator)
   for (let i = 0, n = array.length; i < n; i++) {
     const item = array[i];
     if (iterator(item)) {
-      const clone = _.clone(item);
+      const clone = structuredClone(item);
       filteredArray.push(clone);
       if (clone.hasOwnProperty('children')) {
         clone.children = filterTree(clone.children, keepOrphans, iterator);
@@ -223,22 +248,25 @@ const filterTree = (exports.filterTree = function (array, keepOrphans, iterator)
   }
   return filteredArray;
 });
+
 const collect = (exports.collect = function (array, iterator) {
-  if (!_.isArray(array)) {
+  if (!Array.isArray(array)) {
     throw new Error('Invalid argument: expected an array');
   }
   const result = [];
   collectRecursive(array, result, iterator);
   return result;
 });
+
 const collectFromRootItem = (exports.collectFromRootItem = function (item, iterator) {
-  if (_.isArray(item)) {
+  if (Array.isArray(item)) {
     throw new Error('Invalid argument: expected a single item');
   }
   const result = [iterator(item)];
   collectRecursive(item.children, result, iterator);
   return result;
 });
+
 /**
  * @returns {void}
  */
@@ -250,16 +278,19 @@ function collectRecursive (originalArray, resultArray, iterator) {
     }
   });
 }
+
 exports.collectPluck = function (array, propertyName) {
   return collect(array, function (item) {
     return item[propertyName];
   });
 };
+
 const collectPluckFromRootItem = (exports.collectPluckFromRootItem = function (item, propertyName) {
   return collectFromRootItem(item, function (item) {
     return item[propertyName];
   });
 });
+
 /**
  * Returns an array with the given ids plus those of their descendants, excluding unknown ids but
  * including `null` if present.
@@ -284,27 +315,32 @@ exports.expandIds = function (array, ids) {
   });
   return expandedIds;
 };
+
 /**
- * Applies "iterator" function to all elements of the array and its children
+ * Applies "iterator" function to all elements of the array and its children.
  */
 exports.cloneAndApply = function (array, iterator) {
   const result = [];
   array.forEach((item) => {
-    const clone = _.clone(item);
+    const clone = structuredClone(item);
     result.push(applyRecursive(iterator(clone), iterator));
   });
   return result;
-  function applyRecursive (item, iterator) {
-    if (!Array.isArray(item.children) || item.children.length === 0) { return item; }
-    const result = [];
-    item.children.forEach((child) => {
-      const clone = _.clone(child);
-      result.push(applyRecursive(iterator(clone), iterator));
-    });
-    item.children = result;
-    return item;
-  }
 };
+
+/**
+ * Mutates the given data.
+ */
+function applyRecursive (item, iterator) {
+  if (!Array.isArray(item.children) || item.children.length === 0) { return item; }
+  const result = [];
+  item.children.forEach((child) => {
+    result.push(applyRecursive(iterator(child), iterator));
+  });
+  item.children = result;
+  return item;
+}
+
 /**
  * Display in the console
  * @param {<Streams>} array

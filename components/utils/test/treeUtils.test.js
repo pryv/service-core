@@ -86,7 +86,9 @@ describe('tree utils', function () {
 
   describe('buildTree()', function () {
     it('[32CB] must build a correct tree for a given consistent array', function () {
-      treeUtils.buildTree(testArray, true /* strip parent ids */).should.eql(testTree);
+      const res = treeUtils.buildTree(testArray, true /* strip parent ids */);
+      res.should.eql(testTree);
+      should.notStrictEqual(res[0], testArray[0], 'should not return the original objects but copies instead');
     });
 
     it('[VVVS] must throw an error if objects do not contain the necessary properties', function () {
@@ -100,7 +102,9 @@ describe('tree utils', function () {
 
   describe('flattenTree()', function () {
     it('[11JJ] must build a correct array for a given tree', function () {
-      treeUtils.flattenTree(testTree).should.eql(testArray);
+      const res = treeUtils.flattenTree(testTree);
+      res.should.eql(testArray);
+      should.notStrictEqual(res[0], testTree[0], 'should not return the original objects but copies instead');
     });
 
     it('[OVJM] must throw an error if the object in argument is not an array', function () {
@@ -113,7 +117,7 @@ describe('tree utils', function () {
       const foundItem = treeUtils.findInTree(testTree, function (item) {
         return item.someProperty === true;
       });
-      foundItem.should.eql(testTree[0].children[1]);
+      should.strictEqual(foundItem, testTree[0].children[1]);
     });
 
     it('[SI6L] must return null if no item matches the given iterator function', function () {
@@ -129,8 +133,7 @@ describe('tree utils', function () {
       const filteredTree = treeUtils.filterTree(testTree, true /* keep orphans */, function (item) {
         return item.someProperty === false;
       });
-
-      filteredTree.should.eql([
+      const expected = [
         {
           id: 'root-1',
           someProperty: false,
@@ -153,7 +156,9 @@ describe('tree utils', function () {
           someProperty: false,
           children: []
         }
-      ]);
+      ];
+      filteredTree.should.eql(expected);
+      should.notStrictEqual(filteredTree[0], testTree[0], 'should not return the original objects but copies instead');
     });
   });
 
