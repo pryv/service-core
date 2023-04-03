@@ -22,11 +22,11 @@ const { getVersions } = require('./util');
 
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 
-describe('Migration - 1.8.1', function () {
+describe('Migration - 1.9.0', function () {
   this.timeout(20000);
 
   before(async function () {
-    const newVersion = getVersions('1.8.1');
+    const newVersion = getVersions('1.9.0');
     await SystemStreamsSerializer.init();
     await util.promisify(testData.restoreFromDump)('1.8.0', mongoFolder);
 
