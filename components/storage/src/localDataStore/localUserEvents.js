@@ -289,7 +289,7 @@ const converters = {
  * @returns {{ $and: any[] }}}
  */
 function getMongoQuery (query) {
-  const mongoQuery = { $and: [] };
+  const mongoQuery = { $and: [{deleted: null, headId: null}] };
   for (const item of query) {
     const newCondition = converters[item.type](item.content);
     if (newCondition != null) {

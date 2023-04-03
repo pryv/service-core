@@ -200,8 +200,9 @@ class UserDatabase {
   }
 
   getEvents (params) {
+    params.query.push({ type: 'equal', content: { field: 'deleted', value: null } });
+    params.query.push({ type: 'equal', content: { field: 'headId', value: null } });
     const queryString = prepareEventsGetQuery(params);
-
     this.logger.debug(`GET Events: ${queryString}`);
     const res = this.db.prepare(queryString).all();
     if (res != null) {
@@ -211,6 +212,8 @@ class UserDatabase {
   }
 
   getEventsStream (params) {
+    params.query.push({ type: 'equal', content: { field: 'deleted', value: null } });
+    params.query.push({ type: 'equal', content: { field: 'headId', value: null } });
     const queryString = prepareEventsGetQuery(params);
     this.logger.debug(`GET Events Stream: ${queryString}`);
     const query = this.db.prepare(queryString);
@@ -262,6 +265,7 @@ function prepareEventsDeleteQuery (params) {
 }
 
 function prepareEventsGetQuery (params) {
+  
   return 'SELECT * FROM events_fts ' + prepareQuery(params);
 }
 
@@ -311,6 +315,8 @@ const converters = {
 
 function prepareQuery (params = {}, isDelete = false) {
   const ands = [];
+
+  params.query
 
   for (const item of params.query) {
     const newCondition = converters[item.type](item.content);

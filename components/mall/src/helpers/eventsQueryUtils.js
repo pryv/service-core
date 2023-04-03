@@ -114,10 +114,6 @@ function getStoreQueryFromParams (params) {
 
   const query = [];
 
-  // always exclude history data
-  query.push({ type: 'equal', content: { field: 'headId', value: null } });
-  // always exclude deleted items
-  query.push({ type: 'equal', content: { field: 'deleted', value: null } });
   if (params.headId) {
     throw new Error('No headId in query');
   }
@@ -131,11 +127,6 @@ function getStoreQueryFromParams (params) {
       break;
     default:
       query.push({ type: 'equal', content: { field: 'trashed', value: false } });
-  }
-
-  // if getOne
-  if (params.id) {
-    query.push({ type: 'equal', content: { field: 'id', value: params.id } });
   }
 
   // modified since
