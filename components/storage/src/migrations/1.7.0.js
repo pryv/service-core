@@ -20,8 +20,13 @@ module.exports = async function (context, callback) {
   const logger = getLogger('migration-1.7.0');
   logger.info('V1.6.21 => v1.7.0 Migration started');
   await SystemStreamsSerializer.init();
+
   const newSystemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds();
   const oldToNewStreamIdsMap = buildOldToNewStreamIdsMap(newSystemStreamIds);
+  // add username to system streams definition (removed in 1.8.0) release, but required for migration
+  newSystemStreamIds.push(':_system:username');
+  oldToNewStreamIdsMap['.username'] = ':_system:username';
+  
   const eventsCollection = await context.database.getCollection({
     name: 'events'
   });
@@ -31,6 +36,7 @@ module.exports = async function (context, callback) {
   const accessesCollection = await context.database.getCollection({
     name: 'accesses'
   });
+
   await migrateAccounts(eventsCollection);
   await migrateTags(eventsCollection, streamsCollection);
   await migrateTagsAccesses(accessesCollection);
@@ -73,6 +79,9 @@ module.exports = async function (context, callback) {
         }
       };
       if (isUniqueEvent(event.streamIds)) { request.updateOne.update.$unset = buildUniquePropsToDelete(event); }
+      if (request.updateOne.update.$unset != null && Object.keys(request.updateOne.update.$unset).length === 0) {
+        delete request.updateOne.update.$unset; // happend on null value items
+      }
       // console.log('translated to', JSON.stringify(request,null,2));
       requests.push(request);
       if (requests.length > BUFFER_SIZE) { requests = await flushToDb(requests, eventsCollection); }
