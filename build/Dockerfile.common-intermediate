@@ -1,4 +1,4 @@
-FROM eu.gcr.io/pryvio/base:1.8.1
+FROM eu.gcr.io/pryvio/base:1.8.0
 MAINTAINER "Tech@Pryv" <tech@pryv.com>
 
 # Set main paths that will be reused in this docker file
