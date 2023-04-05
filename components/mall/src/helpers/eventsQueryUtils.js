@@ -10,10 +10,9 @@ const _ = require('lodash');
 
 module.exports = {
   getParamsByStore,
+  getStoreOptionsFromParams,
   getStoreQueryFromParams
 };
-
-const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 
 /**
  * A generic query for events.get, events.updateMany, events.delete
@@ -100,69 +99,32 @@ function getStoreStreamQuery (streamQuery, context) {
 }
 
 /**
- * Translates API query params to the store query format.
+ * Extract options from params
+ */
+function getStoreOptionsFromParams (params) {
+  const options = {
+    sortAscending: params.sortAscending,
+    skip: params.skip,
+    limit: params.limit
+  };
+  return options;
+}
+
+/**
+ * Clean API query params to the store query format.
  * To be called on store-level params just before querying the store.
  * @param {object} params
  * @returns {object}
  */
 function getStoreQueryFromParams (params) {
-  const options = {
-    sort: { time: params.sortAscending ? 1 : -1 },
-    skip: params.skip,
-    limit: params.limit
+  const query = {
+    state: params.state || 'default'
   };
-
-  const query = [];
-
-  if (params.headId) {
-    throw new Error('No headId in query');
-  }
-
-  // trashed
-  switch (params.state) {
-    case 'trashed':
-      query.push({ type: 'equal', content: { field: 'trashed', value: true } });
-      break;
-    case 'all':
-      break;
-    default:
-      query.push({ type: 'equal', content: { field: 'trashed', value: false } });
-  }
-
-  // modified since
-  if (params.modifiedSince != null) {
-    query.push({ type: 'greater', content: { field: 'modified', value: params.modifiedSince } });
-  }
-
-  // types
-  if (params.types && params.types.length > 0) {
-    query.push({ type: 'typesList', content: params.types });
-  }
-
-  // if streams are defined
-  if (params.streams && params.streams.length !== 0) {
-    query.push({ type: 'streamsQuery', content: params.streams });
-  }
-
-  // -------------- time selection -------------- //
-  if (params.toTime != null) {
-    query.push({ type: 'lowerOrEqual', content: { field: 'time', value: params.toTime } });
-  }
-
-  // running
-  if (params.running) {
-    query.push({ type: 'equal', content: { field: 'endTime', value: null } });
-  } else if (params.fromTime != null) {
-    const now = Date.now() / 1000 - DELTA_TO_CONSIDER_IS_NOW;
-    if (params.fromTime <= now && (params.toTime == null || params.toTime >= now)) { // timeFrame includes now
-      query.push({ type: 'greaterOrEqualOrNull', content: { field: 'endTime', value: params.fromTime } });
-    } else {
-      query.push({ type: 'greaterOrEqual', content: { field: 'endTime', value: params.fromTime } });
-    }
-  }
-
-  return {
-    query,
-    options
-  };
+  if (params.fromTime != null) { query.fromTime = params.fromTime; }
+  if (params.toTime != null) { query.toTime = params.toTime; }
+  if (params.streams != null) { query.streams = params.streams; }
+  if (params.types != null && params.types.length > 0) { query.types = params.types; }
+  if (params.running != null) { query.running = params.running; }
+  if (params.modifiedSince != null) { query.modifiedSince = params.modifiedSince; }
+  return query;
 }

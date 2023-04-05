@@ -26,7 +26,7 @@ module.exports = async function (context, callback) {
   // add username to system streams definition (removed in 1.8.0) release, but required for migration
   newSystemStreamIds.push(':_system:username');
   oldToNewStreamIdsMap['.username'] = ':_system:username';
-  
+
   const eventsCollection = await context.database.getCollection({
     name: 'events'
   });

@@ -265,7 +265,6 @@ function prepareEventsDeleteQuery (params) {
 }
 
 function prepareEventsGetQuery (params) {
-  
   return 'SELECT * FROM events_fts ' + prepareQuery(params);
 }
 
@@ -315,9 +314,6 @@ const converters = {
 
 function prepareQuery (params = {}, isDelete = false) {
   const ands = [];
-
-  params.query
-
   for (const item of params.query) {
     const newCondition = converters[item.type](item.content);
     if (newCondition != null) {

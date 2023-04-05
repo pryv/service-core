@@ -11,6 +11,7 @@ const errors = ds.errors;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const DeletionModesFields = require('../DeletionModesFields');
 const { integrity } = require('business');
+const { localStorePrepareOptions, localStorePrepareQuery } = require('../localStoreEventQueries');
 
 /**
  * Local data store: events implementation.
@@ -41,16 +42,20 @@ module.exports = ds.createUserEvents({
   /**
    * @returns {Promise<any>}
    */
-  async get (userId, query, options) {
+  async get (userId, storeQuery, storeOptions) {
     const db = await this.storage.forUser(userId);
+    const query = localStorePrepareQuery(storeQuery);
+    const options = localStorePrepareOptions(storeOptions);
     return db.getEvents({ query, options });
   },
 
   /**
    * @returns {Promise<any>}
    */
-  async getStreamed (userId, query, options) {
+  async getStreamed (userId, storeQuery, storeOptions) {
     const db = await this.storage.forUser(userId);
+    const query = localStorePrepareQuery(storeQuery);
+    const options = localStorePrepareOptions(storeOptions);
     return db.getEventsStream({ query, options });
   },
 

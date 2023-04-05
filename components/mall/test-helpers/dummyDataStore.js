@@ -7,6 +7,7 @@
 
 const ds = require('@pryv/datastore');
 const { Readable } = require('stream');
+const { localStorePrepareQuery } = require('storage/src/localStoreEventQueries');
 
 let keyValueData;
 
@@ -72,7 +73,8 @@ function createUserEvents () {
     /**
      * @returns Array
      */
-    async get (userId, query, options) { // eslint-disable-line no-unused-vars
+    async get (userId, storeQuery, options) { // eslint-disable-line no-unused-vars
+      const query = localStorePrepareQuery(storeQuery);
       const lastStreamCall = await keyValueData.get(userId, 'lastStreamCall');
       let events = [{
         id: 'dummyevent0',
