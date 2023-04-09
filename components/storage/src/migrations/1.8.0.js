@@ -33,7 +33,9 @@ module.exports = async function (context, callback) {
 
   try {
     await migrateUserids();
+    await migratePasswords();
     await migrateIndexedFieldsToPlatform();
+    await setAllTrashed();
   } catch (e) {
     return callback(e);
   }
@@ -50,10 +52,23 @@ module.exports = async function (context, callback) {
     const usersIndex = require('business/src/users/UsersLocalIndex');
     await usersIndex.init();
     const query =  { streamIds: { $in: [':_system:username'] } };
-    const cursor = await eventsCollection.find(query, {projection: {userId: 1, content: 1}});
+    const cursor = await eventsCollection.find(query, {projection: {_id: 1 , userId: 1, content: 1}});
     while (await cursor.hasNext()) {
-      const user = await cursor.next();
-      await usersIndex.addUser(user.content, user.userId);
+      const event = await cursor.next();
+      await usersIndex.addUser(event.content, event.userId);
+      await eventsCollection.deleteMany({userId: event.userId, _id: event._id});
+    }
+  }
+
+  async function migratePasswords() {
+    const userAccountStorage = require('business/src/users/userAccountStorage');
+    await userAccountStorage.init();
+    const query =  { streamIds: { $in: [':_system:passwordHash'] } };
+    const cursor = await eventsCollection.find(query, {projection: {_id: 1, userId: 1, content: 1, created: 1, createdBy: 1}});
+    while (await cursor.hasNext()) {
+      const event = await cursor.next();
+      await userAccountStorage.addPasswordHash(event.userId, event.content, event.createdBy || 'system', event.created);
+      await eventsCollection.deleteMany({userId: event.userId, _id: event._id});
     }
   }
 
