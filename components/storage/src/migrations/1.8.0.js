@@ -4,10 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository } = require('business/src/users/repository');
 const { getLogger } = require('@pryv/boiler');
 const PlatformWideDB = require('platform/src/DB');
+
 /**
  * v1.7.5:
  * - migrate system streamIds in access permissions
@@ -22,26 +24,44 @@ module.exports = async function (context, callback) {
   try {
     await setAllTrashed();
     await migrateUserids();
+    await migratePasswords();
     await migrateIndexedFieldsToPlatform();
+    await setAllTrashed();
   } catch (e) {
     return callback(e);
   }
+
   logger.info('V1.7.5 => v1.8.0 Migration finished');
   callback();
+
   async function setAllTrashed () { // Check this!
     await eventsCollection.updateMany({ trashed: null, deleted: null }, { $set: { trashed: false } });
   }
+
   async function migrateUserids () {
     const usersIndex = await require('storage').getUsersLocalIndex();
     const query = { streamIds: { $in: [':_system:username'] } };
     const cursor = eventsCollection.find(query, {
-      projection: { userId: 1, content: 1 }
+      projection: { _id: 1, userId: 1, content: 1 }
     });
     while (await cursor.hasNext()) {
-      const user = await cursor.next();
-      await usersIndex.addUser(user.content, user.userId);
+      const event = await cursor.next();
+      await usersIndex.addUser(event.content, event.userId);
+      await eventsCollection.deleteMany({ userId: event.userId, _id: event._id });
     }
   }
+
+  async function migratePasswords () {
+    const userAccountStorage = await require('storage').getUserAccountStorage();
+    const query = { streamIds: { $in: [':_system:passwordHash'] } };
+    const cursor = await eventsCollection.find(query, { projection: { _id: 1, userId: 1, content: 1, created: 1, createdBy: 1 } });
+    while (await cursor.hasNext()) {
+      const event = await cursor.next();
+      await userAccountStorage.addPasswordHash(event.userId, event.content, event.createdBy || 'system', event.created);
+      await eventsCollection.deleteMany({ userId: event.userId, _id: event._id });
+    }
+  }
+
   async function migrateIndexedFieldsToPlatform () {
     const platformWideDB = new PlatformWideDB();
     await platformWideDB.init();

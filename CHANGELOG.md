@@ -1,5 +1,8 @@
 ## 1.8
 
+### 1.8.1 
+- Fix migration 1.6.x to 1.8.0 bug
+
 ### 1.8.0
 
 - Add support for password rules: complexity, age, reuse; see API server's `auth.password*` settings
