@@ -292,7 +292,7 @@ function streamQueryToMongoDBQuery (streamQuery) {
 
   function addItem (item) {
     if (item.any && item.any.length > 0) {
-      if (! item.any.includes('*')) {
+      if (!item.any.includes('*')) {
         // ignore queries that contains '*';
         if (item.any.length === 1) {
           ands.push({ streamIds: { $eq: item.any[0] } });

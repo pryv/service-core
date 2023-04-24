@@ -9,8 +9,6 @@ const { assert } = require('chai');
 
 const { toSQLiteQuery } = require('../../src/userSQLite/sqLiteStreamQueryUtils');
 
-const { ALL_EVENTS_TAG } = require('../../src/userSQLite/schemas/events');
-
 describe('[USQL] userSQLite toSqliteQuery()', function () {
   it('[YS6Y] must convert to SQLite including expansion', async function () {
     const clean = [[{ any: ['A', 'B', 'C'] }]];
@@ -25,13 +23,13 @@ describe('[USQL] userSQLite toSqliteQuery()', function () {
   });
 
   it('[SGO5] must convert to SQLite  streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
-    const clean = [[{ any: ['A']}, { any: ['D'] }]];
+    const clean = [[{ any: ['A'] }, { any: ['D'] }]];
     const sqllite = toSQLiteQuery(clean);
     assert.deepEqual(sqllite, '"A" AND "D"');
   });
 
   it('[RPGX] must convert to SQLite  streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
-    const clean = [[{ any: ['A']}, { any: ['D', 'E'] }]];
+    const clean = [[{ any: ['A'] }, { any: ['D', 'E'] }]];
     const sqllite = toSQLiteQuery(clean);
     assert.deepEqual(sqllite, '"A" AND ("D" OR "E")');
   });
@@ -56,7 +54,7 @@ describe('[USQL] userSQLite toSqliteQuery()', function () {
       { not: ['E'] }
     ]];
     const sqllite = toSQLiteQuery(clean);
-    assert.deepEqual(sqllite, `("A" OR "B" OR "C") AND "F" NOT "D" NOT "E" NOT "F" NOT "E"`);
+    assert.deepEqual(sqllite, '("A" OR "B" OR "C") AND "F" NOT "D" NOT "E" NOT "F" NOT "E"');
   });
 
   it('[3TTK] must convert to SQLite including expansion with "ALL" and "NOT"', async function () {

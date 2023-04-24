@@ -288,7 +288,11 @@ function streamQueryAddForcedAndForbiddenStreams (context, params, result, next)
     }
     // ------------- NOT ------------- //
     const forbiddenStreamIds = context.access.getForbiddenGetEventsStreamIds(streamQuery.storeId);
-    addNotsToStreamQuery(streamQuery, forbiddenStreamIds);
+    if (forbiddenStreamIds?.length > 0) {
+      if (streamQuery.not == null) { streamQuery.not = []; }
+      // TODO check for duplicates
+      streamQuery.not.push(...forbiddenStreamIds);
+    }
   }
   next();
 }
@@ -449,22 +453,6 @@ async function findEventsFromStore (filesReadTokenSecret, isStreamIdPrefixBackwa
  */
 async function init () {
   mall = await getMall();
-}
-
-/**
- * @param {StreamQuery} streamQuery
- * @param {Array<string>|null} excludedStreamIds
- */
-function addNotsToStreamQuery (streamQuery, excludedStreamIds) {
-  if (excludedStreamIds == null || excludedStreamIds.length === 0) return;
-  if (streamQuery.not == null) {
-    streamQuery.not = [];
-    streamQuery.not.push(...excludedStreamIds); // here we assume there is double enties.
-    return;
-  }
-  for (const excludedStreamId of excludedStreamIds) {
-    if (excludedStreamIds.indexOf(excludedStreamId) === -1) streamQuery.not.push(excludedStreamId);
-  }
 }
 
 /**

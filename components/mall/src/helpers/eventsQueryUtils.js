@@ -163,6 +163,5 @@ function getStoreQueryFromParams (params) {
   if (params.types != null && params.types.length > 0) { query.types = params.types; }
   if (params.running != null) { query.running = params.running; }
   if (params.modifiedSince != null) { query.modifiedSince = params.modifiedSince; }
-  $$({params, query});
   return query;
 }
