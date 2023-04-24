@@ -1,6 +1,6 @@
 {
   "name": "pryv-datastore",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
   "description": "Library and tools for accessing external data stores within Pryv.io",
   "homepage": "https://pryv.com",

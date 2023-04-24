@@ -12,6 +12,10 @@ const { getMall } = require('mall');
 const { getLogger } = require('@pryv/boiler');
 const { TAG_ROOT_STREAMID, TAG_PREFIX }: { TAG_ROOT_STREAMID: string, TAG_PREFIX: string } = require('api-server/src/methods/helpers/backwardCompatibility');
 const DOT: string = '.';
+
+const logger = getLogger('migration-1.7.0');
+logger.info('V1.6.21 => v1.7.0 Migration started');
+
 /**
  * v1.7.0: 
  * - refactor streamId prefixes from '.' to ':_system:' and ':system'
@@ -21,16 +25,13 @@ const DOT: string = '.';
  */
 module.exports = async function (context, callback) {
 
-  const logger = getLogger('migration-1.7.0');
-  logger.info('V1.6.21 => v1.7.0 Migration started');
-
   await SystemStreamsSerializer.init();
   const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
   const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
   // add username to system streams definition (removed in 1.8.0) release, but required for migration
   newSystemStreamIds.push(':_system:username');
   oldToNewStreamIdsMap['.username'] = ':_system:username';
-  
+
   const eventsCollection = await bluebird.fromCallback(cb =>
     context.database.getCollection({ name: 'events' }, cb));
   const streamsCollection = await bluebird.fromCallback(cb =>
@@ -39,8 +40,7 @@ module.exports = async function (context, callback) {
     context.database.getCollection({ name: 'accesses' }, cb));
 
 
-  
-  await migrateAccounts(eventsCollection);
+  await migrateAccounts(eventsCollection, oldToNewStreamIdsMap);
   await migrateTags(eventsCollection, streamsCollection);
   await migrateTagsAccesses(accessesCollection);
   logger.info('Accounts were migrated, now rebuilding the indexes');
@@ -49,34 +49,42 @@ module.exports = async function (context, callback) {
   logger.info('V1.6.21 => v1.7.0 Migration finished');
   callback();
 
+};
 
-  async function migrateAccounts (eventsCollection): Promise<void> {
-    const usernameCursor = await eventsCollection.find({ 
-      streamIds: { $in: ['.username'] },
-      deleted: null,
-      headId: null,
-    });
+async function migrateAccounts(eventsCollection, oldToNewStreamIdsMap): Promise<void> {
+  const usernameCursor = await eventsCollection.find({
+    streamIds: { $in: ['.username'] },
+    deleted: null,
+    headId: null,
+  });
 
-    let usersCounter: number = 0;
-    while (await usernameCursor.hasNext()) {
-      const usernameEvent = await usernameCursor.next();
-      if (usersCounter % 200 === 0) {
-        logger.info(`Migrating ${usersCounter + 1}st user`);
-      }
-      usersCounter++;
-      await migrateUserEvents(usernameEvent, eventsCollection, oldToNewStreamIdsMap);
+  let requests: Array<{}> = [];
+  const BUFFER_SIZE: number = 500;
+  let usersCounter: number = 0;
+  while (await usernameCursor.hasNext()) {
+    const usernameEvent = await usernameCursor.next();
+    if (usersCounter % 200 === 0) {
+      logger.info(`Migrating ${usersCounter + 1}st user`);
     }
+    usersCounter++;
+    await migrateUserEvents(usernameEvent, oldToNewStreamIdsMap);
+  }
+  if (requests.length > 1) await flushToDb(requests, eventsCollection);
+
+  logger.info(`Migrated ${usersCounter} users`);
+
+  async function addUpdateRequest(updateRequest) {
+    requests.push(updateRequest);
+    if (requests.length > BUFFER_SIZE) requests = await flushToDb(requests, eventsCollection);
   }
 
-
-  async function migrateUserEvents(usernameEvent: {}, eventsCollection: {}, oldToNewStreamIdsMap: Map<string, string>, newSystemStreamIds: Array<string>): Promise<void> {
+  async function migrateUserEvents(usernameEvent: {}): Promise<void> {
     const eventsCursor: {} = eventsCollection.find({ userId: usernameEvent.userId });
-    const BUFFER_SIZE: number = 500;
-    let requests: Array<{}> = [];
+
     while (await eventsCursor.hasNext()) {
       let event: Event = await eventsCursor.next();
 
-      if (! isSystemEvent(event)) continue;
+      if (!isSystemEvent(event)) continue;
 
       const streamIds: Array<string> = translateStreamIdsIfNeeded(event.streamIds, oldToNewStreamIdsMap);
 
@@ -93,194 +101,191 @@ module.exports = async function (context, callback) {
         delete request.updateOne.update.$unset; // happend on null value items
       }
       //console.log('translated to', JSON.stringify(request,null,2));
-      requests.push(request);
-      if (requests.length > BUFFER_SIZE) requests = await flushToDb(requests, eventsCollection);
-    }
-    if (requests.length > 1) await flushToDb(requests, eventsCollection);
-
-    function isUniqueEvent(streamIds: Array<string>): boolean {
-      if (streamIds.indexOf('.unique') > -1) return true;
-      return false;
-    }
-
-    function buildUniquePropsToDelete(event) {
-      const UNIQUE_SUFFIX = '__unique';
-      const unsets = {};
-      for (const prop of Object.keys(event)) {
-        if (prop.indexOf(UNIQUE_SUFFIX) > -1) unsets[prop] = 1;
-      }
-      return unsets;
-    }
-
-    function isSystemEvent(event: Event): boolean {
-      if (event.streamIds == null) return false; // if event is deleted
-      for (const streamId of event.streamIds) {
-        if (streamId.startsWith('.')) return true; // can't use new check because it doesn't work with DOT anymore
-      }
-      return false;
-    }
-
-    async function flushToDb(events: Array<{}>, eventsCollection: {}): Promise<Array<{}>> {
-      const result: {} = await eventsCollection.bulkWrite(events);
-      logger.info(`flushed ${result.nModified} modifications into database`);
-      return [];
-    }
-
-    function translateStreamIdsIfNeeded(streamIds: Array<string>, oldToNewMap: Map<string, string>): Array<string> {
-      const translatedStreamIds: Array<string> = [];
-      for (const streamId of streamIds) {
-        translatedStreamIds.push(translateToNewOrNothing(streamId, oldToNewMap));
-      }
-      return translatedStreamIds;
-
-      function translateToNewOrNothing(oldStreamId: string, oldToNewMap: Map<string, string>): string {
-        return oldToNewMap[oldStreamId] ? oldToNewMap[oldStreamId] : oldStreamId;
-      }
+      await addUpdateRequest(request);
     }
   }
 
-  function buildOldToNewStreamIdsMap(newSystemStreamIds: Array<string>): Map<string, string> {
-    const oldToNewMap: {} = {};
-    for (const newStreamId of newSystemStreamIds) {
-      const oldStreamId: string = translateToOldPrefix(newStreamId);
-      oldToNewMap[oldStreamId] = newStreamId;
-    }
-    return oldToNewMap;
 
-    function translateToOldPrefix(streamId: string): string {
-      return DOT + SystemStreamsSerializer.removePrefixFromStreamId(streamId);
-    }
+
+  function isUniqueEvent(streamIds: Array<string>): boolean {
+    if (streamIds.indexOf('.unique') > -1) return true;
+    return false;
   }
 
-  async function rebuildIndexes(database, eventsCollection): Promise<void> {
-    for (const item of eventsIndexes) {
-      item.options.background = true;
-      await eventsCollection.createIndex(item.index, item.options);
+  function buildUniquePropsToDelete(event) {
+    const UNIQUE_SUFFIX = '__unique';
+    const unsets = {};
+    for (const prop of Object.keys(event)) {
+      if (prop.indexOf(UNIQUE_SUFFIX) > -1) unsets[prop] = 1;
     }
-    const indexCursor = await eventsCollection.listIndexes();
-    while (await indexCursor.hasNext()) {
-      const index = await indexCursor.next();
-      if (index.name.endsWith('__unique_1')) {
-        logger.info('dropping index', index.name);
-        await eventsCollection.dropIndex(index.name);
-      }
-    }
+    return unsets;
   }
 
-  //----------------- TAGS 
-
-  
-  async function migrateTags(eventsCollection, streamsCollection): Promise<void> { 
-    
-    const mall = await getMall();
-    // get all users with tags 
-    const usersWithTag = await eventsCollection.distinct('userId', {tags: { $exists: true, $ne: null }});
-    for (userId of usersWithTag) {
-      const now = Date.now() / 1000; 
-
-      async function createStream(id, name, parentId) {
-        try { 
-          await mall.streams.create(userId, {name: name, id: id, parentId: parentId, modifiedBy: 'migration', createdBy: 'migration', created: now, modified: now});
-        } catch (e) {
-          if (e.id !== 'item-already-exists') throw(e)// already exists.. oK
-        }
-      }
-
-      // create root stream
-      await createStream(TAG_ROOT_STREAMID, 'Migrated Tags')
-      // get all tags for user
-      const tags = await eventsCollection.distinct('tags', {userId: userId});
-      for (tag of tags) { 
-        await createStream(TAG_PREFIX + tag, tag, TAG_ROOT_STREAMID);
-        await migrateEvents(userId);
-      }
-      // migrate tags (add to streams for each event)
+  function isSystemEvent(event: Event): boolean {
+    if (event.streamIds == null) return false; // if event is deleted
+    for (const streamId of event.streamIds) {
+      if (streamId.startsWith('.')) return true; // can't use new check because it doesn't work with DOT anymore
     }
-  
-    async function migrateEvents(userId) {
-      eventsMigrated = 0;
-      const cursor = await eventsCollection.find({ userId: userId, tags: { $exists: true, $ne: [] } });
-      let requests = [];
-      let event;
-      while (await cursor.hasNext()) {
-        event = await cursor.next();
-        if (event.tags == null) continue;
-        const newStreams = event.tags.filter(t => t != null).map(t => TAG_PREFIX + t);
-
-        eventsMigrated++;
-        requests.push({
-          'updateOne': {
-            'filter': { '_id': event._id },
-            'update': {
-              '$addToSet': { 'streamIds': { $each: newStreams }},
-              '$unset': { 'tags': ''}
-            }
-          }
-        });
-
-        if (requests.length === 1000) {
-          //Execute per 1000 operations and re-init
-          await eventsCollection.bulkWrite(requests);
-          console.log('Migrated ' + eventsMigrated + ' events for user ' + userId);
-          requests = [];
-        }
-      }
-
-      if (requests.length > 0) {
-        await eventsCollection.bulkWrite(requests);
-        console.log('Migrated ' + eventsMigrated + ' events for user ' + userId);
-      }
-    }
+    return false;
   }
 
-  async function migrateTagsAccesses(accessesCollection): Promise<void> {
-    const cursor = await accessesCollection.find({ 'permissions.tag': { $exists: true} });
+  async function flushToDb(events: Array<{}>, eventsCollection: {}): Promise<Array<{}>> {
+    const result: {} = await eventsCollection.bulkWrite(events);
+    logger.info(`flushed ${result.nModified} modifications into database over ${events.length} requests`);
+    return [];
+  }
+
+  function translateStreamIdsIfNeeded(streamIds: Array<string>, oldToNewMap: Map<string, string>): Array<string> {
+    const translatedStreamIds: Array<string> = [];
+    for (const streamId of streamIds) {
+      translatedStreamIds.push(translateToNewOrNothing(streamId, oldToNewMap));
+    }
+    return translatedStreamIds;
+
+    function translateToNewOrNothing(oldStreamId: string, oldToNewMap: Map<string, string>): string {
+      return oldToNewMap[oldStreamId] ? oldToNewMap[oldStreamId] : oldStreamId;
+    }
+  }
+}
+
+function buildOldToNewStreamIdsMap(newSystemStreamIds: Array<string>): Map<string, string> {
+  const oldToNewMap: {} = {};
+  for (const newStreamId of newSystemStreamIds) {
+    const oldStreamId: string = translateToOldPrefix(newStreamId);
+    oldToNewMap[oldStreamId] = newStreamId;
+  }
+  return oldToNewMap;
+
+  function translateToOldPrefix(streamId: string): string {
+    return DOT + SystemStreamsSerializer.removePrefixFromStreamId(streamId);
+  }
+}
+
+async function rebuildIndexes(database, eventsCollection): Promise<void> {
+  for (const item of eventsIndexes) {
+    item.options.background = true;
+    await eventsCollection.createIndex(item.index, item.options);
+  }
+  const indexCursor = await eventsCollection.listIndexes();
+  while (await indexCursor.hasNext()) {
+    const index = await indexCursor.next();
+    if (index.name.endsWith('__unique_1')) {
+      logger.info('dropping index', index.name);
+      await eventsCollection.dropIndex(index.name);
+    }
+  }
+}
+
+//----------------- TAGS 
+
+
+async function migrateTags(eventsCollection, streamsCollection): Promise<void> {
+
+  const mall = await getMall();
+  // get all users with tags 
+  const usersWithTag = await eventsCollection.distinct('userId', { tags: { $exists: true, $ne: null } });
+  for (userId of usersWithTag) {
+    const now = Date.now() / 1000;
+
+    async function createStream(id, name, parentId) {
+      try {
+        await mall.streams.create(userId, { name: name, id: id, parentId: parentId, modifiedBy: 'migration', createdBy: 'migration', created: now, modified: now });
+      } catch (e) {
+        if (e.id !== 'item-already-exists') throw (e)// already exists.. oK
+      }
+    }
+
+    // create root stream
+    await createStream(TAG_ROOT_STREAMID, 'Migrated Tags')
+    // get all tags for user
+    const tags = await eventsCollection.distinct('tags', { userId: userId });
+    for (tag of tags) {
+      await createStream(TAG_PREFIX + tag, tag, TAG_ROOT_STREAMID);
+      await migrateEvents(userId);
+    }
+    // migrate tags (add to streams for each event)
+  }
+
+  async function migrateEvents(userId) {
+    eventsMigrated = 0;
+    const cursor = await eventsCollection.find({ userId: userId, tags: { $exists: true, $ne: [] } });
     let requests = [];
-    let accessesMigrated = 0;
+    let event;
     while (await cursor.hasNext()) {
-      const access = await cursor.next();
-      const newPermissions = [];
-      const forcedStreams = [];
-      for (const permission of access.permissions) {
-        if (permission.tag == null) {
-          newPermissions.push(permission);
-          continue;
-        }
-        if (permission.level !== 'read') {
-          const msg = 'Warning cannot migrate fully ' + JSON.stringify(permission) +' accessId: ' + access._id + ' userId: ' + access.userId;
-          console.log(msg);
-          //process.exit(0);
-        }
-        forcedStreams.push(TAG_PREFIX + permission.tag);
-      }
-      newPermissions.push({feature: 'forcedStreams', streams: forcedStreams});
+      event = await cursor.next();
+      if (event.tags == null) continue;
+      const newStreams = event.tags.filter(t => t != null).map(t => TAG_PREFIX + t);
 
-      accessesMigrated++;
+      eventsMigrated++;
       requests.push({
         'updateOne': {
-          'filter': { '_id': access._id },
+          'filter': { '_id': event._id },
           'update': {
-            $set: { permissions: newPermissions }
+            '$addToSet': { 'streamIds': { $each: newStreams } },
+            '$unset': { 'tags': '' }
           }
         }
       });
-      
+
       if (requests.length === 1000) {
         //Execute per 1000 operations and re-init
-        await accessesCollection.bulkWrite(requests);
-        console.log('Migrated ' + accessesMigrated + ' accesses for user ' + userId);
+        await eventsCollection.bulkWrite(requests);
+        console.log('Migrated ' + eventsMigrated + ' events for user ' + userId);
         requests = [];
       }
     }
+
     if (requests.length > 0) {
-      await accessesCollection.bulkWrite(requests);
-      console.log('Migrated ' + accessesMigrated + ' accesses for user ' + userId);
+      await eventsCollection.bulkWrite(requests);
+      console.log('Migrated ' + eventsMigrated + ' events for user ' + userId);
     }
   }
+}
 
+async function migrateTagsAccesses(accessesCollection): Promise<void> {
+  const cursor = await accessesCollection.find({ 'permissions.tag': { $exists: true } });
+  let requests = [];
+  let accessesMigrated = 0;
+  while (await cursor.hasNext()) {
+    const access = await cursor.next();
+    const newPermissions = [];
+    const forcedStreams = [];
+    for (const permission of access.permissions) {
+      if (permission.tag == null) {
+        newPermissions.push(permission);
+        continue;
+      }
+      if (permission.level !== 'read') {
+        const msg = 'Warning cannot migrate fully ' + JSON.stringify(permission) + ' accessId: ' + access._id + ' userId: ' + access.userId;
+        console.log(msg);
+        //process.exit(0);
+      }
+      forcedStreams.push(TAG_PREFIX + permission.tag);
+    }
+    newPermissions.push({ feature: 'forcedStreams', streams: forcedStreams });
 
-};
+    accessesMigrated++;
+    requests.push({
+      'updateOne': {
+        'filter': { '_id': access._id },
+        'update': {
+          $set: { permissions: newPermissions }
+        }
+      }
+    });
 
+    if (requests.length === 1000) {
+      //Execute per 1000 operations and re-init
+      await accessesCollection.bulkWrite(requests);
+      console.log('Migrated ' + accessesMigrated + ' accesses for user ' + userId);
+      requests = [];
+    }
+  }
+  if (requests.length > 0) {
+    await accessesCollection.bulkWrite(requests);
+    console.log('Migrated ' + accessesMigrated + ' accesses for user ' + userId);
+  }
+}
 
 const eventsIndexes = [
   {
