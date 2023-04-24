@@ -10,6 +10,7 @@ const { assert } = require('chai');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
+const eventsQueryUtils = require('mall/src/helpers/eventsQueryUtils');
 const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
 const { storeDataUtils } = require('mall');
 
@@ -271,31 +272,33 @@ describe('[EGSQ] events.get streams query', function () {
     describe('toMongoQuery()', function () {
       it('[KKIH] must convert to MongoDB including expansion', async function () {
         const clean = await validateQuery(['A', 'B']);
-        const mongo = streamsQueryUtils.toMongoDBQuery(clean);
+        const storeQuery = eventsQueryUtils.normalizeStreamQuery(clean);
+        const mongo = streamsQueryUtils.toMongoDBQuery(storeQuery);
         assert.deepEqual(mongo, { streamIds: { $in: ['A', 'B', 'C'] } });
       });
 
       it('[4QMR] must convert to MongoDB including with "ALL"', async function () {
         const clean = await validateQuery({ any: ['A', 'B'], all: ['E'] });
-        const mongo = streamsQueryUtils.toMongoDBQuery(clean);
-        assert.deepEqual(mongo, { streamIds: { $in: ['A', 'B', 'C'] }, $and: [{ streamIds: { $eq: 'E' } }] });
+        const storeQuery = eventsQueryUtils.normalizeStreamQuery(clean);
+        const mongo = streamsQueryUtils.toMongoDBQuery(storeQuery);
+        assert.deepEqual(mongo, { $and: [{ streamIds: { $in: ['A', 'B', 'C'] } }, { streamIds: { $eq: 'E' } }] });
       });
 
       it('[NG7F] must convert to MongoDB including expansion with "NOT"', async function () {
         const clean = await validateQuery({ any: ['A', 'B'], not: ['E'] });
-        const mongo = streamsQueryUtils.toMongoDBQuery(clean);
+        const storeQuery = eventsQueryUtils.normalizeStreamQuery(clean);
+        const mongo = streamsQueryUtils.toMongoDBQuery(storeQuery);
         assert.deepEqual(mongo, {
-          streamIds: { $in: ['A', 'B', 'C'] },
-          $and: [{ streamIds: { $ne: 'E' } }]
+          $and: [{ streamIds: { $in: ['A', 'B', 'C'] } }, { streamIds: { $ne: 'E' } }]
         });
       });
 
       it('[HC6X] must convert to MongoDB including expansion with "ALL" and "NOT"', async function () {
         const clean = await validateQuery({ any: ['A', 'E'], all: ['D', 'C'], not: ['D', 'F'] });
-        const mongo = streamsQueryUtils.toMongoDBQuery(clean);
+        const mongo = streamsQueryUtils.toMongoDBQuery(eventsQueryUtils.normalizeStreamQuery(clean));
         assert.deepEqual(mongo, {
-          streamIds: { $in: ['A', 'B', 'C', 'E'] },
           $and: [
+            { streamIds: { $in: ['A', 'B', 'C', 'E'] } },
             { streamIds: { $eq: 'C' } },
             { streamIds: { $nin: ['D', 'E', 'F'] } }
           ]
@@ -304,13 +307,12 @@ describe('[EGSQ] events.get streams query', function () {
 
       it('[0RNW] must handle array of queries', async function () {
         const clean = await validateQuery([{ any: ['B'] }, { any: ['D'], not: ['E'] }]);
-        const mongo = streamsQueryUtils.toMongoDBQuery(clean);
+        const mongo = streamsQueryUtils.toMongoDBQuery(eventsQueryUtils.normalizeStreamQuery(clean));
         const expected = {
           $or: [
             { streamIds: { $eq: 'B' } },
             {
-              streamIds: { $in: ['D', 'E', 'F'] },
-              $and: [{ streamIds: { $ne: 'E' } }]
+              $and: [{ streamIds: { $in: ['D', 'E', 'F'] } }, { streamIds: { $ne: 'E' } }]
             }
           ]
         };

@@ -275,38 +275,42 @@ exports.toMongoDBQuery = function toMongoDBQuery (streamQueriesArray) {
 };
 /**
  * Convert a streamQuery to a query usable by MongoDB
- * @param {StreamQuery} streamQuery
+ * @param {Array<StreamQuery>|null} streamQuery
  * @returns {{}}
  */
 function streamQueryToMongoDBQuery (streamQuery) {
-  const res = {};
-  if (streamQuery.any && streamQuery.any.length > 0) {
-    if (!streamQuery.any.includes('*')) {
-      // ignore queries that contains '*';
-      if (streamQuery.any.length === 1) {
-        res.streamIds = { $eq: streamQuery.any[0] };
+  const ands = [];
+  if (streamQuery == null) return {};
+
+  for (const item of streamQuery) {
+    addItem(item);
+  }
+
+  if (ands.length === 0) return {};
+  if (ands.length === 1) return ands[0];
+  return { $and: ands };
+
+  function addItem (item) {
+    if (item.any && item.any.length > 0) {
+      if (! item.any.includes('*')) {
+        // ignore queries that contains '*';
+        if (item.any.length === 1) {
+          ands.push({ streamIds: { $eq: item.any[0] } });
+        } else {
+          ands.push({ streamIds: { $in: item.any } });
+        }
+      }
+    }
+    if (item.not && item.not.length > 0) {
+      if (item.not.length === 1) {
+        ands.push({ streamIds: { $ne: item.not[0] } });
       } else {
-        res.streamIds = { $in: streamQuery.any };
+        ands.push({ streamIds: { $nin: item.not } });
       }
     }
   }
-  // only reached from a "and" property
-  if (streamQuery.not && streamQuery.not.length > 0) {
-    if (res.streamIds) { res.streamIds = {}; }
-    if (streamQuery.not.length === 1) {
-      res.streamIds = { $ne: streamQuery.not[0] };
-    } else {
-      res.streamIds = { $nin: streamQuery.not };
-    }
-  }
-  if (streamQuery.and) {
-    res.$and = [];
-    for (const andItem of streamQuery.and) {
-      res.$and.push(streamQueryToMongoDBQuery(andItem));
-    }
-  }
-  return res;
 }
+
 // ------------------------ helpers ----------------------------------//
 /**
  * for nice error message with clear query content

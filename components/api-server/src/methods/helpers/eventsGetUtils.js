@@ -19,10 +19,24 @@ const ChangeStreamIdPrefixStream = require('../streams/ChangeStreamIdPrefixStrea
 const AddTagsStream = require('../streams/AddTagsStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 let mall;
+
+module.exports = {
+  init,
+  applyDefaultsForRetrieval,
+  coerceStreamsParam,
+  validateStreamsQueriesAndSetStore,
+  transformArrayOfStringsToStreamsQuery,
+  streamQueryCheckPermissionsAndReplaceStars,
+  streamQueryAddForcedAndForbiddenStreams,
+  streamQueryExpandStreams,
+  streamQueryAddHiddenStreams,
+  findEventsFromStore
+};
+
 /**
  *  # Stream Query Flow
  *  1. coerceStreamParam:
- *    - null `streams` is changed to `[{any: ['*]}]
+ *    - null `streams` is changed to `[{any: ['*']}]`
  *    - transform "stringified" `streams` by parsing JSON object
  *
  *  2. transformArrayOfStringsToStreamsQuery:
@@ -274,11 +288,7 @@ function streamQueryAddForcedAndForbiddenStreams (context, params, result, next)
     }
     // ------------- NOT ------------- //
     const forbiddenStreamIds = context.access.getForbiddenGetEventsStreamIds(streamQuery.storeId);
-    if (forbiddenStreamIds?.length > 0) {
-      if (streamQuery.not == null) { streamQuery.not = []; }
-      // TODO check for duplicates
-      streamQuery.not.push(...forbiddenStreamIds);
-    }
+    addNotsToStreamQuery(streamQuery, forbiddenStreamIds);
   }
   next();
 }
@@ -440,18 +450,22 @@ async function findEventsFromStore (filesReadTokenSecret, isStreamIdPrefixBackwa
 async function init () {
   mall = await getMall();
 }
-module.exports = {
-  init,
-  applyDefaultsForRetrieval,
-  coerceStreamsParam,
-  validateStreamsQueriesAndSetStore,
-  transformArrayOfStringsToStreamsQuery,
-  streamQueryCheckPermissionsAndReplaceStars,
-  streamQueryAddForcedAndForbiddenStreams,
-  streamQueryExpandStreams,
-  streamQueryAddHiddenStreams,
-  findEventsFromStore
-};
+
+/**
+ * @param {StreamQuery} streamQuery
+ * @param {Array<string>|null} excludedStreamIds
+ */
+function addNotsToStreamQuery (streamQuery, excludedStreamIds) {
+  if (excludedStreamIds == null || excludedStreamIds.length === 0) return;
+  if (streamQuery.not == null) {
+    streamQuery.not = [];
+    streamQuery.not.push(...excludedStreamIds); // here we assume there is double enties.
+    return;
+  }
+  for (const excludedStreamId of excludedStreamIds) {
+    if (excludedStreamIds.indexOf(excludedStreamId) === -1) streamQuery.not.push(excludedStreamId);
+  }
+}
 
 /**
  * @typedef {{
