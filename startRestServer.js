@@ -1,3 +1,7 @@
+
+// npx link ../pryv-datastore
+// launch with NODE_ENV=test LOGS=info node startRestServer.js
+
 const path = require('path');
 
 const { getConfig } = require('@pryv/boiler').init({
@@ -49,7 +53,7 @@ const ds = require('storage/src/localDataStoreSQLite/');
 const server = require('@pryv/datastore/examples/rest/server');
 
 function debugMiddleware (req, res, next) {
-  console.log({ method: req.method, url: req.url, body: req.body });
+  //console.log({ method: req.method, url: req.url, body: req.body });
   next();
 }
 
