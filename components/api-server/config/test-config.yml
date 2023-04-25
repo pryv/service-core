@@ -31,6 +31,8 @@ reporting:
   licenseName: pryv.io-test-license
   templateVersion: 1.0.0
 database:
+  engine: rest
+  baseURL: 'http://localhost:6789/{userId}'
   host: 127.0.0.1
   port: 27017
   name: pryv-node-test

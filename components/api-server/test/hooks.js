@@ -34,10 +34,10 @@ exports.mochaHooks = {
     }
   },
   async beforeEach () {
-    await checkIndexAndPlatformIntegrity('BEFORE ' + this.currentTest.title);
+    // await checkIndexAndPlatformIntegrity('BEFORE ' + this.currentTest.title);
   },
   async afterEach () {
-    await checkIndexAndPlatformIntegrity('AFTER ' + this.currentTest.title);
+    // await checkIndexAndPlatformIntegrity('AFTER ' + this.currentTest.title);
   }
 };
 

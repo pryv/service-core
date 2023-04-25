@@ -26,6 +26,11 @@ class MallTransaction {
       return this.storeTransactions.get(storeId);
     }
     const store = this.mall.storesById.get(storeId);
+    if (store.newTransaction == null) {
+      return {
+        exec: async function (func) { return await func(); }
+      };
+    }
     const transaction = await store.newTransaction();
     this.storeTransactions.set(storeId, transaction);
     return transaction;
