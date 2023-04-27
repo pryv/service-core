@@ -9,11 +9,7 @@ const { getConfig } = require('@pryv/boiler').init({
   baseFilesDir: path.resolve(__dirname, './'),
   baseConfigDir: path.resolve(__dirname, './components/api-server/config/'),
   extraConfigs: [
-    {
-      scope: 'serviceInfo',
-      key: 'service',
-      urlFromKey: 'serviceInfoUrl'
-    },
+
     {
       scope: 'default-paths',
       file: path.resolve(__dirname, './components/api-server/config/paths-config.js')
