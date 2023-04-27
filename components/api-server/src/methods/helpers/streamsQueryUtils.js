@@ -279,16 +279,21 @@ exports.toMongoDBQuery = function toMongoDBQuery (streamQueriesArray) {
  * @returns {{}}
  */
 function streamQueryToMongoDBQuery (streamQuery) {
-  const ands = [];
   if (streamQuery == null) return {};
+
+  const ands = [];
 
   for (const item of streamQuery) {
     addItem(item);
   }
 
-  if (ands.length === 0) return {};
-  if (ands.length === 1) return ands[0];
-  return { $and: ands };
+  if (ands.length === 0) {
+    return {};
+  } else if (ands.length === 1) {
+    return ands[0];
+  } else {
+    return { $and: ands };
+  }
 
   function addItem (item) {
     if (item.any && item.any.length > 0) {
