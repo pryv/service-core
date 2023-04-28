@@ -208,7 +208,7 @@ module.exports = ds.createUserEvents({
   async removeAllNonAccountEventsForUser (userId) {
     const db = await this.storage.forUser(userId);
     const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
-    const query = [{ type: 'streamsQuery', content: [{ any: ['*'], and: [{ not: allAccountStreamIds }] }] }];
+    const query = [{ type: 'streamsQuery', content: [[{ any: ['*'] }, { not: allAccountStreamIds }]] }];
     const res = await db.deleteEvents({ query, options: {} });
     return res;
   }

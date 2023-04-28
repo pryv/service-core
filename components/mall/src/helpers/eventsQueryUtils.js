@@ -11,7 +11,8 @@ const _ = require('lodash');
 module.exports = {
   getParamsByStore,
   getStoreOptionsFromParams,
-  getStoreQueryFromParams
+  getStoreQueryFromParams,
+  normalizeStreamQuery
 };
 
 /**
@@ -99,6 +100,42 @@ function getStoreStreamQuery (streamQuery, context) {
 }
 
 /**
+ *  /!\ As per 1.9.0 we decided to keep a streamQuery in the format of [{any: ..}, {not: ...}, {any: ...}] an extra step
+ *      `normalizeStreamQuery` is added, the full process should be refactored in order to avoid this step.
+ *
+ * @param {*} streamQuery
+ */
+function normalizeStreamQuery (streamQuery) {
+  if (streamQuery == null) return null;
+  const res = [];
+  for (const streamQueryItem of streamQuery) {
+    res.push(normalizeStreamQueryItem(streamQueryItem));
+  }
+  return res;
+}
+
+function normalizeStreamQueryItem (streamQueryItem) {
+  const normalizedStreamQuery = [];
+  const not = []; // we need only one "not"
+  if (streamQueryItem.any != null) normalizedStreamQuery.push({ any: streamQueryItem.any });
+  if (streamQueryItem.not != null) not.push(...streamQueryItem.not);
+  if (streamQueryItem.and != null) {
+    for (const andItem of streamQueryItem.and) {
+      if (andItem.any != null) normalizedStreamQuery.push({ any: andItem.any });
+      if (andItem.not != null) addToNots(andItem.not);
+    }
+  }
+  if (not.length > 0) normalizedStreamQuery.push({ not });
+  return normalizedStreamQuery;
+
+  function addToNots (notItems) {
+    for (const item of notItems) {
+      if (not.indexOf(item) === -1) not.push(item);
+    }
+  }
+}
+
+/**
  * Extract options from params
  */
 function getStoreOptionsFromParams (params) {
@@ -122,7 +159,7 @@ function getStoreQueryFromParams (params) {
   };
   if (params.fromTime != null) { query.fromTime = params.fromTime; }
   if (params.toTime != null) { query.toTime = params.toTime; }
-  if (params.streams != null) { query.streams = params.streams; }
+  if (params.streams != null) { query.streams = normalizeStreamQuery(params.streams); }
   if (params.types != null && params.types.length > 0) { query.types = params.types; }
   if (params.running != null) { query.running = params.running; }
   if (params.modifiedSince != null) { query.modifiedSince = params.modifiedSince; }
