@@ -19,10 +19,24 @@ const ChangeStreamIdPrefixStream = require('../streams/ChangeStreamIdPrefixStrea
 const AddTagsStream = require('../streams/AddTagsStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 let mall;
+
+module.exports = {
+  init,
+  applyDefaultsForRetrieval,
+  coerceStreamsParam,
+  validateStreamsQueriesAndSetStore,
+  transformArrayOfStringsToStreamsQuery,
+  streamQueryCheckPermissionsAndReplaceStars,
+  streamQueryAddForcedAndForbiddenStreams,
+  streamQueryExpandStreams,
+  streamQueryAddHiddenStreams,
+  findEventsFromStore
+};
+
 /**
  *  # Stream Query Flow
  *  1. coerceStreamParam:
- *    - null `streams` is changed to `[{any: ['*]}]
+ *    - null `streams` is changed to `[{any: ['*']}]`
  *    - transform "stringified" `streams` by parsing JSON object
  *
  *  2. transformArrayOfStringsToStreamsQuery:
@@ -440,18 +454,6 @@ async function findEventsFromStore (filesReadTokenSecret, isStreamIdPrefixBackwa
 async function init () {
   mall = await getMall();
 }
-module.exports = {
-  init,
-  applyDefaultsForRetrieval,
-  coerceStreamsParam,
-  validateStreamsQueriesAndSetStore,
-  transformArrayOfStringsToStreamsQuery,
-  streamQueryCheckPermissionsAndReplaceStars,
-  streamQueryAddForcedAndForbiddenStreams,
-  streamQueryExpandStreams,
-  streamQueryAddHiddenStreams,
-  findEventsFromStore
-};
 
 /**
  * @typedef {{

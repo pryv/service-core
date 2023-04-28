@@ -13,6 +13,7 @@ const handleDuplicateError = require('../Database').handleDuplicateError;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const DeletionModesFields = require('../DeletionModesFields');
 const { integrity } = require('business');
+const { localStorePrepareOptions, localStorePrepareQuery } = require('../localStoreEventQueries');
 
 /**
  * Local data store: events implementation.
@@ -48,13 +49,17 @@ module.exports = ds.createUserEvents({
   },
 
   async get (userId, query, options) {
-    const cursor = this._getCursor(userId, getMongoQuery(query), options);
+    const localQuery = localStorePrepareQuery(query);
+    const localOptions = localStorePrepareOptions(options);
+    const cursor = this._getCursor(userId, getMongoQuery(localQuery), localOptions);
     const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
     return res;
   },
 
   async getStreamed (userId, query, options) {
-    const cursor = this._getCursor(userId, getMongoQuery(query), options);
+    const localQuery = localStorePrepareQuery(query);
+    const localOptions = localStorePrepareOptions(options);
+    const cursor = this._getCursor(userId, getMongoQuery(localQuery), localOptions);
     return readableStreamFromEventCursor(cursor);
   },
 
@@ -289,7 +294,7 @@ const converters = {
  * @returns {{ $and: any[] }}}
  */
 function getMongoQuery (query) {
-  const mongoQuery = { $and: [{deleted: null, headId: null}] };
+  const mongoQuery = { $and: [{ deleted: null, headId: null }] };
   for (const item of query) {
     const newCondition = converters[item.type](item.content);
     if (newCondition != null) {

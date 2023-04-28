@@ -10,10 +10,10 @@ const _ = require('lodash');
 
 module.exports = {
   getParamsByStore,
-  getStoreQueryFromParams
+  getStoreOptionsFromParams,
+  getStoreQueryFromParams,
+  normalizeStreamQuery
 };
-
-const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 
 /**
  * A generic query for events.get, events.updateMany, events.delete
@@ -100,69 +100,68 @@ function getStoreStreamQuery (streamQuery, context) {
 }
 
 /**
- * Translates API query params to the store query format.
+ *  /!\ As per 1.9.0 we decided to keep a streamQuery in the format of [{any: ..}, {not: ...}, {any: ...}] an extra step
+ *      `normalizeStreamQuery` is added, the full process should be refactored in order to avoid this step.
+ *
+ * @param {*} streamQuery
+ */
+function normalizeStreamQuery (streamQuery) {
+  if (streamQuery == null) return null;
+  const res = [];
+  for (const streamQueryItem of streamQuery) {
+    res.push(normalizeStreamQueryItem(streamQueryItem));
+  }
+  return res;
+}
+
+function normalizeStreamQueryItem (streamQueryItem) {
+  const normalizedStreamQuery = [];
+  const not = []; // we need only one "not"
+  if (streamQueryItem.any != null) normalizedStreamQuery.push({ any: streamQueryItem.any });
+  if (streamQueryItem.not != null) not.push(...streamQueryItem.not);
+  if (streamQueryItem.and != null) {
+    for (const andItem of streamQueryItem.and) {
+      if (andItem.any != null) normalizedStreamQuery.push({ any: andItem.any });
+      if (andItem.not != null) addToNots(andItem.not);
+    }
+  }
+  if (not.length > 0) normalizedStreamQuery.push({ not });
+  return normalizedStreamQuery;
+
+  function addToNots (notItems) {
+    for (const item of notItems) {
+      if (not.indexOf(item) === -1) not.push(item);
+    }
+  }
+}
+
+/**
+ * Extract options from params
+ */
+function getStoreOptionsFromParams (params) {
+  const options = {
+    sortAscending: params.sortAscending,
+    skip: params.skip,
+    limit: params.limit
+  };
+  return options;
+}
+
+/**
+ * Clean API query params to the store query format.
  * To be called on store-level params just before querying the store.
  * @param {object} params
  * @returns {object}
  */
 function getStoreQueryFromParams (params) {
-  const options = {
-    sort: { time: params.sortAscending ? 1 : -1 },
-    skip: params.skip,
-    limit: params.limit
+  const query = {
+    state: params.state || 'default'
   };
-
-  const query = [];
-
-  if (params.headId) {
-    throw new Error('No headId in query');
-  }
-
-  // trashed
-  switch (params.state) {
-    case 'trashed':
-      query.push({ type: 'equal', content: { field: 'trashed', value: true } });
-      break;
-    case 'all':
-      break;
-    default:
-      query.push({ type: 'equal', content: { field: 'trashed', value: false } });
-  }
-
-  // modified since
-  if (params.modifiedSince != null) {
-    query.push({ type: 'greater', content: { field: 'modified', value: params.modifiedSince } });
-  }
-
-  // types
-  if (params.types && params.types.length > 0) {
-    query.push({ type: 'typesList', content: params.types });
-  }
-
-  // if streams are defined
-  if (params.streams && params.streams.length !== 0) {
-    query.push({ type: 'streamsQuery', content: params.streams });
-  }
-
-  // -------------- time selection -------------- //
-  if (params.toTime != null) {
-    query.push({ type: 'lowerOrEqual', content: { field: 'time', value: params.toTime } });
-  }
-
-  // running
-  if (params.running) {
-    query.push({ type: 'equal', content: { field: 'endTime', value: null } });
-  } else if (params.fromTime != null) {
-    const now = Date.now() / 1000 - DELTA_TO_CONSIDER_IS_NOW;
-    if (params.fromTime <= now && (params.toTime == null || params.toTime >= now)) { // timeFrame includes now
-      query.push({ type: 'greaterOrEqualOrNull', content: { field: 'endTime', value: params.fromTime } });
-    } else {
-      query.push({ type: 'greaterOrEqual', content: { field: 'endTime', value: params.fromTime } });
-    }
-  }
-
-  return {
-    query,
-    options
-  };
+  if (params.fromTime != null) { query.fromTime = params.fromTime; }
+  if (params.toTime != null) { query.toTime = params.toTime; }
+  if (params.streams != null) { query.streams = normalizeStreamQuery(params.streams); }
+  if (params.types != null && params.types.length > 0) { query.types = params.types; }
+  if (params.running != null) { query.running = params.running; }
+  if (params.modifiedSince != null) { query.modifiedSince = params.modifiedSince; }
+  return query;
 }

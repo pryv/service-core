@@ -7,6 +7,7 @@
 
 const ds = require('@pryv/datastore');
 const { Readable } = require('stream');
+const { localStorePrepareQuery } = require('storage/src/localStoreEventQueries');
 
 let keyValueData;
 
@@ -72,7 +73,8 @@ function createUserEvents () {
     /**
      * @returns Array
      */
-    async get (userId, query, options) { // eslint-disable-line no-unused-vars
+    async get (userId, storeQuery, options) { // eslint-disable-line no-unused-vars
+      const query = localStorePrepareQuery(storeQuery);
       const lastStreamCall = await keyValueData.get(userId, 'lastStreamCall');
       let events = [{
         id: 'dummyevent0',
@@ -90,8 +92,9 @@ function createUserEvents () {
 
       // support stream filtering (only for one "any")
       const streamQuery = query.filter((i) => { return i.type === 'streamsQuery'; });
-      if (streamQuery.length > 0 && streamQuery[0].content[0]?.any) {
-        const filterByStreamId = streamQuery[0].content[0]?.any[0];
+      if (streamQuery.length > 0 && streamQuery[0].content[0]) {
+        const firstOrItem = streamQuery[0].content[0];
+        const filterByStreamId = firstOrItem[0]?.any[0];
         events = events.filter((e) => e.streamIds.includes(filterByStreamId));
       }
       ds.defaults.applyOnEvents(events);

@@ -8,7 +8,9 @@ const errors = require('errors').factory;
 const commonFns = require('api-server/src/methods/helpers/commonFunctions');
 const methodsSchema = require('../schema/auditMethods');
 const eventsGetUtils = require('api-server/src/methods/helpers/eventsGetUtils');
-const { getStoreQueryFromParams } = require('mall/src/helpers/eventsQueryUtils');
+const { getStoreQueryFromParams, getStoreOptionsFromParams } = require('mall/src/helpers/eventsQueryUtils');
+const { localStorePrepareOptions, localStorePrepareQuery } = require('storage/src/localStoreEventQueries');
+
 const audit = require('audit');
 const auditStorage = audit.storage;
 const { ConvertEventFromStoreStream } = require('mall/src/helpers/eventsUtils');
@@ -98,9 +100,12 @@ async function getAuditLogs (context, params, result, next) {
   try {
     const userStorage = await auditStorage.forUser(context.user.id);
     params.streams = params.arrayOfStreamQueries;
-    const query = getStoreQueryFromParams(params);
+    const storeQuery = getStoreQueryFromParams(params);
+    const storeOptions = getStoreOptionsFromParams(params);
+    const query = localStorePrepareQuery(storeQuery);
+    const options = localStorePrepareOptions(storeOptions);
     result.addStream('auditLogs', userStorage
-      .getEventsStream(query)
+      .getEventsStream({ query, options })
       .pipe(new ConvertEventFromStoreStream('_audit')));
   } catch (err) {
     return next(err);

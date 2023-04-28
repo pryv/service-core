@@ -100,7 +100,8 @@ class MallUserEvents {
       const eventsStore = this.eventsStores.get(storeId);
       const params = paramsByStore[storeId];
       try {
-        const { query, options } = eventsQueryUtils.getStoreQueryFromParams(params);
+        const query = eventsQueryUtils.getStoreQueryFromParams(params);
+        const options = eventsQueryUtils.getStoreOptionsFromParams(params);
         const events = await eventsStore.get(userId, query, options);
         for (const event of events) {
           res.push(eventsUtils.convertEventFromStore(storeId, event));
@@ -129,8 +130,10 @@ class MallUserEvents {
     }
     const storeId = Object.keys(paramsByStore)[0];
     const eventsStore = this.eventsStores.get(storeId);
+    const params = paramsByStore[storeId];
     try {
-      const { query, options } = eventsQueryUtils.getStoreQueryFromParams(paramsByStore[storeId]);
+      const query = eventsQueryUtils.getStoreQueryFromParams(params);
+      const options = eventsQueryUtils.getStoreOptionsFromParams(params);
       const eventsStreamFromDB = await eventsStore.getStreamed(userId, query, options);
       return eventsStreamFromDB.pipe(new eventsUtils.ConvertEventFromStoreStream(storeId));
     } catch (e) {
