@@ -59,11 +59,6 @@
       "path": "/app/log/core.log",
       "maxFileBytes": 4096,
       "maxNbFiles": 20
-    },
-    "airbrake": {
-      "active": false,
-      "key": "OVERRIDE ME",
-      "projectId": "OVERRIDE ME"
     }
   },
   "updates": {

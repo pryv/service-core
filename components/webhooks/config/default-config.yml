@@ -4,10 +4,6 @@ logs:
     active: true
     level: info
     colorize: true
-  airbrake:
-    active: false
-    projectId: ''
-    key: ''
 database:
   host: 127.0.0.1
   port: 27017
@@ -30,4 +26,3 @@ backwardCompatibility:
     isActive: true
     rootStreamId: 'tags-migrated'
     streamIdPrefix: 'tag-migrated-'
-    

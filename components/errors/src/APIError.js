@@ -5,15 +5,15 @@
  * Proprietary and confidential
  */
 
-// The constructor to use for all errors within the API.
-//
+/**
+ * The constructor to use for all errors within the API.
+ */
 class APIError extends Error {
   id;
   message;
   httpStatus;
   data;
   innerError;
-  dontNotifyAirbrake;
 
   constructor (id, message, options) {
     super();
@@ -29,10 +29,6 @@ class APIError extends Error {
 
     this.innerError = null;
     if (options != null && options.innerError != null) { this.innerError = options.innerError; }
-
-    // We notify unless somebody tells us not to.
-    this.dontNotifyAirbrake = false;
-    if (options != null && options.dontNotifyAirbrake != null) { this.dontNotifyAirbrake = options.dontNotifyAirbrake; }
   }
 }
 
@@ -43,6 +39,5 @@ module.exports = APIError;
  *   httpStatus?: number;
  *   data?: unknown;
  *   innerError?: Error | null;
- *   dontNotifyAirbrake?: boolean;
  * }} APIErrorOptions
  */

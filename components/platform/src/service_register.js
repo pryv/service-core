@@ -9,7 +9,7 @@ const superagent = require('superagent');
 const ErrorIds = require('errors').ErrorIds;
 const errors = require('errors').factory;
 const ErrorMessages = require('errors/src/ErrorMessages');
-const { getLogger, getConfig, notifyAirbrake } = require('@pryv/boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 
 class ServiceRegister {
   settings;
@@ -239,7 +239,6 @@ function safetyCleanDuplicate (foundDuplicates, username, params) {
     const logger = getLogger('service-register');
     const error = new Error('Found unmatching duplicate key: ' + key);
     logger.error('To be investigated >> ', error);
-    notifyAirbrake(error);
   }
 }
 module.exports = {
