@@ -13,6 +13,7 @@ const cuid = require('cuid');
 require('test-helpers/src/api-server-tests-config');
 const storage = require('storage');
 const { databaseFixture } = require('test-helpers');
+const timestamp = require('unix-timestamp');
 const { PendingUpdate } = require('../../../src/metadata_updater/pending_updates');
 const { Flush } = require('../../../src/metadata_updater/flush');
 const { getMall } = require('mall');
@@ -20,11 +21,11 @@ let mall;
 
 describe('Flush', () => {
   const connection = produceMongoConnection();
-  const now = Date.now() / 1000;
+  const now = timestamp.now();
   const initialDuration = 100;
   const fromDeltaTime = initialDuration - 10;
   const toDeltaTime = initialDuration - 1;
-  const modifiedTime = Date.now() / 1e3;
+  const modifiedTime = timestamp.now();
   // Construct and clean a database fixture.
   const pryv = databaseFixture(connection);
   after(function () {
@@ -138,7 +139,7 @@ function makeUpdate (now, attrs = {}) {
     userId: attrs.userId || 'user',
     eventId: attrs.eventId || 'event',
     author: attrs.author || 'token1',
-    timestamp: attrs.timestamp || Date.now() / 1e3,
+    timestamp: attrs.timestamp || timestamp.now(),
     dataExtent: {
       from: attrs.from || now - 100,
       to: attrs.to || now

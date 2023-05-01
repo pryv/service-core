@@ -9,7 +9,7 @@ const { getMall } = require('mall');
 const { getLogger } = require('@pryv/boiler');
 const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const DOT = '.';
-
+const timestamp = require('unix-timestamp');
 const logger = getLogger('migration-1.7.0');
 
 /**
@@ -178,7 +178,7 @@ async function migrateTags (eventsCollection, streamsCollection) {
   // get all users with tags
   const usersWithTag = await eventsCollection.distinct('userId', { tags: { $exists: true, $ne: null } });
   for (const userId of usersWithTag) {
-    const now = Date.now() / 1000;
+    const now = timestamp.now();
 
     async function createStream (id, name, parentId) {
       try {

@@ -7,6 +7,8 @@
 
 /* global assert, cuid, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix, charlatan */
 
+const timestamp = require('unix-timestamp');
+
 describe('Audit Streams and Events', function () {
   let user, username, password, access, appAccess, anotherAppAccess;
   let personalToken;
@@ -61,11 +63,11 @@ describe('Audit Streams and Events', function () {
 
   let start, stop;
   before(async () => {
-    start = Date.now() / 1000;
+    start = timestamp.now();
     await validGet(eventsPath, appAccess);
     await validPost(eventsPath, appAccess)
       .send({ streamIds: [streamId], type: 'count/generic', content: 2 });
-    stop = Date.now() / 1000;
+    stop = timestamp.now();
     await validGet(eventsPath, appAccess);
     await validGet(eventsPath, appAccess).query({ streams: ['other'] });
     await validGet(eventsPath, anotherAppAccess);

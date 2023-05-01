@@ -15,6 +15,7 @@ const AuditFilter = require('./AuditFilter');
 const { AuditAccessIds } = require('./MethodContextUtils');
 const util = require('util');
 const cuid = require('cuid');
+const timestamp = require('unix-timestamp');
 /**
  * EventEmitter interface is just for tests syncing for now
  */
@@ -148,7 +149,7 @@ module.exports = Audit;
  * @returns {{ id: any; createdBy: string; modifiedBy: string; streamIds: any[]; time: number; endTime: number; created: number; modified: number; trashed: boolean; content: { source: any; action: any; query: any; }; }}
  */
 function buildDefaultEvent (context) {
-  const time = Date.now() / 1000;
+  const time = timestamp.now();
   const event = {
     id: cuid(),
     createdBy: 'system',

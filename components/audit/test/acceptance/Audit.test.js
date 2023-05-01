@@ -7,6 +7,8 @@
 
 /* global assert, path, charlatan, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix, apiMethods, fakeAuditEvent, CONSTANTS, sinon, MethodContextUtils, CONSTANTS, AuditAccessIds */
 
+const timestamp = require('unix-timestamp');
+
 describe('Audit', function () {
   let user, username, password, access, readAccess;
   let eventsPath, auditPath;
@@ -61,7 +63,7 @@ describe('Audit', function () {
     let res, now;
     const query = { limit: '1' }; // casting to string as audit saves query before coercion
     before(async function () {
-      now = Date.now() / 1000;
+      now = timestamp.now();
       res = await coreRequest
         .get(eventsPath)
         .set('Authorization', access.token)
@@ -92,7 +94,7 @@ describe('Audit', function () {
       before(async function () {
         assert.isUndefined(apiMethods.AUDITED_METHODS_MAP['service.info']);
         resetSpies();
-        now = Date.now() / 1000;
+        now = timestamp.now();
         res = await coreRequest
           .get(createUserPath('/service/info'));
       });
@@ -111,7 +113,7 @@ describe('Audit', function () {
       let log;
       before(async function () {
         resetSpies();
-        now = Date.now() / 1000;
+        now = timestamp.now();
         res = await coreRequest
           .post(createUserPath('/auth/login'))
           .set('Origin', 'https://sw.rec.la')
@@ -191,7 +193,7 @@ describe('Audit', function () {
       let now;
       const query = { streams: JSON.stringify({ any: ['A', 'Z', true] }) }; // copied from 30NV
       before(async function () {
-        now = Date.now() / 1000;
+        now = timestamp.now();
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', access.token)
@@ -219,7 +221,7 @@ describe('Audit', function () {
       let now;
       const query = { fromTime: 'yo' };
       before(async function () {
-        now = Date.now() / 1000;
+        now = timestamp.now();
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', access.token)
@@ -247,7 +249,7 @@ describe('Audit', function () {
       let now;
       const query = { streams: ['does-not-exist', 'neither'] };
       before(async function () {
-        now = Date.now() / 1000;
+        now = timestamp.now();
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', access.token)
@@ -274,7 +276,7 @@ describe('Audit', function () {
     describe('with errorId "invalid-access-token"', function () {
       let now;
       before(async function () {
-        now = Date.now() / 1000;
+        now = timestamp.now();
         res = await coreRequest
           .get(eventsPath)
           .set('Authorization', 'invalid-token');
@@ -300,7 +302,7 @@ describe('Audit', function () {
     describe('with errorId "forbidden"', function () {
       let now;
       before(async function () {
-        now = Date.now() / 1000;
+        now = timestamp.now();
         res = await coreRequest
           .post(eventsPath)
           .set('Authorization', readAccess.token)
@@ -330,7 +332,7 @@ describe('Audit', function () {
     describe('with errorId "unknown-resource"', function () {
       let now;
       before(async function () {
-        now = Date.now() / 1000;
+        now = timestamp.now();
         res = await coreRequest
           .post(eventsPath + 'does-not-exist')
           .set('Authorization', access.token);
@@ -355,7 +357,7 @@ describe('Audit', function () {
     describe('with a malformed request body', function () {
       let now;
       before(async function () {
-        now = Date.now() / 1000;
+        now = timestamp.now();
         res = await coreRequest
           .post(eventsPath)
           .set('Authorization', access.token)

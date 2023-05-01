@@ -14,6 +14,7 @@ const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
 const { integrity } = require('business');
+const timestamp = require('unix-timestamp');
 
 const { fixturePath } = require('./unit/test-helper');
 
@@ -648,21 +649,21 @@ describe('events.streamIds', function () {
       });
       await user.event({
         type: 'note/txt',
-        time: (Date.now() / 1000) - 2,
+        time: (timestamp.now()) - 2,
         content: 'In B and Son of A',
         id: eventIdAxAandB,
         streamIds: [streamBId, streamAxAId]
       });
       await user.event({
         type: 'note/txt',
-        time: (Date.now() / 1000) - 1,
+        time: (timestamp.now()) - 1,
         content: 'In A and Son of A',
         id: eventIdAandAxA,
         streamIds: [streamAId, streamAxAId]
       });
       await user.event({
         type: 'note/txt',
-        time: (Date.now() / 1000),
+        time: (timestamp.now()),
         content: 'In Son of A and Son of Son of A',
         id: eventIdAxAandAxAxA,
         streamIds: [streamAxAId, streamAxAxAId]

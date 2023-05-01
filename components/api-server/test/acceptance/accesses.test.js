@@ -160,7 +160,7 @@ describe('accesses', () => {
                 level: 'read'
               }
             ],
-            deleted: Date.now() / 1000
+            deleted: timestamp.now()
           };
           before(async () => {
             res = await server
@@ -191,7 +191,7 @@ describe('accesses', () => {
             .put(`/${userId}/accesses/${activeAccess.id}`)
             .set('Authorization', accessToken)
             .send({
-              update: { deleted: Date.now() / 1000 }
+              update: { deleted: timestamp.now() }
             });
           error = res.body.error;
         });

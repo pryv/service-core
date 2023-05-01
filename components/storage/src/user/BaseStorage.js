@@ -340,7 +340,7 @@ BaseStorage.prototype.delete = function (userOrUserId, query, callback) {
   callback(new Error('Not implemented (user: ' + userOrUserId + ')'));
   // a line like this could work when/if Mongo ever supports "replacement" update on multiple docs:
   // this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query),
-  //    {deleted: Date.now() / 1000}, callback);
+  //    {deleted: timestamp.now()}, callback);
 };
 
 BaseStorage.prototype.removeOne = function (userOrUserId, query, callback) {

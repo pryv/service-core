@@ -139,7 +139,7 @@ class Webhook {
       this.currentRetries = 0;
     }
     this.runCount++;
-    this.lastRun = { status, timestamp: Date.now() / 1000 };
+    this.lastRun = { status, timestamp: timestamp.now() };
     this.addRun(this.lastRun);
     await makeUpdate(['lastRun', 'runs', 'runCount', 'failCount', 'currentRetries', 'state'], this);
     if (hasError(status)) {

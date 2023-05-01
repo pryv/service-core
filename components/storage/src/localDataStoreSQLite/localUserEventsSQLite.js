@@ -12,6 +12,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const DeletionModesFields = require('../DeletionModesFields');
 const { integrity } = require('business');
 const { localStorePrepareOptions, localStorePrepareQuery } = require('../localStoreEventQueries');
+const timestamp = require('unix-timestamp');
 
 /**
  * Local data store: events implementation.
@@ -161,7 +162,7 @@ module.exports = ds.createUserEvents({
     }
 
     // prepare event content for DB
-    deletedEventContent.deleted = Date.now() / 1000;
+    deletedEventContent.deleted = timestamp.now();
     for (const field of this.deletionSettings.fields) {
       delete deletedEventContent[field];
     }

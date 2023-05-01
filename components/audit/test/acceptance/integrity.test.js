@@ -8,6 +8,7 @@
 /* global assert, cuid, initTests, initCore, coreRequest, getNewFixture, charlatan */
 
 const { integrity } = require('business');
+const timestamp = require('unix-timestamp');
 
 describe('Audit events integrity', function () {
   let user, username, password, access, appAccess;
@@ -17,7 +18,7 @@ describe('Audit events integrity', function () {
   let auditedEvent;
 
   const streamId = 'yo';
-  const now = Date.now() / 1000;
+  const now = timestamp.now();
 
   before(async function () {
     await initTests();
