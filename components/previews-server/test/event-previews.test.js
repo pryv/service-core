@@ -7,7 +7,6 @@
 
 const should = require('chai').should(); /* eslint-disable-line */
 
-require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');

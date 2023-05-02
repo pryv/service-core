@@ -25,14 +25,17 @@ const deps = module.exports = {
     sessions: new storage.Sessions(database),
     user: {
       accesses: new storage.user.Accesses(database),
-      eventFiles: new storage.user.EventFiles(
-        config.get('eventFiles'), getLogger('eventFiles')),
+      eventFiles: new storage.user.EventFiles(),
       followedSlices: new storage.user.FollowedSlices(database),
       streams: new storage.user.Streams(database), // TODO: reomove when mall is fully implemented for streams
       profile: new storage.user.Profile(database),
       webhooks: new storage.user.Webhooks(database)
     }
   }
+};
+// this is call by global.test.js to initialized async components.
+deps.init = async function init () {
+  await deps.storage.user.eventFiles.init();
 };
 
 const dbDocumentsItems = _.values(_.pick(deps.storage.user,

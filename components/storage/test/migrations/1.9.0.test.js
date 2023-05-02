@@ -10,7 +10,6 @@
  */
 
 const util = require('util');
-require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const testData = helpers.data;
 const { getMall } = require('mall');

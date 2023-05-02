@@ -8,7 +8,27 @@
  * Extends the common test support object with server-specific stuff.
  */
 
-module.exports = require('test-helpers');
+process.env.NODE_ENV = 'test';
+require('test-helpers/src/api-server-tests-config');
 
-// override
-module.exports.dependencies = require('./dependencies');
+const testHelpers = require('test-helpers');
+
+module.exports = testHelpers;
+
+const InstanceManager = testHelpers.InstanceManager;
+
+const { getConfigUnsafe } = require('@pryv/boiler');
+const path = require('path');
+/**
+ * Overrides common test dependencies with server-specific config settings.
+ */
+testHelpers.dependencies.settings = getConfigUnsafe(true).get();
+testHelpers.dependencies.instanceManager = new InstanceManager({
+  serverFilePath: path.resolve(__dirname, '../../src/server.js'),
+  axonMessaging: testHelpers.dependencies.settings.axonMessaging,
+  logging: testHelpers.dependencies.logging
+});
+
+before(async function () {
+  await testHelpers.dependencies.init();
+});

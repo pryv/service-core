@@ -18,11 +18,7 @@ module.exports = EventFiles;
  * Manages files storage for events (attachments & previews).
  *
  */
-function EventFiles (settings, logger) {
-  this.settings = settings;
-  this.logger = logger;
-  $$('GET RID OF THIS Initialization phase');
-}
+function EventFiles () { }
 
 EventFiles.prototype.init = async function () {
   const config = await getConfig();
