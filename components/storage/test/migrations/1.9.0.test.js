@@ -13,19 +13,31 @@ const util = require('util');
 require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const testData = helpers.data;
-
+const { getMall } = require('mall');
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
+const { remove, pathExists } = require('fs-extra');
+const path = require('path');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getVersions } = require('./util');
 
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
+const userWithAttachments = 'u_0';
+const { assert } = require('chai');
 
 describe('Migration - 1.9.0', function () {
   this.timeout(20000);
+  let userLocalDirectory;
 
   before(async function () {
+    // remove user attachments
+    userLocalDirectory = require('storage').userLocalDirectory;
+    await userLocalDirectory.init();
+    const userLocalDir = await userLocalDirectory.getPathForUser(userWithAttachments);
+    const newAttachmentDirPath = path.join(userLocalDir, userLocalDirectory.ATTACHMENT_DIR_NAME);
+    await remove(newAttachmentDirPath);
+
     const newVersion = getVersions('1.9.0');
     await SystemStreamsSerializer.init();
     await util.promisify(testData.restoreFromDump)('1.8.0', mongoFolder);
@@ -35,6 +47,21 @@ describe('Migration - 1.9.0', function () {
   });
 
   after(async () => {});
+
+  it('Check attachments', async () => {
+    const mall = await getMall();
+    const allUserEvents = await mall.events.get(userWithAttachments, {});
+    for (const event of allUserEvents) {
+      $$(event);
+      if (event.attachments) {
+        for (const attachment of event.attachments) {
+          const attachmentPath = userLocalDirectory.pathForAttachment(userWithAttachments, event.id, attachment.id);
+          assert.isTrue(await pathExists(attachmentPath), attachmentPath + ' should exists');
+          $$(attachmentPath);
+        }
+      }
+    }
+  });
 
   it('[XAAB] Check integrity of database', async () => {
     await integrityFinalCheck.all();

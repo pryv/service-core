@@ -5,53 +5,86 @@
  * Proprietary and confidential
  */
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
+const { move } = require('fs-extra');
+const { readdirSync, statSync } = require('fs');
+const path = require('path');
+
 /**
- * v1.7.5:
+ * v1.9.0:
  * - migrate system streamIds in access permissions
  */
 module.exports = async function (context, callback) {
-  const logger = getLogger('migration-1.8.1');
-  logger.info('V1.8.0 => v1.8.1 Migration started');
+  const logger = getLogger('migration-1.9.0');
+  logger.info('V1.9.0 => v1.9.0 Migration started');
   await SystemStreamsSerializer.init();
-  const eventsCollection = await context.database.getCollection({
-    name: 'events'
-  });
   try {
-    const query = { headId: { $exists: true, $ne: null }, integrity: { $exists: true, $ne: null } };
-    const cursor = eventsCollection.find(query, {});
-
-    const BUFFER_SIZE = 500;
-    let requests = [];
-    while (await cursor.hasNext()) {
-      const event = await cursor.next();
-      const originalId = event._id;
-      event.id = event.headId;
-      delete event.headId;
-      delete event.userId;
-      delete event._id;
-      const eventNewIntegrity = integrity.events.compute(event).integrity;
-
-      if (event.integrity === eventNewIntegrity) continue;
-
-      const request = {
-        updateOne: {
-          filter: { _id: originalId },
-          update: {
-            $set: { integrity: eventNewIntegrity }
-          }
-        }
-      };
-      requests.push(request);
-      if (requests.length > BUFFER_SIZE) { requests = await flushToDb(requests, eventsCollection); }
-    }
-    await flushToDb(requests, eventsCollection);
+    await moveAttachments();
+    await migrateHistory(context);
   } catch (e) {
     return callback(e);
   }
-  logger.info('V1.8.0 => v1.8.1 Migration finished');
+
+  logger.info('V1.8.0 => v1.9.0 Migration finished');
   callback();
+};
+
+async function moveAttachments () {
+  const { userLocalDirectory } = require('storage');
+  const logger = getLogger('migration-1.9.0:attachments');
+  const config = await getConfig();
+  await userLocalDirectory.init();
+  const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
+  // 1- go through all originals attachments user Directory
+
+  const fileNames = readdirSync(attachmentsDirPath);
+  for (const userId of fileNames) {
+    const oldAttachmentDirPath = path.join(attachmentsDirPath, userId);
+    if (!statSync(oldAttachmentDirPath).isDirectory()) { logger.warn('Skipping File' + oldAttachmentDirPath); continue; }
+    const userLocalDir = await userLocalDirectory.ensureUserDirectory(userId);
+    // 2- get new attachment folder
+    const newAttachmentDirPath = path.join(userLocalDir, userLocalDirectory.ATTACHMENT_DIR_NAME);
+    // 3- move attachment
+    await move(oldAttachmentDirPath, newAttachmentDirPath);
+  }
+}
+
+async function migrateHistory (context) {
+  const logger = getLogger('migration-1.9.0:historical-events');
+  const eventsCollection = await context.database.getCollection({
+    name: 'events'
+  });
+
+  // integrity value of historical have changed.. re-compute them
+  const query = { headId: { $exists: true, $ne: null }, integrity: { $exists: true, $ne: null } };
+  const cursor = eventsCollection.find(query, {});
+
+  const BUFFER_SIZE = 500;
+  let requests = [];
+  while (await cursor.hasNext()) {
+    const event = await cursor.next();
+    const originalId = event._id;
+    event.id = event.headId;
+    delete event.headId;
+    delete event.userId;
+    delete event._id;
+    const eventNewIntegrity = integrity.events.compute(event).integrity;
+
+    if (event.integrity === eventNewIntegrity) continue;
+
+    const request = {
+      updateOne: {
+        filter: { _id: originalId },
+        update: {
+          $set: { integrity: eventNewIntegrity }
+        }
+      }
+    };
+    requests.push(request);
+    if (requests.length > BUFFER_SIZE) { requests = await flushToDb(requests, eventsCollection); }
+  }
+  await flushToDb(requests, eventsCollection);
 
   async function flushToDb (requests, eventsCollection) {
     if (requests.length === 0) { return; }
@@ -59,4 +92,5 @@ module.exports = async function (context, callback) {
     logger.info(`flushed ${result.nModified} modifications into database`);
     return [];
   }
-};
+}
+
