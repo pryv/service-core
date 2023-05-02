@@ -157,7 +157,7 @@ function resetData (storage, user, items, done) {
 /**
  * Source attachments directory path (!= server storage path)
  */
-const attachmentsDirPath = (exports.attachmentsDirPath = path.join(__dirname, '/data/attachments/'));
+const testsAttachmentsDirPath = (exports.testsAttachmentsDirPath = path.join(__dirname, '/data/attachments/'));
 
 const attachments = (exports.attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
@@ -186,7 +186,7 @@ function getSubresourceIntegrity (filePath) {
  * @returns {{ id: any; filename: any; path: any; data: any; size: any; type: any; integrity: string; }}
  */
 function getAttachmentInfo (id, filename, type) {
-  const filePath = path.join(attachmentsDirPath, filename);
+  const filePath = path.join(testsAttachmentsDirPath, filename);
   const data = fs.readFileSync(filePath);
   const integrity = getSubresourceIntegrity(filePath);
   return {
@@ -275,7 +275,7 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
             ' --out ' +
             getDumpDBSubfolder(outputFolder)),
     childProcess.exec.bind(null, 'tar -C ' +
-            settings.eventFiles.attachmentsDirPath +
+            settings.eventFiles.testsAttachmentsDirPath +
             ' -czf ' +
             getDumpFilesArchive(outputFolder) +
             ' .')

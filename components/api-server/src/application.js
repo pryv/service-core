@@ -140,7 +140,7 @@ class Application {
     }
     this.api = new API();
     this.systemAPI = new API();
-    this.produceStorageSubsystem();
+    await this.produceStorageSubsystem();
     await this.createExpressApp();
     const apiVersion = await getAPIVersion();
     const hostname = require('os').hostname();
@@ -246,11 +246,11 @@ class Application {
   /**
    * @returns {void}
    */
-  produceStorageSubsystem () {
+  async produceStorageSubsystem () {
     this.database = storage.getDatabaseSync();
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models.
-    this.storageLayer = storage.getStorageLayerSync();
+    this.storageLayer = await storage.getStorageLayer();
   }
 
   customAuthStepLoaded = false;

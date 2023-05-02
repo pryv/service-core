@@ -13,39 +13,39 @@ const FollowedSlices = require('./user/FollowedSlices');
 const Profile = require('./user/Profile');
 const Streams = require('./user/Streams');
 const Webhooks = require('./user/Webhooks');
+const { getConfig, getLogger } = require('@pryv/boiler');
 
 class StorageLayer {
   connection;
-
   versions;
-
   passwordResetRequests;
-
   sessions;
-
   accesses;
-
   eventFiles;
-
   followedSlices;
-
   profile;
-
   streams;
-
   webhooks;
-  constructor (connection, logger, attachmentsDirPath, previewsDirPath, passwordResetRequestMaxAge, sessionMaxAge) {
+  logger;
+
+  async init (connection) {
+    if (this.connection != null) { 
+      this.logger.info('Already initialized');
+      return;
+    }
+    const config = await getConfig();
+    this.logger = getLogger('storage');
+    const passwordResetRequestMaxAge = config.get('auth:passwordResetRequestMaxAge');
+    const sessionMaxAge = config.get('auth:sessionMaxAge');
     this.connection = connection;
-    this.versions = new Versions(connection, attachmentsDirPath, logger);
+    this.versions = new Versions(connection, this.logger);
     this.passwordResetRequests = new PasswordResetRequests(connection, {
       maxAge: passwordResetRequestMaxAge
     });
     this.sessions = new Sessions(connection, { maxAge: sessionMaxAge });
     this.accesses = new Accesses(connection);
-    this.eventFiles = new EventFiles({
-      attachmentsDirPath,
-      previewsDirPath
-    }, logger);
+    this.eventFiles = new EventFiles();
+    await this.eventFiles.init();
     this.followedSlices = new FollowedSlices(connection);
     this.profile = new Profile(connection);
     this.streams = new Streams(connection);

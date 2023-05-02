@@ -52,7 +52,6 @@ describe('Migration - 1.9.0', function () {
     const mall = await getMall();
     const allUserEvents = await mall.events.get(userWithAttachments, {});
     for (const event of allUserEvents) {
-      $$(event);
       if (event.attachments) {
         for (const attachment of event.attachments) {
           const attachmentPath = userLocalDirectory.pathForAttachment(userWithAttachments, event.id, attachment.id);

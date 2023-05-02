@@ -11,6 +11,7 @@ const path = require('path');
 const toString = require('utils').toString;
 
 const { pipeline } = require('stream/promises');
+const { getConfig } = require('@pryv/boiler');
 
 module.exports = EventFiles;
 /**
@@ -20,7 +21,13 @@ module.exports = EventFiles;
 function EventFiles (settings, logger) {
   this.settings = settings;
   this.logger = logger;
+  $$('GET RID OF THIS Initialization phase');
 }
+
+EventFiles.prototype.init = async function () {
+  const config = await getConfig();
+  this.settings = config.get('eventFiles');
+};
 
 /**
  * Computes the total storage size of the given user's attached files, in bytes.

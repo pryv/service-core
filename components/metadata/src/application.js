@@ -68,7 +68,7 @@ class Application {
    */
   async startMetadataUpdater () {
     // Connect to MongoDB
-    const storageLayer = produceStorageLayer(this.config.get('database'), this.logger.getLogger('mongodb'));
+    const storageLayer = await storage.getStorageLayer();
     // Construct the service
     const service = new services.MetadataUpdater(storageLayer, this.logger.getLogger('metadata-updater'));
     this.metadataUpdaterService = service;
@@ -80,9 +80,3 @@ class Application {
   }
 }
 module.exports = Application;
-/**
- * @returns {any}
- */
-function produceStorageLayer (settings, logger) {
-  return storage.getStorageLayerSync();
-}
