@@ -31,22 +31,23 @@ module.exports = async function (context, callback) {
 };
 
 async function moveAttachments () {
-  const { userLocalDirectory } = require('storage');
+  const { userLocalDirectory, getStorageLayer } = require('storage');
   const logger = getLogger('migration-1.9.0:attachments');
   const config = await getConfig();
   await userLocalDirectory.init();
-  const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
+  const eventFiles = (await getStorageLayer()).eventFiles;
+  const oldAttachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
   // 1- go through all originals attachments user Directory
 
-  const fileNames = readdirSync(attachmentsDirPath);
+  const fileNames = readdirSync(oldAttachmentsDirPath);
   for (const userId of fileNames) {
-    const oldAttachmentDirPath = path.join(attachmentsDirPath, userId);
-    if (!statSync(oldAttachmentDirPath).isDirectory()) { logger.warn('Skipping File' + oldAttachmentDirPath); continue; }
+    const oldAttachmentUserDirPath = path.join(oldAttachmentsDirPath, userId);
+    if (!statSync(oldAttachmentUserDirPath).isDirectory()) { logger.warn('Skipping File' + oldAttachmentUserDirPath); continue; }
     const userLocalDir = await userLocalDirectory.ensureUserDirectory(userId);
     // 2- get new attachment folder
-    const newAttachmentDirPath = path.join(userLocalDir, userLocalDirectory.ATTACHMENT_DIR_NAME);
+    const newAttachmentDirPath = path.join(userLocalDir, 'attachments');
     // 3- move attachment
-    await move(oldAttachmentDirPath, newAttachmentDirPath);
+    await move(oldAttachmentUserDirPath, newAttachmentDirPath);
   }
 }
 

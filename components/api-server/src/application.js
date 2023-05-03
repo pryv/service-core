@@ -247,7 +247,7 @@ class Application {
    * @returns {void}
    */
   async produceStorageSubsystem () {
-    this.database = storage.getDatabaseSync();
+    this.database = await storage.getDatabase();
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models.
     this.storageLayer = await storage.getStorageLayer();

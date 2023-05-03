@@ -75,6 +75,7 @@ async function getPasswordHash (userId) {
 }
 
 async function addPasswordHash (userId, passwordHash, createdBy, time = timestamp.now()) {
+  $$({userId, passwordHash, createdBy, time});
   const db = await getUserDB(userId);
   const result = { time, hash: passwordHash, createdBy };
   db.prepare('INSERT INTO passwords (time, hash, createdBy) VALUES (@time, @hash, @createdBy)').run(result);

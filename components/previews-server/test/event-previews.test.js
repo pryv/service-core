@@ -256,7 +256,7 @@ describe('event previews', function () {
 
     it('[DQF6] must return a proper error if event data is corrupted (no attached file)', function (done) {
       const event = testData.events[2];
-      const filePath = storage.user.eventFiles.getAttachedFilePath(user, event.id, event.attachments[0].id);
+      const filePath = storage.user.eventFiles.getFileAttachmentPath(user.id, event.id, event.attachments[0].id);
       const tempPath = filePath + '_bak';
       async.series([
         function removeFile (stepDone) {

@@ -24,6 +24,7 @@ const { getVersions } = require('./util');
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 const userWithAttachments = 'u_0';
 const { assert } = require('chai');
+const storage = require('storage');
 
 describe('Migration - 1.9.0', function () {
   this.timeout(20000);
@@ -31,10 +32,10 @@ describe('Migration - 1.9.0', function () {
 
   before(async function () {
     // remove user attachments
-    userLocalDirectory = require('storage').userLocalDirectory;
+    userLocalDirectory = storage.userLocalDirectory;
     await userLocalDirectory.init();
     const userLocalDir = await userLocalDirectory.getPathForUser(userWithAttachments);
-    const newAttachmentDirPath = path.join(userLocalDir, userLocalDirectory.ATTACHMENT_DIR_NAME);
+    const newAttachmentDirPath = path.join(userLocalDir, 'attachments');
     await remove(newAttachmentDirPath);
 
     const newVersion = getVersions('1.9.0');
@@ -45,17 +46,17 @@ describe('Migration - 1.9.0', function () {
     await newVersion.migrateIfNeeded();
   });
 
-  after(async () => {});
+  after(async () => { });
 
   it('Check attachments', async () => {
     const mall = await getMall();
+    const eventFiles = (await storage.getStorageLayer()).eventFiles;
     const allUserEvents = await mall.events.get(userWithAttachments, {});
     for (const event of allUserEvents) {
       if (event.attachments) {
         for (const attachment of event.attachments) {
-          const attachmentPath = userLocalDirectory.pathForAttachment(userWithAttachments, event.id, attachment.id);
+          const attachmentPath = eventFiles.getFileAttachmentPath(userWithAttachments, event.id, attachment.id);
           assert.isTrue(await pathExists(attachmentPath), attachmentPath + ' should exists');
-          $$(attachmentPath);
         }
       }
     }

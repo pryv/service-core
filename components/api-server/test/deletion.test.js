@@ -250,7 +250,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert(sessions === null || sessions === []);
         });
         it(`[${testIDs[i][2]}] should delete user event files`, async function () {
-          const pathToUserFiles = app.storageLayer.eventFiles.getAttachmentPath(userToDelete.attrs.id);
+          const pathToUserFiles = app.storageLayer.eventFiles.getUserAttachmentPath(userToDelete.attrs.id);
           const userFileExists = fs.existsSync(pathToUserFiles);
           assert.isFalse(userFileExists);
         });

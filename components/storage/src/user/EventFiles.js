@@ -13,6 +13,11 @@ const toString = require('utils').toString;
 const { pipeline } = require('stream/promises');
 const { getConfig } = require('@pryv/boiler');
 
+const userLocalDirectory = require('../userLocalDirectory');
+const { event } = require('@pryv/stable-object-representation');
+
+const ATTACHEMENT_USER_DIR = 'attachments';
+
 module.exports = EventFiles;
 /**
  * Manages files storage for events (attachments & previews).
@@ -23,6 +28,7 @@ function EventFiles () { }
 EventFiles.prototype.init = async function () {
   const config = await getConfig();
   this.settings = config.get('eventFiles');
+  await userLocalDirectory.init();
 };
 
 /**
@@ -32,7 +38,7 @@ EventFiles.prototype.init = async function () {
  * @returns {Promise<number>}
  */
 EventFiles.prototype.getTotalSize = async function (user) {
-  const userPath = this.getAttachmentPath(user.id);
+  const userPath = this.getUserAttachmentPath(user.id);
   try {
     await fs.promises.access(userPath);
   } catch (err) {
@@ -78,35 +84,35 @@ EventFiles.prototype.saveAttachedFileFromTemp = async function (tempPath, userId
 
 EventFiles.prototype.saveAttachedFileFromStream = async function (readableStream, userId, eventId, fileId) {
   fileId = fileId || cuid();
-  const dirPath = this.getAttachmentPath(userId, eventId);
+
+  const filePath = this.getFileAttachmentPath(userId, eventId, fileId);
+  const dirPath = path.dirname(filePath);
   await mkdirp(dirPath);
-  const writeStream = fs.createWriteStream(path.join(dirPath, fileId));
+  const writeStream = fs.createWriteStream(filePath);
   await pipeline(readableStream, writeStream);
   return fileId;
 };
 
 EventFiles.prototype.getAttachedFileStream = function (userId, eventId, fileId) {
-  const filePath = this.getAttachmentPath(userId, eventId, fileId);
+  const filePath = this.getFileAttachmentPath(userId, eventId, fileId);
   return fs.createReadStream(filePath);
 };
 
 EventFiles.prototype.removeAttachedFile = async function (userId, eventId, fileId) {
-  const filePath = this.getAttachmentPath(userId, eventId, fileId);
+  const filePath = this.getFileAttachmentPath(userId, eventId, fileId);
   await fs.promises.unlink(filePath);
-  await this.cleanupStructure(path.dirname(filePath));
 };
 
 EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
-  const dirPath = this.getAttachmentPath(userId, eventId);
+  const dirPath = this.getEventAttachmentPath(userId, eventId);
   await fs.promises.rm(dirPath, { recursive: true, force: true });
-  await this.cleanupStructure(path.dirname(dirPath));
 };
 
 /**
  * Synchronous until all related code is async/await.
  */
 EventFiles.prototype.removeAllForUser = function (user) {
-  fs.rmSync(this.getAttachmentPath(user.id), { recursive: true, force: true });
+  fs.rmSync(this.getUserAttachmentPath(user.id), { recursive: true, force: true });
 };
 
 /**
@@ -118,27 +124,27 @@ EventFiles.prototype.removeAll = function () {
 };
 
 /**
- * @param {Object} user
- * @param {String} [eventId]
- * @param {String} [fileId]
- * @returns {String}
+ * @param {String} userId
+ * @param {String} eventId
+ * @param {String} fileId
  */
-EventFiles.prototype.getAttachedFilePath = function (user, eventId, fileId) {
-  const args = [].slice.call(arguments);
-  args[0] = user.id;
-  return this.getAttachmentPath.apply(this, args);
+EventFiles.prototype.getFileAttachmentPath = function (userId, eventId, fileId) {
+  return path.join(this.getEventAttachmentPath(userId, eventId), fileId);
 };
 
 /**
  * @param {String} userId
- * @param {String} [eventId]
- * @param {String} [fileId]
- * @internal
+ * @param {String} eventId
  */
-EventFiles.prototype.getAttachmentPath = function (userId, eventId, fileId) {
-  const args = [].slice.call(arguments);
-  args.unshift(this.settings.attachmentsDirPath);
-  return path.join.apply(null, args);
+EventFiles.prototype.getEventAttachmentPath = function (userId, eventId) {
+  return path.join(this.getUserAttachmentPath(userId), eventId);
+};
+
+/**
+ * @param {String} userId
+ */
+EventFiles.prototype.getUserAttachmentPath = function (userId) {
+  return userLocalDirectory.getPathForUser(userId, ATTACHEMENT_USER_DIR);
 };
 
 /**
@@ -178,24 +184,4 @@ function getPreviewFileName (dimension) {
  */
 EventFiles.prototype.removeAllPreviews = function () {
   fs.rmSync(this.settings.previewsDirPath, { recursive: true, force: true });
-};
-
-/**
- * Attempts to remove the given directory and its parents (if empty) until the root attachments
- * directory is reached.
- * @internal
- */
-EventFiles.prototype.cleanupStructure = async function cleanupStructure (dirPath) {
-  if (dirPath === this.settings.attachmentsDirPath) {
-    return;
-  }
-
-  try {
-    await fs.promises.rmdir(dirPath);
-  } catch (err) {
-    // assume the dir is not empty
-    return;
-  }
-
-  await this.cleanupStructure(path.dirname(dirPath));
 };

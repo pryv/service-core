@@ -19,8 +19,7 @@ const deps = module.exports = {
   settings: config.get(),
   storage: {
     database,
-    versions: new storage.Versions(database, config.get('eventFiles:attachmentsDirPath'),
-      getLogger('versions')),
+    versions: new storage.Versions(database, getLogger('versions')),
     passwordResetRequests: new storage.PasswordResetRequests(database),
     sessions: new storage.Sessions(database),
     user: {

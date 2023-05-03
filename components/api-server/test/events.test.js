@@ -1690,7 +1690,7 @@ describe('events', function () {
         const time = timestamp.now();
         should(updatedEvent.modified).be.approximately(time, 2);
 
-        const filePath = eventFilesStorage.getAttachedFilePath(user, event.id,
+        const filePath = eventFilesStorage.getFileAttachmentPath(user.id, event.id,
           event.attachments[0].id);
         fs.existsSync(filePath).should.eql(false, 'deleted file existence');
 
@@ -1768,7 +1768,7 @@ describe('events', function () {
           integrity.events.set(expected);
           validation.checkObjectEquality(deletion.integrity, expected.integrity);
 
-          const dirPath = eventFilesStorage.getAttachedFilePath(user, id);
+          const dirPath = eventFilesStorage.getEventAttachmentPath(user.id, id);
           fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
         }
       ],

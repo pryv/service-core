@@ -4,11 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const Versions = require('./Versions');
 const PasswordResetRequests = require('./PasswordResetRequests');
 const Sessions = require('./Sessions');
 const Accesses = require('./user/Accesses');
-const EventFiles = require('./user/EventFiles');
+
 const FollowedSlices = require('./user/FollowedSlices');
 const Profile = require('./user/Profile');
 const Streams = require('./user/Streams');
@@ -33,6 +34,9 @@ class StorageLayer {
       this.logger.info('Already initialized');
       return;
     }
+    // placed here to avoid depencency cycles
+    const EventFiles = require('./user/EventFiles');
+
     const config = await getConfig();
     this.logger = getLogger('storage');
     const passwordResetRequestMaxAge = config.get('auth:passwordResetRequestMaxAge');
