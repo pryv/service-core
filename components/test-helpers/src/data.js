@@ -20,6 +20,7 @@ const path = require('path');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
+const { userLocalDirectory } = require('storage');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
@@ -349,6 +350,7 @@ exports.getStructure = function (version) {
  * @returns {void}
  */
 function clearAllData (callback) {
+  deleteUsersDataDirectory();
   storage.user.eventFiles.removeAll();
   storage.database.dropDatabase(callback);
 }
@@ -385,4 +387,9 @@ function buildCustomAccountProperties () {
     customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);
   });
   return customProperties;
+}
+
+function deleteUsersDataDirectory() {
+  const basePath = userLocalDirectory.getBasePath();
+  fs.rmSync(basePath, { recursive: true, force: true });
 }
