@@ -14,7 +14,6 @@ const { pipeline } = require('stream/promises');
 const { getConfig } = require('@pryv/boiler');
 
 const userLocalDirectory = require('../userLocalDirectory');
-const { event } = require('@pryv/stable-object-representation');
 
 const ATTACHEMENT_USER_DIR = 'attachments';
 

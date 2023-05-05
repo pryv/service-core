@@ -30,7 +30,7 @@ class StorageLayer {
   logger;
 
   async init (connection) {
-    if (this.connection != null) { 
+    if (this.connection != null) {
       this.logger.info('Already initialized');
       return;
     }

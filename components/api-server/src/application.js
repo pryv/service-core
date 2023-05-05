@@ -140,7 +140,8 @@ class Application {
     }
     this.api = new API();
     this.systemAPI = new API();
-    await this.produceStorageSubsystem();
+    this.database = await storage.getDatabase();
+    this.storageLayer = await storage.getStorageLayer();
     await this.createExpressApp();
     const apiVersion = await getAPIVersion();
     const hostname = require('os').hostname();
@@ -241,16 +242,6 @@ class Application {
    */
   produceLogSubsystem () {
     this.logging = getLogger('Application');
-  }
-
-  /**
-   * @returns {void}
-   */
-  async produceStorageSubsystem () {
-    this.database = await storage.getDatabase();
-    // 'StorageLayer' is a component that contains all the vertical registries
-    // for various database models.
-    this.storageLayer = await storage.getStorageLayer();
   }
 
   customAuthStepLoaded = false;

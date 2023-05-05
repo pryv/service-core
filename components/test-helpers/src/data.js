@@ -389,7 +389,7 @@ function buildCustomAccountProperties () {
   return customProperties;
 }
 
-function deleteUsersDataDirectory() {
+function deleteUsersDataDirectory () {
   const basePath = userLocalDirectory.getBasePath();
   fs.rmSync(basePath, { recursive: true, force: true });
 }

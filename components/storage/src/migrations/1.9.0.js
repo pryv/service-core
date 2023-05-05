@@ -31,11 +31,10 @@ module.exports = async function (context, callback) {
 };
 
 async function moveAttachments () {
-  const { userLocalDirectory, getStorageLayer } = require('storage');
+  const { userLocalDirectory } = require('storage');
   const logger = getLogger('migration-1.9.0:attachments');
   const config = await getConfig();
   await userLocalDirectory.init();
-  const eventFiles = (await getStorageLayer()).eventFiles;
   const oldAttachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
   // 1- go through all originals attachments user Directory
 
@@ -94,4 +93,3 @@ async function migrateHistory (context) {
     return [];
   }
 }
-

@@ -13,8 +13,7 @@ const path = require('path');
 const fs = require('fs/promises');
 const mkdirp = require('mkdirp');
 
-const { getConfig, getLogger } = require('@pryv/boiler');
-const logger = getLogger('user-local-directory');
+const { getConfig } = require('@pryv/boiler');
 
 module.exports = {
   init,
