@@ -140,6 +140,10 @@ software-audit-owasp:
     /Applications/OWASP\ ZAP.app/Contents/Java/zap.sh  -quickurl http://127.0.0.1:3000 -quickout /tmp/owasp-zap-automated-scan.html
     cp /tmp/owasp-zap-automated-scan.html ./software-audit-package/
 
+# install "grype" first https://github.com/anchore/grype
+software-audit-grype:
+    mkdir -p ./software-audit-package/
+    grype eu.gcr.io/pryvio/core:1.8.1  -o template -t grype-html.tmpl > ./software-audit-package/grype.html
 
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
