@@ -64,7 +64,6 @@ describe('event previews', function () {
         const event = testData.events[2];
 
         const res = await request.get(path(event.id), token);
-
         await checkSizeFits(res.body, {}, { width: 256, height: 256 });
 
         res.statusCode.should.eql(200);
