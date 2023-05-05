@@ -19,6 +19,7 @@ build/core/release.tar
 build/hfs/release.tar
 build/preview/release.tar
 build/release.tar
+software-audit-package
 /test-results/
 coverage/
 var-pryv

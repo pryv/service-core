@@ -127,6 +127,20 @@ clean-data:
     rm -rf ./var-pryv/mongodb-data/*
     DEVELOPMENT=true ./scripts/start-mongo
 
+# Create security assessment package
+software-audit-package:
+    rm -rf ./software-audit-package/
+    mkdir -p ./software-audit-package/source-code
+    cp -rv justfile ./components package* README.md test scripts build .eslintrc.yml .mocharc.js LICENSE CHANGELOG.md ./software-audit-package/source-code/
+    cp -rv coverage ./software-audit-package/
+    npm audit --json > ./software-audit-package/npm-audit-result.json
+
+software-audit-owasp:
+    echo "make sure to start api-server with: just start api-server"
+    /Applications/OWASP\ ZAP.app/Contents/Java/zap.sh  -quickurl http://127.0.0.1:3000 -quickout /tmp/owasp-zap-automated-scan.html
+    cp /tmp/owasp-zap-automated-scan.html ./software-audit-package/
+
+
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
 # –––––––––––––----------------------------------------------------------------
