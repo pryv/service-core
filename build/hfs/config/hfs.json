@@ -28,10 +28,6 @@
       "path": "/app/log/previews.log",
       "maxFileBytes": 4096,
       "maxNbFiles": 20
-    },
-    "airbrake": {
-      "active": false,
-      "key": "OVERRIDE ME"
     }
   },
   "metadataUpdater": {

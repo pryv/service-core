@@ -23,11 +23,6 @@
     },
     "file": {
       "active": false
-    },
-    "airbrake": {
-      "active": false,
-      "projectId": "",
-      "key": ""
     }
   }
 }
