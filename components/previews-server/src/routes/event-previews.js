@@ -64,7 +64,7 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
       if (attachment == null) {
         throw errors.corruptedData('Corrupt event data: expected an attachment.');
       }
-      const attachmentPath = userEventFilesStorage.getAttachedFilePath(context.user, id, attachment.id);
+      const attachmentPath = userEventFilesStorage.getAttachmentPath(context.user.id, id, attachment.id);
       // Get aspect ratio
       if (attachment.width != null) {
         originalSize = { width: attachment.width, height: attachment.height };

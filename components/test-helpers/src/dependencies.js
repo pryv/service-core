@@ -19,19 +19,23 @@ const deps = module.exports = {
   settings: config.get(),
   storage: {
     database,
-    versions: new storage.Versions(database, config.get('eventFiles:attachmentsDirPath'),
-      getLogger('versions')),
+    versions: new storage.Versions(database, getLogger('versions')),
     passwordResetRequests: new storage.PasswordResetRequests(database),
     sessions: new storage.Sessions(database),
     user: {
       accesses: new storage.user.Accesses(database),
-      eventFiles: new storage.user.EventFiles(
-        config.get('eventFiles'), getLogger('eventFiles')),
+      eventFiles: new storage.user.EventFiles(),
       followedSlices: new storage.user.FollowedSlices(database),
       streams: new storage.user.Streams(database), // TODO: reomove when mall is fully implemented for streams
       profile: new storage.user.Profile(database),
       webhooks: new storage.user.Webhooks(database)
     }
+  },
+  /**
+   * Called by global.test.js to initialize async components
+   */
+  init: async function () {
+    await this.storage.user.eventFiles.init();
   }
 };
 

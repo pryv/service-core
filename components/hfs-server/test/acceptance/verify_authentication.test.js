@@ -26,8 +26,9 @@ describe('Metadata Loader', function () {
   });
 
   let loader;
-  beforeEach(() => {
-    loader = new MetadataLoader(database, mall, getLogger('metadata-test'));
+  beforeEach(async () => {
+    loader = new MetadataLoader();
+    await loader.init(database, mall, getLogger('metadata-test'));
   });
   const USER_NAME = 'foo';
   const EVENT_ID = 'c1';

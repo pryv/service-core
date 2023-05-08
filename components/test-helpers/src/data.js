@@ -20,6 +20,7 @@ const path = require('path');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
+const { userLocalDirectory } = require('storage');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
@@ -157,7 +158,7 @@ function resetData (storage, user, items, done) {
 /**
  * Source attachments directory path (!= server storage path)
  */
-const attachmentsDirPath = (exports.attachmentsDirPath = path.join(__dirname, '/data/attachments/'));
+const testsAttachmentsDirPath = (exports.testsAttachmentsDirPath = path.join(__dirname, '/data/attachments/'));
 
 const attachments = (exports.attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
@@ -186,7 +187,7 @@ function getSubresourceIntegrity (filePath) {
  * @returns {{ id: any; filename: any; path: any; data: any; size: any; type: any; integrity: string; }}
  */
 function getAttachmentInfo (id, filename, type) {
-  const filePath = path.join(attachmentsDirPath, filename);
+  const filePath = path.join(testsAttachmentsDirPath, filename);
   const data = fs.readFileSync(filePath);
   const integrity = getSubresourceIntegrity(filePath);
   return {
@@ -225,7 +226,7 @@ function copyAttachmentFn (attachmentInfo, user, eventId) {
       return callback(e);
     }
     storage.user.eventFiles
-      .saveAttachedFileFromTemp(tmpPath, user.id, eventId, attachmentInfo.id)
+      .saveAttachmentFromTemp(tmpPath, user.id, eventId, attachmentInfo.id)
       .then((fileID) => {
         callback(null, fileID);
       }, (err) => {
@@ -349,6 +350,7 @@ exports.getStructure = function (version) {
  * @returns {void}
  */
 function clearAllData (callback) {
+  deleteUsersDataDirectory();
   storage.user.eventFiles.removeAll();
   storage.database.dropDatabase(callback);
 }
@@ -385,4 +387,9 @@ function buildCustomAccountProperties () {
     customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);
   });
   return customProperties;
+}
+
+function deleteUsersDataDirectory () {
+  const basePath = userLocalDirectory.getBasePath();
+  fs.rmSync(basePath, { recursive: true, force: true });
 }

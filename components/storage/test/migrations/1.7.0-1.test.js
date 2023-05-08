@@ -12,7 +12,6 @@
 /* global assert */
 
 const bluebird = require('bluebird');
-require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
