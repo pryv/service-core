@@ -47,13 +47,13 @@ module.exports = function (expressApp: express$Application, app: Application) {
     expressApp.get(path.join(regPath, '/:username/check_username'), 
       setMinimalMethodContext,
       setMethodId('auth.usernameCheck'),
-      (req: express$Request, res, next) => {
+      function apiCall(req: express$Request, res, next) {
         api.call(req.context, req.params, methodCallback(res, next, 200));
     });
     expressApp.get(path.join(regPath, '/:email/check_email'), 
       setMinimalMethodContext,
       setMethodId('auth.emailCheck'),
-      (req: express$Request, res, next) => {
+      function apiCall(req: express$Request, res, next) {
         api.call(req.context, req.params, methodCallback(res, next, 200));
     });
     expressApp.post(path.join(regPath, '/username/check'), (req: express$Request, res, next) => {

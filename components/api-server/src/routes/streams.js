@@ -24,7 +24,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
   expressApp.get(Paths.Streams, 
     loadAccessMiddleware,
     setMethodId('streams.get'),
-    function (req: express$Request, res, next) {
+    function coerce (req: express$Request, res, next) {
       const params = _.extend({}, req.query);
       tryCoerceStringValues(params, {
         includeDeletionsSince: 'number'

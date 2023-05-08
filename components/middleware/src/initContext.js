@@ -21,7 +21,7 @@ import type { StorageLayer } from 'storage';
 module.exports = function initContext(
   storageLayer: StorageLayer, customAuthStepFn: ?CustomAuthFunction
 ) {
-  return function (
+  return function initContext(
     req: express$Request, res: express$Response, next: express$NextFunction
   ) {
     const authorizationHeader = req.headers['authorization'];

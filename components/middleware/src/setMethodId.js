@@ -15,9 +15,9 @@ module.exports = function (methodId: string) {
     req: express$Request, res: express$Response, next: express$NextFunction
   ) {
     if (req.context == null) {
-      const tracing = initRootSpan('express2');
+      const tracing = initRootSpan('expressX');
       req.context = {  tracing:  tracing};
-      res.on('finish', () => { tracing.finishSpan('express2', 'e2:' + methodId)} )
+      res.on('finish', () => { tracing.finishSpan('expressX', 'e2:' + methodId)} )
     }
     req.context.methodId = methodId;
     

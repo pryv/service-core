@@ -8,10 +8,10 @@
 
 
 
-const { Tracing, DummyTracing } = require('./Tracing');
+const { Tracing, DummyTracing } = require('./Tracing');
 const { getHookerTracer } = require('./HookedTracer');
 
-
+const expressPatch = require('./expressPatch');
 const dataBaseTracer = require('./databaseTracer');
 const { getConfigUnsafe } = require('@pryv/boiler');
 const isTracingEnabled = getConfigUnsafe(true).get('trace:enable');
@@ -19,8 +19,8 @@ const launchTags = getConfigUnsafe(true).get('trace:tags');
 
 module.exports.DummyTracing = DummyTracing;
 
-module.exports.dataBaseTracer = dataBaseTracer;
 
+module.exports.dataBaseTracer = dataBaseTracer;
 module.exports.getHookerTracer = getHookerTracer;
 
 /**
@@ -42,9 +42,9 @@ module.exports.initRootSpan = initRootSpan;
 /**
  * Returns an ExpressJS middleware that starts a span and attaches the "tracing" object to the request parameter.
  */
-module.exports.tracingMiddleware = (name: string = 'express1', tags: ?{}): Function => {
+function tracingMiddleware (name: string, tags: ?{}): Function  {
   return function (req: express$Request, res: express$Response, next: express$NextFunction): void {
-    if (req.tracing != null) { console.log('XXXXX tracing already set', new Error()); return next();}
+    if (req.tracing != null) { console.log('XXXXX tracing already set', new Error()); return next();}
     const tracing = initRootSpan (name, tags);
     res.on('close', () => { 
       const extra = req.context?.methodId || req.url;
@@ -53,4 +53,11 @@ module.exports.tracingMiddleware = (name: string = 'express1', tags: ?{}): Funct
     req.tracing = tracing;
     next();
   }
+}
+module.exports.tracingMiddleware = tracingMiddleware;
+
+module.exports.initExpressTracer = function(app) {
+  const expressTraceName = 'express2';
+  app.use(tracingMiddleware(expressTraceName)); // anyway .. initRootSpan will retrun a dummytracer is not enabled
+  if (isTracingEnabled) expressPatch(app, expressTraceName);
 }

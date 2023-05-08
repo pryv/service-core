@@ -56,6 +56,7 @@ const userLocalDirectory = require('business').users.userLocalDirectory;
 const { Extension, ExtensionLoader } = require('utils').extension;
 
 const { getAPIVersion } = require('middleware/src/project_version');
+const { pubsub } = require('messages');
 const { tracingMiddleware } = require('tracing');
 
 logger.debug('Loading app');

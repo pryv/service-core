@@ -13,7 +13,7 @@ import type { StorageLayer } from 'storage';
 // Also, it adds the corresponding access id as a specific response header.
 // 
 module.exports = function loadAccess(storageLayer: StorageLayer) {
-  return async function (
+  return async function loadAccess(
     req: express$Request, res: express$Response, next: express$NextFunction
   ) {
 
