@@ -36,16 +36,16 @@ async function moveAttachments () {
   const config = await getConfig();
   await userLocalDirectory.init();
   const oldAttachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
-  // 1- go through all originals attachments user Directory
-
   const fileNames = readdirSync(oldAttachmentsDirPath);
+  // for each user with existing attachments dir in old location, move the dir to new location
   for (const userId of fileNames) {
     const oldAttachmentUserDirPath = path.join(oldAttachmentsDirPath, userId);
-    if (!statSync(oldAttachmentUserDirPath).isDirectory()) { logger.warn('Skipping File' + oldAttachmentUserDirPath); continue; }
+    if (!statSync(oldAttachmentUserDirPath).isDirectory()) {
+      logger.warn('Skipping file', oldAttachmentUserDirPath);
+      continue;
+    }
     const userLocalDir = await userLocalDirectory.ensureUserDirectory(userId);
-    // 2- get new attachment folder
     const newAttachmentDirPath = path.join(userLocalDir, 'attachments');
-    // 3- move attachment
     await move(oldAttachmentUserDirPath, newAttachmentDirPath);
   }
 }
@@ -56,7 +56,7 @@ async function migrateHistory (context) {
     name: 'events'
   });
 
-  // integrity value of historical have changed.. re-compute them
+  // integrity values in history have changed... re-compute them
   const query = { headId: { $exists: true, $ne: null }, integrity: { $exists: true, $ne: null } };
   const cursor = eventsCollection.find(query, {});
 

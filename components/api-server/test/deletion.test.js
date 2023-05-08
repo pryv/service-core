@@ -250,7 +250,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert(sessions === null || sessions === []);
         });
         it(`[${testIDs[i][2]}] should delete user event files`, async function () {
-          const pathToUserFiles = app.storageLayer.eventFiles.getUserAttachmentPath(userToDelete.attrs.id);
+          const pathToUserFiles = app.storageLayer.eventFiles.getUserPath(userToDelete.attrs.id);
           const userFileExists = fs.existsSync(pathToUserFiles);
           assert.isFalse(userFileExists);
         });
@@ -428,7 +428,7 @@ async function initiateUserWithData (username) {
   if (!isOpenSource) { user.webhook({ id: charlatan.Lorem.word() }, charlatan.Lorem.word()); }
   const filePath = `test-file-${username}`;
   fs.writeFileSync(filePath, 'Just some text');
-  await app.storageLayer.eventFiles.saveAttachedFileFromTemp(path.resolve(filePath), username, charlatan.Lorem.word());
+  await app.storageLayer.eventFiles.saveAttachmentFromTemp(path.resolve(filePath), username, charlatan.Lorem.word());
   if (!isOpenSource) {
     const usersSeries = await influxRepository.get(`user.${username}`, `event.${cuid()}`);
     const data = new DataMatrix(['deltaTime', 'value'], [

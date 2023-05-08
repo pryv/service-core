@@ -30,11 +30,13 @@ const deps = module.exports = {
       profile: new storage.user.Profile(database),
       webhooks: new storage.user.Webhooks(database)
     }
+  },
+  /**
+   * Called by global.test.js to initialize async components
+   */
+  init: async function () {
+    await this.storage.user.eventFiles.init();
   }
-};
-// this is call by global.test.js to initialized async components.
-deps.init = async function init () {
-  await deps.storage.user.eventFiles.init();
 };
 
 const dbDocumentsItems = _.values(_.pick(deps.storage.user,

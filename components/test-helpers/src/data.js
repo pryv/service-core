@@ -226,7 +226,7 @@ function copyAttachmentFn (attachmentInfo, user, eventId) {
       return callback(e);
     }
     storage.user.eventFiles
-      .saveAttachedFileFromTemp(tmpPath, user.id, eventId, attachmentInfo.id)
+      .saveAttachmentFromTemp(tmpPath, user.id, eventId, attachmentInfo.id)
       .then((fileID) => {
         callback(null, fileID);
       }, (err) => {
@@ -276,7 +276,7 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
             ' --out ' +
             getDumpDBSubfolder(outputFolder)),
     childProcess.exec.bind(null, 'tar -C ' +
-            settings.eventFiles.testsAttachmentsDirPath +
+            settings.eventFiles.attachmentsDirPath +
             ' -czf ' +
             getDumpFilesArchive(outputFolder) +
             ' .')

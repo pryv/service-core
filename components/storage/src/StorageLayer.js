@@ -16,6 +16,10 @@ const Streams = require('./user/Streams');
 const Webhooks = require('./user/Webhooks');
 const { getConfig, getLogger } = require('@pryv/boiler');
 
+/**
+ * 'StorageLayer' is a component that contains all the vertical registries
+ * for various database models.
+ */
 class StorageLayer {
   connection;
   versions;
@@ -34,8 +38,6 @@ class StorageLayer {
       this.logger.info('Already initialized');
       return;
     }
-    // placed here to avoid depencency cycles
-    const EventFiles = require('./user/EventFiles');
 
     const config = await getConfig();
     this.logger = getLogger('storage');
@@ -48,6 +50,8 @@ class StorageLayer {
     });
     this.sessions = new Sessions(connection, { maxAge: sessionMaxAge });
     this.accesses = new Accesses(connection);
+    // require() here to avoid depencency cycles
+    const EventFiles = require('./user/EventFiles');
     this.eventFiles = new EventFiles();
     await this.eventFiles.init();
     this.followedSlices = new FollowedSlices(connection);

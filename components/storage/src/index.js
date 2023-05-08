@@ -7,7 +7,7 @@
 const Access = require('./user/Accesses');
 const Stream = require('./user/Streams');
 const Database = require('./Database');
-const StorageLayer = require('./storage_layer');
+const StorageLayer = require('./StorageLayer');
 const { getConfigUnsafe, getConfig } = require('@pryv/boiler');
 const { dataBaseTracer } = require('tracing');
 const usersLocalIndex = require('./usersLocalIndex');
@@ -54,6 +54,34 @@ async function getUserAccountStorage () {
   return userAccountStorage;
 }
 
+let storageLayer;
+/**
+ * @returns {StorageLayer}
+ */
+async function getStorageLayer () {
+  if (storageLayer) { return storageLayer; }
+  const config = await getConfig();
+  storageLayer = new StorageLayer();
+  await storageLayer.init(_getDatabase(config));
+  return storageLayer;
+}
+
+/**
+ * @returns {any}
+ */
+function getDatabaseSync (warnOnly) {
+  return _getDatabase(getConfigUnsafe(warnOnly));
+}
+
+/**
+ * @returns {Promise<any>}
+ */
+async function getDatabase () {
+  const db = _getDatabase(await getConfig());
+  await db.ensureConnect();
+  return db;
+}
+
 let database;
 /**
  * @returns {any}
@@ -64,32 +92,4 @@ function _getDatabase (config) {
     dataBaseTracer(database);
   }
   return database;
-}
-
-let storageLayer;
-/**
- * @returns {any}
- */
-async function getStorageLayer () {
-  if (storageLayer) { return storageLayer; }
-  // 'StorageLayer' is a component that contains all the vertical registries
-  // for various database models.
-  const config = await getConfig();
-  storageLayer = new StorageLayer();
-  await storageLayer.init(_getDatabase(config));
-  return storageLayer;
-}
-/**
- * @returns {any}
- */
-function getDatabaseSync (warnOnly) {
-  return _getDatabase(getConfigUnsafe(warnOnly));
-}
-/**
- * @returns {Promise<any>}
- */
-async function getDatabase () {
-  const db = _getDatabase(await getConfig());
-  await db.ensureConnect();
-  return db;
 }

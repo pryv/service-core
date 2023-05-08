@@ -19,7 +19,7 @@ exports.compareTestAndAttachedFiles = function (user, eventId, fileId, originalF
   if (originalFileName == null) {
     originalFileName = fileId;
   }
-  return cmp(eventFilesStorage.getFileAttachmentPath(user.id, eventId, fileId), path.join(testData.testsAttachmentsDirPath, originalFileName));
+  return cmp(eventFilesStorage.getAttachmentPath(user.id, eventId, fileId), path.join(testData.testsAttachmentsDirPath, originalFileName));
 };
 /**
  * @returns {any}

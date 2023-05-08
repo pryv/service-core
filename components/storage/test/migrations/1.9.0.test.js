@@ -55,7 +55,7 @@ describe('Migration - 1.9.0', function () {
     for (const event of allUserEvents) {
       if (event.attachments) {
         for (const attachment of event.attachments) {
-          const attachmentPath = eventFiles.getFileAttachmentPath(userWithAttachments, event.id, attachment.id);
+          const attachmentPath = eventFiles.getAttachmentPath(userWithAttachments, event.id, attachment.id);
           assert.isTrue(await pathExists(attachmentPath), attachmentPath + ' should exists');
         }
       }
