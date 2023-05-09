@@ -902,7 +902,7 @@ describe('[STRE] streams', function () {
             assert.equal(actual.id, e.id);
           });
 
-          const dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
+          const dirPath = eventFilesStorage.getEventPath(user.id, deletedEventWithAtt.id);
 
           // some time after returning to the client. Let's hang around and try
           // this several times.

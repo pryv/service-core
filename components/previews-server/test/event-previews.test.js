@@ -7,7 +7,6 @@
 
 const should = require('chai').should(); /* eslint-disable-line */
 
-require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -65,14 +64,13 @@ describe('event previews', function () {
         const event = testData.events[2];
 
         const res = await request.get(path(event.id), token);
-
         await checkSizeFits(res.body, {}, { width: 256, height: 256 });
 
         res.statusCode.should.eql(200);
         res.header['content-type'].should.eql('image/jpeg');
 
         const eventFiles = storage.user.eventFiles;
-        const cachedPath = eventFiles.getPreviewFilePath(user, event.id, 256);
+        const cachedPath = eventFiles.getPreviewPath(user, event.id, 256);
 
         const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
 
@@ -145,7 +143,7 @@ describe('event previews', function () {
         function retrieveInitialPreview (stepDone) {
           request.get(path(event.id), token).end(function (res) {
             res.statusCode.should.eql(200);
-            cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+            cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
             cachedStats = fs.statSync(cachedPath);
             stepDone();
           });
@@ -180,7 +178,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
-          cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+          cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
           const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           cachedFileModified = modified.toString();
         },
@@ -257,7 +255,7 @@ describe('event previews', function () {
 
     it('[DQF6] must return a proper error if event data is corrupted (no attached file)', function (done) {
       const event = testData.events[2];
-      const filePath = storage.user.eventFiles.getAttachedFilePath(user, event.id, event.attachments[0].id);
+      const filePath = storage.user.eventFiles.getAttachmentPath(user.id, event.id, event.attachments[0].id);
       const tempPath = filePath + '_bak';
       async.series([
         function removeFile (stepDone) {
@@ -297,7 +295,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
-          aCachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+          aCachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
           // add delay as the attribute is written after the response is sent
           setTimeout(
             async function () {
@@ -310,7 +308,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           assert.strictEqual(res.statusCode, 200);
-          anotherCachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 512);
+          anotherCachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 512);
           await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
         },
         async function hackLastAccessTime () {
@@ -336,7 +334,7 @@ describe('event previews', function () {
       }));
 
       resGet.statusCode.should.eql(200);
-      const cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+      const cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
 
       const lastAccessed = await xattr.get(cachedPath, 'user.pryv.lastAccessed');
       assert.isNotNull(lastAccessed);

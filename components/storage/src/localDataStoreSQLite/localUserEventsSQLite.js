@@ -101,7 +101,7 @@ module.exports = ds.createUserEvents({
   async saveAttachedFiles (userId, eventId, attachmentsItems, transaction) {
     const attachmentsResponse = [];
     for (const attachment of attachmentsItems) {
-      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, eventId);
+      const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachment.attachmentData, userId, eventId);
       attachmentsResponse.push({ id: fileId });
     }
     return attachmentsResponse;
@@ -113,7 +113,7 @@ module.exports = ds.createUserEvents({
    * @returns {Promise<any>}
    */
   async getAttachedFile (userId, eventId, fileId) {
-    return this.eventsFileStorage.getAttachedFileStream(userId, eventId, fileId);
+    return this.eventsFileStorage.getAttachmentStream(userId, eventId, fileId);
   },
 
   /**
@@ -123,7 +123,7 @@ module.exports = ds.createUserEvents({
    * @returns {Promise<any>}
    */
   async deleteAttachedFile (userId, eventId, fileId, transaction) {
-    return await this.eventsFileStorage.removeAttachedFile(userId, eventId, fileId);
+    return await this.eventsFileStorage.removeAttachment(userId, eventId, fileId);
   },
 
   /**

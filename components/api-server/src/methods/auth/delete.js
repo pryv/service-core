@@ -20,5 +20,13 @@ module.exports = async function (api) {
   const logging = getLogger('delete');
   const storageLayer = await getStorageLayer();
   const deletion = new Deletion(logging, storageLayer, config);
-  api.register('auth.delete', deletion.checkIfAuthorized.bind(deletion), deletion.validateUserExists.bind(deletion), deletion.validateUserFilepaths.bind(deletion), deletion.deleteUserFiles.bind(deletion), deletion.deleteHFData.bind(deletion), deletion.deleteAuditData.bind(deletion), deletion.deleteUser.bind(deletion));
+  api.register(
+    'auth.delete',
+    deletion.checkIfAuthorized.bind(deletion),
+    deletion.validateUserExists.bind(deletion),
+    deletion.validateUserFilepaths.bind(deletion),
+    deletion.deleteUserFiles.bind(deletion),
+    deletion.deleteHFData.bind(deletion),
+    deletion.deleteAuditData.bind(deletion),
+    deletion.deleteUser.bind(deletion));
 };

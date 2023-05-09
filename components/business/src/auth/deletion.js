@@ -84,8 +84,8 @@ class Deletion {
    */
   async validateUserFilepaths (context, params, result, next) {
     const dirPaths = [
-      this.config.get('eventFiles:attachmentsDirPath'),
-      this.config.get('eventFiles:previewsDirPath')
+      this.storageLayer.eventFiles.getUserPath(context.user.id),
+      path.join(this.config.get('eventFiles:previewsDirPath'), context.user.id)
     ];
     // NOTE User specific paths are constructed by appending the user _id_ to the
     // `paths` constant above. I know this because I read EventFiles#getXPath(...)
@@ -111,7 +111,6 @@ class Deletion {
    */
   async deleteUserFiles (context, params, result, next) {
     const dirPaths = [
-      this.config.get('eventFiles:attachmentsDirPath'),
       this.config.get('eventFiles:previewsDirPath')
     ];
     for (const dirPath of dirPaths) {
