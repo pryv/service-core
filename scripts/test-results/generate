@@ -35,10 +35,11 @@ fs.readdirSync(paths.components).forEach(function (name) {
 
   console.log(formatHeading(name));
 
-  const componentOutputPath = temp.path();
-  childProcess.spawnSync('npx mocha', [`--reporter=json --reporter-option output="${componentOutputPath}"`], {
+  const componentOutputPath = temp.path() + '_' + name;
+  childProcess.spawnSync('LOGS=info NODE_ENV=test npx mocha', [`--reporter=json --reporter-option output="${componentOutputPath}"`], {
     env: process.env,
     cwd: subPath,
+    stdio: 'inherit',
     shell: true // required to use `npx`
   });
 
