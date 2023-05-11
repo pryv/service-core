@@ -25,6 +25,8 @@ coverage/
 var-pryv
 *.log
 learn-config
+build/test/pryv/*/data
+build/test/pryv/*/log
 
 # netbeans IDE
 nbproject/

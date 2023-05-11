@@ -112,7 +112,7 @@ class Database {
       this.logger.debug('Connected');
       await this.client
         .db('admin')
-        .command({ setFeatureCompatibilityVersion: '4.2' }, {});
+        .command({ setFeatureCompatibilityVersion: '6.0' }, {});
       this.db = this.client.db(this.databaseName);
       this.connecting = false;
     } catch (err) {
