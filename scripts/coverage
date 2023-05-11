@@ -1,0 +1,11 @@
+#!/bin/bash
+
+## This script must be called by `just test-cover-all`
+## run all tests including api-server, storage & mall with sqlite
+
+just clean-data &
+just test all
+just clean-data &
+just test-sqlite api-server
+just test-sqlite storage
+just test-sqlite mall
