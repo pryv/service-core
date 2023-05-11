@@ -143,7 +143,7 @@ software-audit-owasp:
 # install "grype" first https://github.com/anchore/grype
 software-audit-grype:
     mkdir -p ./software-audit-package/
-    grype eu.gcr.io/pryvio/core:1.8.1  -o template -t grype-html.tmpl > ./software-audit-package/grype.html
+    grype eu.gcr.io/pryvio/core:1.8.1  -o template -t build/grype-html.tmpl > ./software-audit-package/grype.html
 
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
