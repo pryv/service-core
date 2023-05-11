@@ -9,3 +9,5 @@ ARG TARGET_DIR="/app/bin"
 # copy all code to the target dir except files mentioned in .dockerignore
 COPY . $TARGET_DIR
 WORKDIR $TARGET_DIR
+# We us node_modules from the source dir.. but that works only if on Ubuntu 22:04
+# RUN just install

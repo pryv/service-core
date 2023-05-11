@@ -8,7 +8,17 @@ set -e
 # Determine the build_tag and whether we need to release.
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 
-if [ "$1" != "test" ]
+if [ "$1" == "preview" ]
+then
+  if [ -z "$2" ]; then
+    echo "preview requiers a TAG for the version"
+    exit 0
+  fi
+  version=$2"-preview"
+  echo "This is a preview build: it will be published to the Docker registry with tag: ${version}"
+  host='eu.gcr.io'
+  release=true
+elif [ "$1" != "test" ]
 then
 
 $SCRIPT_FOLDER/scripts/build_name
