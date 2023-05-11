@@ -14,7 +14,7 @@ RUN mkdir -p $DATA_DIR/attachments && \
     mkdir -p $DATA_DIR/previews && \
     chown -R app:app $DATA_DIR
 
-# Clean up after ourselves.
-RUN apt-get remove -y autoconf automake
+# Clean up after ourselves. curl, build-essential and git are not needed
+RUN apt-get remove -y --auto-remove autoconf automake  curl build-essential git linux-libc-dev
 RUN apt-get autoremove && apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* & rm -rf /app/bin/build
