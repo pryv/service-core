@@ -141,9 +141,10 @@ software-audit-owasp:
     cp /tmp/owasp-zap-automated-scan.html ./software-audit-package/
 
 # install "grype" first https://github.com/anchore/grype
+# and build local docker containers following build/README.md
 software-audit-grype:
     mkdir -p ./software-audit-package/
-    grype eu.gcr.io/pryvio/core:1.8.1  -o template -t grype-html.tmpl > ./software-audit-package/grype.html
+    grype local/pryvio/core:test  -o template -t build/grype-html.tmpl > ./software-audit-package/grype.html
 
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils

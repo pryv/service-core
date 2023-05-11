@@ -1,0 +1,14 @@
+{
+  "access": "https://access.rec.la/access",
+  "api": "https://l.rec.la/{username}",
+  "serial": "2023061301",
+  "register": "https://reg.rec.la",
+  "name": "Pryv Docker Local",
+  "home": "https://sw.rec.la",
+  "support": "https://pryv.com/helpdesk",
+  "terms": "https://pryv.com/terms-of-use/",
+  "eventTypes": "https://api.pryv.com/event-types/flat.json",
+  "assets": {
+    "definitions": "https://pryv.github.io/assets-pryv.me/index.json"
+  }
+}

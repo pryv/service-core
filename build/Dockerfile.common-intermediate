@@ -1,5 +1,7 @@
-FROM eu.gcr.io/pryvio/base:1.9.0
-MAINTAINER "Tech@Pryv" <tech@pryv.com>
+ARG BUILD_HOST
+ARG BUILD_VERSION
+FROM ${BUILD_HOST}/pryvio/base:${BUILD_VERSION}
+LABEL maintainer="Pryv tech@pryv.com>"
 
 # Set main paths that will be reused in this docker file
 ARG TARGET_DIR="/app/bin"
@@ -7,3 +9,5 @@ ARG TARGET_DIR="/app/bin"
 # copy all code to the target dir except files mentioned in .dockerignore
 COPY . $TARGET_DIR
 WORKDIR $TARGET_DIR
+# We us node_modules from the source dir.. but that works only if on Ubuntu 22:04
+# RUN just install
