@@ -99,6 +99,9 @@ test-cover component *params:
     NODE_ENV=test COMPONENT={{component}} nyc --reporter=html --report-dir=./coverage \
         scripts/components-run npx mocha -- {{params}}
 
+test-cover-all:
+    NODE_ENV=test nyc --reporter=html --report-dir=./coverage scripts/coverage
+
 # Set up test results report generation
 test-results-init-repo:
     scripts/test-results/init-repo
