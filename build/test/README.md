@@ -7,3 +7,8 @@ Will run only on a machine with docker accessible at user level with arch amd64
 3. start `./start.sh`
 
 
+
+
+# License
+
+[UNLICENSED](LICENSE)
