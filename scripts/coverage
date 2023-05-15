@@ -1,7 +1,7 @@
 #!/bin/bash
 
-## This script must be called by `just test-cover-all`
-## run all tests including api-server, storage & mall with sqlite
+# Run every possible test, with both Mongo and SQLite storage;
+# meant to be called from `just test-cover-all`
 
 just clean-data &
 just test all

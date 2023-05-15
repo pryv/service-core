@@ -1,5 +1,4 @@
 FROM pryvio/common-intermediate:latest
-LABEL maintainer="Pryv tech@pryv.com>"
 
 # pass building name as an argument (like core,previews or other)
 ARG COMPONENT_NAME

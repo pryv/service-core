@@ -1,7 +1,7 @@
 ARG BUILD_HOST
 ARG BUILD_VERSION
 FROM ${BUILD_HOST}/pryvio/base:${BUILD_VERSION}
-LABEL maintainer="Pryv tech@pryv.com>"
+LABEL maintainer="Pryv<tech@pryv.com>"
 
 # Set main paths that will be reused in this docker file
 ARG TARGET_DIR="/app/bin"

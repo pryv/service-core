@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# This file builds all images when packages are installed before the build 
+# This file builds all images when packages are installed before the build
 # (no auth is needed inside the docker image itself)
 set -e
 
-# Builds 'service-core' docker image with the version given below. 
+# Builds 'service-core' docker image with the version given below.
 
 # Determine the build_tag and whether we need to release.
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
@@ -11,7 +11,7 @@ SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 if [ "$1" == "preview" ]
 then
   if [ -z "$2" ]; then
-    echo "preview requiers a TAG for the version"
+    echo "preview requiers a tag argument for the version"
     exit 0
   fi
   version=$2"-preview"
@@ -20,34 +20,28 @@ then
   release=true
 elif [ "$1" != "test" ]
 then
-
-$SCRIPT_FOLDER/scripts/build_name
-
-version=$(cat build_tag)
-if [ -e release_build ]; then
-  echo "This is a release build, it will update 'latest' tags."
+  $SCRIPT_FOLDER/scripts/build_name
+  version=$(cat build_tag)
+  if [ -e release_build ]; then
+    echo "This is a release build, it will update 'latest' tags."
+  fi
+  host='eu.gcr.io'
+  release=true
+else ## test
+  version=test
+  host=localhost
+  release=false
 fi
-
-host='eu.gcr.io'
-release=true
-
-else ## test 
-
-host=localhost
-release=false
-version=test
-
-fi ## end test
 
 # Copy the release version to the project root, so we can later display it to
 # clients:
 cp ./build_tag ./.api-version
 
 
-echo "---------------------------- building core base --------------------------------" 
+echo "---------------------------- building core base --------------------------------"
 docker build --build-arg BUILD_HOST=$host --build-arg BUILD_VERSION=$version -f $SCRIPT_FOLDER/Dockerfile.common-intermediate -t pryvio/common-intermediate:latest .
 
-# Builds these images: core hfs webhooks preview 
+# Builds these images: core hfs webhooks preview
 for service in core hfs webhooks preview
 do
     echo "---------------------------- building $service --------------------------------"

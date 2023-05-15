@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 VAR_PRYV_FOLDER=$SCRIPT_FOLDER/../var-pryv

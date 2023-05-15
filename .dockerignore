@@ -11,7 +11,7 @@ mongo-scripts
 nats-server
 #node_modules
 #scripts
-software-audit-package
+security-assessment
 test-results
 var-pryv
 **/test
@@ -21,5 +21,5 @@ var-pryv
 .licenser.yml
 .mocharc.js
 application.log
+npm-debug.log
 README.md
-yarn-error.log

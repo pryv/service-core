@@ -132,6 +132,22 @@ just run api-server migrate
 to trigger data migration. Migrations are defined in the `storage` component.
 
 
+## Local Docker containers
+
+See [dedicated README](build/test/README.md).
+
+
+## Security assessment
+
+```
+just security-assessment
+```
+to run security assessment and write output to `security-assessment` (assumes `coverage` data to be present).
+
+See other `just security-assessment-*` commands for what's available. Some require additional software such as [OWASP ZAP](https://www.zaproxy.org/), Docker engine and [Grype](https://github.com/anchore/grype).
+
+
+
 ## Developing on core and depended-upon packages simultaneously
 
 Sometimes it's necessary to work on core and e.g. `@pryv/boiler` or `@pryv/datastore` at the same time.
