@@ -27,15 +27,17 @@ then
   fi
   host='eu.gcr.io'
   release=true
+
+  # Copy the release version to the project root, so we can later display it to
+  # clients:
+  cp ./build_tag ./.api-version
 else ## test
   version=test
   host=localhost
   release=false
 fi
 
-# Copy the release version to the project root, so we can later display it to
-# clients:
-cp ./build_tag ./.api-version
+
 
 
 echo "---------------------------- building core base --------------------------------"
