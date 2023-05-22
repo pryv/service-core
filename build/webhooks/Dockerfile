@@ -1,6 +1,8 @@
 FROM pryvio/intermediate-webhooks:latest
 
-# Only clean up after ourselves.
-RUN apt-get remove -y autoconf automake 
+# config, data and log directories are mapped as Docker volumes, so don't need to be handled here
+
+# Only clean up after ourselves
+RUN apt-get remove -y autoconf automake
 RUN apt-get autoremove && apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* & rm -rf /app/bin/build
