@@ -8,6 +8,8 @@ Requires an AMD64 machine with Docker accessible at user level.
 2. `./build/build test` to build test Docker images
 3. `./build/test/start.sh`  to run containers
 
+To test with [lib-js](https://github.com/pryv/lib-js) 
+use: `TEST_PRYVLIB_DNSLESS_URL="http://l.rec.la:3000/" just test all` from `lib-js` directory
 
 # License
 

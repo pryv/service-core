@@ -31,6 +31,6 @@ case "$1" in
 		create_links # no need to call remove_link, it will be called by create_links
 		;;
 	*)
-		echo "No parameters (or wrong one). Launching migration and creating links with 'start'"
+		echo "No parameters (or wrong one)."
 		create_links ;;
 esac

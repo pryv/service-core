@@ -61,9 +61,18 @@ remove_links() {
 	rm -Rf /etc/service/gnats
 }
 
+wait_for_nats() {
+	while ! nc -z 127.0.0.1 4222 ;
+	do 
+		echo "waiting 2 seconds for nats to be up"
+		sleep 2
+	done
+}
+
 case "$1" in
 	start)
 		create_nats_link
+		wait_for_nats
 		create_links
 		;;
 	stop)
@@ -71,6 +80,7 @@ case "$1" in
 		;;
 	restart)
 		create_nats_link
+		wait_for_nats
 		create_links # no need to call remove_link, it will be called by create_links
 		;;
 	migrate)
@@ -79,6 +89,7 @@ case "$1" in
 	*)
 		echo "No parameters (or wrong one). Launching migration and creating links with 'start'…"
 		create_nats_link
+		wait_for_nats
 		migrate_db
 		create_links
 		;;

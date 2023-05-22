@@ -1,4 +1,7 @@
-#!/bin/sh
+#!/bin/bash
+
+echo "Launching with suffix -$$"
+
 PRYV_BOILER_SUFFIX="-$$" NODE_ENV="production" exec chpst -u app node /app/bin/components/api-server/bin/server \
     --config /app/conf/core.yml --http:port ${PORT_NUM}
 # ${PORT_NUM} will be replaced by launching script

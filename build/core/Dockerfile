@@ -9,6 +9,8 @@ RUN mv ./nats-server/nats-server-v2.3.4-linux-amd64/nats-server /usr/local/bin/
 
 # config, data and log directories are mapped as Docker volumes, so don't need to be handled here
 
+RUN apt-get install -y netcat
+
 # Clean up after ourselves
 RUN apt-get remove -y --auto-remove autoconf automake curl build-essential git linux-libc-dev
 RUN apt-get autoremove && apt-get clean && \

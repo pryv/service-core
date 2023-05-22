@@ -109,7 +109,7 @@ trace:
 accessTracking:
   isActive: true
 service:
-  name: Open-Pryv.io
+  name: Local Docker Test
   support: https://pryv.com/open-pryv-non-configured-page/
   terms: https://pryv.com/open-pryv-non-configured-page/
   home: https://pryv.com/open-pryv-non-configured-page/

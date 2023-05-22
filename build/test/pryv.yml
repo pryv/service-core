@@ -7,6 +7,8 @@ services:
     networks:
       - frontend
       - backend
+    ports:  ## Added to test localy 
+      - "3000:3000"
     volumes:
       - ${PRYV_CONF_ROOT}/pryv/core/conf/:/app/conf/:ro
       - ${PRYV_CONF_ROOT}/pryv/core/data/:/app/data/
