@@ -585,7 +585,7 @@ describe('Versioning', function () {
       settings.versioning = {
         forceKeepHistory: true
       };
-      settings.dnsLess = { isActive: true };
+      settings.dnsLess = { isActive: true, publicUrl: 'http://127.0.0.1:3000/' };
       await server.ensureStartedAsync(settings);
     });
 
