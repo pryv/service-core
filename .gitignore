@@ -25,6 +25,7 @@ build/test/pryv/*/log
 security-assessment
 /test-results/
 coverage/
+private-libs
 var-pryv
 *.log
 learn-config

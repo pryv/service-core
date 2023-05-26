@@ -9,7 +9,7 @@ coverage
 docs
 mongo-scripts
 nats-server
-#node_modules
+node_modules
 #scripts
 security-assessment
 test-results

@@ -9,5 +9,14 @@ ARG TARGET_DIR="/app/bin"
 COPY . $TARGET_DIR
 WORKDIR $TARGET_DIR
 
+# Add python, needed fo gyp to build stuff
+RUN apt-get update
+RUN apt-get install -y python3
+
 # don't install node modules here: for now, that is done in the GH workflow
-# RUN just install
+RUN npm install --omit=dev --omit=optional
+
+# remove python 
+RUN sudo apt-get -y --purge autoremove python3
+# cleanup package cache
+RUN rm -rf /var/lib/apt/lists/*
