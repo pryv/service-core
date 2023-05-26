@@ -21,11 +21,8 @@ SCRIPT_EXTRAS="./scripts/setup-open"
 if [[ -f $SCRIPT_EXTRAS ]]; then
   echo "Running Open-Pryv.io extra setup steps..."
   bash $SCRIPT_EXTRAS
-else # add private packages and libs
-  mkdir -p "private-libs"
-  pushd "private-libs"
-  git clone git@github.com:pryv/lib-reporting.git
-  popd 
+else # add private packages and libs (non open-sourced)
+  bash ./scripts/setup-private-libs
 fi
 
 # create base file structure
