@@ -39,6 +39,9 @@ do
 	sleep 2
 done
 
+# recreate $child_services_dir (deleted previously in cleaning)
+mkdir -p $child_services_dir
+
 # Add core service(s) for runit to start
 for i in $( seq 1 $num_procs )
 do
