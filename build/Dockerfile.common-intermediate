@@ -17,6 +17,6 @@ RUN apt-get install -y python3
 RUN npm install --omit=dev --omit=optional
 
 # remove python 
-RUN sudo apt-get -y --purge autoremove python3
+RUN apt-get -y --purge autoremove python3
 # cleanup package cache
 RUN rm -rf /var/lib/apt/lists/*
