@@ -168,7 +168,7 @@ describe('[SYER] system (ex-register)', function () {
         await mongoFixtures.context.cleanEverything();
       });
       it('[FUTR] must create a new user with the sent data, sending a welcome email', async function () {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.services.email.enabled = {
           welcome: true
         };
@@ -212,7 +212,7 @@ describe('[SYER] system (ex-register)', function () {
         const users = await usersRepository.getAll(true);
         users.length.should.eql(originalCount + 1, 'users');
 
-        const expected = _.cloneDeep(newUserData);
+        const expected = structuredClone(newUserData);
         expected.storageUsed = { dbDocuments: 0, attachedFiles: 0 };
         const actual = _.find(users, function (user) {
           return user.username === newUserData.username;
@@ -227,12 +227,12 @@ describe('[SYER] system (ex-register)', function () {
     });
 
     it('[0G7C] must not send a welcome email if mailing is deactivated', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testWelcomeMailNotSent(settings, done);
     });
     it('[TWBF] must not send a welcome email if welcome mail is deactivated', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.services.email.enabled = {
         welcome: false
       };
@@ -259,7 +259,7 @@ describe('[SYER] system (ex-register)', function () {
       async.series([
         server.ensureStarted.bind(server, settings),
         function registerNewUser (stepDone) {
-          const newUserDataExpected = Object.assign({}, newUserData);
+          const newUserDataExpected = structuredClone(newUserData);
           post(newUserDataExpected, function (err, res) {
             should.not.exists(err);
             validation.check(res, {
@@ -278,7 +278,7 @@ describe('[SYER] system (ex-register)', function () {
 
       it('[9K71] must run the process but not save anything for test username "recla"',
         async function () {
-          const settings = _.cloneDeep(helpers.dependencies.settings);
+          const settings = structuredClone(helpers.dependencies.settings);
 
           should(process.env.NODE_ENV).be.eql('test');
 
@@ -320,7 +320,7 @@ describe('[SYER] system (ex-register)', function () {
         });
 
       it('[ZG1L] must support the old "/register" path for backwards-compatibility', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         request.post(new URL('/register/create-user', server.url).toString())
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .send(newUserDataExpected)
@@ -340,7 +340,7 @@ describe('[SYER] system (ex-register)', function () {
       });
 
       it('[ABI5] must return a correct 400 error if the language property is above 5 characters', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         // eslint-disable-next-line n/handle-callback-err
         post(_.assignIn(newUserDataExpected, { language: 'abcdef' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
@@ -348,7 +348,7 @@ describe('[SYER] system (ex-register)', function () {
       });
 
       it('[OVI4] must return a correct 400 error if the language property is the empty string', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         // eslint-disable-next-line n/handle-callback-err
         post(_.assignIn(newUserDataExpected, { language: '' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
@@ -396,7 +396,7 @@ describe('[SYER] system (ex-register)', function () {
       });
 
       it('[Y5JB] must return a correct 404 error when authentication is invalid', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         request
           .post(path())
           .set('authorization', 'bad-key').send(newUserDataExpected)
@@ -450,7 +450,7 @@ describe('[SYER] system (ex-register)', function () {
       }
 
       function instanciateServerWithLogs (stepDone) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.logs = {
           file: {
             active: true,
@@ -468,7 +468,7 @@ describe('[SYER] system (ex-register)', function () {
 
       // cf. GH issue #64
       it('[Y69B] must replace the passwordHash in the logs by (hidden) when the authentication is invalid', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         async.series([
           function failCreateUser (stepDone) {
             request.post(path()).set('authorization', 'bad-key').send(newUserDataExpected)
@@ -486,7 +486,7 @@ describe('[SYER] system (ex-register)', function () {
 
       // cf. GH issue #64 too
       it('[MEJ9] must replace the passwordHash in the logs by (hidden) when the payload is invalid (here parameters)', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         async.series([
           function failCreateUser (stepDone) {
             // eslint-disable-next-line n/handle-callback-err
@@ -502,10 +502,10 @@ describe('[SYER] system (ex-register)', function () {
       });
 
       it('[CO6H] must not mention the passwordHash in the logs when none is provided', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         async.series([
           function failCreateUser (stepDone) {
-            const dataWithNoPasswordHash = _.cloneDeep(newUserDataExpected);
+            const dataWithNoPasswordHash = structuredClone(newUserDataExpected);
             delete dataWithNoPasswordHash.passwordHash;
 
             // eslint-disable-next-line n/handle-callback-err
@@ -521,7 +521,7 @@ describe('[SYER] system (ex-register)', function () {
       });
 
       function verifyHiddenPasswordHashInLogs (callback) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         fs.readFile(logFilePath, 'utf8', function (err, data) {
           if (err) {
             return callback(err);
@@ -545,7 +545,7 @@ describe('[SYER] system (ex-register)', function () {
   });
 
   describe('GET /user-info/{username}', function () {
-    const user = Object.assign({}, testData.users[0]);
+    const user = structuredClone(testData.users[0]);
     function path (username) {
       return basePath() + '/user-info/' + username;
     }

@@ -9,7 +9,6 @@ const storeDataUtils = require('./helpers/storeDataUtils');
 const streamsUtils = require('./helpers/streamsUtils');
 const { treeUtils } = require('utils');
 const cuid = require('cuid');
-const _ = require('lodash');
 const errorFactory = require('errors').factory;
 
 /**
@@ -192,7 +191,7 @@ class MallUserStreams {
     if (streamData.deleted != null) {
       return await this.createDeleted(userId, streamData);
     }
-    const streamForStore = _.cloneDeep(streamData);
+    const streamForStore = structuredClone(streamData);
     // 0- Prepare default values
     if (streamForStore.trashed !== true) {
       delete streamForStore.trashed;
@@ -243,7 +242,7 @@ class MallUserStreams {
    * @returns {Promise<any>}
    */
   async update (userId, streamData) {
-    const streamForStore = _.cloneDeep(streamData);
+    const streamForStore = structuredClone(streamData);
     // 1- Check if there is a parent stream
     let parentStoreId = storeDataUtils.LocalStoreId;
     let parentStoreStreamId;
