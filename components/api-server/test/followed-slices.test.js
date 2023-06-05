@@ -176,8 +176,7 @@ describe('followed slices', function () {
           schema: methodsSchema.update.result
         });
 
-        const expected = structuredClone(newSliceData);
-        _.defaults(expected, original);
+        const expected = Object.assign({}, original, newSliceData);
         res.body.followedSlice.should.eql(expected);
 
         followedSlicesNotifCount.should.eql(1, 'followed slices notifications');

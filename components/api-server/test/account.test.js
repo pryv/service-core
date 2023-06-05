@@ -107,7 +107,7 @@ describe('[ACCO] account', function () {
         // setup registration server mock
         let regServerCalled = false;
         helpers.instanceTestSetup.set(settings, {
-          context: _.defaults({ username: user.username }, settings.services.register),
+          context: Object.assign({}, settings.services.register, { username: user.username }),
           execute: function () {
             const scope = require('nock')(this.context.url);
             scope.put('/users')
@@ -151,7 +151,7 @@ describe('[ACCO] account', function () {
               if (!isOpenSource) { // no notification in openSource
                 assert.isOk(regServerCalled);
               }
-              const expected = _.defaults(updatedData, user);
+              const expected = Object.assign({}, user, updatedData);
               delete expected.id;
               delete expected.password;
               delete expected.storageUsed;
@@ -393,7 +393,7 @@ describe('[ACCO] account', function () {
           });
         },
         function verifyNewPassword (stepDone) {
-          request.login(_.defaults({ password: data.newPassword }, user), stepDone);
+          request.login(Object.assign({}, user, { password: data.newPassword }), stepDone);
         },
         async function checkPasswordInHistory () {
           assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, data.oldPassword, 2), 'missing previous password in history');
@@ -438,7 +438,7 @@ describe('[ACCO] account', function () {
 
       describe('Complexity rules:', function () {
         it('[1YPT] must return an error if the new password is too short', async () => {
-          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.badTooShort }, baseData);
+          const data = Object.assign({}, baseData, { newPassword: helpers.passwordRules.passwords.badTooShort });
           const res = await request.post(path).send(data);
           validation.checkError(res, {
             status: 400,
@@ -448,7 +448,7 @@ describe('[ACCO] account', function () {
         });
 
         it('[352R] must accept the new password if it is long enough', async () => {
-          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good3CharCats }, baseData);
+          const data = Object.assign({}, baseData, { newPassword: helpers.passwordRules.passwords.good3CharCats });
           const res = await request.post(path).send(data);
           validation.check(res, {
             status: 200
@@ -457,7 +457,7 @@ describe('[ACCO] account', function () {
         });
 
         it('[663A] must return an error if the new password does not contains characters from enough categories', async () => {
-          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.bad2CharCats }, baseData);
+          const data = Object.assign({}, baseData, { newPassword: helpers.passwordRules.passwords.bad2CharCats });
           const res = await request.post(path).send(data);
           validation.checkError(res, {
             status: 400,
@@ -469,7 +469,7 @@ describe('[ACCO] account', function () {
         it('[OY2G] must accept the new password if it contains characters from enough categories', async () => {
           // also tests checking for all 4 categories
           await server.ensureStartedAsync(_.merge(structuredClone(settings), { auth: { passwordComplexityMinCharCategories: 4 } }));
-          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
+          const data = Object.assign({}, baseData, { newPassword: helpers.passwordRules.passwords.good4CharCats });
           const res = await request.post(path).send(data);
           validation.check(res, {
             status: 200
@@ -481,7 +481,7 @@ describe('[ACCO] account', function () {
       describe('Reuse rules:', function () {
         it('[AFX4] must return an error if the new password is found in the N last passwords used', async () => {
           const passwordsHistory = await setupPasswordHistory(settings.auth.passwordPreventReuseHistoryLength);
-          const data = _.defaults({ newPassword: passwordsHistory[0] }, baseData);
+          const data = Object.assign({}, baseData, { newPassword: passwordsHistory[0] });
           const res = await request.post(path).send(data);
           validation.checkError(res, {
             status: 400,
@@ -492,7 +492,7 @@ describe('[ACCO] account', function () {
 
         it('[6XXP] must accept the new password if different from the N last passwords used', async () => {
           const passwordsHistory = await setupPasswordHistory(settings.auth.passwordPreventReuseHistoryLength + 1);
-          const data = _.defaults({ newPassword: passwordsHistory[0] }, baseData);
+          const data = Object.assign({}, baseData, { newPassword: passwordsHistory[0] });
           const res = await request.post(path).send(data);
           validation.check(res, {
             status: 200
@@ -504,7 +504,7 @@ describe('[ACCO] account', function () {
           const passwordsHistory = [];
           for (let n = historyLength; n >= 1; n--) {
             const pwd = `${helpers.passwordRules.passwords.good4CharCats}-${n}`;
-            const res = await request.post(path).send(_.defaults({ newPassword: pwd }, baseData));
+            const res = await request.post(path).send(Object.assign({}, baseData, { newPassword: pwd }));
             validation.check(res, { status: 200 });
             passwordsHistory.push(pwd);
             baseData.oldPassword = pwd;
@@ -525,7 +525,7 @@ describe('[ACCO] account', function () {
           await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', timestamp.now('-23h'));
 
           // try and change
-          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
+          const data = Object.assign({}, baseData, { newPassword: helpers.passwordRules.passwords.good4CharCats });
           const res = await request.post(path).send(data);
           validation.checkError(res, {
             status: 400,
@@ -543,7 +543,7 @@ describe('[ACCO] account', function () {
           await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', timestamp.now('-25h'));
 
           // try and change
-          const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
+          const data = Object.assign({}, baseData, { newPassword: helpers.passwordRules.passwords.good4CharCats });
           const res = await request.post(path).send(data);
           validation.check(res, {
             status: 200
@@ -618,10 +618,10 @@ describe('[ACCO] account', function () {
           );
         },
         function doReset (stepDone) {
-          const data = _.defaults({
+          const data = Object.assign({}, authData, {
             resetToken,
             newPassword
-          }, authData);
+          });
           request.post(resetPath).send(data)
             .unset('authorization')
             .set('Origin', 'http://test.pryv.local')
@@ -633,7 +633,7 @@ describe('[ACCO] account', function () {
             });
         },
         function verifyNewPassword (stepDone) {
-          request.login(_.defaults({ password: newPassword }, user), stepDone);
+          request.login(Object.assign({}, user, { password: newPassword }), stepDone);
         }
       ], done);
     });
@@ -709,10 +709,10 @@ describe('[ACCO] account', function () {
           );
         },
         function doReset (stepDone) {
-          const data = _.defaults({
+          const data = Object.assign({}, authData, {
             resetToken,
             newPassword
-          }, authData);
+          });
           // use user1's resetToken to reset user0's password
           request.post(resetPath).send(data)
             .unset('authorization')
@@ -748,10 +748,10 @@ describe('[ACCO] account', function () {
     });
 
     it('[PKBP] "reset" must return an error if the reset token is invalid/expired', function (done) {
-      const data = _.defaults({
+      const data = Object.assign({}, authData, {
         resetToken: 'bad-token',
         newPassword: '>-=(♥️)=-<'
-      }, authData);
+      });
       request.post(resetPath).send(data)
         .unset('authorization')
         .set('Origin', 'http://test.pryv.local')
@@ -802,7 +802,7 @@ describe('[ACCO] account', function () {
           );
         },
         function doResetFirst (stepDone) {
-          const data = _.defaults({ resetToken, newPassword }, authData);
+          const data = Object.assign({}, authData, { resetToken, newPassword });
           // use user1's resetToken to reset user0's password
           request.post(resetPath).send(data)
             .unset('authorization')
@@ -816,7 +816,7 @@ describe('[ACCO] account', function () {
             });
         },
         function doResetSecond (stepDone) {
-          const data = _.defaults({ resetToken, newPassword }, authData);
+          const data = Object.assign({}, authData, { resetToken, newPassword });
           // use user1's resetToken to reset user0's password
           request.post(resetPath).send(data)
             .unset('authorization')
@@ -885,10 +885,10 @@ describe('[ACCO] account', function () {
             );
           },
           function doReset (stepDone) {
-            const data = _.defaults({
+            const data = Object.assign({}, authData, {
               resetToken,
               newPassword: badPassword
-            }, authData);
+            });
             request.post(resetPath).send(data)
               .unset('authorization')
               .set('Origin', 'http://test.pryv.local')

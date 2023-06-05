@@ -43,7 +43,7 @@ describe('Socket.IO', function () {
   // Connects to `namespace` given `queryParams`. Connections are disconnected
   // after each test automatically.
   function connect (namespace, queryParams) {
-    const paramsWithNS = _.defaults(queryParams || {});
+    const paramsWithNS = queryParams || {};
     const url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
     const conn = io.connect(url, { forceNew: true });
     cleanupConnections.push(conn);

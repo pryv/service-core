@@ -153,7 +153,7 @@ module.exports = async function produceAccessesApiMethods (api) {
   );
 
   function applyDefaultsForCreation (context, params, result, next) {
-    _.defaults(params, { type: 'shared' });
+    params.type ??= 'shared';
     next();
   }
 

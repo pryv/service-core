@@ -8,7 +8,6 @@
  * Some method used by events.get are shared with audit.getLogs
  */
 const streamsQueryUtils = require('./streamsQueryUtils');
-const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 const errors = require('errors').factory;
 const { getMall, storeDataUtils } = require('mall');
@@ -147,19 +146,17 @@ function coerceStreamsParam (context, params, result, next) {
  * @returns {Promise<void>}
  */
 async function applyDefaultsForRetrieval (context, params, result, next) {
-  _.defaults(params, {
-    streams: [{ any: ['*'] }],
-    tags: null,
-    types: null,
-    fromTime: null,
-    toTime: null,
-    sortAscending: false,
-    skip: null,
-    limit: null,
-    state: 'default',
-    modifiedSince: null,
-    includeDeletions: false
-  });
+  params.streams ??= [{ any: ['*'] }];
+  params.tags ??= null;
+  params.types ??= null;
+  params.fromTime ??= null;
+  params.toTime ??= null;
+  params.sortAscending ??= false;
+  params.skip ??= null;
+  params.limit ??= null;
+  params.state ??= 'default';
+  params.modifiedSince ??= null;
+  params.includeDeletions ??= false;
   if (params.fromTime == null && params.toTime != null) {
     params.fromTime = timestamp.add(params.toTime, -24 * 60 * 60);
   }

@@ -175,7 +175,7 @@ describe('auth', function () {
     });
 
     it('[ADL4] must accept "no origin" (i.e. not a CORS request) if authorized', function (done) {
-      const authDataNoCORS = _.defaults({ appId: 'pryv-test-no-cors' }, authData);
+      const authDataNoCORS = Object.assign({}, authData, { appId: 'pryv-test-no-cors' });
       request
         .post(path(authDataNoCORS.username))
         .send(authDataNoCORS)
@@ -214,7 +214,7 @@ describe('auth', function () {
       request
         .post(path(authData.username))
         .set('Origin', trustedOrigin)
-        .send(_.defaults({ username: authData.username.toUpperCase() }, authData))
+        .send(Object.assign({}, authData, { username: authData.username.toUpperCase() }))
         .end(function (err, res) {
           should.not.exist(err);
           assert.strictEqual(res.statusCode, 200);
@@ -223,10 +223,10 @@ describe('auth', function () {
     });
 
     it('[L7JQ] must return a correct error when the local credentials are missing or invalid', function (done) {
-      const data = _.defaults({
+      const data = Object.assign({}, authData, {
         username: authData.username,
         password: 'bad-password'
-      }, authData);
+      });
       request
         .post(path(data.username))
         .set('Origin', trustedOrigin)
@@ -243,7 +243,7 @@ describe('auth', function () {
     });
 
     it('[4AQR] must return a correct error if the app id is missing or untrusted', function (done) {
-      const data = _.defaults({ appId: 'untrusted-app-id' }, authData);
+      const data = Object.assign({}, authData, { appId: 'untrusted-app-id' });
       request
         .post(path(data.username))
         .set('Origin', trustedOrigin)

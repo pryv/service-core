@@ -1234,7 +1234,7 @@ describe('events', function () {
             updatedEventAttachments[attachment.fileName] = attachment;
           });
 
-          let expected = {};
+          const expected = structuredClone(event);
           expected.attachments = [];
           updatedEvent.attachments.forEach(function (attachment) {
             if (attachment.fileName === testData.attachments.image.filename) {
@@ -1260,7 +1260,6 @@ describe('events', function () {
           });
           expected.modified = updatedEvent.modified;
           expected.modifiedBy = access.id;
-          expected = _.defaults(expected, event);
           integrity.events.set(expected);
 
           validation.checkObjectEquality(updatedEvent, expected);

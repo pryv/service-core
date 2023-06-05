@@ -245,7 +245,7 @@ module.exports = async function (api) {
   function applyPrerequisitesForCreation (context, params, result, next) {
     const event = context.newEvent;
     // default time is now
-    _.defaults(event, { time: timestamp.now() });
+    event.time ??= timestamp.now();
     if (event.tags == null) {
       event.tags = [];
     }
