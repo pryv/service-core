@@ -19,6 +19,10 @@ build/core/release.tar
 build/hfs/release.tar
 build/preview/release.tar
 build/release.tar
+build/test/pryv/*/backup
+build/test/pryv/*/data
+build/test/pryv/*/log
+security-assessment
 /test-results/
 coverage/
 var-pryv

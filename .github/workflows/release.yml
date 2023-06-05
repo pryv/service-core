@@ -7,11 +7,13 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-20.04
+    # IMPORTANT: Ubuntu version must match our Docker base image's (see release-packaging repo)
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
-        node-version: [16.16.0]
+        # IMPORTANT: Node.js version must match our Docker base image's (see release-packaging repo)
+        node-version: [18.16.0]
 
     steps:
     - name: Install `just`

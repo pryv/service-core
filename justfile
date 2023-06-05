@@ -72,7 +72,7 @@ test component *params:
     NODE_ENV=test COMPONENT={{component}} scripts/components-run \
         npx mocha -- {{params}}
 
-# Run tests with sqlite poc storage
+# Same as `test` but using SQLite PoC storage
 test-sqlite component *params:
     database__engine=sqlite NODE_ENV=test COMPONENT={{component}} scripts/components-run  \
         npx mocha -- {{params}}
@@ -98,6 +98,10 @@ test-profile component *params:
 test-cover component *params:
     NODE_ENV=test COMPONENT={{component}} nyc --reporter=html --report-dir=./coverage \
         scripts/components-run npx mocha -- {{params}}
+
+# Run all possible tests (with both Mongo and SQLite storage) and generate HTML coverage report
+test-cover-all:
+    NODE_ENV=test nyc --reporter=html --report-dir=./coverage scripts/coverage
 
 # Set up test results report generation
 test-results-init-repo:
@@ -126,6 +130,25 @@ clean-data:
     (killall mongod && sleep 2) || echo "MongoDB was not running"
     rm -rf ./var-pryv/mongodb-data/*
     DEVELOPMENT=true ./scripts/start-mongo
+
+# Run security assessment and output to `security-assessment`
+security-assessment:
+    rm -rf ./security-assessment/
+    mkdir -p ./security-assessment/source-code
+    cp -rv justfile ./components package* README.md test scripts build .eslintrc.yml .mocharc.js LICENSE CHANGELOG.md ./security-assessment/source-code/
+    cp -rv coverage ./security-assessment/
+    npm audit --json > ./security-assessment/npm-audit-result.json
+
+# Run OWASP ZAP, writing output to `security-assessment` (requires OWASP ZAP app)
+security-assessment-owasp:
+    echo "make sure to start api-server with: just start api-server"
+    /Applications/OWASP\ ZAP.app/Contents/Java/zap.sh  -quickurl http://127.0.0.1:3000 -quickout /tmp/owasp-zap-automated-scan.html
+    cp /tmp/owasp-zap-automated-scan.html ./security-assessment/
+
+# Run Grype audit, writing output to `security-assessment` (requires Grype and local Docker containers)
+security-assessment-grype:
+    mkdir -p ./security-assessment/
+    grype local/pryvio/core:test  -o template -t build/grype-html.tmpl > ./security-assessment/grype.html
 
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
