@@ -13,7 +13,7 @@ _help:
 setup-dev-env:
     scripts/setup-dev-env
 
-# Checkout private repositories (also run by setup-dev-env)
+# Setup/update private repositories (also run by setup-dev-env)
 setup-private-libs:
     scripts/setup-private-libs
 
