@@ -51,7 +51,7 @@ describe('auth', function () {
     helpers.dependencies.storage.sessions.clearAll(done);
   });
 
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   const trustedOrigin = 'http://test.pryv.local';
   const authData = {
     username: user.username,
@@ -348,7 +348,7 @@ describe('auth', function () {
       }
 
       function instanciateServerWithLogs (stepDone) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.logs = {
           file: {
             active: true,
@@ -368,7 +368,7 @@ describe('auth', function () {
       after(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
       it('[C03J] must replace the password in the logs by (hidden) when an error occurs', function (done) {
-        const wrongPasswordData = _.cloneDeep(authData);
+        const wrongPasswordData = structuredClone(authData);
         wrongPasswordData.password = 'wrongPassword';
         async.series([
           function failLogin (stepDone) {
@@ -402,7 +402,7 @@ describe('auth', function () {
       });
 
       it('[G0YT] must not mention the password in the logs when none is provided', function (done) {
-        const wrongPasswordData = _.cloneDeep(authData);
+        const wrongPasswordData = structuredClone(authData);
         delete wrongPasswordData.password;
         async.series([
           function failLogin (stepDone) {
@@ -441,7 +441,7 @@ describe('auth', function () {
     }
 
     describe('[WPRA] When password rules are enabled', function () {
-      const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
+      const settings = _.merge(structuredClone(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
       const maxAge = helpers.passwordRules.settingsOverride.auth.passwordAgeMaxDays;
       const minAge = 1;
 

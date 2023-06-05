@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const _ = require('lodash');
 const Transform = require('stream').Transform;
 const storeDataUtils = require('./storeDataUtils');
 const errorFactory = require('errors').factory;
@@ -184,7 +183,7 @@ function removeEmptyAttachments (eventData) {
  * @returns {any}
  */
 function convertEventToStore (storeId, eventData) {
-  const event = _.cloneDeep(eventData);
+  const event = structuredClone(eventData);
   removeStoreIds(storeId, event);
   durationToStoreEndTime(event);
   stateToStore(event);
@@ -196,7 +195,7 @@ function convertEventToStore (storeId, eventData) {
  * @returns {any}
  */
 function convertEventFromStore (storeId, eventData) {
-  const event = _.cloneDeep(eventData);
+  const event = structuredClone(eventData);
   endTimeFromStoreToDuration(event);
   stateFromStore(event);
   deletionFromStore(event);

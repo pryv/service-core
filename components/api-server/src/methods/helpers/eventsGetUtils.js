@@ -414,7 +414,7 @@ async function findEventsFromStore (filesReadTokenSecret, isStreamIdPrefixBackwa
       throw new Error('Missing storeId' + params.arrayOfStreamQueriesWithStoreId);
     }
     if (paramsByStoreId[storeId] == null) {
-      paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
+      paramsByStoreId[storeId] = structuredClone(params); // copy the parameters
       paramsByStoreId[storeId].streams = []; // empty the stream query
     }
     delete streamQuery.storeId;

@@ -148,7 +148,7 @@ module.exports = ds.createUserEvents({
   async delete (userId, originalEvent, transaction) {
     const db = await this.storage.forUser(userId);
     await this._generateVersionIfNeeded(db, originalEvent.id, originalEvent, transaction);
-    const deletedEventContent = Object.assign({}, originalEvent);
+    const deletedEventContent = structuredClone(originalEvent);
     const eventId = deletedEventContent.id;
 
     // if attachments are to be deleted
@@ -175,7 +175,7 @@ module.exports = ds.createUserEvents({
     if (!this.keepHistory) return;
     let versionItem = null;
     if (originalEvent != null) {
-      versionItem = Object.assign({}, originalEvent);
+      versionItem = structuredClone(originalEvent);
     } else {
       versionItem = await db.getOneEvent(eventId);
     }

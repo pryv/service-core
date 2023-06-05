@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const _ = require('lodash');
 const Readable = require('stream').Readable;
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 const ds = require('@pryv/datastore');
@@ -89,7 +88,7 @@ module.exports = ds.createUserEvents({
   async create (userId, event, transaction) {
     try {
       const options = { transactionSession: transaction?.transactionSession };
-      const toInsert = _.cloneDeep(event);
+      const toInsert = structuredClone(event);
       toInsert.userId = userId;
       toInsert._id = event.id;
       delete toInsert.id;
@@ -122,7 +121,7 @@ module.exports = ds.createUserEvents({
   },
 
   async update (userId, eventData, transaction) {
-    const update = Object.assign({}, eventData);
+    const update = structuredClone(eventData);
     update._id = update.id;
     update.userId = userId;
     delete update.id;
@@ -138,7 +137,7 @@ module.exports = ds.createUserEvents({
   },
 
   async delete (userId, originalEvent) {
-    const deletedEventContent = Object.assign({}, originalEvent);
+    const deletedEventContent = structuredClone(originalEvent);
     await this._generateVersionIfNeeded(userId, originalEvent.id, originalEvent);
     // if attachments are to be deleted
     if (this.deletionSettings.removeAttachments && deletedEventContent.attachments != null && deletedEventContent.attachments.length > 0) {
@@ -176,7 +175,7 @@ module.exports = ds.createUserEvents({
     const options = { transactionSession: transaction?.transactionSession };
     let versionItem = null;
     if (originalEvent != null) {
-      versionItem = Object.assign({}, originalEvent);
+      versionItem = structuredClone(originalEvent);
       delete versionItem.id;
     } else {
       versionItem = await this.eventsCollection.findOne(query, options);

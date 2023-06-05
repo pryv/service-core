@@ -8,7 +8,6 @@
 const assert = require('chai').assert;
 const timestamp = require('unix-timestamp');
 const awaiting = require('awaiting');
-const _ = require('lodash');
 
 const Webhook = require('../../../src/webhooks/Webhook');
 const WebhooksRepository = require('business/src/webhooks/repository');
@@ -402,7 +401,7 @@ describe('Webhook', () => {
         await webhook.send(message);
         await webhook.send(message);
         await webhook.send(message);
-        runs1 = _.cloneDeep(webhook.runs);
+        runs1 = structuredClone(webhook.runs);
       });
 
       let runs1, runs2, runs3;
@@ -414,7 +413,7 @@ describe('Webhook', () => {
       it('[FYOR] should rotate the runs', async () => {
         await webhook.send(message);
         await sleep(500);
-        runs2 = _.cloneDeep(webhook.runs);
+        runs2 = structuredClone(webhook.runs);
         assert.deepEqual(runs2[2], runs1[1]);
         assert.deepEqual(runs2[1], runs1[0]);
         assert.deepEqual(runs2[0], webhook.lastRun);

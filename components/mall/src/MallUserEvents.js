@@ -303,7 +303,7 @@ class MallUserEvents {
    */
   async updateDeleteAttachment (userId, eventData, attachmentId, mallTransaction) {
     await this.deleteAttachedFile(userId, eventData, attachmentId, mallTransaction);
-    const newEventData = _.cloneDeep(eventData);
+    const newEventData = structuredClone(eventData);
     newEventData.attachments = newEventData.attachments.filter((attachment) => {
       return attachment.id !== attachmentId;
     });
@@ -490,7 +490,7 @@ module.exports = MallUserEvents;
  * @returns {any}
  */
 function _attachmentsResponseToEvent (eventDataWithoutNewAttachments, attachmentsResponse, attachmentsItems) {
-  const eventDataWithNewAttachments = _.cloneDeep(eventDataWithoutNewAttachments);
+  const eventDataWithNewAttachments = structuredClone(eventDataWithoutNewAttachments);
   eventDataWithNewAttachments.attachments =
         eventDataWithNewAttachments.attachments || [];
   for (let i = 0; i < attachmentsResponse.length; i++) {

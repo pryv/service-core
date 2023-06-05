@@ -557,11 +557,11 @@ module.exports = async function (api) {
         return next(errors.invalidOperation('Normal events cannot be updated to HF-events and vice versa.'));
       }
     }
-    context.oldEvent = _.cloneDeep(event);
+    context.oldEvent = structuredClone(event);
     context.newEvent = _.extend(event, eventUpdate);
     // clientData key-map handling
     if (eventUpdate.clientData != null) {
-      context.newEvent.clientData = _.cloneDeep(context.oldEvent.clientData || {});
+      context.newEvent.clientData = structuredClone(context.oldEvent.clientData || {});
       for (const [key, value] of Object.entries(eventUpdate.clientData)) {
         if (value == null) {
           // delete keys with null value
@@ -941,7 +941,7 @@ module.exports = async function (api) {
     }
   }
   async function flagAsTrashed (context, params, result, next) {
-    const newEvent = _.cloneDeep(context.oldEvent);
+    const newEvent = structuredClone(context.oldEvent);
     newEvent.trashed = true;
     context.updateTrackingProperties(newEvent);
     try {
@@ -1003,7 +1003,7 @@ module.exports = async function (api) {
         return next(errors.unknownResource('attachment', params.fileId));
       }
       const deletedAtt = context.event.attachments[attIndex];
-      const newEvent = _.cloneDeep(context.oldEvent);
+      const newEvent = structuredClone(context.oldEvent);
       context.updateTrackingProperties(newEvent);
       const newEventData = await mall.events.updateDeleteAttachment(context.user.id, newEvent, params.fileId);
       // if update was not done and no errors were catched
@@ -1047,7 +1047,7 @@ module.exports = async function (api) {
     // save event from the database as an oldEvent
     context.oldEvent = event;
     // create an event object that could be modified
-    context.event = Object.assign({}, event);
+    context.event = structuredClone(event);
     next();
   }
   /**

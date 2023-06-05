@@ -33,7 +33,7 @@ const { getMall } = require('mall');
 require('date-utils');
 
 describe('events', function () {
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   const basePath = '/' + user.username + '/events';
   const testType = 'test/test';
   // these must be set after server instance started
@@ -452,7 +452,7 @@ describe('events', function () {
         modifiedSince: timestamp.now('-45m'),
         includeDeletions: true
       };
-      let events = _.clone(testData.events).sort(function (a, b) {
+      let events = structuredClone(testData.events).sort(function (a, b) {
         return (b.time - a.time);
       });
       const eventDeletions = events.filter(function (e) {
@@ -719,7 +719,7 @@ describe('events', function () {
       };
       const processedTags = ['patapoumpoum'];
       const processedStreamIds = data.streamIds.concat(processedTags.map(t => TAG_PREFIX + t));
-      const expected = _.cloneDeep(data);
+      const expected = structuredClone(data);
       expected.tags = processedTags;
       expected.streamIds = processedStreamIds;
       expected.streamId = data.streamIds[0];
@@ -763,7 +763,7 @@ describe('events', function () {
 
           events.length.should.eql(originalCount + 1, 'events');
 
-          const expected = _.clone(data);
+          const expected = structuredClone(data);
 
           expected.streamId = expected.streamIds[0];
           expected.id = createdEventId;
@@ -920,7 +920,7 @@ describe('events', function () {
           const event = await mall.events.getOne(user.id, testData.events[11].id);
           // HERE
           // as event comes from storage we will not find "tags"
-          const expected = _.cloneDeep(testData.events[11]);
+          const expected = structuredClone(testData.events[11]);
           delete expected.tags;
           event.should.eql(expected);
         }
@@ -1376,7 +1376,7 @@ describe('events', function () {
             validation.checkFilesReadToken(res.body.event, access, filesReadTokenSecret);
             validation.sanitizeEvent(res.body.event);
 
-            const expected = _.clone(data);
+            const expected = structuredClone(data);
             expected.id = original.id;
             expected.tags = ['yippiya'];
             expected.modified = time;
@@ -1419,7 +1419,7 @@ describe('events', function () {
           });
 
           should(res.body.event.modified).be.approximately(time, 2);
-          const expected = _.cloneDeep(original);
+          const expected = structuredClone(original);
           delete expected.modified;
           expected.modifiedBy = access.id;
           expected.streamId = expected.streamIds[0];
@@ -1575,7 +1575,7 @@ describe('events', function () {
         });
 
       function setIgnoreProtectedFieldUpdates (activated, stepDone) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.updates.ignoreProtectedFields = activated;
         server.ensureStarted(settings, stepDone);
       }
@@ -1675,7 +1675,7 @@ describe('events', function () {
         const updatedEvent = res.body.event;
         validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
         validation.sanitizeEvent(updatedEvent);
-        const expected = _.clone(testData.events[0]);
+        const expected = structuredClone(testData.events[0]);
         expected.attachments = expected.attachments.slice();
         // NOTE We cannot be sure that we still are at the exact same second that
         // we were just now when we did the call. So don't use time here, test

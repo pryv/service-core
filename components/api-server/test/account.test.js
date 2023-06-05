@@ -30,7 +30,7 @@ const encryption = require('utils').encryption;
 let isOpenSource = false;
 
 describe('[ACCO] account', function () {
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   let usersRepository = null;
   let userAccountStorage = null;
 
@@ -71,7 +71,7 @@ describe('[ACCO] account', function () {
 
     it('[PHSB] must return the user\'s account details', function (done) {
       request.get(basePath).end(function (res) {
-        const expected = _.clone(user);
+        const expected = structuredClone(user);
         delete expected.id;
         delete expected.password;
         delete expected.storageUsed;
@@ -97,7 +97,7 @@ describe('[ACCO] account', function () {
 
     it('[0PPV] must modify account details with the sent data, notifying register if e-mail changed',
       function (done) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.testsSkipForwardToRegister = false;
         const updatedData = {
           email: 'userzero.new@test.com',
@@ -428,7 +428,7 @@ describe('[ACCO] account', function () {
     });
 
     describe('[APWD] When password rules are enabled', function () {
-      const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
+      const settings = _.merge(structuredClone(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
       const baseData = { oldPassword: user.password };
 
       before(async () => {
@@ -468,7 +468,7 @@ describe('[ACCO] account', function () {
 
         it('[OY2G] must accept the new password if it contains characters from enough categories', async () => {
           // also tests checking for all 4 categories
-          await server.ensureStartedAsync(_.merge(_.cloneDeep(settings), { auth: { passwordComplexityMinCharCategories: 4 } }));
+          await server.ensureStartedAsync(_.merge(structuredClone(settings), { auth: { passwordComplexityMinCharCategories: 4 } }));
           const data = _.defaults({ newPassword: helpers.passwordRules.passwords.good4CharCats }, baseData);
           const res = await request.post(path).send(data);
           validation.check(res, {
@@ -514,7 +514,7 @@ describe('[ACCO] account', function () {
       });
 
       describe('Age rules:', function () {
-        const passwordAgeSettings = _.merge(_.cloneDeep(settings), { auth: { passwordAgeMinDays: 1 } });
+        const passwordAgeSettings = _.merge(structuredClone(settings), { auth: { passwordAgeMinDays: 1 } });
 
         it('[J4O6] must return an error if the current password’s age is below the set minimum', async () => {
           await server.ensureStartedAsync(passwordAgeSettings);
@@ -566,7 +566,7 @@ describe('[ACCO] account', function () {
 
     it('[G1VN] "request" must trigger an email with a reset token, store that token, ' +
        'then "reset" must reset the password to the given value', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       let resetToken;
       const newPassword = 'Dr0ws$4p';
 
@@ -639,13 +639,13 @@ describe('[ACCO] account', function () {
     });
 
     it('[HV0V] must not trigger a reset email if mailing is deactivated', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testResetMailNotSent(settings, done);
     });
 
     it('[VZ1W] must not trigger a reset email if reset mail is deactivated', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.services.email.enabled = {
         resetPassword: false
       };
@@ -833,7 +833,7 @@ describe('[ACCO] account', function () {
 
     describe('[RPWD] When password rules are enabled', function () {
       it('[HZCU] must fail if the new password does not comply (smoke test; see "/change-password" tests)', function (done) {
-        const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
+        const settings = _.merge(structuredClone(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
         settings.services.email.enabled = true;
 
         let resetToken;

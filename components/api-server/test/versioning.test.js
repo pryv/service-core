@@ -28,7 +28,7 @@ describe('Versioning', function () {
     mall = await getMall();
   });
 
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   let request = null;
 
   function pathToEvent (eventId) {
@@ -48,7 +48,7 @@ describe('Versioning', function () {
   }
 
   before(function (done) {
-    const settings = _.cloneDeep(helpers.dependencies.settings);
+    const settings = structuredClone(helpers.dependencies.settings);
     settings.versioning.forceKeepHistory = true;
     async.series([
       testData.resetUsers,
@@ -65,7 +65,7 @@ describe('Versioning', function () {
   });
 
   after(function (done) {
-    const settings = _.cloneDeep(helpers.dependencies.settings);
+    const settings = structuredClone(helpers.dependencies.settings);
     settings.versioning = {
       forceKeepHistory: false,
       deletionMode: 'keep-nothing'
@@ -106,7 +106,7 @@ describe('Versioning', function () {
 
       it('[FLLW] must delete the event\'s history when deleting it with deletionMode=keep-nothing',
         function (done) {
-          const settings = _.cloneDeep(helpers.dependencies.settings);
+          const settings = structuredClone(helpers.dependencies.settings);
           settings.versioning.deletionMode = 'keep-nothing';
 
           async.series([
@@ -132,7 +132,7 @@ describe('Versioning', function () {
 
       it('[6W0B] must minimize the event\'s history when deleting it with deletionMode=keep-authors',
         function (done) {
-          const settings = _.cloneDeep(helpers.dependencies.settings);
+          const settings = structuredClone(helpers.dependencies.settings);
           settings.versioning.deletionMode = 'keep-authors';
 
           async.series([
@@ -174,7 +174,7 @@ describe('Versioning', function () {
       it('[1DBC] must not modify the event\'s history when deleting it with ' +
         'deletionMode=keep-everything',
       function (done) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.versioning.deletionMode = 'keep-everything';
 
         async.series([
@@ -191,7 +191,7 @@ describe('Versioning', function () {
           async function verifyDeletedHeadInStory () {
             const event = await mall.events.getOne(user.id, trashedEventWithHistory.id);
             assert.exists(event);
-            const expected = _.cloneDeep(trashedEventWithHistory);
+            const expected = structuredClone(trashedEventWithHistory);
             delete expected.streamId;
             // this comes from the storage .. no need to test tags
             delete expected.tags;
@@ -207,14 +207,14 @@ describe('Versioning', function () {
             (eventHistory.length).should.eql(2);
             eventHistory.forEach(function (event) {
               if (event.modified === testData.events[20].modified) {
-                const expected = _.cloneDeep(testData.events[20]);
+                const expected = structuredClone(testData.events[20]);
                 expected.id = expected.headId;
                 delete expected.headId;
                 delete expected.tags;// this comes from the storage .. no need to test tags
                 event.should.eql(expected);
                 checked.first = true;
               } else if (event.modified === testData.events[21].modified) {
-                const expected = _.cloneDeep(testData.events[21]);
+                const expected = structuredClone(testData.events[21]);
                 expected.id = expected.headId;
                 delete expected.headId;
                 delete expected.tags;// this comes from the storage .. no need to test tags
@@ -261,7 +261,7 @@ describe('Versioning', function () {
 
     describe('forceKeepHistory is OFF', function () {
       before(function (done) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.versioning.forceKeepHistory = false;
         server.ensureStarted(settings, done);
       });
@@ -302,7 +302,7 @@ describe('Versioning', function () {
       beforeEach(testData.resetEvents);
 
       before(function (done) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.versioning.forceKeepHistory = true;
         async.series([
           server.ensureStarted.bind(server, settings)
@@ -402,7 +402,7 @@ describe('Versioning', function () {
 
   describe('Streams', function () {
     before(function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.versioning = {
         forceKeepHistory: true
       };
@@ -454,7 +454,7 @@ describe('Versioning', function () {
 
     it('[95TJ] must delete the events\' history when their stream is deleted with ' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-nothing\'', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.versioning = {
         deletionMode: 'keep-nothing'
       };
@@ -486,7 +486,7 @@ describe('Versioning', function () {
 
     it('[4U91] must keep the events\' minimal history when their stream is deleted with ' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-authors\'', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.versioning = {
         deletionMode: 'keep-authors'
       };
@@ -531,7 +531,7 @@ describe('Versioning', function () {
 
     it('[D4CY] must not delete the events\' history when their stream is deleted with' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-everything\'', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.versioning = {
         deletionMode: 'keep-everything'
       };
@@ -552,7 +552,7 @@ describe('Versioning', function () {
           const event = await mall.events.getOne(user.id, eventOnChildStream.id);
 
           assert.exists(event);
-          const expected = _.cloneDeep(eventOnChildStream);
+          const expected = structuredClone(eventOnChildStream);
           delete expected.streamId;
           expected.deleted = event.deleted;
           // we can remove tags as it comes from the db
@@ -568,7 +568,7 @@ describe('Versioning', function () {
             event.id.should.eql(eventOnChildStream.id);
             if (event.id === testData.events[26].id) {
               // we can remove tags as it comes from the db
-              const expected = _.cloneDeep(testData.events[26]);
+              const expected = structuredClone(testData.events[26]);
               delete expected.tags;
               event.should.eql(expected);
             }
@@ -581,7 +581,7 @@ describe('Versioning', function () {
   describe('Users', function () {
     const req = require('superagent');
     before(async function () {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.versioning = {
         forceKeepHistory: true
       };
