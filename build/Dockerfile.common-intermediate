@@ -16,8 +16,6 @@ RUN apt-get install -y python3
 # install node modules here
 RUN npm ci --omit=dev --omit=optional
 
-# remove private libs source
-RUN rm -rf ./private-libs
 # remove python
 RUN apt-get -y --purge autoremove python3
 # cleanup package cache
