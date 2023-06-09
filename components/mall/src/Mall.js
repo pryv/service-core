@@ -95,7 +95,10 @@ class Mall {
     let storageUsed = 0;
     for (const [storeId, store] of this.storesById) {
       try {
-        storageUsed += await store.getUserStorageSize(userId);
+        if (store.getUserStorageSize != null) {
+          // undocumented feature of DataStore, skip if not implemented
+          storageUsed += await store.getUserStorageSize(userId);
+        }
       } catch (error) {
         storeDataUtils.throwAPIError(error, storeId);
       }
