@@ -197,6 +197,9 @@ class MallUserEvents {
    * @returns {Promise<any>}
    */
   async create (userId, eventData, mallTransaction) {
+    if (eventData.attachments != null && eventData.attachments.length > 0) {
+      throw new Error('Attachments must be added after event creation');
+    }
     const { storeId, eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, mallTransaction);
     try {
       const res = await eventsStore.create(userId, storeEvent, storeTransaction);
@@ -231,15 +234,17 @@ class MallUserEvents {
 
   /**
    * @param {string} userId
-   * @param {any} eventDataWithoutAttachments
-   * @param {boolean} isExistingEvent
-   * @param {Array<AttachmentItem>} attachmentsItems
+   * @param {string} eventId
+   * @param {AttachmentItem} attachmentItem
    * @param {MallTransaction} mallTransaction
-   * @returns {Promise<any>}
+   * @returns {Promise<Event>}
    */
-  async saveAttachedFiles (userId, eventDataWithoutAttachments, isExistingEvent, attachmentsItems, mallTransaction) {
-    const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventDataWithoutAttachments, mallTransaction);
-    return await eventsStore.saveAttachedFiles(userId, storeEvent.id, attachmentsItems, storeTransaction);
+  async addAttachment (userId, eventId, attachmentItem, mallTransaction) {
+    const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventId);
+    const eventsStore = this.eventsStores.get(storeId);
+    const eventFromStore = await eventsStore.addAttachment(userId, storeEventId, attachmentItem);
+    const storeEvent = eventsUtils.convertEventFromStore(storeId, eventFromStore);
+    return storeEvent;
   }
 
   /**
@@ -276,22 +281,11 @@ class MallUserEvents {
    * @returns {Promise<void>}
    */
   async createWithAttachments (userId, eventDataWithoutAttachments, attachmentsItems, mallTransaction) {
-    const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutAttachments, false, attachmentsItems, mallTransaction);
-    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutAttachments, attachmentsResponse, attachmentsItems);
-    return await this.create(userId, eventDataWithNewAttachments, mallTransaction);
-  }
-
-  /**
-   * @param {string} userId
-   * @param {any} eventDataWithoutNewAttachments
-   * @param {Array<AttachmentItem>} newAttachmentsItems
-   * @param {MallTransaction} mallTransaction
-   * @returns {Promise<void>}
-   */
-  async updateWithAttachments (userId, eventDataWithoutNewAttachments, newAttachmentsItems, mallTransaction) {
-    const attachmentsResponse = await this.saveAttachedFiles(userId, eventDataWithoutNewAttachments, true, newAttachmentsItems, mallTransaction);
-    const eventDataWithNewAttachments = _attachmentsResponseToEvent(eventDataWithoutNewAttachments, attachmentsResponse, newAttachmentsItems);
-    return await this.update(userId, eventDataWithNewAttachments, mallTransaction);
+    let event = await this.create(userId, eventDataWithoutAttachments);
+    for (const attachmentItem of attachmentsItems) {
+      event = await this.addAttachment(userId, event.id, attachmentItem);
+    }
+    return event;
   }
 
   /**
@@ -484,23 +478,3 @@ class MallUserEvents {
   }
 }
 module.exports = MallUserEvents;
-
-/**
- * Add attachment response to eventData
- * @returns {any}
- */
-function _attachmentsResponseToEvent (eventDataWithoutNewAttachments, attachmentsResponse, attachmentsItems) {
-  const eventDataWithNewAttachments = structuredClone(eventDataWithoutNewAttachments);
-  eventDataWithNewAttachments.attachments =
-        eventDataWithNewAttachments.attachments || [];
-  for (let i = 0; i < attachmentsResponse.length; i++) {
-    eventDataWithNewAttachments.attachments.push({
-      id: attachmentsResponse[i].id,
-      fileName: attachmentsItems[i].fileName,
-      type: attachmentsItems[i].type,
-      size: attachmentsItems[i].size,
-      integrity: attachmentsItems[i].integrity
-    });
-  }
-  return eventDataWithNewAttachments;
-}

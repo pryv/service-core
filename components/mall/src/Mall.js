@@ -59,12 +59,24 @@ class Mall {
     // placed here otherwise create a circular dependency .. pfff
     const { getUserAccountStorage } = require('storage');
     const userAccountStorage = await getUserAccountStorage();
+    const { integrity } = require('business');
     for (const [storeId, store] of this.storesById) {
+      // create a custom integrity calculation for this store
+      const integritySetOnEvent = function setOnEvent (eventData) {
+        // we copy eventIs to avoid a full cloning
+        const initialId = eventData.id;
+        const fullEventId = storeDataUtils.getFullItemId(storeId, initialId);
+        eventData.id = fullEventId;
+        integrity.events.set(eventData);
+        eventData.id = initialId;
+      };
+
       const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);
       const params = {
         ...this.storeDescriptionsByStore.get(store),
         storeKeyValueData,
-        logger: getLogger(`mall:${storeId}`)
+        logger: getLogger(`mall:${storeId}`),
+        integrity: { setOnEvent: integritySetOnEvent }
       };
       await store.init(params);
     }

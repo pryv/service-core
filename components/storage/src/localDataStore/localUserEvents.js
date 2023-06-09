@@ -11,7 +11,6 @@ const errors = ds.errors;
 const handleDuplicateError = require('../Database').handleDuplicateError;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const DeletionModesFields = require('../DeletionModesFields');
-const { integrity } = require('business');
 const { localStorePrepareOptions, localStorePrepareQuery } = require('../localStoreEventQueries');
 const timestamp = require('unix-timestamp');
 
@@ -27,10 +26,12 @@ module.exports = ds.createUserEvents({
     removeAttachments: true,
     updateOperatorForHistory: { $unset: {} }
   },
+  integritySetOnEvent: null,
 
-  init (eventsCollection, eventsFileStorage) {
+  init (eventsCollection, eventsFileStorage, integritySetOnEvent) {
     this.eventsCollection = eventsCollection;
     this.eventsFileStorage = eventsFileStorage;
+    this.integritySetOnEvent = integritySetOnEvent;
 
     // prepare deletion settings
     this.deletionSettings.mode = this.settings.versioning?.deletionMode || 'keep-nothing';
@@ -103,13 +104,17 @@ module.exports = ds.createUserEvents({
     }
   },
 
-  async saveAttachedFiles (userId, eventId, attachmentsItems, transaction) {
-    const attachmentsResponse = [];
-    for (const attachment of attachmentsItems) {
-      const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachment.attachmentData, userId, eventId);
-      attachmentsResponse.push({ id: fileId });
-    }
-    return attachmentsResponse;
+  async addAttachment (userId, eventId, attachmentItem, transaction) {
+    const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId);
+    const newAttachmentsItem = Object.assign({ id: fileId }, attachmentItem);
+    delete newAttachmentsItem.attachmentData;
+    const eventData = await this.getOne(userId, eventId);
+    const newEventData = structuredClone(eventData);
+    if (newEventData.attachments == null) newEventData.attachments = [];
+    newEventData.attachments.push(newAttachmentsItem);
+    this.integritySetOnEvent(newEventData);
+    await this.update(userId, newEventData, transaction);
+    return newEventData;
   },
 
   async getAttachedFile (userId, eventId, fileId) {
@@ -156,7 +161,7 @@ module.exports = ds.createUserEvents({
     for (const field of this.deletionSettings.fields) {
       delete deletedEventContent[field];
     }
-    integrity.events.set(deletedEventContent);
+    this.integritySetOnEvent(deletedEventContent);
     deletedEventContent._id = deletedEventContent.id;
     delete deletedEventContent.id;
     deletedEventContent.userId = userId;

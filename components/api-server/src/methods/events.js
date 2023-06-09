@@ -596,43 +596,36 @@ module.exports = async function (api) {
     next();
   }
   async function updateEvent (context, params, result, next) {
+    // -- update the event
+    let updatedEvent = await mall.events.update(context.user.id, context.newEvent);
+    // if update was not done and no errors were catched
+    //, perhaps user is trying to edit account streams
+    if (!updatedEvent) {
+      return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
+    }
+
+    // now deals with attachments if any
     const files = sanitizeRequestFiles(params.files);
     delete params.files;
-    if (files != null && files.length > 0) {
-      const attachmentItems = [];
-      for (const file of files) {
-        attachmentItems.push({
-          fileName: file.originalname,
-          type: file.mimetype,
-          size: file.size,
-          integrity: file.integrity,
-          attachmentData: fs.createReadStream(file.path) // simulate full pass-thru of attachement until implemented
-        });
-      }
-      try {
-        const updatedEvent = await mall.events.updateWithAttachments(context.user.id, context.newEvent, attachmentItems);
-        updatedEvent.attachments = setFileReadToken(context.access, updatedEvent.attachments);
-        updatedEvent.streamId = updatedEvent.streamIds[0];
-        result.event = updatedEvent;
-      } catch (err) {
-        if (err instanceof APIError) { return next(err); }
-        return next(errors.unexpectedError(err));
-      }
-      return next(); // --- update has been done
-    }
     try {
-      const updatedEvent = await mall.events.update(context.user.id, context.newEvent);
-      // if update was not done and no errors were catched
-      //, perhaps user is trying to edit account streams
-      if (!updatedEvent) {
-        return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
+      if (files != null && files.length > 0) {
+        for (const file of files) {
+          const attachmentItem = {
+            fileName: file.originalname,
+            type: file.mimetype,
+            size: file.size,
+            integrity: file.integrity,
+            attachmentData: fs.createReadStream(file.path) // simulate full pass-thru of attachement until implemented
+          };
+          updatedEvent = await mall.events.addAttachment(context.user.id, updatedEvent.id, attachmentItem);
+        }
       }
-      updatedEvent.streamId = updatedEvent.streamIds[0];
-      result.event = updatedEvent;
-      result.event.attachments = setFileReadToken(context.access, result.event.attachments);
     } catch (err) {
-      return next(err);
+      return next(errors.unexpectedError(err));
     }
+    updatedEvent.attachments = setFileReadToken(context.access, updatedEvent.attachments);
+    updatedEvent.streamId = updatedEvent.streamIds[0];
+    result.event = updatedEvent;
     next();
   }
   /**

@@ -1513,6 +1513,28 @@ describe('events', function () {
         });
       });
 
+      it('[MPUA] must prevent updating attachments',
+        function (done) {
+          const forbiddenUpdate = {
+            attachments: []
+          };
+
+          async.series([
+            function instanciateServerWithStrictMode (stepDone) {
+              setIgnoreProtectedFieldUpdates(false, stepDone);
+            },
+            function testForbiddenUpdate (stepDone) {
+              request.put(path(eventId)).send(forbiddenUpdate)
+                .end(function (res) {
+                  validation.checkError(res, {
+                    status: 403,
+                    id: ErrorIds.Forbidden
+                  }, stepDone);
+                });
+            }
+          ], done);
+        });
+
       it('[L15U] must prevent update of protected fields and throw a forbidden error in strict mode',
         function (done) {
           const forbiddenUpdate = {

@@ -841,6 +841,7 @@ describe('[STRE] streams', function () {
             .attach('image', testData.attachments.image.path,
               testData.attachments.image.fileName)
             .end(function (res) {
+              $$({ createdEvent: res.body });
               validation.check(res, { status: 200 });
               eventsNotifCount = 0; // reset
               stepDone();
@@ -896,6 +897,7 @@ describe('[STRE] streams', function () {
 
           deletedEvents.forEach(function (e) {
             const actual = _.find(foundDeletedEvents, { id: e.id });
+            $$(actual, { id: e.id });
             assert.approximately(
               actual.deleted, deletionTime, 2,
               'Deletion time must be correct.');
