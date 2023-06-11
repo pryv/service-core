@@ -81,7 +81,6 @@ module.exports = ds.createUserEvents({
    * @returns {Promise<any>}
    */
   async create (userId, event, transaction) {
-    if (event.id === 'cthisistesteventno0000024') $$({ create: event });
     const db = await this.storage.forUser(userId);
     try {
       await db.createEvent(event);
@@ -145,7 +144,6 @@ module.exports = ds.createUserEvents({
    * @returns {Promise<any>}
    */
   async delete (userId, originalEvent, transaction) {
-    if (originalEvent.id === 'cthisistesteventno0000024') $$({ delete: originalEvent });
     const db = await this.storage.forUser(userId);
     await this._generateVersionIfNeeded(db, originalEvent.id, originalEvent, transaction);
     const deletedEventContent = structuredClone(originalEvent);

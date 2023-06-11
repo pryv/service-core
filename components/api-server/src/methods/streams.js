@@ -392,10 +392,8 @@ module.exports = async function (api) {
         });
       } else {
         // case  mergeEventsWithParent = false
-        $$({ xxx: await mall.events.getOne(context.user.id, 'cthisistesteventno0000024'), cleanDescendantIds });
         const eventsStream = await mall.events.getStreamedWithParamsByStore(context.user.id, { [storeId]: { streams: [{ any: cleanDescendantIds }] } });
         for await (const event of eventsStream) {
-          if (event.id === 'cthisistesteventno0000024') $$({ found: event });
           const remaningStreamsIds = _.difference(event.streamIds, streamAndDescendantIds);
           if (remaningStreamsIds.length === 0) { // no more streams deleted event
             await mall.events.delete(context.user.id, event);

@@ -106,7 +106,6 @@ class UserDatabase {
 
   async updateEvent (eventId, eventData) {
     const eventForDb = eventSchemas.eventToDB(eventData);
-
     if (eventForDb.streamIds == null) { eventForDb.streamIds = ALL_EVENTS_TAG; }
 
     delete eventForDb.eventid;
