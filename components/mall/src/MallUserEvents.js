@@ -243,8 +243,8 @@ class MallUserEvents {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventId);
     const eventsStore = this.eventsStores.get(storeId);
     const eventFromStore = await eventsStore.addAttachment(userId, storeEventId, attachmentItem);
-    const storeEvent = eventsUtils.convertEventFromStore(storeId, eventFromStore);
-    return storeEvent;
+    const event = eventsUtils.convertEventFromStore(storeId, eventFromStore);
+    return event;
   }
 
   /**
@@ -263,14 +263,21 @@ class MallUserEvents {
 
   /**
    * @param {string} userId
-   * @param {any} eventData
+   * @param {string} eventId
    * @param {string} fileId
    * @param {MallTransaction} mallTransaction
    * @returns {Promise<any>}
    */
-  async deleteAttachedFile (userId, eventData, fileId, mallTransaction) {
-    const { eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, mallTransaction);
-    return await eventsStore.deleteAttachedFile(userId, storeEvent.id, fileId, storeTransaction);
+  async deleteAttachment (userId, eventId, fileId, mallTransaction) {
+    const [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(eventId);
+    const eventsStore = this.eventsStores.get(storeId);
+    const storeTransaction = mallTransaction ? await mallTransaction.getStoreTransaction(storeId) : null;
+    if (!eventsStore) {
+      throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
+    }
+    const eventFromStore = await eventsStore.deleteAttachment(userId, eventId, fileId, storeTransaction);
+    const event = eventsUtils.convertEventFromStore(storeId, eventFromStore);
+    return event;
   }
 
   /**
@@ -286,22 +293,6 @@ class MallUserEvents {
       event = await this.addAttachment(userId, event.id, attachmentItem);
     }
     return event;
-  }
-
-  /**
-   * @param {string} userId
-   * @param {any} eventData
-   * @param {string} attachmentId
-   * @param {MallTransaction} mallTransaction
-   * @returns {Promise<void>}
-   */
-  async updateDeleteAttachment (userId, eventData, attachmentId, mallTransaction) {
-    await this.deleteAttachedFile(userId, eventData, attachmentId, mallTransaction);
-    const newEventData = structuredClone(eventData);
-    newEventData.attachments = newEventData.attachments.filter((attachment) => {
-      return attachment.id !== attachmentId;
-    });
-    return await this.update(userId, newEventData, mallTransaction);
   }
 
   // ----------------- UPDATE ----------------- //
@@ -409,7 +400,7 @@ class MallUserEvents {
           if (update.fieldsToDelete.includes('attachments') &&
                         eventData.attachments != null) {
             for (const attachment of eventData.attachments) {
-              await mallEvents.deleteAttachedFile(userId, eventData, attachment.id, mallTransaction);
+              await mallEvents.deleteAttachment(userId, eventData, attachment.id, mallTransaction);
             }
           }
           for (const field of update.fieldsToDelete) {

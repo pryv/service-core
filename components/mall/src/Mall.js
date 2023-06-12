@@ -9,6 +9,7 @@ const MallUserStreams = require('./MallUserStreams');
 const MallUserEvents = require('./MallUserEvents');
 const MallTransaction = require('./MallTransaction');
 const { getLogger } = require('@pryv/boiler');
+const eventsUtils = require('./helpers/eventsUtils');
 
 /**
  * Storage for streams and events.
@@ -62,13 +63,9 @@ class Mall {
     const { integrity } = require('business');
     for (const [storeId, store] of this.storesById) {
       // create a custom integrity calculation for this store
-      const integritySetOnEvent = function setOnEvent (eventData) {
-        // we copy eventIs to avoid a full cloning
-        const initialId = eventData.id;
-        const fullEventId = storeDataUtils.getFullItemId(storeId, initialId);
-        eventData.id = fullEventId;
-        integrity.events.set(eventData);
-        eventData.id = initialId;
+      const integritySetOnEvent = function setOnEvent (eventFromStoreData) {
+        const event = eventsUtils.convertEventFromStore(storeId, eventFromStoreData);
+        eventFromStoreData.integrity = integrity.events.compute(event).integrity;
       };
 
       const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);

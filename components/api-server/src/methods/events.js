@@ -596,19 +596,12 @@ module.exports = async function (api) {
     next();
   }
   async function updateEvent (context, params, result, next) {
-    // -- update the event
-    let updatedEvent = await mall.events.update(context.user.id, context.newEvent);
-    // if update was not done and no errors were catched
-    //, perhaps user is trying to edit account streams
-    if (!updatedEvent) {
-      return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
-    }
-
-    // now deals with attachments if any
+    // deals with attachments if any
     const files = sanitizeRequestFiles(params.files);
     delete params.files;
     try {
       if (files != null && files.length > 0) {
+        let eventWithUpdatedAttachments = null;
         for (const file of files) {
           const attachmentItem = {
             fileName: file.originalname,
@@ -617,12 +610,26 @@ module.exports = async function (api) {
             integrity: file.integrity,
             attachmentData: fs.createReadStream(file.path) // simulate full pass-thru of attachement until implemented
           };
-          updatedEvent = await mall.events.addAttachment(context.user.id, updatedEvent.id, attachmentItem);
+          eventWithUpdatedAttachments = await mall.events.addAttachment(context.user.id, context.newEvent.id, attachmentItem);
+          if (!eventWithUpdatedAttachments) {
+            return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
+          }
+          // update attachments property of newEvent
+          context.newEvent.attachments = eventWithUpdatedAttachments.attachments;
         }
       }
     } catch (err) {
       return next(errors.unexpectedError(err));
     }
+
+    // -- update the event (to save tacking properties and recalculate integrity)
+    const updatedEvent = await mall.events.update(context.user.id, context.newEvent);
+    // if update was not done and no errors were catched
+    //, perhaps user is trying to edit account streams
+    if (!updatedEvent) {
+      return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
+    }
+
     updatedEvent.attachments = setFileReadToken(context.access, updatedEvent.attachments);
     updatedEvent.streamId = updatedEvent.streamIds[0];
     result.event = updatedEvent;
@@ -996,17 +1003,20 @@ module.exports = async function (api) {
         return next(errors.unknownResource('attachment', params.fileId));
       }
       const deletedAtt = context.event.attachments[attIndex];
-      const newEvent = structuredClone(context.oldEvent);
-      context.updateTrackingProperties(newEvent);
-      const newEventData = await mall.events.updateDeleteAttachment(context.user.id, newEvent, params.fileId);
+      const eventDataWithDeletedAttach = await mall.events.deleteAttachment(context.user.id, context.event.id, params.fileId);
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
-      if (!newEventData) {
+      if (!eventDataWithDeletedAttach) {
         return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
       }
+
+      // update tracking properties on event
+      context.updateTrackingProperties(eventDataWithDeletedAttach);
+      const newEvent = await mall.events.update(context.user.id, eventDataWithDeletedAttach);
+
       // To remove when streamId not necessary
-      newEventData.streamId = newEventData.streamIds[0];
-      result.event = newEventData;
+      newEvent.streamId = newEvent.streamIds[0];
+      result.event = newEvent;
       result.event.attachments = setFileReadToken(context.access, result.event.attachments);
       const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
       // approximately update account storage size
