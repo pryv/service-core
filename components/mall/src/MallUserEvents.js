@@ -239,10 +239,10 @@ class MallUserEvents {
    * @param {MallTransaction} mallTransaction
    * @returns {Promise<Event>}
    */
-  async addAttachedFile (userId, eventId, attachmentItem, mallTransaction) {
+  async addAttachment (userId, eventId, attachmentItem, mallTransaction) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventId);
     const eventsStore = this.eventsStores.get(storeId);
-    const storeEvent = await eventsStore.addAttachedFile(userId, storeEventId, attachmentItem);
+    const storeEvent = await eventsStore.addAttachment(userId, storeEventId, attachmentItem);
     const event = eventsUtils.convertEventFromStore(storeId, storeEvent);
     return event;
   }
@@ -290,7 +290,7 @@ class MallUserEvents {
   async createWithAttachments (userId, eventDataWithoutAttachments, attachmentsItems, mallTransaction) {
     let event = await this.create(userId, eventDataWithoutAttachments);
     for (const attachmentItem of attachmentsItems) {
-      event = await this.addAttachedFile(userId, event.id, attachmentItem);
+      event = await this.addAttachment(userId, event.id, attachmentItem);
     }
     return event;
   }

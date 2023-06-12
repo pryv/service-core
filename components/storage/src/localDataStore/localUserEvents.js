@@ -104,7 +104,7 @@ module.exports = ds.createUserEvents({
     }
   },
 
-  async addAttachedFile (userId, eventId, attachmentItem, transaction) {
+  async addAttachment (userId, eventId, attachmentItem, transaction) {
     const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId);
     const attachment = Object.assign({ id: fileId }, attachmentItem);
     delete attachment.attachmentData;
