@@ -977,36 +977,27 @@ module.exports = async function (api) {
   );
 
   async function deleteAttachment (context, params, result, next) {
-    try {
-      const attIndex = getAttachmentIndex(context.event.attachments, params.fileId);
-      if (attIndex === -1) {
-        return next(errors.unknownResource('attachment', params.fileId));
-      }
-      const deletedAtt = context.event.attachments[attIndex];
-      const eventDataWithDeletedAttach = await mall.events.deleteAttachment(context.user.id, context.event.id, params.fileId);
-      // if update was not done and no errors were catched
-      //, perhaps user is trying to edit account streams
-      if (!eventDataWithDeletedAttach) {
-        return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification]));
-      }
-
-      // update tracking properties on event
-      context.updateTrackingProperties(eventDataWithDeletedAttach);
-      const newEvent = await mall.events.update(context.user.id, eventDataWithDeletedAttach);
-
-      // To remove when streamId not necessary
-      newEvent.streamId = newEvent.streamIds[0];
-      result.event = newEvent;
-      result.event.attachments = setFileReadToken(context.access, result.event.attachments);
-      const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
-      // approximately update account storage size
-      storagedUsed.attachedFiles -= deletedAtt.size;
-      await usersRepository.updateOne(context.user, storagedUsed, 'system');
-      pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
-      next();
-    } catch (err) {
-      next(err);
+    const attIndex = getAttachmentIndex(context.event.attachments, params.fileId);
+    if (attIndex === -1) {
+      return next(errors.unknownResource('attachment', params.fileId));
     }
+    const deletedAtt = context.event.attachments[attIndex];
+    const eventDataWithDeletedAttach = await mall.events.deleteAttachment(context.user.id, context.event.id, params.fileId);
+
+    // update tracking properties on event
+    context.updateTrackingProperties(eventDataWithDeletedAttach);
+    const newEvent = await mall.events.update(context.user.id, eventDataWithDeletedAttach);
+
+    // To remove when streamId not necessary
+    newEvent.streamId = newEvent.streamIds[0];
+    result.event = newEvent;
+    result.event.attachments = setFileReadToken(context.access, result.event.attachments);
+    const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);
+    // approximately update account storage size
+    storagedUsed.attachedFiles -= deletedAtt.size;
+    await usersRepository.updateOne(context.user, storagedUsed, 'system');
+    pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+    next();
   }
   async function checkEventForDelete (context, params, result, next) {
     const eventId = params.id;
