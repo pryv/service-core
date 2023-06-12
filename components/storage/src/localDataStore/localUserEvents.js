@@ -121,14 +121,13 @@ module.exports = ds.createUserEvents({
   },
 
   async deleteAttachment (userId, eventId, fileId, transaction) {
-    const eventData = await this.getOne(userId, eventId);
-    const newEventData = structuredClone(eventData);
-    newEventData.attachments = newEventData.attachments.filter((attachment) => {
+    const event = await this.getOne(userId, eventId);
+    event.attachments = event.attachments.filter((attachment) => {
       return attachment.id !== fileId;
     });
     await this.eventsFileStorage.removeAttachment(userId, eventId, fileId);
-    await this.update(userId, newEventData, transaction);
-    return newEventData;
+    await this.update(userId, event, transaction);
+    return event;
   },
 
   async update (userId, eventData, transaction) {
