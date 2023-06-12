@@ -26,12 +26,12 @@ module.exports = ds.createUserEvents({
     removeAttachments: true,
     updateOperatorForHistory: { $unset: {} }
   },
-  integritySetOnEvent: null,
+  setIntegrityOnEvent: null,
 
-  init (eventsCollection, eventsFileStorage, integritySetOnEvent) {
+  init (eventsCollection, eventsFileStorage, setIntegrityOnEventFn) {
     this.eventsCollection = eventsCollection;
     this.eventsFileStorage = eventsFileStorage;
-    this.integritySetOnEvent = integritySetOnEvent;
+    this.setIntegrityOnEvent = setIntegrityOnEventFn;
 
     // prepare deletion settings
     this.deletionSettings.mode = this.settings.versioning?.deletionMode || 'keep-nothing';
@@ -104,17 +104,16 @@ module.exports = ds.createUserEvents({
     }
   },
 
-  async addAttachment (userId, eventId, attachmentItem, transaction) {
+  async addAttachedFile (userId, eventId, attachmentItem, transaction) {
     const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId);
-    const newAttachmentsItem = Object.assign({ id: fileId }, attachmentItem);
-    delete newAttachmentsItem.attachmentData;
-    const eventData = await this.getOne(userId, eventId);
-    const newEventData = structuredClone(eventData);
-    if (newEventData.attachments == null) newEventData.attachments = [];
-    newEventData.attachments.push(newAttachmentsItem);
-    this.integritySetOnEvent(newEventData);
-    await this.update(userId, newEventData, transaction);
-    return newEventData;
+    const attachment = Object.assign({ id: fileId }, attachmentItem);
+    delete attachment.attachmentData;
+    const event = await this.getOne(userId, eventId);
+    event.attachments ??= [];
+    event.attachments.push(attachment);
+    this.setIntegrityOnEvent(event);
+    await this.update(userId, event, transaction);
+    return event;
   },
 
   async getAttachedFile (userId, eventId, fileId) {
@@ -168,7 +167,7 @@ module.exports = ds.createUserEvents({
     for (const field of this.deletionSettings.fields) {
       delete deletedEventContent[field];
     }
-    this.integritySetOnEvent(deletedEventContent);
+    this.setIntegrityOnEvent(deletedEventContent);
     deletedEventContent._id = deletedEventContent.id;
     delete deletedEventContent.id;
     deletedEventContent.userId = userId;

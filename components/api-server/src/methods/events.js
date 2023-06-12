@@ -610,7 +610,7 @@ module.exports = async function (api) {
             integrity: file.integrity,
             attachmentData: fs.createReadStream(file.path) // simulate full pass-thru of attachement until implemented
           };
-          eventWithUpdatedAttachments = await mall.events.addAttachment(context.user.id, context.newEvent.id, attachmentItem);
+          eventWithUpdatedAttachments = await mall.events.addAttachedFile(context.user.id, context.newEvent.id, attachmentItem);
           if (!eventWithUpdatedAttachments) {
             return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountEventModification])); // WTF this was checked earlier
           }

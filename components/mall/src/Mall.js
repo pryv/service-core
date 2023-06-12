@@ -62,18 +62,12 @@ class Mall {
     const userAccountStorage = await getUserAccountStorage();
     const { integrity } = require('business');
     for (const [storeId, store] of this.storesById) {
-      // create a custom integrity calculation for this store
-      const integritySetOnEvent = function setOnEvent (eventFromStoreData) {
-        const event = eventsUtils.convertEventFromStore(storeId, eventFromStoreData);
-        eventFromStoreData.integrity = integrity.events.compute(event).integrity;
-      };
-
       const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);
       const params = {
         ...this.storeDescriptionsByStore.get(store),
         storeKeyValueData,
         logger: getLogger(`mall:${storeId}`),
-        integrity: { setOnEvent: integritySetOnEvent }
+        integrity: { setOnEvent: getEventIntegrityFn(storeId, integrity) }
       };
       await store.init(params);
     }
@@ -84,7 +78,7 @@ class Mall {
 
   /**
    * @returns {Promise<void>}
-   */
+  */
   async deleteUser (userId) {
     for (const [storeId, store] of this.storesById) {
       try {
@@ -99,7 +93,7 @@ class Mall {
    * Return the quantity of storage used by the user in bytes.
    * @param {string} userId
    * @returns {Promise<number>}
-   */
+  */
   async getUserStorageSize (userId) {
     let storageUsed = 0;
     for (const [storeId, store] of this.storesById) {
@@ -118,9 +112,22 @@ class Mall {
   /**
    * @param {string} storeId
    * @returns {Promise<any>}
-   */
+  */
   async newTransaction () {
     return new MallTransaction(this);
   }
 }
 module.exports = Mall;
+
+/**
+ * Get store-specific integrity calculation function
+ * @param {string} storeId
+ * @param {*} integrity
+ * @returns {Function}
+*/
+function getEventIntegrityFn (storeId, integrity) {
+  return function setIntegrityForEvent (storeEventData) {
+    const event = eventsUtils.convertEventFromStore(storeId, storeEventData);
+    storeEventData.integrity = integrity.events.compute(event).integrity;
+  };
+}

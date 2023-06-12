@@ -21,13 +21,13 @@ module.exports = ds.createUserEvents({
   eventsFileStorage: null,
   deletionSettings: null,
   keepHistory: null,
-  integritySetOnEvent: null,
+  setIntegrityOnEvent: null,
 
-  init (storage, eventsFileStorage, settings, integritySetOnEvent) {
+  init (storage, eventsFileStorage, settings, setIntegrityOnEventFn) {
     this.storage = storage;
     this.eventsFileStorage = eventsFileStorage;
     this.settings = settings;
-    this.integritySetOnEvent = integritySetOnEvent;
+    this.setIntegrityOnEvent = setIntegrityOnEventFn;
     this.deletionSettings = {
       mode: this.settings.versioning?.deletionMode || 'keep-nothing'
     };
@@ -93,17 +93,16 @@ module.exports = ds.createUserEvents({
     }
   },
 
-  async addAttachment (userId, eventId, attachmentItem, transaction) {
+  async addAttachedFile (userId, eventId, attachmentItem, transaction) {
     const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId);
-    const newAttachmentsItem = Object.assign({ id: fileId }, attachmentItem);
-    delete newAttachmentsItem.attachmentData;
-    const eventData = await this.getOne(userId, eventId);
-    const newEventData = structuredClone(eventData);
-    if (newEventData.attachments == null) newEventData.attachments = [];
-    newEventData.attachments.push(newAttachmentsItem);
-    this.integritySetOnEvent(newEventData);
-    await this.update(userId, newEventData, transaction);
-    return newEventData;
+    const attachment = Object.assign({ id: fileId }, attachmentItem);
+    delete attachment.attachmentData;
+    const event = await this.getOne(userId, eventId);
+    event.attachments ??= [];
+    event.attachments.push(attachment);
+    this.setIntegrityOnEvent(event);
+    await this.update(userId, event, transaction);
+    return event;
   },
   /**
    * @param {string} userId
@@ -171,7 +170,7 @@ module.exports = ds.createUserEvents({
     for (const field of this.deletionSettings.fields) {
       delete deletedEventContent[field];
     }
-    this.integritySetOnEvent(deletedEventContent);
+    this.setIntegrityOnEvent(deletedEventContent);
     delete deletedEventContent.id;
     return await db.updateEvent(eventId, deletedEventContent);
   },

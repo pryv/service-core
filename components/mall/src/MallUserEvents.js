@@ -6,6 +6,7 @@
  */
 
 const _ = require('lodash');
+const assert = require('assert');
 const storeDataUtils = require('./helpers/storeDataUtils');
 const eventsUtils = require('./helpers/eventsUtils');
 const eventsQueryUtils = require('./helpers/eventsQueryUtils');
@@ -197,9 +198,8 @@ class MallUserEvents {
    * @returns {Promise<any>}
    */
   async create (userId, eventData, mallTransaction) {
-    if (eventData.attachments != null && eventData.attachments.length > 0) {
-      throw new Error('Attachments must be added after event creation');
-    }
+    assert.ok(eventData.attachments == null || eventData.attachments.length === 0,
+      'Attachments must be added after event creation');
     const { storeId, eventsStore, storeEvent, storeTransaction } = await this.prepareForStore(eventData, mallTransaction);
     try {
       const res = await eventsStore.create(userId, storeEvent, storeTransaction);
@@ -239,11 +239,11 @@ class MallUserEvents {
    * @param {MallTransaction} mallTransaction
    * @returns {Promise<Event>}
    */
-  async addAttachment (userId, eventId, attachmentItem, mallTransaction) {
+  async addAttachedFile (userId, eventId, attachmentItem, mallTransaction) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventId);
     const eventsStore = this.eventsStores.get(storeId);
-    const eventFromStore = await eventsStore.addAttachment(userId, storeEventId, attachmentItem);
-    const event = eventsUtils.convertEventFromStore(storeId, eventFromStore);
+    const storeEvent = await eventsStore.addAttachedFile(userId, storeEventId, attachmentItem);
+    const event = eventsUtils.convertEventFromStore(storeId, storeEvent);
     return event;
   }
 
@@ -290,7 +290,7 @@ class MallUserEvents {
   async createWithAttachments (userId, eventDataWithoutAttachments, attachmentsItems, mallTransaction) {
     let event = await this.create(userId, eventDataWithoutAttachments);
     for (const attachmentItem of attachmentsItems) {
-      event = await this.addAttachment(userId, event.id, attachmentItem);
+      event = await this.addAttachedFile(userId, event.id, attachmentItem);
     }
     return event;
   }
