@@ -10,7 +10,6 @@ const ds = require('@pryv/datastore');
 const errors = ds.errors;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const DeletionModesFields = require('../DeletionModesFields');
-const { integrity } = require('business');
 const { localStorePrepareOptions, localStorePrepareQuery } = require('../localStoreEventQueries');
 const timestamp = require('unix-timestamp');
 
@@ -22,11 +21,13 @@ module.exports = ds.createUserEvents({
   eventsFileStorage: null,
   deletionSettings: null,
   keepHistory: null,
+  setIntegrityOnEvent: null,
 
-  init (storage, eventsFileStorage, settings) {
+  init (storage, eventsFileStorage, settings, setIntegrityOnEventFn) {
     this.storage = storage;
     this.eventsFileStorage = eventsFileStorage;
     this.settings = settings;
+    this.setIntegrityOnEvent = setIntegrityOnEventFn;
     this.deletionSettings = {
       mode: this.settings.versioning?.deletionMode || 'keep-nothing'
     };
@@ -92,21 +93,17 @@ module.exports = ds.createUserEvents({
     }
   },
 
-  /**
-   * @param {string} userId
-   * @param {Array<AttachmentItem>} attachmentsItems
-   * @param {Transaction} transaction
-   * @returns {Promise<any[]>}
-   */
-  async saveAttachedFiles (userId, eventId, attachmentsItems, transaction) {
-    const attachmentsResponse = [];
-    for (const attachment of attachmentsItems) {
-      const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachment.attachmentData, userId, eventId);
-      attachmentsResponse.push({ id: fileId });
-    }
-    return attachmentsResponse;
+  async addAttachment (userId, eventId, attachmentItem, transaction) {
+    const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId);
+    const attachment = Object.assign({ id: fileId }, attachmentItem);
+    delete attachment.attachmentData;
+    const event = await this.getOne(userId, eventId);
+    event.attachments ??= [];
+    event.attachments.push(attachment);
+    this.setIntegrityOnEvent(event);
+    await this.update(userId, event, transaction);
+    return event;
   },
-
   /**
    * @param {string} userId
    * @param {string} fileId
@@ -122,8 +119,15 @@ module.exports = ds.createUserEvents({
    * @param {Transaction} transaction
    * @returns {Promise<any>}
    */
-  async deleteAttachedFile (userId, eventId, fileId, transaction) {
-    return await this.eventsFileStorage.removeAttachment(userId, eventId, fileId);
+  async deleteAttachment (userId, eventId, fileId, transaction) {
+    const eventData = await this.getOne(userId, eventId);
+    const newEventData = structuredClone(eventData);
+    newEventData.attachments = newEventData.attachments.filter((attachment) => {
+      return attachment.id !== fileId;
+    });
+    await this.eventsFileStorage.removeAttachment(userId, eventId, fileId);
+    await this.update(userId, newEventData, transaction);
+    return newEventData;
   },
 
   /**
@@ -166,7 +170,7 @@ module.exports = ds.createUserEvents({
     for (const field of this.deletionSettings.fields) {
       delete deletedEventContent[field];
     }
-    integrity.events.set(deletedEventContent);
+    this.setIntegrityOnEvent(deletedEventContent);
     delete deletedEventContent.id;
     return await db.updateEvent(eventId, deletedEventContent);
   },
