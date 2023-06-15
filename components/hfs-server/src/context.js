@@ -62,7 +62,9 @@ class Context {
    */
   async configureMetadataCache () {
     const mall = await getMall();
-    this.metadata = new MetadataCache(this.series, new MetadataLoader(this.mongoConn, mall, getLogger('metadata-cache')), this.config);
+    const metadataLoader = new MetadataLoader();
+    await metadataLoader.init(this.mongoConn, mall, getLogger('metadata-cache'));
+    this.metadata = new MetadataCache(this.series, metadataLoader, this.config);
   }
 
   // Configures the metadata updater service.

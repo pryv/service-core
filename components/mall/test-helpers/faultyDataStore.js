@@ -7,23 +7,16 @@
 
 const ds = require('@pryv/datastore');
 
-const faultyStreams = createUserStreams();
-const faultyEvents = createUserEvents();
-
 /**
  * Faulty data store that always fails.
  * (Implements no data methods, so all calls will throw "not supported" errors.)
  */
 module.exports = ds.createDataStore({
-  id: 'faulty',
-  name: 'Faulty store',
-
-  async init () {
+  async init (keyValueData) { // eslint-disable-line no-unused-vars
+    this.streams = createUserStreams();
+    this.events = createUserEvents();
     return this;
   },
-
-  streams: faultyStreams,
-  events: faultyEvents,
 
   async deleteUser (userId) {}, // eslint-disable-line no-unused-vars
 

@@ -43,7 +43,8 @@ module.exports = {
   getPasswordHash,
   getCurrentPasswordTime,
   passwordExistsInHistory,
-  clearHistory
+  clearHistory,
+  getKeyValueDataForStore
 };
 
 async function init () {
@@ -64,6 +65,8 @@ async function init () {
 
   initState = InitStates.READY;
 }
+
+// PASSWORD MANAGEMENT
 
 async function getPasswordHash (userId) {
   const db = await getUserDB(userId);
@@ -98,6 +101,59 @@ async function passwordExistsInHistory (userId, password, historyLength) {
   return false;
 }
 
+// PER-STORE KEY-VALUE DB
+
+function getKeyValueDataForStore (storeId) {
+  return new StoreKeyValueData(storeId);
+}
+
+/**
+ * @constructor
+ * @param {string} storeId
+ */
+function StoreKeyValueData (storeId) {
+  this.storeId = storeId;
+}
+
+StoreKeyValueData.prototype.getAll = async function (userId) {
+  const db = await getUserDB(userId);
+  const query = db.prepare('SELECT key, value FROM storeKeyValueData WHERE storeId = @storeId');
+  const res = {};
+  for (const item of query.iterate({ storeId: this.storeId })) {
+    res[item.key] = JSON.parse(item.value);
+  }
+  return res;
+};
+
+StoreKeyValueData.prototype.get = async function (userId, key) {
+  const db = await getUserDB(userId);
+  const res = db.prepare('SELECT value FROM storeKeyValueData WHERE storeId = @storeId AND key = @key').get({
+    storeId: this.storeId,
+    key
+  });
+  if (res?.value == null) return null;
+  return JSON.parse(res.value);
+};
+
+StoreKeyValueData.prototype.set = async function (userId, key, value) {
+  const db = await getUserDB(userId);
+  if (value == null) {
+    db.prepare('DELETE FROM storeKeyValueData WHERE storeId = @storeId AND key = @key)').run({
+      storeId: this.storeId,
+      key
+    });
+  } else {
+    const valueStr = JSON.stringify(value);
+    db.prepare('REPLACE INTO storeKeyValueData (storeId, key, value) VALUES (@storeId, @key, @value)').run({
+      storeId: this.storeId,
+      key,
+      value: valueStr
+    });
+  }
+};
+
+// COMMON FUNCTIONS
+
 /**
  * For tests
  */
@@ -119,6 +175,8 @@ async function openUserDB (userId) {
   db.unsafeMode(true);
   db.prepare('CREATE TABLE IF NOT EXISTS passwords (time REAL PRIMARY KEY, hash TEXT NOT NULL, createdBy TEXT NOT NULL);').run();
   db.prepare('CREATE INDEX IF NOT EXISTS passwords_hash ON passwords(hash);').run();
+  db.prepare('CREATE TABLE IF NOT EXISTS storeKeyValueData (storeId TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (storeId, key));').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS storeKeyValueData_storeId ON storeKeyValueData(storeId);').run();
   dbCache.set(userId, db);
   return db;
 }

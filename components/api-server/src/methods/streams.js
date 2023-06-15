@@ -22,6 +22,7 @@ const logger = getLogger('methods:streams');
 const { getMall, storeDataUtils } = require('mall');
 const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 const { pubsub } = require('messages');
+const Readable = require('stream').Readable;
 /**
  * Event streams API methods implementation.
  *
@@ -39,10 +40,8 @@ module.exports = async function (api) {
   // RETRIEVAL
   api.register('streams.get', commonFns.getParamsValidation(methodsSchema.get.params), checkAuthorization, applyDefaultsForRetrieval, findAccessibleStreams, includeDeletionsIfRequested);
   function applyDefaultsForRetrieval (context, params, result, next) {
-    _.defaults(params, {
-      parentId: null,
-      includeDeletionsSince: null
-    });
+    params.parentId ??= null;
+    params.includeDeletionsSince ??= null;
     next();
   }
   async function checkAuthorization (context, params, result, next) {
@@ -78,7 +77,7 @@ module.exports = async function (api) {
     let streams = await mall.streams.get(context.user.id, {
       id: streamId,
       storeId,
-      expandChildren: -1,
+      childrenDepth: -1,
       includeTrashed: params.includeTrashed || params.state === 'all',
       excludedIds: context.access.getCannotListStreamsStreamIds(storeId)
     });
@@ -104,7 +103,7 @@ module.exports = async function (api) {
         const listableFullStreamId = storeDataUtils.getFullItemId(listable.storeId, listable.streamId);
         const inResult = treeUtils.findById(streams, listableFullStreamId);
         if (inResult) {
-          const copy = _.cloneDeep(inResult);
+          const copy = structuredClone(inResult);
           filteredStreams.push(copy);
         } else {
           if (storeId === 'local' && listable.storeId !== 'local') {
@@ -112,7 +111,7 @@ module.exports = async function (api) {
             const listableStreamAndChilds = await mall.streams.get(context.user.id, {
               id: listable.streamId,
               storeId: listable.storeId,
-              expandChildren: -1,
+              childrenDepth: -1,
               includeTrashed: params.includeTrashed || params.state === 'all',
               excludedIds: context.access.getCannotListStreamsStreamIds(listable.storeId)
             });
@@ -161,7 +160,7 @@ module.exports = async function (api) {
   // CREATION
   api.register('streams.create', forbidSystemStreamsActions, commonFns.getParamsValidation(methodsSchema.create.params), applyDefaultsForCreation, applyPrerequisitesForCreation, createStream);
   function applyDefaultsForCreation (context, params, result, next) {
-    _.defaults(params, { parentId: null });
+    params.parentId ??= null;
     next();
   }
   async function applyPrerequisitesForCreation (context, params, result, next) {
@@ -173,7 +172,7 @@ module.exports = async function (api) {
       const parentResults = await mall.streams.get(context.user.id, {
         id: params.parentId,
         includeTrashed: true,
-        expandChildren: 1
+        childrenDepth: 1
       });
       if (parentResults.length === 0) {
         return next(errors.unknownReferencedResource('unknown Stream:', 'parentId', params.parentId, null));
@@ -262,7 +261,7 @@ module.exports = async function (api) {
       const targetParentArray = await mall.streams.get(context.user.id, {
         id: params.update.parentId,
         includeTrashed: true,
-        expandChildren: 1
+        childrenDepth: 1
       });
       if (targetParentArray.length === 0) {
         // no parent
@@ -288,7 +287,7 @@ module.exports = async function (api) {
   }
   async function updateStream (context, params, result, next) {
     try {
-      const updateData = _.cloneDeep(params.update);
+      const updateData = structuredClone(params.update);
       updateData.id = params.id;
       const updatedStream = await mall.streams.update(context.user.id, updateData);
       result.stream = updatedStream;
@@ -304,7 +303,7 @@ module.exports = async function (api) {
   // DELETION
   api.register('streams.delete', forbidSystemStreamsActions, commonFns.getParamsValidation(methodsSchema.del.params), verifyStreamExistenceAndPermissions, deleteStream);
   async function verifyStreamExistenceAndPermissions (context, params, result, next) {
-    _.defaults(params, { mergeEventsWithParent: null });
+    params.mergeEventsWithParent ??= null;
     context.stream = await context.streamForStreamId(params.id);
     if (context.stream == null) {
       return process.nextTick(next.bind(null, errors.unknownResource('stream', params.id)));
@@ -342,9 +341,10 @@ module.exports = async function (api) {
     const streamToDeleteSingleArray = await mall.streams.get(context.user.id, {
       id: storeStreamId,
       includeTrashed: true,
-      expandChildren: -1,
+      childrenDepth: -1,
       storeId
     });
+
     const streamToDelete = streamToDeleteSingleArray[0]; // no need to check existence: done before in verifyStreamExistenceAndPermissions
     const streamAndDescendantIds = treeUtils.collectPluckFromRootItem(streamToDelete, 'id');
     // keep stream and children to delete in next step
@@ -359,6 +359,7 @@ module.exports = async function (api) {
     const events = await mall.events.getWithParamsByStore(context.user.id, {
       [storeId]: { streams: [{ any: cleanDescendantIds }], limit: 1 }
     });
+
     const hasLinkedEvents = !!events.length;
     if (hasLinkedEvents) {
       // has linked events -----------------
@@ -366,6 +367,17 @@ module.exports = async function (api) {
         return next(errors.invalidParametersFormat('There are events referring to the deleted items ' +
                     'and the `mergeEventsWithParent` parameter is missing.'));
       }
+    }
+
+    // --- all tests are passed
+    // --- create result streams and start send result as they come
+    const updatedEventsStream = new ItemsStream();
+    result.addStream('updatedEvents', updatedEventsStream);
+    const singleItemDeletedStream = new ItemsStream();
+    result.addStream('streamDeletion', singleItemDeletedStream, false);
+    next(); // <== call next here to avoid await blocking
+
+    if (hasLinkedEvents) {
       if (params.mergeEventsWithParent) {
         // -- Case 1 -- Merge events with parent
         // add parent stream Id if needed and remove deleted stream ids
@@ -374,6 +386,9 @@ module.exports = async function (api) {
         await mall.events.updateMany(context.user.id, query, {
           addStreams: [parentId],
           removeStreams: streamAndDescendantIds
+        }, function (event) {
+          if (event == null) return;
+          updatedEventsStream.add({ action: 'mergedToParent', id: event.id });
         });
       } else {
         // case  mergeEventsWithParent = false
@@ -382,24 +397,44 @@ module.exports = async function (api) {
           const remaningStreamsIds = _.difference(event.streamIds, streamAndDescendantIds);
           if (remaningStreamsIds.length === 0) { // no more streams deleted event
             await mall.events.delete(context.user.id, event);
+            updatedEventsStream.add({ action: 'deleted', id: event.id });
           } else { // update event without these streams
             event.streamIds = remaningStreamsIds;
             await mall.events.update(context.user.id, event);
+            updatedEventsStream.add({ action: 'updatedStreamIds', id: event.id });
           }
         }
       }
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     }
+    updatedEventsStream.add(null); // close stream
     // finally delete stream
     for (const streamIdToDelete of context.streamToDeleteAndDescendantIds) {
       try {
-        await mall.streams.updateDelete(context.user.id, streamIdToDelete);
+        await mall.streams.delete(context.user.id, streamIdToDelete);
       } catch (err) {
         logger.error('Failed deleted some streams', err);
       }
     }
-    result.streamDeletion = { id: params.id };
+    singleItemDeletedStream.push({ id: params.id });
+    singleItemDeletedStream.push(null); // close stream
     pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
-    next();
   }
 };
+
+class ItemsStream extends Readable {
+  buffer;
+  constructor () {
+    super({ objectMode: true });
+    this.buffer = [];
+  }
+
+  add (item) { this.push(item); }
+
+  _read () {
+    let push = true;
+    while (this.buffer.length > 0 && push) {
+      push = this.push(this.buffer.shift());
+    }
+  }
+}

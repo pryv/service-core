@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const { tryCoerceStringValues } = require('api-server').validation;
-const lodash = require('lodash');
 const timestamp = require('unix-timestamp');
 const errors = require('errors').factory;
 const SeriesResponse = require('../SeriesResponse');
@@ -29,7 +28,7 @@ async function querySeriesData (ctx, req, res) {
   if (accessToken == null) { throw errors.missingHeader(AUTH_HEADER, 401); }
   if (eventId == null) { throw errors.invalidItemId(); }
   const seriesMeta = await verifyAccess(username, eventId, accessToken, metadata);
-  const query = coerceStringParams(lodash.clone(req.query));
+  const query = coerceStringParams(structuredClone(req.query));
   applyDefaultValues(query);
   validateQuery(query);
   await retrievePoints(seriesRepo, res, query, seriesMeta);

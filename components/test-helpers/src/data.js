@@ -4,9 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Regroups shared test data and related  helper functions.
  */
+
 const async = require('async');
 const childProcess = require('child_process');
 const dependencies = require('./dependencies');
@@ -15,17 +17,20 @@ const settings = dependencies.settings;
 const storage = dependencies.storage;
 const fs = require('fs');
 const path = require('path');
-const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
+const { userLocalDirectory } = require('storage');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
+
 // users
+
 const users = (exports.users = require('./data/users'));
 const defaultUser = users[0];
+
 exports.resetUsers = async () => {
   logger.debug('resetUsers');
   await getConfig(); // lock up to the time config is ready
@@ -38,15 +43,18 @@ exports.resetUsers = async () => {
     await usersRepository.insertOne(userObj, false, true);
   }
 };
+
 // accesses
+
 const accesses = (exports.accesses = require('./data/accesses'));
+
 exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
   const u = user || defaultUser;
   if (personalAccessToken) {
     accesses[0].token = personalAccessToken;
   }
   if (addToId) {
-    const data = _.cloneDeep(accesses);
+    const data = structuredClone(accesses);
     for (let i = 0; i < data.length; i++) {
       data[i].id += u.id;
     }
@@ -55,30 +63,40 @@ exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
   }
   resetData(storage.user.accesses, u, accesses, done);
 };
+
 // profile
+
 const profile = (exports.profile = require('./data/profile'));
+
 exports.resetProfile = function (done, user) {
   resetData(storage.user.profile, user || defaultUser, profile, done);
 };
+
 // followed slices
+
 const followedSlicesURL = 'http://' +
     settings.http.ip +
     ':' +
     settings.http.port +
     '/' +
     users[0].username;
+
 const followedSlices = (exports.followedSlices =
     require('./data/followedSlices')(followedSlicesURL));
+
 exports.resetFollowedSlices = function (done, user) {
   resetData(storage.user.followedSlices, user || defaultUser, followedSlices, done);
 };
+
 // events
+
 const events = (exports.events = require('./data/events'));
+
 exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
   const eventsToWrite = events.map((e) => {
-    const eventToWrite = _.cloneDeep(e);
+    const eventToWrite = structuredClone(e);
     delete eventToWrite.tags;
     return eventToWrite;
   });
@@ -99,15 +117,18 @@ exports.resetEvents = function (done, user) {
     }
   ], done);
 };
+
 // streams
+
 const streams = (exports.streams = require('./data/streams'));
+
 exports.resetStreams = function (done, user) {
   const myUser = user || defaultUser;
   let mall = null;
   async function addStreams (arrayOfStreams) {
     for (const stream of arrayOfStreams) {
       const children = stream?.children || [];
-      const streamData = _.clone(stream);
+      const streamData = structuredClone(stream);
       delete streamData.children;
       await mall.streams.create(myUser.id, streamData);
       await addStreams(children);
@@ -121,6 +142,7 @@ exports.resetStreams = function (done, user) {
     }
   ], done);
 };
+
 /**
  * @returns {void}
  */
@@ -130,11 +152,14 @@ function resetData (storage, user, items, done) {
     storage.insertMany.bind(storage, user, items)
   ], done);
 }
+
 // attachments
+
 /**
  * Source attachments directory path (!= server storage path)
  */
-const attachmentsDirPath = (exports.attachmentsDirPath = path.join(__dirname, '/data/attachments/'));
+const testsAttachmentsDirPath = (exports.testsAttachmentsDirPath = path.join(__dirname, '/data/attachments/'));
+
 const attachments = (exports.attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
   document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
@@ -143,6 +168,7 @@ const attachments = (exports.attachments = {
   imageBigger: getAttachmentInfo('imageBigger', 'image-bigger.jpg', 'image/jpeg'),
   text: getAttachmentInfo('text', 'text.txt', 'text/plain')
 });
+
 // following https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
 // compute sri with openssl
 // cat FILENAME.js | openssl dgst -sha384 -binary | openssl base64 -A
@@ -156,11 +182,12 @@ function getSubresourceIntegrity (filePath) {
         '-' +
         childProcess.execSync(`cat "${filePath}" | openssl dgst -${algorithm} -binary | openssl base64 -A`));
 }
+
 /**
  * @returns {{ id: any; filename: any; path: any; data: any; size: any; type: any; integrity: string; }}
  */
 function getAttachmentInfo (id, filename, type) {
-  const filePath = path.join(attachmentsDirPath, filename);
+  const filePath = path.join(testsAttachmentsDirPath, filename);
   const data = fs.readFileSync(filePath);
   const integrity = getSubresourceIntegrity(filePath);
   return {
@@ -173,20 +200,20 @@ function getAttachmentInfo (id, filename, type) {
     integrity
   };
 }
+
 exports.resetAttachments = function (done, user) {
   if (!user) {
     user = defaultUser;
   }
+  storage.user.eventFiles.removeAllForUser(user);
   async.series([
-    function (stepDone) {
-      storage.user.eventFiles.removeAllForUser(user, stepDone);
-    },
     copyAttachmentFn(attachments.document, user, events[0].id),
     copyAttachmentFn(attachments.image, user, events[0].id),
     copyAttachmentFn(attachments.imageBigger, user, events[2].id),
     copyAttachmentFn(attachments.animatedGif, user, events[12].id)
   ], done);
 };
+
 /**
  * @returns {(callback: any) => any}
  */
@@ -199,7 +226,7 @@ function copyAttachmentFn (attachmentInfo, user, eventId) {
       return callback(e);
     }
     storage.user.eventFiles
-      .saveAttachedFileFromTemp(tmpPath, user.id, eventId, attachmentInfo.id)
+      .saveAttachmentFromTemp(tmpPath, user.id, eventId, attachmentInfo.id)
       .then((fileID) => {
         callback(null, fileID);
       }, (err) => {
@@ -207,7 +234,9 @@ function copyAttachmentFn (attachmentInfo, user, eventId) {
       });
   };
 }
+
 // data dump & restore (for testing data migration)
+
 /**
  * Dumps test data into a `data` subfolder named after the provided version.
  * DB data is mongodumped, attachments data is tarballed.
@@ -230,7 +259,7 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
     exports.resetStreams,
     exports.resetEvents,
     exports.resetAttachments,
-    rimraf.bind(null, outputFolder),
+    fs.rm.bind(null, outputFolder, { recursive: true, force: true }),
     childProcess.exec.bind(null, mongodump +
             (settings.database.authUser
               ? ' -u ' +
@@ -258,6 +287,7 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
     callback();
   });
 };
+
 /**
  *
  * @param {String} versionNum Must match an existing dumped version (e.g. "0.3.0")
@@ -305,6 +335,7 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
     callback();
   });
 };
+
 /**
  * Fetches the database structure for a given version
  *
@@ -314,33 +345,37 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
 exports.getStructure = function (version) {
   return require(path.join(__dirname, '/structure/', version));
 };
+
 /**
  * @returns {void}
  */
 function clearAllData (callback) {
-  async.series([
-    storage.database.dropDatabase.bind(storage.database),
-    storage.user.eventFiles.removeAll.bind(storage.user.eventFiles)
-  ], callback);
+  deleteUsersDataDirectory();
+  storage.user.eventFiles.removeAll();
+  storage.database.dropDatabase(callback);
 }
+
 /**
  * @returns {any}
  */
 function getDumpFolder (versionNum) {
   return path.resolve(__dirname, 'data/dumps', versionNum);
 }
+
 /**
  * @returns {any}
  */
 function getDumpDBSubfolder (dumpFolder) {
   return path.resolve(dumpFolder, 'db');
 }
+
 /**
  * @returns {any}
  */
 function getDumpFilesArchive (dumpFolder) {
   return path.resolve(dumpFolder, 'event-files.tar.gz');
 }
+
 /**
  * @returns {{}}
  */
@@ -352,4 +387,9 @@ function buildCustomAccountProperties () {
     customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);
   });
   return customProperties;
+}
+
+function deleteUsersDataDirectory () {
+  const basePath = userLocalDirectory.getBasePath();
+  fs.rmSync(basePath, { recursive: true, force: true });
 }

@@ -140,7 +140,8 @@ class Application {
     }
     this.api = new API();
     this.systemAPI = new API();
-    this.produceStorageSubsystem();
+    this.database = await storage.getDatabase();
+    this.storageLayer = await storage.getStorageLayer();
     await this.createExpressApp();
     const apiVersion = await getAPIVersion();
     const hostname = require('os').hostname();
@@ -213,7 +214,7 @@ class Application {
     require('./routes/auth/register')(this.expressApp, this);
     if (this.isOpenSource) {
       require('www')(this.expressApp, this);
-      require('register')(this.expressApp, this);
+      await require('register')(this.expressApp, this);
     }
 
     require('./routes/system')(this.expressApp, this);
@@ -241,16 +242,6 @@ class Application {
    */
   produceLogSubsystem () {
     this.logging = getLogger('Application');
-  }
-
-  /**
-   * @returns {void}
-   */
-  produceStorageSubsystem () {
-    this.database = storage.getDatabaseSync();
-    // 'StorageLayer' is a component that contains all the vertical registries
-    // for various database models.
-    this.storageLayer = storage.getStorageLayerSync();
   }
 
   customAuthStepLoaded = false;

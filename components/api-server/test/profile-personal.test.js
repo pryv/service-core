@@ -16,7 +16,7 @@ const testData = helpers.data;
 const _ = require('lodash');
 
 describe('profile (personal)', function () {
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   const basePath = '/' + user.username + '/profile';
   let request = null; // must be set after server instance started
   const publicProfile = testData.profile[0];
@@ -95,7 +95,7 @@ describe('profile (personal)', function () {
           schema: methodsSchema.update.result
         });
 
-        const expectedData = _.extend(_.cloneDeep(original.data), data);
+        const expectedData = _.extend(structuredClone(original.data), data);
         delete expectedData.keyTwo;
         res.body.profile.should.eql(expectedData);
 

@@ -4,17 +4,22 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const errors = require('errors');
 const errorsFactory = errors.factory;
 const APIError = errors.APIError;
 const errorHandling = errors.errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
-const { notifyAirbrake } = require('@pryv/boiler');
 const { getConfigUnsafe } = require('@pryv/boiler');
+
+module.exports = produceHandleErrorMiddleware;
+
 (async () => {
   await commonMeta.loadSettings();
 })();
-/** Error route handling.
+
+/**
+ * Error route handling.
  * @param {any} logging
  * @returns {(error: any, req: any, res: any, next: () => void) => Promise<void>}
  */
@@ -39,9 +44,6 @@ function produceHandleErrorMiddleware (logging) {
       // req.context.tracing.finishSpan('express1');
     }
     errorHandling.logError(error, req, logger);
-    if (!error.dontNotifyAirbrake) {
-      notifyAirbrake(error);
-    }
     res
       .status(error.httpStatus || 500)
       .json(commonMeta.setCommonMeta({
@@ -49,4 +51,3 @@ function produceHandleErrorMiddleware (logging) {
       }));
   };
 }
-module.exports = produceHandleErrorMiddleware;

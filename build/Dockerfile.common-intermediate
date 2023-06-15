@@ -1,9 +1,22 @@
-FROM eu.gcr.io/pryvio/base:1.9.0
-MAINTAINER "Tech@Pryv" <tech@pryv.com>
+ARG BUILD_HOST
+ARG BUILD_VERSION
+FROM ${BUILD_HOST}/pryvio/base:${BUILD_VERSION}
+LABEL maintainer="Pryv<tech@pryv.com>"
 
-# Set main paths that will be reused in this docker file
 ARG TARGET_DIR="/app/bin"
 
 # copy all code to the target dir except files mentioned in .dockerignore
 COPY . $TARGET_DIR
 WORKDIR $TARGET_DIR
+
+# add Python (needed to install node modules via node-gyp)
+RUN apt-get update
+RUN apt-get install -y python3
+
+# install node modules here
+RUN npm ci --omit=dev --omit=optional
+
+# remove python
+RUN apt-get -y --purge autoremove python3
+# cleanup package cache
+RUN rm -rf /var/lib/apt/lists/*

@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const _ = require('lodash');
 const Readable = require('stream').Readable;
 const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 const ds = require('@pryv/datastore');
@@ -12,7 +11,8 @@ const errors = ds.errors;
 const handleDuplicateError = require('../Database').handleDuplicateError;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const DeletionModesFields = require('../DeletionModesFields');
-const { integrity } = require('business');
+const { localStorePrepareOptions, localStorePrepareQuery } = require('../localStoreEventQueries');
+const timestamp = require('unix-timestamp');
 
 /**
  * Local data store: events implementation.
@@ -26,10 +26,12 @@ module.exports = ds.createUserEvents({
     removeAttachments: true,
     updateOperatorForHistory: { $unset: {} }
   },
+  setIntegrityOnEvent: null,
 
-  init (eventsCollection, eventsFileStorage) {
+  init (eventsCollection, eventsFileStorage, setIntegrityOnEventFn) {
     this.eventsCollection = eventsCollection;
     this.eventsFileStorage = eventsFileStorage;
+    this.setIntegrityOnEvent = setIntegrityOnEventFn;
 
     // prepare deletion settings
     this.deletionSettings.mode = this.settings.versioning?.deletionMode || 'keep-nothing';
@@ -47,33 +49,33 @@ module.exports = ds.createUserEvents({
     return res[0];
   },
 
-  async get (userId, params) {
-    const { query, options } = paramsToMongoquery(params);
-    const cursor = this._getCursor(userId, query, options);
+  async get (userId, query, options) {
+    const localQuery = localStorePrepareQuery(query);
+    const localOptions = localStorePrepareOptions(options);
+    const cursor = this._getCursor(userId, getMongoQuery(localQuery), localOptions);
     const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
     return res;
   },
 
-  async getStreamed (userId, params) {
-    const { query, options } = paramsToMongoquery(params);
-    const cursor = this._getCursor(userId, query, options);
+  async getStreamed (userId, query, options) {
+    const localQuery = localStorePrepareQuery(query);
+    const localOptions = localStorePrepareOptions(options);
+    const cursor = this._getCursor(userId, getMongoQuery(localQuery), localOptions);
     return readableStreamFromEventCursor(cursor);
   },
 
   /**
    * @param {identifier} userId
-   * @param {timestamp} deletedSince
-   * @param {number} [limit]
-   * @param {number} [skip]
-   * @param {boolean} [sortAscending]
+   * @param {{deletedSince: timestamp}} query
+   * @param {{skip: number, limit: number, sortAscending: boolean}} [options]
    * @returns {Promise<Readable>}
    */
-  async getDeletionsStreamed (userId, deletedSince, limit = null, skip = null, sortAscending = false) {
-    const query = { deleted: { $gt: deletedSince } };
-    const options = { sort: { deleted: sortAscending ? 1 : -1 } };
-    if (skip != null) options.skip = skip;
-    if (limit != null) options.limit = limit;
-    const cursor = this._getCursor(userId, query, options);
+  async getDeletionsStreamed (userId, query, options) {
+    const mongoQuery = { deleted: { $gt: query.deletedSince } };
+    const mongoOptions = { sort: { deleted: options?.sortAscending ? 1 : -1 } };
+    if (options?.limit != null) mongoOptions.limit = options.limit;
+    if (options?.skip != null) mongoOptions.skip = options.skip;
+    const cursor = this._getCursor(userId, mongoQuery, mongoOptions);
     return readableStreamFromEventCursor(cursor);
   },
 
@@ -87,7 +89,7 @@ module.exports = ds.createUserEvents({
   async create (userId, event, transaction) {
     try {
       const options = { transactionSession: transaction?.transactionSession };
-      const toInsert = _.cloneDeep(event);
+      const toInsert = structuredClone(event);
       toInsert.userId = userId;
       toInsert._id = event.id;
       delete toInsert.id;
@@ -102,25 +104,34 @@ module.exports = ds.createUserEvents({
     }
   },
 
-  async saveAttachedFiles (userId, eventId, attachmentsItems, transaction) {
-    const attachmentsResponse = [];
-    for (const attachment of attachmentsItems) {
-      const fileId = await this.eventsFileStorage.saveAttachedFileFromStream(attachment.attachmentData, userId, eventId);
-      attachmentsResponse.push({ id: fileId });
-    }
-    return attachmentsResponse;
+  async addAttachment (userId, eventId, attachmentItem, transaction) {
+    const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId);
+    const attachment = Object.assign({ id: fileId }, attachmentItem);
+    delete attachment.attachmentData;
+    const event = await this.getOne(userId, eventId);
+    event.attachments ??= [];
+    event.attachments.push(attachment);
+    this.setIntegrityOnEvent(event);
+    await this.update(userId, event, transaction);
+    return event;
   },
 
   async getAttachedFile (userId, eventId, fileId) {
-    return this.eventsFileStorage.getAttachedFileStream(userId, eventId, fileId);
+    return this.eventsFileStorage.getAttachmentStream(userId, eventId, fileId);
   },
 
-  async deleteAttachedFile (userId, eventId, fileId, transaction) {
-    return await this.eventsFileStorage.removeAttachedFile(userId, eventId, fileId);
+  async deleteAttachment (userId, eventId, fileId, transaction) {
+    const event = await this.getOne(userId, eventId);
+    event.attachments = event.attachments.filter((attachment) => {
+      return attachment.id !== fileId;
+    });
+    await this.eventsFileStorage.removeAttachment(userId, eventId, fileId);
+    await this.update(userId, event, transaction);
+    return event;
   },
 
   async update (userId, eventData, transaction) {
-    const update = Object.assign({}, eventData);
+    const update = structuredClone(eventData);
     update._id = update.id;
     update.userId = userId;
     delete update.id;
@@ -136,7 +147,7 @@ module.exports = ds.createUserEvents({
   },
 
   async delete (userId, originalEvent) {
-    const deletedEventContent = Object.assign({}, originalEvent);
+    const deletedEventContent = structuredClone(originalEvent);
     await this._generateVersionIfNeeded(userId, originalEvent.id, originalEvent);
     // if attachments are to be deleted
     if (this.deletionSettings.removeAttachments && deletedEventContent.attachments != null && deletedEventContent.attachments.length > 0) {
@@ -151,11 +162,11 @@ module.exports = ds.createUserEvents({
     }
 
     // prepare event content for mongodb
-    deletedEventContent.deleted = Date.now() / 1000;
+    deletedEventContent.deleted = timestamp.now();
     for (const field of this.deletionSettings.fields) {
       delete deletedEventContent[field];
     }
-    integrity.events.set(deletedEventContent);
+    this.setIntegrityOnEvent(deletedEventContent);
     deletedEventContent._id = deletedEventContent.id;
     delete deletedEventContent.id;
     deletedEventContent.userId = userId;
@@ -174,7 +185,7 @@ module.exports = ds.createUserEvents({
     const options = { transactionSession: transaction?.transactionSession };
     let versionItem = null;
     if (originalEvent != null) {
-      versionItem = Object.assign({}, originalEvent);
+      versionItem = structuredClone(originalEvent);
       delete versionItem.id;
     } else {
       versionItem = await this.eventsCollection.findOne(query, options);
@@ -288,25 +299,20 @@ const converters = {
 };
 
 /**
- * transform params to mongoQuery
- * @param {*} requestedType
- * @returns {{ query: { $and: any[]; }; options: { skip: any; limit: any; sort: any; }; }}
+ * Transform the given events query to the MongoDB format.
+ * @param {any[]} query
+ * @returns {{ $and: any[] }}}
  */
-function paramsToMongoquery (params) {
-  const options = {
-    skip: params.options.skip,
-    limit: params.options.limit,
-    sort: params.options.sort
-  };
-  const query = { $and: [] };
-  for (const item of params.query) {
+function getMongoQuery (query) {
+  const mongoQuery = { $and: [{ deleted: null, headId: null }] };
+  for (const item of query) {
     const newCondition = converters[item.type](item.content);
     if (newCondition != null) {
-      query.$and.push(newCondition);
+      mongoQuery.$and.push(newCondition);
     }
   }
-  if (query.$and.length === 0) { delete query.$and; } // remove empty $and
-  return { query, options };
+  if (mongoQuery.$and.length === 0) { delete mongoQuery.$and; } // remove empty $and
+  return mongoQuery;
 }
 
 /**

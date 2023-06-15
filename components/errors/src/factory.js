@@ -39,22 +39,19 @@ factory.forbidden = function (message) {
             "The given token's access permissions do not allow this operation.";
   }
   return new APIError(ErrorIds.Forbidden, message, {
-    httpStatus: 403,
-    dontNotifyAirbrake: true
+    httpStatus: 403
   });
 };
 
 factory.invalidAccessToken = function (message, status) {
   return new APIError(ErrorIds.InvalidAccessToken, message, {
-    httpStatus: status || 401,
-    dontNotifyAirbrake: true
+    httpStatus: status || 401
   });
 };
 
 factory.invalidCredentials = function (message) {
   return new APIError(ErrorIds.InvalidCredentials, message || 'The given username/password pair is invalid.', {
-    httpStatus: 401,
-    dontNotifyAirbrake: true
+    httpStatus: 401
   });
 };
 
@@ -67,8 +64,7 @@ factory.invalidEventType = function (type) {
 
 factory.invalidItemId = function (message) {
   return new APIError(ErrorIds.InvalidItemId, message || '', {
-    httpStatus: 400,
-    dontNotifyAirbrake: true
+    httpStatus: 400
   });
 };
 
@@ -80,8 +76,7 @@ factory.invalidOperation = function (message, data, innerError) {
   return new APIError(ErrorIds.InvalidOperation, message, {
     httpStatus: 400,
     data,
-    innerError,
-    dontNotifyAirbrake: true
+    innerError
   });
 };
 
@@ -89,8 +84,7 @@ factory.invalidParametersFormat = function (message, data, innerError) {
   return new APIError(ErrorIds.InvalidParametersFormat, message, {
     httpStatus: 400,
     data,
-    innerError,
-    dontNotifyAirbrake: true
+    innerError
   });
 };
 
@@ -98,8 +92,7 @@ factory.invalidRequestStructure = function (message, data, innerError) {
   return new APIError(ErrorIds.InvalidRequestStructure, message, {
     httpStatus: 400,
     data,
-    innerError,
-    dontNotifyAirbrake: true
+    innerError
   });
 };
 
@@ -118,15 +111,13 @@ factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError)
   return new APIError(ErrorIds.ItemAlreadyExists, message, {
     httpStatus: 409,
     innerError: innerError || null,
-    data: conflictingKeys,
-    dontNotifyAirbrake: true
+    data: conflictingKeys
   });
 };
 
 factory.missingHeader = function (headerName, status) {
   return new APIError(ErrorIds.MissingHeader, 'Missing expected header "' + headerName + '"', {
-    httpStatus: status || 400,
-    dontNotifyAirbrake: true
+    httpStatus: status || 400
   });
 };
 
@@ -140,8 +131,7 @@ factory.periodsOverlap = function (message, data, innerError) {
   return new APIError(ErrorIds.PeriodsOverlap, message, {
     httpStatus: 400,
     data,
-    innerError,
-    dontNotifyAirbrake: true
+    innerError
   });
 };
 
@@ -184,8 +174,7 @@ factory.unknownReferencedResource = function (resourceType, paramKey, value, inn
   return new APIError(ErrorIds.UnknownReferencedResource, message, {
     httpStatus: 400,
     data,
-    innerError,
-    dontNotifyAirbrake: true
+    innerError
   });
 };
 
@@ -196,8 +185,7 @@ factory.unknownResource = function (resourceType, id, innerError) {
         (id ? '"' + id + '"' : '');
   return new APIError(ErrorIds.UnknownResource, message, {
     httpStatus: 404,
-    innerError,
-    dontNotifyAirbrake: true
+    innerError
   });
 };
 
@@ -207,15 +195,13 @@ factory.unsupportedContentType = function (contentType) {
 
 factory.goneResource = function () {
   return new APIError(ErrorIds.Gone, 'API method gone, please stop using it.', {
-    httpStatus: 410,
-    dontNotifyAirbrake: true
+    httpStatus: 410
   });
 };
 
 factory.unavailableMethod = function (message) {
   return new APIError(ErrorIds.unavailableMethod, 'API method unavailable in current version. This method is only available in the commercial license.', {
-    httpStatus: 451,
-    dontNotifyAirbrake: true
+    httpStatus: 451
   });
 };
 

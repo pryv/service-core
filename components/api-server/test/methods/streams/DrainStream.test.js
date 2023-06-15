@@ -21,7 +21,7 @@ describe('DrainStream', function () {
       done();
     }
 
-    const drain = new DrainStream({ limit: 4 }, expectation);
+    const drain = new DrainStream({ limit: 4, isArray: true }, expectation);
 
     input.forEach(function (item) {
       drain.write(item);
@@ -35,7 +35,7 @@ describe('DrainStream', function () {
       done();
     }
 
-    const drain = new DrainStream({ limit: 1 }, expectation);
+    const drain = new DrainStream({ limit: 1, isArray: true }, expectation);
     drain.write({ a: 'a' });
     drain.write({ b: 'b' });
   });

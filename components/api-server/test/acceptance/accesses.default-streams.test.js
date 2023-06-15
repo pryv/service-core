@@ -74,7 +74,7 @@ describe('Accesses with account streams', function () {
 
   async function getAccessInDb (id) {
     return await bluebird.fromCallback(
-      (cb) => user.db.accesses.findOne({ id: user.attrs.id }, { _id: id }, null, cb));
+      (cb) => user.storage.accesses.findOne({ id: user.attrs.id }, { _id: id }, null, cb));
   }
 
   before(async function () {

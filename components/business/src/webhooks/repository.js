@@ -23,7 +23,7 @@ class Repository {
    */
   async getAll () {
     const usersRepository = await getUsersRepository();
-    const users = await usersRepository.getAllUsernames();
+    const users = await usersRepository.getAllUsersIdAndName();
     const allWebhooks = new Map();
     await bluebird.all(users.map(retrieveWebhooks, this));
     return allWebhooks;

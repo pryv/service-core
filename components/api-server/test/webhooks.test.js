@@ -889,14 +889,14 @@ describe('webhooks', () => {
           token: sharedAccessToken
         });
         user.webhook({
-          url: 'http://localhost:' + port + postPath,
+          url: 'http://127.0.0.1:' + port + postPath,
           id: webhookId1
         }, appAccessId1);
         user.webhook({
           id: webhookId2
         }, appAccessId2);
         user.webhook({
-          url: 'http://localhost:' + port + postPath,
+          url: 'http://127.0.0.1:' + port + postPath,
           id: webhookId3
         }, sharedAccessId);
       });

@@ -13,6 +13,7 @@ const cuid = require('cuid');
 require('test-helpers/src/api-server-tests-config');
 const storage = require('storage');
 const { databaseFixture } = require('test-helpers');
+const timestamp = require('unix-timestamp');
 const { PendingUpdate } = require('../../../src/metadata_updater/pending_updates');
 const { Flush } = require('../../../src/metadata_updater/flush');
 const { getMall } = require('mall');
@@ -20,11 +21,11 @@ let mall;
 
 describe('Flush', () => {
   const connection = produceMongoConnection();
-  const now = Date.now() / 1000;
+  const now = timestamp.now();
   const initialDuration = 100;
   const fromDeltaTime = initialDuration - 10;
   const toDeltaTime = initialDuration - 1;
-  const modifiedTime = Date.now() / 1e3;
+  const modifiedTime = timestamp.now();
   // Construct and clean a database fixture.
   const pryv = databaseFixture(connection);
   after(function () {
@@ -38,32 +39,30 @@ describe('Flush', () => {
     parentStreamId = cuid();
     eventId = cuid();
     eventWithContentId = cuid();
-    await pryv.user(userId, {}, (user) => {
-      user.stream({ id: parentStreamId }, (stream) => {
-        stream.event({
-          time: now,
-          id: eventId,
-          type: 'series:mass/kg',
-          description: 'no initial data',
-          content: {
-            elementType: 'mass/kg',
-            fields: ['value'],
-            required: ['value']
-          }
-        });
-        stream.event({
-          time: now,
-          id: eventWithContentId,
-          type: 'series:mass/kg',
-          description: 'with initial ' + initialDuration + ' seconds off data ',
-          content: {
-            elementType: 'mass/kg',
-            fields: ['value'],
-            required: ['value']
-          },
-          duration: initialDuration
-        });
-      });
+    const user = await pryv.user(userId, {}, (user) => { });
+    const stream = await user.stream({ id: parentStreamId }, async (stream) => {});
+    stream.event({
+      time: now,
+      id: eventId,
+      type: 'series:mass/kg',
+      description: 'no initial data',
+      content: {
+        elementType: 'mass/kg',
+        fields: ['value'],
+        required: ['value']
+      }
+    });
+    await stream.event({
+      time: now,
+      id: eventWithContentId,
+      type: 'series:mass/kg',
+      description: 'with initial ' + initialDuration + ' seconds off data ',
+      content: {
+        elementType: 'mass/kg',
+        fields: ['value'],
+        required: ['value']
+      },
+      duration: initialDuration
     });
   });
   describe('event with no existing metadata', () => {
@@ -140,7 +139,7 @@ function makeUpdate (now, attrs = {}) {
     userId: attrs.userId || 'user',
     eventId: attrs.eventId || 'event',
     author: attrs.author || 'token1',
-    timestamp: attrs.timestamp || Date.now() / 1e3,
+    timestamp: attrs.timestamp || timestamp.now(),
     dataExtent: {
       from: attrs.from || now - 100,
       to: attrs.to || now

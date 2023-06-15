@@ -3,7 +3,7 @@
 // @flow
 
 // Starts a HTTP server for high frequency series. Main entry point for the high
-// frequency series server. 
+// frequency series server.
 
 const Application = require('../src/application');
 

@@ -4,28 +4,22 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const EventEmitter = require('events');
-const bluebird = require('bluebird');
 const PORT = 6123;
-/** @extends EventEmitter */
+
 class HttpServer extends EventEmitter {
   app;
-
   server;
-
   messages;
-
   metas;
-
   messageReceived;
-
   messageCount;
-
   responseStatus;
-
   responseDelay;
+
   constructor (path, statusCode, responseBody, delay) {
     super();
     const app = express();
@@ -47,6 +41,7 @@ class HttpServer extends EventEmitter {
         }, that.responseDelay);
       }
     });
+
     function processMessage (req, res) {
       this.messages = this.messages.concat(req.body.messages);
       this.metas = this.metas.concat(req.body.meta);
@@ -118,13 +113,11 @@ class HttpServer extends EventEmitter {
   }
 
   /**
-   * @returns {any}
+   * @returns {Promise<any>}
    */
-  close () {
-    return bluebird.fromCallback((cb) => {
-      if (this.server == null) { return cb(); }
-      this.server.close(cb);
-    });
+  async close () {
+    if (this.server == null) { return; }
+    await this.server.close();
   }
 }
 module.exports = HttpServer;

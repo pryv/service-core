@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 VAR_PRYV_FOLDER=$SCRIPT_FOLDER/../var-pryv
@@ -12,5 +12,5 @@ else
   # detach process, convert standalone to replicaSet
   # https://docs.mongodb.com/manual/tutorial/convert-shard-standalone-to-shard-replica-set/
   $MONGO_BIN_FOLDER/mongod $BASE_OPTS --fork --replSet shardA
-  $MONGO_BIN_FOLDER/mongo --eval "rs.initiate()"
+  $MONGO_BIN_FOLDER/mongosh --eval "rs.initiate()"
 fi

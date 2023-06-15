@@ -16,17 +16,9 @@ const userEvents = require('./localUserEvents');
 const LocalTransaction = require('./LocalTransaction');
 
 module.exports = ds.createDataStore({
-  id: 'local',
 
-  name: 'Local store',
-
-  settings: {
-    attachments: {
-      setFileReadToken: true // methods/events will add a readFileToken
-    }
-  },
-
-  async init () {
+  async init (params) {
+    this.settings = params.settings;
     await SystemStreamsSerializer.init();
     const database = await storage.getDatabase();
 
@@ -39,7 +31,7 @@ module.exports = ds.createDataStore({
     }
     // forward settings to userEvents
     userEvents.settings = this.settings;
-    userEvents.init(eventsCollection, eventFilesStorage);
+    userEvents.init(eventsCollection, eventFilesStorage, params.integrity.setOnEvent);
 
     // init streams
     const streamsCollection = await database.getCollection({ name: 'streams' });

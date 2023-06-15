@@ -8,7 +8,6 @@
 const assert = require('chai').assert;
 const timestamp = require('unix-timestamp');
 const awaiting = require('awaiting');
-const _ = require('lodash');
 
 const Webhook = require('../../../src/webhooks/Webhook');
 const WebhooksRepository = require('business/src/webhooks/repository');
@@ -27,7 +26,7 @@ describe('Webhook', () => {
     const repository = new WebhooksRepository(storage, userStorage);
     let notificationsServer;
     let postPath = '/notifications';
-    let url = 'http://localhost:' + PORT + postPath;
+    let url = 'http://127.0.0.1:' + PORT + postPath;
     const user = {
       username: 'doesnotmatter'
     };
@@ -201,7 +200,7 @@ describe('Webhook', () => {
       describe('when the notifications service is down', () => {
         before(async () => {
           postPath = '/notifs2222';
-          url = 'http://localhost:' + PORT + postPath;
+          url = 'http://127.0.0.1:' + PORT + postPath;
           notificationsServer = new HttpServer(postPath, 503);
           await notificationsServer.listen();
         });
@@ -266,7 +265,7 @@ describe('Webhook', () => {
     describe('when throttling frequent calls', () => {
       before(async () => {
         postPath = '/notifs3';
-        url = 'http://localhost:' + PORT + postPath;
+        url = 'http://127.0.0.1:' + PORT + postPath;
         notificationsServer = new HttpServer(postPath, 200);
         await notificationsServer.listen();
       });
@@ -328,7 +327,7 @@ describe('Webhook', () => {
       let webhook, storedWebhook;
       before(async () => {
         postPath = '/notifs5';
-        url = 'http://localhost:' + PORT + postPath;
+        url = 'http://127.0.0.1:' + PORT + postPath;
         notificationsServer = new HttpServer(postPath, 400);
         await notificationsServer.listen();
       });
@@ -378,7 +377,7 @@ describe('Webhook', () => {
       let webhook;
       before(async () => {
         postPath = '/notifs4';
-        url = 'http://localhost:' + PORT + postPath;
+        url = 'http://127.0.0.1:' + PORT + postPath;
         notificationsServer = new HttpServer(postPath, 200);
         await notificationsServer.listen();
       });
@@ -402,7 +401,7 @@ describe('Webhook', () => {
         await webhook.send(message);
         await webhook.send(message);
         await webhook.send(message);
-        runs1 = _.cloneDeep(webhook.runs);
+        runs1 = structuredClone(webhook.runs);
       });
 
       let runs1, runs2, runs3;
@@ -414,7 +413,7 @@ describe('Webhook', () => {
       it('[FYOR] should rotate the runs', async () => {
         await webhook.send(message);
         await sleep(500);
-        runs2 = _.cloneDeep(webhook.runs);
+        runs2 = structuredClone(webhook.runs);
         assert.deepEqual(runs2[2], runs1[1]);
         assert.deepEqual(runs2[1], runs1[0]);
         assert.deepEqual(runs2[0], webhook.lastRun);
@@ -432,5 +431,5 @@ describe('Webhook', () => {
 });
 
 function makeUrl (path) {
-  return 'http://localhost:' + PORT + path;
+  return 'http://127.0.0.1:' + PORT + path;
 }

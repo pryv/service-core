@@ -26,7 +26,7 @@ const { integrity } = require('business');
 const { getMall } = require('mall');
 
 describe('accesses (personal)', function () {
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   const basePath = '/' + user.username + '/accesses';
   let sessionAccessId = null;
   let request = null;
@@ -88,7 +88,7 @@ describe('accesses (personal)', function () {
         .get(basePath)
         .end(function (res) {
           const expected = validation
-            .removeDeletions(_.cloneDeep(testData.accesses))
+            .removeDeletions(structuredClone(testData.accesses))
             .map((a) => _.omit(a, 'calls'));
           validation.addStoreStreams(expected);
           for (const e of expected) {
@@ -206,6 +206,11 @@ describe('accesses (personal)', function () {
             defaultName: 'Trashed stream to restore (this should be ignored)'
           },
           {
+            streamId: testData.streams[4].id,
+            level: 'read',
+            defaultName: 'Deleted stream must be recreated'
+          },
+          {
             streamId: '*',
             level: 'read',
             defaultName: 'Ignored, must be cleaned up'
@@ -222,7 +227,7 @@ describe('accesses (personal)', function () {
                 status: 201,
                 schema: methodsSchema.create.result
               });
-              const expected = _.cloneDeep(data);
+              const expected = structuredClone(data);
               expected.id = res.body.access.id;
               expected.token = res.body.access.token;
               expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
@@ -230,6 +235,7 @@ describe('accesses (personal)', function () {
               delete expected.permissions[1].defaultName;
               delete expected.permissions[2].defaultName;
               delete expected.permissions[3].defaultName;
+              delete expected.permissions[4].defaultName;
               expected.created = res.body.access.created;
               expected.createdBy = res.body.access.createdBy;
               expected.modified = res.body.access.modified;
@@ -241,13 +247,15 @@ describe('accesses (personal)', function () {
             });
         },
         async function verifyNewStream () {
-          const streams = await mall.streams.get(user.id, {
-            id: data.permissions[1].streamId
-          });
-          should.exist(streams[0]);
-          const stream = streams[0];
-          validation.checkStoredItem(stream, 'stream');
-          stream.name.should.eql(data.permissions[1].defaultName);
+          const newStream = await mall.streams.getOneWithNoChildren(user.id, data.permissions[1].streamId);
+          should.exist(newStream);
+          validation.checkStoredItem(newStream, 'stream');
+          newStream.name.should.eql(data.permissions[1].defaultName);
+
+          const undeletedStream = await mall.streams.getOneWithNoChildren(user.id, data.permissions[3].streamId);
+          should.exist(undeletedStream);
+          validation.checkStoredItem(undeletedStream, 'stream');
+          undeletedStream.name.should.eql(data.permissions[3].defaultName);
         },
         async function verifyRestoredStream () {
           const streams = await mall.streams.get(user.id, {
@@ -306,7 +314,7 @@ describe('accesses (personal)', function () {
             status: 201,
             schema: methodsSchema.create.result
           });
-          const expected = _.cloneDeep(data);
+          const expected = structuredClone(data);
           expected.id = res.body.access.id;
           expected.token = res.body.access.token;
           expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
@@ -649,6 +657,11 @@ describe('accesses (personal)', function () {
             streamId: 'new-stream',
             level: 'manage',
             defaultName: 'The New Stream, Sir.'
+          },
+          {
+            streamId: testData.streams[4].id,
+            level: 'read',
+            defaultName: 'Undeleted stream'
           }
         ]
       };
@@ -656,12 +669,9 @@ describe('accesses (personal)', function () {
         .post(path)
         .send(data)
         .end(function (res) {
-          validation.check(res, {
-            status: 200,
-            schema: methodsSchema.checkApp.result
-          });
+          validation.check(res, { status: 200, schema: methodsSchema.checkApp.result });
           should.exist(res.body.checkedPermissions);
-          const expected = _.cloneDeep(data.requestedPermissions);
+          const expected = structuredClone(data.requestedPermissions);
           expected[0].name = testData.streams[0].name;
           delete expected[0].defaultName;
           res.body.checkedPermissions.should.eql(expected);
@@ -696,7 +706,7 @@ describe('accesses (personal)', function () {
             schema: methodsSchema.checkApp.result
           });
           should.exist(res.body.checkedPermissions);
-          const expected = _.cloneDeep(data.requestedPermissions);
+          const expected = structuredClone(data.requestedPermissions);
           expected[0].name = testData.streams[0].name;
           delete expected[0].defaultName;
           delete expected[1].defaultName;
@@ -755,7 +765,7 @@ describe('accesses (personal)', function () {
             schema: methodsSchema.checkApp.result
           });
           should.exist(res.body.checkedPermissions);
-          const expected = _.cloneDeep(data.requestedPermissions);
+          const expected = structuredClone(data.requestedPermissions);
           expected[0].name = testData.streams[0].name;
           delete expected[0].defaultName;
           res.body.checkedPermissions.should.eql(expected);
@@ -788,7 +798,7 @@ describe('accesses (personal)', function () {
           should.exist(res.body.checkedPermissions);
           should.exist(res.body.error);
           res.body.error.id.should.eql(ErrorIds.ItemAlreadyExists);
-          const expected = _.cloneDeep(data.requestedPermissions);
+          const expected = structuredClone(data.requestedPermissions);
           expected[0].defaultName = testData.streams[3].name + ' (1)';
           res.body.checkedPermissions.should.eql(expected);
           done();

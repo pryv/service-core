@@ -4,7 +4,6 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const _ = require('lodash');
 const { DummyTracing } = require('tracing');
 
 class MinimalMethodContext {
@@ -24,7 +23,7 @@ class MinimalMethodContext {
       name: 'http',
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
     };
-    this.originalQuery = _.cloneDeep(req.query);
+    this.originalQuery = structuredClone(req.query);
     if (this.originalQuery?.auth) { delete this.originalQuery.auth; }
     this._tracing = req.tracing;
   }

@@ -13,6 +13,7 @@ const _ = require('lodash');
 const integrity = require('business/src/integrity');
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('storage:accesses');
+const timestamp = require('unix-timestamp');
 
 module.exports = Accesses;
 
@@ -119,7 +120,7 @@ Accesses.prototype.getCollectionInfo = function (userOrUserId) {
  */
 Accesses.prototype.delete = function (userOrUserId, query, callback) {
   const update = {
-    $set: { deleted: Date.now() / 1000 }
+    $set: { deleted: timestamp.now() }
   };
   const finalCallBack = getResetIntegrity(this, userOrUserId, update, callback);
   this.database.updateMany(this.getCollectionInfo(userOrUserId),

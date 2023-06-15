@@ -61,7 +61,7 @@ class Platform {
 
   // for tests only - called by repository
   async deleteAll () {
-    this.#db.deleteAll();
+    await this.#db.deleteAll();
   }
 
   /**
@@ -69,7 +69,7 @@ class Platform {
    * Exposes directly a platform db method as it's needed by service_register in dnsLess mode
    */
   async getLocalUsersUniqueField (field, value) {
-    return this.#db.getUsersUniqueField(field, value);
+    return await this.#db.getUsersUniqueField(field, value);
   }
 
   /**

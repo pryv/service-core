@@ -7,6 +7,8 @@
 
 /* global assert, cuid, initTests, initCore, charlatan, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix, CONSTANTS */
 
+const timestamp = require('unix-timestamp');
+
 describe('Audit legacy route', function () {
   let user, username, password, access, appAccess;
   let personalToken;
@@ -52,11 +54,11 @@ describe('Audit legacy route', function () {
 
   let start, stop;
   before(async () => {
-    start = Date.now() / 1000;
+    start = timestamp.now();
     await validGet(eventsPath);
     await validPost(eventsPath)
       .send({ streamIds: [streamId], type: 'count/generic', content: 2 });
-    stop = Date.now() / 1000;
+    stop = timestamp.now();
     await validGet(eventsPath);
     await validGet(eventsPath)
       .query({ streams: ['other'] });

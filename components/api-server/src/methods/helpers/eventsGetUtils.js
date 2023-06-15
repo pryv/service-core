@@ -8,7 +8,6 @@
  * Some method used by events.get are shared with audit.getLogs
  */
 const streamsQueryUtils = require('./streamsQueryUtils');
-const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 const errors = require('errors').factory;
 const { getMall, storeDataUtils } = require('mall');
@@ -19,10 +18,24 @@ const ChangeStreamIdPrefixStream = require('../streams/ChangeStreamIdPrefixStrea
 const AddTagsStream = require('../streams/AddTagsStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 let mall;
+
+module.exports = {
+  init,
+  applyDefaultsForRetrieval,
+  coerceStreamsParam,
+  validateStreamsQueriesAndSetStore,
+  transformArrayOfStringsToStreamsQuery,
+  streamQueryCheckPermissionsAndReplaceStars,
+  streamQueryAddForcedAndForbiddenStreams,
+  streamQueryExpandStreams,
+  streamQueryAddHiddenStreams,
+  findEventsFromStore
+};
+
 /**
  *  # Stream Query Flow
  *  1. coerceStreamParam:
- *    - null `streams` is changed to `[{any: ['*]}]
+ *    - null `streams` is changed to `[{any: ['*']}]`
  *    - transform "stringified" `streams` by parsing JSON object
  *
  *  2. transformArrayOfStringsToStreamsQuery:
@@ -133,19 +146,17 @@ function coerceStreamsParam (context, params, result, next) {
  * @returns {Promise<void>}
  */
 async function applyDefaultsForRetrieval (context, params, result, next) {
-  _.defaults(params, {
-    streams: [{ any: ['*'] }],
-    tags: null,
-    types: null,
-    fromTime: null,
-    toTime: null,
-    sortAscending: false,
-    skip: null,
-    limit: null,
-    state: 'default',
-    modifiedSince: null,
-    includeDeletions: false
-  });
+  params.streams ??= [{ any: ['*'] }];
+  params.tags ??= null;
+  params.types ??= null;
+  params.fromTime ??= null;
+  params.toTime ??= null;
+  params.sortAscending ??= false;
+  params.skip ??= null;
+  params.limit ??= null;
+  params.state ??= 'default';
+  params.modifiedSince ??= null;
+  params.includeDeletions ??= false;
   if (params.fromTime == null && params.toTime != null) {
     params.fromTime = timestamp.add(params.toTime, -24 * 60 * 60);
   }
@@ -311,7 +322,7 @@ async function streamQueryExpandStreams (context, params, result, next) {
       id: streamId,
       storeId,
       includeTrashed: params.state === 'all' || params.state === 'trashed',
-      expandChildren: -1,
+      childrenDepth: -1,
       excludedIds,
       hideStoreRoots: true
     };
@@ -361,7 +372,7 @@ async function streamQueryAddHiddenStreams (context, params, result, next) {
       const rootStreams = await mall.streams.get(context.user.id, {
         id: '*',
         storeId: streamQuery.storeId,
-        expandChildren: 0,
+        childrenDepth: 0,
         includeTrashed: true,
         excludedIds: []
       });
@@ -400,7 +411,7 @@ async function findEventsFromStore (filesReadTokenSecret, isStreamIdPrefixBackwa
       throw new Error('Missing storeId' + params.arrayOfStreamQueriesWithStoreId);
     }
     if (paramsByStoreId[storeId] == null) {
-      paramsByStoreId[storeId] = _.cloneDeep(params); // copy the parameters
+      paramsByStoreId[storeId] = structuredClone(params); // copy the parameters
       paramsByStoreId[storeId].streams = []; // empty the stream query
     }
     delete streamQuery.storeId;
@@ -440,18 +451,6 @@ async function findEventsFromStore (filesReadTokenSecret, isStreamIdPrefixBackwa
 async function init () {
   mall = await getMall();
 }
-module.exports = {
-  init,
-  applyDefaultsForRetrieval,
-  coerceStreamsParam,
-  validateStreamsQueriesAndSetStore,
-  transformArrayOfStringsToStreamsQuery,
-  streamQueryCheckPermissionsAndReplaceStars,
-  streamQueryAddForcedAndForbiddenStreams,
-  streamQueryExpandStreams,
-  streamQueryAddHiddenStreams,
-  findEventsFromStore
-};
 
 /**
  * @typedef {{
@@ -476,7 +475,7 @@ module.exports = {
  *   id: string;
  *   storeId: string;
  *   includeTrashed: boolean;
- *   expandChildren: integer;
+ *   childrenDepth: integer;
  *   excludedIds: Array<string>;
  *   hideStoreRoots?: boolean;
  * }} StoreQuery

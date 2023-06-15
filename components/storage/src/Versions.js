@@ -31,14 +31,12 @@ module.exports = Versions;
  * TODO: must be per-user to properly support account relocation
  *
  * @param database
- * @param attachmentsDirPath
  * @param logging
  * @param migrationsOverride Use for tests
  * @constructor
  */
-function Versions (database, attachmentsDirPath, logger, migrationsOverride) {
+function Versions (database, logger, migrationsOverride) {
   this.database = database;
-  this.attachmentsDirPath = attachmentsDirPath;
   this.migrations = migrationsOverride || migrations;
   this.logger = logger;
 }
@@ -68,7 +66,6 @@ Versions.prototype.migrateIfNeeded = async function () {
   }).sort();
   const context = new MigrationContext({
     database: this.database,
-    attachmentsDirPath: this.attachmentsDirPath,
     logger: this.logger
   });
   for (const migration of migrationsToRun) {

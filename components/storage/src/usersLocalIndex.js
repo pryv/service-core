@@ -10,6 +10,7 @@
 
 const mkdirp = require('mkdirp');
 const SQLite3 = require('better-sqlite3');
+const concurrentSafeWrite = require('./sqliteUtils/concurrentSafeWrite');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const cache = require('cache');
@@ -18,6 +19,9 @@ const logger = getLogger('users:local-index');
 
 class UsersLocalIndex {
   initialized;
+  /**
+   * @type {DBIndex}
+   */
   db;
 
   constructor () {
@@ -36,7 +40,7 @@ class UsersLocalIndex {
 
   /**
    * Check the integrity of the userIndex compared to the username events in SystemStreams
-   * @returns {Object} With `errors` an array of error messages if discrepencies are found
+   * @returns {Promise<Object>} With `errors` an array of error messages if discrepencies are found
    */
   async checkIntegrity () {
     const errors = [];
@@ -65,7 +69,7 @@ class UsersLocalIndex {
   }
 
   async addUser (username, userId) {
-    this.db.addUser(username, userId);
+    await this.db.addUser(username, userId);
     logger.debug('addUser', username, userId);
   }
 
@@ -93,6 +97,9 @@ class UsersLocalIndex {
     return res;
   }
 
+  /**
+   * @returns {Promise<Object>} An object whose keys are the usernames and values are the user ids.
+   */
   async getAllByUsername () {
     logger.debug('getAllByUsername');
     return this.db.getAllByUsername();
@@ -104,12 +111,12 @@ class UsersLocalIndex {
   async deleteAll () {
     logger.debug('deleteAll');
     cache.clear();
-    return this.db.deleteAll();
+    return await this.db.deleteAll();
   }
 
   async deleteById (userId) {
     logger.debug('deleteById', userId);
-    return this.db.deleteById(userId);
+    return await this.db.deleteById(userId);
   }
 }
 
@@ -136,10 +143,14 @@ class DBIndex {
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/user-index.db');
-    this.db.pragma('journal_mode = WAL');
+    await concurrentSafeWrite.initWALAndConcurrentSafeWriteCapabilities(this.db);
 
-    this.db.prepare('CREATE TABLE IF NOT EXISTS id4name (username TEXT PRIMARY KEY, userId TEXT NOT NULL);').run();
-    this.db.prepare('CREATE INDEX IF NOT EXISTS id4name_id ON id4name(userId);').run();
+    concurrentSafeWrite.execute(() => {
+      this.db.prepare('CREATE TABLE IF NOT EXISTS id4name (username TEXT PRIMARY KEY, userId TEXT NOT NULL);').run();
+    });
+    concurrentSafeWrite.execute(() => {
+      this.db.prepare('CREATE INDEX IF NOT EXISTS id4name_id ON id4name(userId);').run();
+    });
 
     this.queryGetIdForName = this.db.prepare('SELECT userId FROM id4name WHERE username = ?');
     this.queryGetNameForId = this.db.prepare('SELECT username FROM id4name WHERE userId = ?');
@@ -157,14 +168,23 @@ class DBIndex {
     return this.queryGetNameForId.get(userId)?.username;
   }
 
-  addUser (username, userId) {
-    return this.queryInsert.run({ username, userId });
+  async addUser (username, userId) {
+    let result = null;
+    await concurrentSafeWrite.execute(() => {
+      result = this.queryInsert.run({ username, userId });
+    });
+    return result;
   }
 
-  deleteById (userId) {
-    return this.queryDeleteById.run({ userId });
+  async deleteById (userId) {
+    await concurrentSafeWrite.execute(() => {
+      return this.queryDeleteById.run({ userId });
+    });
   }
 
+  /**
+   * @returns {Object} An object whose keys are the usernames and values are the user ids.
+   */
   getAllByUsername () {
     const users = {};
     for (const user of this.queryGetAll.iterate()) {
@@ -173,8 +193,10 @@ class DBIndex {
     return users;
   }
 
-  deleteAll () {
-    return this.queryDeleteAll.run();
+  async deleteAll () {
+    concurrentSafeWrite.execute(() => {
+      return this.queryDeleteAll.run();
+    });
   }
 }
 

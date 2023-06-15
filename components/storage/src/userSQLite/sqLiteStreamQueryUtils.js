@@ -15,33 +15,37 @@ exports.toSQLiteQuery = function toSQLiteQuery (streamQuery) {
   if (streamQuery == null) return null;
 
   if (streamQuery.length === 1) {
-    return processBlock(streamQuery[0]);
+    return processAndBlock(streamQuery[0]);
   } else { // pack in $or
-    return '(' + streamQuery.map(processBlock).join(') OR (') + ')';
+    return '(' + streamQuery.map(processAndBlock).join(') OR (') + ')';
   }
 
-  function processBlock (block) {
-    if (typeof block === 'string') return '"' + block + '"';
-    let res = ''; // A OR B
-    const anyExists = block.any && block.any.length > 0 && block.any[0] !== '*';
-    if (anyExists) {
-      if (block.any.length === 1) {
-        res += addQuotes(block.any)[0];
+  function processAndBlock (andBlock) {
+    if (typeof andBlock === 'string') return '"' + andBlock + '"';
+
+    const anys = [];
+    const nots = [];
+    for (const andItem of andBlock) {
+      if (andItem.any != null && andItem.any.length > 0) {
+        if (andItem.any.indexOf('*') > -1) continue; // skip and with '*';
+        if (andItem.any.length === 1) {
+          anys.push(addQuotes(andItem.any)[0]);
+        } else {
+          anys.push('(' + addQuotes(andItem.any).join(' OR ') + ')');
+        }
+      } else if (andItem.not != null && andItem.not.length > 0) {
+        nots.push(' NOT ' + addQuotes(andItem.not).join(' NOT '));
       } else {
-        res += '(' + addQuotes(block.any).join(' OR ') + ')';
+        throw new Error('Go a query block with no any or not item ' + andBlock);
       }
     }
-    if (block.and && block.and.length > 0) {
-      if (anyExists) res += ' AND ';
-      const subs = block.and.map(processBlock);
-      res += subs.join(' AND ');
+
+    if (anys.length === 0) {
+      anys.push('"' + ALL_EVENTS_TAG + '"');
     }
-    if (block.not && block.not.length > 0) {
-      if (!anyExists) res += ' "' + ALL_EVENTS_TAG + '" ';
-      res += ' NOT ';
-      res += addQuotes(block.not).join(' NOT ');
-    }
-    if (res === '') res = null;
+
+    const res = anys.join(' AND ') + nots.join('');
+    if (res === ALL_EVENTS_TAG) return null;
     return res;
   }
 };

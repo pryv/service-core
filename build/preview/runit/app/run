@@ -1,3 +1,0 @@
-#!/bin/sh
-PRYV_BOILER_SUFFIX="-$$" exec chpst -u app node /app/bin/components/previews-server/src/server \
-    --config /app/conf/preview.yml

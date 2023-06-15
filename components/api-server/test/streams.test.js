@@ -30,7 +30,7 @@ const { getMall } = require('mall');
 const cache = require('cache');
 
 describe('[STRE] streams', function () {
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   const initialRootStreamId = testData.streams[0].id;
   const basePath = '/' + user.username + '/streams';
   // these must be set after server instance started
@@ -77,7 +77,7 @@ describe('[STRE] streams', function () {
       request.get(basePath).end(async function (res) {
         // manually filter out trashed items
 
-        const expected = treeUtils.filterTree(validation.removeDeletionsAndHistory(_.cloneDeep(testData.streams)),
+        const expected = treeUtils.filterTree(validation.removeDeletionsAndHistory(structuredClone(testData.streams)),
           false, function (s) { return !s.trashed; });
         await validation.addStoreStreams(expected);
         res.body.streams = validation.removeAccountStreams(res.body.streams);
@@ -92,7 +92,7 @@ describe('[STRE] streams', function () {
 
     it('[DPWG] must return all streams (trashed or not) when requested', function (done) {
       request.get(basePath).query({ state: 'all' }).end(async function (res) {
-        const expected = _.sortBy(validation.removeDeletions(_.cloneDeep(testData.streams)), 'name');
+        const expected = _.sortBy(validation.removeDeletions(structuredClone(testData.streams)), 'name');
         await validation.addStoreStreams(expected);
         res.body.streams = validation.removeAccountStreams(res.body.streams);
         validation.check(res, {
@@ -206,7 +206,7 @@ describe('[STRE] streams', function () {
           const streams = await mall.streams.get(user.id, { storeId: 'local', hideRootStreams: true });
           streams.length.should.eql(originalCount + 1, 'should count one more root stream');
 
-          const expected = _.clone(data);
+          const expected = structuredClone(data);
           expected.id = createdStream.id;
           expected.parentId = null;
           expected.created = expected.modified = time;
@@ -218,7 +218,7 @@ describe('[STRE] streams', function () {
           validation.checkObjectEquality(actual, expected);
         },
         async function verifyStoredItem () {
-          const stream = await mall.streams.getOne(user.id, createdStream.id);
+          const stream = await mall.streams.getOneWithNoChildren(user.id, createdStream.id);
           validation.checkStoredItem(stream, 'stream');
         }
       ], done);
@@ -303,7 +303,7 @@ describe('[STRE] streams', function () {
 
         async.series([
           async function _countInitialChildStreams () {
-            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', expandChildren: -1 });
+            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', childrenDepth: -1 });
             originalCount = streams[0].children.length;
           },
           function _addNewStream (stepDone) {
@@ -326,7 +326,7 @@ describe('[STRE] streams', function () {
           async function _recountChildStreams () {
             // server and current "mall" instance are not running on the same instance and cache must me invalidated manually
             cache.unsetStreams(user.id, 'local');
-            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', expandChildren: -1 });
+            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', childrenDepth: -1 });
             const count = streams[0].children.length;
             assert.strictEqual(count, originalCount + 1, 'Created a child stream.');
           }
@@ -441,7 +441,7 @@ describe('[STRE] streams', function () {
           schema: methodsSchema.update.result
         });
 
-        const expected = _.clone(data);
+        const expected = structuredClone(data);
         expected.id = original.id;
         expected.parentId = original.parentId;
         expected.modified = time;
@@ -485,7 +485,7 @@ describe('[STRE] streams', function () {
             schema: methodsSchema.update.result
           });
 
-          const expected = _.clone(original);
+          const expected = structuredClone(original);
           _.extend(expected.clientData, data.clientData);
           delete expected.clientData.numberProp;
           delete expected.modified;
@@ -544,12 +544,12 @@ describe('[STRE] streams', function () {
         async function verifyStreamsData () {
           const streams = await mall.streams.get(user.id, { storeId: 'local', hideRootStreams: true });
 
-          const updated = _.clone(original);
+          const updated = structuredClone(original);
           updated.parentId = newParent.id;
           delete updated.modified;
           delete updated.modifiedBy;
-          const expected = _.clone(newParent);
-          expected.children = _.clone(newParent.children);
+          const expected = structuredClone(newParent);
+          expected.children = structuredClone(newParent.children);
           expected.children.unshift(updated);
           const actual = _.find(streams, function (stream) {
             return stream.id === newParent.id;
@@ -657,14 +657,14 @@ describe('[STRE] streams', function () {
       });
 
       function setIgnoreProtectedFieldUpdates (activated, stepDone) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.updates.ignoreProtectedFields = activated;
         server.ensureStarted(settings, stepDone);
       }
     });
   });
 
-  describe('DELETE /<id>', function () {
+  describe('[STRD] DELETE /<id>', function () {
     this.timeout(5000);
 
     beforeEach(resetData);
@@ -724,7 +724,7 @@ describe('[STRE] streams', function () {
         },
         async function verifyStreamData () {
           // parent
-          const parentStream = await mall.streams.get(user.id, { id: parent.id, storeId: 'local', expandChildren: -1, includeTrashed: true });
+          const parentStream = await mall.streams.get(user.id, { id: parent.id, storeId: 'local', childrenDepth: -1, includeTrashed: true });
           const parentChildren = parentStream[0].children;
           parentChildren.length.should.eql(testData.streams[2].children.length - 1, 'child streams');
 
@@ -833,6 +833,8 @@ describe('[STRE] streams', function () {
       const deletedEventWithAtt = deletedEvents[0];
       let deletionTime;
 
+      const ADD_N_EVENTS = 100;
+
       async.series([
         function addEventAttachment (stepDone) {
           request.post('/' + user.username + '/events/' + deletedEventWithAtt.id)
@@ -843,6 +845,22 @@ describe('[STRE] streams', function () {
               eventsNotifCount = 0; // reset
               stepDone();
             });
+        },
+        async function fillStreamWithALotOfEvent () {
+          const mall = await getMall();
+          for (let i = 0; i < ADD_N_EVENTS; i++) {
+            await mall.events.create(user.id, {
+              id: 'cxxxxxxx' + i,
+              type: 'note/txt',
+              streamIds: [testData.streams[8].id],
+              content: '' + i,
+              time: timestamp.now(),
+              created: timestamp.now(),
+              createdBy: 'test',
+              modified: timestamp.now(),
+              modifiedBy: 'test'
+            });
+          }
         },
         async function trashStream () {
           await mall.streams.update(user.id, { id, trashed: true });
@@ -865,12 +883,12 @@ describe('[STRE] streams', function () {
         },
         async function verifyLinkedEvents () {
           let events = await mall.events.get(user.id, { state: 'all' });
-          const foundDeletedEvents = await mall.events.getDeletions('local', user.id, 0);
+          const foundDeletedEvents = await mall.events.getDeletions('local', user.id, { deletedSince: 0 });
           // lets separate system events from all other events and validate them separately
           const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
           events = separatedEvents.events;
           const eventsWithoutHistory = testData.events.filter(e => e.headId == null);
-          (events.length + foundDeletedEvents.length).should.eql(eventsWithoutHistory.length, 'events');
+          (events.length + foundDeletedEvents.length).should.eql(eventsWithoutHistory.length + ADD_N_EVENTS, 'events');
 
           // validate account streams events
           const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
@@ -884,7 +902,7 @@ describe('[STRE] streams', function () {
             assert.equal(actual.id, e.id);
           });
 
-          const dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
+          const dirPath = eventFilesStorage.getEventPath(user.id, deletedEventWithAtt.id);
 
           // some time after returning to the client. Let's hang around and try
           // this several times.

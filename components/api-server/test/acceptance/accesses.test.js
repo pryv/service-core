@@ -160,7 +160,7 @@ describe('accesses', () => {
                 level: 'read'
               }
             ],
-            deleted: Date.now() / 1000
+            deleted: timestamp.now()
           };
           before(async () => {
             res = await server
@@ -191,7 +191,7 @@ describe('accesses', () => {
             .put(`/${userId}/accesses/${activeAccess.id}`)
             .set('Authorization', accessToken)
             .send({
-              update: { deleted: Date.now() / 1000 }
+              update: { deleted: timestamp.now() }
             });
           error = res.body.error;
         });
@@ -846,7 +846,7 @@ describe('accesses', () => {
       assert.equal(body.user.username, userId);
     });
     describe('[APRA] When password rules are enabled', async () => {
-      const settingsOverride = _.cloneDeep(helpers.passwordRules.settingsOverride);
+      const settingsOverride = structuredClone(helpers.passwordRules.settingsOverride);
       settingsOverride.auth.passwordAgeMinDays = 1;
       const passwordTime = timestamp.now(`-${settingsOverride.auth.passwordAgeMaxDays - 1}d`);
       before(async () => {

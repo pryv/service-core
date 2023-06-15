@@ -10,18 +10,15 @@
  */
 
 const path = require('path');
-const rimraf = require('rimraf');
-const bluebird = require('bluebird');
+const fs = require('fs/promises');
 const mkdirp = require('mkdirp');
 
-const { getConfig, getLogger } = require('@pryv/boiler');
-const logger = getLogger('user-local-directory');
+const { getConfig } = require('@pryv/boiler');
 
 module.exports = {
   init,
   ensureUserDirectory,
   getPathForUser,
-  pathForAttachment,
   deleteUserDirectory,
   getBasePath,
   setBasePathTestOnly
@@ -29,7 +26,6 @@ module.exports = {
 
 let config;
 let basePath;
-let attachmentsBasePath;
 
 // temporarly set baseBath for tests;
 function setBasePathTestOnly (path) {
@@ -46,12 +42,6 @@ async function init () {
   const candidateBasePath = config.get('userFiles:path');
   mkdirp.sync(candidateBasePath);
   basePath = candidateBasePath;
-
-  const candidateAttachmentsBasePath = config.get('eventFiles:attachmentsDirPath');
-  mkdirp.sync(candidateAttachmentsBasePath);
-  attachmentsBasePath = candidateAttachmentsBasePath;
-
-  logger.debug('User local files: ' + basePath + '  Attachments in: ' + attachmentsBasePath);
 }
 
 /**
@@ -85,28 +75,13 @@ function getPathForUser (userId, extraPath = '') {
 }
 
 /**
- * Return the full file path for this attachment
- * TODO: cleanup – currently unused; duplicate of storage/user/EventFiles.getAttachmentPath()
- * @param {string} userId
- * @param {string} eventId
- * @param {string} fileId
- * @param {boolean} [ensureDirs] - default: false creates needed directories if set
- */
-function pathForAttachment (userId, eventId, fileId, ensureDirs = false) {
-  if (attachmentsBasePath == null) {
-    throw new Error('Run init() first');
-  }
-  return path.join(attachmentsBasePath, userId, eventId, fileId);
-}
-
-/**
  * Delete user data folder
  *
  * @param {*} userId -- user id
  */
 async function deleteUserDirectory (userId) {
   const userFolder = getPathForUser(userId);
-  await bluebird.fromCallback(cb => rimraf(userFolder, { disableGlob: true }, cb));
+  await fs.rm(userFolder, { recursive: true, force: true });
 }
 
 function getBasePath () {

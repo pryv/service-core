@@ -7,7 +7,8 @@
 const commonMeta = require('./methods/helpers/setCommonMeta');
 const MultiStream = require('multistream');
 const DrainStream = require('./methods/streams/DrainStream');
-const ArrayStream = require('./methods/streams/ArrayStream');
+const ArraySerializationStream = require('./methods/streams/ArraySerializationStream');
+const SingleObjectSerializationStream = require('./methods/streams/SingleObjectSerializationStream');
 const async = require('async');
 
 const { Transform } = require('stream');
@@ -131,9 +132,9 @@ class Result {
    * @param {Readable} stream
    * @returns {void}
    */
-  addStream (arrayName, stream) {
+  addStream (arrayName, stream, isArray = true) {
     this._private.isStreamResult = true;
-    this._private.streamsArray.push({ name: arrayName, stream });
+    this._private.streamsArray.push({ name: arrayName, stream, isArray });
   }
 
   // Returns true if the Result holds any streams, false otherwise.
@@ -191,20 +192,14 @@ class Result {
     const streamsArray = this._private.streamsArray;
     if (!this._private.isStreamResult) { throw new Error('AF: not a stream result.'); }
     if (streamsArray.length < 1) { throw new Error('streams array empty'); }
-    // Are we handling a single stream?
-    if (streamsArray.length === 1) {
-      const first = streamsArray[0];
-      return first.stream
-        .pipe(new ArrayStream(first.name, true))
-        .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
-        .pipe(res);
-    }
-    // assert: streamsArray.length > 1
+
     const streams = [];
     for (let i = 0; i < streamsArray.length; i++) {
       const s = streamsArray[i];
-      streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
+      const serializedStream = s.stream.pipe(s.isArray ? new ArraySerializationStream(s.name) : new SingleObjectSerializationStream(s.name));
+      streams.push(serializedStream);
     }
+
     return new MultiStream(streams)
       .pipe(new ResultStream(this._private.tracing, this._private.tracingId))
       .pipe(res);
@@ -245,7 +240,7 @@ class Result {
     const streamsArray = _private.streamsArray;
     const resultObj = {};
     async.forEachOfSeries(streamsArray, (elementDef, i, done) => {
-      const drain = new DrainStream({ limit: _private.arrayLimit }, (err, list) => {
+      const drain = new DrainStream({ limit: _private.arrayLimit, isArray: elementDef.isArray }, (err, list) => {
         if (err) {
           return done(err);
         }
@@ -275,15 +270,15 @@ class Result {
 /** @extends Transform */
 class ResultStream extends Transform {
   isStart;
-
   tracing;
-
   tracingId;
+  debugString;
   constructor (tracing, parentTracingId) {
-    super({ objectMode: true });
+    super({ writableObjectMode: true });
     this.isStart = true;
     this.tracing = tracing;
     this.tracingId = this.tracing.startSpan('resultStream', {}, parentTracingId);
+    this.debugString = '';
   }
 
   /**
@@ -300,13 +295,18 @@ class ResultStream extends Transform {
     callback();
   }
 
+  // uncomment to debug
+  // push (data) { this.debugString += data; super.push(data); }
+
   /**
    * @returns {void}
    */
   _flush (callback) {
-    const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
+    const thing = ' "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
     this.push(thing + '}');
     this.tracing.finishSpan('resultStream');
+
+    if (this.debugString !== '') { console.log('***** RESULT DATA **********\n' + this.debugString + '\n*********************'); }
     callback();
   }
 }

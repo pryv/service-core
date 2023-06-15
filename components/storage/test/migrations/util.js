@@ -46,7 +46,6 @@ function getVersions (/* migration1Id, migration2Id, ... */) {
   pickArgs.unshift(migrations);
   const pickedMigrations = _.pick.apply(_, pickArgs);
   return new Versions(database,
-    helpers.dependencies.settings.eventFiles.attachmentsDirPath,
     getLogger('versions'),
     pickedMigrations);
 }

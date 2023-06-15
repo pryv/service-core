@@ -6,6 +6,7 @@
  */
 const MongoClient = require('mongodb').MongoClient;
 const _ = require('lodash');
+const util = require('util');
 const { setTimeout } = require('timers/promises');
 
 const { getLogger } = require('@pryv/boiler');
@@ -111,7 +112,7 @@ class Database {
       this.logger.debug('Connected');
       await this.client
         .db('admin')
-        .command({ setFeatureCompatibilityVersion: '4.2' }, {});
+        .command({ setFeatureCompatibilityVersion: '6.0' }, {});
       this.db = this.client.db(this.databaseName);
       this.connecting = false;
     } catch (err) {
@@ -569,27 +570,27 @@ class Database {
    * In case of singleCollectionMode count the number of documents
    *
    * @param {CollectionInfo} collectionInfo  undefined
-   * @param {DatabaseCallback} callback  undefined
-   * @returns {void}
+   * @returns {Promise<number>}
    */
-  totalSize (collectionInfo, callback) {
+  async totalSize (collectionInfo) {
     if (collectionInfo.name === 'streams') {
       tellMeIfStackDoesNotContains(['localUserStreams.js'], {
         for: collectionInfo.name
       });
     }
     if (collectionInfo.useUserId) {
-      return this.countAll(collectionInfo, callback);
+      // return number of documents
+      return util.promisify(this.countAll).call(this, collectionInfo);
     }
-    this.getCollectionSafe(collectionInfo, callback, (collection) => {
-      collection.stats(function (err, stats) {
-        if (err != null) {
-          // assume collection doesn't exist
-          return callback(null, 0);
-        }
-        callback(null, getTotalSizeFromStats(stats));
-      });
-    });
+    // else use collection stats
+    const collection = this.getCollection(collectionInfo);
+    try {
+      const stats = await collection.stats();
+      return getTotalSizeFromStats(stats);
+    } catch (err) {
+      // assume collection doesn't exist
+      return 0;
+    }
   }
 
   /**
@@ -707,10 +708,9 @@ module.exports = Database;
 /** @typedef {(coll: Collection) => unknown} CollectionCallback */
 
 /**
- * @typedef {{
- *   name: string;
- *   indexes: Array<IndexDefinition>;
- * }} CollectionInfo
+ * @typedef {object} CollectionInfo
+ * @property {string } name
+ * @property {Array<IndexDefinition>} [indexes]
  */
 
 /**
@@ -758,8 +758,9 @@ function getAuthPart (settings) {
   }
   return authPart;
 }
+
 /**
- * @returns {any}
+ * @returns {number}
  */
 function getTotalSizeFromStats (stats) {
   // written according to http://docs.mongodb.org/manual/reference/command/collStats/
@@ -767,6 +768,7 @@ function getTotalSizeFromStats (stats) {
         stats.size +
         stats.totalIndexSize);
 }
+
 /**
  * @returns {boolean}
  */

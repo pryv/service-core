@@ -56,12 +56,7 @@ function eventToDB (sourceEvent) {
   event.created = nullIfUndefined(sourceEvent.created);
   event.clientData = nullOrJSON(sourceEvent.clientData);
   event.attachments = nullOrJSON(sourceEvent.attachments);
-  if (sourceEvent.deleted != null || sourceEvent.trashed != null) {
-    event.trashed = (sourceEvent.trashed) ? 1 : 0;
-  } else {
-    event.trashed = null;
-  }
-
+  event.trashed = (sourceEvent.trashed) ? 1 : 0;
   event.createdBy = nullIfUndefined(sourceEvent.createdBy);
   event.modifiedBy = nullIfUndefined(sourceEvent.modifiedBy);
   event.modified = nullIfUndefined(sourceEvent.modified);
