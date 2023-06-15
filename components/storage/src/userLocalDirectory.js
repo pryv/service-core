@@ -13,14 +13,12 @@ const path = require('path');
 const fs = require('fs/promises');
 const mkdirp = require('mkdirp');
 
-const { getConfig, getLogger } = require('@pryv/boiler');
-const logger = getLogger('user-local-directory');
+const { getConfig } = require('@pryv/boiler');
 
 module.exports = {
   init,
   ensureUserDirectory,
   getPathForUser,
-  pathForAttachment,
   deleteUserDirectory,
   getBasePath,
   setBasePathTestOnly
@@ -28,7 +26,6 @@ module.exports = {
 
 let config;
 let basePath;
-let attachmentsBasePath;
 
 // temporarly set baseBath for tests;
 function setBasePathTestOnly (path) {
@@ -45,12 +42,6 @@ async function init () {
   const candidateBasePath = config.get('userFiles:path');
   mkdirp.sync(candidateBasePath);
   basePath = candidateBasePath;
-
-  const candidateAttachmentsBasePath = config.get('eventFiles:attachmentsDirPath');
-  mkdirp.sync(candidateAttachmentsBasePath);
-  attachmentsBasePath = candidateAttachmentsBasePath;
-
-  logger.debug('User local files: ' + basePath + '  Attachments in: ' + attachmentsBasePath);
 }
 
 /**
@@ -81,21 +72,6 @@ function getPathForUser (userId, extraPath = '') {
   const dir3 = userId.substr(userId.length - 3, 1);
   const resultPath = path.join(basePath, dir1, dir2, dir3, userId, extraPath);
   return resultPath;
-}
-
-/**
- * Return the full file path for this attachment
- * TODO: cleanup – currently unused; duplicate of storage/user/EventFiles.getAttachmentPath()
- * @param {string} userId
- * @param {string} eventId
- * @param {string} fileId
- * @param {boolean} [ensureDirs] - default: false creates needed directories if set
- */
-function pathForAttachment (userId, eventId, fileId, ensureDirs = false) {
-  if (attachmentsBasePath == null) {
-    throw new Error('Run init() first');
-  }
-  return path.join(attachmentsBasePath, userId, eventId, fileId);
 }
 
 /**

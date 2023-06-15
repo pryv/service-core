@@ -1,6 +1,6 @@
 {
   "name": "mall",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
   "description": "Aggregator for 'stores' implementing events and streams storage.",
   "homepage": "https://pryv.com",

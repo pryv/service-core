@@ -26,10 +26,9 @@ class MallTransaction {
       return this.storeTransactions.get(storeId);
     }
     const store = this.mall.storesById.get(storeId);
+    // stubbing transaction when not supported (not yet documented in DataStore)
     if (store.newTransaction == null) {
-      return {
-        exec: async function (func) { return await func(); }
-      };
+      return new StoreTransactionStub();
     }
     const transaction = await store.newTransaction();
     this.storeTransactions.set(storeId, transaction);
@@ -38,3 +37,7 @@ class MallTransaction {
 }
 
 module.exports = MallTransaction;
+
+class StoreTransactionStub {
+  async exec (func) { return await func(); }
+}

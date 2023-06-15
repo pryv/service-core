@@ -9,6 +9,7 @@ const converters = require('./../converters');
 const util = require('util');
 const treeUtils = require('utils').treeUtils;
 const _ = require('lodash');
+const timestamp = require('unix-timestamp');
 
 const cache = require('cache');
 
@@ -118,7 +119,7 @@ Streams.prototype.delete = function (userOrUserId, query, callback) {
   const userId = userOrUserId.id || userOrUserId;
   cache.unsetUserData(userId);
   const update = {
-    $set: { deleted: Date.now() / 1000 },
+    $set: { deleted: timestamp.now() },
     $unset: {
       name: 1,
       parentId: 1,

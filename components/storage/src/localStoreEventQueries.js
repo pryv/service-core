@@ -9,6 +9,7 @@
  * Might by moved tp @pryv/datastore repo
  */
 
+const timestamp = require('unix-timestamp');
 const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 
 module.exports = {
@@ -72,7 +73,7 @@ function localStorePrepareQuery (query) {
   if (query.running) {
     localQuery.push({ type: 'equal', content: { field: 'endTime', value: null } });
   } else if (query.fromTime != null) {
-    const now = Date.now() / 1000 - DELTA_TO_CONSIDER_IS_NOW;
+    const now = timestamp.now() - DELTA_TO_CONSIDER_IS_NOW;
     if (query.fromTime <= now && (query.toTime == null || query.toTime >= now)) { // timeFrame includes now
       localQuery.push({ type: 'greaterOrEqualOrNull', content: { field: 'endTime', value: query.fromTime } });
     } else {

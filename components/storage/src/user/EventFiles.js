@@ -4,23 +4,32 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 const cuid = require('cuid');
 const fs = require('fs');
 const mkdirp = require('mkdirp');
 const path = require('path');
-const toString = require('utils').toString;
 
+const { toString } = require('utils');
 const { pipeline } = require('stream/promises');
+const { getConfig, getLogger } = require('@pryv/boiler');
+const userLocalDirectory = require('../userLocalDirectory');
+
+const ATTACHMENT_DIRNAME = 'attachments';
 
 module.exports = EventFiles;
 /**
  * Manages files storage for events (attachments & previews).
  *
  */
-function EventFiles (settings, logger) {
-  this.settings = settings;
-  this.logger = logger;
-}
+function EventFiles () { }
+
+EventFiles.prototype.init = async function () {
+  const config = await getConfig();
+  this.settings = config.get('eventFiles');
+  this.logger = getLogger('storage:eventFiles');
+  await userLocalDirectory.init();
+};
 
 /**
  * Computes the total storage size of the given user's attached files, in bytes.
@@ -29,7 +38,7 @@ function EventFiles (settings, logger) {
  * @returns {Promise<number>}
  */
 EventFiles.prototype.getTotalSize = async function (user) {
-  const userPath = this.getAttachmentPath(user.id);
+  const userPath = this.getUserPath(user.id);
   try {
     await fs.promises.access(userPath);
   } catch (err) {
@@ -66,44 +75,55 @@ async function getDirectorySize (dirPath) {
  * @param tempPath The current, temporary path of the file to save (the file will actually be moved
  *                 from that path)
  */
-EventFiles.prototype.saveAttachedFileFromTemp = async function (tempPath, userId, eventId, fileId) {
+EventFiles.prototype.saveAttachmentFromTemp = async function (tempPath, userId, eventId, fileId) {
   const readStream = fs.createReadStream(tempPath);
-  fileId = await this.saveAttachedFileFromStream(readStream, userId, eventId, fileId);
+  fileId = await this.saveAttachmentFromStream(readStream, userId, eventId, fileId);
   await fs.promises.unlink(tempPath);
   return fileId;
 };
 
-EventFiles.prototype.saveAttachedFileFromStream = async function (readableStream, userId, eventId, fileId) {
+EventFiles.prototype.saveAttachmentFromStream = async function (readableStream, userId, eventId, fileId) {
   fileId = fileId || cuid();
-  const dirPath = this.getAttachmentPath(userId, eventId);
+  const filePath = this.getAttachmentPath(userId, eventId, fileId);
+  const dirPath = path.dirname(filePath);
   await mkdirp(dirPath);
-  const writeStream = fs.createWriteStream(path.join(dirPath, fileId));
+  const writeStream = fs.createWriteStream(filePath);
   await pipeline(readableStream, writeStream);
   return fileId;
 };
 
-EventFiles.prototype.getAttachedFileStream = function (userId, eventId, fileId) {
+EventFiles.prototype.getAttachmentStream = function (userId, eventId, fileId) {
   const filePath = this.getAttachmentPath(userId, eventId, fileId);
   return fs.createReadStream(filePath);
 };
 
-EventFiles.prototype.removeAttachedFile = async function (userId, eventId, fileId) {
+EventFiles.prototype.removeAttachment = async function (userId, eventId, fileId) {
   const filePath = this.getAttachmentPath(userId, eventId, fileId);
   await fs.promises.unlink(filePath);
-  await this.cleanupStructure(path.dirname(filePath));
+  await cleanupIfEmpty(path.dirname(filePath));
 };
 
+/**
+ * Attempts to remove the given directory (if empty)
+ */
+async function cleanupIfEmpty (dirPath) {
+  try {
+    await fs.promises.rmdir(dirPath);
+  } catch (err) {
+    // assume dir is not empty
+  }
+}
+
 EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
-  const dirPath = this.getAttachmentPath(userId, eventId);
+  const dirPath = this.getEventPath(userId, eventId);
   await fs.promises.rm(dirPath, { recursive: true, force: true });
-  await this.cleanupStructure(path.dirname(dirPath));
 };
 
 /**
  * Synchronous until all related code is async/await.
  */
 EventFiles.prototype.removeAllForUser = function (user) {
-  fs.rmSync(this.getAttachmentPath(user.id), { recursive: true, force: true });
+  fs.rmSync(this.getUserPath(user.id), { recursive: true, force: true });
 };
 
 /**
@@ -115,27 +135,27 @@ EventFiles.prototype.removeAll = function () {
 };
 
 /**
- * @param {Object} user
- * @param {String} [eventId]
- * @param {String} [fileId]
- * @returns {String}
+ * @param {String} userId
+ * @param {String} eventId
+ * @param {String} fileId
  */
-EventFiles.prototype.getAttachedFilePath = function (user, eventId, fileId) {
-  const args = [].slice.call(arguments);
-  args[0] = user.id;
-  return this.getAttachmentPath.apply(this, args);
+EventFiles.prototype.getAttachmentPath = function (userId, eventId, fileId) {
+  return path.join(this.getEventPath(userId, eventId), fileId);
 };
 
 /**
  * @param {String} userId
- * @param {String} [eventId]
- * @param {String} [fileId]
- * @internal
+ * @param {String} eventId
  */
-EventFiles.prototype.getAttachmentPath = function (userId, eventId, fileId) {
-  const args = [].slice.call(arguments);
-  args.unshift(this.settings.attachmentsDirPath);
-  return path.join.apply(null, args);
+EventFiles.prototype.getEventPath = function (userId, eventId) {
+  return path.join(this.getUserPath(userId), eventId);
+};
+
+/**
+ * @param {String} userId
+ */
+EventFiles.prototype.getUserPath = function (userId) {
+  return userLocalDirectory.getPathForUser(userId, ATTACHMENT_DIRNAME);
 };
 
 /**
@@ -161,7 +181,7 @@ EventFiles.prototype.ensurePreviewPath = function (user, eventId, dimension, cal
  * @param {Number} dimension
  * @returns {String}
  */
-EventFiles.prototype.getPreviewFilePath = function (user, eventId, dimension) {
+EventFiles.prototype.getPreviewPath = function (user, eventId, dimension) {
   return path.join(this.settings.previewsDirPath, user.id, eventId, getPreviewFileName(dimension));
 };
 
@@ -175,24 +195,4 @@ function getPreviewFileName (dimension) {
  */
 EventFiles.prototype.removeAllPreviews = function () {
   fs.rmSync(this.settings.previewsDirPath, { recursive: true, force: true });
-};
-
-/**
- * Attempts to remove the given directory and its parents (if empty) until the root attachments
- * directory is reached.
- * @internal
- */
-EventFiles.prototype.cleanupStructure = async function cleanupStructure (dirPath) {
-  if (dirPath === this.settings.attachmentsDirPath) {
-    return;
-  }
-
-  try {
-    await fs.promises.rmdir(dirPath);
-  } catch (err) {
-    // assume the dir is not empty
-    return;
-  }
-
-  await this.cleanupStructure(path.dirname(dirPath));
 };

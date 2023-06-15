@@ -8,6 +8,7 @@ const BaseStorage = require('./BaseStorage');
 const converters = require('./../converters');
 const util = require('util');
 const _ = require('lodash');
+const timestamp = require('unix-timestamp');
 
 module.exports = Webhooks;
 /**
@@ -59,7 +60,7 @@ Webhooks.prototype.getCollectionInfo = function (userOrUserId) {
  */
 Webhooks.prototype.delete = function (userOrUserId, query, callback) {
   const update = {
-    $set: { deleted: Date.now() / 1000 },
+    $set: { deleted: timestamp.now() },
     $unset: {
       accessId: 1,
       url: 1,
@@ -89,7 +90,7 @@ Webhooks.prototype.delete = function (userOrUserId, query, callback) {
  * @param {*} callback
  */
 Webhooks.prototype.insertOne = function (userOrUserId, webhook, callback) {
-  const webhookToCreate = _.clone(webhook);
+  const webhookToCreate = structuredClone(webhook);
   if (webhookToCreate.deleted === undefined) webhookToCreate.deleted = null;
   this.database.insertOne(
     this.getCollectionInfo(userOrUserId),

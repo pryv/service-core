@@ -6,7 +6,6 @@
  */
 
 const { assert } = require('chai');
-const _ = require('lodash');
 const cuid = require('cuid');
 const charlatan = require('charlatan');
 const nock = require('nock');
@@ -124,7 +123,7 @@ describe('[ACCO] Account with system streams', function () {
       before(async function () {
         await createUser();
         // create additional events for all editable streams
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         scope = nock(settings.services.register.url);
 
         scope.put('/users',
@@ -251,7 +250,7 @@ describe('[ACCO] Account with system streams', function () {
         before(async function () {
           user2 = await createUser();
           await createUser();
-          const settings = _.cloneDeep(helpers.dependencies.settings);
+          const settings = structuredClone(helpers.dependencies.settings);
           scope = nock(settings.services.register.url);
           scope.put('/users')
             .reply(400, {
@@ -292,7 +291,7 @@ describe('[ACCO] Account with system streams', function () {
       let scope;
       before(async function () {
         await createUser();
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         nock.cleanAll();
         scope = nock(settings.services.register.url);
         scope.put('/users')

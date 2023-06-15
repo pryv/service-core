@@ -12,6 +12,8 @@ const assert = chai.assert;
 const cuid = require('cuid');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
+const timestamp = require('unix-timestamp');
+
 const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
 const apiServerContext = require('api-server/test/test-helpers').context;
@@ -43,7 +45,7 @@ describe('[SDHF] Storing data in a HF series', function () {
     after(function () {
       pryv.clean();
     });
-    const nowEvent = Date.now() / 1000;
+    const nowEvent = timestamp.now();
     // Set up a few ids that we'll use for testing. NOTE that these ids will
     // change on every test run.
     let userId, parentStreamId, secondStreamId, eventId, accessToken, secondStreamToken;
@@ -203,7 +205,7 @@ describe('[SDHF] Storing data in a HF series', function () {
     // true if the whole operation is successful.
     //
     async function tryStore (attrs, header, data) {
-      const effectiveAttrs = lodash.merge({ streamIds: [parentStreamId], time: Date.now() / 1000 }, attrs);
+      const effectiveAttrs = lodash.merge({ streamIds: [parentStreamId], time: timestamp.now() }, attrs);
       const usersRepository = await getUsersRepository();
       const user = await usersRepository.getUserById(userId);
       assert.isNotNull(user);
@@ -251,7 +253,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         [3, 3]
       ]);
       // move event to tomorrow
-      const newEventTime = Date.now() / 1000 + 60 * 60 * 24;
+      const newEventTime = timestamp.now() + 60 * 60 * 24;
       await apiServer
         .request()
         .put('/' + result.user.username + '/events/' + result.event.id)
@@ -293,7 +295,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         [3, 3]
       ]);
       // move event to tomorrow
-      const newEventTime = Date.now() / 1000 + 60 * 60 * 24;
+      const newEventTime = timestamp.now() + 60 * 60 * 24;
       await apiServer
         .request()
         .delete('/' + result.user.username + '/events/' + result.event.id)
@@ -601,7 +603,7 @@ describe('[SDHF] Storing data in a HF series', function () {
       // true if the whole operation is successful.
       //
       async function tryStore (attrs, header, data) {
-        const effectiveAttrs = lodash.merge({ streamIds: [parentStreamId], time: Date.now() / 1000 }, attrs);
+        const effectiveAttrs = lodash.merge({ streamIds: [parentStreamId], time: timestamp.now() }, attrs);
         const usersRepository = await getUsersRepository();
         const user = await usersRepository.getUserById(userId);
         assert.isNotNull(user);

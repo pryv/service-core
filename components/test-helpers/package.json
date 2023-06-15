@@ -1,6 +1,6 @@
 {
   "name": "test-helpers",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
   "description": "Shared utilities and data for testing",
   "homepage": "https://pryv.com",

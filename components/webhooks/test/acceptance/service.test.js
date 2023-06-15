@@ -130,7 +130,7 @@ describe('webhooks', function () {
         const metas = notificationsServer.getMetas();
         assert.equal(metas[0].apiVersion, webhooksService.apiVersion);
         assert.equal(metas[0].serial, webhooksService.serial);
-        assert.approximately(metas[0].serverTime, Date.now() / 1000, 100);
+        assert.approximately(metas[0].serverTime, timestamp.now(), 100);
       });
       it('[UM4T] should send nothing to inactive webhooks', async function () {
         const inactiveWebhook = await repository.getById(user, webhook2.id);

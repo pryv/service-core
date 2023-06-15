@@ -6,6 +6,7 @@
  */
 
 const ds = require('@pryv/datastore');
+const timestamp = require('unix-timestamp');
 const { Readable } = require('stream');
 const { localStorePrepareQuery } = require('storage/src/localStoreEventQueries');
 
@@ -81,13 +82,13 @@ function createUserEvents () {
         type: 'note/txt',
         streamIds: ['mariana'],
         content: 'hello',
-        time: Date.now() / 1000
+        time: timestamp.now()
       }, {
         id: 'laststreamcall',
         type: 'data/json',
         streamIds: ['antonia'],
         content: lastStreamCall,
-        time: Date.now() / 1000
+        time: timestamp.now()
       }];
 
       // support stream filtering (only for one "any")

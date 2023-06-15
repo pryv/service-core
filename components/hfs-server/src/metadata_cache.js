@@ -137,15 +137,11 @@ class MetadataLoader {
   storage;
 
   mall;
-  constructor (databaseConn, mall, logger) {
+
+  async init (databaseConn, mall, logger) {
     this.databaseConn = databaseConn;
     this.mall = mall;
-    // NOTE We pass bogus values to the last few arguments of StorageLayer -
-    // we're not using anything but the 'events' collection. Anyhow - these
-    // should be abstracted away from the storage. Also - this is currently
-    // a prototype, so we are allowed to do this.
-    const sessionMaxAge = 3600 * 1000;
-    this.storage = new storage.StorageLayer(databaseConn, logger, 'attachmentsDirPath', 'previewsDirPath', 10, sessionMaxAge);
+    this.storage = await storage.getStorageLayer();
   }
 
   /**

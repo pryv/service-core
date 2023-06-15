@@ -51,7 +51,7 @@ describe('auth', function () {
     helpers.dependencies.storage.sessions.clearAll(done);
   });
 
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   const trustedOrigin = 'http://test.pryv.local';
   const authData = {
     username: user.username,
@@ -175,7 +175,7 @@ describe('auth', function () {
     });
 
     it('[ADL4] must accept "no origin" (i.e. not a CORS request) if authorized', function (done) {
-      const authDataNoCORS = _.defaults({ appId: 'pryv-test-no-cors' }, authData);
+      const authDataNoCORS = Object.assign({}, authData, { appId: 'pryv-test-no-cors' });
       request
         .post(path(authDataNoCORS.username))
         .send(authDataNoCORS)
@@ -214,7 +214,7 @@ describe('auth', function () {
       request
         .post(path(authData.username))
         .set('Origin', trustedOrigin)
-        .send(_.defaults({ username: authData.username.toUpperCase() }, authData))
+        .send(Object.assign({}, authData, { username: authData.username.toUpperCase() }))
         .end(function (err, res) {
           should.not.exist(err);
           assert.strictEqual(res.statusCode, 200);
@@ -223,10 +223,10 @@ describe('auth', function () {
     });
 
     it('[L7JQ] must return a correct error when the local credentials are missing or invalid', function (done) {
-      const data = _.defaults({
+      const data = Object.assign({}, authData, {
         username: authData.username,
         password: 'bad-password'
-      }, authData);
+      });
       request
         .post(path(data.username))
         .set('Origin', trustedOrigin)
@@ -243,7 +243,7 @@ describe('auth', function () {
     });
 
     it('[4AQR] must return a correct error if the app id is missing or untrusted', function (done) {
-      const data = _.defaults({ appId: 'untrusted-app-id' }, authData);
+      const data = Object.assign({}, authData, { appId: 'untrusted-app-id' });
       request
         .post(path(data.username))
         .set('Origin', trustedOrigin)
@@ -348,7 +348,7 @@ describe('auth', function () {
       }
 
       function instanciateServerWithLogs (stepDone) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.logs = {
           file: {
             active: true,
@@ -368,7 +368,7 @@ describe('auth', function () {
       after(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
       it('[C03J] must replace the password in the logs by (hidden) when an error occurs', function (done) {
-        const wrongPasswordData = _.cloneDeep(authData);
+        const wrongPasswordData = structuredClone(authData);
         wrongPasswordData.password = 'wrongPassword';
         async.series([
           function failLogin (stepDone) {
@@ -402,7 +402,7 @@ describe('auth', function () {
       });
 
       it('[G0YT] must not mention the password in the logs when none is provided', function (done) {
-        const wrongPasswordData = _.cloneDeep(authData);
+        const wrongPasswordData = structuredClone(authData);
         delete wrongPasswordData.password;
         async.series([
           function failLogin (stepDone) {
@@ -441,7 +441,7 @@ describe('auth', function () {
     }
 
     describe('[WPRA] When password rules are enabled', function () {
-      const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
+      const settings = _.merge(structuredClone(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
       const maxAge = helpers.passwordRules.settingsOverride.auth.passwordAgeMaxDays;
       const minAge = 1;
 

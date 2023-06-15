@@ -7,9 +7,6 @@
     },
     "file": {
       "active": false
-    },
-    "airbrake": {
-      "active": false
     }
   },
   "database": {
