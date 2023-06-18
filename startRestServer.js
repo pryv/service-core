@@ -3,6 +3,8 @@
 // launch with NODE_ENV=test LOGS=info node startRestServer.js
 
 const path = require('path');
+const eventsUtils = require('mall/src/helpers/eventsUtils');
+const stableRepresentation = require('@pryv/stable-object-representation');
 
 const { getConfig } = require('@pryv/boiler').init({
   appName: 'rest',
@@ -49,16 +51,23 @@ const ds = require('storage/src/localDataStoreSQLite/');
 const server = require('@pryv/datastore/examples/rest/server');
 
 function debugMiddleware (req, res, next) {
-  //console.log({ method: req.method, url: req.url, body: req.body });
+  console.log({ method: req.method, url: req.url, body: req.body });
   next();
 }
 
 (async function () {
   const config = await getConfig();
+  const algorithm = config.get('integrity:algorithm');
+  function setIntegrityForEvent (storeEventData) {
+    const event = eventsUtils.convertEventFromStore('local', storeEventData);
+    storeEventData.integrity = stableRepresentation.event.compute(event, algorithm).integrity;
+  }
+
   const localSettings = {
     attachments: { setFileReadToken: true },
     versioning: config.get('versioning')
   };
-  await ds.init({ id: 'local', name: 'Local', settings: localSettings });
+
+  await ds.init({ id: 'local', name: 'Local', settings: localSettings, integrity: { setOnEvent: setIntegrityForEvent } });
   await server(ds, 6789, { middleware: debugMiddleware });
 })();
