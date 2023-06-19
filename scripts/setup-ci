@@ -25,4 +25,4 @@ sudo apt-get install graphicsmagick
 sudo service influxdb start
 
 # Start mongodb
-./scripts/start-mongo
+IS_CI=true ./scripts/start-mongo
