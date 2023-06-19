@@ -11,9 +11,9 @@ const { localStorePrepareOptions, localStorePrepareQuery } = require('storage/sr
 
 module.exports = ds.createUserEvents({
   async getStreamed (userId, storeQuery, storeOptions) {
-    const userStorage = await audit.storage.forUser(userId);
+    const userDB = await audit.storage.forUser(userId);
     const query = localStorePrepareQuery(storeQuery);
     const options = localStorePrepareOptions(storeOptions);
-    return userStorage.getEventsStream({ query, options });
+    return userDB.getEventsStreamed({ query, options });
   }
 });

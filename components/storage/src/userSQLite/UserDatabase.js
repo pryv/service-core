@@ -101,7 +101,7 @@ UserDatabase.prototype.getEvents = function (params) {
   return null;
 };
 
-UserDatabase.prototype.getEventsStream = function (params) {
+UserDatabase.prototype.getEventsStreamed = function (params) {
   params.query.push({ type: 'equal', content: { field: 'deleted', value: null } });
   params.query.push({ type: 'equal', content: { field: 'headId', value: null } });
   const queryString = prepareEventsGetQuery(params);
@@ -114,7 +114,7 @@ function prepareEventsGetQuery (params) {
   return 'SELECT * FROM events_fts ' + prepareQuery(params);
 }
 
-UserDatabase.prototype.getEventsDeletionsStream = function (deletedSince) {
+UserDatabase.prototype.getEventDeletionsStreamed = function (deletedSince) {
   this.logger.debug(`GET events deletions since: ${deletedSince}`);
   return readableEventsStreamForIterator(this.eventQueries.getDeletedSince.iterate(deletedSince));
 };
@@ -153,7 +153,7 @@ UserDatabase.prototype.getOneEvent = function (eventId) {
   return eventsSchema.fromDB(event);
 };
 
-UserDatabase.prototype.eventsCount = function () {
+UserDatabase.prototype.countEvents = function () {
   const res = this.db.prepare('SELECT count(*) as count FROM events').get();
   return res?.count || 0;
 };
@@ -196,7 +196,7 @@ UserDatabase.prototype.updateEvent = async function (eventId, eventData) {
   return eventsSchema.fromDB(dbEvent);
 };
 
-UserDatabase.prototype.getEventsHistory = function (eventId) {
+UserDatabase.prototype.getEventHistory = function (eventId) {
   this.logger.debug(`GET event history for: ${eventId}`);
   return this.eventQueries.getHistory.all(eventId).map(eventsSchema.fromDBHistory);
 };
@@ -209,7 +209,7 @@ UserDatabase.prototype.minimizeEventHistory = async function (eventId, fieldsToR
   });
 };
 
-UserDatabase.prototype.deleteEventsHistory = async function (eventId) {
+UserDatabase.prototype.deleteEventHistory = async function (eventId) {
   this.logger.debug(`(async) DELETE event history for event id: ${eventId}`);
   await concurrentSafeWrite.execute(() => {
     return this.eventQueries.deleteByHeadId.run(eventId);

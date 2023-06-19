@@ -98,14 +98,14 @@ function limitStreamQueryToAccessToken (context, params, result, next) {
  */
 async function getAuditLogs (context, params, result, next) {
   try {
-    const userStorage = await auditStorage.forUser(context.user.id);
+    const userDB = await auditStorage.forUser(context.user.id);
     params.streams = params.arrayOfStreamQueries;
     const storeQuery = getStoreQueryFromParams(params);
     const storeOptions = getStoreOptionsFromParams(params);
     const query = localStorePrepareQuery(storeQuery);
     const options = localStorePrepareOptions(storeOptions);
-    result.addStream('auditLogs', userStorage
-      .getEventsStream({ query, options })
+    result.addStream('auditLogs', userDB
+      .getEventsStreamed({ query, options })
       .pipe(new ConvertEventFromStoreStream('_audit')));
   } catch (err) {
     return next(err);

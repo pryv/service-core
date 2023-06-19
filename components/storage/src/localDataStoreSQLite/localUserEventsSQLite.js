@@ -58,7 +58,7 @@ module.exports = ds.createUserEvents({
     const db = await this.storage.forUser(userId);
     const query = localStorePrepareQuery(storeQuery);
     const options = localStorePrepareOptions(storeOptions);
-    return db.getEventsStream({ query, options });
+    return db.getEventsStreamed({ query, options });
   },
 
   /**
@@ -66,7 +66,7 @@ module.exports = ds.createUserEvents({
    */
   async getDeletionsStreamed (userId, query, options) {
     const db = await this.storage.forUser(userId);
-    return db.getEventsDeletionsStream(query.deletedSince);
+    return db.getEventDeletionsStreamed(query.deletedSince);
   },
 
   /**
@@ -74,7 +74,7 @@ module.exports = ds.createUserEvents({
    */
   async getHistory (userId, eventId) {
     const db = await this.storage.forUser(userId);
-    return db.getEventsHistory(eventId);
+    return db.getEventHistory(eventId);
   },
 
   /**
@@ -160,7 +160,7 @@ module.exports = ds.createUserEvents({
       await this.eventsFileStorage.removeAllForEvent(userId, eventId);
     }
     // eventually delete or update history
-    if (this.deletionSettings.mode === 'keep-nothing') await db.deleteEventsHistory(eventId);
+    if (this.deletionSettings.mode === 'keep-nothing') await db.deleteEventHistory(eventId);
     if (this.deletionSettings.mode === 'keep-authors') {
       await db.minimizeEventHistory(eventId, this.deletionSettings.fields);
     }
@@ -204,7 +204,7 @@ module.exports = ds.createUserEvents({
   async _getUserStorageSize (userId) {
     const db = await this.storage.forUser(userId);
     // TODO: fix this total HACK
-    return db.eventsCount();
+    return db.countEvents();
   },
 
   /**
