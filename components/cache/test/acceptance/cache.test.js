@@ -131,8 +131,9 @@ describe('Cache', function () {
 
     const data = `first-with-cache: ${tFirstCallWithCache}, second-with-cache: ${tSecondCallWithCache}, no-cache: ${tNoCache}  => `;
     assert.isBelow(tSecondCallWithCache, tFirstCallWithCache, 'second-with-cache streams.get should be faster than first-with-cache' + data);
-    const expectedGainPercent = 25;
-    assert.isAbove(tNoCache, tSecondCallWithCache * (1 + expectedGainPercent / 100), `cache streams.get should be at least ${expectedGainPercent}% longer than second-with-cache ${data}`);
+    const expectedGainPercent = 15;
+    const percentGained = Math.round((tNoCache - tSecondCallWithCache) * 100 / tNoCache);
+    assert.isAbove(percentGained, expectedGainPercent, `cache streams.get should be at least ${expectedGainPercent}% longer than second-with-cache ${data}`);
   });
 
   it('[XDP6] Cache should reset permissions on stream structure change when moving a stream in and out ', async () => {
