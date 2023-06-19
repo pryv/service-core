@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 
-const { ALL_EVENTS_TAG } = require('./schemas/events');
+const { ALL_EVENTS_TAG } = require('./schema/events');
 
 /**
  * Transform queries for SQLite - to be run on

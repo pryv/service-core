@@ -5,23 +5,21 @@
  * Proprietary and confidential
  */
 
-const concurrentSafeWrite = require('../sqliteUtils/concurrentSafeWrite');
 const SQLite3 = require('better-sqlite3');
 const { Readable } = require('stream');
 
-const eventSchemas = require('./schemas/events');
+const concurrentSafeWrite = require('../sqliteUtils/concurrentSafeWrite');
+const eventsSchema = require('./schema/events');
 const { createFTSFor } = require('./FullTextSearchDataBase');
-const events = require('./schemas/events');
-
 const { toSQLiteQuery } = require('./sqLiteStreamQueryUtils');
 
 const DB_OPTIONS = {};
 
 const tables = {
-  events: events.dbSchema
+  events: eventsSchema.dbSchema
 };
 
-const ALL_EVENTS_TAG = events.ALL_EVENTS_TAG;
+const ALL_EVENTS_TAG = eventsSchema.ALL_EVENTS_TAG;
 
 /**
  * TODO: refactor the structure of tables and queries
@@ -105,7 +103,7 @@ class UserDatabase {
   }
 
   async updateEvent (eventId, eventData) {
-    const eventForDb = eventSchemas.eventToDB(eventData);
+    const eventForDb = eventsSchema.toDB(eventData);
     if (eventForDb.streamIds == null) { eventForDb.streamIds = ALL_EVENTS_TAG; }
 
     delete eventForDb.eventid;
@@ -121,7 +119,7 @@ class UserDatabase {
       }
     });
 
-    const resultEvent = eventSchemas.eventFromDB(eventForDb);
+    const resultEvent = eventsSchema.fromDB(eventForDb);
     return resultEvent;
   }
 
@@ -130,13 +128,13 @@ class UserDatabase {
    * Not safe within a multi-process environement
    */
   createEventSync (event) {
-    const eventForDb = eventSchemas.eventToDB(event);
+    const eventForDb = eventsSchema.toDB(event);
     this.logger.debug(`(sync) CREATE event: ${JSON.stringify(eventForDb)}`);
     this.create.events.run(eventForDb);
   }
 
   async createEvent (event) {
-    const eventForDb = eventSchemas.eventToDB(event);
+    const eventForDb = eventsSchema.toDB(event);
     this.logger.debug(`(async) CREATE event: ${JSON.stringify(eventForDb)}`);
     await concurrentSafeWrite.execute(() => {
       this.create.events.run(eventForDb);
@@ -195,7 +193,7 @@ class UserDatabase {
     this.logger.debug(`GET ONE event: ${eventId}`);
     const event = this.get.eventById.get(eventId);
     if (event == null) return null;
-    return eventSchemas.eventFromDB(event);
+    return eventsSchema.fromDB(event);
   }
 
   getEvents (params) {
@@ -205,7 +203,7 @@ class UserDatabase {
     this.logger.debug(`GET Events: ${queryString}`);
     const res = this.db.prepare(queryString).all();
     if (res != null) {
-      return res.map(eventSchemas.eventFromDB);
+      return res.map(eventsSchema.fromDB);
     }
     return null;
   }
@@ -226,7 +224,7 @@ class UserDatabase {
 
   getEventsHistory (eventId) {
     this.logger.debug(`GET Events History for: ${eventId}`);
-    return this.get.eventHistory.all(eventId).map(eventSchemas.historyEventFromDB);
+    return this.get.eventHistory.all(eventId).map(eventsSchema.fromDBHistory);
   }
 
   // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
@@ -235,7 +233,7 @@ class UserDatabase {
       next: function () {
         const res = iterateSource.next();
         if (res && res.value) {
-          res.value = eventSchemas.eventFromDB(res.value);
+          res.value = eventsSchema.fromDB(res.value);
         }
         return res;
       }
@@ -271,29 +269,29 @@ const converters = {
   equal: (content) => {
     const realField = (content.field === 'id') ? 'eventid' : content.field;
     if (content.value === null) return `${realField} IS NULL`;
-    const value = events.coerceSelectValueForColumn(realField, content.value);
+    const value = eventsSchema.coerceValueForColumn(realField, content.value);
     return `${realField} = ${value}`;
   },
   greater: (content) => {
-    const value = events.coerceSelectValueForColumn(content.field, content.value);
+    const value = eventsSchema.coerceValueForColumn(content.field, content.value);
     return `${content.field} > ${value}`;
   },
   greaterOrEqual: (content) => {
-    const value = events.coerceSelectValueForColumn(content.field, content.value);
+    const value = eventsSchema.coerceValueForColumn(content.field, content.value);
     return `${content.field} >= ${value}`;
   },
   lowerOrEqual: (content) => {
-    const value = events.coerceSelectValueForColumn(content.field, content.value);
+    const value = eventsSchema.coerceValueForColumn(content.field, content.value);
     return `${content.field} <= ${value}`;
   },
   greaterOrEqualOrNull: (content) => {
-    const value = events.coerceSelectValueForColumn(content.field, content.value);
+    const value = eventsSchema.coerceValueForColumn(content.field, content.value);
     return `(${content.field} >= ${value} OR ${content.field} IS NULL)`;
   },
   typesList: (list) => {
     if (list.length === 0) return null;
     const lt = list.map((type) => {
-      const typeCorced = events.coerceSelectValueForColumn('type', type);
+      const typeCorced = eventsSchema.coerceValueForColumn('type', type);
       // unsupported "*" query for types
       const starPos = typeCorced.indexOf('/*');
       if (starPos > 0) {
