@@ -10,14 +10,14 @@ const { Readable } = require('stream');
 
 const concurrentSafeWrite = require('../sqliteUtils/concurrentSafeWrite');
 const eventsSchema = require('./schema/events');
-const { createFTSFor } = require('./FullTextSearchDataBase');
-const { toSQLiteQuery } = require('./sqLiteStreamQueryUtils');
+const fullTextSearch = require('./fullTextSearch');
+const { toSQLiteQuery } = require('./streamQueryUtils');
 
 module.exports = UserDatabase;
 
 const DB_OPTIONS = {};
 
-const tables = {
+const tableSchemas = {
   events: eventsSchema.dbSchema
 };
 
@@ -34,26 +34,21 @@ UserDatabase.prototype.init = async function () {
   await concurrentSafeWrite.initWALAndConcurrentSafeWriteCapabilities(this.db);
   // here we might want to skip DB initialization if version is not null
 
-  this.create = {};
-  this.getAll = {};
-  this.get = {};
-  this.delete = {};
+  this.eventQueries = {};
 
   // create all tables
-  for (const tableName of Object.keys(tables)) {
-    const columnsTypes = [];
+  for (const tableName of Object.keys(tableSchemas)) {
+    const columnNames = Object.keys(tableSchemas[tableName]);
+    const columnTypes = [];
     const indexes = [];
-    const columnNames = Object.keys(tables[tableName]);
     columnNames.forEach((columnName) => {
-      const column = tables[tableName][columnName];
-      columnsTypes.push(`${columnName} ${column.type}`);
+      const column = tableSchemas[tableName][columnName];
+      columnTypes.push(`${columnName} ${column.type}`);
       if (column.index) { indexes.push(columnName); }
     });
 
     await concurrentSafeWrite.execute(() => {
-      this.db.prepare('CREATE TABLE IF NOT EXISTS events ( ' +
-        columnsTypes.join(', ') +
-      ');').run();
+      this.db.prepare(`CREATE TABLE IF NOT EXISTS ${tableName} (${columnTypes.join(', ')});`).run();
     });
 
     for (const columnName of indexes) {
@@ -61,78 +56,84 @@ UserDatabase.prototype.init = async function () {
         this.db.prepare(`CREATE INDEX IF NOT EXISTS ${tableName}_${columnName} ON ${tableName}(${columnName})`).run();
       });
     }
-
-    this.create[tableName] = this.db.prepare(`INSERT INTO ${tableName} (` +
-      columnNames.join(', ') + ') VALUES (@' +
-      columnNames.join(', @') + ')');
-
-    this.getAll[tableName] = this.db.prepare(`SELECT * FROM ${tableName}`);
   }
 
-  // -- create FTS for streamIds on events
-  createFTSFor(this.db, 'events', tables.events, ['streamIds']);
+  // setup events queries
 
-  this.queryGetTerms = this.db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
+  // TODO: reorder consistently
 
-  this.delete.eventsByHeadId = this.db.prepare('DELETE FROM events WHERE headId = ?');
-  this.delete.eventById = this.db.prepare('DELETE FROM events WHERE eventid = ?');
+  this.eventQueries.create = prepareCreateQuery(this.db, 'events', Object.keys(tableSchemas.events));
+  this.eventQueries.getAll = prepareGetAllQuery(this.db, 'events');
 
-  this.get.eventById = this.db.prepare('SELECT * FROM events WHERE eventid = ?');
-  this.get.eventsDeletedSince = this.db.prepare('SELECT * from events WHERE deleted >= ? ORDER BY deleted DESC');
-  this.get.eventHistory = this.db.prepare('SELECT * from events WHERE headId = ? ORDER BY modified ASC');
+  fullTextSearch.setupForTable(this.db, 'events', tableSchemas.events, ['streamIds']);
+  this.eventQueries.getTerms = this.db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
+
+  this.eventQueries.deleteByHeadId = this.db.prepare('DELETE FROM events WHERE headId = ?');
+  this.eventQueries.deleteById = this.db.prepare('DELETE FROM events WHERE eventid = ?');
+
+  this.eventQueries.getById = this.db.prepare('SELECT * FROM events WHERE eventid = ?');
+  this.eventQueries.getDeletedSince = this.db.prepare('SELECT * from events WHERE deleted >= ? ORDER BY deleted DESC');
+  this.eventQueries.getHistory = this.db.prepare('SELECT * from events WHERE headId = ? ORDER BY modified ASC');
 };
 
-UserDatabase.prototype.updateEvent = async function (eventId, eventData) {
-  const eventForDb = eventsSchema.toDB(eventData);
-  if (eventForDb.streamIds == null) { eventForDb.streamIds = eventsSchema.ALL_EVENTS_TAG; }
+function prepareCreateQuery (db, tableName, columnNames) {
+  return db.prepare(`INSERT INTO ${tableName} (${columnNames.join(', ')}) VALUES (@${columnNames.join(', @')})`);
+}
 
-  delete eventForDb.eventid;
-  const queryString = `UPDATE events SET ${Object.keys(eventForDb).map(field => `${field} = @${field}`).join(', ')} WHERE eventid = @eventid`;
-  eventForDb.eventid = eventId;
+function prepareGetAllQuery (db, tableName) {
+  return db.prepare(`SELECT * FROM ${tableName}`);
+}
+
+UserDatabase.prototype.updateEvent = async function (eventId, eventData) {
+  const dbEvent = eventsSchema.toDB(eventData);
+  if (dbEvent.streamIds == null) { dbEvent.streamIds = eventsSchema.ALL_EVENTS_TAG; }
+
+  delete dbEvent.eventid;
+  const queryString = `UPDATE events SET ${Object.keys(dbEvent).map(field => `${field} = @${field}`).join(', ')} WHERE eventid = @eventid`;
+  dbEvent.eventid = eventId;
   const update = this.db.prepare(queryString);
 
   await concurrentSafeWrite.execute(() => {
-    const res = update.run(eventForDb);
-    this.logger.debug(`UPDATE events changes: ${res.changes} eventId: ${eventId} event: ${JSON.stringify(eventForDb)}`);
+    const res = update.run(dbEvent);
+    this.logger.debug(`UPDATE events changes: ${res.changes} eventId: ${eventId} event: ${JSON.stringify(dbEvent)}`);
     if (res.changes !== 1) {
       throw new Error('Event not found');
     }
   });
 
-  const resultEvent = eventsSchema.fromDB(eventForDb);
-  return resultEvent;
+  return eventsSchema.fromDB(dbEvent);
 };
 
 /**
- * Use only during tests or migration
+ * Use only in tests or migration
  * Not safe within a multi-process environement
  */
 UserDatabase.prototype.createEventSync = function (event) {
-  const eventForDb = eventsSchema.toDB(event);
-  this.logger.debug(`(sync) CREATE event: ${JSON.stringify(eventForDb)}`);
-  this.create.events.run(eventForDb);
+  const dbEvent = eventsSchema.toDB(event);
+  this.logger.debug(`(sync) CREATE event: ${JSON.stringify(dbEvent)}`);
+  this.eventQueries.create.run(dbEvent);
 };
 
 UserDatabase.prototype.createEvent = async function (event) {
-  const eventForDb = eventsSchema.toDB(event);
-  this.logger.debug(`(async) CREATE event: ${JSON.stringify(eventForDb)}`);
+  const dbEvent = eventsSchema.toDB(event);
+  this.logger.debug(`(async) CREATE event: ${JSON.stringify(dbEvent)}`);
   await concurrentSafeWrite.execute(() => {
-    this.create.events.run(eventForDb);
+    this.eventQueries.create.run(dbEvent);
   });
 };
 
 UserDatabase.prototype.getAllActions = function () {
-  return this.queryGetTerms.all('action-%');
+  return this.eventQueries.getTerms.all('action-%');
 };
 
 UserDatabase.prototype.getAllAccesses = function () {
-  return this.queryGetTerms.all('access-%');
+  return this.eventQueries.getTerms.all('access-%');
 };
 
 UserDatabase.prototype.deleteEventsHistory = async function (eventId) {
-  this.logger.debug(`(async) DELETE event history for eventId: ${eventId}`);
+  this.logger.debug(`(async) DELETE event history for event id: ${eventId}`);
   await concurrentSafeWrite.execute(() => {
-    return this.delete.eventsByHeadId.run(eventId);
+    return this.eventQueries.deleteByHeadId.run(eventId);
   });
 };
 
@@ -147,15 +148,15 @@ UserDatabase.prototype.minimizeEventHistory = async function (eventId, fieldsToR
 UserDatabase.prototype.deleteEvents = async function (params) {
   const queryString = prepareEventsDeleteQuery(params);
   if (queryString.indexOf('MATCH') > 0) {
-    this.logger.debug(`DELETE events one by one as queryString includes MATCH: ${queryString}`);
-    // SQLite does not know how to delete with "MATCH" statement
-    // going by the doddgy task of getting events that matches the query and deleting them one by one
+    this.logger.debug(`DELETE events one by one as query includes "MATCH": ${queryString}`);
+    // HACK: SQLite does not know how to delete with "MATCH" statement,
+    //       so we're getting events that match and deleting them one by one
     const selectEventsToBeDeleted = prepareEventsGetQuery(params);
 
     for (const event of this.db.prepare(selectEventsToBeDeleted).iterate()) {
       this.logger.debug(`  > DELETE event: ${event.eventid}`);
       await concurrentSafeWrite.execute(() => {
-        this.delete.eventById.run(event.eventid);
+        this.eventQueries.deleteById.run(event.eventid);
       });
     }
     return null;
@@ -170,8 +171,8 @@ UserDatabase.prototype.deleteEvents = async function (params) {
 };
 
 UserDatabase.prototype.getOneEvent = function (eventId) {
-  this.logger.debug(`GET ONE event: ${eventId}`);
-  const event = this.get.eventById.get(eventId);
+  this.logger.debug(`GET one event: ${eventId}`);
+  const event = this.eventQueries.getById.get(eventId);
   if (event == null) return null;
   return eventsSchema.fromDB(event);
 };
@@ -180,7 +181,7 @@ UserDatabase.prototype.getEvents = function (params) {
   params.query.push({ type: 'equal', content: { field: 'deleted', value: null } });
   params.query.push({ type: 'equal', content: { field: 'headId', value: null } });
   const queryString = prepareEventsGetQuery(params);
-  this.logger.debug(`GET Events: ${queryString}`);
+  this.logger.debug(`GET events: ${queryString}`);
   const res = this.db.prepare(queryString).all();
   if (res != null) {
     return res.map(eventsSchema.fromDB);
@@ -192,19 +193,19 @@ UserDatabase.prototype.getEventsStream = function (params) {
   params.query.push({ type: 'equal', content: { field: 'deleted', value: null } });
   params.query.push({ type: 'equal', content: { field: 'headId', value: null } });
   const queryString = prepareEventsGetQuery(params);
-  this.logger.debug(`GET Events Stream: ${queryString}`);
+  this.logger.debug(`GET events streamed: ${queryString}`);
   const query = this.db.prepare(queryString);
   return this.readableEventsStreamForIterator(query.iterate());
 };
 
 UserDatabase.prototype.getEventsDeletionsStream = function (deletedSince) {
-  this.logger.debug(`GET Events Deletions since: ${deletedSince}`);
-  return this.readableEventsStreamForIterator(this.get.eventsDeletedSince.iterate(deletedSince));
+  this.logger.debug(`GET events deletions since: ${deletedSince}`);
+  return this.readableEventsStreamForIterator(this.eventQueries.getDeletedSince.iterate(deletedSince));
 };
 
 UserDatabase.prototype.getEventsHistory = function (eventId) {
-  this.logger.debug(`GET Events History for: ${eventId}`);
-  return this.get.eventHistory.all(eventId).map(eventsSchema.fromDBHistory);
+  this.logger.debug(`GET event history for: ${eventId}`);
+  return this.eventQueries.getHistory.all(eventId).map(eventsSchema.fromDBHistory);
 };
 
 // also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
@@ -235,7 +236,7 @@ UserDatabase.prototype.close = function () {
   this.db.close();
 };
 
-// -----------------------------------------------------------------------------
+// TODO reorder for clarity
 
 function prepareEventsDeleteQuery (params) {
   if (params.streams) { throw new Error(`Events DELETE with stream query not supported yet: ${JSON.stringify(params)}`); }

@@ -7,11 +7,15 @@
 
 const { ALL_EVENTS_TAG } = require('./schema/events');
 
+module.exports = {
+  toSQLiteQuery
+};
+
 /**
- * Transform queries for SQLite - to be run on
- * @param {} streamQuery
+ * Get stream queries for SQLite - to be run on
+ * @param {Object[]} streamQuery
  */
-exports.toSQLiteQuery = function toSQLiteQuery (streamQuery) {
+function toSQLiteQuery (streamQuery) {
   if (streamQuery == null) return null;
 
   if (streamQuery.length === 1) {
@@ -48,7 +52,7 @@ exports.toSQLiteQuery = function toSQLiteQuery (streamQuery) {
     if (res === ALL_EVENTS_TAG) return null;
     return res;
   }
-};
+}
 
 function addQuotes (array) {
   return array.map((x) => '"' + x + '"');

@@ -7,15 +7,16 @@
 const path = require('path');
 const fs = require('fs/promises');
 const LRU = require('lru-cache');
+
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
-
 const versioning = require('./versioning');
 const userLocalDirectory = require('storage').userLocalDirectory;
 const ensureUserDirectory = userLocalDirectory.ensureUserDirectory;
 
 const CACHE_SIZE = 500;
 const VERSION = '1.0.0';
+
 class Storage {
   initialized = false;
   userDBsCache = null;
@@ -58,7 +59,7 @@ class Storage {
   /**
    * get the database relative to a specific user
    * @param {string} userId
-   * @returns {UserDatabase}
+   * @returns {Promise<UserDatabase>}
    */
   async forUser (userId) {
     this.logger.debug('forUser: ' + userId);
@@ -69,7 +70,7 @@ class Storage {
   /**
    * close and delete the database relative to a specific user
    * @param {string} userId
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async deleteUser (userId) {
     this.logger.info('deleteUser: ' + userId);
