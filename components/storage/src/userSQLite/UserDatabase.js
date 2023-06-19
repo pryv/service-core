@@ -62,27 +62,119 @@ UserDatabase.prototype.init = async function () {
 
   // TODO: reorder consistently
 
-  this.eventQueries.create = prepareCreateQuery(this.db, 'events', Object.keys(tableSchemas.events));
   this.eventQueries.getAll = prepareGetAllQuery(this.db, 'events');
 
   fullTextSearch.setupForTable(this.db, 'events', tableSchemas.events, ['streamIds']);
   this.eventQueries.getTerms = this.db.prepare('SELECT * FROM events_fts_v WHERE term like ?');
 
-  this.eventQueries.deleteByHeadId = this.db.prepare('DELETE FROM events WHERE headId = ?');
-  this.eventQueries.deleteById = this.db.prepare('DELETE FROM events WHERE eventid = ?');
-
   this.eventQueries.getById = this.db.prepare('SELECT * FROM events WHERE eventid = ?');
   this.eventQueries.getDeletedSince = this.db.prepare('SELECT * from events WHERE deleted >= ? ORDER BY deleted DESC');
   this.eventQueries.getHistory = this.db.prepare('SELECT * from events WHERE headId = ? ORDER BY modified ASC');
+
+  this.eventQueries.create = prepareCreateQuery(this.db, 'events', Object.keys(tableSchemas.events));
+
+  this.eventQueries.deleteByHeadId = this.db.prepare('DELETE FROM events WHERE headId = ?');
+  this.eventQueries.deleteById = this.db.prepare('DELETE FROM events WHERE eventid = ?');
 };
+
+function prepareGetAllQuery (db, tableName) {
+  return db.prepare(`SELECT * FROM ${tableName}`);
+}
 
 function prepareCreateQuery (db, tableName, columnNames) {
   return db.prepare(`INSERT INTO ${tableName} (${columnNames.join(', ')}) VALUES (@${columnNames.join(', @')})`);
 }
 
-function prepareGetAllQuery (db, tableName) {
-  return db.prepare(`SELECT * FROM ${tableName}`);
+UserDatabase.prototype.close = function () {
+  this.db.close();
+};
+
+UserDatabase.prototype.getEvents = function (params) {
+  params.query.push({ type: 'equal', content: { field: 'deleted', value: null } });
+  params.query.push({ type: 'equal', content: { field: 'headId', value: null } });
+  const queryString = prepareEventsGetQuery(params);
+  this.logger.debug(`GET events: ${queryString}`);
+  const res = this.db.prepare(queryString).all();
+  if (res != null) {
+    return res.map(eventsSchema.fromDB);
+  }
+  return null;
+};
+
+UserDatabase.prototype.getEventsStream = function (params) {
+  params.query.push({ type: 'equal', content: { field: 'deleted', value: null } });
+  params.query.push({ type: 'equal', content: { field: 'headId', value: null } });
+  const queryString = prepareEventsGetQuery(params);
+  this.logger.debug(`GET events streamed: ${queryString}`);
+  const query = this.db.prepare(queryString);
+  return readableEventsStreamForIterator(query.iterate());
+};
+
+function prepareEventsGetQuery (params) {
+  return 'SELECT * FROM events_fts ' + prepareQuery(params);
 }
+
+UserDatabase.prototype.getEventsDeletionsStream = function (deletedSince) {
+  this.logger.debug(`GET events deletions since: ${deletedSince}`);
+  return readableEventsStreamForIterator(this.eventQueries.getDeletedSince.iterate(deletedSince));
+};
+
+// also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
+function readableEventsStreamForIterator (iterateSource) {
+  const iterateTransform = {
+    next: function () {
+      const res = iterateSource.next();
+      if (res && res.value) {
+        res.value = eventsSchema.fromDB(res.value);
+      }
+      return res;
+    }
+  };
+
+  iterateTransform[Symbol.iterator] = function () {
+    return iterateTransform;
+  };
+
+  return Readable.from(iterateTransform);
+}
+
+UserDatabase.prototype.getAllActions = function () {
+  return this.eventQueries.getTerms.all('action-%');
+};
+
+UserDatabase.prototype.getAllAccesses = function () {
+  return this.eventQueries.getTerms.all('access-%');
+};
+
+UserDatabase.prototype.getOneEvent = function (eventId) {
+  this.logger.debug(`GET one event: ${eventId}`);
+  const event = this.eventQueries.getById.get(eventId);
+  if (event == null) return null;
+  return eventsSchema.fromDB(event);
+};
+
+UserDatabase.prototype.eventsCount = function () {
+  const res = this.db.prepare('SELECT count(*) as count FROM events').get();
+  return res?.count || 0;
+};
+
+UserDatabase.prototype.createEvent = async function (event) {
+  const dbEvent = eventsSchema.toDB(event);
+  this.logger.debug(`(async) CREATE event: ${JSON.stringify(dbEvent)}`);
+  await concurrentSafeWrite.execute(() => {
+    this.eventQueries.create.run(dbEvent);
+  });
+};
+
+/**
+ * Use only in tests or migration
+ * Not safe within a multi-process environement
+ */
+UserDatabase.prototype.createEventSync = function (event) {
+  const dbEvent = eventsSchema.toDB(event);
+  this.logger.debug(`(sync) CREATE event: ${JSON.stringify(dbEvent)}`);
+  this.eventQueries.create.run(dbEvent);
+};
 
 UserDatabase.prototype.updateEvent = async function (eventId, eventData) {
   const dbEvent = eventsSchema.toDB(eventData);
@@ -104,37 +196,9 @@ UserDatabase.prototype.updateEvent = async function (eventId, eventData) {
   return eventsSchema.fromDB(dbEvent);
 };
 
-/**
- * Use only in tests or migration
- * Not safe within a multi-process environement
- */
-UserDatabase.prototype.createEventSync = function (event) {
-  const dbEvent = eventsSchema.toDB(event);
-  this.logger.debug(`(sync) CREATE event: ${JSON.stringify(dbEvent)}`);
-  this.eventQueries.create.run(dbEvent);
-};
-
-UserDatabase.prototype.createEvent = async function (event) {
-  const dbEvent = eventsSchema.toDB(event);
-  this.logger.debug(`(async) CREATE event: ${JSON.stringify(dbEvent)}`);
-  await concurrentSafeWrite.execute(() => {
-    this.eventQueries.create.run(dbEvent);
-  });
-};
-
-UserDatabase.prototype.getAllActions = function () {
-  return this.eventQueries.getTerms.all('action-%');
-};
-
-UserDatabase.prototype.getAllAccesses = function () {
-  return this.eventQueries.getTerms.all('access-%');
-};
-
-UserDatabase.prototype.deleteEventsHistory = async function (eventId) {
-  this.logger.debug(`(async) DELETE event history for event id: ${eventId}`);
-  await concurrentSafeWrite.execute(() => {
-    return this.eventQueries.deleteByHeadId.run(eventId);
-  });
+UserDatabase.prototype.getEventsHistory = function (eventId) {
+  this.logger.debug(`GET event history for: ${eventId}`);
+  return this.eventQueries.getHistory.all(eventId).map(eventsSchema.fromDBHistory);
 };
 
 UserDatabase.prototype.minimizeEventHistory = async function (eventId, fieldsToRemove) {
@@ -142,6 +206,13 @@ UserDatabase.prototype.minimizeEventHistory = async function (eventId, fieldsToR
   this.logger.debug(`(async) Minimize event history: ${minimizeHistoryStatement}`);
   await concurrentSafeWrite.execute(() => {
     this.db.prepare(minimizeHistoryStatement).run(eventId);
+  });
+};
+
+UserDatabase.prototype.deleteEventsHistory = async function (eventId) {
+  this.logger.debug(`(async) DELETE event history for event id: ${eventId}`);
+  await concurrentSafeWrite.execute(() => {
+    return this.eventQueries.deleteByHeadId.run(eventId);
   });
 };
 
@@ -170,81 +241,9 @@ UserDatabase.prototype.deleteEvents = async function (params) {
   return res;
 };
 
-UserDatabase.prototype.getOneEvent = function (eventId) {
-  this.logger.debug(`GET one event: ${eventId}`);
-  const event = this.eventQueries.getById.get(eventId);
-  if (event == null) return null;
-  return eventsSchema.fromDB(event);
-};
-
-UserDatabase.prototype.getEvents = function (params) {
-  params.query.push({ type: 'equal', content: { field: 'deleted', value: null } });
-  params.query.push({ type: 'equal', content: { field: 'headId', value: null } });
-  const queryString = prepareEventsGetQuery(params);
-  this.logger.debug(`GET events: ${queryString}`);
-  const res = this.db.prepare(queryString).all();
-  if (res != null) {
-    return res.map(eventsSchema.fromDB);
-  }
-  return null;
-};
-
-UserDatabase.prototype.getEventsStream = function (params) {
-  params.query.push({ type: 'equal', content: { field: 'deleted', value: null } });
-  params.query.push({ type: 'equal', content: { field: 'headId', value: null } });
-  const queryString = prepareEventsGetQuery(params);
-  this.logger.debug(`GET events streamed: ${queryString}`);
-  const query = this.db.prepare(queryString);
-  return this.readableEventsStreamForIterator(query.iterate());
-};
-
-UserDatabase.prototype.getEventsDeletionsStream = function (deletedSince) {
-  this.logger.debug(`GET events deletions since: ${deletedSince}`);
-  return this.readableEventsStreamForIterator(this.eventQueries.getDeletedSince.iterate(deletedSince));
-};
-
-UserDatabase.prototype.getEventsHistory = function (eventId) {
-  this.logger.debug(`GET event history for: ${eventId}`);
-  return this.eventQueries.getHistory.all(eventId).map(eventsSchema.fromDBHistory);
-};
-
-// also see: https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
-UserDatabase.prototype.readableEventsStreamForIterator = function (iterateSource) {
-  const iterateTransform = {
-    next: function () {
-      const res = iterateSource.next();
-      if (res && res.value) {
-        res.value = eventsSchema.fromDB(res.value);
-      }
-      return res;
-    }
-  };
-
-  iterateTransform[Symbol.iterator] = function () {
-    return iterateTransform;
-  };
-
-  return Readable.from(iterateTransform);
-};
-
-UserDatabase.prototype.eventsCount = function () {
-  const res = this.db.prepare('SELECT count(*) as count FROM events').get();
-  return res?.count || 0;
-};
-
-UserDatabase.prototype.close = function () {
-  this.db.close();
-};
-
-// TODO reorder for clarity
-
 function prepareEventsDeleteQuery (params) {
   if (params.streams) { throw new Error(`Events DELETE with stream query not supported yet: ${JSON.stringify(params)}`); }
   return 'DELETE FROM events ' + prepareQuery(params, true);
-}
-
-function prepareEventsGetQuery (params) {
-  return 'SELECT * FROM events_fts ' + prepareQuery(params);
 }
 
 const converters = {
