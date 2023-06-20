@@ -22,19 +22,15 @@
 const SQLite3 = require('better-sqlite3');
 const fs = require('fs/promises');
 
-module.exports = {
-  migrate0to1
-};
-
-async function migrate0to1 (v0dbPath, v1user, logger) {
+module.exports = async function migrateUserDB (v0dbPath, v1userDB, logger) {
   const v0db = new SQLite3(v0dbPath);
   const v0EventsIterator = v0db.prepare('SELECT * FROM events').iterate();
   const res = { count: 0 };
 
-  v1user.db.exec('BEGIN');
+  v1userDB.db.exec('BEGIN');
   for (const eventData of v0EventsIterator) {
-    eventData.id = eventData.eventid;
-    delete eventData.eventid;
+    eventData.eventid = eventData.id;
+    delete eventData.id;
 
     if (eventData.duration) { // NOT null, 0, undefined
       eventData.endTime = eventData.time + eventData.duration;
@@ -51,11 +47,11 @@ async function migrate0to1 (v0dbPath, v1user, logger) {
     }
     delete eventData.duration;
     res.count++;
-    v1user.createEventSync(eventData);
+    v1userDB.createEventSync(eventData);
   }
-  v1user.db.exec('COMMIT');
+  v1userDB.db.exec('COMMIT');
 
   v0db.close();
   await fs.unlink(v0dbPath);
   return res;
-}
+};

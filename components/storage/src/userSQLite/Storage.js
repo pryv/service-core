@@ -10,7 +10,7 @@ const LRU = require('lru-cache');
 
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
-const versioning = require('./versioning');
+const migrations = require('./migrations');
 const userLocalDirectory = require('storage').userLocalDirectory;
 const ensureUserDirectory = userLocalDirectory.ensureUserDirectory;
 
@@ -30,7 +30,7 @@ class Storage {
     this.initialized = true;
     this.config = await getConfig();
     await userLocalDirectory.init();
-    await versioning.checkAllUsers(this);
+    await migrations.migrateUserDBsIfNeeded(this);
     this.logger.debug('DB initialized');
     return this;
   }

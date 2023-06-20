@@ -60,8 +60,6 @@ UserDatabase.prototype.init = async function () {
 
   // setup events queries
 
-  // TODO: reorder consistently
-
   this.eventQueries.getAll = prepareGetAllQuery(this.db, 'events');
 
   fullTextSearch.setupForTable(this.db, 'events', tableSchemas.events, ['streamIds']);
