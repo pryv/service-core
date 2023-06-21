@@ -1,3 +1,20 @@
+
+## 1.9
+### 1.9.0 
+- Removing FlowType and converting at best-effort typing information in jsdoc
+- Updating to MongoDb v6
+- Updating to use node v18
+- Updating containerization 
+- Now streaming deletetion eventIds when deleting streams to avoid timeout
+- Many Linting update
+- Consolidated SQLite usages
+- Introducted platformDb for future cross-cores usage
+- Moving attachments in users directories
+- Finalizing data-store API for first public release
+- Fix Bugs:
+  - Non-reusable deleted streamIds when following auth process #484
+  - SQLITE_BUSY error thrown in multi-core #487
+
 ## 1.8
 
 ### 1.8.1 
