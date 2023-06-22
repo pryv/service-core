@@ -2,6 +2,10 @@
 // npx link ../pryv-datastore
 // launch with NODE_ENV=test LOGS=info node startRestServer.js
 
+// keep a copy of error functions to reaasign back
+const { errors: dataStoreErrors } = require('@pryv/datastore');
+const originalErrors = Object.assign({}, dataStoreErrors);
+
 const path = require('path');
 const eventsUtils = require('mall/src/helpers/eventsUtils');
 const stableRepresentation = require('@pryv/stable-object-representation');
@@ -56,6 +60,9 @@ function debugMiddleware (req, res, next) {
 }
 
 (async function () {
+  // data store errors have been assigned by storeDataUtils assign them back to PryvDataStoreError
+  Object.assign(dataStoreErrors, originalErrors);
+
   const config = await getConfig();
   const algorithm = config.get('integrity:algorithm');
   function setIntegrityForEvent (storeEventData) {
