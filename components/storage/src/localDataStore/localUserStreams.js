@@ -56,6 +56,10 @@ module.exports = ds.createUserStreams({
     if (!query.includeTrashed) {
       if (stream.trashed) return null;
       // i.e. default behavior (return non-trashed items)
+      if (!stream.children) {
+        $$('checkthis', { stream });
+        stream.children = [];
+      }
       stream.children = treeUtils.filterTree(stream.children, false /* no orphans */, (stream) => !stream.trashed);
     }
 

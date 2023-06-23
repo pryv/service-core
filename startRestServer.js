@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2012–2023 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 
 // npx link ../pryv-datastore
 // launch with NODE_ENV=test LOGS=info node startRestServer.js
@@ -55,7 +61,7 @@ const ds = require('storage/src/localDataStoreSQLite/');
 const server = require('@pryv/datastore/examples/rest/server');
 
 function debugMiddleware (req, res, next) {
-  console.log({ method: req.method, url: req.url, body: req.body });
+  // console.log({ method: req.method, url: req.url, body: req.body });
   next();
 }
 
