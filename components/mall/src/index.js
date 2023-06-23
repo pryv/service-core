@@ -65,7 +65,7 @@ async function getMall () {
   } else if (config.get('database:engine') === 'rest') {
     logger.info('Using Rest SQLite data store');
     const rest = require('@pryv/datastore/examples/rest');
-    const settings = Object.assign({}, localSettings);
+    const settings = structuredClone(localSettings);
     settings.baseURL = config.get('database:baseURL');
     mall.addStore(rest, { id: 'local', name: 'Local', settings });
   } else {
