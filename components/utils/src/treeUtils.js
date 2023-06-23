@@ -26,7 +26,7 @@ exports.buildTree = function (array, stripParentIds) {
   array.forEach(function (item) {
     verifyFlatItem(item);
     const clone = structuredClone(item);
-    clone.children = [];
+    if (clone.deleted == null) clone.children = [];
     map[item.id] = clone;
   });
   const result = [];
