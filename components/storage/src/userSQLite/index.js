@@ -6,6 +6,11 @@
  */
 const Storage = require('./Storage');
 
+module.exports = {
+  getStorage,
+  closeStorage
+};
+
 const storages = {};
 /**
  *@returns {Promise<Storage>}
@@ -24,8 +29,3 @@ function closeStorage (name) {
     delete storages[name];
   }
 }
-
-module.exports = {
-  getStorage,
-  closeStorage
-};

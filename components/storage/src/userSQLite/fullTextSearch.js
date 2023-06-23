@@ -13,15 +13,19 @@
 // following characters _-:
 // see: https://sqlite.org/fts5.html#tokenizers
 
+module.exports = {
+  setupForTable
+};
+
 /**
- * Add Full text Search capabilities on a specific table
- * @param {Sqlite3} db
+ * Add full text search capabilities on a specific table
+ * @param {SQLite3} db
  * @param {string} tableName
  * @param {Object} tableData
  * @param {Array} columnsToInclude - names of table to add to FTS
  * @param {string} [id=rowid] - (optional id for the table) ! column must be of "Integer" type an be a primary KEY
  */
-function createFTSFor (db, tableName, tableData, columnsToInclude, id) {
+function setupForTable (db, tableName, tableData, columnsToInclude, id) {
   const itemId = id || 'rowid';
   const columnsTypes = [];
   const columnNames = Object.keys(tableData);
@@ -65,7 +69,3 @@ function createFTSFor (db, tableName, tableData, columnsToInclude, id) {
     END;
   `).run();
 }
-
-module.exports = {
-  createFTSFor
-};
