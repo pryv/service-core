@@ -11,6 +11,7 @@
 - Introducted platformDb for future cross-cores usage
 - Moving attachments in users directories
 - Finalizing data-store API for first public release
+- Support for multiple CAA (certificate autorities issuer)
 - Fix Bugs:
   - Non-reusable deleted streamIds when following auth process #484
   - SQLITE_BUSY error thrown in multi-core #487
