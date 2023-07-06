@@ -13,6 +13,9 @@ child_services_dir=$start_dir/child_services
 rm -Rf $service_dir/hfs_*
 rm -Rf $child_services_dir
 
+# recreate $child_services_dir (deleted previously in cleaning)
+mkdir -p $child_services_dir
+
 # Set $num_procs to 2 or the value of $NUM_PROCS if set
 if [ -z ${NUM_PROCS+x} ]
 then
