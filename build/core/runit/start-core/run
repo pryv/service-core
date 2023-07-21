@@ -39,6 +39,13 @@ do
 	sleep 2
 done
 
+# Run Migartion checks before really starting the services
+pushd ${NODE_PATH}components/api-server
+chpst -u app ./bin/migrate --config /app/conf/core.yml
+popd
+
+
+
 # recreate $child_services_dir (deleted previously in cleaning)
 mkdir -p $child_services_dir
 
