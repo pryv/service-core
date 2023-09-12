@@ -114,13 +114,25 @@ describe('Stores Streams', function () {
       .query({ parentId: ':dummy:' })
       .set('Authorization', personalToken)
       .query({});
-    const streams = res.body.streams;
-    assert.exists(streams);
-    assert.equal(streams.length, 1, 'Should find one stream');
-    assert.equal(streams[0].id, ':dummy:myself', 'Should find myself stream');
-    assert.equal(streams[0].children.length, 2, 'myself stream should have two children');
-    assert.equal(streams[0].children[0].id, ':dummy:mariana', 'myself stream should have mariana children');
-    assert.equal(streams[0].children[1].id, ':dummy:antonia', 'myself stream should have antonia children');
+    checkDummyStreamsStructure(res.body);
+  });
+
+  it('[XC22] app token must retrive :dummy: stream structure', async () => {
+    const res = await coreRequest
+      .get(streamsPath)
+      .query({ parentId: ':dummy:' })
+      .set('Authorization', appAccessDummy.token)
+      .query({});
+    checkDummyStreamsStructure(res.body);
+  });
+
+  it('[XC23] master token must retrive :dummy: stream structure', async () => {
+    const res = await coreRequest
+      .get(streamsPath)
+      .query({ parentId: ':dummy:' })
+      .set('Authorization', appAccessMaster.token)
+      .query({});
+    checkDummyStreamsStructure(res.body);
   });
 
   it('[3ZTM] Root streams must have null parentIds "*"', async () => {
@@ -134,3 +146,14 @@ describe('Stores Streams', function () {
     }
   });
 });
+
+function checkDummyStreamsStructure (body) {
+  assert.notExists(body.error);
+  const streams = body.streams;
+  assert.exists(streams);
+  assert.equal(streams.length, 1, 'Should find one stream');
+  assert.equal(streams[0].id, ':dummy:myself', 'Should find myself stream');
+  assert.equal(streams[0].children.length, 2, 'myself stream should have two children');
+  assert.equal(streams[0].children[0].id, ':dummy:mariana', 'myself stream should have mariana children');
+  assert.equal(streams[0].children[1].id, ':dummy:antonia', 'myself stream should have antonia children');
+}
