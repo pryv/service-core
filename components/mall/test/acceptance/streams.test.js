@@ -87,7 +87,7 @@ describe('Stores Streams', function () {
     if (!isOpenSource) { assert.equal(streams[2].id, ':_audit:access-' + appAccessDummy.id); }
   });
 
-  it('[XC20] Must retrieve "yo" streams and all stores when requesting "*"', async () => {
+  it('[XC20] master token must retrieve "yo" streams and all stores when requesting "*"', async () => {
     const res = await coreRequest
       .get(streamsPath)
       .set('Authorization', appAccessMaster.token)
@@ -106,6 +106,21 @@ describe('Stores Streams', function () {
       assert.equal(streams[2].id, streamId);
       assert.equal(streams[2].children.length, 1);
     }
+  });
+
+  it('[XC21] personal token must retrive :dummy: stream structure', async () => {
+    const res = await coreRequest
+      .get(streamsPath)
+      .query({ parentId: ':dummy:' })
+      .set('Authorization', personalToken)
+      .query({});
+    const streams = res.body.streams;
+    assert.exists(streams);
+    assert.equal(streams.length, 1, 'Should find one stream');
+    assert.equal(streams[0].id, ':dummy:myself', 'Should find myself stream');
+    assert.equal(streams[0].children.length, 2, 'myself stream should have two children');
+    assert.equal(streams[0].children[0].id, ':dummy:mariana', 'myself stream should have mariana children');
+    assert.equal(streams[0].children[1].id, ':dummy:antonia', 'myself stream should have antonia children');
   });
 
   it('[3ZTM] Root streams must have null parentIds "*"', async () => {
