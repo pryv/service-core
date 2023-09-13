@@ -26,7 +26,7 @@ security-assessment
 /test-results/
 coverage/
 private-libs
-var-pryv
+var-pryv*
 *.log
 learn-config
 
