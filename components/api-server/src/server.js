@@ -52,7 +52,7 @@ class Server {
     await this.setupSocketIO(server);
     await this.startListen(server);
     if (!this.isOpenSource) {
-      await this.setupReporting();
+      //await this.setupReporting();
     }
     this.logger.info('Server ready. API Version: ' + apiVersion);
     pubsub.status.emit(pubsub.SERVER_READY);
