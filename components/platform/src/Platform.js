@@ -223,6 +223,7 @@ class Platform {
       }
       return false;
     }
+    throw new Error('Should not be used when dnsLess');
   }
 
   /**

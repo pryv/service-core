@@ -56,11 +56,19 @@ module.exports = async function (api) {
   /**
    * Seem to be use only in dnsLess..
    */
-  api.register('auth.usernameCheck', setAuditAccessId(AuditAccessIds.PUBLIC), commonFns.getParamsValidation(methodsSchema.usernameCheck.params), ifDnsLess(checkLocalUsersUniqueField, checkUsername));
+  api.register('auth.usernameCheck',
+    setAuditAccessId(AuditAccessIds.PUBLIC),
+    commonFns.getParamsValidation(methodsSchema.usernameCheck.params),
+    checkUsername);
+
   /**
    * ⚠️ DNS-less only
    */
-  api.register('auth.emailCheck', setAuditAccessId(AuditAccessIds.PUBLIC), commonFns.getParamsValidation(methodsSchema.emailCheck.params), checkLocalUsersUniqueField);
+  api.register('auth.emailCheck',
+    setAuditAccessId(AuditAccessIds.PUBLIC),
+    commonFns.getParamsValidation(methodsSchema.emailCheck.params),
+    checkLocalUsersUniqueField);
+
   /**
    * Check in service-register if user id is reserved
    * ⚠️ DNS-less only
@@ -96,10 +104,17 @@ module.exports = async function (api) {
    */
   async function checkUsername (context, params, result, next) {
     result.reserved = false;
-    try {
-      result.reserved = await platform.isUsernameReserved(params.username);
-    } catch (error) {
-      return next(errors.unexpectedError(error));
+    if (isDnsLess) {
+      result.reserved = await usersRepository.usernameExists(params.username);
+    } else {
+      try {
+        result.reserved = await platform.isUsernameReserved(params.username);
+      } catch (error) {
+        return next(errors.unexpectedError(error));
+      }
+    }
+    if (result.reserved == null) {
+      return next(errors.unexpectedError('usernamed reserved cannot be null'));
     }
     next();
   }
