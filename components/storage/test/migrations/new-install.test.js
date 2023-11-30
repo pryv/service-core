@@ -29,7 +29,6 @@ describe('Migrations - new install', () => {
     } else {
       assert.equal(v._id, process.env.npm_package_version);
     }
-    
     assert.approximately(v.initialInstall, timestamp.now(), 1000);
   });
 });

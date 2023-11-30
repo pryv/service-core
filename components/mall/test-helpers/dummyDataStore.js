@@ -71,6 +71,35 @@ function createUserEvents () {
       return readable;
     },
 
+    async create (userId, eventData) {
+      const event = structuredClone(eventData);
+      event.content = 'Received';
+      delete event.integrity;
+      ds.defaults.applyOnEvents([event]);
+      return event;
+    },
+
+    async update (userId, eventData) {
+      const event = structuredClone(eventData);
+      event.content = 'Updated';
+      delete event.integrity;
+      ds.defaults.applyOnEvents([event]);
+      return event;
+    },
+
+    async getOne (userId, eventId) {
+      if (eventId !== 'dummyevent0') throw ds.errors.invalidItemId('Unkown event', { eventId });
+      const event = {
+        id: 'dummyevent0',
+        type: 'note/txt',
+        streamIds: ['mariana'],
+        content: 'hello',
+        time: timestamp.now()
+      };
+      ds.defaults.applyOnEvents([event]);
+      return event;
+    },
+
     /**
      * @returns Array
      */

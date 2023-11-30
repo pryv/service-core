@@ -27,12 +27,10 @@ describe('[BMM2] registration: DNS-less', () => {
   let app;
   let request;
   let res;
-  let isReallyOpenSource;
 
   before(async function () {
     nock.cleanAll();
     config = await getConfig();
-    isReallyOpenSource = config.get('openSource:isActive');
     config.injectTestConfig({
       dnsLess: { isActive: true },
       openSource: { isActive: false },

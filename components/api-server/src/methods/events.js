@@ -15,7 +15,7 @@ const eventSchema = require('../schema/event');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
-const { getMall } = require('mall');
+const { getMall, storeDataUtils } = require('mall');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
@@ -596,32 +596,35 @@ module.exports = async function (api) {
     next();
   }
   async function updateEvent (context, params, result, next) {
-    // deals with attachments if any
-    const files = sanitizeRequestFiles(params.files);
-    delete params.files;
-    if (files != null && files.length > 0) {
-      let eventWithUpdatedAttachments = null;
-      for (const file of files) {
-        const attachmentItem = {
-          fileName: file.originalname,
-          type: file.mimetype,
-          size: file.size,
-          integrity: file.integrity,
-          attachmentData: fs.createReadStream(file.path) // simulate full pass-thru of attachement until implemented
-        };
-        eventWithUpdatedAttachments = await mall.events.addAttachment(context.user.id, context.newEvent.id, attachmentItem);
-        // update attachments property of newEvent
-        context.newEvent.attachments = eventWithUpdatedAttachments.attachments;
+    try {
+      // deals with attachments if any
+      const files = sanitizeRequestFiles(params.files);
+      delete params.files;
+      if (files != null && files.length > 0) {
+        let eventWithUpdatedAttachments = null;
+        for (const file of files) {
+          const attachmentItem = {
+            fileName: file.originalname,
+            type: file.mimetype,
+            size: file.size,
+            integrity: file.integrity,
+            attachmentData: fs.createReadStream(file.path) // simulate full pass-thru of attachement until implemented
+          };
+          eventWithUpdatedAttachments = await mall.events.addAttachment(context.user.id, context.newEvent.id, attachmentItem);
+          // update attachments property of newEvent
+          context.newEvent.attachments = eventWithUpdatedAttachments.attachments;
+        }
       }
+      // -- update the event (to save tacking properties and recalculate integrity)
+      const updatedEvent = await mall.events.update(context.user.id, context.newEvent);
+
+      updatedEvent.attachments = setFileReadToken(context.access, updatedEvent.attachments);
+      updatedEvent.streamId = updatedEvent.streamIds[0];
+      result.event = updatedEvent;
+      next();
+    } catch (e) {
+      next(e);
     }
-
-    // -- update the event (to save tacking properties and recalculate integrity)
-    const updatedEvent = await mall.events.update(context.user.id, context.newEvent);
-
-    updatedEvent.attachments = setFileReadToken(context.access, updatedEvent.attachments);
-    updatedEvent.streamId = updatedEvent.streamIds[0];
-    result.event = updatedEvent;
-    next();
   }
   /**
    * For account streams - 'active' streamId defines the 'main' event
@@ -720,8 +723,9 @@ module.exports = async function (api) {
       }
       const streamIdsNotFoundList = [];
       const streamIdsTrashed = [];
-      for (const streamId of event.streamIds) {
-        const stream = await context.streamForStreamId(streamId, 'local');
+      for (const fullStreamId of event.streamIds) {
+        const [storeId, streamId] = storeDataUtils.parseStoreIdAndStoreItemId(fullStreamId);
+        const stream = await context.streamForStreamId(streamId, storeId);
         if (!stream) {
           streamIdsNotFoundList.push(streamId);
         } else if (stream.trashed) {

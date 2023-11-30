@@ -104,9 +104,6 @@ describe('[MSTE] Stores Streams & Events', function () {
         assert.equal(streams[2].id, ':_audit:');
         assert.equal(streams[3].id, streamId);
         assert.equal(streams[3].children.length, 1);
-      } else {
-        assert.equal(streams[2].id, streamId);
-        assert.equal(streams[2].children.length, 1);
       }
     });
 
@@ -150,33 +147,91 @@ describe('[MSTE] Stores Streams & Events', function () {
   });
 
   describe('Events', function () {
-    it('[XD21] personal token must retrive :dummy: events', async () => {
-      const res = await coreRequest
-        .get(eventsPath)
-        .query({ streams: [':dummy:'] })
-        .set('Authorization', personalToken)
-        .query({});
-      checkDummyEvent0(res.body);
-      assert.exists(res.body.events[1], 'We should also get events from antonia');
+    describe('GET', function () {
+      it('[XD21] personal token must retrive :dummy: events', async () => {
+        const res = await coreRequest
+          .get(eventsPath)
+          .query({ streams: [':dummy:'] })
+          .set('Authorization', personalToken)
+          .query({});
+        checkDummyEvent0(res.body);
+        assert.exists(res.body.events[1], 'We should also get events from antonia');
+      });
+
+      it('[XD22] master token must retrive :dummy: events', async () => {
+        const res = await coreRequest
+          .get(eventsPath)
+          .query({ streams: [':dummy:mariana'] })
+          .set('Authorization', appAccessMaster.token)
+          .query({});
+        checkDummyEvent0(res.body);
+      });
+
+      it('[XD23] app token must retrive :dummy: events', async () => {
+        const res = await coreRequest
+          .get(eventsPath)
+          .query({ streams: [':dummy:mariana'] })
+          .set('Authorization', appAccessDummy.token)
+          .query({});
+        checkDummyEvent0(res.body);
+        assert.exists(res.body.events.length, 1, 'There should be only one event in mariana');
+      });
     });
 
-    it('[XD22] master token must retrive :dummy: events', async () => {
-      const res = await coreRequest
-        .get(eventsPath)
-        .query({ streams: [':dummy:mariana'] })
-        .set('Authorization', appAccessMaster.token)
-        .query({});
-      checkDummyEvent0(res.body);
+    describe('CREATE', function () {
+      it('[YD21] create event on :dummy:', async () => {
+        const res = await coreRequest
+          .post(eventsPath)
+          .send({ type: 'note/txt', content: 'hello', streamIds: [':dummy:mariana'] })
+          .set('Authorization', appAccessDummy.token);
+        assert.equal(res.body.event.content, 'Received');
+      });
+
+      it('[YD22] create with a given id on :dummy:', async () => {
+        const res = await coreRequest
+          .post(eventsPath)
+          .send({ id: ':dummy:fluffy', type: 'note/txt', content: 'hello', streamIds: [':dummy:mariana'] })
+          .set('Authorization', appAccessDummy.token);
+        assert.equal(res.body.event.id, ':dummy:fluffy');
+        assert.equal(res.body.event.content, 'Received');
+      });
+
+      it('[YD23] should fail on mismatching stream and id in store', async () => {
+        const res = await coreRequest
+          .post(eventsPath)
+          .send({ id: ':dummy:fluffy', type: 'note/txt', content: 'hello', streamIds: ['yo'] })
+          .set('Authorization', appAccessMaster.token);
+        assert.equal(res.body.error.id, 'invalid-request-structure');
+        assert.equal(res.body.error.message, 'Cannot create or update an event with id and streamIds belonging to different stores');
+      });
+
+      it('[YD24] should fail on mismatching stream in store and id', async () => {
+        const res = await coreRequest
+          .post(eventsPath)
+          .send({ id: 'cslpldeicsd0nmkkl7dif1qtk', type: 'note/txt', content: 'hello', streamIds: [':dummy:mariana'] })
+          .set('Authorization', appAccessMaster.token);
+        assert.equal(res.body.error.id, 'invalid-request-structure');
+        assert.equal(res.body.error.message, 'Cannot create or update an event with id and streamIds belonging to different stores');
+      });
     });
 
-    it('[XD23] app token must retrive :dummy: events', async () => {
-      const res = await coreRequest
-        .get(eventsPath)
-        .query({ streams: [':dummy:mariana'] })
-        .set('Authorization', appAccessDummy.token)
-        .query({});
-      checkDummyEvent0(res.body);
-      assert.exists(res.body.events.length, 1, 'There should be only one event in mariana');
+    describe('UPDATE', function () {
+      it('[ZD21] update event :dummy:dummyevent0', async () => {
+        const res = await coreRequest
+          .put(eventsPath + ':dummy:dummyevent0')
+          .send({ content: 'bye' })
+          .set('Authorization', appAccessDummy.token);
+        assert.equal(res.body.event.content, 'bye');
+      });
+
+      it('[ZD22] should fail moving an event to another store', async () => {
+        const res = await coreRequest
+          .put(eventsPath + ':dummy:dummyevent0')
+          .send({ streamIds: ['yo'] })
+          .set('Authorization', appAccessDummy.token);
+        assert.equal(res.body.error.id, 'invalid-request-structure');
+        assert.equal(res.body.error.message, 'Cannot create or update an event with id and streamIds belonging to different stores');
+      });
     });
   });
 });

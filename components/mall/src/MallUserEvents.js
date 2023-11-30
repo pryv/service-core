@@ -300,22 +300,22 @@ class MallUserEvents {
   /**
    * @returns {Promise<any>}
    */
-  async update (userId, eventData, mallTransaction) {
-    const [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
-    const storeEvent = eventsUtils.convertEventToStore(storeId, eventData);
+  async update (userId, newEventData, mallTransaction) {
     // update integrity field and recalculate if needed
     // integrity caclulation is done on event.id and streamIds that includes the store prefix
-    delete storeEvent.integrity;
     if (integrity.events.isActive) {
-      integrity.events.set(storeEvent);
+      integrity.events.set(newEventData);
     }
     // replace all streamIds by store-less streamIds
+    const [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(newEventData.id);
+    const storeEvent = eventsUtils.convertEventToStore(storeId, newEventData);
+
     if (storeEvent?.streamIds) {
       const storeStreamIds = [];
-      for (const fullStreamId of storeEvent.streamIds) {
+      for (const fullStreamId of newEventData.streamIds) {
         const [streamStoreId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(fullStreamId);
         if (streamStoreId !== storeId) {
-          throw errorFactory.invalidRequestStructure('events cannot be moved to a different store', eventData);
+          throw errorFactory.invalidRequestStructure('events cannot be moved to a different store', newEventData);
         }
         storeStreamIds.push(storeStreamId);
       }
@@ -328,7 +328,7 @@ class MallUserEvents {
     try {
       const success = await eventsStore.update(userId, storeEvent, storeTransaction);
       if (!success) {
-        throw errorFactory.invalidItemId('Could not update event with id ' + eventData.id);
+        throw errorFactory.invalidItemId('Could not update event with id ' + newEventData.id);
       }
       return eventsUtils.convertEventFromStore(storeId, storeEvent);
     } catch (e) {
