@@ -62,87 +62,142 @@ describe('[MSTE] Stores Streams & Events', function () {
   });
 
   describe('Streams', function () {
-    it('[1Q12] Must retrieve dummy streams when querying parentId', async () => {
-      const res = await coreRequest
-        .get(streamsPath)
-        .set('Authorization', appAccessDummy.token)
-        .query({ parentId: ':dummy:' });
-      const streams = res.body.streams;
-      assert.exists(streams);
-      assert.equal(streams.length, 1);
-      assert.equal(streams[0].children.length, 2);
-      assert.equal(streams[0].name, user.username);
-      assert.equal(streams[0].parentId, ':dummy:');
+    describe('GET', function () {
+      it('[1Q12] Must retrieve dummy streams when querying parentId', async () => {
+        const res = await coreRequest
+          .get(streamsPath)
+          .set('Authorization', appAccessDummy.token)
+          .query({ parentId: ':dummy:' });
+        const streams = res.body.streams;
+        assert.exists(streams);
+        assert.equal(streams.length, 1);
+        assert.equal(streams[0].children.length, 2);
+        assert.equal(streams[0].name, user.username);
+        assert.equal(streams[0].parentId, ':dummy:');
+      });
+
+      it('[UVQ2] Must retrieve "yo" streams and ":dummy:" when requesting "*"', async () => {
+        const res = await coreRequest
+          .get(streamsPath)
+          .set('Authorization', appAccessDummy.token)
+          .query({});
+        const streams = res.body.streams;
+        assert.exists(streams);
+        assert.equal(streams.length, isOpenSource ? 2 : 3);
+        assert.equal(streams[0].id, streamId);
+        assert.equal(streams[0].children.length, 1);
+        assert.equal(streams[1].id, ':dummy:');
+        if (!isOpenSource) { assert.equal(streams[2].id, ':_audit:access-' + appAccessDummy.id); }
+      });
+
+      it('[XC20] master token must retrieve "yo" streams and all stores when requesting "*"', async () => {
+        const res = await coreRequest
+          .get(streamsPath)
+          .set('Authorization', appAccessMaster.token)
+          .query({});
+        const streams = res.body.streams;
+        assert.exists(streams);
+        // we also get helpers here, because with the current implementation, it is returned.
+        assert.equal(streams.length, isOpenSource ? 4 : 5);
+        assert.equal(streams[0].id, ':dummy:');
+        assert.equal(streams[1].id, ':faulty:');
+        if (!isOpenSource) {
+          assert.equal(streams[2].id, ':_audit:');
+          assert.equal(streams[3].id, streamId);
+          assert.equal(streams[3].children.length, 1);
+        }
+      });
+
+      it('[XC21] personal token must retrive :dummy: stream structure', async () => {
+        const res = await coreRequest
+          .get(streamsPath)
+          .query({ parentId: ':dummy:' })
+          .set('Authorization', personalToken)
+          .query({});
+        checkDummyStreamsStructure(res.body);
+      });
+
+      it('[XC22] app token must retrive :dummy: stream structure', async () => {
+        const res = await coreRequest
+          .get(streamsPath)
+          .query({ parentId: ':dummy:' })
+          .set('Authorization', appAccessDummy.token)
+          .query({});
+        checkDummyStreamsStructure(res.body);
+      });
+
+      it('[XC23] master token must retrive :dummy: stream structure', async () => {
+        const res = await coreRequest
+          .get(streamsPath)
+          .query({ parentId: ':dummy:' })
+          .set('Authorization', appAccessMaster.token)
+          .query({});
+        checkDummyStreamsStructure(res.body);
+      });
+
+      it('[3ZTM] Root streams must have null parentIds "*"', async () => {
+        const res = await coreRequest
+          .get(streamsPath)
+          .set('Authorization', appAccessDummy.token)
+          .query({});
+        const streams = res.body.streams;
+        for (const stream of streams) {
+          assert.notExists(stream.parentId);
+        }
+      });
     });
 
-    it('[UVQ2] Must retrieve "yo" streams and ":dummy:" when requesting "*"', async () => {
-      const res = await coreRequest
-        .get(streamsPath)
-        .set('Authorization', appAccessDummy.token)
-        .query({});
-      const streams = res.body.streams;
-      assert.exists(streams);
-      assert.equal(streams.length, isOpenSource ? 2 : 3);
-      assert.equal(streams[0].id, streamId);
-      assert.equal(streams[0].children.length, 1);
-      assert.equal(streams[1].id, ':dummy:');
-      if (!isOpenSource) { assert.equal(streams[2].id, ':_audit:access-' + appAccessDummy.id); }
+    describe('CREATE', function () {
+      it('[2Q12] Create a stream under dummy', async () => {
+        const res = await coreRequest
+          .post(streamsPath)
+          .set('Authorization', appAccessDummy.token)
+          .send({ id: ':dummy:fluffy', name: 'Fluffy', parentId: ':dummy:' });
+        const stream = res.body.stream;
+        assert.equal(stream.id, ':dummy:fluffy');
+        assert.equal(stream.parentId, ':dummy:');
+        assert.equal(stream.name, 'Bluppy');
+      });
+
+      it('[2Q13] Should fail creating outside of store', async () => {
+        const res = await coreRequest
+          .post(streamsPath)
+          .set('Authorization', personalToken)
+          .send({ id: ':dummy:fluffy', name: 'Fluffy', parentId: 'yo' });
+        assert.equal(res.body.error.id, 'invalid-request-structure');
+        assert.equal(res.body.error.message, 'streams cannot have an id different non matching from their parentId store');
+      });
+
+      it('[2Q14] Should fail creating outside of store 2', async () => {
+        const res = await coreRequest
+          .post(streamsPath)
+          .set('Authorization', personalToken)
+          .send({ id: ':dummy:fluffy', name: 'Fluffy' });
+        assert.equal(res.body.error.id, 'invalid-request-structure');
+        assert.equal(res.body.error.message, 'streams cannot have an id different non matching from their parentId store');
+      });
     });
 
-    it('[XC20] master token must retrieve "yo" streams and all stores when requesting "*"', async () => {
-      const res = await coreRequest
-        .get(streamsPath)
-        .set('Authorization', appAccessMaster.token)
-        .query({});
-      const streams = res.body.streams;
-      assert.exists(streams);
-      // we also get helpers here, because with the current implementation, it is returned.
-      assert.equal(streams.length, isOpenSource ? 4 : 5);
-      assert.equal(streams[0].id, ':dummy:');
-      assert.equal(streams[1].id, ':faulty:');
-      if (!isOpenSource) {
-        assert.equal(streams[2].id, ':_audit:');
-        assert.equal(streams[3].id, streamId);
-        assert.equal(streams[3].children.length, 1);
-      }
-    });
+    describe('UPDATE', function () {
+      it('[3Q12] Create a stream under dummy', async () => {
+        const res = await coreRequest
+          .put(streamsPath + ':dummy:mariana')
+          .set('Authorization', personalToken)
+          .send({ name: 'Fluffy' });
+        const stream = res.body.stream;
+        assert.equal(stream.id, ':dummy:mariana');
+        assert.equal(stream.parentId, ':dummy:');
+        assert.equal(stream.name, 'Bluppy');
+      });
 
-    it('[XC21] personal token must retrive :dummy: stream structure', async () => {
-      const res = await coreRequest
-        .get(streamsPath)
-        .query({ parentId: ':dummy:' })
-        .set('Authorization', personalToken)
-        .query({});
-      checkDummyStreamsStructure(res.body);
-    });
-
-    it('[XC22] app token must retrive :dummy: stream structure', async () => {
-      const res = await coreRequest
-        .get(streamsPath)
-        .query({ parentId: ':dummy:' })
-        .set('Authorization', appAccessDummy.token)
-        .query({});
-      checkDummyStreamsStructure(res.body);
-    });
-
-    it('[XC23] master token must retrive :dummy: stream structure', async () => {
-      const res = await coreRequest
-        .get(streamsPath)
-        .query({ parentId: ':dummy:' })
-        .set('Authorization', appAccessMaster.token)
-        .query({});
-      checkDummyStreamsStructure(res.body);
-    });
-
-    it('[3ZTM] Root streams must have null parentIds "*"', async () => {
-      const res = await coreRequest
-        .get(streamsPath)
-        .set('Authorization', appAccessDummy.token)
-        .query({});
-      const streams = res.body.streams;
-      for (const stream of streams) {
-        assert.notExists(stream.parentId);
-      }
+      it('[3Q13] Should fail moving a stream outside of store', async () => {
+        const res = await coreRequest
+          .put(streamsPath + ':dummy:mariana')
+          .set('Authorization', personalToken)
+          .send({ parentId: 'yo' });
+        assert.equal(res.body.error.id, 'invalid-request-structure');
+        assert.equal(res.body.error.message, 'streams cannot have an id different non matching from their parentId store');
+      });
     });
   });
 

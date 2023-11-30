@@ -44,7 +44,21 @@ function createUserStreams () {
       await keyValueData.set(userId, 'lastStreamCall', Object.assign({ id: streamId }, query));
       const stream = findStream(streamId, genStreams(userId));
       return stream;
+    },
+
+    async create (userId, streamData) {
+      if (streamData.id !== 'fluffy') throw ds.errors.unsupportedOperation('streams.create');
+      const newStream = structuredClone(streamData);
+      newStream.name = 'Bluppy';
+      return newStream;
+    },
+
+    async update (userId, streamData) {
+      const newStream = structuredClone(streamData);
+      newStream.name = 'Bluppy';
+      return newStream;
     }
+
   });
 
   function findStream (streamId, streams) {

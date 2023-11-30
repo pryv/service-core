@@ -229,7 +229,7 @@ class MallUserStreams {
     } else {
       [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.id);
       if (parentStoreId !== storeId) {
-        throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', streamData);
+        throw errorFactory.invalidRequestStructure('streams cannot have an id different non matching from their parentId store', streamData);
       }
       streamForStore.id = storeStreamId;
     }
@@ -247,6 +247,11 @@ class MallUserStreams {
     }
     // 3 - Insert stream
     const res = await streamsStore.create(userId, streamForStore);
+
+    if (storeId !== storeDataUtils.LocalStoreId) {
+      // add Prefix
+      streamsUtils.addStoreIdPrefixToStreams(storeId, [res]);
+    }
     return res;
   }
 
@@ -257,27 +262,19 @@ class MallUserStreams {
    */
   async update (userId, streamData) {
     const streamForStore = structuredClone(streamData);
-    // 1- Check if there is a parent stream
-    let parentStoreId = storeDataUtils.LocalStoreId;
-    let parentStoreStreamId;
+    const [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.id);
+    streamForStore.id = storeStreamId;
+
+    // 1- Check if there is a parent stream update
     if (streamForStore.parentId != null) {
-      [parentStoreId, parentStoreStreamId] =
-                storeDataUtils.parseStoreIdAndStoreItemId(streamData.parentId);
+      const [parentStoreId, parentStoreStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.parentId);
+      if (parentStoreId !== storeId) {
+        throw errorFactory.invalidRequestStructure('streams cannot have an id different non matching from their parentId store', streamData);
+      }
       streamForStore.parentId = parentStoreStreamId;
     }
-    // 2- Check streamId and store
-    let storeId, storeStreamId;
-    if (streamForStore.id == null) {
-      storeId = parentStoreId;
-      streamForStore.id = cuid();
-    } else {
-      [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(streamData.id);
-      if (parentStoreId !== storeId) {
-        throw errorFactory.invalidRequestStructure('streams cannot have an id different from their parentId', streamData);
-      }
-      streamForStore.id = storeStreamId;
-    }
-    // 4- Check if a sibbling stream with the same name exists
+
+    // 2- Check if a sibbling stream with the same name exists
     const siblingNames = await this.getNamesOfChildren(userId, streamData.parentId, [streamData.id]);
     if (siblingNames.includes(streamForStore.name)) {
       throw errorFactory.itemAlreadyExists('stream', { name: streamData.name });
@@ -285,6 +282,10 @@ class MallUserStreams {
     // 3 - Insert stream
     const streamsStore = this.streamsStores.get(storeId);
     const res = await streamsStore.update(userId, streamForStore);
+    if (storeId !== storeDataUtils.LocalStoreId) {
+      // add Prefix
+      streamsUtils.addStoreIdPrefixToStreams(storeId, [res]);
+    }
     return res;
   }
 
