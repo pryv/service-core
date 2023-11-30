@@ -100,6 +100,9 @@ class MallUserStreams {
     }
     // ------ Query Store -------------//
     const streamsStore = this.streamsStores.get(storeId);
+    if (streamsStore == null) {
+      throw errorFactory.unknownResource('Store', storeId);
+    }
     const storeQuery = {
       includeTrashed: params.includeTrashed,
       childrenDepth: params.childrenDepth,
