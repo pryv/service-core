@@ -267,7 +267,7 @@ module.exports = async function (api) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
     // check target parent if needed
-    if (params.update.parentId) {
+    if (params.update.parentId && params.update.parentId !== stream.parentId) {
       const targetParentArray = await mall.streams.get(context.user.id, {
         id: params.update.parentId,
         includeTrashed: true,

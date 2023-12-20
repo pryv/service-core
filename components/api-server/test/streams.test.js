@@ -130,7 +130,7 @@ describe('[STRE] streams', function () {
     });
 
     it('[1M8A] must not keep stream deletions past a certain time ' +
-        '(cannot test because cannot force-run Mongo\'s TTL cleanup task)');
+      '(cannot test because cannot force-run Mongo\'s TTL cleanup task)');
 
     it('[W9VC] must return a correct 401 error if no access token is provided', function (done) {
       commonTests.checkAccessTokenAuthentication(server.url, basePath, done);
@@ -525,6 +525,24 @@ describe('[STRE] streams', function () {
       });
     });
 
+    it('[JT6G] must modify the stream with the sent data event if name and parentId sent are the same', function (done) {
+      request.get(basePath).query({ parentId: 's_2_1' }).end(function (resQ) {
+        const stream = resQ.body.streams[0];
+        const data = {
+          name: stream.name,
+          clientData: { hello: 'bob' },
+          parentId: stream.parentId
+        };
+
+        request.put(path(stream.id)).send(data).end(function (res) {
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.update.result
+          }, done);
+        });
+      });
+    });
+
     it('[PT1E] must move the stream under the given parent when specified', function (done) {
       const original = testData.streams[0].children[1];
       const newParent = testData.streams[1];
@@ -691,7 +709,7 @@ describe('[STRE] streams', function () {
     });
 
     it('[TEFF] must delete the stream when already trashed with its descendants if there are no linked ' +
-        'events', function (done) {
+      'events', function (done) {
       const parent = testData.streams[2];
       const deletedStream = parent.children[1];
       const id = deletedStream.id;
@@ -744,7 +762,7 @@ describe('[STRE] streams', function () {
     });
 
     it('[LVTR] must return a correct error if there are linked events and the related parameter is ' +
-        'missing', function (done) {
+      'missing', function (done) {
       const id = testData.streams[0].id;
       async.series([
         async function trashStream () {
