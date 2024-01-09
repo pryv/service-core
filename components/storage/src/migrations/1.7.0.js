@@ -1,68 +1,65 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { UsersRepository, getUsersRepository, User } = require('business/src/users');
 const { getMall } = require('mall');
-
 const { getLogger } = require('@pryv/boiler');
-const { TAG_ROOT_STREAMID, TAG_PREFIX }: { TAG_ROOT_STREAMID: string, TAG_PREFIX: string } = require('api-server/src/methods/helpers/backwardCompatibility');
-const DOT: string = '.';
-
+const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
+const DOT = '.';
+const timestamp = require('unix-timestamp');
 const logger = getLogger('migration-1.7.0');
-logger.info('V1.6.21 => v1.7.0 Migration started');
 
 /**
- * v1.7.0: 
+ * v1.7.0:
  * - refactor streamId prefixes from '.' to ':_system:' and ':system'
  * - remove XX__unique properties from all events containing '.unique'
- * 
+ *
  * - remove tags and set them as "root streams" with the prefix "tag-"
  */
 module.exports = async function (context, callback) {
-
+  logger.info('V1.6.21 => v1.7.0 Migration started');
   await SystemStreamsSerializer.init();
-  const newSystemStreamIds: Array<string> = SystemStreamsSerializer.getAllSystemStreamsIds();
-  const oldToNewStreamIdsMap: Map<string, string> = buildOldToNewStreamIdsMap(newSystemStreamIds);
+
+  const newSystemStreamIds = SystemStreamsSerializer.getAllSystemStreamsIds();
+  const oldToNewStreamIdsMap = buildOldToNewStreamIdsMap(newSystemStreamIds);
   // add username and passwordHash to system streams definition (removed in 1.8.0) release, but required for migration
   newSystemStreamIds.push(':_system:username');
   oldToNewStreamIdsMap['.username'] = ':_system:username';
   newSystemStreamIds.push(':_system:passwordHash');
   oldToNewStreamIdsMap['.passwordHash'] = ':_system:passwordHash';
 
-  const eventsCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'events' }, cb));
-  const streamsCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'streams' }, cb));
-  const accessesCollection = await bluebird.fromCallback(cb =>
-    context.database.getCollection({ name: 'accesses' }, cb));
-
+  const eventsCollection = await context.database.getCollection({
+    name: 'events'
+  });
+  const streamsCollection = await context.database.getCollection({
+    name: 'streams'
+  });
+  const accessesCollection = await context.database.getCollection({
+    name: 'accesses'
+  });
 
   await migrateAccounts(eventsCollection, oldToNewStreamIdsMap);
   await migrateTags(eventsCollection, streamsCollection);
   await migrateTagsAccesses(accessesCollection);
   logger.info('Accounts were migrated, now rebuilding the indexes');
-  await rebuildIndexes(context.database, eventsCollection),
-
+  await rebuildIndexes(context.database, eventsCollection);
   logger.info('V1.6.21 => v1.7.0 Migration finished');
   callback();
-
 };
 
-async function migrateAccounts(eventsCollection, oldToNewStreamIdsMap): Promise<void> {
+async function migrateAccounts (eventsCollection, oldToNewStreamIdsMap) {
   const usernameCursor = await eventsCollection.find({
     streamIds: { $in: ['.username'] },
     deleted: null,
-    headId: null,
+    headId: null
   });
 
-  let requests: Array<{}> = [];
-  const BUFFER_SIZE: number = 500;
-  let usersCounter: number = 0;
+  let requests = [];
+  const BUFFER_SIZE = 500;
+  let usersCounter = 0;
   while (await usernameCursor.hasNext()) {
     const usernameEvent = await usernameCursor.next();
     if (usersCounter % 200 === 0) {
@@ -75,46 +72,44 @@ async function migrateAccounts(eventsCollection, oldToNewStreamIdsMap): Promise<
 
   logger.info(`Migrated ${usersCounter} users`);
 
-  async function addUpdateRequest(updateRequest) {
+  async function addUpdateRequest (updateRequest) {
     requests.push(updateRequest);
     if (requests.length > BUFFER_SIZE) requests = await flushToDb(requests, eventsCollection);
   }
 
-  async function migrateUserEvents(usernameEvent: {}): Promise<void> {
-    const eventsCursor: {} = eventsCollection.find({ userId: usernameEvent.userId });
+  async function migrateUserEvents (usernameEvent, oldToNewStreamIdsMap) {
+    const eventsCursor = eventsCollection.find({ userId: usernameEvent.userId });
 
     while (await eventsCursor.hasNext()) {
-      let event: Event = await eventsCursor.next();
+      const event = await eventsCursor.next();
 
       if (!isSystemEvent(event)) continue;
 
-      const streamIds: Array<string> = translateStreamIdsIfNeeded(event.streamIds, oldToNewStreamIdsMap);
+      const streamIds = translateStreamIdsIfNeeded(event.streamIds, oldToNewStreamIdsMap);
 
       const request = {
         updateOne: {
-          filter: { '_id': event._id },
+          filter: { _id: event._id },
           update: {
-            $set: { streamIds },
+            $set: { streamIds }
           }
         }
-      }
-      if (isUniqueEvent(event.streamIds)) request.updateOne.update['$unset'] = buildUniquePropsToDelete(event);
+      };
+      if (isUniqueEvent(event.streamIds)) request.updateOne.update.$unset = buildUniquePropsToDelete(event);
       if (request.updateOne.update.$unset != null && Object.keys(request.updateOne.update.$unset).length === 0) {
         delete request.updateOne.update.$unset; // happend on null value items
       }
-      //console.log('translated to', JSON.stringify(request,null,2));
+      // console.log('translated to', JSON.stringify(request,null,2));
       await addUpdateRequest(request);
     }
   }
 
-
-
-  function isUniqueEvent(streamIds: Array<string>): boolean {
+  function isUniqueEvent (streamIds) {
     if (streamIds.indexOf('.unique') > -1) return true;
     return false;
   }
 
-  function buildUniquePropsToDelete(event) {
+  function buildUniquePropsToDelete (event) {
     const UNIQUE_SUFFIX = '__unique';
     const unsets = {};
     for (const prop of Object.keys(event)) {
@@ -123,7 +118,7 @@ async function migrateAccounts(eventsCollection, oldToNewStreamIdsMap): Promise<
     return unsets;
   }
 
-  function isSystemEvent(event: Event): boolean {
+  function isSystemEvent (event) {
     if (event.streamIds == null) return false; // if event is deleted
     for (const streamId of event.streamIds) {
       if (streamId.startsWith('.')) return true; // can't use new check because it doesn't work with DOT anymore
@@ -131,39 +126,39 @@ async function migrateAccounts(eventsCollection, oldToNewStreamIdsMap): Promise<
     return false;
   }
 
-  async function flushToDb(events: Array<{}>, eventsCollection: {}): Promise<Array<{}>> {
-    const result: {} = await eventsCollection.bulkWrite(events);
+  async function flushToDb (events, eventsCollection) {
+    const result = await eventsCollection.bulkWrite(events);
     logger.info(`flushed ${result.nModified} modifications into database over ${events.length} requests`);
     return [];
   }
 
-  function translateStreamIdsIfNeeded(streamIds: Array<string>, oldToNewMap: Map<string, string>): Array<string> {
-    const translatedStreamIds: Array<string> = [];
+  function translateStreamIdsIfNeeded (streamIds, oldToNewMap) {
+    const translatedStreamIds = [];
     for (const streamId of streamIds) {
       translatedStreamIds.push(translateToNewOrNothing(streamId, oldToNewMap));
     }
     return translatedStreamIds;
 
-    function translateToNewOrNothing(oldStreamId: string, oldToNewMap: Map<string, string>): string {
+    function translateToNewOrNothing (oldStreamId, oldToNewMap) {
       return oldToNewMap[oldStreamId] ? oldToNewMap[oldStreamId] : oldStreamId;
     }
   }
 }
 
-function buildOldToNewStreamIdsMap(newSystemStreamIds: Array<string>): Map<string, string> {
-  const oldToNewMap: {} = {};
+function buildOldToNewStreamIdsMap (newSystemStreamIds) {
+  const oldToNewMap = {};
   for (const newStreamId of newSystemStreamIds) {
-    const oldStreamId: string = translateToOldPrefix(newStreamId);
+    const oldStreamId = translateToOldPrefix(newStreamId);
     oldToNewMap[oldStreamId] = newStreamId;
   }
   return oldToNewMap;
 
-  function translateToOldPrefix(streamId: string): string {
+  function translateToOldPrefix (streamId) {
     return DOT + SystemStreamsSerializer.removePrefixFromStreamId(streamId);
   }
 }
 
-async function rebuildIndexes(database, eventsCollection): Promise<void> {
+async function rebuildIndexes (database, eventsCollection) {
   for (const item of eventsIndexes) {
     item.options.background = true;
     await eventsCollection.createIndex(item.index, item.options);
@@ -178,39 +173,37 @@ async function rebuildIndexes(database, eventsCollection): Promise<void> {
   }
 }
 
-//----------------- TAGS 
+// ----------------- TAGS
 
-
-async function migrateTags(eventsCollection, streamsCollection): Promise<void> {
-
+async function migrateTags (eventsCollection, streamsCollection) {
   const mall = await getMall();
-  // get all users with tags 
+  // get all users with tags
   const usersWithTag = await eventsCollection.distinct('userId', { tags: { $exists: true, $ne: null } });
-  for (userId of usersWithTag) {
-    const now = Date.now() / 1000;
+  for (const userId of usersWithTag) {
+    const now = timestamp.now();
 
-    async function createStream(id, name, parentId) {
+    async function createStream (id, name, parentId) {
       try {
-        await mall.streams.create(userId, { name: name, id: id, parentId: parentId, modifiedBy: 'migration', createdBy: 'migration', created: now, modified: now });
+        await mall.streams.create(userId, { name, id, parentId, modifiedBy: 'migration', createdBy: 'migration', created: now, modified: now });
       } catch (e) {
-        if (e.id !== 'item-already-exists') throw (e)// already exists.. oK
+        if (e.id !== 'item-already-exists') throw (e);// already exists.. oK
       }
     }
 
     // create root stream
-    await createStream(TAG_ROOT_STREAMID, 'Migrated Tags')
+    await createStream(TAG_ROOT_STREAMID, 'Migrated Tags');
     // get all tags for user
-    const tags = await eventsCollection.distinct('tags', { userId: userId });
-    for (tag of tags) {
+    const tags = await eventsCollection.distinct('tags', { userId });
+    for (const tag of tags) {
       await createStream(TAG_PREFIX + tag, tag, TAG_ROOT_STREAMID);
       await migrateEvents(userId);
     }
     // migrate tags (add to streams for each event)
   }
 
-  async function migrateEvents(userId) {
-    eventsMigrated = 0;
-    const cursor = await eventsCollection.find({ userId: userId, tags: { $exists: true, $ne: [] } });
+  async function migrateEvents (userId) {
+    let eventsMigrated = 0;
+    const cursor = await eventsCollection.find({ userId, tags: { $exists: true, $ne: [] } });
     let requests = [];
     let event;
     while (await cursor.hasNext()) {
@@ -220,17 +213,17 @@ async function migrateTags(eventsCollection, streamsCollection): Promise<void> {
 
       eventsMigrated++;
       requests.push({
-        'updateOne': {
-          'filter': { '_id': event._id },
-          'update': {
-            '$addToSet': { 'streamIds': { $each: newStreams } },
-            '$unset': { 'tags': '' }
+        updateOne: {
+          filter: { _id: event._id },
+          update: {
+            $addToSet: { streamIds: { $each: newStreams } },
+            $unset: { tags: '' }
           }
         }
       });
 
       if (requests.length === 1000) {
-        //Execute per 1000 operations and re-init
+        // Execute per 1000 operations and re-init
         await eventsCollection.bulkWrite(requests);
         console.log('Migrated ' + eventsMigrated + ' events for user ' + userId);
         requests = [];
@@ -244,7 +237,7 @@ async function migrateTags(eventsCollection, streamsCollection): Promise<void> {
   }
 }
 
-async function migrateTagsAccesses(accessesCollection): Promise<void> {
+async function migrateTagsAccesses (accessesCollection) {
   const cursor = await accessesCollection.find({ 'permissions.tag': { $exists: true } });
   let requests = [];
   let accessesMigrated = 0;
@@ -260,7 +253,7 @@ async function migrateTagsAccesses(accessesCollection): Promise<void> {
       if (permission.level !== 'read') {
         const msg = 'Warning cannot migrate fully ' + JSON.stringify(permission) + ' accessId: ' + access._id + ' userId: ' + access.userId;
         console.log(msg);
-        //process.exit(0);
+        // process.exit(0);
       }
       forcedStreams.push(TAG_PREFIX + permission.tag);
     }
@@ -268,59 +261,59 @@ async function migrateTagsAccesses(accessesCollection): Promise<void> {
 
     accessesMigrated++;
     requests.push({
-      'updateOne': {
-        'filter': { '_id': access._id },
-        'update': {
+      updateOne: {
+        filter: { _id: access._id },
+        update: {
           $set: { permissions: newPermissions }
         }
       }
     });
 
     if (requests.length === 1000) {
-      //Execute per 1000 operations and re-init
+      // Execute per 1000 operations and re-init
       await accessesCollection.bulkWrite(requests);
-      console.log('Migrated ' + accessesMigrated + ' accesses for user ' + userId);
+      console.log('Migrated ' + accessesMigrated + ' accesses for user ' + access.userId);
       requests = [];
     }
   }
   if (requests.length > 0) {
     await accessesCollection.bulkWrite(requests);
-    console.log('Migrated ' + accessesMigrated + ' accesses for user ' + userId);
+    console.log('Migrated ' + accessesMigrated + ' accesses for user');
   }
 }
 
 const eventsIndexes = [
   {
     index: { userId: 1 },
-    options: {},
+    options: {}
   },
   {
-    index: { userId: 1, _id: 1, },
-    options: {},
+    index: { userId: 1, _id: 1 },
+    options: {}
   },
   {
     index: { userId: 1, streamIds: 1 },
-    options: {},
+    options: {}
   },
   {
     index: { userId: 1, time: 1 },
-    options: {},
+    options: {}
   },
   {
     index: { userId: 1, streamIds: 1 },
-    options: {},
+    options: {}
   },
   // no index by content until we have more actual usage feedback
   {
     index: { userId: 1, trashed: 1 },
-    options: {},
+    options: {}
   },
   {
     index: { userId: 1, modified: 1 },
-    options: {},
+    options: {}
   },
   {
     index: { userId: 1, endTime: 1 },
-    options: { partialFilterExpression: { endTime: { $exists: true } } },
+    options: { partialFilterExpression: { endTime: { $exists: true } } }
   }
 ];

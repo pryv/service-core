@@ -1,30 +1,25 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 
 const storeDataUtils = require('./storeDataUtils');
-const _ = require('lodash');
 
 module.exports = {
   getParamsByStore,
-  getStoreQueryFromParams
+  getStoreOptionsFromParams,
+  getStoreQueryFromParams,
+  normalizeStreamQuery
 };
-
-const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
 
 /**
  * A generic query for events.get, events.updateMany, events.delete
  * @typedef {Object} EventsGetQuery
- * @property {string} [id] - an event id (incompatible with headId)
- * @property {string} [headId] - for history querying the id of the event to get the history from (incompatible with id))
+ * @property {string} [id] - an event id
  * @property {Array<StreamQuery>} [streams] - an array of stream queries (see StreamQuery)
  * @property {('trashed'|'all'|null)} [state=null] - get only trashed, all document or non-trashed events (default is non-trashed)
- * @property {boolean} [withDeletions=false] - also returns deleted events (default is false) !! used by tests and internals !!
- * @property {timestamp} [deletedSince] - return deleted events since this timestamp
- * @property {boolean} [includeHistory] - if true, returns the history of the event and the event if "id" is given - Otherwise all events, including their history (use by tests only)
  * @property {Array<EventType>} [types] - reduce scope of events to a set of types
  * @property {timestamp} [fromTime] - events with a time of endTime after this timestamp
  * @property {timestamp} [toTime] - events with a time of endTime before this timestamp
@@ -36,19 +31,18 @@ const DELTA_TO_CONSIDER_IS_NOW = 5; // 5 seconds
  * Get per-store query params from the given API query params.
  * @param {EventsGetQuery} params - a query object
  * @returns {Object.<String, EventsGetQuery>}
- * @throws {Error} if query.id and params.headId are both set
+ * @throws {Error} if params.headId is set
  * @throws {Error} if query.id is set and params.streams is querying a different store
  * @throws {Error} if query.streams contains stream queries that implies different stores
  */
 function getParamsByStore (params) {
-  let singleStoreId, singleStoreEventId, storeHeadId;
+  let singleStoreId, singleStoreEventId;
   if (params.id) { // a specific event is queried so we have a singleStore query;
     [singleStoreId, singleStoreEventId] = storeDataUtils.parseStoreIdAndStoreItemId(params.id);
   }
 
   if (params.headId) { // a specific "head" is queried so we have a singleStore query;
-    if (params.id) throw new Error('Cannot mix headId and id in query');
-    [singleStoreId, storeHeadId] = storeDataUtils.parseStoreIdAndStoreItemId(params.headId);
+    throw new Error('Cannot use headId and id in query');
   }
 
   // repack stream queries by store
@@ -68,21 +62,17 @@ function getParamsByStore (params) {
 
   const paramsByStore = {};
   for (const storeId of Object.keys(streamQueriesByStore)) {
-    paramsByStore[storeId] = _.cloneDeep(params);
+    paramsByStore[storeId] = structuredClone(params);
     paramsByStore[storeId].streams = streamQueriesByStore[storeId];
   }
 
   if (singleStoreId) {
-    paramsByStore[singleStoreId] ??= _.cloneDeep(params);
-    if (storeHeadId) {
-      paramsByStore[singleStoreId].headId = storeHeadId;
-    } else { // we have a singleStoreEventId
-      paramsByStore[singleStoreId].id = singleStoreEventId;
-    }
+    paramsByStore[singleStoreId] ??= structuredClone(params);
+    paramsByStore[singleStoreId].id = singleStoreEventId;
   }
 
   if (Object.keys(paramsByStore).length === 0) { // default is local
-    paramsByStore.local = _.cloneDeep(params);
+    paramsByStore.local = structuredClone(params);
     delete paramsByStore.local.streams;
   }
 
@@ -109,92 +99,68 @@ function getStoreStreamQuery (streamQuery, context) {
 }
 
 /**
- * Translates API query params to the store query format.
+ *  /!\ As per 1.9.0 we decided to keep a streamQuery in the format of [{any: ..}, {not: ...}, {any: ...}] an extra step
+ *      `normalizeStreamQuery` is added, the full process should be refactored in order to avoid this step.
+ *
+ * @param {*} streamQuery
+ */
+function normalizeStreamQuery (streamQuery) {
+  if (streamQuery == null) return null;
+  const res = [];
+  for (const streamQueryItem of streamQuery) {
+    res.push(normalizeStreamQueryItem(streamQueryItem));
+  }
+  return res;
+}
+
+function normalizeStreamQueryItem (streamQueryItem) {
+  const normalizedStreamQuery = [];
+  const not = []; // we need only one "not"
+  if (streamQueryItem.any != null) normalizedStreamQuery.push({ any: streamQueryItem.any });
+  if (streamQueryItem.not != null) not.push(...streamQueryItem.not);
+  if (streamQueryItem.and != null) {
+    for (const andItem of streamQueryItem.and) {
+      if (andItem.any != null) normalizedStreamQuery.push({ any: andItem.any });
+      if (andItem.not != null) addToNots(andItem.not);
+    }
+  }
+  if (not.length > 0) normalizedStreamQuery.push({ not });
+  return normalizedStreamQuery;
+
+  function addToNots (notItems) {
+    for (const item of notItems) {
+      if (not.indexOf(item) === -1) not.push(item);
+    }
+  }
+}
+
+/**
+ * Extract options from params
+ */
+function getStoreOptionsFromParams (params) {
+  const options = {
+    sortAscending: params.sortAscending,
+    skip: params.skip,
+    limit: params.limit
+  };
+  return options;
+}
+
+/**
+ * Clean API query params to the store query format.
  * To be called on store-level params just before querying the store.
  * @param {object} params
  * @returns {object}
  */
 function getStoreQueryFromParams (params) {
-  const options = {
-    sort: { time: params.sortAscending ? 1 : -1 },
-    skip: params.skip,
-    limit: params.limit
+  const query = {
+    state: params.state || 'default'
   };
-
-  const query = [];
-
-  // trashed
-  switch (params.state) {
-    case 'trashed':
-      query.push({ type: 'equal', content: { field: 'trashed', value: true } });
-      break;
-    case 'all':
-      break;
-    default:
-      // trashed must be false, unless loooking for deletedSince (then we don't care)
-      if (params.deletedSince != null) break;
-      query.push({ type: 'equal', content: { field: 'trashed', value: false } });
-  }
-
-  // if getOne
-  if (params.id) {
-    query.push({ type: 'equal', content: { field: 'id', value: params.id } });
-  }
-
-  if (params.deletedSince != null) {
-    query.push({ type: 'greater', content: { field: 'deleted', value: params.deletedSince } });
-    options.sort = { deleted: -1 };
-  } else {
-    // all deletions (tests only)
-    if (! params.withDeletions) {
-      query.push({ type: 'equal', content: { field: 'deleted', value: null } }); // <<== actual default value
-    }
-  }
-
-  // modified since
-  if (params.modifiedSince != null) {
-    query.push({ type: 'greater', content: { field: 'modified', value: params.modifiedSince } });
-  }
-
-  // types
-  if (params.types && params.types.length > 0) {
-    query.push({ type: 'typesList', content: params.types });
-  }
-
-  // history
-  if (params.headId) { // I don't like this !! history implementation should not be exposed .. but it's a quick fix for now
-    query.push({ type: 'equal', content: { field: 'headId', value: params.headId } });
-    options.sort.modified = 1; // also sort by modified time when history is requested
-  } else if (!params.includeHistory) { // no history;
-    query.push({ type: 'equal', content: { field: 'headId', value: null } });
-  }
-
-  // if streams are defined
-  if (params.streams && params.streams.length !== 0) {
-    query.push({ type: 'streamsQuery', content: params.streams });
-  }
-
-  // -------------- time selection -------------- //
-  if (params.toTime != null) {
-    query.push({ type: 'lowerOrEqual', content: { field: 'time', value: params.toTime } });
-  }
-
-  // running
-  if (params.running) {
-    query.push({ type: 'equal', content: { field: 'endTime', value: null } });
-  } else if (params.fromTime != null) {
-    const now = Date.now() / 1000 - DELTA_TO_CONSIDER_IS_NOW;
-    if (params.fromTime <= now && (params.toTime == null || params.toTime >= now)) { // timeFrame includes now
-      query.push({ type: 'greaterOrEqualOrNull', content: { field: 'endTime', value: params.fromTime } });
-    } else {
-      query.push({ type: 'greaterOrEqual', content: { field: 'endTime', value: params.fromTime } });
-    }
-  }
-
-  const res = {
-    options,
-    query
-  };
-
-  return res;
+  if (params.fromTime != null) { query.fromTime = params.fromTime; }
+  if (params.toTime != null) { query.toTime = params.toTime; }
+  if (params.streams != null) { query.streams = normalizeStreamQuery(params.streams); }
+  if (params.types != null && params.types.length > 0) { query.types = params.types; }
+  if (params.running != null) { query.running = params.running; }
+  if (params.modifiedSince != null) { query.modifiedSince = params.modifiedSince; }
+  return query;
 }

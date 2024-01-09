@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -31,22 +31,21 @@ module.exports = Versions;
  * TODO: must be per-user to properly support account relocation
  *
  * @param database
- * @param attachmentsDirPath
  * @param logging
  * @param migrationsOverride Use for tests
  * @constructor
  */
-function Versions (database, attachmentsDirPath, logger, migrationsOverride) {
+function Versions (database, logger, migrationsOverride) {
   this.database = database;
-  this.attachmentsDirPath = attachmentsDirPath;
   this.migrations = migrationsOverride || migrations;
   this.logger = logger;
 }
 
 Versions.prototype.getCurrent = async function () {
-  return await bluebird.fromCallback(function (cb) {
-    this.database.findOne(collectionInfo, {}, { sort: { migrationCompleted: -1 } }, cb)
-  }.bind(this));
+  const version = await bluebird.fromCallback((cb) => {
+    this.database.findOne(collectionInfo, {}, { sort: { migrationCompleted: -1 } }, cb);
+  });
+  return version;
 };
 
 Versions.prototype.migrateIfNeeded = async function () {
@@ -55,19 +54,18 @@ Versions.prototype.migrateIfNeeded = async function () {
   if (!v) {
     // new install: init to package version
     currentVNum = packageFile.version;
-    await bluebird.fromCallback(function (cb) {
+    await bluebird.fromCallback((cb) => {
       this.database.insertOne(collectionInfo, {
         _id: currentVNum,
         initialInstall: timestamp.now()
       }, cb);
-    }.bind(this));
+    });
   }
   const migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {
     return vNum > currentVNum;
   }).sort();
   const context = new MigrationContext({
     database: this.database,
-    attachmentsDirPath: this.attachmentsDirPath,
     logger: this.logger
   });
   for (const migration of migrationsToRun) {
@@ -78,15 +76,15 @@ Versions.prototype.migrateIfNeeded = async function () {
    * @this {Versions}
    */
   async function migrate (vNum) {
-    await bluebird.fromCallback(function (cb) {
+    await bluebird.fromCallback((cb) => {
       this.database.upsertOne(collectionInfo, { _id: vNum }, { $set: { migrationStarted: timestamp.now() } }, cb);
-    }.bind(this));
-    await bluebird.fromCallback(function (cb) {
+    });
+    await bluebird.fromCallback((cb) => {
       this.migrations[vNum](context, cb);
-    }.bind(this));
-    await bluebird.fromCallback(function (cb) {
+    });
+    await bluebird.fromCallback((cb) => {
       this.database.updateOne(collectionInfo, { _id: vNum }, { $set: { migrationCompleted: timestamp.now() } }, cb);
-    }.bind(this));
+    });
   }
 };
 
@@ -94,7 +92,7 @@ Versions.prototype.migrateIfNeeded = async function () {
  * For tests only.
  */
 Versions.prototype.removeAll = async function () {
-  await bluebird.fromCallback(function (cb) {
+  await bluebird.fromCallback((cb) => {
     this.database.deleteMany(collectionInfo, {}, cb);
-  }.bind(this));
+  });
 };

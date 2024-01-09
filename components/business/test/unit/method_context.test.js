@@ -1,36 +1,26 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
-/* global describe, it, beforeEach */
 
 require('test-helpers/src/api-server-tests-config');
 const timestamp = require('unix-timestamp');
-
 const sinon = require('sinon');
-
 const chai = require('chai');
-const assert = chai.assert; 
-
+const assert = chai.assert;
 const MethodContext = require('../../src/MethodContext');
-import type { ContextSource } from 'business';
 
-const contextSource: ContextSource = {
+const contextSource = {
   name: 'test',
   ip: '127.0.0.1'
-}
+};
 
 describe('MethodContext', () => {
   describe('#parseAuth', () => {
     const username = 'USERNAME';
-    const customAuthStep = null; 
-
-    
-    
+    const customAuthStep = null;
     it('[ZRW8] should parse token out', () => {
       const mc = new MethodContext(contextSource, username, 'TOKEN', customAuthStep);
       assert.strictEqual(mc.accessToken, 'TOKEN');
@@ -42,44 +32,35 @@ describe('MethodContext', () => {
       assert.strictEqual(mc.callerId, 'CALLERID');
     });
   });
-  
+
   describe('#retrieveAccessFromId', () => {
     const username = 'USERNAME';
-    const customAuthStep = null; 
-    
-    let access: Object;
+    const customAuthStep = null;
+    let access;
     let mc, findOne, storage;
     beforeEach(() => {
       mc = new MethodContext(contextSource, username, 'TOKEN CALLERID', customAuthStep);
-
       access = {
-        id: 'accessIdFromAccess', 
-        token: 'tokenFromAccess',
+        id: 'accessIdFromAccess',
+        token: 'tokenFromAccess'
       };
-      
       findOne = sinon.fake.yields(null, access);
-      
       storage = {
         accesses: {
-          findOne: findOne,
+          findOne
         }
       };
     });
-
     it('[OJW2] checks expiry of the access', async () => {
       access.expires = timestamp.now('-1d');
-
-      let caught = false; 
+      let caught = false;
       try {
-        // FLOW storage is a fake
+        // storage is a fake
         await mc.retrieveAccessFromId(storage, 'accessId');
-      }
-      catch (err) {
+      } catch (err) {
         caught = true;
       }
-      
       assert.isTrue(caught);
     });
   });
 });
-

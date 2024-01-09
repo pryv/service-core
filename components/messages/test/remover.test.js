@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -16,8 +16,7 @@ describe('Pubsub removers', function () {
     let titiReceived = false;
     pubsub.notifications.emit('toto', 'titi');
 
-
-    function messageReceived(msg) {
+    function messageReceived (msg) {
       assert.equal(msg, 'titi');
       titiReceived = true;
       removable();

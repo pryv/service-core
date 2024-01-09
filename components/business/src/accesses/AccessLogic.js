@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -94,7 +94,7 @@ class AccessLogic {
    * Loads permissions from `this.permissions`.
    * - Loads tag permissions into `tagPermissions`/`tagPermissionsMap`.
    */
-  loadPermissions () {
+  async loadPermissions () {
     if (!this.permissions) {
       return;
     }
@@ -107,7 +107,7 @@ class AccessLogic {
 
     for (const perm of this.permissions) {
       if (perm.streamId != null) {
-        this._loadStreamPermission(perm);
+        await this._loadStreamPermission(perm);
       } else if (perm.tag != null) {
         this._loadTagPermission(perm);
       } else if (perm.feature != null) {
@@ -121,10 +121,19 @@ class AccessLogic {
     }
   }
 
-  _loadStreamPermission (perm) {
+  async _loadStreamPermission (perm) {
     const [storeId, storeStreamId] = storeDataUtils.parseStoreIdAndStoreItemId(perm.streamId);
     if (this._streamByStorePermissionsMap[storeId] == null) this._streamByStorePermissionsMap[storeId] = {};
     this._streamByStorePermissionsMap[storeId][storeStreamId] = { streamId: storeStreamId, level: perm.level };
+
+    if (perm.streamId === '*') { // add mall stores to permissions
+      const mall = await getMall();
+      const mallStoreIds = mall.includedInStarPermissions;
+      for (const mallStoreId of mallStoreIds) {
+        if (this._streamByStorePermissionsMap[mallStoreId] == null) this._streamByStorePermissionsMap[mallStoreId] = {};
+        this._streamByStorePermissionsMap[mallStoreId]['*'] = { streamId: '*', level: perm.level };
+      }
+    }
   }
 
   /**
@@ -172,7 +181,7 @@ class AccessLogic {
         const storePermissions = this._streamByStorePermissionsMap[storeId];
         for (const perm of Object.values(storePermissions)) {
           if ((perm.streamId != null) && isHigherOrEqualLevel(perm.level, 'read')) {
-            res.push({ streamId: perm.streamId, storeId: storeId });
+            res.push({ streamId: perm.streamId, storeId });
           }
         }
       }
@@ -238,7 +247,7 @@ class AccessLogic {
   _registerFeaturePermission (perm) {
     this.featurePermissionsMap[perm.feature] = perm;
     if (perm.feature === 'forcedStreams') { // load them by store
-      const [storeId, ] = storeDataUtils.parseStoreIdAndStoreItemId(perm.streams);
+      const [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(perm.streams);
       if (this._streamByStoreForced[storeId] == null) this._streamByStoreForced[storeId] = [];
       this._streamByStoreForced[storeId].push(...perm.streams);
     }
@@ -346,7 +355,7 @@ class AccessLogic {
         if (!myLevel || isLowerLevel(myLevel, perm.level)) return false;
       } else if (perm.feature != null) {
         const allow = this._canCreateAccessWithFeaturePermission(perm);
-        if (! allow) return false;
+        if (!allow) return false;
       }
     }
     // can only manage shared accesses with permissions
@@ -445,7 +454,7 @@ class AccessLogic {
   */
   async canGetEventsOnStreamAndWithTags (streamId, tags) {
     if (this.isPersonal()) return true;
-    return await this.canGetEventsOnStream(streamId, 'local') &&
+    return (await this.canGetEventsOnStream(streamId, 'local')) &&
       (this.canGetEventsWithAnyTag() ||
         _.some(tags || [], this._canGetEventsWithTag.bind(this)));
   }
@@ -459,7 +468,7 @@ class AccessLogic {
    */
   async canUpdateEventsOnStreamAndWIthTags (streamId, tags) {
     if (this.isPersonal()) return true;
-    return await this.canUpdateEventsOnStream(streamId) ||
+    return (await this.canUpdateEventsOnStream(streamId)) ||
       (this._canUpdateEventWithTag('*') ||
         _.some(tags || [], this._canUpdateEventWithTag.bind(this)));
   }
@@ -473,7 +482,7 @@ class AccessLogic {
    */
   async canCreateEventsOnStreamAndWIthTags (streamId, tags) {
     if (this.isPersonal()) return true;
-    return await this.canCreateEventsOnStream(streamId) ||
+    return (await this.canCreateEventsOnStream(streamId)) ||
       (this._canCreateEventsWithTag('*') ||
         _.some(tags || [], this._canCreateEventsWithTag.bind(this)));
   }
@@ -510,7 +519,7 @@ class AccessLogic {
       if (permissions != null) return permissions; // found
 
       // not found, look for parent
-      const stream = await mall.streams.getOne(this._userId, currentStream, storeId); // TODO dont fetch children
+      const stream = await mall.streams.getOneWithNoChildren(this._userId, currentStream, storeId);
       currentStream = stream ? stream.parentId : null;
     }
 
@@ -538,14 +547,14 @@ class AccessLogic {
   /**
    * return true is this access can create an access with this feature
    */
-  _canCreateAccessWithFeaturePermission(featurePermission) {
-    if (featurePermission.feature == 'selfRevoke') {
+  _canCreateAccessWithFeaturePermission (featurePermission) {
+    if (featurePermission.feature === 'selfRevoke') {
       // true if this acces canSelfRevoke or if requested setting is identical to this access
-      return this._canSelfRevoke() || featurePermission.setting == this.featurePermissionsMap.selfRevoke.setting;
+      return this._canSelfRevoke() || featurePermission.setting === this.featurePermissionsMap.selfRevoke.setting;
     }
-    if (featurePermission.feature == 'selfAudit') {
+    if (featurePermission.feature === 'selfAudit') {
       // true if this acces has no setting for selfAudit or if requested setting is identical to this access
-      return this.featurePermissionsMap.selfAudit == null || featurePermission.setting == this.featurePermissionsMap.selfAudit.setting;
+      return this.featurePermissionsMap.selfAudit == null || featurePermission.setting === this.featurePermissionsMap.selfAudit.setting;
     }
   }
 

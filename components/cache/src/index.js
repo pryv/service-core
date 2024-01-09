@@ -1,71 +1,82 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-// @flow
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 const LRU = require('lru-cache');
-
-import type { Stream } from 'business/src/streams';
-
 const _caches = {};
-const MAX_PER_CACHE_SIZE: number = 2000; // maximum elements for each cache (namespace)
-
+const MAX_PER_CACHE_SIZE = 2000; // maximum elements for each cache (namespace)
 let synchro = null;
-
-let isActive: boolean = false;
-let isSynchroActive: boolean = false
-
+let isActive = false;
+let isSynchroActive = false;
 const logger = getLogger('cache');
 const debug = {};
 for (const key of ['set', 'get', 'unset', 'clear']) {
   const logg = logger.getLogger(key);
-  debug[key] = function() {
+  debug[key] = function () {
     logg.debug(...arguments);
-  }
+  };
 }
-
 const config = getConfigUnsafe(true);
-
 /**
  * username -> userId
  */
-const userIdForUsername: Map<string, string> = new Map();
-
-function getNameSpace(namespace: string) {
-  if (namespace == null) console.log('XXXX', new Error('Null namespace'));
-  return _caches[namespace] || ( _caches[namespace] = new LRU({
-    max: MAX_PER_CACHE_SIZE
-  }));
+const userIdForUsername = new Map();
+/**
+ * @param {string} namespace
+ * @returns {any}
+ */
+function getNameSpace (namespace) {
+  if (namespace == null) { console.log('XXXX', new Error('Null namespace')); }
+  return (_caches[namespace] ||
+        (_caches[namespace] = new LRU({
+          max: MAX_PER_CACHE_SIZE
+        })));
 }
-
-function set(namespace: string, key: string, value: string) {
-  if (! isActive) return;
-  if (key == null) throw new Error('Null key for' + namespace);
+/**
+ * @param {string} namespace
+ * @param {string} key
+ * @param {string} value
+ * @returns {string}
+ */
+function set (namespace, key, value) {
+  if (!isActive) { return; }
+  if (key == null) { throw new Error('Null key for' + namespace); }
   getNameSpace(namespace).set(key, value);
   debug.set(namespace, key);
   return value;
 }
-
-function unset(namespace: string, key: string) {
-  if (! isActive) return;
-  if (key == null) throw new Error('Null key for' + namespace);
+/**
+ * @param {string} namespace
+ * @param {string} key
+ * @returns {void}
+ */
+function unset (namespace, key) {
+  if (!isActive) { return; }
+  if (key == null) { throw new Error('Null key for' + namespace); }
   getNameSpace(namespace).delete(key);
   debug.unset(namespace, key);
 }
-
-function get(namespace: string, key: string) {
-  if (! isActive) return null;
-  if (key == null) throw new Error('Null key for' + namespace);
+/**
+ * @param {string} namespace
+ * @param {string} key
+ * @returns {any}
+ */
+function get (namespace, key) {
+  if (!isActive) { return null; }
+  if (key == null) { throw new Error('Null key for' + namespace); }
   debug.get(namespace, key);
   return getNameSpace(namespace).get(key);
 }
-
-function clear(namespace: string) {
-  if (namespace == null) { // clear all
+/**
+ * @param {string} namespace
+ * @returns {void}
+ */
+function clear (namespace) {
+  if (namespace == null) {
+    // clear all
     for (const ns of Object.keys(_caches)) {
       debug.clear(ns);
       delete _caches[ns];
@@ -78,35 +89,48 @@ function clear(namespace: string) {
   loadConfiguration(); // reload configuration
   debug.clear(namespace);
 }
-
-//--------------- Users ---------------//
-
-function getUserId(username: string) {
-  if (! isActive) return;
+// --------------- Users ---------------//
+/**
+ * @param {string} username
+ * @returns {string}
+ */
+function getUserId (username) {
+  if (!isActive) { return; }
   debug.get('user-id', username);
   return userIdForUsername.get(username);
 }
-
-function setUserId(username: string, userId: string) {
-  if (! isActive) return;
+/**
+ * @param {string} username
+ * @param {string} userId
+ * @returns {void}
+ */
+function setUserId (username, userId) {
+  if (!isActive) { return; }
   debug.set('user-id', username, userId);
   userIdForUsername.set(username, userId);
 }
-
-function unsetUser(username: string, notifyOtherProcesses: boolean = true) {
-  if (! isActive) return;
+/**
+ * @param {string} username
+ * @param {boolean} notifyOtherProcesses
+ * @returns {void}
+ */
+function unsetUser (username, notifyOtherProcesses = true) {
+  if (!isActive) { return; }
   debug.unset('user-id', username);
   const userId = getUserId(username);
-  if (userId == null) return;
-
+  if (userId == null) { return; }
   unsetUserData(userId, false);
   // notify userId delete
-  if (notifyOtherProcesses && isSynchroActive) synchro.unsetUser(username);
+  if (notifyOtherProcesses && isSynchroActive) { synchro.unsetUser(username); }
   userIdForUsername.delete(username);
 }
-
-function unsetUserData(userId: string, notifyOtherProcesses: boolean = true) {
-  if (! isActive) return;
+/**
+ * @param {string} userId
+ * @param {boolean} notifyOtherProcesses
+ * @returns {void}
+ */
+function unsetUserData (userId, notifyOtherProcesses = true) {
+  if (!isActive) { return; }
   if (isSynchroActive) {
     synchro.removeListenerForUserId(userId);
   }
@@ -117,116 +141,142 @@ function unsetUserData(userId: string, notifyOtherProcesses: boolean = true) {
   _unsetStreams(userId, 'local'); // for now we hardcode local streams
   _clearAccessLogics(userId);
 }
-
-//--------------- Streams ---------------//
-function getStreams(userId: string, storeId: string = 'local'): ?Array<Stream> {
+// --------------- Streams ---------------//
+/**
+ * @param {string} userId
+ * @param {string} storeId
+ * @returns {any[]}
+ */
+function getStreams (userId, storeId = 'local') {
   return get(NS.STREAMS_FOR_USERID + storeId, userId);
 }
-
-function setStreams(userId: string, storeId: string = 'local', streams: Array<Stream>): void {
-  if (! isActive) return;
-  if (isSynchroActive) synchro.registerListenerForUserId(userId); // follow this user
+/**
+ * @param {string} userId
+ * @param {string} storeId
+ * @param {Array<Stream>} streams
+ * @returns {void}
+ */
+function setStreams (userId, storeId = 'local', streams) {
+  if (!isActive) { return; }
+  if (isSynchroActive) { synchro.registerListenerForUserId(userId); } // follow this user
   set(NS.STREAMS_FOR_USERID + storeId, userId, streams);
 }
-
-function _unsetStreams(userId: string, storeId: string = 'local'): void {
+/**
+ * @param {string} userId
+ * @param {string} storeId
+ * @returns {void}
+ */
+function _unsetStreams (userId, storeId = 'local') {
   unset(NS.STREAMS_FOR_USERID + storeId, userId);
 }
-
-function unsetStreams(userId: string, storeId: string = 'local'): void {
+/**
+ * @param {string} userId
+ * @param {string} storeId
+ * @returns {void}
+ */
+function unsetStreams (userId, storeId = 'local') {
   unsetUserData(userId);
 }
-
-
-//--------------- Access Logic -----------//
-
-function getAccessLogicForToken(userId: string, token: string) {
-  if (! isActive) return null;
+// --------------- Access Logic -----------//
+/**
+ * @param {string} userId
+ * @param {string} token
+ * @returns {any}
+ */
+function getAccessLogicForToken (userId, token) {
+  if (!isActive) { return null; }
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
-  if (accessLogics == null) return null;
+  if (accessLogics == null) { return null; }
   return accessLogics.tokens[token];
 }
-
-function getAccessLogicForId(userId: string, accessId: string) {
-  if (! isActive) return null;
+/**
+ * @param {string} userId
+ * @param {string} accessId
+ * @returns {any}
+ */
+function getAccessLogicForId (userId, accessId) {
+  if (!isActive) { return null; }
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
-  if (accessLogics == null) return null;
+  if (accessLogics == null) { return null; }
   return accessLogics.ids[accessId];
 }
-
-
-function unsetAccessLogic(userId: string, accessLogic: string, notifyOtherProcesses: boolean = true): void {
-  if (! isActive) return;
+/**
+ * @param {string} userId
+ * @param {string} accessLogic
+ * @param {boolean} notifyOtherProcesses
+ * @returns {void}
+ */
+function unsetAccessLogic (userId, accessLogic, notifyOtherProcesses = true) {
+  if (!isActive) { return; }
   // notify others to unsed
-  if (notifyOtherProcesses && isSynchroActive) synchro.unsetAccessLogic(userId, accessLogic);
+  if (notifyOtherProcesses && isSynchroActive) { synchro.unsetAccessLogic(userId, accessLogic); }
   // perform unset
   const accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
-  if (accessLogics == null) return ;
+  if (accessLogics == null) { return; }
   delete accessLogics.tokens[accessLogic.token];
   delete accessLogics.ids[accessLogic.id];
 }
-
-function _clearAccessLogics(userId: string): void {
+/**
+ * @param {string} userId
+ * @returns {void}
+ */
+function _clearAccessLogics (userId) {
   unset(NS.ACCESS_LOGICS_FOR_USERID, userId);
 }
-
-function setAccessLogic(userId: string, accessLogic: {}): void {
-  if (! isActive) return;
-  if (synchro != null) synchro.registerListenerForUserId(userId);
+/**
+ * @param {string} userId
+ * @param {{}} accessLogic
+ * @returns {void}
+ */
+function setAccessLogic (userId, accessLogic) {
+  if (!isActive) { return; }
+  if (synchro != null) { synchro.registerListenerForUserId(userId); }
   let accessLogics = get(NS.ACCESS_LOGICS_FOR_USERID, userId);
   if (accessLogics == null) {
     accessLogics = {
       tokens: {},
       ids: {}
-    }
+    };
     set(NS.ACCESS_LOGICS_FOR_USERID, userId, accessLogics);
   }
   accessLogics.tokens[accessLogic.token] = accessLogic;
   accessLogics.ids[accessLogic.id] = accessLogic;
 }
-
-//---------------
-
+// ---------------
 const NS = {
   USERID_BY_USERNAME: 'USERID_BY_USERNAME',
   STREAMS_FOR_USERID: 'STREAMS',
   ACCESS_LOGICS_FOR_USERID: 'ACCESS_LOGICS_BY_USERID'
-}
-
+};
 const cache = {
   clear,
-
   getUserId,
   setUserId,
   unsetUser,
   unsetUserData,
-
   setStreams,
   getStreams,
   unsetStreams,
-
   getAccessLogicForId,
   getAccessLogicForToken,
   unsetAccessLogic,
   setAccessLogic,
-
   loadConfiguration,
   isActive,
-
-  NS,
+  NS
 };
-
-/** Used only from tests to reload configuration after settting changes */
-function loadConfiguration() {
+/**
+ * Used only from tests to reload configuration after settting changes
+ * @returns {void}
+ */
+function loadConfiguration () {
   // could be true/false or 1/0 if launched from command line
-  isActive = config.get('caching:isActive') ? true : false;
-  isSynchroActive = config.get('openSource:isActive') ? false : true;
-
+  isActive = !!config.get('caching:isActive');
+  isSynchroActive = !config.get('openSource:isActive');
   if (isSynchroActive) {
-    synchro = require('./synchro.js');
+    synchro = require('./synchro');
     synchro.setCache(cache);
   }
 }
 loadConfiguration();
-
 module.exports = cache;

@@ -1,16 +1,20 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
 
 /**
  * Helper functions for serializing/deserializing setup instructions for tests.
  * Added to support injecting mocks in server instance (separate process) from
  * tests.
  */
+module.exports = {
+  set,
+  clear,
+  execute
+};
 
 const logger = require('@pryv/boiler').getLogger('instance-test-setup');
 
@@ -23,48 +27,65 @@ const logger = require('@pryv/boiler').getLogger('instance-test-setup');
  *                       A `messagingSocket` property will be injected into `context` at execution
  *                       time to allow passing messages back to the test process.
  */
-exports.set = function (settings: any, setup: any) {
+function set (settings, setup) {
   if (!settings || !setup) {
     throw new Error('Expected config and setup object arguments');
   }
   settings.instanceTestSetup = stringify(setup);
-};
+}
 
-exports.clear = function (settings: any) {
+function clear (settings) {
   delete settings.instanceTestSetup;
-};
+}
 
 /**
  * @throws Any error encountered deserializing or calling the setup function
  */
-exports.execute = function (testSetup: string, testNotifier: any) {
-  var obj = parse(testSetup);
-  
+function execute (testSetup, testNotifier) {
+  const obj = parse(testSetup);
   if (obj.context != null) {
     // inject TCP axonMessaging socket to allow passing data back to test process
     obj.context.testNotifier = testNotifier;
   }
-  
-  obj.execute();
-};
+  try {
+    const result = obj.execute();
+    logger.debug('executeResult', result);
+  } catch (error) {
+    logger.error('executeResult Error', error);
+    throw error;
+  }
+}
 
-function stringify(obj) {
+/**
+ * @returns {string}
+ */
+function stringify (obj) {
   return JSON.stringify(obj, function (key, value) {
-    // stringify functions with their source, converting CRLF. 
-    // 
+    // stringify functions with their source, converting CRLF.
+    //
     // NOTE If you strip CRLF here, any comment in the serialized function will
-    // comment out the rest of the line. 
-    // 
-    return (typeof value === 'function') ? value.toString().replace(/\r?\n|\n/g, '\n') : value;
+    // comment out the rest of the line.
+    //
+    return typeof value === 'function'
+      ? value.toString().replace(/\r?\n|\n/g, '\n')
+      : value;
   });
 }
 
-function parse(str) {
+/**
+ * @returns {any}
+ */
+function parse (str) {
   try {
     return JSON.parse(str, function (key, value) {
       logger.debug('eval', value);
-      if (typeof value !== 'string') { return value; }
-      return (value.substring(0, 8) === 'function') ? eval('(' + value + ')') : value;
+      if (typeof value !== 'string') {
+        return value;
+      }
+      // eslint-disable-next-line no-eval
+      const evalValue = value.substring(0, 8) === 'function' ? eval('(' + value + ')') : value;
+      logger.debug('evalValue', value);
+      return evalValue;
     });
   } catch (e) {
     logger.debug('Failed parsing string:', str);

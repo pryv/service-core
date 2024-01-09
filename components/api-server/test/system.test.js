@@ -1,18 +1,13 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-/* global describe, before, beforeEach, after, it */
-
-
 const async = require('async');
 const should = require('should');
 const request = require('superagent');
 const timestamp = require('unix-timestamp');
-const url = require('url');
 const _ = require('lodash');
 const assert = require('chai').assert;
 const bluebird = require('bluebird');
@@ -37,7 +32,7 @@ const { getConfig } = require('@pryv/boiler');
 
 require('date-utils');
 
-describe('system route', function () {
+describe('[SYRO] system route', function () {
   let mongoFixtures;
   let username;
   let server;
@@ -66,7 +61,7 @@ describe('system route', function () {
   });
 
   it('[CHEK] System check Platform integrity ', async () => {
-    const res = await request.get(url.resolve(server.url(), '/system/check-platform-integrity'))
+    const res = await request.get(new URL('/system/check-platform-integrity', server.url()).toString())
       .set('authorization', config.get('auth:adminAccessKey'));
     should.exists(res.body.checks);
     const checkLength = 2;
@@ -92,10 +87,10 @@ describe('system route', function () {
       const user = await mongoFixtures.user(username);
       await user.access({
         type: 'personal',
-        token: token
+        token
       });
       await user.session(token);
-      const res = await server.request()
+      await server.request()
         .put(profilePath)
         .set('authorization', token)
         .send({
@@ -121,12 +116,12 @@ describe('system route', function () {
   });
 });
 
-describe('system (ex-register)', function () {
+describe('[SYER] system (ex-register)', function () {
   let mongoFixtures;
 
   this.timeout(5000);
   function basePath () {
-    return url.resolve(server.url, '/system');
+    return new URL('/system', server.url).toString();
   }
 
   before(async function () {
@@ -150,8 +145,7 @@ describe('system (ex-register)', function () {
   // reconfigures it so that it just replies OK for subsequent tests.
   // DEPRECATED: remove (along with all other references to `create-user`) after all reg servers updated
   describe('POST /create-user (DEPRECATED)', function () {
-
-    function path() {
+    function path () {
       return basePath() + '/create-user';
     }
     function post (data, callback) {
@@ -174,14 +168,12 @@ describe('system (ex-register)', function () {
         await mongoFixtures.context.cleanEverything();
       });
       it('[FUTR] must create a new user with the sent data, sending a welcome email', async function () {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.services.email.enabled = {
           welcome: true
         };
 
         let mailSent = false;
-
-        let originalCount;
 
         // setup mail server mock
         helpers.instanceTestSetup.set(settings, {
@@ -206,7 +198,7 @@ describe('system (ex-register)', function () {
         const usersRepository = await getUsersRepository();
         const originalUsers = await usersRepository.getAll();
 
-        originalCount = originalUsers.length;
+        const originalCount = originalUsers.length;
         // create user
         const res = await bluebird.fromCallback(cb => post(newUserData, cb));
         validation.check(res, {
@@ -220,7 +212,7 @@ describe('system (ex-register)', function () {
         const users = await usersRepository.getAll(true);
         users.length.should.eql(originalCount + 1, 'users');
 
-        const expected = _.cloneDeep(newUserData);
+        const expected = structuredClone(newUserData);
         expected.storageUsed = { dbDocuments: 0, attachedFiles: 0 };
         const actual = _.find(users, function (user) {
           return user.username === newUserData.username;
@@ -235,12 +227,12 @@ describe('system (ex-register)', function () {
     });
 
     it('[0G7C] must not send a welcome email if mailing is deactivated', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testWelcomeMailNotSent(settings, done);
     });
     it('[TWBF] must not send a welcome email if welcome mail is deactivated', function (done) {
-      const settings = _.cloneDeep(helpers.dependencies.settings);
+      const settings = structuredClone(helpers.dependencies.settings);
       settings.services.email.enabled = {
         welcome: false
       };
@@ -261,14 +253,15 @@ describe('system (ex-register)', function () {
 
       // fetch notification from server process
       server.once('mail-sent2', function () {
-        return callback('Welcome email should not be sent!');
+        return callback(new Error('Welcome email should not be sent!'));
       });
 
       async.series([
         server.ensureStarted.bind(server, settings),
         function registerNewUser (stepDone) {
-          const newUserDataExpected = Object.assign({}, newUserData);
+          const newUserDataExpected = structuredClone(newUserData);
           post(newUserDataExpected, function (err, res) {
+            should.not.exists(err);
             validation.check(res, {
               status: 201,
               schema: methodsSchema.createUser.result
@@ -285,9 +278,7 @@ describe('system (ex-register)', function () {
 
       it('[9K71] must run the process but not save anything for test username "recla"',
         async function () {
-          let originalCount;
-          let createdUserId;
-          const settings = _.cloneDeep(helpers.dependencies.settings);
+          const settings = structuredClone(helpers.dependencies.settings);
 
           should(process.env.NODE_ENV).be.eql('test');
 
@@ -304,8 +295,8 @@ describe('system (ex-register)', function () {
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
           const usersRepository = await getUsersRepository();
-          originalUsers = await usersRepository.getAll();
-          originalCount = originalUsers.length;
+          const originalUsers = await usersRepository.getAll();
+          const originalCount = originalUsers.length;
 
           // create user
           const data = {
@@ -320,7 +311,7 @@ describe('system (ex-register)', function () {
             status: 201,
             schema: methodsSchema.createUser.result
           });
-          createdUserId = res.body.id;
+          const createdUserId = res.body.id;
 
           // getUpdatedUsers
           const users = await usersRepository.getAll();
@@ -329,11 +320,12 @@ describe('system (ex-register)', function () {
         });
 
       it('[ZG1L] must support the old "/register" path for backwards-compatibility', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
-        request.post(url.resolve(server.url, '/register/create-user'))
+        const newUserDataExpected = structuredClone(newUserData);
+        request.post(new URL('/register/create-user', server.url).toString())
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .send(newUserDataExpected)
           .end(function (err, res) {
+            should.not.exists(err);
             validation.check(res, {
               status: 201
             }, done);
@@ -341,20 +333,23 @@ describe('system (ex-register)', function () {
       });
 
       it('[VGF5] must return a correct 400 error if the sent data is badly formatted', function (done) {
+        // eslint-disable-next-line n/handle-callback-err
         post({ badProperty: 'bad value' }, function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
       });
 
       it('[ABI5] must return a correct 400 error if the language property is above 5 characters', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
+        // eslint-disable-next-line n/handle-callback-err
         post(_.assignIn(newUserDataExpected, { language: 'abcdef' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
       });
 
       it('[OVI4] must return a correct 400 error if the language property is the empty string', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
+        // eslint-disable-next-line n/handle-callback-err
         post(_.assignIn(newUserDataExpected, { language: '' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
@@ -401,10 +396,11 @@ describe('system (ex-register)', function () {
       });
 
       it('[Y5JB] must return a correct 404 error when authentication is invalid', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         request
           .post(path())
           .set('authorization', 'bad-key').send(newUserDataExpected)
+          // eslint-disable-next-line n/handle-callback-err
           .end(function (err, res) {
             validation.checkError(res, {
               status: 404,
@@ -417,6 +413,7 @@ describe('system (ex-register)', function () {
         request.post(path())
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .set('Content-Type', 'application/Jssdlfkjslkjfon') // <-- case error
+          // eslint-disable-next-line n/handle-callback-err
           .end(function (err, res) {
             validation.checkError(res, {
               status: 415,
@@ -453,7 +450,7 @@ describe('system (ex-register)', function () {
       }
 
       function instanciateServerWithLogs (stepDone) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.logs = {
           file: {
             active: true,
@@ -464,17 +461,18 @@ describe('system (ex-register)', function () {
             json: false
           }
         };
-        server.ensureStarted.call(server, settings, stepDone);
+        server.ensureStarted(settings, stepDone);
       }
 
       after(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
       // cf. GH issue #64
       it('[Y69B] must replace the passwordHash in the logs by (hidden) when the authentication is invalid', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         async.series([
           function failCreateUser (stepDone) {
             request.post(path()).set('authorization', 'bad-key').send(newUserDataExpected)
+              // eslint-disable-next-line n/handle-callback-err
               .end(function (err, res) {
                 validation.checkError(res, {
                   status: 404,
@@ -488,9 +486,10 @@ describe('system (ex-register)', function () {
 
       // cf. GH issue #64 too
       it('[MEJ9] must replace the passwordHash in the logs by (hidden) when the payload is invalid (here parameters)', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         async.series([
           function failCreateUser (stepDone) {
+            // eslint-disable-next-line n/handle-callback-err
             post(_.extend({ invalidParam: 'yolo' }, newUserDataExpected), function (err, res) {
               validation.checkError(res, {
                 status: 400,
@@ -503,12 +502,13 @@ describe('system (ex-register)', function () {
       });
 
       it('[CO6H] must not mention the passwordHash in the logs when none is provided', function (done) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         async.series([
           function failCreateUser (stepDone) {
-            const dataWithNoPasswordHash = _.cloneDeep(newUserDataExpected);
+            const dataWithNoPasswordHash = structuredClone(newUserDataExpected);
             delete dataWithNoPasswordHash.passwordHash;
 
+            // eslint-disable-next-line n/handle-callback-err
             post(dataWithNoPasswordHash, function (err, res) {
               validation.checkError(res, {
                 status: 400,
@@ -521,7 +521,7 @@ describe('system (ex-register)', function () {
       });
 
       function verifyHiddenPasswordHashInLogs (callback) {
-        const newUserDataExpected = Object.assign({}, newUserData);
+        const newUserDataExpected = structuredClone(newUserData);
         fs.readFile(logFilePath, 'utf8', function (err, data) {
           if (err) {
             return callback(err);
@@ -545,7 +545,7 @@ describe('system (ex-register)', function () {
   });
 
   describe('GET /user-info/{username}', function () {
-    const user = Object.assign({}, testData.users[0]);
+    const user = structuredClone(testData.users[0]);
     function path (username) {
       return basePath() + '/user-info/' + username;
     }
@@ -560,6 +560,7 @@ describe('system (ex-register)', function () {
           request.get(path(user.username))
             .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
             .end(function (err, res) {
+              should.not.exists(err);
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.getUserInfo.result
@@ -569,14 +570,14 @@ describe('system (ex-register)', function () {
             });
         },
         function makeUserRequest1 (stepDone) {
-          request.get(url.resolve(server.url, '/' + user.username + '/events'))
+          request.get(new URL('/' + user.username + '/events', server.url).toString())
             .set('authorization', testData.accesses[4].token)
             .end(function (err) {
               stepDone(err);
             });
         },
         function makeUserRequest2 (stepDone) {
-          request.get(url.resolve(server.url, '/' + user.username + '/events'))
+          request.get(new URL('/' + user.username + '/events', server.url).toString())
             .set('authorization', testData.accesses[1].token)
             .end(function (err) {
               expectedTime = timestamp.now();
@@ -587,6 +588,7 @@ describe('system (ex-register)', function () {
           request.get(path(user.username))
             .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
             .end(function (err, res) {
+              should.not.exists(err);
               const info = res.body.userInfo;
 
               assert.approximately(info.lastAccess, expectedTime, 2);
@@ -615,6 +617,7 @@ describe('system (ex-register)', function () {
     });
 
     it('[FNJ5] must return a correct 404 error when authentication is invalid', function (done) {
+      // eslint-disable-next-line n/handle-callback-err
       request.get(path(user.username)).set('authorization', 'bad-key').end(function (err, res) {
         validation.checkError(res, {
           status: 404,

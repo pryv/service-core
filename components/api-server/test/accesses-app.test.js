@@ -1,50 +1,41 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
 
-/*global describe, before, beforeEach, it */
-
-
-const ErrorIds = require('errors').ErrorIds;
-const async = require('async');
-const methodsSchema = require('../src/schema/accessesMethods');
-const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const should = require('should');
+const async = require('async');
+const timestamp = require('unix-timestamp');
+
+const { ErrorIds } = require('errors');
+const methodsSchema = require('../src/schema/accessesMethods');
 const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
-
 const { integrity } = require('business');
 
-import type Request  from './helpers';
-
 describe('[ACCP] accesses (app)', function () {
-
   let helpers, server, validation, storage, testData;
   let additionalTestAccesses, user, access, basePath, accessesNotifCount;
-  let request: ?Request = null; // must be set after server instance started
+  let request = null; // must be set after server instance started
 
-  function buildApiEndpoint(username, token) {
+  function buildApiEndpoint (username, token) {
     return ApiEndpoint.build(username, token);
   }
 
-  before(async function() {
+  before(async () => {
     await getConfig(); // needed for ApiEndpoint.build();
   });
 
-
   before(() => {
-    require('./test-helpers'); 
+    require('./test-helpers');
     helpers = require('./helpers');
     server = helpers.dependencies.instanceManager;
     validation = helpers.validation;
     storage = helpers.dependencies.storage.user.accesses;
     testData = helpers.data;
-
     additionalTestAccesses = [
       {
         id: 'app_A',
@@ -59,7 +50,7 @@ describe('[ACCP] accesses (app)', function () {
           {
             streamId: testData.streams[1].id,
             level: 'contribute'
-          },
+          }
         ],
         created: timestamp.now(),
         createdBy: 'test',
@@ -75,7 +66,7 @@ describe('[ACCP] accesses (app)', function () {
           {
             streamId: testData.streams[0].id,
             level: 'read'
-          },
+          }
         ],
         created: timestamp.now(),
         createdBy: 'test',
@@ -91,7 +82,7 @@ describe('[ACCP] accesses (app)', function () {
           {
             streamId: testData.streams[0].children[0].id,
             level: 'read'
-          },
+          }
         ],
         created: timestamp.now(),
         createdBy: 'app_A',
@@ -131,27 +122,25 @@ describe('[ACCP] accesses (app)', function () {
         modifiedBy: 'test'
       }
     ];
-   
-    user = Object.assign({}, testData.users[0]);
-    
-    additionalTestAccesses.map((a) => {
+    user = structuredClone(testData.users[0]);
+    additionalTestAccesses.forEach((a) => {
       a.apiEndpoint = buildApiEndpoint(user.username, a.token);
       integrity.accesses.set(a);
     });
-
-
     access = additionalTestAccesses[0];
     basePath = '/' + user.username + '/accesses';
-    
     // to verify data change notifications
-    server.on('axon-accesses-changed', function () { accessesNotifCount++; });
+    server.on('axon-accesses-changed', function () {
+      accessesNotifCount++;
+    });
   });
 
-  function path(id) {
+  function path (id) {
     return basePath + '/' + id;
   }
-  function req(): Request {
-    if (request) return request; 
+
+  function req () {
+    if (request) { return request; }
     throw new Error('request is still not defined.');
   }
 
@@ -160,40 +149,43 @@ describe('[ACCP] accesses (app)', function () {
       testData.resetUsers,
       testData.resetStreams,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
-      function (stepDone) { request = helpers.request(server.url); stepDone(); }
+      function (stepDone) {
+        request = helpers.request(server.url);
+        stepDone();
+      }
     ], done);
   });
 
   describe('GET /', function () {
-
     before(resetAccesses);
 
-    it('[YEHW] must return shared accesses whose permissions are a subset of the current one\'s',
-      function (done) {
-        req().get(basePath, access.token).end(function (res) {
+    it("[YEHW] must return shared accesses whose permissions are a subset of the current one's", function (done) {
+      req()
+        .get(basePath, access.token)
+        .end(function (res) {
           validation.check(res, {
             status: 200,
             schema: methodsSchema.get.result,
-            body: {accesses: [additionalTestAccesses[2]]}
+            body: { accesses: [additionalTestAccesses[2]] }
           }, done);
         });
-      });
+    });
 
     it('[GLHP] must be forbidden to requests with a shared access token', function (done) {
       const sharedAccess = testData.accesses[1];
-      req().get(basePath, sharedAccess.token).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      req()
+        .get(basePath, sharedAccess.token)
+        .end(function (res) {
+          validation.checkErrorForbidden(res, done);
+        });
     });
-
   });
 
   describe('POST /', function () {
-
     beforeEach(resetAccesses);
 
     it('[QVHS] must create a new shared access with the sent data and return it', function (done) {
-      const  data = {
+      const data = {
         name: 'New Access',
         permissions: [
           {
@@ -201,32 +193,33 @@ describe('[ACCP] accesses (app)', function () {
             level: 'read',
             defaultName: 'Should be ignored',
             name: 'Should be ignored'
-          },
+          }
         ]
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
+      req()
+        .post(basePath, access.token)
+        .send(data)
+        .end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
+          });
+          const expected = structuredClone(data);
+          expected.id = res.body.access.id;
+          expected.token = res.body.access.token;
+          expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
+          expected.type = 'shared';
+          delete expected.permissions[0].defaultName;
+          delete expected.permissions[0].name;
+          expected.created = res.body.access.created;
+          expected.createdBy = res.body.access.createdBy;
+          expected.modified = res.body.access.modified;
+          expected.modifiedBy = res.body.access.modifiedBy;
+          integrity.accesses.set(expected);
+          validation.checkObjectEquality(res.body.access, expected);
+          should(accessesNotifCount).be.eql(1, 'accesses notifications');
+          done();
         });
-
-        const expected: {[key: string]: any} = _.cloneDeep(data);
-        expected.id = res.body.access.id;
-        expected.token = res.body.access.token;
-        expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
-        expected.type = 'shared';
-        delete expected.permissions[0].defaultName;
-        delete expected.permissions[0].name;
-        expected.created = res.body.access.created;
-        expected.createdBy = res.body.access.createdBy;
-        expected.modified = res.body.access.modified;
-        expected.modifiedBy = res.body.access.modifiedBy;
-        integrity.accesses.set(expected);
-        validation.checkObjectEquality(res.body.access, expected);
-
-        should(accessesNotifCount).be.eql(1, 'accesses notifications');
-        done();
-      });
     });
 
     it('[6GR1] must forbid trying to create a non-shared access', function (done) {
@@ -240,9 +233,12 @@ describe('[ACCP] accesses (app)', function () {
           }
         ]
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      req()
+        .post(basePath, access.token)
+        .send(data)
+        .end(function (res) {
+          validation.checkErrorForbidden(res, done);
+        });
     });
 
     it('[A4MC] must forbid trying to create an access with greater permissions', function (done) {
@@ -255,9 +251,12 @@ describe('[ACCP] accesses (app)', function () {
           }
         ]
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      req()
+        .post(basePath, access.token)
+        .send(data)
+        .end(function (res) {
+          validation.checkErrorForbidden(res, done);
+        });
     });
 
     it('[QN6D] must return a correct error if the sent data is badly formatted', function (done) {
@@ -270,14 +269,16 @@ describe('[ACCP] accesses (app)', function () {
           }
         ]
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
+      req()
+        .post(basePath, access.token)
+        .send(data)
+        .end(function (res) {
+          validation.checkErrorInvalidParams(res, done);
+        });
     });
 
     it('[4HAE] must allow creation of shared accesses with an access that has superior permission on root stream (*)', function (done) {
       const access = additionalTestAccesses[3];
-
       const data = {
         name: 'New Access',
         permissions: [
@@ -287,122 +288,128 @@ describe('[ACCP] accesses (app)', function () {
           }
         ]
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
-        should.exist(res.body);
-        should.not.exist(res.body.error);
-        should(res.statusCode).be.eql(201);
-        done();
-      });
+      req()
+        .post(basePath, access.token)
+        .send(data)
+        .end(function (res) {
+          should.exist(res.body);
+          should.not.exist(res.body.error);
+          should(res.statusCode).be.eql(201);
+          done();
+        });
     });
-
   });
 
   describe('PUT /<token>', function () {
-
     beforeEach(resetAccesses);
 
     it('[11UZ]  must return a 410 (Gone)', function (done) {
-      req().put(path(additionalTestAccesses[1].id), access.token)
-          .send({name: 'Updated App Access'}).end(function (res) {
-            validation.check(res, {status: 410});
-            done();
-      });
+      req()
+        .put(path(additionalTestAccesses[1].id), access.token)
+        .send({ name: 'Updated App Access' })
+        .end(function (res) {
+          validation.check(res, { status: 410 });
+          done();
+        });
     });
   });
 
   describe('DELETE /<id>', function () {
-
     beforeEach(resetAccesses);
 
     it('[5BOO] must delete the shared access', function (done) {
       const deletedAccess = additionalTestAccesses[2];
       let deletionTime;
       async.series([
-        function deleteAccess(stepDone) {
+        function deleteAccess (stepDone) {
           deletionTime = timestamp.now();
-          req().del(path(deletedAccess.id), access.token).end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.del.result,
-              body: {accessDeletion: {id: deletedAccess.id}}
+          req()
+            .del(path(deletedAccess.id), access.token)
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.del.result,
+                body: { accessDeletion: { id: deletedAccess.id } }
+              });
+              should(accessesNotifCount).be.eql(1, 'accesses notifications');
+              stepDone();
             });
-            should(accessesNotifCount).be.eql(1, 'accesses notifications');
-            stepDone();
-          });
         },
-        function verifyData(stepDone) {
+        function verifyData (stepDone) {
           storage.findAll(user, null, function (err, accesses) {
-            accesses.length.should.eql(testData.accesses.length + additionalTestAccesses.length,
-                                       'accesses');
-
+            should.not.exist(err);
+            accesses.length.should.eql(testData.accesses.length + additionalTestAccesses.length, 'accesses');
             const expected = _.assign({
               deleted: deletionTime
             }, deletedAccess);
-            const actual = _.find(accesses, {id: deletedAccess.id});
+            const actual = _.find(accesses, { id: deletedAccess.id });
             validation.checkObjectEquality(actual, expected);
-
             stepDone();
           });
         }
-      ],
-          done
-      );
+      ], done);
     });
 
     it('[ZTSX] forbid deletion of already deleted for AppTokens', function (done) {
-      req().del(path(access.id), access.token).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.del.result,
-          body: { 
-            accessDeletion: { id: access.id },
-            relatedDeletions: [{
-              id: additionalTestAccesses[2].id
-            }] 
-          }
+      req()
+        .del(path(access.id), access.token)
+        .end(function (res) {
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.del.result,
+            body: {
+              accessDeletion: { id: access.id },
+              relatedDeletions: [
+                {
+                  id: additionalTestAccesses[2].id
+                }
+              ]
+            }
+          });
+          req()
+            .del(path(access.id), access.token)
+            .end(function (res2) {
+              validation.check(res2, {
+                status: 403
+              });
+              done();
+            });
         });
-
-        req().del(path(access.id), access.token).end(function (res2) {
-          validation.check(res2, {
-            status: 403});
-
-          done();
-        });
-
-      });
     });
 
-    
-
     it('[VGQS] must forbid trying to delete a non-shared access', function (done) {
-      req().del(path(additionalTestAccesses[1].id), access.token).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      req()
+        .del(path(additionalTestAccesses[1].id), access.token)
+        .end(function (res) {
+          validation.checkErrorForbidden(res, done);
+        });
     });
 
     it('[ZTSY] must forbid trying to delete an access that was not created by itself', function (done) {
-      req().del(path(testData.accesses[1].id), access.token).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      req()
+        .del(path(testData.accesses[1].id), access.token)
+        .end(function (res) {
+          validation.checkErrorForbidden(res, done);
+        });
     });
 
     it('[J32P] must return a correct error if the access does not exist', function (done) {
-      req().del(path('unknown-id'), access.token).end(function (res) {
-        validation.checkError(res, {
-          status: 404,
-          id: ErrorIds.UnknownResource
-        }, done);
-      });
+      req()
+        .del(path('unknown-id'), access.token)
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 404,
+            id: ErrorIds.UnknownResource
+          }, done);
+        });
     });
-
   });
 
-  function resetAccesses(done) {
+  function resetAccesses (done) {
     accessesNotifCount = 0;
     async.series([
       testData.resetAccesses,
       storage.insertMany.bind(storage, user, additionalTestAccesses)
     ], done);
   }
-
 });

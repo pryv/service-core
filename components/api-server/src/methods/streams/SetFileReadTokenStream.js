@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -19,8 +19,8 @@ module.exports = SetFileReadTokenStream;
  *        params.filesReadTokenSecret {String} available in authSettings
  * @constructor
  */
-function SetFileReadTokenStream(params) {
-  Transform.call(this, {objectMode: true});
+function SetFileReadTokenStream (params) {
+  Transform.call(this, { objectMode: true });
 
   this.access = params.access;
   this.filesReadTokenSecret = params.filesReadTokenSecret;
@@ -29,11 +29,10 @@ function SetFileReadTokenStream(params) {
 inherits(SetFileReadTokenStream, Transform);
 
 SetFileReadTokenStream.prototype._transform = function (event, encoding, callback) {
-  
   // To remove when streamId not necessary
   event.streamId = event.streamIds[0];
 
-  if (! event.attachments) {
+  if (!event.attachments) {
     this.push(event);
   } else {
     event.attachments.forEach(function (att) {
@@ -46,4 +45,3 @@ SetFileReadTokenStream.prototype._transform = function (event, encoding, callbac
   }
   callback();
 };
-

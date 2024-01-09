@@ -1,33 +1,29 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const _ = require('lodash');
-
 const errors = require('errors').factory;
-
 const { getConfig } = require('@pryv/boiler');
 const getHTTPDigestHeaderForAttachment = require('business').integrity.attachments.getHTTPDigestHeaderForAttachment;
 const { getMall } = require('mall');
-
 let initialized = false;
 let config = null;
 let mall = null;
 let isAuditActive = false;
 let audit = null;
-
+/**
+ * @returns {Class<attachmentsAccessMiddleware>>}
+ */
 async function middlewareFactory () {
-  if (initialized) return attachmentsAccessMiddleware;
-
+  if (initialized) { return attachmentsAccessMiddleware; }
   config = await getConfig();
   mall = await getMall();
-
   // -- Audit
-  isAuditActive = (!config.get('openSource:isActive')) && config.get('audit:active');
+  isAuditActive =
+        !config.get('openSource:isActive') && config.get('audit:active');
   if (isAuditActive) {
     const throwIfMethodIsNotDeclared = require('audit/src/ApiMethods').throwIfMethodIsNotDeclared;
     throwIfMethodIsNotDeclared('events.getAttachment');
@@ -38,14 +34,15 @@ async function middlewareFactory () {
   return attachmentsAccessMiddleware;
 }
 module.exports = middlewareFactory;
-
 // A middleware that checks permissions to access the file attachment, then
 // translates the request's resource path to match the actual physical path for
 // static-serving the file.
 //
+/**
+ * @returns {Promise<any>}
+ */
 async function attachmentsAccessMiddleware (req, res, next) {
   const event = await mall.events.getOne(req.context.user.id, req.params.id);
-
   if (!event) {
     return next(errors.unknownResource('event', req.params.id));
   }
@@ -59,28 +56,25 @@ async function attachmentsAccessMiddleware (req, res, next) {
   if (!canReadEvent) {
     return next(errors.forbidden());
   }
-
   // set response content type (we can't rely on the filename)
-  const attachment = event.attachments ? _.find(event.attachments, { id: req.params.fileId }) : null;
+  const attachment = event.attachments
+    ? _.find(event.attachments, { id: req.params.fileId })
+    : null;
   if (!attachment) {
-    return next(errors.unknownResource(
-      'attachment', req.params.fileId
-    ));
+    return next(errors.unknownResource('attachment', req.params.fileId));
   }
   res.header('Content-Type', attachment.type);
   res.header('Content-Length', attachment.size);
-  res.header('Content-Disposition', 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(attachment.fileName));
+  res.header('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(attachment.fileName));
   if (attachment.integrity != null) {
     const digest = getHTTPDigestHeaderForAttachment(attachment.integrity);
     if (digest != null) {
       res.header('Digest', digest);
     }
   }
-  const fileReadStream = await mall.events.getAttachedFile(req.context.user.id, event, req.params.fileId);
-
+  const fileReadStream = await mall.events.getAttachment(req.context.user.id, event, req.params.fileId);
   // for Audit
   req.context.originalQuery = req.params;
-
   const pipedStream = fileReadStream.pipe(res);
   let streamHasErrors = false;
   fileReadStream.on('error', async (err) => {
@@ -93,8 +87,8 @@ async function attachmentsAccessMiddleware (req, res, next) {
     next(err);
   });
   pipedStream.on('finish', async () => {
-    if (streamHasErrors) return;
-    if (isAuditActive) await audit.validApiCall(req.context, null);
+    if (streamHasErrors) { return; }
+    if (isAuditActive) { await audit.validApiCall(req.context, null); }
     // do not call "next()"
   });
 }

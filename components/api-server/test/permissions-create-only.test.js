@@ -1,20 +1,18 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, before, after */
 
 const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
-const _ = require('lodash');
 
 const helpers = require('./helpers');
 const testData = helpers.data;
-const settings = _.cloneDeep(helpers.dependencies.settings);
+const settings = structuredClone(helpers.dependencies.settings);
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -23,31 +21,31 @@ let isAuditActive = true;
 
 describe('permissions create-only level', () => {
   let mongoFixtures;
-  before(async function() {
+  before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     const config = await getConfig();
-    isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
+    isAuditActive = (!config.get('openSource:isActive')) && config.get('audit:active');
   });
   after(async () => {
     await mongoFixtures.clean();
   });
 
   let user,
-      username,
-      streamParentId,
-      streamCreateOnlyId,
-      streamOutId,
-      readAccessId,
-      readAccessToken,
-      createOnlyToken,
-      coWithReadParentToken,
-      coWithContributeParentToken,
-      masterToken,
-      manageAccessToken,
-      contributeAccessToken,
-      createOnlyEventId,
-      streamParentIdAndCreateOnlyEventId,
-      eventOutId;
+    username,
+    streamParentId,
+    streamCreateOnlyId,
+    streamOutId,
+    readAccessId,
+    readAccessToken,
+    createOnlyToken,
+    coWithReadParentToken,
+    coWithContributeParentToken,
+    masterToken,
+    manageAccessToken,
+    contributeAccessToken,
+    createOnlyEventId,
+    streamParentIdAndCreateOnlyEventId,
+    eventOutId;
 
   before(() => {
     username = cuid();
@@ -147,7 +145,7 @@ describe('permissions create-only level', () => {
         {
           streamId: '*',
           level: 'manage'
-        },
+        }
       ]
     });
     await user.access({
@@ -157,7 +155,7 @@ describe('permissions create-only level', () => {
         {
           streamId: streamCreateOnlyId,
           level: 'manage'
-        },
+        }
       ]
     });
     await user.access({
@@ -167,7 +165,7 @@ describe('permissions create-only level', () => {
         {
           streamId: streamCreateOnlyId,
           level: 'contribute'
-        },
+        }
       ]
     });
     await streamParent.event();
@@ -190,15 +188,13 @@ describe('permissions create-only level', () => {
       basePath = `/${username}/accesses`;
     });
 
-    function reqPath(id) {
+    function reqPath (id) {
       return `${basePath}/${id}`;
     }
 
     describe('Accesses', function () {
       describe('GET /', function () {
-
         describe('when using an access with a "create-only" permissions', function () {
-
           let accesses;
           before(async function () {
             const res = await server.request()
@@ -214,9 +210,7 @@ describe('permissions create-only level', () => {
       });
 
       describe('POST /', function () {
-
         describe('when using an access with a "create-only" permission', function () {
-
           it('[X4Z1] a masterToken should allow to create an access with a "create-only" permissions', async function () {
             const res = await server.request()
               .post(basePath)
@@ -226,7 +220,7 @@ describe('permissions create-only level', () => {
                 name: 'whatever',
                 permissions: [{
                   streamId: streamCreateOnlyId,
-                  level: 'create-only',
+                  level: 'create-only'
                 }]
               });
             assert.equal(res.status, 201);
@@ -243,7 +237,7 @@ describe('permissions create-only level', () => {
                 name: 'whatever2nd',
                 permissions: [{
                   streamId: streamCreateOnlyId,
-                  level: 'create-only',
+                  level: 'create-only'
                 }]
               });
             assert.equal(res.status, 201);
@@ -260,8 +254,8 @@ describe('permissions create-only level', () => {
                 name: 'whatever2nd2nd',
                 permissions: [{
                   streamId: streamCreateOnlyId,
-                  level: 'create-only',
-                },{
+                  level: 'create-only'
+                }, {
                   feature: 'selfRevoke',
                   setting: 'forbidden'
                 }]
@@ -280,7 +274,7 @@ describe('permissions create-only level', () => {
                 name: 'whatever3rd',
                 permissions: [{
                   streamId: streamCreateOnlyId,
-                  level: 'create-only',
+                  level: 'create-only'
                 }]
               });
             assert.equal(res.status, 403);
@@ -297,14 +291,13 @@ describe('permissions create-only level', () => {
                 name: 'whatever4th',
                 permissions: [{
                   streamId: streamCreateOnlyId,
-                  level: 'create-only',
+                  level: 'create-only'
                 }]
               });
             assert.equal(res.status, 201);
             const access = res.body.access;
             assert.exists(access);
           });
-
 
           it('[FEGI] a createOnlyToken should forbid to create an access with a "read" level permission permission', async function () {
             const res = await server
@@ -366,15 +359,15 @@ describe('permissions create-only level', () => {
         });
       });
 
-      describe('PUT /', function() {
+      describe('PUT /', function () {
         it('[1WXJ] should forbid updating accesses', async function () {
           const res = await server.request()
             .put(reqPath(readAccessId))
             .set('Authorization', createOnlyToken)
             .send({
               clientData: {
-                a: 'b',
-              },
+                a: 'b'
+              }
             });
           assert.equal(res.status, 410);
         });
@@ -389,21 +382,20 @@ describe('permissions create-only level', () => {
         });
       });
     });
-
   });
 
-  describe('Events', function() {
+  describe('Events', function () {
     let basePath;
     before(() => {
       basePath = `/${username}/events`;
     });
 
-    function reqPath(id) {
+    function reqPath (id) {
       return `${basePath}/${id}`;
     }
 
-    describe('GET /', function() {
-      it('[CKF3] should return an error list when fetching explicitly "create-only" streams', async function() {
+    describe('GET /', function () {
+      it('[CKF3] should return an error list when fetching explicitly "create-only" streams', async function () {
         const query = {
           streams: [streamCreateOnlyId]
         };
@@ -417,7 +409,7 @@ describe('permissions create-only level', () => {
         assert.equal(res.body.error.id, 'forbidden');
       });
 
-      it('[V4KJ] should not return events when fetching "create-only" streams that are children of "read" streams', async function() {
+      it('[V4KJ] should not return events when fetching "create-only" streams that are children of "read" streams', async function () {
         const res = await server
           .request()
           .get(basePath)
@@ -429,14 +421,14 @@ describe('permissions create-only level', () => {
         }
       });
 
-      it('[SYRW] should not return events when fetching "create-only" streams that are children of "contribute" streams', async function() {
+      it('[SYRW] should not return events when fetching "create-only" streams that are children of "contribute" streams', async function () {
         const res = await server
           .request()
           .get(basePath)
           .set('Authorization', coWithContributeParentToken);
         const events = res.body.events;
         assert.equal(events.length, 1);
-        for (let event of events) {
+        for (const event of events) {
           assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
         }
       });
@@ -452,8 +444,8 @@ describe('permissions create-only level', () => {
       });
     });
 
-    describe('POST /', function() {
-      it('[0G8I] should forbid creating events for out of scope streams', async function() {
+    describe('POST /', function () {
+      it('[0G8I] should forbid creating events for out of scope streams', async function () {
         const params = {
           type: 'test/test',
           streamId: streamOutId
@@ -467,7 +459,7 @@ describe('permissions create-only level', () => {
         assert.equal(res.status, 403);
       });
 
-      it('[F406] should allow creating events for "create-only" streams', async function() {
+      it('[F406] should allow creating events for "create-only" streams', async function () {
         const params = {
           type: 'test/test',
           streamId: streamCreateOnlyId
@@ -480,8 +472,6 @@ describe('permissions create-only level', () => {
         assert.equal(res.status, 201);
       });
     });
-
-
 
     describe('PUT /', function () {
       it('[V0UO] should forbid updating events for "create-only" streams', async function () {
@@ -511,9 +501,7 @@ describe('permissions create-only level', () => {
       // because they are covered by the GET above
     });
 
-
     describe('attachments', function () {
-
       let eventId, fileId;
       before(async function () {
         const res = await server.request()
@@ -521,7 +509,7 @@ describe('permissions create-only level', () => {
           .set('Authorization', createOnlyToken)
           .field('event', JSON.stringify({
             streamId: streamCreateOnlyId,
-            type: 'picture/attached',
+            type: 'picture/attached'
           }))
           .attach('document', testData.attachments.document.path,
             testData.attachments.document.filename);
@@ -572,16 +560,15 @@ describe('permissions create-only level', () => {
         });
       });
     });
-
   });
 
-  describe('Streams', function() {
+  describe('Streams', function () {
     let basePath;
     before(() => {
       basePath = `/${username}/streams`;
     });
 
-    function reqPath(id) {
+    function reqPath (id) {
       return `${basePath}/${id}`;
     }
 
@@ -634,7 +621,6 @@ describe('permissions create-only level', () => {
         assert.equal(res.status, 403);
       });
     });
-
   });
 
   describe('Webhooks', function () {
@@ -644,26 +630,19 @@ describe('permissions create-only level', () => {
       basePath = `/${username}/webhooks`;
     });
 
-    function reqPath(id) {
-      return `${basePath}/${id}`;
-    }
-
-
-    describe('CREATE /', function() {
+    describe('CREATE /', function () {
       it('[3AE9] should allow creating webhooks', async function () {
         const res = await server
           .request()
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .send({
-            url: charlatan.Internet.url(),
+            url: charlatan.Internet.url()
           });
         assert.equal(res.status, 201);
       });
     });
 
     // skipping GET, UPDATE & DELETE as they use the same code check.
-
   });
-
 });

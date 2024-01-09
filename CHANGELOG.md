@@ -1,6 +1,27 @@
+
+## 1.9
+
+### 1.9.0
+
+- Remove FlowType and convert (best-effort) typing information into JSDoc comments
+- Update to MongoDB v6
+- Update to node v18
+- Update Docker images
+- Stream deletion eventIds when deleting streams to avoid timeout
+- Introduce platform DB for future cross-cores usage
+- Unify SQLite usage across audit and storage
+- Move attachments to per-user directories
+- Finalize data-store API for first public release
+- Many linting fixes
+- Support for multiple CAA (certificate autorities issuer)
+- Bug fixes:
+  - Non-reusable deleted streamIds when following auth process #484
+  - SQLITE_BUSY error thrown in multi-core #487
+
 ## 1.8
 
-### 1.8.1 
+### 1.8.1
+
 - Fix migration 1.6.x to 1.8.0 bug
 
 ### 1.8.0
@@ -368,7 +389,7 @@ New feature:
 - We've rehauled the 'delete-user' command of the Pryv.IO cli admin tool. It
   now operates more explicitly and allows automation.
 
-- Improvements related to mongoDB:
+- Improvements related to MongoDB:
   - We now use j:true as write concern, which requests acknowledgement that
     write operations has been written to the journal. This measure improves our
     persistence story in the face of a crash.

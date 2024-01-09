@@ -1,33 +1,31 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, beforeEach, it */
+
+const { assert } = require('chai');
+const supertest = require('supertest');
+const bluebird = require('bluebird');
+const async = require('async');
+const fs = require('fs');
+const should = require('should'); // explicit require to benefit from static function
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
 
 require('./test-helpers');
 
-const bluebird = require('bluebird');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
-const async = require('async');
 const attachmentsCheck = helpers.attachmentsCheck;
 const commonTests = helpers.commonTests;
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
 const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/eventsMethods');
-const fs = require('fs');
-const should = require('should'); // explicit require to benefit from static function
-const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
-const timestamp = require('unix-timestamp');
-const _ = require('lodash');
 
-const chai = require('chai');
-const assert = chai.assert;
-const supertest = require('supertest');
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { integrity } = require('business');
 const { getMall } = require('mall');
@@ -35,27 +33,26 @@ const { getMall } = require('mall');
 require('date-utils');
 
 describe('events', function () {
-
-  var user = Object.assign({}, testData.users[0]),
-      basePath = '/' + user.username + '/events',
-      testType = 'test/test',
-      // these must be set after server instance started
-      request = null,
-      access = null,
-      filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
+  const user = structuredClone(testData.users[0]);
+  const basePath = '/' + user.username + '/events';
+  const testType = 'test/test';
+  // these must be set after server instance started
+  let request = null;
+  let access = null;
+  const filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
 
   let mall;
 
-  before(async function() {
+  before(async function () {
     mall = await getMall();
   });
 
-  function path(id, base) {
+  function path (id, base) {
     return (base || basePath) + '/' + id;
   }
 
   // to verify data change notifications
-  var eventsNotifCount;
+  let eventsNotifCount;
   server.on('axon-events-changed', function () { eventsNotifCount++; });
 
   before(function (done) {
@@ -69,23 +66,23 @@ describe('events', function () {
         request.login(user, stepDone);
       },
       function (stepDone) {
-        helpers.dependencies.storage.user.accesses.findOne(user, {token: request.token},
-            null, function (err, acc) {
-          access = acc;
-          stepDone();
-        });
+        helpers.dependencies.storage.user.accesses.findOne(user, { token: request.token },
+          null, function (err, acc) {
+            assert.notExists(err);
+            access = acc;
+            stepDone();
+          });
       }
     ], done);
   });
 
   describe('GET /', function () {
-
     before(resetEvents);
 
     it('[WC8C] must return the last 20 non-trashed events (sorted descending) by default',
       function (done) {
-        var additionalEvents = [];
-        for (var i = 0; i < 50; i++) {
+        const additionalEvents = [];
+        for (let i = 0; i < 50; i++) {
           additionalEvents.push({
             id: (100 + i).toString(),
             time: timestamp.now('-' + (48 + i) + 'h'),
@@ -101,8 +98,8 @@ describe('events', function () {
         let allEvents;
         let accountStreamsEvents;
         async.series([
-          async function createEvents() { 
-            return mall.events.createMany(user.id,  additionalEvents)
+          async function createEvents () {
+            return mall.events.createMany(user.id, additionalEvents);
           },
           function getDefault (stepDone) {
             request.get(basePath).end(function (res) {
@@ -112,14 +109,14 @@ describe('events', function () {
                 .filter(function (e) {
                   return !e.trashed && !_.some(testData.streams, containsTrashedEventStream);
                   function containsTrashedEventStream (stream) {
-                    return stream.trashed && stream.id === e.streamIds[0] ||
+                    return (stream.trashed && stream.id === e.streamIds[0]) ||
                       _.some(stream.children, containsTrashedEventStream);
                   }
                 });
               stepDone();
             });
           },
-          function separateAccountEventAndAllOtherEvents(stepDone) {
+          function separateAccountEventAndAllOtherEvents (stepDone) {
             // lets separate core events from all other events and validate them separatelly
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(response.body.events);
             response.body.events = separatedEvents.events;
@@ -141,7 +138,7 @@ describe('events', function () {
 
     it('[U8U9] must only return events for the given streams (incl. sub-streams) when set',
       function (done) {
-        var params = {
+        const params = {
           streams: [testData.streams[0].id, testData.streams[2].id],
           fromTime: timestamp.now('-48h'),
           sortAscending: false // explicitly set default value to check it works too...
@@ -160,7 +157,7 @@ describe('events', function () {
       });
 
     it('[S0M6] must return an error if some of the given streams do not exist', function (done) {
-      var params = { streams: ['bad-id-A', 'bad-id-B'] };
+      const params = { streams: ['bad-id-A', 'bad-id-B'] };
       request.get(basePath).query(params).end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -171,7 +168,7 @@ describe('events', function () {
     });
 
     it('[R667] must only return events with the given tag when set', function (done) {
-      var params = {
+      const params = {
         tags: ['super'],
         fromTime: timestamp.now('-48h')
       };
@@ -189,7 +186,7 @@ describe('events', function () {
     });
 
     it('[KNJY] must only return events with any of the given tags when set', function (done) {
-      var params = {
+      const params = {
         tags: ['super', 'fragilistic'],
         fromTime: timestamp.now('-48h')
       };
@@ -207,7 +204,7 @@ describe('events', function () {
     });
 
     it('[QR4I] must only return events of any of the given types when set', function (done) {
-      var params = {
+      const params = {
         types: ['picture/attached', 'note/webclip'],
         state: 'all'
       };
@@ -225,7 +222,7 @@ describe('events', function () {
     });
 
     it('[TWP8] must (unofficially) support a wildcard for event types', function (done) {
-      var params = {
+      const params = {
         types: ['activity/*'],
         state: 'all'
       };
@@ -243,7 +240,7 @@ describe('events', function () {
     });
 
     it('[4TWI] must refuse unsupported event types', function (done) {
-      var params = {
+      const params = {
         types: ['activity/asd asd'],
         state: 'all'
       };
@@ -257,7 +254,7 @@ describe('events', function () {
 
     it('[7MOU] must only return events in the given time period sorted ascending when set',
       function (done) {
-        var params = {
+        const params = {
           // must also include already started but overlapping events
           fromTime: timestamp.add(testData.events[1].time, '58m'),
           toTime: testData.events[3].time,
@@ -282,7 +279,7 @@ describe('events', function () {
         toTime: 0
       };
       const events = testData.events.filter(function (e) {
-        return e.time == 0;
+        return e.time === 0;
       });
       request.get(basePath).query(params).end(function (res) {
         validation.check(res, {
@@ -291,14 +288,14 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: events
+            events
           }
         }, done);
       });
     });
 
     it('[Y6SY] must take into account modifiedSince even if set to 0', function (done) {
-      var params = {
+      const params = {
         modifiedSince: 0
       };
 
@@ -307,7 +304,7 @@ describe('events', function () {
         res.body.events = separatedEvents.events;
         validation.check(res, {
           status: 200,
-          schema: methodsSchema.get.result,
+          schema: methodsSchema.get.result
         });
         res.body.events.should.not.containEql(testData.events[27]);
         done();
@@ -315,7 +312,7 @@ describe('events', function () {
     });
 
     it('[QNDP] must properly exclude period events completed before the given period', function (done) {
-      var params = {
+      const params = {
         fromTime: testData.events[1].time + testData.events[1].duration + 1,
         toTime: timestamp.add(testData.events[3].time, '-1m')
       };
@@ -333,7 +330,7 @@ describe('events', function () {
     });
 
     it('[5UFW] must return ongoing events started before the given time period', function (done) {
-      var params = {
+      const params = {
         streams: [testData.streams[0].id],
         fromTime: testData.events[9].time + 1,
         toTime: timestamp.now()
@@ -353,7 +350,7 @@ describe('events', function () {
 
     it('[S9J4] must only return events in the given paging range when set', function (done) {
       request.get(basePath).query({ state: 'all', skip: 1, limit: 3 }).end(function (res) {
-        var events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
+        const events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
           return (b.time - a.time);
         }).slice(1, 4);
         validation.check(res, {
@@ -362,7 +359,7 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: events
+            events
           }
         }, done);
       });
@@ -370,7 +367,7 @@ describe('events', function () {
 
     it('[915E] must return only trashed events when requested', function (done) {
       request.get(basePath).query({ state: 'trashed' }).end(function (res) {
-        var events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
+        const events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
           return (b.time - a.time);
         });
         validation.check(res, {
@@ -405,11 +402,11 @@ describe('events', function () {
     });
 
     it('[JZYF] must return only events modified since the given time when requested', function (done) {
-      var params = {
+      const params = {
         state: 'all',
         modifiedSince: timestamp.now('-45m')
       };
-      var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
+      let events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
         return e.modified >= timestamp.now('-45m');
       });
       events = events.sort(function (a, b) {
@@ -428,14 +425,14 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: events
+            events
           }
         }, done);
       });
     });
 
     it('[C3HU] must return an error if withDeletions is given as parameter', function (done) {
-      var params = {
+      const params = {
         state: 'all',
         modifiedSince: timestamp.now('-45m'),
         includeDeletions: true,
@@ -449,21 +446,20 @@ describe('events', function () {
       });
     });
 
-
     it('[B766] must include event deletions (since that time) when requested', function (done) {
-      var params = {
+      const params = {
         state: 'all',
         modifiedSince: timestamp.now('-45m'),
         includeDeletions: true
       };
-      var events = _.clone(testData.events).sort(function (a, b) {
+      let events = structuredClone(testData.events).sort(function (a, b) {
         return (b.time - a.time);
       });
-      var eventDeletions = events.filter(function (e) {
+      const eventDeletions = events.filter(function (e) {
         return (e.deleted && e.deleted > timestamp.now('-45m'));
-      }).map(function (e) { 
+      }).map(function (e) {
         if (e.type != null) {
-          return {id: e.id, deleted: e.deleted};
+          return { id: e.id, deleted: e.deleted };
         }
         return e;
       });
@@ -473,7 +469,7 @@ describe('events', function () {
       });
 
       request.get(basePath).query(params).end(async function (res) {
-        try{
+        try {
           // lets separate core events from all other events and validate them separatelly
           const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
@@ -481,14 +477,14 @@ describe('events', function () {
           validation.validateAccountEvents(actualAccountStreamsEvents);
           await bluebird.fromCallback(
             (cb) => validation.check(res, {
-            status: 200,
-            schema: methodsSchema.get.result,
-            sanitizeFn: validation.sanitizeEvents,
-            sanitizeTarget: 'events',
-            body: {
-              events: events,
-              eventDeletions: eventDeletions
-            }
+              status: 200,
+              schema: methodsSchema.get.result,
+              sanitizeFn: validation.sanitizeEvents,
+              sanitizeTarget: 'events',
+              body: {
+                events,
+                eventDeletions
+              }
             }, cb));
           done();
         } catch (error) {
@@ -498,10 +494,10 @@ describe('events', function () {
     });
 
     it('[V72A] must only return running period event(s) when requested', function (done) {
-      var params = {
+      const params = {
         running: true
       };
-      var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
+      const events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
         return e.duration === null;
       }).sort(function (a, b) {
         return b.time - a.time;
@@ -513,7 +509,7 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: events
+            events
           }
         }, done);
       });
@@ -522,16 +518,14 @@ describe('events', function () {
     it('[68IL] must return an error if no access token is provided', function (done) {
       commonTests.checkAccessTokenAuthentication(server.url, basePath, done);
     });
-
   });
 
   describe('GET /<event id>/<file id>', function () {
-
     before(resetEvents);
 
     it('[F29M] must return the attached file with the correct headers', function (done) {
-      var event = testData.events[0],
-          attachment = event.attachments[0];
+      const event = testData.events[0];
+      const attachment = event.attachments[0];
 
       request.get(path(event.id) + '/' + attachment.id).end(function (res) {
         res.statusCode.should.eql(200);
@@ -544,7 +538,7 @@ describe('events', function () {
     });
 
     it('[PP6G] must return readToken in attachments', function (done) {
-      var event = testData.events[0];
+      const event = testData.events[0];
 
       request.get(path(event.id) + '/').end(function (res) {
         res.statusCode.should.eql(200);
@@ -558,95 +552,94 @@ describe('events', function () {
     });
 
     it('[NL65] must accept a secure read token in the query string instead of the `"Authorization" header',
-        function (done) {
-      var event = testData.events[0],
-          attIndex = 0;
-      async.waterfall([
-        function retrieveAttachmentInfo(stepDone) {
-          request.get(basePath).query({sortAscending: true, streams: event.streamIds[0] }).end(function (res) {
-            stepDone(null, res.body.events[0].attachments[attIndex]);
-          });
-        },
-        function retrieveAttachedFile(att, stepDone) {
-          request.get(path(event.id) + '/' + att.id)
+      function (done) {
+        const event = testData.events[0];
+        const attIndex = 0;
+        async.waterfall([
+          function retrieveAttachmentInfo (stepDone) {
+            request.get(basePath).query({ sortAscending: true, streams: event.streamIds[0] }).end(function (res) {
+              stepDone(null, res.body.events[0].attachments[attIndex]);
+            });
+          },
+          function retrieveAttachedFile (att, stepDone) {
+            request.get(path(event.id) + '/' + att.id)
               .unset('Authorization')
-              .query({readToken: att.readToken})
+              .query({ readToken: att.readToken })
               .end(function (res) {
-            res.statusCode.should.eql(200);
+                res.statusCode.should.eql(200);
 
-            res.headers.should.have.property('content-type', att.type);
-            res.headers.should.have.property('content-length', att.size.toString());
+                res.headers.should.have.property('content-type', att.type);
+                res.headers.should.have.property('content-length', att.size.toString());
 
-            stepDone();
-          });
-        }
-      ], done);
-    });
+                stepDone();
+              });
+          }
+        ], done);
+      });
 
     it('[ZDY4] must accept special chars in Content-Disposition header', function (done) {
-      var event = testData.events[0],
-          attIndex = 1;
+      const event = testData.events[0];
+      const attIndex = 1;
       async.waterfall([
-        function retrieveAttachmentInfo(stepDone) {
-          request.get(basePath).query({sortAscending: true, streams: event.streamIds[0] }).end(function (res) {
+        function retrieveAttachmentInfo (stepDone) {
+          request.get(basePath).query({ sortAscending: true, streams: event.streamIds[0] }).end(function (res) {
             stepDone(null, res.body.events[0].attachments[attIndex]);
           });
         },
-        function retrieveAttachedFile(att, stepDone) {
+        function retrieveAttachedFile (att, stepDone) {
           request.get(path(event.id) + '/' + att.id)
-              .unset('Authorization')
-              .query({readToken: att.readToken})
-              .end(function (res) {
-            res.statusCode.should.eql(200);
-            res.headers.should.have.property('content-type', att.type);
-            res.headers.should.have.property('content-length', att.size.toString());
-            res.headers.should.have.property('content-disposition', 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(att.fileName) );
-            stepDone();
-          });
+            .unset('Authorization')
+            .query({ readToken: att.readToken })
+            .end(function (res) {
+              res.statusCode.should.eql(200);
+              res.headers.should.have.property('content-type', att.type);
+              res.headers.should.have.property('content-length', att.size.toString());
+              res.headers.should.have.property('content-disposition', 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(att.fileName));
+              stepDone();
+            });
         }
       ], done);
     });
-
 
     it('[TN27] must allow a filename path suffix after the file id', function (done) {
-      var event = testData.events[0],
-          attIndex = 1;
+      const event = testData.events[0];
+      const attIndex = 1;
       async.waterfall([
-        function retrieveAttachmentInfo(stepDone) {
-          request.get(basePath).query({sortAscending: true, streams: event.streamIds[0]}).end(function (res) {
+        function retrieveAttachmentInfo (stepDone) {
+          request.get(basePath).query({ sortAscending: true, streams: event.streamIds[0] }).end(function (res) {
             stepDone(null, res.body.events[0].attachments[attIndex]);
           });
         },
-        function retrieveAttachedFile(att, stepDone) {
+        function retrieveAttachedFile (att, stepDone) {
           request.get(path(event.id) + '/' + att.id + '/' + att.fileName)
-              .unset('Authorization')
-              .query({readToken: att.readToken})
-              .end(function (res) {
-            res.statusCode.should.eql(200);
+            .unset('Authorization')
+            .query({ readToken: att.readToken })
+            .end(function (res) {
+              res.statusCode.should.eql(200);
 
-            res.headers.should.have.property('content-type', att.type);
-            res.headers.should.have.property('content-length', att.size.toString());
+              res.headers.should.have.property('content-type', att.type);
+              res.headers.should.have.property('content-length', att.size.toString());
 
-            stepDone();
-          });
+              stepDone();
+            });
         }
       ], done);
     });
 
-    it('[LOUB] must allow any filename (including special characters)', function(done) {
-      var event = testData.events[0],
-          attIndex = 1;
+    it('[LOUB] must allow any filename (including special characters)', function (done) {
+      const event = testData.events[0];
+      const attIndex = 1;
       async.waterfall(
         [
-          function retrieveAttachmentInfo(stepDone) {
+          function retrieveAttachmentInfo (stepDone) {
             request
               .get(`/${user.username}/events/${event.id}`)
               .query({ sortAscending: true, streams: [event.streamId] })
-              .end(function(res) {
+              .end(function (res) {
                 stepDone(null, res.body.event.attachments[attIndex]);
               });
           },
-          function retrieveAttachedFile(att, stepDone) {
+          function retrieveAttachedFile (att, stepDone) {
             request
               .get(
                 path(event.id) +
@@ -656,44 +649,44 @@ describe('events', function () {
               )
               .unset('Authorization')
               .query({ readToken: att.readToken })
-              .end(function(res) {
+              .end(function (res) {
                 res.statusCode.should.eql(200);
                 stepDone();
               });
-          },
+          }
         ],
         done
       );
     });
 
     it('[9NJ0] must refuse an invalid file read token', function (done) {
-      var event = testData.events[0];
+      const event = testData.events[0];
       request.get(path(event.id) + '/' + event.attachments[0].id)
-          .unset('Authorization')
-          .query({readToken: access.id + '-Bad-HMAC'})
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidAccessToken
-        }, done);
-      });
+        .unset('Authorization')
+        .query({ readToken: access.id + '-Bad-HMAC' })
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 401,
+            id: ErrorIds.InvalidAccessToken
+          }, done);
+        });
     });
 
     it('[9HNM] must refuse auth via the regular "auth" query string parameter', function (done) {
-      var event = testData.events[0];
+      const event = testData.events[0];
       request.get(path(event.id) + '/' + event.attachments[0].id)
-          .unset('Authorization')
-          .query({auth: access.token})
-          .end(function (res) {
-            validation.checkError(res, {
-              status: 401,
-              id: ErrorIds.InvalidAccessToken
-            }, done);
-          });
+        .unset('Authorization')
+        .query({ auth: access.token })
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 401,
+            id: ErrorIds.InvalidAccessToken
+          }, done);
+        });
     });
 
     it('[MMCZ] must return a proper error if trying to get an unknown attachment', function (done) {
-      var event = testData.events[0];
+      const event = testData.events[0];
       request.get(path(event.id) + '/unknown-file-id').end(function (res) {
         validation.checkError(res, {
           status: 404,
@@ -701,11 +694,9 @@ describe('events', function () {
         }, done);
       });
     });
-
   });
 
   describe('POST /', function () {
-
     beforeEach(resetEvents);
 
     it('[1GR6] must create an event with the sent data, returning it', function (done) {
@@ -728,7 +719,7 @@ describe('events', function () {
       };
       const processedTags = ['patapoumpoum'];
       const processedStreamIds = data.streamIds.concat(processedTags.map(t => TAG_PREFIX + t));
-      const expected = _.cloneDeep(data);
+      const expected = structuredClone(data);
       expected.tags = processedTags;
       expected.streamIds = processedStreamIds;
       expected.streamId = data.streamIds[0];
@@ -738,11 +729,11 @@ describe('events', function () {
       let created;
 
       async.series([
-        async function countInitialEvents() {
+        async function countInitialEvents () {
           const events = await mall.events.get(user.id, {});
           originalCount = events.length;
         },
-        function addNewEvent(stepDone) {
+        function addNewEvent (stepDone) {
           request.post(basePath).send(data).end(function (res) {
             const event = res?.body.event;
             assert.exists(event);
@@ -759,7 +750,7 @@ describe('events', function () {
             validation.check(res, {
               status: 201,
               schema: methodsSchema.create.result,
-              body: { event: expected },
+              body: { event: expected }
             });
             created = timestamp.now();
             createdEventId = res.body.event.id;
@@ -767,12 +758,12 @@ describe('events', function () {
             stepDone();
           });
         },
-        async function verifyEventData() {
+        async function verifyEventData () {
           const events = await mall.events.get(user.id, {});
 
           events.length.should.eql(originalCount + 1, 'events');
 
-          var expected = _.clone(data);
+          const expected = structuredClone(data);
 
           expected.streamId = expected.streamIds[0];
           expected.id = createdEventId;
@@ -780,7 +771,7 @@ describe('events', function () {
           delete expected.tags; // tags are not stored anymore
           expected.created = expected.modified = created;
           expected.createdBy = expected.modifiedBy = access.id;
-          var actual = _.find(events, function (event) {
+          const actual = _.find(events, function (event) {
             return event.id === createdEventId;
           });
           actual.streamId = actual.streamIds[0];
@@ -791,13 +782,13 @@ describe('events', function () {
     });
 
     it('[QSBV] must set the event\'s time to "now" if missing', function (done) {
-      var data = {
+      const data = {
         streamIds: [testData.streams[2].id],
         type: 'mass/kg',
         content: 10.7
       };
       request.post(basePath).send(data).end(function (res) {
-        var expectedTimestamp = timestamp.now();
+        const expectedTimestamp = timestamp.now();
 
         validation.check(res, {
           status: 201,
@@ -831,13 +822,13 @@ describe('events', function () {
     });
 
     it('[D2TH] must refuse events with no stream id', function (done) {
-      request.post(basePath).send({type: testType}).end(function (res) {
+      request.post(basePath).send({ type: testType }).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
     it('[WN86] must return a correct error if an event with the same id already exists', function (done) {
-      var data = {
+      const data = {
         id: testData.events[0].id,
         streamIds: [testData.streams[2].id],
         type: 'test/test'
@@ -846,13 +837,13 @@ describe('events', function () {
         validation.checkError(res, {
           status: 409,
           id: ErrorIds.ItemAlreadyExists,
-          data: {id: data.id}
+          data: { id: data.id }
         }, done);
       });
     });
 
     it('[94PW] must not allow reuse of deleted ids (unlike streams)', function (done) {
-      var data = {
+      const data = {
         id: testData.events[13].id, // existing deletion
         streamIds: [testData.streams[2].id],
         type: 'test/test'
@@ -861,13 +852,13 @@ describe('events', function () {
         validation.checkError(res, {
           status: 409,
           id: ErrorIds.ItemAlreadyExists,
-          data: {id: data.id}
+          data: { id: data.id }
         }, done);
       });
     });
 
     it('[DRFA] must only allow ids that are formatted like cuids', function (done) {
-      var data = {
+      const data = {
         id: 'man, this is a baaad id',
         streamIds: [testData.streams[2].id],
         type: 'test/test'
@@ -878,8 +869,8 @@ describe('events', function () {
     });
 
     it('[O7Y2] must reject tags that are too long', function (done) {
-      var bigTag = new Array(600).join('a');
-      var data = {
+      const bigTag = new Array(600).join('a');
+      const data = {
         streamIds: [testData.streams[2].id],
         type: 'generic/count',
         content: 1,
@@ -895,12 +886,12 @@ describe('events', function () {
     });
 
     it('[2885] must fix the tags to an empty array if not set', function (done) {
-      var data = { streamId: testData.streams[1].id, type: testType };
+      const data = { streamId: testData.streams[1].id, type: testType };
 
       request.post(basePath).send(data).end(function (res) {
         should(res.statusCode).be.eql(201);
 
-        var createdEvent = res.body.event;
+        const createdEvent = res.body.event;
         createdEvent.should.have.property('tags');
         createdEvent.tags.should.eql([]);
 
@@ -908,16 +899,15 @@ describe('events', function () {
       });
     });
 
-
     it('[UL6Y] must not stop the running period event if the stream allows overlapping', function (done) {
-      var data = {
+      const data = {
         streamIds: [testData.streams[1].id],
         duration: timestamp.duration('1h'),
         type: testType,
         tags: []
       };
       async.series([
-        function addNew(stepDone) {
+        function addNew (stepDone) {
           request.post(basePath).send(data).end(function (res) {
             should.not.exist(res.body.stoppedId);
             validation.check(res, {
@@ -926,11 +916,11 @@ describe('events', function () {
             }, stepDone);
           });
         },
-        async function verifyData() {
+        async function verifyData () {
           const event = await mall.events.getOne(user.id, testData.events[11].id);
           // HERE
           // as event comes from storage we will not find "tags"
-          const expected = _.cloneDeep(testData.events[11]);
+          const expected = structuredClone(testData.events[11]);
           delete expected.tags;
           event.should.eql(expected);
         }
@@ -938,7 +928,7 @@ describe('events', function () {
     });
 
     it('[FZ4T] must validate the event\'s content if its type is known', function (done) {
-      var data = {
+      const data = {
         streamIds: [testData.streams[1].id],
         type: 'note/webclip',
         content: {
@@ -955,25 +945,25 @@ describe('events', function () {
 
     // cf. GH issue #42
     it('[EL88] must not fail when validating the content if passing a string instead of an object',
-        function (done) {
-      var data = {
-        streamIds: [testData.streams[1].id],
-        type: 'note/webclip',
-        content: 'This should be an object'
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
+      function (done) {
+        const data = {
+          streamIds: [testData.streams[1].id],
+          type: 'note/webclip',
+          content: 'This should be an object'
+        };
+        request.post(basePath).send(data).end(function (res) {
+          validation.checkErrorInvalidParams(res, done);
+        });
       });
-    });
 
     it('[JUM6] must return an error if the sent data is badly formatted', function (done) {
-      request.post(basePath).send({badProperty: 'bad value'}).end(function (res) {
+      request.post(basePath).send({ badProperty: 'bad value' }).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
     it('[5NEL] must return an error if the associated stream is unknown', function (done) {
-      var data = {
+      const data = {
         time: timestamp.fromDate('2012-03-22T10:00'),
         type: testType,
         streamIds: ['unknown-stream-id']
@@ -982,29 +972,29 @@ describe('events', function () {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
-          data: {streamIds: data.streamIds}
+          data: { streamIds: data.streamIds }
         }, done);
       });
     });
 
     it('[3S2T] must allow the event\'s period overlapping existing periods when the stream allows it',
-        function (done) {
-      var data = {
-        streamIds: [testData.streams[1].id],
-        time: timestamp.add(testData.events[11].time, '-15m'),
-        duration: timestamp.duration('5h30m'),
-        type: testType
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        }, done);
+      function (done) {
+        const data = {
+          streamIds: [testData.streams[1].id],
+          time: timestamp.add(testData.events[11].time, '-15m'),
+          duration: timestamp.duration('5h30m'),
+          type: testType
+        };
+        request.post(basePath).send(data).end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
+          }, done);
+        });
       });
-    });
 
     it('[Q0L6] must return an error if the assigned stream is trashed', function (done) {
-      var data = {
+      const data = {
         type: testType,
         streamIds: [testData.streams[3].id]
       };
@@ -1012,7 +1002,7 @@ describe('events', function () {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.InvalidOperation,
-          data: {trashedReference: 'streamIds'}
+          data: { trashedReference: 'streamIds' }
         }, done);
       });
     });
@@ -1030,7 +1020,7 @@ describe('events', function () {
       request.post(basePath).send({
         streamIds: [],
         type: 'note/txt',
-        content: 'i should return an error!',
+        content: 'i should return an error!'
       }).end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -1038,15 +1028,13 @@ describe('events', function () {
         }, done);
       });
     });
-
   });
 
   describe('POST / (multipart content)', function () {
-
     beforeEach(resetEvents);
 
     it('[4CUV] must create a new event with the uploaded files', function (finalDone) {
-      var data = {
+      const data = {
         time: timestamp.now(),
         type: 'wisdom/test',
         content: {
@@ -1057,13 +1045,12 @@ describe('events', function () {
       };
       async.series([
         postEventsWithAttachments,
-        checkEvents,
+        checkEvents
       ], finalDone);
-
 
       let createdEvent; // set by postEventsWithAttachments reused by checkEvents
       let expected; // set by postEventsWithAttachments reused by checkEvents
-      function postEventsWithAttachments(done) {
+      function postEventsWithAttachments (done) {
         request.post(basePath)
           .field('event', JSON.stringify(data))
           .attach('document', testData.attachments.document.path,
@@ -1099,18 +1086,18 @@ describe('events', function () {
                   integrity: testData.attachments.image.integrity
                 }
               ],
-              streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+              streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t))
             });
 
             expected.created = createdEvent.created;
             expected.createdBy = createdEvent.createdBy;
             expected.modified = createdEvent.modified;
             expected.modifiedBy = createdEvent.modifiedBy;
-            if (! integrity.attachments.isActive) {
+            if (!integrity.attachments.isActive) {
               delete expected.attachments[0].integrity;
               delete expected.attachments[1].integrity;
             }
-            if (! integrity.events.isActive) {
+            if (!integrity.events.isActive) {
               delete expected.integrity;
             }
             integrity.events.set(expected);
@@ -1124,24 +1111,22 @@ describe('events', function () {
               createdEvent.attachments[1].id,
               testData.attachments.image.filename).should.equal('');
 
-
             eventsNotifCount.should.eql(1, 'events notifications');
 
             done();
           });
       }
 
-      function checkEvents(done) {
+      function checkEvents (done) {
         request.get(basePath + '/' + createdEvent.id).end(function (res) {
           validation.checkObjectEquality(validation.sanitizeEvent(res.body.event), expected);
           done();
         });
-      };
-
+      }
     });
 
     it('[HROI] must properly handle part names containing special chars (e.g. ".", "$")', function (done) {
-      var data = {
+      const data = {
         time: timestamp.now(),
         type: 'wisdom/test',
         content: {
@@ -1152,61 +1137,61 @@ describe('events', function () {
       };
 
       request.post(basePath)
-          .field('event', JSON.stringify(data))
-          .attach('$name.with:special-chars/',
-              fs.createReadStream(testData.attachments.document.path),
-              {filename: 'file.name.with.many.dots.pdf'})
-          .end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        });
+        .field('event', JSON.stringify(data))
+        .attach('$name.with:special-chars/',
+          fs.createReadStream(testData.attachments.document.path),
+          { filename: 'file.name.with.many.dots.pdf' })
+        .end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
+          });
 
-        var createdEvent = validation.sanitizeEvent(res.body.event);
-        var expected = _.extend(data, {
-          id: createdEvent.id,
-          attachments: [
-            {
-              id: createdEvent.attachments[0].id,
-              fileName: 'file.name.with.many.dots.pdf',
-              type: testData.attachments.document.type,
-              size: testData.attachments.document.size,
-              integrity: testData.attachments.document.integrity
-            }
-          ],
-          streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
-          integrity: createdEvent.integrity
-        });
+          const createdEvent = validation.sanitizeEvent(res.body.event);
+          const expected = _.extend(data, {
+            id: createdEvent.id,
+            attachments: [
+              {
+                id: createdEvent.attachments[0].id,
+                fileName: 'file.name.with.many.dots.pdf',
+                type: testData.attachments.document.type,
+                size: testData.attachments.document.size,
+                integrity: testData.attachments.document.integrity
+              }
+            ],
+            streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+            integrity: createdEvent.integrity
+          });
 
-        if (! integrity.attachments.isActive) {
-          delete expected.attachments[0].integrity;
-        }
-        if (! integrity.events.isActive) {
-          delete expected.integrity;
-        }
-        validation.checkObjectEquality(createdEvent, expected);
+          if (!integrity.attachments.isActive) {
+            delete expected.attachments[0].integrity;
+          }
+          if (!integrity.events.isActive) {
+            delete expected.integrity;
+          }
+          validation.checkObjectEquality(createdEvent, expected);
 
-        // check attached files
-        attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+          // check attached files
+          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
             createdEvent.attachments[0].id,
             testData.attachments.document.filename).should.equal('');
 
-        eventsNotifCount.should.eql(1, 'events notifications');
+          eventsNotifCount.should.eql(1, 'events notifications');
 
-        done();
-      });
+          done();
+        });
     });
 
     it('[0QGV] must return an error if the non-file content part is not JSON', function (done) {
       request.post(basePath)
-          .field('event', '<bad>data</bad>')
-          .attach('file', testData.attachments.text.path, testData.attachments.text.fileName)
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidRequestStructure
-        }, done);
-      });
+        .field('event', '<bad>data</bad>')
+        .attach('file', testData.attachments.text.path, testData.attachments.text.fileName)
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidRequestStructure
+          }, done);
+        });
     });
 
     it('[R8ER] must return an error if there is more than one non-file content part', function (done) {
@@ -1224,82 +1209,78 @@ describe('events', function () {
   });
 
   describe('POST /<event id> (multipart content)', function () {
-
     beforeEach(resetEvents);
 
     it('[ZI01] must add the uploaded files to the event as attachments', function (done) {
-      var event = testData.events[1],
-          time;
+      const event = testData.events[1];
 
       request.post(path(event.id))
-          .attach('image', testData.attachments.image.path,
-              testData.attachments.image.fileName)
-          .attach('text', testData.attachments.text.path,
-              testData.attachments.text.fileName)
-          .end(function (res) {
-
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.update.result
-            });
-
-            var updatedEvent = res.body.event;
-            validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
-            validation.sanitizeEvent(updatedEvent);
-
-            var updatedEventAttachments = {};
-            updatedEvent.attachments.forEach(function (attachment) {
-              updatedEventAttachments[attachment.fileName] = attachment;
-            });
-
-            var expected = {};
-            expected.attachments = [];
-            updatedEvent.attachments.forEach(function (attachment) {
-              if (attachment.fileName === testData.attachments.image.filename) {
-                const attData = {
-                  id: attachment.id,
-                  fileName: testData.attachments.image.filename,
-                  type: testData.attachments.image.type,
-                  size: testData.attachments.image.size,
-                };
-                if (integrity.attachments.isActive) attData.integrity = testData.attachments.image.integrity;
-                expected.attachments.push(attData);
-              }
-              if (attachment.fileName === testData.attachments.text.filename) {
-               const attData = {
-                  id: attachment.id,
-                  fileName: testData.attachments.text.filename,
-                  type: testData.attachments.text.type,
-                  size: testData.attachments.text.size
-                }
-                if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
-                expected.attachments.push(attData);
-              }
-            });
-            expected.modified = updatedEvent.modified;
-            expected.modifiedBy = access.id;
-            expected = _.defaults(expected, event);
-            integrity.events.set(expected);
-
-            validation.checkObjectEquality(updatedEvent, expected);
-
-            // check attached files
-            attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-              updatedEventAttachments[testData.attachments.image.filename].id,
-                testData.attachments.image.filename).should.equal('');
-            attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-              updatedEventAttachments[testData.attachments.text.filename].id,
-                testData.attachments.text.filename).should.equal('');
-
-            eventsNotifCount.should.eql(1, 'events notifications');
-
-            done();
+        .attach('image', testData.attachments.image.path,
+          testData.attachments.image.fileName)
+        .attach('text', testData.attachments.text.path,
+          testData.attachments.text.fileName)
+        .end(function (res) {
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.update.result
           });
+
+          const updatedEvent = res.body.event;
+          validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
+          validation.sanitizeEvent(updatedEvent);
+
+          const updatedEventAttachments = {};
+          updatedEvent.attachments.forEach(function (attachment) {
+            updatedEventAttachments[attachment.fileName] = attachment;
+          });
+
+          const expected = structuredClone(event);
+          expected.attachments = [];
+          updatedEvent.attachments.forEach(function (attachment) {
+            if (attachment.fileName === testData.attachments.image.filename) {
+              const attData = {
+                id: attachment.id,
+                fileName: testData.attachments.image.filename,
+                type: testData.attachments.image.type,
+                size: testData.attachments.image.size
+              };
+              if (integrity.attachments.isActive) attData.integrity = testData.attachments.image.integrity;
+              expected.attachments.push(attData);
+            }
+            if (attachment.fileName === testData.attachments.text.filename) {
+              const attData = {
+                id: attachment.id,
+                fileName: testData.attachments.text.filename,
+                type: testData.attachments.text.type,
+                size: testData.attachments.text.size
+              };
+              if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
+              expected.attachments.push(attData);
+            }
+          });
+          expected.modified = updatedEvent.modified;
+          expected.modifiedBy = access.id;
+          integrity.events.set(expected);
+
+          validation.checkObjectEquality(updatedEvent, expected);
+
+          // check attached files
+          attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+            updatedEventAttachments[testData.attachments.image.filename].id,
+            testData.attachments.image.filename).should.equal('');
+          attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+            updatedEventAttachments[testData.attachments.text.filename].id,
+            testData.attachments.text.filename).should.equal('');
+
+          eventsNotifCount.should.eql(1, 'events notifications');
+
+          done();
+        });
     });
 
     it('[EUZM] must add the uploaded files to the event without replacing existing attachments',
       function (done) {
-        var event = testData.events[0];
+        const event = testData.events[0];
 
         request
           .post(path(event.id))
@@ -1312,13 +1293,13 @@ describe('events', function () {
               schema: methodsSchema.update.result
             });
 
-            var updatedEvent = validation.sanitizeEvent(res.body.event);
-            var expectedAttachments = event.attachments.slice();
+            const updatedEvent = validation.sanitizeEvent(res.body.event);
+            const expectedAttachments = event.attachments.slice();
             const attData = {
               id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
               fileName: testData.attachments.text.filename,
               type: testData.attachments.text.type,
-              size: testData.attachments.text.size,
+              size: testData.attachments.text.size
             };
             if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
             expectedAttachments.push(attData);
@@ -1329,15 +1310,14 @@ describe('events', function () {
             attachments.should.eql(expectedAttachments);
 
             attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-                attachments[attachments.length - 1].id,
-                testData.attachments.text.filename).should.equal('');
+              attachments[attachments.length - 1].id,
+              testData.attachments.text.filename).should.equal('');
 
             eventsNotifCount.should.eql(1, 'events notifications');
 
             done();
           });
       });
-
   });
 
   describe('GET /<id>', () => {
@@ -1366,13 +1346,12 @@ describe('events', function () {
   });
 
   describe('PUT /<id>', function () {
-
     beforeEach(resetEvents);
 
     it('[4QRU] must modify the event with the sent data', function (done) {
-      var original = testData.events[0],
-          time;
-      var data = {
+      const original = testData.events[0];
+      let time;
+      const data = {
         time: timestamp.add(original.time, '-15m'),
         duration: timestamp.add(original.duration, '15m'),
         type: testType,
@@ -1382,10 +1361,10 @@ describe('events', function () {
         description: 'New description',
         clientData: {
           clientField: 'client value'
-        },
+        }
       };
       async.series([
-        function update(stepDone) {
+        function update (stepDone) {
           request.put(path(original.id)).send(data).end(function (res) {
             time = timestamp.now();
             validation.check(res, {
@@ -1396,7 +1375,7 @@ describe('events', function () {
             validation.checkFilesReadToken(res.body.event, access, filesReadTokenSecret);
             validation.sanitizeEvent(res.body.event);
 
-            var expected = _.clone(data);
+            const expected = structuredClone(data);
             expected.id = original.id;
             expected.tags = ['yippiya'];
             expected.modified = time;
@@ -1409,7 +1388,7 @@ describe('events', function () {
             stepDone();
           });
         },
-        async function verifyStoredItem() {
+        async function verifyStoredItem () {
           const dbEvent = await mall.events.getOne(user.id, original.id);
           dbEvent.duration.should.eql(data.duration);
         }
@@ -1417,44 +1396,44 @@ describe('events', function () {
     });
 
     it('[6B05] must add/update/remove the specified client data fields without touching the others',
-        function (done) {
-      var original = testData.events[1],
-          time;
-      var data = {
-        clientData: {
-          booleanProp: true, // add
-          stringProp: 'Where Art Thou?', // update
-          numberProp: null // delete
-        }
-      };
+      function (done) {
+        const original = testData.events[1];
+        let time;
+        const data = {
+          clientData: {
+            booleanProp: true, // add
+            stringProp: 'Where Art Thou?', // update
+            numberProp: null // delete
+          }
+        };
 
-      request.put(path(original.id)).send(data).end(function (res) {
+        request.put(path(original.id)).send(data).end(function (res) {
         // BUG Depending on when we do this inside any given second, by the time
         // we call timestamp.now here, we already have a different second than
         // we had when we made the request. -> Random test success.
-        time = timestamp.now();
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
+          time = timestamp.now();
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.update.result
+          });
+
+          should(res.body.event.modified).be.approximately(time, 2);
+          const expected = structuredClone(original);
+          delete expected.modified;
+          expected.modifiedBy = access.id;
+          expected.streamId = expected.streamIds[0];
+          expected.modified = res.body.event.modified;
+          expected.created = res.body.event.created;
+          expected.clientData = _.extend(expected.clientData, data.clientData);
+
+          delete expected.clientData.numberProp;
+          integrity.events.set(expected);
+          validation.checkObjectEquality(res.body.event, expected);
+
+          eventsNotifCount.should.eql(1, 'events notifications');
+          done();
         });
-
-        should(res.body.event.modified).be.approximately(time, 2);
-        var expected = _.cloneDeep(original);
-        delete expected.modified;
-        expected.modifiedBy = access.id;
-        expected.streamId = expected.streamIds[0];
-        expected.modified = res.body.event.modified;
-        expected.created = res.body.event.created;
-        expected.clientData = _.extend(expected.clientData, data.clientData);
-
-        delete expected.clientData.numberProp;
-        integrity.events.set(expected);
-        validation.checkObjectEquality(res.body.event, expected);
-
-        eventsNotifCount.should.eql(1, 'events notifications');
-        done();
       });
-    });
 
     it('[FM3G] must accept explicit null for optional fields', function (done) {
       const data = {
@@ -1476,7 +1455,7 @@ describe('events', function () {
     });
 
     it('[BS75] must validate the event\'s content if its type is known', function (done) {
-      var data = {
+      const data = {
         type: 'position/wgs84',
         content: {
           latitude: 'bad-value',
@@ -1489,7 +1468,7 @@ describe('events', function () {
     });
 
     it('[FU83] must return an error if the event does not exist', function (done) {
-      request.put(path('unknown-id')).send({time: timestamp.now()}).end(function (res) {
+      request.put(path('unknown-id')).send({ time: timestamp.now() }).end(function (res) {
         validation.checkError(res, {
           status: 404,
           id: ErrorIds.UnknownResource
@@ -1498,19 +1477,19 @@ describe('events', function () {
     });
 
     it('[W2QL] must return an error if the sent data is badly formatted', function (done) {
-      request.put(path(testData.events[3].id)).send({badProperty: 'bad value'})
-          .end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
+      request.put(path(testData.events[3].id)).send({ badProperty: 'bad value' })
+        .end(function (res) {
+          validation.checkErrorInvalidParams(res, done);
+        });
     });
 
     it('[01B2] must return an error if the associated stream is unknown', function (done) {
-      request.put(path(testData.events[3].id)).send({ streamIds: ['unknown-stream-id']})
+      request.put(path(testData.events[3].id)).send({ streamIds: ['unknown-stream-id'] })
         .end(function (res) {
           validation.checkError(res, {
             status: 400,
             id: ErrorIds.UnknownReferencedResource,
-            data: {streamIds: ['unknown-stream-id']}
+            data: { streamIds: ['unknown-stream-id'] }
           }, done);
         });
     });
@@ -1534,6 +1513,28 @@ describe('events', function () {
         });
       });
 
+      it('[MPUA] must prevent updating attachments',
+        function (done) {
+          const forbiddenUpdate = {
+            attachments: []
+          };
+
+          async.series([
+            function instanciateServerWithStrictMode (stepDone) {
+              setIgnoreProtectedFieldUpdates(false, stepDone);
+            },
+            function testForbiddenUpdate (stepDone) {
+              request.put(path(eventId)).send(forbiddenUpdate)
+                .end(function (res) {
+                  validation.checkError(res, {
+                    status: 403,
+                    id: ErrorIds.Forbidden
+                  }, stepDone);
+                });
+            }
+          ], done);
+        });
+
       it('[L15U] must prevent update of protected fields and throw a forbidden error in strict mode',
         function (done) {
           const forbiddenUpdate = {
@@ -1546,10 +1547,10 @@ describe('events', function () {
           };
 
           async.series([
-            function instanciateServerWithStrictMode(stepDone) {
+            function instanciateServerWithStrictMode (stepDone) {
               setIgnoreProtectedFieldUpdates(false, stepDone);
             },
-            function testForbiddenUpdate(stepDone) {
+            function testForbiddenUpdate (stepDone) {
               request.put(path(eventId)).send(forbiddenUpdate)
                 .end(function (res) {
                   validation.checkError(res, {
@@ -1572,10 +1573,10 @@ describe('events', function () {
             modifiedBy: 'alice'
           };
           async.series([
-            function instanciateServerWithNonStrictMode(stepDone) {
+            function instanciateServerWithNonStrictMode (stepDone) {
               setIgnoreProtectedFieldUpdates(true, stepDone);
             },
-            function testForbiddenUpdate(stepDone) {
+            function testForbiddenUpdate (stepDone) {
               request.put(path(eventId)).send(forbiddenUpdate)
                 .end(function (res) {
                   validation.check(res, {
@@ -1594,17 +1595,17 @@ describe('events', function () {
           ], done);
         });
 
-      function setIgnoreProtectedFieldUpdates(activated, stepDone) {
-        let settings = _.cloneDeep(helpers.dependencies.settings);
+      function setIgnoreProtectedFieldUpdates (activated, stepDone) {
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.updates.ignoreProtectedFields = activated;
-        server.ensureStarted.call(server, settings, stepDone);
+        server.ensureStarted(settings, stepDone);
       }
     });
 
     it('[CUM3] must reject tags that are too long', function (done) {
-      var bigTag = new Array(600).join('a');
+      const bigTag = new Array(600).join('a');
 
-      request.put(path(testData.events[1].id)).send({tags: [bigTag]})
+      request.put(path(testData.events[1].id)).send({ tags: [bigTag] })
         .end(function (res) {
           validation.check(res, {
             status: 400,
@@ -1618,35 +1619,35 @@ describe('events', function () {
   // Fixes #208
   describe('PUT HF/non-HF events', function () {
     const streamId = testData.streams[0].id;
-    const normalEvent = {streamIds: [streamId], type : 'activity/plain'};
-    const hfEvent = {streamIds: [streamId], type : 'series:activity/plain'};
+    const normalEvent = { streamIds: [streamId], type: 'activity/plain' };
+    const hfEvent = { streamIds: [streamId], type: 'series:activity/plain' };
     let normalEventId;
     let hfEventId;
     const isOpenSource = helpers.dependencies.settings.openSource.isActive;
 
-    before(function(done) {
+    before(function (done) {
       if (isOpenSource) {
         this.skip();
         return done();
       }
       async.parallel([
-        function createNormalEvent(stepDone) {
+        function createNormalEvent (stepDone) {
           request.post(basePath).send(normalEvent).end(function (res) {
-            should.exist(res.status);
+            assert.exists(res.status);
             should(res.status).be.eql(201);
 
-            should.exist(res.body.event.id);
+            assert.exists(res.body.event.id);
             normalEventId = res.body.event.id;
 
             stepDone();
           });
         },
-        function createHfEvent(stepDone) {
+        function createHfEvent (stepDone) {
           request.post(basePath).send(hfEvent).end(function (res) {
-            should.exist(res.status);
+            assert.exists(res.status);
             should(res.status).be.eql(201);
 
-            should.exist(res.body.event.id);
+            assert.exists(res.body.event.id);
             hfEventId = res.body.event.id;
 
             stepDone();
@@ -1657,10 +1658,10 @@ describe('events', function () {
 
     it('[Z7R1] a normal event should not be updated to an hf-event', function (done) {
       request.put(path(normalEventId)).send(hfEvent).end(function (res) {
-        should.exist(res.status);
+        assert.exists(res.status);
         should(res.status).be.eql(400);
 
-        should.exist(res.body.error.id);
+        assert.exists(res.body.error.id);
         should(res.body.error.id).be.eql('invalid-operation');
 
         done();
@@ -1669,10 +1670,10 @@ describe('events', function () {
 
     it('[Z7R2] An hf-event should not be updated to a normal event', function (done) {
       request.put(path(hfEventId)).send(normalEvent).end(function (res) {
-        should.exist(res.status);
+        assert.exists(res.status);
         should(res.status).be.eql(400);
 
-        should.exist(res.body.error.id);
+        assert.exists(res.body.error.id);
         should(res.body.error.id).be.eql('invalid-operation');
 
         done();
@@ -1681,22 +1682,21 @@ describe('events', function () {
   });
 
   describe('DELETE /<event id>/<file id>', function () {
-
     beforeEach(resetEvents);
 
     it('[RW8M] must delete the attachment (reference in event + file)', function (done) {
-      var event = testData.events[0];
-      var fPath = path(event.id) + '/' + event.attachments[0].id;
+      const event = testData.events[0];
+      const fPath = path(event.id) + '/' + event.attachments[0].id;
       request.del(fPath).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.update.result
         });
 
-        var updatedEvent = res.body.event;
+        const updatedEvent = res.body.event;
         validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
         validation.sanitizeEvent(updatedEvent);
-        var expected = _.clone(testData.events[0]);
+        const expected = structuredClone(testData.events[0]);
         expected.attachments = expected.attachments.slice();
         // NOTE We cannot be sure that we still are at the exact same second that
         // we were just now when we did the call. So don't use time here, test
@@ -1708,11 +1708,11 @@ describe('events', function () {
         integrity.events.set(expected);
         validation.checkObjectEquality(updatedEvent, expected);
 
-        var time = timestamp.now();
+        const time = timestamp.now();
         should(updatedEvent.modified).be.approximately(time, 2);
 
-        var filePath = eventFilesStorage.getAttachedFilePath(user, event.id,
-            event.attachments[0].id);
+        const filePath = eventFilesStorage.getAttachmentPath(user.id, event.id,
+          event.attachments[0].id);
         fs.existsSync(filePath).should.eql(false, 'deleted file existence');
 
         eventsNotifCount.should.eql(1, 'events notifications');
@@ -1729,16 +1729,14 @@ describe('events', function () {
         }, done);
       });
     });
-
   });
 
   describe('DELETE /<id>', function () {
-
     beforeEach(resetEvents);
 
     it('[AT5Y] must flag the event as trashed', function (done) {
-      var id = testData.events[0].id,
-          time;
+      const id = testData.events[0].id;
+      let time;
 
       request.del(path(id)).end(function (res) {
         time = timestamp.now();
@@ -1747,7 +1745,7 @@ describe('events', function () {
           schema: methodsSchema.del.result
         });
 
-        var trashedEvent = res.body.event;
+        const trashedEvent = res.body.event;
         trashedEvent.trashed.should.eql(true);
         trashedEvent.modified.should.be.within(time - 1, time);
         trashedEvent.modifiedBy.should.eql(access.id);
@@ -1759,57 +1757,52 @@ describe('events', function () {
     });
 
     it('[73CD] must delete the event when already trashed including all its attachments', function (done) {
-      var id = testData.events[0].id,
-          deletionTime;
+      const id = testData.events[0].id;
       let event;
 
       async.series([
-          async function getEvent() {
-            event = await mall.events.getOne(user.id, id);
-          },
-          async function trashEvent() {
-            event.trashed = true;
-            await mall.events.update(user.id, event);
-          },
-          function deleteEvent(stepDone) {
-            request.del(path(id)).end(function (res) {
-
-              validation.check(res, {
-                status: 200,
-                schema: methodsSchema.del.result
-              });
-              res.body.eventDeletion.should.eql({id: id});
-              eventsNotifCount.should.eql(1, 'events notifications');
-              stepDone();
+        async function getEvent () {
+          event = await mall.events.getOne(user.id, id);
+        },
+        async function trashEvent () {
+          event.trashed = true;
+          await mall.events.update(user.id, event);
+        },
+        function deleteEvent (stepDone) {
+          request.del(path(id)).end(function (res) {
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.del.result
             });
-          },
-          async function verifyEventData() {
-            let events = await mall.events.get(user.id, {state: 'all', deletedSince: 0});
+            res.body.eventDeletion.should.eql({ id });
+            eventsNotifCount.should.eql(1, 'events notifications');
+            stepDone();
+          });
+        },
+        async function verifyEventData () {
+          const deletedEvents = await mall.events.getDeletions('local', user.id, { deletedSince: 0 });
+          const deletion = _.find(deletedEvents, function (event) {
+            return event.id === id;
+          });
+          assert.exists(deletion);
+          const expected = { id, deleted: deletion.deleted };
+          integrity.events.set(expected);
+          validation.checkObjectEquality(deletion.integrity, expected.integrity);
 
-            var deletion = _.find(events, function (event) {
-              return event.id === id;
-            });
-            should.exist(deletion);
-            const expected = { id: id, deleted: deletion.deleted };
-            integrity.events.set(expected);
-            validation.checkObjectEquality(deletion, expected);
-
-            var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
-            fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
-          }
-        ],
-        done
+          const dirPath = eventFilesStorage.getEventPath(user.id, id);
+          fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
+        }
+      ],
+      done
       );
     });
-
   });
 
-  function resetEvents(done) {
+  function resetEvents (done) {
     eventsNotifCount = 0;
     async.series([
       testData.resetEvents,
       testData.resetAttachments
     ], done);
   }
-
 });

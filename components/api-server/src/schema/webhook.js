@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -22,18 +22,18 @@ exports = module.exports = function (action) {
   if (action === Action.STORE) { action = Action.READ; } // read items === stored items
 
   const base = object({
-    'id': string(),
-    'accessId': string(),
-    'url': string(),
-    'state': string(),
-    'runCount': number(),
-    'failCount': number(),
-    'lastRun': run,
-    'runs': array(run),
-    'currentRetries': number(),
-    'maxRetries': number(),
-    'minIntervalMs': number(),
-  }, 
+    id: string(),
+    accessId: string(),
+    url: string(),
+    state: string(),
+    runCount: number(),
+    failCount: number(),
+    lastRun: run,
+    runs: array(run),
+    currentRetries: number(),
+    maxRetries: number(),
+    minIntervalMs: number()
+  },
   {
     additionalProperties: false
   });
@@ -56,7 +56,7 @@ exports = module.exports = function (action) {
         'created',
         'createdBy',
         'modified',
-        'modifiedBy',
+        'modifiedBy'
       ];
       break;
     case Action.CREATE:
@@ -72,12 +72,12 @@ exports = module.exports = function (action) {
 
 const run = object({
   status: number(),
-  timestamp: number(),
+  timestamp: number()
 },
-{ 
+{
   required: [
     'status',
-    'timestamp',
+    'timestamp'
   ]
 }
 );

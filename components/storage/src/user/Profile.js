@@ -1,13 +1,13 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var BaseStorage = require('./BaseStorage'),
-    converters = require('./../converters'),
-    util = require('util'),
-    _ = require('lodash');
+const BaseStorage = require('./BaseStorage');
+const converters = require('./../converters');
+const util = require('util');
+const _ = require('lodash');
 
 module.exports = Profile;
 /**
@@ -16,7 +16,7 @@ module.exports = Profile;
  * @param {Database} database
  * @constructor
  */
-function Profile(database) {
+function Profile (database) {
   Profile.super_.call(this, database);
 
   _.extend(this.converters, {
@@ -34,10 +34,10 @@ Profile.prototype.getCollectionInfo = function (userOrUserId) {
   const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'profile',
-    indexes: [ {
-      index: {profileId: 1},
-      options: {unique: true}
-    } ],
-    useUserId: userId,
+    indexes: [{
+      index: { profileId: 1 },
+      options: { unique: true }
+    }],
+    useUserId: userId
   };
 };

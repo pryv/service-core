@@ -2,8 +2,6 @@
 set -e
 
 # Install nats-server on linux machine
-# This file is the duplicate of ./core/nats-server.sh file that consists of docker
-# run commands to install nats-server
 
 # check if nats-server is already installed and if no install it
 # command -v nats-server should output /usr/local/bin/nats-server

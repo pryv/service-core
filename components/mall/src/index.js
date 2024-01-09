@@ -1,71 +1,82 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 
-// @flow
-
 /**
- * Data Store aggregator.
- * Pack configured datastores into one
+ * “Data stores aggregator”.
+ * Provides a uniform interface to all data stores (built-in and custom).
  */
 
+const { setTimeout } = require('timers/promises');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const Mall = require('./Mall');
 
-import typeof DataStore from 'pryv-datastore';
+module.exports = {
+  getMall,
+  // TODO: eventually remove this once all the store id logic is safely contained within the mall
+  storeDataUtils: require('./helpers/storeDataUtils')
+};
 
-let mall: Mall;
-let initializing: boolean = false;
+let mall;
+let initializing = false;
 
-async function getMall(): Promise<Mall> {
+/**
+ * @returns {Promise<any>}
+ */
+async function getMall () {
+  // eslint-disable-next-line no-unmodified-loop-condition
   while (initializing) {
-    await new Promise((r) => setTimeout(r, 5));
+    await setTimeout(5);
   }
-  if (mall != null) return mall;
+  if (mall != null) { return mall; }
   initializing = true;
 
-  const config: {} = await getConfig();
-  const logger: {} = getLogger('mall');
+  const config = await getConfig();
+  const logger = getLogger('mall');
   mall = new Mall();
 
-  // load external stores from config (Imported After to avoid cycles);
-  const customStoresDef: Array<{}> = config.get('custom:dataStores');
+  // load external stores from config (imported after to avoid cycles);
+  const customStoresDef = config.get('custom:dataStores');
   if (customStoresDef) {
     for (const storeDef of customStoresDef) {
       logger.info(`Loading store "${storeDef.name}" with id "${storeDef.id}" from ${storeDef.path}`);
-      const newStore: DataStore = require(storeDef.path);
-      newStore.id = storeDef.id;
-      newStore.name = storeDef.name;
-      newStore.settings = storeDef.config;
-      mall.addStore(newStore);
+      const store = require(storeDef.path);
+      const storeDescription = {
+        id: storeDef.id,
+        name: storeDef.name,
+        includeInStarPermission: true,
+        settings: storeDef.settings
+      };
+      mall.addStore(store, storeDescription);
     }
   }
 
   // Load built-in stores
-
+  const localSettings = {
+    attachments: { setFileReadToken: true },
+    versioning: config.get('versioning')
+  };
   if (config.get('database:engine') === 'sqlite') {
-    const LocalStore: DataStore  = require('storage/src/LocalDataStoreSQLite'); // change to LocalDataStoreSQLite for SQLite PoC
-    mall.addStore(LocalStore);
-    logger.info('Using SQLite PoC Datastore');
+    logger.info('Using PoC SQLite data store');
+    const sqlite = require('storage/src/localDataStoreSQLite');
+    mall.addStore(sqlite, { id: 'local', name: 'Local', settings: localSettings });
   } else {
-    const localStore: DataStore = require('storage/src/localDataStore');
-    mall.addStore(localStore);
+    const mongo = require('storage/src/localDataStore');
+    mall.addStore(mongo, { id: 'local', name: 'Local', settings: localSettings });
   }
-
+  // audit
   if (!config.get('openSource:isActive') && config.get('audit:active')) {
     const auditDataStore = require('audit/src/datastore/auditDataStore');
-    mall.addStore(auditDataStore);
+    mall.addStore(auditDataStore, { id: '_audit', name: 'Audit', settings: {} });
   }
+
   await mall.init();
+
   initializing = false;
   return mall;
 }
 
-module.exports = {
-  getMall : getMall,
-  // TODO: eventually remove this once all the store id logic is safely contained within the mall
-  storeDataUtils: require('./helpers/storeDataUtils')
-};
+/** @typedef {Class<import>} DataStore */

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -8,14 +8,14 @@
  * JSON Schema specification for users.
  */
 
-var Action = require('./Action'),
-    helpers = require('./helpers');
+const Action = require('./Action');
+const helpers = require('./helpers');
 
 /**
  * @param {Action} action
  */
 module.exports = function (action) {
-  var schema = {
+  const schema = {
     id: helpers.getTypeURI('user', action),
     type: 'object',
     additionalProperties: false,
@@ -24,12 +24,12 @@ module.exports = function (action) {
       email: helpers.email,
       language: helpers.language,
       appId: helpers.string(),
-      referer: helpers.string({ nullable: true }), 
-      invitationToken: helpers.string({ nullable: true }), 
+      referer: helpers.string({ nullable: true }),
+      invitationToken: helpers.string({ nullable: true }),
       storageUsed: helpers.object({
         dbDocuments: helpers.number(),
         attachedFiles: helpers.number()
-      }, {required: [ 'dbDocuments', 'attachedFiles' ]})
+      }, { required: ['dbDocuments', 'attachedFiles'] })
     }
   };
 
@@ -39,22 +39,22 @@ module.exports = function (action) {
   }
 
   // only accept password hash on create (request from registration-server) (and store of course)
-  if (action === Action.CREATE || action === Action.STORE) {
+  if (action === Action.CREATE || action === Action.STORE) {
     schema.properties.passwordHash = helpers.string();
   }
 
   switch (action) {
-  case Action.READ:
-    schema.required = [ 'id', 'username', 'email', 'language' ];
-    break;
+    case Action.READ:
+      schema.required = ['id', 'username', 'email', 'language'];
+      break;
     case Action.STORE:
-    schema.required = ['id', 'username', 'email', 'language', 'storageUsed' ];
-    // TODO ILIA - load custom streams correctly here as is done in schema/authMethods
-    schema.additionalProperties = true;
-    break;
-  case Action.CREATE:
-    schema.required = [ 'username', 'passwordHash', 'email', 'language' ];
-    break;
+      schema.required = ['id', 'username', 'email', 'language', 'storageUsed'];
+      // TODO ILIA - load custom streams correctly here as is done in schema/authMethods
+      schema.additionalProperties = true;
+      break;
+    case Action.CREATE:
+      schema.required = ['username', 'passwordHash', 'email', 'language'];
+      break;
   }
 
   return schema;

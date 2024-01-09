@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -8,6 +8,7 @@ const BaseStorage = require('./BaseStorage');
 const converters = require('./../converters');
 const util = require('util');
 const _ = require('lodash');
+const timestamp = require('unix-timestamp');
 
 module.exports = Webhooks;
 /**
@@ -16,12 +17,12 @@ module.exports = Webhooks;
  * @param {Database} database
  * @constructor
  */
-function Webhooks(database) {
+function Webhooks (database) {
   Webhooks.super_.call(this, database);
 
   _.extend(this.converters, {
     itemDefaults: [
-      converters.createIdIfMissing,
+      converters.createIdIfMissing
     ],
     itemToDB: [converters.deletionToDB],
     itemFromDB: [converters.deletionFromDB]
@@ -49,7 +50,7 @@ Webhooks.prototype.getCollectionInfo = function (userOrUserId) {
   const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'webhooks',
-    indexes: indexes,
+    indexes,
     useUserId: userId
   };
 };
@@ -59,7 +60,7 @@ Webhooks.prototype.getCollectionInfo = function (userOrUserId) {
  */
 Webhooks.prototype.delete = function (userOrUserId, query, callback) {
   const update = {
-    $set: { deleted: Date.now() / 1000 },
+    $set: { deleted: timestamp.now() },
     $unset: {
       accessId: 1,
       url: 1,
@@ -74,8 +75,8 @@ Webhooks.prototype.delete = function (userOrUserId, query, callback) {
       created: 1,
       createdBy: 1,
       modified: 1,
-      modifiedBy: 1,
-    },
+      modifiedBy: 1
+    }
   };
   this.database.updateMany(this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query), update, callback);
@@ -83,13 +84,13 @@ Webhooks.prototype.delete = function (userOrUserId, query, callback) {
 
 /**
  * Override base method to set deleted:null
- * 
- * @param {*} user 
- * @param {*} item 
- * @param {*} callback 
+ *
+ * @param {*} user
+ * @param {*} item
+ * @param {*} callback
  */
 Webhooks.prototype.insertOne = function (userOrUserId, webhook, callback) {
-  let webhookToCreate = _.clone(webhook);
+  const webhookToCreate = structuredClone(webhook);
   if (webhookToCreate.deleted === undefined) webhookToCreate.deleted = null;
   this.database.insertOne(
     this.getCollectionInfo(userOrUserId),

@@ -1,14 +1,11 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, before, beforeEach, after, afterEach it */
-// @flow
 
-const chai = require('chai');
-const assert = chai.assert;
+const { assert } = require('chai');
 const should = require('should');
 const _ = require('lodash');
 const async = require('async');
@@ -24,11 +21,12 @@ const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
 const testData = helpers.data;
 const { UserRepositoryOptions } = require('business/src/users');
-const userAccountStorage = require('business/src/users/userAccountStorage');
+const { getUserAccountStorage } = require('storage');
 const encryption = require('utils').encryption;
 
 describe('auth', function () {
   this.timeout(5000);
+  let userAccountStorage;
 
   function apiPath (username) {
     return new URL(username, server.url).href;
@@ -38,23 +36,23 @@ describe('auth', function () {
     return apiPath(username) + '/auth';
   }
 
+  before(async function () {
+    userAccountStorage = await getUserAccountStorage();
+  });
+
   before(function (done) {
-    async.series(
-      [
-        server.ensureStarted.bind(server, helpers.dependencies.settings),
-        testData.resetUsers
-      ],
-      done
-    );
+    async.series([
+      server.ensureStarted.bind(server, helpers.dependencies.settings),
+      testData.resetUsers
+    ], done);
   });
 
   afterEach(function (done) {
     helpers.dependencies.storage.sessions.clearAll(done);
   });
 
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   const trustedOrigin = 'http://test.pryv.local';
-
   const authData = {
     username: user.username,
     password: user.password,
@@ -69,118 +67,99 @@ describe('auth', function () {
     before(testData.resetAccesses);
 
     it('[2CV5] must authenticate the given credentials, open a session and return the access token', function (done) {
-      async.series(
-        [
-          function login (stepDone) {
-            request
-              .post(path(authData.username))
-              .set('Origin', trustedOrigin)
-              .send(authData)
-              .end(function (err, res) {
-                should.not.exist(err);
-                assert.strictEqual(res.statusCode, 200);
-
-                should.exist(res.body.token);
-                should.exist(res.body.apiEndpoint);
-                assert.include(res.body.apiEndpoint, res.body.token);
-                checkNoUnwantedCookie(res);
-                should.exist(res.body.preferredLanguage);
-
-                assert.strictEqual(res.body.preferredLanguage, user.language);
-
-                stepDone();
-              });
-          },
-          function checkAccess (stepDone) {
-            helpers.dependencies.storage.user.accesses.findOne(
-              user,
-              { name: authData.appId },
-              null,
-              function (err, access) {
-                should.not.exist(err);
-                access.modifiedBy.should.eql(UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
-                stepDone();
-              }
-            );
-          }
-        ],
-        done
-      );
+      async.series([
+        function login (stepDone) {
+          request
+            .post(path(authData.username))
+            .set('Origin', trustedOrigin)
+            .send(authData)
+            .end(function (err, res) {
+              should.not.exist(err);
+              assert.strictEqual(res.statusCode, 200);
+              should.exist(res.body.token);
+              should.exist(res.body.apiEndpoint);
+              assert.include(res.body.apiEndpoint, res.body.token);
+              checkNoUnwantedCookie(res);
+              should.exist(res.body.preferredLanguage);
+              assert.strictEqual(res.body.preferredLanguage, user.language);
+              stepDone();
+            });
+        },
+        function checkAccess (stepDone) {
+          helpers.dependencies.storage.user.accesses.findOne(user, { name: authData.appId }, null, function (err, access) {
+            should.not.exist(err);
+            access.modifiedBy.should.eql(UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
+            stepDone();
+          });
+        }
+      ], done);
     });
 
     it('[68SH] must return expired', function (done) {
       let personalToken;
-      async.series(
-        [
-          function login (stepDone) {
-            request
-              .post(path(authData.username))
-              .set('Origin', trustedOrigin)
-              .send(authData)
-              .end(function (err, res) {
-                should.not.exist(err);
-                personalToken = res.body.token;
-                stepDone();
-              });
-          },
-          function expireSession (stepDone) {
-            helpers.dependencies.storage.sessions.expireNow(personalToken,
-              function (err/* , session */) {
-                stepDone(err);
-              }
-            );
-          },
-          function shouldReturnSessionHasExpired (stepDone) {
-            request
-              .get(apiPath(authData.username) + '/access-info')
-              .set('Origin', trustedOrigin)
-              .set('Authorization', personalToken)
-              .end(function (err, res) {
-                should.exist(err);
-                assert.strictEqual(res.statusCode, 403);
-                assert.strictEqual(res.body.error.id, 'invalid-access-token');
-                assert.strictEqual(res.body.error.message, 'Access session has expired.');
-                stepDone();
-              });
-          }
-        ],
-        done
-      );
+      async.series([
+        function login (stepDone) {
+          request
+            .post(path(authData.username))
+            .set('Origin', trustedOrigin)
+            .send(authData)
+            .end(function (err, res) {
+              should.not.exist(err);
+              personalToken = res.body.token;
+              stepDone();
+            });
+        },
+        function expireSession (stepDone) {
+          helpers.dependencies.storage.sessions.expireNow(personalToken, function (err /* , session */) {
+            stepDone(err);
+          });
+        },
+        function shouldReturnSessionHasExpired (stepDone) {
+          request
+            .get(apiPath(authData.username) + '/access-info')
+            .set('Origin', trustedOrigin)
+            .set('Authorization', personalToken)
+            .end(function (err, res) {
+              should.exist(err);
+              assert.strictEqual(res.statusCode, 403);
+              assert.strictEqual(res.body.error.id, 'invalid-access-token');
+              assert.strictEqual(res.body.error.message, 'Access session has expired.');
+              stepDone();
+            });
+        }
+      ], done);
     });
 
     it('[5UMP] must reuse the current session if already open', function (done) {
       let originalToken;
-      async.series(
-        [
-          function login (stepDone) {
-            request
-              .post(path(authData.username))
-              .set('Origin', trustedOrigin)
-              .send(authData)
-              .end(function (err, res) {
-                should.not.exist(err);
-                assert.strictEqual(res.statusCode, 200);
-                originalToken = res.body.token;
-                stepDone();
-              });
-          },
-          function loginAgain (stepDone) {
-            request
-              .post(path(authData.username))
-              .set('Origin', trustedOrigin)
-              .send(authData)
-              .end(function (err, res) {
-                should.not.exist(err);
-                assert.strictEqual(res.statusCode, 200);
-                assert.strictEqual(res.body.token, originalToken);
-                assert.exists(res.body.apiEndpoint);
-                assert.include(res.body.apiEndpoint, originalToken);
-                stepDone();
-              });
-          }
-        ],
-        done
-      );
+      async.series([
+        function login (stepDone) {
+          request
+            .post(path(authData.username))
+            .set('Origin', trustedOrigin)
+            .send(authData)
+            .end(function (err, res) {
+              should.not.exist(err);
+              assert.strictEqual(res.statusCode, 200);
+              originalToken = res.body.token;
+              stepDone();
+            });
+        },
+        function loginAgain (stepDone) {
+          request
+            .post(path(authData.username))
+            .set('Origin', trustedOrigin)
+            .send(authData)
+            .end(function (err, res) {
+              should.not.exist(err);
+              assert.strictEqual(res.statusCode, 200);
+              assert.strictEqual(res.body.token, originalToken);
+              assert.exists(res.body.apiEndpoint);
+              assert.include(res.body.apiEndpoint, originalToken);
+              stepDone();
+            });
+        }
+      ], done);
     });
 
     it('[509A] must accept "wildcarded" app ids and origins', function (done) {
@@ -196,7 +175,7 @@ describe('auth', function () {
     });
 
     it('[ADL4] must accept "no origin" (i.e. not a CORS request) if authorized', function (done) {
-      const authDataNoCORS = _.defaults({ appId: 'pryv-test-no-cors' }, authData);
+      const authDataNoCORS = Object.assign({}, authData, { appId: 'pryv-test-no-cors' });
       request
         .post(path(authDataNoCORS.username))
         .send(authDataNoCORS)
@@ -235,9 +214,7 @@ describe('auth', function () {
       request
         .post(path(authData.username))
         .set('Origin', trustedOrigin)
-        .send(
-          _.defaults({ username: authData.username.toUpperCase() }, authData)
-        )
+        .send(Object.assign({}, authData, { username: authData.username.toUpperCase() }))
         .end(function (err, res) {
           should.not.exist(err);
           assert.strictEqual(res.statusCode, 200);
@@ -246,13 +223,10 @@ describe('auth', function () {
     });
 
     it('[L7JQ] must return a correct error when the local credentials are missing or invalid', function (done) {
-      const data = _.defaults(
-        {
-          username: authData.username,
-          password: 'bad-password'
-        },
-        authData
-      );
+      const data = Object.assign({}, authData, {
+        username: authData.username,
+        password: 'bad-password'
+      });
       request
         .post(path(data.username))
         .set('Origin', trustedOrigin)
@@ -269,7 +243,7 @@ describe('auth', function () {
     });
 
     it('[4AQR] must return a correct error if the app id is missing or untrusted', function (done) {
-      const data = _.defaults({ appId: 'untrusted-app-id' }, authData);
+      const data = Object.assign({}, authData, { appId: 'untrusted-app-id' });
       request
         .post(path(data.username))
         .set('Origin', trustedOrigin)
@@ -306,40 +280,29 @@ describe('auth', function () {
       const loginCount = 2;
       const randomId = 'pryv-test-' + Date.now();
       const accessStorage = helpers.dependencies.storage.user.accesses;
-
-      async.times(
-        loginCount,
-        function (n, next) {
-          request
-            .post(path(authData.username))
-            .set('Origin', 'https://test.rec.la:1234')
-            .send({
-              username: user.username,
-              password: user.password,
-              appId: randomId
-            })
-            .end(function (err, res) {
-              if (err) return next(err);
-              should(res.statusCode).be.equal(200);
-              next(null, res.body.token);
-            });
-        },
-        function (err, results) {
-          if (err) return done(err);
-          const lastResult = results[1];
-
-          accessStorage.findOne(
-            user,
-            { name: randomId, type: 'personal' },
-            null,
-            (err, access) => {
-              should.not.exist(err);
-              should(access.token).be.equal(lastResult);
-              done();
-            }
-          );
-        }
-      );
+      async.times(loginCount, function (n, next) {
+        request
+          .post(path(authData.username))
+          .set('Origin', 'https://test.rec.la:1234')
+          .send({
+            username: user.username,
+            password: user.password,
+            appId: randomId
+          })
+          .end(function (err, res) {
+            if (err) { return next(err); }
+            should(res.statusCode).be.equal(200);
+            next(null, res.body.token);
+          });
+      }, function (err, results) {
+        if (err) { return done(err); }
+        const lastResult = results[1];
+        accessStorage.findOne(user, { name: randomId, type: 'personal' }, null, (err, access) => {
+          should.not.exist(err);
+          should(access.token).be.equal(lastResult);
+          done();
+        });
+      });
     });
 
     // cf. GH issue #57
@@ -351,14 +314,11 @@ describe('auth', function () {
         .end(function (err, res) {
           should.not.exist(err);
           assert.strictEqual(res.statusCode, 200);
-
           should.exist(res.body.token);
           checkNoUnwantedCookie(res);
           should.exist(res.body.preferredLanguage);
           assert.strictEqual(res.body.preferredLanguage, user.language);
-
           should.not.exist(res.body._private);
-
           done();
         });
     });
@@ -368,14 +328,11 @@ describe('auth', function () {
       let logFilePath = '';
 
       beforeEach(function (done) {
-        async.series(
-          [ensureLogFileIsEmpty, generateLogFile, instanciateServerWithLogs],
-          done
-        );
+        async.series([ensureLogFileIsEmpty, generateLogFile, instanciateServerWithLogs], done);
       });
 
       function ensureLogFileIsEmpty (stepDone) {
-        if (logFilePath.length <= 0) return stepDone();
+        if (logFilePath.length <= 0) { return stepDone(); }
         const truncateTo = 0; // default
         fs.truncate(logFilePath, truncateTo, function (err) {
           if (err && err.code === 'ENOENT') {
@@ -391,7 +348,7 @@ describe('auth', function () {
       }
 
       function instanciateServerWithLogs (stepDone) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         settings.logs = {
           file: {
             active: true,
@@ -411,72 +368,64 @@ describe('auth', function () {
       after(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
       it('[C03J] must replace the password in the logs by (hidden) when an error occurs', function (done) {
-        const wrongPasswordData = _.cloneDeep(authData);
+        const wrongPasswordData = structuredClone(authData);
         wrongPasswordData.password = 'wrongPassword';
-
-        async.series(
-          [
-            function failLogin (stepDone) {
-              request
-                .post(path(authData.username))
-                .set('Origin', trustedOrigin)
-                .send(wrongPasswordData)
-                .end(function (err, res) {
-                  should.exist(err);
-                  assert.strictEqual(res.statusCode, 401);
-                  stepDone();
-                });
-            },
-            function givehalfSecondChance (stepDone) {
-              setTimeout(stepDone, 500);
-            },
-            function verifyHiddenPasswordInLogs (stepDone) {
-              fs.readFile(logFilePath, 'utf8', function (err, data) {
-                if (err) {
-                  return stepDone(err);
-                }
-                assert.isAbove(data.length, 10, 'Issue in configuration, logfile is empty. >> ' + logFilePath);
-                const passwordFound = data.indexOf(wrongPasswordData.password);
-                const hiddenPasswordFound = data.indexOf('"password":"(hidden password)"');
-                assert.equal(passwordFound, -1, 'password is present in logs when it should not. >> \n' + data);
-                assert.isAtLeast(hiddenPasswordFound, 0, 'log with hidden password not found.. >> \n' + data);
+        async.series([
+          function failLogin (stepDone) {
+            request
+              .post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(wrongPasswordData)
+              .end(function (err, res) {
+                should.exist(err);
+                assert.strictEqual(res.statusCode, 401);
                 stepDone();
               });
-            }
-          ],
-          done
-        );
+          },
+          function givehalfSecondChance (stepDone) {
+            setTimeout(stepDone, 500);
+          },
+          function verifyHiddenPasswordInLogs (stepDone) {
+            fs.readFile(logFilePath, 'utf8', function (err, data) {
+              if (err) {
+                return stepDone(err);
+              }
+              assert.isAbove(data.length, 10, 'Issue in configuration, logfile is empty. >> ' + logFilePath);
+              const passwordFound = data.indexOf(wrongPasswordData.password);
+              const hiddenPasswordFound = data.indexOf('"password":"(hidden password)"');
+              assert.equal(passwordFound, -1, 'password is present in logs when it should not. >> \n' + data);
+              assert.isAtLeast(hiddenPasswordFound, 0, 'log with hidden password not found.. >> \n' + data);
+              stepDone();
+            });
+          }
+        ], done);
       });
 
       it('[G0YT] must not mention the password in the logs when none is provided', function (done) {
-        const wrongPasswordData = _.cloneDeep(authData);
+        const wrongPasswordData = structuredClone(authData);
         delete wrongPasswordData.password;
-
-        async.series(
-          [
-            function failLogin (stepDone) {
-              request
-                .post(path(authData.username))
-                .set('Origin', trustedOrigin)
-                .send(wrongPasswordData)
-                .end(function (err, res) {
-                  should.exist(err);
-                  assert.strictEqual(res.statusCode, 400);
-                  stepDone();
-                });
-            },
-            function verifyNoPasswordFieldInLogs (stepDone) {
-              fs.readFile(logFilePath, 'utf8', function (err, data) {
-                if (err) {
-                  return stepDone(err);
-                }
-                should(data.indexOf('password=')).be.equal(-1);
+        async.series([
+          function failLogin (stepDone) {
+            request
+              .post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(wrongPasswordData)
+              .end(function (err, res) {
+                should.exist(err);
+                assert.strictEqual(res.statusCode, 400);
                 stepDone();
               });
-            }
-          ],
-          done
-        );
+          },
+          function verifyNoPasswordFieldInLogs (stepDone) {
+            fs.readFile(logFilePath, 'utf8', function (err, data) {
+              if (err) {
+                return stepDone(err);
+              }
+              should(data.indexOf('password=')).be.equal(-1);
+              stepDone();
+            });
+          }
+        ], done);
       });
     });
 
@@ -484,7 +433,6 @@ describe('auth', function () {
       if (!res.headers['set-cookie']) {
         return;
       }
-
       res.headers['set-cookie']
         .filter(function (cookieString) {
           return cookieString.indexOf('sso=') !== 0; // we only want the SSO cookie
@@ -493,7 +441,7 @@ describe('auth', function () {
     }
 
     describe('[WPRA] When password rules are enabled', function () {
-      const settings = _.merge(_.cloneDeep(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
+      const settings = _.merge(structuredClone(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
       const maxAge = helpers.passwordRules.settingsOverride.auth.passwordAgeMaxDays;
       const minAge = 1;
 
@@ -514,8 +462,10 @@ describe('auth', function () {
         const passwordHash = await encryption.hash(user.password);
         const passwordTime = timestamp.now(`-${maxAge - 1}d`);
         await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', passwordTime);
-
-        const res = await request.post(path(authData.username)).set('Origin', trustedOrigin).send(authData);
+        const res = await request
+          .post(path(authData.username))
+          .set('Origin', trustedOrigin)
+          .send(authData);
         assert.exists(res.body.passwordExpires);
         assert.approximately(res.body.passwordExpires, timestamp.add(passwordTime, `${maxAge}d`), 1000);
         assert.exists(res.body.passwordCanBeChanged);
@@ -529,8 +479,8 @@ describe('auth', function () {
         const passwordHash = await encryption.hash(user.password);
         const passwordTime = timestamp.now(`-${maxAge + 1}d`);
         await userAccountStorage.addPasswordHash(user.id, passwordHash, 'test', passwordTime);
-
-        const res = await request.post(path(authData.username))
+        const res = await request
+          .post(path(authData.username))
           .ok(() => true)
           .set('Origin', trustedOrigin)
           .send(authData);
@@ -539,8 +489,12 @@ describe('auth', function () {
           id: ErrorIds.InvalidCredentials
         });
         const expectedExpirationTime = timestamp.add(passwordTime, `${maxAge}d`);
-        assert.include(res.body.error.message, `Password expired since ${timestamp.toDate(expectedExpirationTime).toISOString()}`);
-        assert.deepEqual(res.body.error.data, { expiredTime: expectedExpirationTime });
+        assert.include(res.body.error.message, `Password expired since ${timestamp
+                    .toDate(expectedExpirationTime)
+                    .toISOString()}`);
+        assert.deepEqual(res.body.error.data, {
+          expiredTime: expectedExpirationTime
+        });
       });
     });
   });
@@ -552,80 +506,70 @@ describe('auth', function () {
 
     it('[6W5M] must terminate the access session and fail to logout a second time (session already expired)', function (done) {
       let token;
-      async.series(
-        [
-          function (stepDone) {
-            request
-              .post(basePath(user.username) + '/login')
-              .set('Origin', trustedOrigin)
-              .send(authData)
-              .end(function (err, res) {
-                token = res.body.token;
-                if (typeof token !== 'string') { return stepDone(new Error('AF: not a string')); }
-
-                stepDone();
-              });
-          },
-          function (stepDone) {
-            request
-              .post(path(user.username))
-              .send({})
-              .set('authorization', token)
-              .end(function (err, res) {
-                assert.strictEqual(res.statusCode, 200);
-
-                stepDone();
-              });
-          },
-          function (stepDone) {
-            // Session was already closed
-            // Trying to logout a second time should fail
-            request
-              .post(path(user.username))
-              .send({})
-              .set('authorization', token)
-              .end(function (err, res) {
-                validation.checkError(
-                  res,
-                  {
-                    status: 403,
-                    id: ErrorIds.InvalidAccessToken
-                  },
-                  stepDone
-                );
-              });
-          }
-        ],
-        done
-      );
+      async.series([
+        function (stepDone) {
+          request
+            .post(basePath(user.username) + '/login')
+            .set('Origin', trustedOrigin)
+            .send(authData)
+            .end(function (err, res) {
+              assert.notExists(err);
+              token = res.body.token;
+              if (typeof token !== 'string') {
+                return stepDone(new Error('AF: not a string'));
+              }
+              stepDone();
+            });
+        },
+        function (stepDone) {
+          request
+            .post(path(user.username))
+            .send({})
+            .set('authorization', token)
+            .end(function (err, res) {
+              assert.notExists(err);
+              assert.strictEqual(res.statusCode, 200);
+              stepDone();
+            });
+        },
+        function (stepDone) {
+          // Session was already closed
+          // Trying to logout a second time should fail
+          request
+            .post(path(user.username))
+            .send({})
+            .set('authorization', token)
+            .end(function (err, res) { // eslint-disable-line n/handle-callback-err
+              validation.checkError(res, {
+                status: 403,
+                id: ErrorIds.InvalidAccessToken
+              }, stepDone);
+            });
+        }
+      ], done);
     });
 
     it('[E2MD] (or any request) must alternatively accept the access token in the query string', function (done) {
       const testRequest = helpers.request(server.url);
-
-      async.series(
-        [
-          testRequest.login.bind(testRequest, user),
-          function (stepDone) {
-            request
-              .post(path(user.username))
-              .query({ auth: testRequest.token })
-              .send({})
-              .end(function (err, res) {
-                assert.strictEqual(res.statusCode, 200);
-
-                stepDone();
-              });
-          }
-        ],
-        done
-      );
+      async.series([
+        testRequest.login.bind(testRequest, user),
+        function (stepDone) {
+          request
+            .post(path(user.username))
+            .query({ auth: testRequest.token })
+            .send({})
+            .end(function (err, res) {
+              assert.notExists(err);
+              assert.strictEqual(res.statusCode, 200);
+              stepDone();
+            });
+        }
+      ], done);
     });
   });
 
   describe('SSO support', function () {
     // WARNING: exceptionally, tests in here are interdependent and their sequence matters
-
     const persistentReq2 = request.agent();
 
     before(function (done) {
@@ -639,8 +583,9 @@ describe('auth', function () {
     });
 
     it('[TIDW] GET /who-am-i must return a 410 as it has been removed', function (done) {
-      persistentReq2.get(basePath(authData.username) + '/who-am-i')
-        .end(function (err, res) {
+      persistentReq2
+        .get(basePath(authData.username) + '/who-am-i')
+        .end(function (err, res) { // eslint-disable-line n/handle-callback-err
           assert.strictEqual(res.statusCode, 410);
           done();
         });

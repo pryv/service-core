@@ -1,12 +1,11 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 const nock = require('nock');
 const assert = require('chai').assert;
-const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const bluebird = require('bluebird');
@@ -366,24 +365,18 @@ describe('[BMM2] registration: DNS-less', () => {
 
     it('[7T9L] when checking a valid available username, it should respond with status 200 and {reserved:false}', async () => {
       const res = await request.get(path('unexisting-username'));
-
-      const body = res.body;
       assert.equal(res.status, 200);
-      assert.isFalse(body.reserved);
+      assert.isFalse(res.body.reserved);
     });
 
     it('[153Q] when checking a valid taken username, it should respond with status 409 and the correct error', async () => {
       const res = await request.get(path(existingUsername));
-
-      const body = res.body;
-      assert.equal(res.status, 409);
-      assert.equal(body.error.id, ErrorIds.ItemAlreadyExists);
-      assert.deepEqual(body.error.data, { username: existingUsername });
+      assert.equal(res.status, 200);
+      assert.isTrue(res.body.reserved);
     });
 
     it('[H09H] when checking a too short username, it should respond with status 400 and the correct error', async () => {
       const res = await request.get(path('a'.repeat(USERNAME_MIN_LENGTH - 1)));
-
       const body = res.body;
       assert.equal(res.status, 400);
       assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);

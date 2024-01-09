@@ -1,56 +1,47 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/*global describe, before, beforeEach, after, it */
+
+const async = require('async');
+const fs = require('fs');
+const path = require('path');
+const timestamp = require('unix-timestamp');
+const { assert } = require('chai');
 
 require('./test-helpers');
 const helpers = require('./helpers');
 const treeUtils = require('utils').treeUtils;
 const server = helpers.dependencies.instanceManager;
-const async = require('async');
-const fs = require('fs');
-const path = require('path');
 const validation = helpers.validation;
 const testData = helpers.data;
-const timestamp = require('unix-timestamp');
-const _ = require('lodash');
-const bluebird = require('bluebird');
-const chai = require('chai');
-const assert = chai.assert;
 const { integrity } = require('business');
 const { getConfig } = require('@pryv/boiler');
 
 let isAuditActive = false;
 
 describe('[ACCP] Access permissions', function () {
-
   before(async () => {
     const config = await getConfig();
-    isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
+    isAuditActive = (!config.get('openSource:isActive')) && config.get('audit:active');
   });
 
-  var user = Object.assign({}, testData.users[0]),
-      request = null, // must be set after server instance started
-      filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
+  const user = structuredClone(testData.users[0]);
+  let request = null; // must be set after server instance started
+  const filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
 
-  function token(testAccessIndex) {
+  function token (testAccessIndex) {
     return testData.accesses[testAccessIndex].token;
   }
 
-
-  function getAllStreamIdsByToken(testAccessIndex) {
-    var tokenStreamIds = [];
+  function getAllStreamIdsByToken (testAccessIndex) {
+    const tokenStreamIds = [];
     testData.accesses[testAccessIndex].permissions.forEach(function (p) {
       tokenStreamIds.push(p.streamId);
     });
     return treeUtils.expandIds(testData.streams, tokenStreamIds);
-  }
-
-  function getAllTagsByToken(testAccessIndex) {
-    return _.map(testData.accesses[testAccessIndex].permissions, 'tag');
   }
 
   before(function (done) {
@@ -63,7 +54,6 @@ describe('[ACCP] Access permissions', function () {
   });
 
   describe('Events', function () {
-
     before(function (done) {
       async.series([
         testData.resetStreams,
@@ -73,20 +63,20 @@ describe('[ACCP] Access permissions', function () {
 
     beforeEach(testData.resetEvents);
 
-    var basePath = '/' + user.username + '/events';
+    const basePath = '/' + user.username + '/events';
 
-    function reqPath(id) {
+    function reqPath (id) {
       return basePath + '/' + id;
     }
 
     it('[1AK1] `get` must only return events in accessible streams', function (done) {
-      var params = {
+      const params = {
         limit: 100, // i.e. all
         state: 'all'
       };
-      var streamIds = getAllStreamIdsByToken(1);
+      const streamIds = getAllStreamIdsByToken(1);
 
-      var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
+      const events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
         return streamIds.indexOf(e.streamIds[0]) >= 0;
       }).sort(function (a, b) {
         return b.time - a.time;
@@ -103,7 +93,7 @@ describe('[ACCP] Access permissions', function () {
 
     it('[NKI5] `get` must return all events when permissions are defined for "all streams" (*)',
       function (done) {
-        var params = {
+        const params = {
           limit: 100, // i.e. all
           state: 'all'
         };
@@ -112,7 +102,6 @@ describe('[ACCP] Access permissions', function () {
             filesReadTokenSecret);
           validation.sanitizeEvents(res.body.events);
           res.body.events = validation.removeAccountStreamsEvents(res.body.events);
-          testData.events.forEach(integrity.events.set);
           res.body.events.should.eql(validation.removeDeletionsAndHistory(testData.events).sort(
             function (a, b) {
               return b.time - a.time;
@@ -123,30 +112,30 @@ describe('[ACCP] Access permissions', function () {
       });
 
     it('[5360] `get` (or any request) must alternatively accept the access token in the query string',
-        function (done) {
-      var query = {
-        auth: token(1),
-        streams: [testData.streams[2].children[0].id],
-        state: 'all'
-      };
-      request.get(basePath, token(1)).unset('Authorization').query(query).end(function (res) {
-        const expectedEvent = _.cloneDeep(testData.events[8]);
-        expectedEvent.streamId = expectedEvent.streamIds[0];
-        res.body.events.should.eql([expectedEvent]);
-        done();
+      function (done) {
+        const query = {
+          auth: token(1),
+          streams: [testData.streams[2].children[0].id],
+          state: 'all'
+        };
+        request.get(basePath, token(1)).unset('Authorization').query(query).end(function (res) {
+          const expectedEvent = structuredClone(testData.events[8]);
+          expectedEvent.streamId = expectedEvent.streamIds[0];
+          res.body.events.should.eql([expectedEvent]);
+          done();
+        });
       });
-    });
 
     it('[KTM1] must forbid getting an attached file if permissions are insufficient', function (done) {
-      var event = testData.events[0],
-          attachment = event.attachments[0];
+      const event = testData.events[0];
+      const attachment = event.attachments[0];
       request.get(reqPath(event.id) + '/' + attachment.id, token(3)).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('[2773] must forbid creating events for \'read-only\' streams', function (done) {
-      var params = {
+      const params = {
         type: 'test/test',
         streamId: testData.streams[0].id
       };
@@ -157,7 +146,7 @@ describe('[ACCP] Access permissions', function () {
 
     it('[ZKZZ] must forbid updating events for \'read-only\' streams', function (done) {
       // also check recursive permissions
-      request.put(reqPath(testData.events[0].id), token(1)).send({content: {}}).end(function (res) {
+      request.put(reqPath(testData.events[0].id), token(1)).send({ content: {} }).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -169,7 +158,7 @@ describe('[ACCP] Access permissions', function () {
     });
 
     it('[Y38T] must allow creating events for \'contribute\' streams', function (done) {
-      var data = {
+      const data = {
         time: timestamp.now('-5h'),
         duration: timestamp.duration('1h'),
         type: 'test/test',
@@ -183,27 +172,26 @@ describe('[ACCP] Access permissions', function () {
   });
 
   describe('Streams', function () {
-
     before(testData.resetEvents);
 
     beforeEach(testData.resetStreams);
 
-    var basePath = '/' + user.username + '/streams';
+    const basePath = '/' + user.username + '/streams';
 
-    function reqPath(id) {
+    function reqPath (id) {
       return basePath + '/' + id;
     }
 
     // note: personal (i.e. full) access is implicitly covered by streams/events tests
 
     it('[BSFP] `get` must only return streams for which permissions are defined', function (done) {
-      request.get(basePath, token(1)).query({state: 'all'}).end(async function (res) {
+      request.get(basePath, token(1)).query({ state: 'all' }).end(async function (res) {
         const expectedStreamids = [testData.streams[0].id, testData.streams[1].id, testData.streams[2].children[0].id];
         if (isAuditActive) {
           expectedStreamids.push(':_audit:access-a_1');
         }
         assert.exists(res.body.streams);
-        res.body.streams.length.should.eql(expectedStreamids.length)
+        res.body.streams.length.should.eql(expectedStreamids.length);
         for (const stream of res.body.streams) {
           assert.include(expectedStreamids, stream.id);
         }
@@ -212,7 +200,7 @@ describe('[ACCP] Access permissions', function () {
     });
 
     it('[R4IA] must forbid creating child streams in \'read-only\' streams', function (done) {
-      var data = {
+      const data = {
         name: 'Tai Ji',
         parentId: testData.streams[0].id
       };
@@ -222,7 +210,7 @@ describe('[ACCP] Access permissions', function () {
     });
 
     it('[KHI7] must forbid creating child streams in \'contribute\' streams', function (done) {
-      var data = {
+      const data = {
         name: 'Xing Yi',
         parentId: testData.streams[1].id
       };
@@ -238,21 +226,21 @@ describe('[ACCP] Access permissions', function () {
     });
 
     it('[7B6P] must forbid updating \'contribute\' streams', function (done) {
-      request.put(reqPath(testData.streams[1].id), token(1)).send({name: 'Ba Gua'})
-          .end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      request.put(reqPath(testData.streams[1].id), token(1)).send({ name: 'Ba Gua' })
+        .end(function (res) {
+          validation.checkErrorForbidden(res, done);
+        });
     });
 
     it('[RG5R] must forbid deleting \'contribute\' streams', function (done) {
-      request.del(reqPath(testData.streams[1].id), token(1)).query({mergeEventsWithParent: true})
-          .end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      request.del(reqPath(testData.streams[1].id), token(1)).query({ mergeEventsWithParent: true })
+        .end(function (res) {
+          validation.checkErrorForbidden(res, done);
+        });
     });
 
     it('[21AZ] must not allow creating child streams in trashed \'managed\' streams', function (done) {
-      var data = {
+      const data = {
         name: 'Dzogchen',
         parentId: testData.streams[2].children[0].id
       };
@@ -263,7 +251,7 @@ describe('[ACCP] Access permissions', function () {
     });
 
     it('[O1AZ] must allow creating child streams in \'managed\' streams', function (done) {
-      var data = {
+      const data = {
         name: 'Dzogchen',
         parentId: testData.streams[2].children[1].id
       };
@@ -274,23 +262,23 @@ describe('[ACCP] Access permissions', function () {
     });
 
     it('[5QPU] must forbid moving streams into non-\'managed\' parent streams', function (done) {
-      var update = {parentId: testData.streams[1].id};
+      const update = { parentId: testData.streams[1].id };
       request.put(reqPath(testData.streams[2].children[0].id), token(1))
-          .send(update).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+        .send(update).end(function (res) {
+          validation.checkErrorForbidden(res, done);
+        });
     });
 
     it('[KP1Q] must allow deleting child streams in \'managed\' streams', function (done) {
       request.del(reqPath(testData.streams[2].children[0].children[0].id), token(1))
-      .end(function (res) {
-        res.statusCode.should.eql(200); // trashed -> considered an update
-        done();
-      });
+        .end(function (res) {
+          res.statusCode.should.eql(200); // trashed -> considered an update
+          done();
+        });
     });
 
     it('[HHSS] must recursively apply permissions to the streams\' child streams', function (done) {
-      var data = {
+      const data = {
         name: 'Zen',
         parentId: testData.streams[0].children[0].id
       };
@@ -300,28 +288,27 @@ describe('[ACCP] Access permissions', function () {
     });
 
     it('[NJ1A] must allow access to all streams when no specific stream permissions are defined',
-        function (done) {
-          const expected = validation.removeDeletions(_.cloneDeep(testData.streams));
-          validation.addStoreStreams(expected);
-          request.get(basePath, token(2)).query({ state: 'all' }).end(function (res) {
-            res.body.streams = validation.removeAccountStreams(res.body.streams);
-            res.body.streams.should.eql(expected);
-            done();
+      function (done) {
+        const expected = validation.removeDeletions(structuredClone(testData.streams));
+        validation.addStoreStreams(expected);
+        request.get(basePath, token(2)).query({ state: 'all' }).end(function (res) {
+          res.body.streams = validation.removeAccountStreams(res.body.streams);
+          res.body.streams.should.eql(expected);
+          done();
+        });
       });
-    });
   });
 
   describe('Auth and change tracking', function () {
-
     before(testData.resetStreams);
 
     beforeEach(testData.resetEvents);
 
-    var basePath = '/' + user.username + '/events',
-        sharedAccessIndex = 1,
-        callerId = 'test-caller-id',
-        auth = token(sharedAccessIndex) + ' ' + callerId;
-    var newEventData = {
+    const basePath = '/' + user.username + '/events';
+    const sharedAccessIndex = 1;
+    const callerId = 'test-caller-id';
+    const auth = token(sharedAccessIndex) + ' ' + callerId;
+    const newEventData = {
       type: 'test/test',
       streamId: testData.streams[1].id
     };
@@ -329,8 +316,8 @@ describe('[ACCP] Access permissions', function () {
     it('[YE49] must handle optional caller id in auth (in addition to token)', function (done) {
       request.post(basePath, auth).send(newEventData).end(function (res) {
         res.statusCode.should.eql(201);
-        var event = res.body.event,
-            expectedAuthor = testData.accesses[sharedAccessIndex].id + ' ' + callerId;
+        const event = res.body.event;
+        const expectedAuthor = testData.accesses[sharedAccessIndex].id + ' ' + callerId;
         event.createdBy.should.eql(expectedAuthor);
         event.modifiedBy.should.eql(expectedAuthor);
         done();
@@ -338,17 +325,15 @@ describe('[ACCP] Access permissions', function () {
     });
 
     describe('custom auth step (e.g. to validate/parse caller id)', function () {
-
-      var fileName = 'customAuthStepFn.js',
-          srcPath = path.join(__dirname, 'permissions.fixtures', fileName),
-          destPath = path.join(__dirname, '../../../../custom-extensions', fileName);
+      const fileName = 'customAuthStepFn.js';
+      const srcPath = path.join(__dirname, 'permissions.fixtures', fileName);
+      const destPath = path.join(__dirname, '../../../custom-extensions', fileName);
 
       before(function (done) {
         async.series([
-          function setupCustomAuthStep(stepDone) {
+          function setupCustomAuthStep (stepDone) {
             fs.readFile(srcPath, function (err, data) {
-              if (err)
-                return stepDone(err);
+              if (err) { return stepDone(err); }
 
               fs.writeFile(destPath, data, stepDone);
             });
@@ -357,8 +342,7 @@ describe('[ACCP] Access permissions', function () {
         ], function (err) {
           if (err) done(err);
 
-          if (! fs.existsSync(destPath))
-            throw new Error('Failed creating :' + destPath);
+          if (!fs.existsSync(destPath)) { throw new Error('Failed creating :' + destPath); }
 
           done();
         });
@@ -366,7 +350,7 @@ describe('[ACCP] Access permissions', function () {
 
       after(function (done) {
         async.series([
-          function teardownCustomAuthStep(stepDone) {
+          function teardownCustomAuthStep (stepDone) {
             fs.unlink(destPath, stepDone);
           },
           server.restart.bind(server)
@@ -380,11 +364,11 @@ describe('[ACCP] Access permissions', function () {
       });
 
       it('[H58R] must allow access when successful', function (done) {
-        var successAuth = token(sharedAccessIndex) + ' Georges (unparsed)';
+        const successAuth = token(sharedAccessIndex) + ' Georges (unparsed)';
         request.post(basePath, successAuth).send(newEventData).end(function (res) {
           res.statusCode.should.eql(201);
-          var event = res.body.event,
-              expectedAuthor = testData.accesses[sharedAccessIndex].id + ' Georges (parsed)';
+          const event = res.body.event;
+          const expectedAuthor = testData.accesses[sharedAccessIndex].id + ' Georges (parsed)';
           event.createdBy.should.eql(expectedAuthor);
           event.modifiedBy.should.eql(expectedAuthor);
           done();
@@ -392,21 +376,22 @@ describe('[ACCP] Access permissions', function () {
       });
 
       it('[H58Z] must allow access whith "callerid" headers', function (done) {
-        var successAuth = token(sharedAccessIndex);
+        const successAuth = token(sharedAccessIndex);
         request.post(basePath, successAuth)
           .set('callerid', 'Georges (unparsed)')
           .send(newEventData).end(function (err, res) {
-          res.statusCode.should.eql(201);
-          var event = res.body.event,
-              expectedAuthor = testData.accesses[sharedAccessIndex].id + ' Georges (parsed)';
-          event.createdBy.should.eql(expectedAuthor);
-          event.modifiedBy.should.eql(expectedAuthor);
-          done();
-        });
+            assert.notExists(err);
+            res.statusCode.should.eql(201);
+            const event = res.body.event;
+            const expectedAuthor = testData.accesses[sharedAccessIndex].id + ' Georges (parsed)';
+            event.createdBy.should.eql(expectedAuthor);
+            event.modifiedBy.should.eql(expectedAuthor);
+            done();
+          });
       });
 
       it('[ISE4] must fail properly (i.e. not granting access) when the custom function crashes', function (done) {
-        var crashAuth = token(sharedAccessIndex) + ' Please Crash';
+        const crashAuth = token(sharedAccessIndex) + ' Please Crash';
         request.post(basePath, crashAuth).send(newEventData).end(function (res) {
           res.statusCode.should.eql(500);
           done();
@@ -417,9 +402,7 @@ describe('[ACCP] Access permissions', function () {
         const srcPath = path.join(__dirname, 'permissions.fixtures', 'customAuthStepFn.invalid.js');
         fs.writeFileSync(destPath, fs.readFileSync(srcPath)); // Copy content of srcPath file to destPath
         try {
-          await bluebird.fromCallback(cb => {
-            server.restart.call(server, cb);
-          });
+          await server.restartAsync();
         } catch (error) {
           assert.isNotNull(error);
           assert.exists(error.message);

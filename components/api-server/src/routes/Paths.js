@@ -1,33 +1,25 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 /**
  * Regroups the different URL paths served by this module.
  */
-
 const path = require('path');
-
 const Params = {
   Username: 'username'
 };
 Object.freeze(Params);
-
-
 const username = param(Params.Username);
-const Paths = module.exports = {
+const Paths = (module.exports = {
   // expose params for URL parsing
-  Params: Params,
-
+  Params,
   System: makePath('system'),
   Register: makePath('reg'),
   WWW: makePath('www'),
   UserRoot: makePath(username),
-
   Accesses: makePath(username, 'accesses'),
   Account: makePath(username, 'account'),
   Auth: makePath(username, 'auth'),
@@ -38,19 +30,22 @@ const Paths = module.exports = {
   Service: makePath(username, 'service'),
   Webhooks: makePath(username, 'webhooks'),
   Audit: makePath(username, 'audit/logs'),
-
   SocketIO: makePath('socket.io'),
   SocketIO2: makePath('socket.io2'),
   Favicon: makePath('favicon.ico')
-};
+});
 Object.freeze(Paths);
-
-function makePath(...a: Array<string>): string {
+/**
+ * @param {Array<string>} a
+ * @returns {string}
+ */
+function makePath (...a) {
   a.unshift('/');
-
   return path.join(...a);
 }
-
-function param(name) {
+/**
+ * @returns {string}
+ */
+function param (name) {
   return ':' + name;
 }

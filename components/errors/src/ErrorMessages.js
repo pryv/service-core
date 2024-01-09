@@ -1,23 +1,25 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
 const ErrorIds = require('./ErrorIds');
 const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers');
 /**
  * Identifier constants for API errors' messages.
  */
 const ErrorMessages = {
-
   /**
    * Invitation token validation in the service-register
    */
   // ErrorIds.
   [ErrorIds.InvalidInvitationToken]: 'Invalid invitation',
-  [ErrorIds.InvalidUsername]: 'Username should have between ' + USERNAME_MIN_LENGTH + ' and ' + USERNAME_MAX_LENGTH + ' characters and contain lowercase letters or numbers or dashes',
+  [ErrorIds.InvalidUsername]: 'Username should have between ' +
+        USERNAME_MIN_LENGTH +
+        ' and ' +
+        USERNAME_MAX_LENGTH +
+        ' characters and contain lowercase letters or numbers or dashes',
   [ErrorIds.UsernameRequired]: 'Username is required',
   [ErrorIds.InvalidEmail]: 'Invalid email',
   [ErrorIds.InvalidLanguage]: 'Invalid language',
@@ -37,8 +39,7 @@ const ErrorMessages = {
   [ErrorIds.ForbiddenToEditNoneditableAccountFields]: 'It is forbidden to edit non-editable acccount fields.',
   [ErrorIds.UnexpectedError]: 'Unexpected error',
   [ErrorIds.NewPasswordFieldIsRequired]: 'newPassword field is required.',
-  IndexedParameterInvalidFormat: 'Indexed parameters must be numbers or strings if required.',
+  IndexedParameterInvalidFormat: 'Indexed parameters must be numbers or strings if required.'
 };
 Object.freeze(ErrorMessages);
-
 module.exports = ErrorMessages;

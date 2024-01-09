@@ -1,79 +1,85 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const errors = require('errors').factory;
 const business = require('business');
-
 const opentracing = require('opentracing');
 const cls = require('../tracing/cls');
-
-import type Context  from '../context';
-
-// ----------------------------------------------- (sync) express error handling
-
-type ControllerMethod = (ctx: Context, 
-  req: express$Request, res: express$Response, next: express$NextFunction) => mixed; 
-type ExpressHandler = (req: express$Request, res: express$Response, next: express$NextFunction) => mixed; 
-function mount(ctx: Context, handler: ControllerMethod): express$Middleware {
-  return catchAndNext(
-    handler.bind(null, ctx)); 
+/**
+ * @param {Context} ctx
+ * @param {ControllerMethod} handler
+ * @returns {any}
+ */
+function mount (ctx, handler) {
+  return catchAndNext(handler.bind(null, ctx));
 }
-
-function catchAndNext(handler: ExpressHandler): express$Middleware {
-  return async (req: express$Request, res, next) => {
+/**
+ * @param {ExpressHandler} handler
+ * @returns {any}
+ */
+function catchAndNext (handler) {
+  return async (req, res, next) => {
     try {
       return await handler(req, res, next);
-    }
-    catch (err) {
+    } catch (err) {
       storeErrorInTrace(err);
-      
       if (err.constructor.name === 'ServiceNotAvailableError') {
         return next(errors.apiUnavailable(err.message));
       }
       if (err instanceof business.types.errors.InputTypeError) {
         return next(errors.invalidRequestStructure(err.message));
       }
-    
       next(err);
     }
   };
 }
-
 const TAG_ERROR_MESSAGE = 'error.message';
-
-// Tries to store the current error in the active trace. Traces are then 
+// Tries to store the current error in the active trace. Traces are then
 // all closed down by the 'trace' middleware, yielding a correct error trace
-// in every case. 
-// 
+// in every case.
+//
 // NOTE This method should not throw an error!
-// 
-function storeErrorInTrace(err: any) {
+//
+/**
+ * @param {any} err
+ * @returns {void}
+ */
+function storeErrorInTrace (err) {
   try {
     const Tags = opentracing.Tags;
-
     const root = cls.getRootSpan();
-    if (root == null) return; 
-    
+    if (root == null) { return; }
     root.setTag(Tags.ERROR, true);
-    if (err.message != null)
-      root.setTag(TAG_ERROR_MESSAGE, err.message);
-  }
-  catch (err) {
+    if (err.message != null) { root.setTag(TAG_ERROR_MESSAGE, err.message); }
+  } catch (err) {
     // IGNORE
   }
 }
-
 // --------------------------------------------------------------------- factory
-
-module.exports = function (ctx: Context) {
+module.exports = function (ctx) {
   return {
     storeSeriesData: mount(ctx, require('./op/store_series_data')),
     querySeriesData: mount(ctx, require('./op/query_series_data')),
-    storeSeriesBatch: mount(ctx, require('./op/store_series_batch')),
+    storeSeriesBatch: mount(ctx, require('./op/store_series_batch'))
   };
 };
+
+/**
+ * @typedef {(
+ *   ctx: Context,
+ *   req: express$Request,
+ *   res: express$Response,
+ *   next: express$NextFunction
+ * ) => unknown} ControllerMethod
+ */
+
+/**
+ * @typedef {(
+ *   req: express$Request,
+ *   res: express$Response,
+ *   next: express$NextFunction
+ * ) => unknown} ExpressHandler
+ */

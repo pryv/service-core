@@ -1,15 +1,15 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
 const storeDataUtils = require('./helpers/storeDataUtils');
-
 const MallUserStreams = require('./MallUserStreams');
 const MallUserEvents = require('./MallUserEvents');
 const MallTransaction = require('./MallTransaction');
+const { getLogger } = require('@pryv/boiler');
+const eventsUtils = require('./helpers/eventsUtils');
 
 /**
  * Storage for streams and events.
@@ -20,51 +20,79 @@ class Mall {
   /**
    * @type {Map<string, DataStore>}
    */
-  stores;
-  initialized: boolean;
-  _streams: MallUserStreams;
-  _events: MallUserEvents;
-
-  constructor() {
-    this.stores = new Map();
-    this.initialized = false;
-  }
-
-  get streams() { return this._streams; }
-  get events() { return this._events; }
-
+  storesById = new Map();
   /**
-   * Register a new DataStore
-   * @param {DataStore} store
+   * @type {Map<DataStore, {id: string, name: string, settings: object}>}
    */
-  addStore(store) {
-    if (this.initialized) throw(new Error('Sources cannot be added after init()'));
-    this.stores.set(store.id, store);
+  storeDescriptionsByStore = new Map();
+  /**
+   * Contains the list of stores included in star permissions.
+   * @type {string[]}
+   */
+  includedInStarPermissions = [];
+
+  _events;
+  _streams;
+
+  initialized = false;
+
+  get streams () {
+    return this._streams;
+  }
+
+  get events () {
+    return this._events;
   }
 
   /**
-   * @returns {Promise<Mall>}
+   * Register a DataStore
+   * @param {DataStore} store
+   * @param {{ id: string, name: string, settings: object}} storeDescription
+   * @returns {void}
+   */
+  addStore (store, storeDescription) {
+    if (this.initialized) { throw new Error('Sources cannot be added after init()'); }
+    this.storesById.set(storeDescription.id, store);
+    this.storeDescriptionsByStore.set(store, storeDescription);
+    if (storeDescription.includeInStarPermission) {
+      this.includedInStarPermissions.push(storeDescription.id);
+    }
+  }
+
+  /**
+   * @returns {Promise<this>}
    */
   async init () {
-    if (this.initialized) throw(new Error('init() can only be called once.'));
+    if (this.initialized) { throw new Error('init() can only be called once.'); }
     this.initialized = true;
-
-    for (const store of this.stores.values()) {
-      await store.init();
+    // placed here otherwise create a circular dependency .. pfff
+    const { getUserAccountStorage } = require('storage');
+    const userAccountStorage = await getUserAccountStorage();
+    const { integrity } = require('business');
+    for (const [storeId, store] of this.storesById) {
+      const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);
+      const params = {
+        ...this.storeDescriptionsByStore.get(store),
+        storeKeyValueData,
+        logger: getLogger(`mall:${storeId}`),
+        integrity: { setOnEvent: getEventIntegrityFn(storeId, integrity) }
+      };
+      await store.init(params);
     }
-
-    this._streams = new MallUserStreams(this.stores.values());
-    this._events = new MallUserEvents(this.stores.values());
-
+    this._streams = new MallUserStreams(this);
+    this._events = new MallUserEvents(this);
     return this;
   }
 
+  /**
+   * @returns {Promise<void>}
+  */
   async deleteUser (userId) {
-    for (const store of this.stores.values()) {
+    for (const [storeId, store] of this.storesById) {
       try {
         await store.deleteUser(userId);
       } catch (error) {
-        storeDataUtils.throwAPIError(error, store.id);
+        storeDataUtils.throwAPIError(error, storeId);
       }
     }
   }
@@ -72,14 +100,18 @@ class Mall {
   /**
    * Return the quantity of storage used by the user in bytes.
    * @param {string} userId
-   */
-  async getUserStorageSize(userId) {
+   * @returns {Promise<number>}
+  */
+  async getUserStorageSize (userId) {
     let storageUsed = 0;
-    for (const store of this.stores.values()) {
+    for (const [storeId, store] of this.storesById) {
       try {
-        storageUsed += await store.getUserStorageSize(userId);
+        if (store.getUserStorageSize != null) {
+          // undocumented feature of DataStore, skip if not implemented
+          storageUsed += await store.getUserStorageSize(userId);
+        }
       } catch (error) {
-        storeDataUtils.throwAPIError(error, store.id);
+        storeDataUtils.throwAPIError(error, storeId);
       }
     }
     return storageUsed;
@@ -87,11 +119,23 @@ class Mall {
 
   /**
    * @param {string} storeId
-   * @returns {Promise<MallTransaction>}
-   */
-  async newTransaction() {
+   * @returns {Promise<any>}
+  */
+  async newTransaction () {
     return new MallTransaction(this);
   }
 }
-
 module.exports = Mall;
+
+/**
+ * Get store-specific integrity calculation function
+ * @param {string} storeId
+ * @param {*} integrity
+ * @returns {Function}
+*/
+function getEventIntegrityFn (storeId, integrity) {
+  return function setIntegrityForEvent (storeEventData) {
+    const event = eventsUtils.convertEventFromStore(storeId, storeEventData);
+    storeEventData.integrity = integrity.events.compute(event).integrity;
+  };
+}

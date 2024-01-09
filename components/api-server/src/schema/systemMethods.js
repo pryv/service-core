@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -8,9 +8,9 @@
  * JSON Schema specification of methods data for system.
  */
 
-var Action = require('./Action'),
-    helpers = require('./helpers'),
-    user = require('./user');
+const Action = require('./Action');
+const helpers = require('./helpers');
+const user = require('./user');
 
 module.exports = {
   createUser: {
@@ -19,7 +19,7 @@ module.exports = {
       type: 'object',
       additionalProperties: false,
       properties: {
-        'id': {
+        id: {
           type: 'string'
         }
       }
@@ -29,7 +29,7 @@ module.exports = {
     params: helpers.object({
       username: helpers.string()
     }, {
-      required: [ 'username' ]
+      required: ['username']
     }),
     result: helpers.object({
       userInfo: helpers.object({
@@ -41,15 +41,15 @@ module.exports = {
         storageUsed: user(Action.READ).properties.storageUsed
       }, {
         additionalProperties: false,
-        required: [ 'username', 'lastAccess', 'callsTotal', 'callsDetail', 'storageUsed' ]
+        required: ['username', 'lastAccess', 'callsTotal', 'callsDetail', 'storageUsed']
       })
     }, {
-      required: [ 'userInfo' ]
+      required: ['userInfo']
     })
   },
   deactivateMfa: {
     params: helpers.object({
-      username: helpers.username,
-    }, { required: [ 'username' ] }),
-  },
+      username: helpers.username
+    }, { required: ['username'] })
+  }
 };

@@ -1,14 +1,14 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, before, after */
 
+const { setTimeout } = require('timers/promises');
 require('./test-helpers');
-const httpServer = require('./support/httpServer');
-const assert = require('chai').assert;
+const HttpServer = require('./support/httpServer');
+const { assert } = require('chai');
 const hostname = require('os').hostname;
 const cuid = require('cuid');
 
@@ -33,15 +33,11 @@ const customSettings = {
 const monitoringUsername = cuid();
 const monitorToken = cuid();
 
-const Promise = require('bluebird');
-
 describe('service-reporting', () => {
-
   let mongoFixtures;
-  before(async function() {
+  before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     if ((await getConfig()).get('openSource:isActive')) this.skip();
-
   });
   after(async () => {
     await mongoFixtures.clean();
@@ -50,7 +46,7 @@ describe('service-reporting', () => {
   before(async () => {
     const user = await mongoFixtures.user(monitoringUsername);
     user.access({
-      type: 'app', token: monitorToken,
+      type: 'app', token: monitorToken
     });
     await mongoFixtures.user(cuid());
   });
@@ -58,8 +54,8 @@ describe('service-reporting', () => {
   describe('POST report on service-reporting (started)', () => {
     let reportRecieved = false;
     before(async () => {
-      infoHttpServer = new httpServer('/service/info', 200);
-      reportHttpServer = new httpServer('/reports', 200);
+      infoHttpServer = new HttpServer('/service/info', 200);
+      reportHttpServer = new HttpServer('/reports', 200);
 
       reportHttpServer.on('report_received', function () {
         reportRecieved = true;
@@ -76,8 +72,8 @@ describe('service-reporting', () => {
     });
 
     it('[G1UG] must start and successfully send a report when service-reporting is listening', async () => {
-      await new Promise(r => setTimeout(r, 1000));
-      assert.isTrue(reportRecieved, 'Should have revceif report received event from server');
+      await setTimeout(1000);
+      assert.isTrue(reportRecieved, 'Should have received report received event from server');
       await assertServerStarted();
       const lastReport = reportHttpServer.getLastReport();
       const reportingSettings = customSettings.reporting;
@@ -90,12 +86,11 @@ describe('service-reporting', () => {
       assert.exists(lastReport.clientData.serviceInfoUrl, 'missing serviceInfourl');
     });
   });
-
 });
 
-async function assertServerStarted() {
+async function assertServerStarted () {
   // throws if the server is off
   await server.request()
-        .get(`/${monitoringUsername}/events`)
-        .set('Authorizaiton', monitorToken);
+    .get(`/${monitoringUsername}/events`)
+    .set('Authorizaiton', monitorToken);
 }

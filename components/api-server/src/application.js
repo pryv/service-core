@@ -1,45 +1,58 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
 
 // A central registry for singletons and configuration-type instances; pass this
 // to your code to give it access to app setup.
 
 const path = require('path');
-const boiler = require('@pryv/boiler').init({
+const { setTimeout } = require('timers/promises');
+
+require('@pryv/boiler').init({
   appName: 'api-server',
+  baseFilesDir: path.resolve(__dirname, '../../../'),
   baseConfigDir: path.resolve(__dirname, '../config/'),
-  extraConfigs: [{
-    scope: 'serviceInfo',
-    key: 'service',
-    urlFromKey: 'serviceInfoUrl'
-  },{
-    scope: 'default-paths',
-    file: path.resolve(__dirname, '../config/paths-config.js')
-  },{
-    plugin: require('../config/components/systemStreams')
-  },{
-    plugin: require('../config/public-url')
-  }, {
-    scope: 'default-audit',
-    file: path.resolve(__dirname, '../../audit/config/default-config.yml')
-  }, {
-    scope: 'default-audit-path',
-    file: path.resolve(__dirname, '../../audit/config/default-path.js')
-  }, {
-    plugin: require('../config/config-validation')
-  }, {
-    plugin: {load: async () => {
-      // this is not a plugin, but a way to ensure some component are initialized after config
-      // @sgoumaz - should we promote this pattern for all singletons that need to be initialized ?
-      const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-      await SystemStreamsSerializer.init();
-    }}
-  }]
+  extraConfigs: [
+    {
+      scope: 'serviceInfo',
+      key: 'service',
+      urlFromKey: 'serviceInfoUrl'
+    },
+    {
+      scope: 'default-paths',
+      file: path.resolve(__dirname, '../config/paths-config.js')
+    },
+    {
+      plugin: require('../config/components/systemStreams')
+    },
+    {
+      plugin: require('../config/public-url')
+    },
+    {
+      scope: 'default-audit',
+      file: path.resolve(__dirname, '../../audit/config/default-config.yml')
+    },
+    {
+      scope: 'default-audit-path',
+      file: path.resolve(__dirname, '../../audit/config/default-path.js')
+    },
+    {
+      plugin: require('../config/config-validation')
+    },
+    {
+      plugin: {
+        load: async () => {
+          // this is not a plugin, but a way to ensure some component are initialized after config
+          // @sgoumaz - should we promote this pattern for all singletons that need to be initialized ?
+          const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+          await SystemStreamsSerializer.init();
+        }
+      }
+    }
+  ]
 });
 
 const storage = require('storage');
@@ -50,26 +63,19 @@ const errorsMiddlewareMod = require('./middleware/errors');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const userLocalDirectory = require('storage').userLocalDirectory;
 
-
-const { Extension, ExtensionLoader } = require('utils').extension;
+const { ExtensionLoader } = require('utils').extension;
 
 const { getAPIVersion } = require('middleware/src/project_version');
 const { tracingMiddleware } = require('tracing');
 
 logger.debug('Loading app');
 
-import type { CustomAuthFunction } from 'business';
-import type { WebhooksSettingsHolder }  from './methods/webhooks';
-
-type UpdatesSettingsHolder = {
-  ignoreProtectedFields: boolean,
-}
-
-// Application is a grab bag of singletons / system services with not many
-// methods of its own. It is the type-safe version of DI.
-//
+/**
+ * Application is a grab bag of singletons / system services with not many
+ * methods of its own. It is the type-safe version of DI.
+ */
 class Application {
   // new config
   config;
@@ -78,31 +84,45 @@ class Application {
   initalized;
   initializing;
 
+  /**
+   * Normal user API
+   * @type {API}
+   */
+  api;
+  /**
+   * API for system routes.
+   * @type {API}
+   */
+  systemAPI;
 
-  // Normal user API
-  api: API;
-  // API for system routes.
-  systemAPI: API;
+  /** @type {import('storage').Database} */
+  database;
 
-  database: storage.Database;
+  /**
+   * Storage subsystem
+   * @type {import('storage').StorageLayer}
+   */
+  storageLayer;
 
-  // Storage subsystem
-  storageLayer: storage.StorageLayer;
+  expressApp;
 
-  expressApp: express$Application;
+  isOpenSource;
+  isAuditActive;
 
-  isOpenSource: boolean;
-  isAuditActive: boolean;
-
-  constructor() {
+  constructor () {
     this.initalized = false;
     this.isOpenSource = false;
     this.isAuditActive = false;
     this.initializing = false;
   }
 
-  async initiate() {
-    while (this.initializing) { await new Promise(r => setTimeout(r, 50)); }
+  /**
+   * @returns {Promise<this>}
+   */
+  async initiate () {
+    while (this.initializing) {
+      await setTimeout(50);
+    }
     if (this.initalized) {
       logger.debug('App was already initialized, skipping');
       return this;
@@ -110,82 +130,81 @@ class Application {
     this.initializing = true;
     this.produceLogSubsystem();
     logger.debug('Init started');
-
-
     this.config = await getConfig();
     this.isOpenSource = this.config.get('openSource:isActive');
-    this.isAuditActive = (! this.isOpenSource) && this.config.get('audit:active');
-
+    this.isAuditActive = !this.isOpenSource && this.config.get('audit:active');
     await userLocalDirectory.init();
-
     if (this.isAuditActive) {
       const audit = require('audit');
       await audit.init();
     }
-
     this.api = new API();
     this.systemAPI = new API();
-
-    this.produceStorageSubsystem();
+    this.database = await storage.getDatabase();
+    this.storageLayer = await storage.getStorageLayer();
     await this.createExpressApp();
-    const apiVersion: string = await getAPIVersion();
-    const hostname: string = require('os').hostname();
-    this.expressApp.use(tracingMiddleware(
-      'express1',
-      {
-        apiVersion,
-        hostname,
-      }
-    ))
+    const apiVersion = await getAPIVersion();
+    const hostname = require('os').hostname();
+    this.expressApp.use(tracingMiddleware('express1', {
+      apiVersion,
+      hostname
+    }));
     await this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
     const errorsMiddleware = errorsMiddlewareMod(this.logging);
     this.expressApp.use(errorsMiddleware);
     logger.debug('Init done');
     this.initalized = true;
-    if (this.config.get('showRoutes')) this.helperShowRoutes();
+    if (this.config.get('showRoutes')) { this.helperShowRoutes(); }
     this.initializing = false;
     return this;
   }
 
   /**
    * Helps that display all routes and methodId registered
+   * @returns {void}
    */
-  helperShowRoutes() {
-    let route;
+  helperShowRoutes () {
     const routes = [];
-    function addRoute(route) {
+    function addRoute (route) {
       if (route) {
         let methodId;
-        for (let layer of route.stack ) {
+        for (const layer of route.stack) {
           if (layer.handle.name === 'setMethodId') {
             const fakeReq = {};
-            layer.handle(fakeReq, null, function() {});
+            layer.handle(fakeReq, null, function () { });
             methodId = fakeReq.context.methodId;
           }
         }
         let keys = Object.keys(route.methods);
-        if (keys.length > 1) keys = ['all'];
-        routes.push({methodId: methodId, path: route.path, method: keys[0]})
+        if (keys.length > 1) { keys = ['all']; }
+        routes.push({ methodId, path: route.path, method: keys[0] });
       }
     }
 
-    this.expressApp._router.stack.forEach(function(middleware){
-      if(middleware.route){ // routes registered directly on the app
-          addRoute(middleware.route);
-      } else if(middleware.name === 'router'){ // router middleware
-          middleware.handle.stack.forEach(h => addRoute(h.route));
+    this.expressApp._router.stack.forEach(function (middleware) {
+      if (middleware.route) {
+        // routes registered directly on the app
+        addRoute(middleware.route);
+      } else if (middleware.name === 'router') {
+        // router middleware
+        middleware.handle.stack.forEach((h) => addRoute(h.route));
       }
     });
     console.log(routes);
   }
 
-  async createExpressApp(): Promise<express$Application> {
+  /**
+   * @returns {Promise<any>}
+   */
+  async createExpressApp () {
     this.expressApp = await expressAppInit(this.logging);
   }
 
-  async initiateRoutes() {
-
+  /**
+   * @returns {Promise<void>}
+   */
+  async initiateRoutes () {
     if (this.config.get('dnsLess:isActive')) {
       require('./routes/register')(this.expressApp, this);
     }
@@ -195,7 +214,7 @@ class Application {
     require('./routes/auth/register')(this.expressApp, this);
     if (this.isOpenSource) {
       require('www')(this.expressApp, this);
-      require('register')(this.expressApp, this);
+      await require('register')(this.expressApp, this);
     }
 
     require('./routes/system')(this.expressApp, this);
@@ -210,33 +229,31 @@ class Application {
     require('./routes/service')(this.expressApp, this);
     require('./routes/streams')(this.expressApp, this);
 
-
-    if(! this.isOpenSource) {
+    if (!this.isOpenSource) {
       require('./routes/webhooks')(this.expressApp, this);
     }
-    if(this.isAuditActive) {
+    if (this.isAuditActive) {
       require('audit/src/routes/audit.route')(this.expressApp, this);
     }
   }
 
-  produceLogSubsystem() {
+  /**
+   * @returns {void}
+   */
+  produceLogSubsystem () {
     this.logging = getLogger('Application');
   }
 
-  produceStorageSubsystem() {
-    this.database = storage.getDatabaseSync();
-    // 'StorageLayer' is a component that contains all the vertical registries
-    // for various database models.
-    this.storageLayer = storage.getStorageLayerSync()
-  }
-
-   // Returns the custom auth function if one was configured. Otherwise returns
-  // null.
-  //
   customAuthStepLoaded = false;
   customAuthStepFn = null;
-  getCustomAuthFunction(from): ?CustomAuthFunction {
-    if (! this.customAuthStepLoaded) {
+
+  /**
+   * Returns the custom auth function if one was configured. Otherwise returns
+   * null.
+   * @returns {CustomAuthFunction|null}
+   */
+  getCustomAuthFunction (from) {
+    if (!this.customAuthStepLoaded) {
       this.customAuthStepFn = this.loadCustomExtension();
       this.customAuthStepLoaded = true;
     }
@@ -244,7 +261,10 @@ class Application {
     return this.customAuthStepFn;
   }
 
-  loadCustomExtension(): ?Extension {
+  /**
+   * @returns {Extension|null}
+   */
+  loadCustomExtension () {
     const defaultFolder = this.config.get('customExtensions:defaultFolder');
     const name = 'customAuthStepFn';
     const customAuthStepFnPath = this.config.get('customExtensions:customAuthStepFn');
@@ -252,13 +272,17 @@ class Application {
     const loader = new ExtensionLoader(defaultFolder);
 
     let customAuthStep = null;
-    if ( customAuthStepFnPath) {
+    if (customAuthStepFnPath) {
       logger.debug('Loading CustomAuthStepFn from ' + customAuthStepFnPath);
       customAuthStep = loader.loadFrom(customAuthStepFnPath);
     } else {
       // assert: no path was configured in configuration file, try loading from
       // default location:
-      logger.debug('Trying to load CustomAuthStepFn from ' + defaultFolder + '/'+ name + '.js');
+      logger.debug('Trying to load CustomAuthStepFn from ' +
+        defaultFolder +
+        '/' +
+        name +
+        '.js');
       customAuthStep = loader.load(name);
     }
     if (customAuthStep) {
@@ -268,17 +292,16 @@ class Application {
       logger.debug('No CustomAuthStepFn');
     }
   }
-
 }
 
 let app;
 /**
  * get Application Singleton
  * @param {boolean} forceNewApp - In TEST mode only, return a new Application for fixtures and mocks
- * @returns
+ * @returns {any}
  */
-function getApplication(forceNewApp) {
-  if (forceNewApp || ! app)  {
+function getApplication (forceNewApp) {
+  if (forceNewApp || !app) {
     app = new Application();
   }
   return app;
@@ -286,4 +309,10 @@ function getApplication(forceNewApp) {
 
 module.exports = {
   getApplication
-}
+};
+
+/**
+ * @typedef {{
+ *   ignoreProtectedFields: boolean;
+ * }} UpdatesSettingsHolder
+ */

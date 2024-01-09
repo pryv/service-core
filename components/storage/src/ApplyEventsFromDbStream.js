@@ -1,23 +1,22 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var Transform = require('stream').Transform,
-    inherits = require('util').inherits,
-    converters = require('./converters'),
-    timestamp = require('unix-timestamp');
+const Transform = require('stream').Transform;
+const inherits = require('util').inherits;
+const converters = require('./converters');
 
 module.exports = ApplyEventsFromDbStream;
 
 inherits(ApplyEventsFromDbStream, Transform);
 
 /**
- * @param {Array<Function>} convs 
+ * @param {Array<Function>} convs
  */
-function ApplyEventsFromDbStream(itemFromDBConverters) {
-  Transform.call(this, {objectMode: true});
+function ApplyEventsFromDbStream (itemFromDBConverters) {
+  Transform.call(this, { objectMode: true });
   this.trans = converters.getRenamePropertyFn('_id', 'id');
   this.converters = itemFromDBConverters;
 }
@@ -28,13 +27,13 @@ ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callba
     // SingleCollectionsMode - start
     delete event.userId;
 
-    for (converter of this.converters) {
+    for (const converter of this.converters) {
       event = converter(event);
     }
 
     this.push(event);
     callback();
-  } catch(err) {
+  } catch (err) {
     return callback(err);
   }
 };

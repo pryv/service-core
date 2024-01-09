@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -12,13 +12,14 @@
 const path = require('path');
 require('@pryv/boiler').init({
   appName: 'dump-test-data',
+  baseFilesDir: path.resolve(__dirname, '../../../'),
   baseConfigDir: path.resolve(__dirname, '../../api-server/config/'),
   extraConfigs: [
     {
       scope: 'serviceInfo',
       key: 'service',
       urlFromKey: 'serviceInfoUrl'
-    }, 
+    },
     {
       scope: 'defaults-paths',
       file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
@@ -40,15 +41,13 @@ const bluebird = require('bluebird');
 
 // don't add additional layer of ".." as this script is meant to be launched with babel-node as per the package.json script
 // it does require the "ln -s ../components components" symlink in the root node_modules/ of the projet
-const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin';
+const mongoFolder = path.resolve(__dirname, '../../../var-pryv/mongodb-bin');
 
 const version = process.argv[2];
 if (version == null) {
   console.error('Please provide version as first argument');
   process.exit(1);
 }
-
-
 
 (async () => {
   let hasErr = false;
@@ -62,5 +61,3 @@ if (version == null) {
   }
   process.exit(hasErr ? 1 : 0);
 })();
-
-

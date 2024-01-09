@@ -27,7 +27,6 @@ Prerequisites:
 Then:
 1. `just setup-dev-env` to setup local file structure and install MongoDB
 2. `just install [--no-optional]` to install node modules
-3. `just compile-dev` for the initial code compilation into `dist`
 
 
 ## Dev environment basics
@@ -47,16 +46,10 @@ Everything should be accessible from the project root, including running command
 - All NPM dependencies are kept in the root `package.json`
 - Only basic properties are kept in each component's `package.json`
 
-
-## Flowtype transpilation
-
-```
-just compile-(release|dev|watch)
-```
-at least once before running the servers or tests, to transpile the source code from Flowtype to pure JS (the compiled code is in `dist/`).
-- `just compile-release` by default
-- `just compile-dev` to include source maps
-- `just compile-watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
+The code follows the [Semi-Standard](https://github.com/standard/semistandard) style.
+- Run `just lint` to check linting on the entire repo
+- Run `just lint-changes` to only check modified files
+- Add the `--fix` option to either of the above to automatically fix issues when possible.
 
 
 ## Running service dependencies
@@ -116,14 +109,11 @@ Test results are kept in the [dev-test-results](https://github.com/pryv/dev-test
 
 ## Debugging
 
-Add your breakpoints _in the compiled code_ (i.e. in `dist/`), then `just test-debug` to run tests in debug mode.
+Add your breakpoints, then `just test-debug` to run tests in debug mode.
 
 For debugging by hand, old-school:
 - Print server 500 errors: uncomment the line containing `uncomment to log 500 errors on test running using InstanceManager` in `…/errorHandling.js`
 - Print server `console.log`: uncomment the line with `stdio: 'inherit'` in `…/InstanceManager.js`
-
-Miscellaneous tools:
-- VSCode extension [Source maps navigator](https://marketplace.visualstudio.com/items?itemName=vlkoti.vscode-sourcemaps-navigator) helps navigate to the original source code from the compiled one. Use `Ctrl/Cmd+click` on links.
 
 
 ## Tracing
@@ -140,6 +130,32 @@ to start the tracing service (Jaeger).
 just run api-server migrate
 ```
 to trigger data migration. Migrations are defined in the `storage` component.
+
+
+## Local Docker containers
+
+See [dedicated README](build/test/README.md).
+
+
+## Security assessment
+
+```
+just security-assessment
+```
+to run security assessment and write output to `security-assessment` (assumes `coverage` data to be present).
+
+See other `just security-assessment-*` commands for what's available. Some require additional software such as [OWASP ZAP](https://www.zaproxy.org/), Docker engine and [Grype](https://github.com/anchore/grype).
+
+
+
+## Developing on core and depended-upon packages simultaneously
+
+Sometimes it's necessary to work on core and e.g. `@pryv/boiler` or `@pryv/datastore` at the same time.
+
+1. Open the working copies of core and the desired package(s) in the same workspace (e.g. for VSCode, from the parent folder, run `code service-core pryv-datastore`)
+2. From `service-core`, run `npx link {package working copy path}` (e.g. `npx link ../pryv-datastore`)
+
+When you're done with the side-by-side work, `just install` to cleanup and resume using the regular package dependencies.
 
 
 ## App Configuration
@@ -204,7 +220,7 @@ to fetch them from the "reference" version published online. (The API server als
 
 If you're running into a lot of test failures, it may be because your Mongo database is empty, so try to `just test storage` first.
 
-If you are getting multiple seemingly unrelated errors following a branch switch, try to `just clean` then `just compile-release`.
+If you are getting multiple seemingly unrelated errors following a branch switch, try to `just clean`.
 
 ### Docker installation on Linux
 

@@ -1,10 +1,10 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
+/* global charlatan, cuid, app, config */
 /**
  * Loaded by .mocharc.js for node tests
  */
@@ -22,7 +22,7 @@ const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
 
 const { pubsub } = require('messages');
-const userLocalDirectory = require('business').users.userLocalDirectory;
+const userLocalDirectory = require('storage').userLocalDirectory;
 const { AuditAccessIds } = require('audit/src/MethodContextUtils');
 
 let initTestsDone = false;
@@ -38,33 +38,31 @@ async function initTests () {
   global.audit = audit;
 }
 
-
 let initCoreDone = false;
 /**
  * requires initTests()
  */
-async function initCore() {
+async function initCore () {
   if (initCoreDone) return;
   initCoreDone = true;
   config.injectTestConfig({
     dnsLess: {
-      isActive: true,
-    },
+      isActive: true
+    }
   });
   const database = await storage.getDatabase();
 
-
-  global.getNewFixture = function() {
+  global.getNewFixture = function () {
     return databaseFixture(database);
-  }
+  };
 
   global.app = getApplication();
   await global.app.initiate();
 
   // Initialize notifications dependency
-  let axonMsgs = [];
+  const axonMsgs = [];
   const axonSocket = {
-    emit: (...args) => axonMsgs.push(args),
+    emit: (...args) => axonMsgs.push(args)
   };
   pubsub.setTestNotifier(axonSocket);
   pubsub.status.emit(pubsub.SERVER_READY);
@@ -79,7 +77,7 @@ async function initCore() {
   global.coreRequest = supertest(app.expressApp);
 }
 
-function fakeAuditEvent(methodId) {
+function fakeAuditEvent (methodId) {
   return {
     createdBy: 'system',
     streamIds: [cuid()],
@@ -87,23 +85,22 @@ function fakeAuditEvent(methodId) {
     content: {
       source: { name: 'http', ip: charlatan.Internet.IPv4() },
       action: methodId,
-      query: {},
-    },
+      query: {}
+    }
   };
 }
 
-
-function addActionStreamIdPrefix(methodId) {
+function addActionStreamIdPrefix (methodId) {
   return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACTION_STREAM_ID_PREFIX + methodId;
 }
 
-function addAccessStreamIdPrefix(accessId) {
+function addAccessStreamIdPrefix (accessId) {
   return audit.CONSTANTS.STORE_PREFIX + audit.CONSTANTS.ACCESS_STREAM_ID_PREFIX + accessId;
 }
 
 Object.assign(global, {
-  initCore: initCore,
-  initTests: initTests,
+  initCore,
+  initTests,
   assert: require('chai').assert,
   cuid: require('cuid'),
   charlatan: require('charlatan'),
@@ -113,11 +110,11 @@ Object.assign(global, {
   _: require('lodash'),
   apiMethods: require('audit/src/ApiMethods'),
   MethodContextUtils: require('audit/src/MethodContextUtils'),
-  fakeAuditEvent: fakeAuditEvent,
+  fakeAuditEvent,
   validation: require('audit/src/validation'),
   AuditFilter: require('audit/src/AuditFilter'),
   addActionStreamIdPrefix,
   addAccessStreamIdPrefix,
   CONSTANTS: audit.CONSTANTS,
-  AuditAccessIds: AuditAccessIds,
+  AuditAccessIds
 });

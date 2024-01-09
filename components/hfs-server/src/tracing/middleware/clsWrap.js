@@ -1,22 +1,25 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-
-// @flow
-
-// Express middleware that makes sure we have a continuation local storage 
-// context for each express request. 
-
+// Express middleware that makes sure we have a continuation local storage
+// context for each express request.
 const cls = require('../cls');
-
-function clsWrap(req: express$Request, res: express$Response, next: express$NextFunction) {
+/**
+ * @param {express$Request} req
+ * @param {express$Response} res
+ * @param {express$NextFunction} next
+ * @returns {any}
+ */
+function clsWrap (req, res, next) {
   return cls.startExpressContext(req, res, next);
 }
-
-function factory(): express$Middleware {
+/**
+ * @returns {any}
+ */
+function factory () {
   return clsWrap;
 }
 module.exports = factory;

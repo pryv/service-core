@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -48,7 +48,7 @@ function PasswordResetRequests (database, options) {
 PasswordResetRequests.prototype.get = function (id, username, callback) {
   const query = {
     _id: id,
-    username: username
+    username
   };
   this.database.findOne(collectionInfo, query, null, function (err, resetReq) {
     if (err) {
@@ -76,7 +76,7 @@ PasswordResetRequests.prototype.get = function (id, username, callback) {
 PasswordResetRequests.prototype.generate = function (username, callback) {
   const resetReq = {
     _id: generateId(),
-    username: username,
+    username,
     expires: this.getNewExpirationDate()
   };
   this.database.insertOne(collectionInfo, resetReq, function (err) {
@@ -95,7 +95,7 @@ PasswordResetRequests.prototype.generate = function (username, callback) {
 PasswordResetRequests.prototype.destroy = function (id, username, callback) {
   const query = {
     _id: id,
-    username: username
+    username
   };
   this.database.deleteOne(collectionInfo, query, callback);
 };

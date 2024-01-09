@@ -1,35 +1,36 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Tests data migration between versions.
  */
 
-/* global describe, it, before, after, assert */
+/* global assert */
 
 const bluebird = require('bluebird');
-require('test-helpers/src/api-server-tests-config');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
 
-const mongoFolder = __dirname + '../../../../../../var-pryv/mongodb-bin';
+const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getVersions } = require('./util');
 
-const usersIndex = require('business/src/users/UsersLocalIndex');
+const { getUsersLocalIndex } = require('storage');
 
 const { platform } = require('platform');
 
 describe('Migration - 1.8.0', function () {
   this.timeout(20000);
   let initialEventsUsers;
+  let usersIndex;
 
   before(async function () {
     const newVersion = getVersions('1.8.0');
@@ -40,7 +41,7 @@ describe('Migration - 1.8.0', function () {
     initialEventsUsers = await getInitialEventsUsers();
 
     // --- user Index
-    await usersIndex.init();
+    usersIndex = await getUsersLocalIndex();
     await usersIndex.deleteAll();
 
     // --- erase platform wide db
@@ -79,9 +80,9 @@ describe('Migration - 1.8.0', function () {
 });
 
 async function getInitialEventsUsers () {
-  const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
+  const eventsCollection = await database.getCollection({ name: 'events' });
   const query = { streamIds: { $in: [':_system:username'] } };
-  const cursor = await eventsCollection.find(query, { projection: { userId: 1, content: 1 } });
+  const cursor = eventsCollection.find(query, { projection: { userId: 1, content: 1 } });
 
   const users = {};
   while (await cursor.hasNext()) {

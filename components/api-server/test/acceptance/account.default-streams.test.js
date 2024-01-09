@@ -1,31 +1,27 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, it, before, after */
 
-const assert = require('chai').assert;
-const _ = require('lodash');
+const { assert } = require('chai');
 const cuid = require('cuid');
-const bluebird = require('bluebird');
 const charlatan = require('charlatan');
 const nock = require('nock');
 const supertest = require('supertest');
 
-const ErrorIds = require('errors').ErrorIds;
+const { ErrorIds } = require('errors');
 const { getApplication } = require('api-server/src/application');
 
 const { pubsub } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const userAccountStorage = require('business/src/users/userAccountStorage');
+
+const { getUserAccountStorage } = require('storage');
 const { getConfig } = require('@pryv/boiler');
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
-const helpers = require('api-server/test/helpers');
-const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
 
 const { getMall } = require('mall');
 
@@ -42,6 +38,11 @@ describe('[ACCO] Account with system streams', function () {
   let config;
   let isDnsLess;
   let mall;
+  let userAccountStorage;
+
+  before(async () => {
+    userAccountStorage = await getUserAccountStorage();
+  });
 
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
@@ -122,7 +123,7 @@ describe('[ACCO] Account with system streams', function () {
       before(async function () {
         await createUser();
         // create additional events for all editable streams
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         scope = nock(settings.services.register.url);
 
         scope.put('/users',
@@ -141,11 +142,13 @@ describe('[ACCO] Account with system streams', function () {
           await createAdditionalEvent(editableStreamsId);
         }
 
-        allVisibleAccountEvents = await mall.events.get(user.attrs.id, 
-          {streams: [
-            {any: visibleStreamsIds}, 
-            {and: [{any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE]}]},
-          ]});
+        allVisibleAccountEvents = await mall.events.get(user.attrs.id,
+          {
+            streams: [
+              { any: visibleStreamsIds },
+              { and: [{ any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }] }
+            ]
+          });
 
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
@@ -162,10 +165,11 @@ describe('[ACCO] Account with system streams', function () {
           event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')));
         const attachedFilesAccountEvent = allVisibleAccountEvents.find(event =>
           event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles')));
-        const insurancenumberAccountEvent = allVisibleAccountEvents.find(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
-        const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
+        // TODO: verify the following data or remove those lines
+        // const insurancenumberAccountEvent = allVisibleAccountEvents.find(event =>
+        //   event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
+        // const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
+        //   event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
         assert.equal(res.body.account.email, emailAccountEvent.content);
         assert.equal(res.body.account.language, languageAccountEvent.content);
         assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
@@ -246,7 +250,7 @@ describe('[ACCO] Account with system streams', function () {
         before(async function () {
           user2 = await createUser();
           await createUser();
-          const settings = _.cloneDeep(helpers.dependencies.settings);
+          const settings = structuredClone(helpers.dependencies.settings);
           scope = nock(settings.services.register.url);
           scope.put('/users')
             .reply(400, {
@@ -287,7 +291,7 @@ describe('[ACCO] Account with system streams', function () {
       let scope;
       before(async function () {
         await createUser();
-        const settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = structuredClone(helpers.dependencies.settings);
         nock.cleanAll();
         scope = nock(settings.services.register.url);
         scope.put('/users')

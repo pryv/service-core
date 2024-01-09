@@ -1,4 +1,0 @@
-#!/bin/sh
-PRYV_BOILER_SUFFIX="-$$" NODE_ENV="production" exec chpst -u app node /app/bin/dist/components/api-server/bin/server \
-    --config /app/conf/core.yml --http:port ${PORT_NUM}
-# ${PORT_NUM} will be replaced by launching script 

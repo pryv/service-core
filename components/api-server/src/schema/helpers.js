@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -8,12 +8,12 @@
  * Helpers for defining schemas.
  */
 
-var _ = require('lodash');
+const _ = require('lodash');
 
 const USERNAME_MIN_LENGTH = 5;
 const USERNAME_MAX_LENGTH = 60;
 const USERNAME_REGEXP_STR = '^[a-z0-9]' +
-                            '[a-z0-9-]{' + (USERNAME_MIN_LENGTH - 2) + ',' + (USERNAME_MAX_LENGTH - 2) + '}' + 
+                            '[a-z0-9-]{' + (USERNAME_MIN_LENGTH - 2) + ',' + (USERNAME_MAX_LENGTH - 2) + '}' +
                             '[a-z0-9]$';
 
 exports.USERNAME_MIN_LENGTH = USERNAME_MIN_LENGTH;
@@ -37,7 +37,7 @@ exports.getTypeURI = function (name, action) {
  * @param {Object} options Extra properties to merge into the returned object definition
  */
 exports.object = function (propertiesDef, options) {
-  return _.extend(getBaseSchema('object', options), {properties: propertiesDef});
+  return _.extend(getBaseSchema('object', options), { properties: propertiesDef });
 };
 
 /**
@@ -47,7 +47,7 @@ exports.object = function (propertiesDef, options) {
  * @param {Object} options Extra properties to merge into the returned array definition
  */
 exports.array = function (itemsDef, options) {
-  return _.extend(getBaseSchema('array', options), {items: itemsDef});
+  return _.extend(getBaseSchema('array', options), { items: itemsDef });
 };
 
 /**
@@ -68,7 +68,7 @@ exports.null = getBaseSchema.bind(null, 'null');
 ///   b) Validating emails is hard _and_ useless:
 ///     https://hackernoon.com/the-100-correct-way-to-validate-email-addresses-7c4818f24643
 ///
-exports.email = getBaseSchema('string', {maxLength: 300});
+exports.email = getBaseSchema('string', { maxLength: 300 });
 
 exports.language = getBaseSchema('string', { maxLength: 5, minLength: 1 });
 
@@ -94,13 +94,13 @@ exports.username = getBaseSchema('string', { pattern: USERNAME_REGEXP_STR });
 
 exports.getBaseSchema = getBaseSchema;
 
-function getBaseSchema(type, options) {
+function getBaseSchema (type, options) {
   const result = {
     type: [type]
   };
 
   if (options != null) {
-    if(options.nullable === true) {
+    if (options.nullable === true) {
       result.type.push('null');
     }
     // We omit 'nullable' since we handled this particular option just above
@@ -116,8 +116,8 @@ function getBaseSchema(type, options) {
  * @param {Object} schema
  */
 exports.addTrackingProperties = function (schema) {
-  schema.properties.created = {type: 'number'};
-  schema.properties.createdBy = {type: 'string'};
-  schema.properties.modified = {type: 'number'};
-  schema.properties.modifiedBy = {type: 'string'};
+  schema.properties.created = { type: 'number' };
+  schema.properties.createdBy = { type: 'string' };
+  schema.properties.modified = { type: 'number' };
+  schema.properties.modifiedBy = { type: 'string' };
 };

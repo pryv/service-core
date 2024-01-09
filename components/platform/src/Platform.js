@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -27,12 +27,12 @@ class Platform {
   #serviceRegisterConn;
   #config;
 
-  constructor() {
+  constructor () {
     this.#initialized = false;
     this.#db = new DB();
   }
 
-  async init() {
+  async init () {
     if (this.#initialized) {
       logger.warn('Platform already initialized, skipping');
       return this;
@@ -41,35 +41,35 @@ class Platform {
     this.#config = await getConfig();
     const isDnsLess = this.#config.get('dnsLess:isActive');
     await this.#db.init();
-    if (! isDnsLess) {
+    if (!isDnsLess) {
       this.#serviceRegisterConn = await getServiceRegisterConn();
     }
 
     return this;
   }
 
-  async checkIntegrity() {
+  async checkIntegrity () {
     return await platformCheckIntegrity(this.#db);
   }
 
   /**
    * during tests forward to register might be activated and deactivated
    */
-  #shouldForwardToRegister() {
-    return this.#serviceRegisterConn != null && process.NODE_ENV != 'test' && ! this.#config.get('testsSkipForwardToRegister');
+  #shouldForwardToRegister () {
+    return this.#serviceRegisterConn != null && (process.env.NODE_ENV !== 'test' || !this.#config.get('testsSkipForwardToRegister'));
   }
 
   // for tests only - called by repository
-  async deleteAll() {
-    this.#db.deleteAll();
+  async deleteAll () {
+    await this.#db.deleteAll();
   }
 
   /**
    * Get if value exists for this unique key (only test on local db)
    * Exposes directly a platform db method as it's needed by service_register in dnsLess mode
    */
-  async getLocalUsersUniqueField(field, value) {
-    return this.#db.getUsersUniqueField(field, value);
+  async getLocalUsersUniqueField (field, value) {
+    return await this.#db.getUsersUniqueField(field, value);
   }
 
   /**
@@ -78,10 +78,10 @@ class Platform {
    * b) When creating a user, if a uniqueness error is username has been detected, we want to
    *    complete the error message with other eventual conflicts
    */
-  async checkUpdateOperationUniqueness(username, operations) {
+  async checkUpdateOperationUniqueness (username, operations) {
     const localUniquenessErrors = {};
     for (const op of operations) {
-      if (op.action != 'delete' && op.isUnique) {
+      if (op.action !== 'delete' && op.isUnique) {
         const value = await this.#db.getUsersUniqueField(op.key, op.value);
         if (value != null) localUniquenessErrors[op.key] = op.value;
       }
@@ -96,7 +96,7 @@ class Platform {
    * @param {*} isCreation
    * @param {boolean} skipFowardToRegister - for tests only
    */
-  async updateUserAndForward(username, operations, skipFowardToRegister = false) {
+  async updateUserAndForward (username, operations, skipFowardToRegister = false) {
     // ** 1st check on local index before forwarding to register
     // This should be removed when platformWideDB will be implemented
     // This code is redundant with some check that will be performed by #updateUser after updating register
@@ -109,9 +109,9 @@ class Platform {
     // ** Execute request on register
     if (!skipFowardToRegister && this.#shouldForwardToRegister()) {
       const ops2 = operations.map(op => {
-        const action = op.action == 'delete' ? 'delete' : 'update';
-        const isCreation = op.action == 'create';
-        return {[action]: {key: op.key, value: op.value, isUnique: op.isUnique, isCreation, isActive: op.isActive}};
+        const action = op.action === 'delete' ? 'delete' : 'update';
+        const isCreation = op.action === 'create';
+        return { [action]: { key: op.key, value: op.value, isUnique: op.isUnique, isCreation, isActive: op.isActive } };
       });
       await this.#serviceRegisterConn.updateUserInServiceRegister(username, ops2);
     }
@@ -125,13 +125,13 @@ class Platform {
    * Replace updateUserInServiceRegister()
    * @param {*} key
    */
-  async #updateUser(username, operations) {
+  async #updateUser (username, operations) {
     // otherwise deletion
     for (const op of operations) {
       switch (op.action) {
         case 'create':
           if (op.isUnique) {
-            if (! op.isActive) break; // only change value of (active setting)
+            if (!op.isActive) break; // only change value of (active setting)
             const potentialCollisionUsername = await this.#db.getUsersUniqueField(op.key, op.value);
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
@@ -143,7 +143,7 @@ class Platform {
           break;
 
         case 'update':
-          if (! op.isActive) break; // only change value of (active setting) -- figure out what it means ;)
+          if (!op.isActive) break; // only change value of (active setting) -- figure out what it means ;)
           if (op.isUnique) {
             const existingUsernameValue = await this.#db.getUsersUniqueField(op.key, op.previousValue);
             if (existingUsernameValue !== null && existingUsernameValue === username) {
@@ -187,18 +187,18 @@ class Platform {
    * @param {[User]} User -- // for some tests User might be null
    * @param {boolean} skipFowardToRegister -- for fixtures
    */
-  async deleteUser(username, user, skipFowardToRegister = false) {
+  async deleteUser (username, user, skipFowardToRegister = false) {
     // unique fields
     const operations = [];
     if (user != null) { // cannot delete unique keys if user is null! (as the current value is needed)
       for (const field of SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()) {
-        operations.push({action: 'delete', key: field, value: user[field], isUnique: true});
+        operations.push({ action: 'delete', key: field, value: user[field], isUnique: true });
       }
     }
 
     // indexed fields
     for (const field of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
-      operations.push({action: 'delete', key: field, isUnique: false});
+      operations.push({ action: 'delete', key: field, isUnique: false });
     }
 
     await this.#updateUser(username, operations);
@@ -208,7 +208,6 @@ class Platform {
       const res = await this.#serviceRegisterConn.deleteUser(username);
       logger.debug('delete on register: ' + username, res);
     }
-
   }
 
   // ----------------  Simple abstractions for service register calls (to be removed)  ----------------
@@ -216,7 +215,7 @@ class Platform {
   /**
    * Check if username is available (FW to service register)
    */
-  async isUsernameReserved(username) {
+  async isUsernameReserved (username) {
     if (this.#serviceRegisterConn) {
       const response = await this.#serviceRegisterConn.checkUsername(username);
       if (response.reserved === true) {
@@ -224,23 +223,22 @@ class Platform {
       }
       return false;
     }
+    throw new Error('Should not be used when dnsLess');
   }
 
   /**
    * Validate user and pre-register it (FW to service register)
    */
-  async createUserStep1_ValidateUser(username, invitationToken, uniqueFields, hostname) {
+  async createUserStep1_ValidateUser (username, invitationToken, uniqueFields, hostname) {
     await this.#serviceRegisterConn.validateUser(username, invitationToken, uniqueFields, hostname);
   }
 
   /**
    * Validate user and pre-register it (FW to service register)
    */
-   async createUserStep2_CreateUser(userData) {
+  async createUserStep2_CreateUser (userData) {
     await this.#serviceRegisterConn.createUser(userData);
   }
-
 }
-
 
 module.exports = new Platform();

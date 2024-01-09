@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -47,13 +47,13 @@ module.exports = [
     password: 't3st-f0uR',
     email: 'user-three@test.com',
     language: 'en'
-  },
+  }
   // user with system stream permission accesses
-  /*{ // used to generate dump 1.7.1 - to remove when finished
+  /* { // used to generate dump 1.7.1 - to remove when finished
     id: 'u_5',
     username: 'user-system-perms',
     password: 'walalala',
     email: 'user-system@pryv.com',
     language: 'en',
-  },*/
+  }, */
 ];

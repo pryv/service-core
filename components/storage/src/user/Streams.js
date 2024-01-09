@@ -1,16 +1,15 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var async = require('async'),
-    BaseStorage = require('./BaseStorage'),
-    converters = require('./../converters'),
-    util = require('util'),
-    toString = require('utils').toString,
-    treeUtils = require('utils').treeUtils,
-    _ = require('lodash');
+const BaseStorage = require('./BaseStorage');
+const converters = require('./../converters');
+const util = require('util');
+const treeUtils = require('utils').treeUtils;
+const _ = require('lodash');
+const timestamp = require('unix-timestamp');
 
 const cache = require('cache');
 
@@ -22,14 +21,14 @@ module.exports = Streams;
  * @param {Database} database
  * @constructor
  */
-function Streams(database) {
+function Streams (database) {
   Streams.super_.call(this, database);
 
   _.extend(this.converters, {
     itemDefaults: [
     ],
     itemToDB: [
-      //converters.deletionToDB,
+      // converters.deletionToDB,
     ],
     itemsToDB: [
       treeUtils.flattenTree,
@@ -45,12 +44,12 @@ function Streams(database) {
   });
 
   this.defaultOptions = {
-    sort: {name: 1}
+    sort: { name: 1 }
   };
 }
 util.inherits(Streams, BaseStorage);
 
-function cleanupDeletions(streams) {
+function cleanupDeletions (streams) {
   streams.forEach(function (s) {
     if (s.deleted) {
       delete s.parentId;
@@ -59,23 +58,26 @@ function cleanupDeletions(streams) {
   return streams;
 }
 
-var indexes = [
+const indexes = [
   {
-    index: {streamId: 1},
-    options: {unique: true}
+    index: { streamId: 1 },
+    options: { unique: true }
   },
- {
-    index: {name: 1},
+  {
+    index: { name: 1 },
     options: {}
   },
   {
     index: { name: 1, parentId: 1 },
-    options: { unique: true, partialFilterExpression: {
-      deleted: { $type: 'null'}
-    } }
+    options: {
+      unique: true,
+      partialFilterExpression: {
+        deleted: { $type: 'null' }
+      }
+    }
   },
   {
-    index: {trashed: 1},
+    index: { trashed: 1 },
     options: {}
   }
 ];
@@ -87,11 +89,10 @@ Streams.prototype.getCollectionInfo = function (userOrUserId) {
   const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {
     name: 'streams',
-    indexes: indexes,
+    indexes,
     useUserId: userId
   };
 };
-
 
 Streams.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
@@ -103,7 +104,7 @@ Streams.prototype.insertOne = function (user, stream, callback) {
 };
 
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {
-  if (typeof updatedData.parentId != 'undefined') { // clear ALL when a stream is moved
+  if (typeof updatedData.parentId !== 'undefined') { // clear ALL when a stream is moved
     cache.unsetUserData(user.id);
   } else { // only stream Structure
     cache.unsetStreams(user.id, 'local');
@@ -111,15 +112,14 @@ Streams.prototype.updateOne = function (user, query, updatedData, callback) {
   Streams.super_.prototype.updateOne.call(this, user, query, updatedData, callback);
 };
 
-/* jshint -W024 */
 /**
  * Implementation.
  */
 Streams.prototype.delete = function (userOrUserId, query, callback) {
-  const userId = userOrUserId.id || userOrUserId;
+  const userId = userOrUserId.id || userOrUserId;
   cache.unsetUserData(userId);
-  var update = {
-    $set: {deleted: Date.now() / 1000},
+  const update = {
+    $set: { deleted: timestamp.now() },
     $unset: {
       name: 1,
       parentId: 1,
@@ -135,4 +135,3 @@ Streams.prototype.delete = function (userOrUserId, query, callback) {
   this.database.updateMany(this.getCollectionInfo(userOrUserId),
     this.applyQueryToDB(query), update, callback);
 };
-

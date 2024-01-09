@@ -1,63 +1,73 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const logger = require('@pryv/boiler').getLogger('influx_row_type');
-
-import type {EventType, PropertyType, Validator, Content}  from './interfaces';
-
 const FIELD_DELTATIME = 'deltaTime';
 const FIELD_TIMESTAMP = 'timestamp';
-
 // Represents the type of the deltaTime column in influx input data.
 //
-class InfluxDateType implements PropertyType {
-  deltaTo: number;
-  constructor(eventTime: number) {
+
+class InfluxDateType {
+  deltaTo;
+  constructor (eventTime) {
     this.deltaTo = eventTime;
   }
 
-  secondsToNanos(secs: number): number {
-    if (secs < 0) throw new Error(`Deltatime must be greater than 0`);
+  /**
+   * @param {number} secs
+   * @returns {number}
+   */
+  secondsToNanos (secs) {
+    if (secs < 0) { throw new Error('Deltatime must be greater than 0'); }
     return Math.trunc(secs * 1000 * 1000 * 1000);
   }
 
-  coerce(value: any): any {
+  /**
+   * @param {any} value
+   * @returns {any}
+   */
+  coerce (value) {
     switch (typeof value) {
       case 'number':
         return this.secondsToNanos(value - this.deltaTo);
       case 'string':
         return this.secondsToNanos(parseFloat(value) - this.deltaTo);
-      // FALL THROUGH
+            // FALL THROUGH
     }
-
     throw new Error(`Cannot coerce ${value} into deltaTime.`);
   }
 }
-
 // Represents the type of a row in influx input data.
 //
-class InfluxRowType implements EventType {
-  eventType: EventType;
-  seriesMeta: SeriesMetadata;
-  applyDeltaTimeToSerie: Number;
 
-  constructor(eventType: EventType) {
+class InfluxRowType {
+  eventType;
+
+  seriesMeta;
+
+  applyDeltaTimeToSerie;
+  constructor (eventType) {
     this.eventType = eventType;
     this.applyDeltaTimeToSerie = 0;
   }
 
-  setSeriesMeta(seriesMeta: SeriesMetadata) {
+  /**
+   * @param {SeriesMetadata} seriesMeta
+   * @returns {void}
+   */
+  setSeriesMeta (seriesMeta) {
     this.seriesMeta = seriesMeta;
   }
 
   // Returns the name of the type inside the series.
   //
-  elementTypeName() {
+  /**
+   * @returns {any}
+   */
+  elementTypeName () {
     return this.eventType.typeName();
   }
 
@@ -66,10 +76,11 @@ class InfluxRowType implements EventType {
    * WARNING If 'timestamp' column is found a column name will be renamed to "deltaTime"
    * and next coerce will convert timestamps to deltaTime relatively to the
    * Event time.
+   * @param {Array<string>} columnNames
+   * @returns {boolean}
    */
-  validateColumns(columnNames: Array<string>): boolean {
+  validateColumns (columnNames) {
     const underlyingType = this.eventType;
-
     // ** do we need to transformation timestamp into deltatime
     // ** look for "timestamp" in the columns and rename it to deltatime..
     // ** advertise type to convert future measures and r
@@ -81,57 +92,51 @@ class InfluxRowType implements EventType {
       }
       this.applyDeltaTimeToSerie = this.seriesMeta.time;
     }
-
     // These names are all allowed once:
     const allowedFields = new Set(underlyingType.fields());
     allowedFields.add(FIELD_DELTATIME);
     logger.debug('Allowed are ', allowedFields);
-
     // Accumulator for the fields that we've already seen.
     const seenFields = new Set();
-
     for (const field of columnNames) {
-      if (! allowedFields.has(field)) {
+      if (!allowedFields.has(field)) {
         logger.debug(`Field '${field}' is not allowed.`);
         return false;
       }
-
       // Fields are only allowed once; otherwise the storage op would be
       // ambiguous.
       if (seenFields.has(field)) {
         logger.debug(`Duplicate field '${field}'.`);
         return false;
       }
-
       seenFields.add(field);
     }
-
     // Now this looks valid: Only allowed fields and every field just once.
     // Let's see if we have all required fields:
     const requiredFields = new Set(underlyingType.requiredFields());
     requiredFields.add(FIELD_DELTATIME);
-
     for (const requiredField of requiredFields) {
-      if (! seenFields.has(requiredField)) {
+      if (!seenFields.has(requiredField)) {
         logger.debug(`Field '${requiredField}' is required, but was not present.`);
         return false;
       }
     }
-
     return true;
   }
 
   /** Returns true if all the rows in the given row array are valid for this
    * type.
+   * @param {Array<any>} rows
+   * @param {Array<string>} columnNames
+   * @returns {boolean}
    */
-  validateAllRows(rows: Array<any>, columnNames: Array<string>) {
-    for (let row of rows) {
-      if (! this.isRowValid(row, columnNames)) {
+  validateAllRows (rows, columnNames) {
+    for (const row of rows) {
+      if (!this.isRowValid(row, columnNames)) {
         logger.debug('Invalid row: ', row, columnNames.length);
         return false;
       }
     }
-
     return true;
   }
 
@@ -147,30 +152,34 @@ class InfluxRowType implements EventType {
    *      2.2.1) `coerce` into target type
    *      2.2.2) `isCellValid`?
    *
-   * @param row {any} Rows parsed from client input, could be any type.
-   * @param columnNames {Array<string>} A list of column names the client
-   *  provided. Check these first using `validateColumns`.
+   * @param {any} row  Rows parsed from client input, could be any type.
+   * @param {Array<string>} columnNames  A list of column names the client
+    provided. Check these first using `validateColumns`.
+   * @returns {boolean}
    */
-  isRowValid(row: any, columnNames: Array<string>) {
+  isRowValid (row, columnNames) {
     // A valid row is an array of cells.
-    if (!Array.isArray(row)) return false;
-
+    if (!Array.isArray(row)) { return false; }
     // It has the correct length. (Assumes that columnNames is right)
-    if (row.length !== columnNames.length) return false;
-
+    if (row.length !== columnNames.length) { return false; }
     // Everything looks good.
     return true;
   }
 
   // As part of being an EventType, return the name of this type.
   //
-  typeName() {
-    return 'series:'+this.eventType.typeName();
+  /**
+   * @returns {string}
+   */
+  typeName () {
+    return 'series:' + this.eventType.typeName();
   }
 
   /** Returns the type of a single cell with column name `name`.
+   * @param {string} name
+   * @returns {any}
    */
-  forField(name: string): PropertyType  {
+  forField (name) {
     if (name === FIELD_DELTATIME) {
       return new InfluxDateType(this.applyDeltaTimeToSerie);
     } else {
@@ -181,37 +190,54 @@ class InfluxRowType implements EventType {
   // What fields may be present? See `requiredFields` for a list of mandatory
   // fields.
   //
-  optionalFields(): Array<string> {
+  /**
+   * @returns {string[]}
+   */
+  optionalFields () {
     return this.eventType.optionalFields();
   }
 
   // check if a field is required
-  isOptionalField(name: string): Boolean {
+  /**
+   * @param {string} name
+   * @returns {Boolean}
+   */
+  isOptionalField (name) {
     return this.optionalFields().includes(name);
   }
 
   // What fields MUST be present?
   //
-  requiredFields(): Array<string> {
-    return [FIELD_DELTATIME].concat(
-      this.eventType.requiredFields());
-  }
-  fields(): Array<string> {
-    return [FIELD_DELTATIME].concat(
-      this.eventType.fields());
+  /**
+   * @returns {string[]}
+   */
+  requiredFields () {
+    return [FIELD_DELTATIME].concat(this.eventType.requiredFields());
   }
 
-  isSeries(): true {
+  /**
+   * @returns {string[]}
+   */
+  fields () {
+    return [FIELD_DELTATIME].concat(this.eventType.fields());
+  }
+
+  /**
+   * @returns {true}
+   */
+  isSeries () {
     return true;
   }
 
-  callValidator(
-    validator: Validator,
-    content: Content // eslint-disable-line no-unused-vars
-  ): Promise<Content> {
-    return Promise.reject(
-      new Error('No validation for influx row types.'));
+  /**
+   * @param {Validator} validator
+   * @param {Content} content
+   * @returns {Promise<any>}
+   */
+  callValidator (validator,
+    // eslint-disable-line no-unused-vars
+    content) {
+    return Promise.reject(new Error('No validation for influx row types.'));
   }
 }
-
 module.exports = InfluxRowType;

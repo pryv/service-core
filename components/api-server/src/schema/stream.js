@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -21,19 +21,19 @@ const boolean = helpers.boolean;
  * @param {String} refToStreamSchema
  */
 module.exports = function (action, ignoreChildren, refToStreamSchema) {
-  let schema = {
+  const schema = {
     id: helpers.getTypeURI('stream', action),
     type: 'object',
     additionalProperties: false,
     properties: {
-      'id': string({minLength: 1}),
-      'name': string({minLength: 1}),
-      'parentId': string({nullable: true, minLength: 1}),
-      'clientData': object({}, {nullable: true}),
-      'trashed': boolean({nullable: true}),
+      id: string({ minLength: 1 }),
+      name: string({ minLength: 1 }),
+      parentId: string({ nullable: true, minLength: 1 }),
+      clientData: object({}, { nullable: true }),
+      trashed: boolean({ nullable: true }),
       // ignored except on READ, accepted to simplify interaction with client frameworks
-      'children': array({'$ref': refToStreamSchema || '#'}, {nullable: true}),
-      'childrenHidden': boolean({nullable: true}),
+      children: array({ $ref: refToStreamSchema || '#' }, { nullable: true }),
+      childrenHidden: boolean({ nullable: true })
     }
   };
 
@@ -41,18 +41,18 @@ module.exports = function (action, ignoreChildren, refToStreamSchema) {
 
   switch (action) {
     case Action.READ:
-      schema.required = [ 'id', 'name', 'parentId',
-        'created', 'createdBy', 'modified', 'modifiedBy' ];
-      if (! ignoreChildren){ 
+      schema.required = ['id', 'name', 'parentId',
+        'created', 'createdBy', 'modified', 'modifiedBy'];
+      if (!ignoreChildren) {
         schema.required.push('children');
       }
       break;
     case Action.STORE:
-      schema.required = [ 'id', 'name', 'parentId',
-        'created', 'createdBy', 'modified', 'modifiedBy' ];
+      schema.required = ['id', 'name', 'parentId',
+        'created', 'createdBy', 'modified', 'modifiedBy'];
       break;
     case Action.CREATE:
-      schema.required = [ 'name' ];
+      schema.required = ['name'];
       break;
     case Action.UPDATE:
       // whitelist for properties that can be updated

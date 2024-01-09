@@ -1,11 +1,9 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const commonFns = require('./../helpers/commonFunctions');
 const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
@@ -14,14 +12,7 @@ const { getPlatform } = require('platform');
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
-const usersIndex = require('business/src/users/UsersLocalIndex');
-const { getPasswordRules } = require('business').users;
-
-
-import type { MethodContext } from 'business';
-import type Result  from '../Result';
-import type { ApiCallback }  from '../API';
-
+const { getPasswordRules, getUsersRepository } = require('business').users;
 /**
  * Auth API methods implementations.
  *
@@ -33,37 +24,26 @@ module.exports = async function (api) {
   const storageLayer = await getStorageLayer();
   const servicesSettings = config.get('services');
   const isDnsLess = config.get('dnsLess:isActive');
-  await usersIndex.init();
+  const usersRepository = await getUsersRepository();
   const passwordRules = await getPasswordRules();
-
   // REGISTER
-  const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
+  const registration = new Registration(logging, storageLayer, servicesSettings);
   await registration.init();
   const platform = await getPlatform();
-
-  function skip(context, params, result, next) { next(); }
-  function ifDnsLess(ifTrue, ifFalse) {
+  function skip (context, params, result, next) {
+    next();
+  }
+  function ifDnsLess (ifTrue, ifFalse) {
     if (isDnsLess) {
       return ifTrue || skip;
     }
     return ifFalse || skip;
   }
-
-  api.register('auth.register',
-    setAuditAccessId(AuditAccessIds.PUBLIC),
+  api.register('auth.register', setAuditAccessId(AuditAccessIds.PUBLIC),
     // data validation methods
-    commonFns.getParamsValidation(methodsSchema.register.params),
-    enforcePasswordRules,
-    registration.prepareUserData,
-    ifDnsLess(skip, registration.createUserStep1_ValidateUserOnPlatform.bind(registration)),
-    //user registration methods
-    ifDnsLess(skip, registration.deletePartiallySavedUserIfAny.bind(registration)),
-    ifDnsLess(skip, registration.createUserStep2_CreateUserOnPlatform.bind(registration)),
-    registration.createUser.bind(registration),
-    registration.buildResponse.bind(registration),
-    registration.sendWelcomeMail.bind(registration),
-  );
-
+    commonFns.getParamsValidation(methodsSchema.register.params), enforcePasswordRules, registration.prepareUserData, ifDnsLess(skip, registration.createUserStep1_ValidateUserOnPlatform.bind(registration)),
+    // user registration methods
+    ifDnsLess(skip, registration.deletePartiallySavedUserIfAny.bind(registration)), ifDnsLess(skip, registration.createUserStep2_CreateUserOnPlatform.bind(registration)), registration.createUser.bind(registration), registration.buildResponse.bind(registration), registration.sendWelcomeMail.bind(registration));
   async function enforcePasswordRules (context, params, result, next) {
     try {
       await passwordRules.checkNewPassword(null, params.password);
@@ -72,7 +52,6 @@ module.exports = async function (api) {
       return next(err);
     }
   }
-
   // Username check
   /**
    * Seem to be use only in dnsLess..
@@ -80,8 +59,7 @@ module.exports = async function (api) {
   api.register('auth.usernameCheck',
     setAuditAccessId(AuditAccessIds.PUBLIC),
     commonFns.getParamsValidation(methodsSchema.usernameCheck.params),
-    ifDnsLess(checkLocalUsersUniqueField, checkUsername)
-  );
+    checkUsername);
 
   /**
    * ⚠️ DNS-less only
@@ -89,8 +67,7 @@ module.exports = async function (api) {
   api.register('auth.emailCheck',
     setAuditAccessId(AuditAccessIds.PUBLIC),
     commonFns.getParamsValidation(methodsSchema.emailCheck.params),
-    checkLocalUsersUniqueField
-  );
+    checkLocalUsersUniqueField);
 
   /**
    * Check in service-register if user id is reserved
@@ -100,26 +77,23 @@ module.exports = async function (api) {
    * @param {*} result
    * @param {*} next
    */
-  async function checkLocalUsersUniqueField(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function checkLocalUsersUniqueField (context, params, result, next) {
     result.reserved = false;
     // the check for the required field is done by the schema
     const field = Object.keys(params)[0];
-
     // username
-    if (field == 'username') {
-      if (await usersIndex.usernameExists(params[field])) {
-        return next(errors.itemAlreadyExists( 'user', {'username': params[field]}));
+    if (field === 'username') {
+      if (await usersRepository.usernameExists(params[field])) {
+        return next(errors.itemAlreadyExists('user', { username: params[field] }));
       }
     }
-
     // other unique fields
     const value = await platform.getLocalUsersUniqueField(field, params[field]);
     if (value != null) {
-      return next(errors.itemAlreadyExists('user', {[field]: params[field]}));
+      return next(errors.itemAlreadyExists('user', { [field]: params[field] }));
     }
     next();
   }
-
   /**
    * Check with register service whether username is reserved
    * ⚠️ to be used only if dnsLess is NOT active.
@@ -128,12 +102,19 @@ module.exports = async function (api) {
    * @param {*} result
    * @param {*} next
    */
-  async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function checkUsername (context, params, result, next) {
     result.reserved = false;
-    try {
-      result.reserved = await platform.isUsernameReserved(params.username);
-    } catch (error) {
-      return next(errors.unexpectedError(error));
+    if (isDnsLess) {
+      result.reserved = await usersRepository.usernameExists(params.username);
+    } else {
+      try {
+        result.reserved = await platform.isUsernameReserved(params.username);
+      } catch (error) {
+        return next(errors.unexpectedError(error));
+      }
+    }
+    if (result.reserved == null) {
+      return next(errors.unexpectedError('usernamed reserved cannot be null'));
     }
     next();
   }

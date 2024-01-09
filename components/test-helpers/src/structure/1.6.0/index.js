@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -9,27 +9,27 @@ module.exports = {
     events: [
       {
         index: { time: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { streamIds: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { tags: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { trashed: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { modified: 1 },
-        options: {},
+        options: {}
       },
       {
         index: { endTime: 1 },
-        options: { partialFilterExpression: { endTime: { $exists: true } } },
+        options: { partialFilterExpression: { endTime: { $exists: true } } }
       },
       {
         index: { email__unique: 1 },
@@ -39,7 +39,7 @@ module.exports = {
             email__unique: { $exists: true },
             streamIds: '.unique'
           }
-        },
+        }
       },
       {
         index: { username__unique: 1 },
@@ -49,8 +49,8 @@ module.exports = {
             username__unique: { $exists: true },
             streamIds: '.unique'
           }
-        },
-      },
+        }
+      }
     ],
     accesses: [
       {

@@ -1,11 +1,9 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 /**
  * Identifier constants for API errors.
  */
@@ -16,7 +14,6 @@ const ErrorIds = {
   InvalidAccessToken: 'invalid-access-token',
   InvalidCredentials: 'invalid-credentials',
   UnsupportedOperation: 'unsupported-operation',
-
   /**
    * Used for High-Frequency Series, allowing only known, simple types.
    */
@@ -48,7 +45,6 @@ const ErrorIds = {
    * Used for open source version
    */
   unavailableMethod: 'unavailable-method',
-
   /**
    * Invitation token validation in the service-register
    */
@@ -60,7 +56,6 @@ const ErrorIds = {
   InvalidAppId: 'appid-invalid',
   InvalidPassword: 'password-invalid',
   Invalidreferer: 'referer-invalid',
-
   /**
    * Throw this error for methods that are valid only for pryv.io
    */
@@ -74,8 +69,7 @@ const ErrorIds = {
   ForbiddenAccountStreamsModification: 'forbidden-account-streams-actions',
   ForbiddenToEditNoneditableAccountFields: 'forbidden-to-edit-noneditable-account-fields',
   MissingRequiredField: 'missing-required-field',
-  NewPasswordFieldIsRequired: 'newPassword-required',
+  NewPasswordFieldIsRequired: 'newPassword-required'
 };
 Object.freeze(ErrorIds);
-
 module.exports = ErrorIds;

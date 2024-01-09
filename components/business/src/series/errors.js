@@ -1,24 +1,23 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
-// Thrown when the request parsing fails. 
-// 
+// Thrown when the request parsing fails.
+//
 class ParseFailure extends Error {
 }
-
-function error(msg: string): Error {
+/**
+ * @param {string} msg
+ * @returns {Error}
+ */
+function error (msg) {
   return new ParseFailure(msg);
 }
-
 module.exports = {
   // error class
-  ParseFailure, 
-  
+  ParseFailure,
   // error factories
   error
 };

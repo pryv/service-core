@@ -1,89 +1,66 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
 const request = require('superagent');
 const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
+const { pubsub } = require('messages');
 
-const { pubsub } = require('messages');
-import type { MessageSink } from 'messages';
-import type Repository  from './repository';
+class Webhook {
+  id;
 
-export type Run = {
-  status: number,
-  timestamp: number
-};
+  accessId;
 
-export type WebhookState = 'active' | 'inactive';
+  url;
 
-export type WebhookUpdate = {
-  state: WebhookState,
-  currentRetries: number,
-};
+  state;
 
-class Webhook implements MessageSink {
-  id: string;
-  accessId: string;
-  url: string;
-  state: WebhookState;
+  runs;
 
-  runs: Array<Run>;
-  lastRun: Run;
+  lastRun;
 
-  runsSize: number;
-  runCount: number;
-  failCount: number;
+  runsSize;
 
-  currentRetries: number;
-  maxRetries: number;
-  minIntervalMs: number;
+  runCount;
 
-  created: ?number;
-  createdBy: ?string;
-  modified: ?number;
-  modifiedBy: ?string;
+  failCount;
 
-  messageBuffer: Set<string>;
-  timeout: ?TimeoutID;
-  isSending: boolean;
+  currentRetries;
 
-  user: ?{};
-  repository: ?Repository;
+  maxRetries;
 
-  apiVersion: string;
-  serial: string;
+  minIntervalMs;
+
+  created;
+
+  createdBy;
+
+  modified;
+
+  modifiedBy;
+
+  messageBuffer;
+
+  timeout;
+
+  isSending;
+
+  user;
+
+  repository;
+
+  apiVersion;
+
+  serial;
 
   logger;
 
-  pubsubTurnOffListener: ?function;
-
-  constructor(params: {
-    id?: string,
-    accessId: string,
-    url: string,
-    runCount?: number,
-    failCount?: number,
-    runs?: Array<Run>,
-    runsSize?: number,
-    lastRun: Run,
-    state?: WebhookState,
-    currentRetries?: number,
-    minIntervalMs?: number,
-    maxRetries?: number,
-    created?: number,
-    createdBy?: string,
-    modified?: number,
-    modifiedBy?: string,
-    user?: {},
-    webhooksRepository?: Repository,
-    messageBuffer?: Set<string>
-  }) {
+  pubsubTurnOffListener;
+  constructor (params) {
     this.id = params.id || cuid();
     this.accessId = params.accessId;
     this.url = params.url;
@@ -107,30 +84,35 @@ class Webhook implements MessageSink {
     this.runsSize = params.runsSize || 50;
   }
 
- startListenting(username: string) {
-    if (this.pubsubTurnOffListener != null) { throw new Error('Cannot listen twice'); }
-    this.pubsubTurnOffListener = pubsub.notifications.onAndGetRemovable(username,
-      function named(payload) { this.send(payload.eventName); }.bind(this)
-    ); 
+  /**
+   * @param {string} username
+   * @returns {void}
+   */
+  startListenting (username) {
+    if (this.pubsubTurnOffListener != null) {
+      throw new Error('Cannot listen twice');
+    }
+    this.pubsubTurnOffListener = pubsub.notifications.onAndGetRemovable(username, function named (payload) {
+      this.send(payload.eventName);
+    }.bind(this));
   }
 
   /**
    * Send the message with the throttling and retry mechanics - to use in webhooks service
+   * @param {string} message
+   * @param {boolean} isRescheduled
+   * @returns {Promise<void>}
    */
-  async send(message: string, isRescheduled?: boolean): Promise<void> {
-    if (this.state == 'inactive') return;
-
-    if (isRescheduled != null && isRescheduled == true) {
+  async send (message, isRescheduled) {
+    if (this.state === 'inactive') { return; }
+    if (isRescheduled != null && isRescheduled === true) {
       this.timeout = null;
     }
     this.messageBuffer.add(message);
-
-    if (tooSoon.call(this) || this.isSending)
-      return reschedule.call(this, message);
+    if (tooSoon.call(this) || this.isSending) { return reschedule.call(this, message); }
     this.isSending = true;
-
-    let status: ?number;
-    const sentBuffer: Array<string> = Array.from(this.messageBuffer);
+    let status;
+    const sentBuffer = Array.from(this.messageBuffer);
     this.messageBuffer.clear();
     try {
       const res = await this.makeCall(sentBuffer);
@@ -144,11 +126,10 @@ class Webhook implements MessageSink {
     }
     log(this, 'Webhook ' + this.id + ' run with status ' + status);
     this.isSending = false;
-
     if (hasError(status)) {
       this.failCount++;
       this.currentRetries++;
-      sentBuffer.forEach(m => {
+      sentBuffer.forEach((m) => {
         this.messageBuffer.add(m);
       });
       if (this.currentRetries > this.maxRetries) {
@@ -157,40 +138,30 @@ class Webhook implements MessageSink {
     } else {
       this.currentRetries = 0;
     }
-
     this.runCount++;
-    this.lastRun = { status: status, timestamp: Date.now() / 1000 };
+    this.lastRun = { status, timestamp: timestamp.now() };
     this.addRun(this.lastRun);
-
-    await makeUpdate(
-      ['lastRun', 'runs', 'runCount', 'failCount', 'currentRetries', 'state'],
-      this
-    );
-
+    await makeUpdate(['lastRun', 'runs', 'runCount', 'failCount', 'currentRetries', 'state'], this);
     if (hasError(status)) {
       handleRetry.call(this, message);
     }
-
-    function hasError(status) {
+    function hasError (status) {
       return status < 200 || status >= 300;
     }
-
-    function handleRetry(message): void {
-      if (this.state == 'inactive') {
+    function handleRetry (message) {
+      if (this.state === 'inactive') {
         return;
       }
       reschedule.call(this, message);
     }
-
-    function reschedule(message: string): void {
-      if (this.timeout != null) return;
+    function reschedule (message) {
+      if (this.timeout != null) { return; }
       const delay = this.minIntervalMs * (this.currentRetries || 1);
       this.timeout = setTimeout(() => {
         return this.send(message, true);
       }, delay);
     }
-
-    function tooSoon(): boolean {
+    function tooSoon () {
       const now = timestamp.now();
       if ((now - this.lastRun.timestamp) * 1000 < this.minIntervalMs) {
         return true;
@@ -202,62 +173,86 @@ class Webhook implements MessageSink {
 
   /**
    * Only make the HTTP call - used for webhook.test API method
+   * @param {Array<string>} messages
+   * @returns {Promise<any>}
    */
-  async makeCall(messages: Array<string>): Promise<Http$Response> {
+  async makeCall (messages) {
     const res = await request.post(this.url).send({
-      messages: messages,
+      messages,
       meta: {
         apiVersion: this.apiVersion,
         serverTime: timestamp.now(),
-        serial: this.serial,
+        serial: this.serial
       }
     });
     return res;
   }
 
-  stop(): void {
+  /**
+   * @returns {void}
+   */
+  stop () {
     if (this.timeout != null) {
       clearTimeout(this.timeout);
     }
-    if (this.pubsubTurnOffListener != null) { 
+    if (this.pubsubTurnOffListener != null) {
       this.pubsubTurnOffListener();
       this.pubsubTurnOffListener = null;
-    };
+    }
   }
 
-  addRun(run: Run): void {
+  /**
+   * @param {Run} run
+   * @returns {void}
+   */
+  addRun (run) {
     if (this.runCount > this.runsSize) {
       this.runs.splice(-1, 1);
-    } 
+    }
     this.runs.unshift(run);
   }
 
-  async save(): Promise<void> {
+  /**
+   * @returns {Promise<void>}
+   */
+  async save () {
     if (this.repository == null) {
       throw new Error('repository not set for Webhook object.');
     }
-    
     await this.repository.insertOne(this.user, this);
   }
 
-  async update(fieldsToUpdate: {}): Promise<void> {
+  /**
+   * @param {{}} fieldsToUpdate
+   * @returns {Promise<void>}
+   */
+  async update (fieldsToUpdate) {
     const fields = Object.keys(fieldsToUpdate);
     _.merge(this, fieldsToUpdate);
     await makeUpdate(fields, this);
   }
-  
-  async delete(): Promise<void> {
+
+  /**
+   * @returns {Promise<void>}
+   */
+  async delete () {
     if (this.repository == null) {
       throw new Error('repository not set for Webhook object.');
     }
     await this.repository.deleteOne(this.user, this.id);
   }
 
-  getMessageBuffer(): Array<string> {
+  /**
+   * @returns {string[]}
+   */
+  getMessageBuffer () {
     return Array.from(this.messageBuffer);
   }
 
-  forStorage(): {} {
+  /**
+   * @returns {{}}
+   */
+  forStorage () {
     return _.pick(this, [
       'id',
       'accessId',
@@ -277,7 +272,10 @@ class Webhook implements MessageSink {
     ]);
   }
 
-  forApi(): {} {
+  /**
+   * @returns {{}}
+   */
+  forApi () {
     return _.pick(this, [
       'id',
       'accessId',
@@ -297,31 +295,49 @@ class Webhook implements MessageSink {
     ]);
   }
 
-  setApiVersion(version: string): void {
+  /**
+   * @param {string} version
+   * @returns {void}
+   */
+  setApiVersion (version) {
     this.apiVersion = version;
   }
 
-  setSerial(serial: string): void {
+  /**
+   * @param {string} serial
+   * @returns {void}
+   */
+  setSerial (serial) {
     this.serial = serial;
   }
 
-  setLogger(logger): void {
+  /**
+   * @returns {void}
+   */
+  setLogger (logger) {
     this.logger = logger;
   }
 }
 module.exports = Webhook;
-
-function log(webhook: Webhook, msg: string): void {
-  if (webhook.logger == null) return;
+/**
+ * @param {Webhook} webhook
+ * @param {string} msg
+ * @returns {void}
+ */
+function log (webhook, msg) {
+  if (webhook.logger == null) { return; }
   webhook.logger.info(msg);
 }
-
-async function makeUpdate(fields?: Array<string>, webhook: Webhook): Promise<void> {
+/**
+ * @param {Array<string> | undefined | null} fields
+ * @param {Webhook} webhook
+ * @returns {Promise<void>}
+ */
+async function makeUpdate (fields, webhook) {
   if (webhook.repository == null) {
     throw new Error('repository not set for Webhook object.');
   }
   let update;
-
   if (fields == null) {
     update = webhook.forStorage();
   } else {
@@ -329,3 +345,19 @@ async function makeUpdate(fields?: Array<string>, webhook: Webhook): Promise<voi
   }
   await webhook.repository.updateOne(webhook.user, update, webhook.id);
 }
+
+/**
+ * @typedef {{
+ *   status: number;
+ *   timestamp: number;
+ * }} Run
+ */
+
+/** @typedef {'active' | 'inactive'} WebhookState */
+
+/**
+ * @typedef {{
+ *   state: WebhookState;
+ *   currentRetries: number;
+ * }} WebhookUpdate
+ */

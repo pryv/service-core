@@ -31,10 +31,9 @@ files:
 ignore:
 - .git
 - .vscode
+- build/test/pryv
 - coverage
-- dist
-- flow-coverage
-- flow-typed
+- private-libs
 - nats-server
 - node_modules
 - test-results

@@ -1,0 +1,52 @@
+#!/bin/bash
+set -e
+
+#######################################
+# Sets up and starts the HFS service(s)
+#######################################
+
+service_dir=/etc/service
+start_dir=$service_dir/start-hfs
+child_services_dir=$start_dir/child_services
+
+# First remove any previously existing HFS service(s)
+rm -Rf $service_dir/hfs_*
+rm -Rf $child_services_dir
+
+# recreate $child_services_dir (deleted previously in cleaning)
+mkdir -p $child_services_dir
+
+# Set $num_procs to 2 or the value of $NUM_PROCS if set
+if [ -z ${NUM_PROCS+x} ]
+then
+	num_procs=2
+else
+	num_procs=$NUM_PROCS
+fi
+
+# Set $starting_port to 3000 or the value of $STARTING_PORT if set
+if [ -z ${STARTING_PORT+x} ]
+then
+	starting_port=3000
+else
+	starting_port=$STARTING_PORT
+fi
+
+export NODE_ENV=production
+export NODE_PATH=/app/bin/
+
+# Add HFS service(s) for runit to start
+for i in $( seq 1 $num_procs )
+do
+	# setup HFS service dir in $child_services_dir
+	hfs_dir=$child_services_dir/hfs_$i
+	port=$((starting_port + i - 1))
+	cp -R $start_dir/hfs_n $hfs_dir
+	# replace port number with current port in the duplicated script
+	sed -i "s/\${PORT_NUM}/$port/g" $hfs_dir/run
+	# finally symlink to tell runit about it
+	ln -s $hfs_dir $service_dir/hfs_$i
+done
+
+# Job done, now wait until shutdown
+while :; do sleep infinity; done

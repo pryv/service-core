@@ -1,13 +1,14 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
 /**
  * Regroups shared test data and related  helper functions.
  */
-const bluebird = require('bluebird');
+
 const async = require('async');
 const childProcess = require('child_process');
 const dependencies = require('./dependencies');
@@ -16,17 +17,18 @@ const settings = dependencies.settings;
 const storage = dependencies.storage;
 const fs = require('fs');
 const path = require('path');
-const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository, User } = require('business/src/users');
+const { userLocalDirectory } = require('storage');
 const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
 
 // users
-const users = exports.users = require('./data/users');
+
+const users = (exports.users = require('./data/users'));
 const defaultUser = users[0];
 
 exports.resetUsers = async () => {
@@ -34,29 +36,26 @@ exports.resetUsers = async () => {
   await getConfig(); // lock up to the time config is ready
   await SystemStreamsSerializer.init();
   const customAccountProperties = buildCustomAccountProperties();
-
   const usersRepository = await getUsersRepository();
   await usersRepository.deleteAll();
-
   for (const user of users) {
-    const userObj: User = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
+    const userObj = new User(_.merge(customAccountProperties, user)); // might alter storage "dump data" script
     await usersRepository.insertOne(userObj, false, true);
   }
 };
 
 // accesses
 
-const accesses = exports.accesses = require('./data/accesses');
+const accesses = (exports.accesses = require('./data/accesses'));
 
 exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
   const u = user || defaultUser;
   if (personalAccessToken) {
     accesses[0].token = personalAccessToken;
   }
-
   if (addToId) {
-    var data = _.cloneDeep(accesses);
-    for (var i = 0; i < data.length; i++) {
+    const data = structuredClone(accesses);
+    for (let i = 0; i < data.length; i++) {
       data[i].id += u.id;
     }
     resetData(storage.user.accesses, u, data, done);
@@ -67,7 +66,7 @@ exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
 
 // profile
 
-const profile = exports.profile = require('./data/profile');
+const profile = (exports.profile = require('./data/profile'));
 
 exports.resetProfile = function (done, user) {
   resetData(storage.user.profile, user || defaultUser, profile, done);
@@ -75,9 +74,15 @@ exports.resetProfile = function (done, user) {
 
 // followed slices
 
-const followedSlicesURL = 'http://' + settings.http.ip + ':' + settings.http.port + '/' +
+const followedSlicesURL = 'http://' +
+    settings.http.ip +
+    ':' +
+    settings.http.port +
+    '/' +
     users[0].username;
-const followedSlices = exports.followedSlices = require('./data/followedSlices')(followedSlicesURL);
+
+const followedSlices = (exports.followedSlices =
+    require('./data/followedSlices')(followedSlicesURL));
 
 exports.resetFollowedSlices = function (done, user) {
   resetData(storage.user.followedSlices, user || defaultUser, followedSlices, done);
@@ -85,62 +90,62 @@ exports.resetFollowedSlices = function (done, user) {
 
 // events
 
-const events = exports.events = require('./data/events');
+const events = (exports.events = require('./data/events'));
 
 exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
-  const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
-  let eventsToWrite = events.map(e => {
-    const eventToWrite = _.cloneDeep(e);
+  const eventsToWrite = events.map((e) => {
+    const eventToWrite = structuredClone(e);
     delete eventToWrite.tags;
     return eventToWrite;
-  })
+  });
   let mall;
   async.series([
-    async function removeNonAccountEvents() {
+    async function removeNonAccountEvents () {
       mall = await getMall();
-      await mall.events.delete(user.id, {state: 'all', withDeletions: true, includeHistory: true, streams: [{not: allAccountStreamIds}]});
+      await mall.events.localRemoveAllNonAccountEventsForUser(user.id);
     },
-    async function createEvents() {
-      await mall.events.createMany(user.id,  eventsToWrite)
+    async function createEvents () {
+      await mall.events.createManyForTests(user.id, eventsToWrite);
     },
-    function removeZerosDuration(done2) {
-      events.forEach( e => { if (e.duration === 0) delete e.duration});
+    function removeZerosDuration (done2) {
+      events.forEach((e) => {
+        if (e.duration === 0) { delete e.duration; }
+      });
       done2();
     }
   ], done);
-
 };
 
 // streams
 
-const streams = exports.streams = require('./data/streams');
+const streams = (exports.streams = require('./data/streams'));
 
 exports.resetStreams = function (done, user) {
   const myUser = user || defaultUser;
   let mall = null;
-
-  async function addStreams(arrayOfStreams) {
+  async function addStreams (arrayOfStreams) {
     for (const stream of arrayOfStreams) {
       const children = stream?.children || [];
-      const streamData = _.clone(stream);
+      const streamData = structuredClone(stream);
       delete streamData.children;
       await mall.streams.create(myUser.id, streamData);
       await addStreams(children);
     }
   }
-
   async.series([
     async () => {
       mall = await getMall();
       await mall.streams.deleteAll(myUser.id, 'local');
       await addStreams(streams);
-    },
-  ], done)
-
+    }
+  ], done);
 };
 
+/**
+ * @returns {void}
+ */
 function resetData (storage, user, items, done) {
   async.series([
     storage.removeAll.bind(storage, user),
@@ -153,50 +158,55 @@ function resetData (storage, user, items, done) {
 /**
  * Source attachments directory path (!= server storage path)
  */
-const attachmentsDirPath = exports.attachmentsDirPath = __dirname + '/data/attachments/';
+const testsAttachmentsDirPath = (exports.testsAttachmentsDirPath = path.join(__dirname, '/data/attachments/'));
 
-const attachments = exports.attachments = {
+const attachments = (exports.attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
   document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
   document_modified: getAttachmentInfo('document', 'document.modified.pdf', 'application/pdf'),
   image: getAttachmentInfo('image', 'image (space and special chars)é__.png', 'image/png'),
   imageBigger: getAttachmentInfo('imageBigger', 'image-bigger.jpg', 'image/jpeg'),
   text: getAttachmentInfo('text', 'text.txt', 'text/plain')
-};
+});
 
 // following https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
 // compute sri with openssl
 // cat FILENAME.js | openssl dgst -sha384 -binary | openssl base64 -A
 // replaces: 'sha256 ' + crypto.createHash('sha256').update(data).digest('hex');
-function getSubresourceIntegrity(filePath) {
+/**
+ * @returns {string}
+ */
+function getSubresourceIntegrity (filePath) {
   const algorithm = 'sha256';
-  return algorithm + '-' + childProcess.execSync(`cat "${filePath}" | openssl dgst -${algorithm} -binary | openssl base64 -A`)
+  return (algorithm +
+        '-' +
+        childProcess.execSync(`cat "${filePath}" | openssl dgst -${algorithm} -binary | openssl base64 -A`));
 }
 
-
-function getAttachmentInfo(id, filename, type) {
-  const filePath = path.join(attachmentsDirPath, filename);
+/**
+ * @returns {{ id: any; filename: any; path: any; data: any; size: any; type: any; integrity: string; }}
+ */
+function getAttachmentInfo (id, filename, type) {
+  const filePath = path.join(testsAttachmentsDirPath, filename);
   const data = fs.readFileSync(filePath);
   const integrity = getSubresourceIntegrity(filePath);
   return {
-    id: id,
-    filename: filename,
+    id,
+    filename,
     path: filePath,
-    data: data,
+    data,
     size: data.length,
-    type: type,
-    integrity: integrity,
+    type,
+    integrity
   };
 }
 
 exports.resetAttachments = function (done, user) {
-  if (! user) {
+  if (!user) {
     user = defaultUser;
   }
+  storage.user.eventFiles.removeAllForUser(user);
   async.series([
-    function (stepDone) {
-      storage.user.eventFiles.removeAllForUser(user, stepDone);
-    },
     copyAttachmentFn(attachments.document, user, events[0].id),
     copyAttachmentFn(attachments.image, user, events[0].id),
     copyAttachmentFn(attachments.imageBigger, user, events[2].id),
@@ -204,7 +214,10 @@ exports.resetAttachments = function (done, user) {
   ], done);
 };
 
-function copyAttachmentFn(attachmentInfo, user, eventId) {
+/**
+ * @returns {(callback: any) => any}
+ */
+function copyAttachmentFn (attachmentInfo, user, eventId) {
   return function (callback) {
     const tmpPath = '/tmp/' + attachmentInfo.filename;
     try {
@@ -212,8 +225,13 @@ function copyAttachmentFn(attachmentInfo, user, eventId) {
     } catch (e) {
       return callback(e);
     }
-    storage.user.eventFiles.saveAttachedFileFromTemp(tmpPath, user.id, eventId, attachmentInfo.id).then(
-      (fileID) => { callback(null, fileID); }, (err) => { callback(err); });
+    storage.user.eventFiles
+      .saveAttachmentFromTemp(tmpPath, user.id, eventId, attachmentInfo.id)
+      .then((fileID) => {
+        callback(null, fileID);
+      }, (err) => {
+        callback(err);
+      });
   };
 }
 
@@ -230,9 +248,7 @@ function copyAttachmentFn(attachmentInfo, user, eventId) {
 exports.dumpCurrent = function (mongoFolder, version, callback) {
   const mongodump = path.resolve(mongoFolder, 'bin/mongodump');
   const outputFolder = getDumpFolder(version);
-
   logger.info('Dumping current test data to ' + outputFolder);
-
   async.series([
     clearAllData,
     storage.versions.migrateIfNeeded.bind(storage.versions),
@@ -243,17 +259,31 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
     exports.resetStreams,
     exports.resetEvents,
     exports.resetAttachments,
-    rimraf.bind(null, outputFolder),
+    fs.rm.bind(null, outputFolder, { recursive: true, force: true }),
     childProcess.exec.bind(null, mongodump +
-        (settings.database.authUser ?
-            ' -u ' + settings.database.authUser + ' -p ' + settings.database.authPassword : '') +
-        ' --host ' + settings.database.host + ':' + settings.database.port +
-        ' --db ' + settings.database.name +
-        ' --out ' + getDumpDBSubfolder(outputFolder)),
-    childProcess.exec.bind(null, 'tar -C ' + settings.eventFiles.attachmentsDirPath +
-        ' -czf ' + getDumpFilesArchive(outputFolder) + ' .')
+            (settings.database.authUser
+              ? ' -u ' +
+                    settings.database.authUser +
+                    ' -p ' +
+                    settings.database.authPassword
+              : '') +
+            ' --host ' +
+            settings.database.host +
+            ':' +
+            settings.database.port +
+            ' --db ' +
+            settings.database.name +
+            ' --out ' +
+            getDumpDBSubfolder(outputFolder)),
+    childProcess.exec.bind(null, 'tar -C ' +
+            settings.eventFiles.attachmentsDirPath +
+            ' -czf ' +
+            getDumpFilesArchive(outputFolder) +
+            ' .')
   ], function (err) {
-    if (err) { return callback(err); }
+    if (err) {
+      return callback(err);
+    }
     callback();
   });
 };
@@ -269,29 +299,38 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
   const sourceFolder = getDumpFolder(versionNum);
   const sourceDBFolder = getDumpDBSubfolder(sourceFolder);
   const sourceFilesArchive = getDumpFilesArchive(sourceFolder);
-
   logger.info('Restoring v' + versionNum + ' data from ' + sourceFolder);
-
-  if (! fs.existsSync(sourceDBFolder) || ! fs.existsSync(sourceFilesArchive)) {
+  if (!fs.existsSync(sourceDBFolder) || !fs.existsSync(sourceFilesArchive)) {
     throw new Error('Missing source dump or part of it at ' + sourceFolder);
   }
-
   async.series([
     clearAllData,
     childProcess.exec.bind(null, mongorestore +
-      ' --nsFrom "pryv-node.*" --nsTo "pryv-node-test.*" '+
-        (settings.database.authUser ?
-            ' -u ' + settings.database.authUser + ' -p ' + settings.database.authPassword : '') +
-        ' --host ' + settings.database.host + ':' + settings.database.port +
-        ' ' + sourceDBFolder),
-    function (done) { 
+            ' --nsFrom "pryv-node.*" --nsTo "pryv-node-test.*" ' +
+            (settings.database.authUser
+              ? ' -u ' +
+                    settings.database.authUser +
+                    ' -p ' +
+                    settings.database.authPassword
+              : '') +
+            ' --host ' +
+            settings.database.host +
+            ':' +
+            settings.database.port +
+            ' ' +
+            sourceDBFolder),
+    function (done) {
       mkdirp.sync(settings.eventFiles.attachmentsDirPath);
       done();
     },
-    childProcess.exec.bind(null, 'tar -xzf ' + sourceFilesArchive +
-        ' -C ' + settings.eventFiles.attachmentsDirPath)
+    childProcess.exec.bind(null, 'tar -xzf ' +
+            sourceFilesArchive +
+            ' -C ' +
+            settings.eventFiles.attachmentsDirPath)
   ], function (err) {
-    if (err) { return callback(err); }
+    if (err) {
+      return callback(err);
+    }
     logger.info('OK');
     callback();
   });
@@ -304,35 +343,53 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
  * @returns {Object} structure
  */
 exports.getStructure = function (version) {
-  return require(path.resolve(__dirname + '/structure/' + version));
+  return require(path.join(__dirname, '/structure/', version));
 };
 
+/**
+ * @returns {void}
+ */
 function clearAllData (callback) {
-  async.series([
-    storage.database.dropDatabase.bind(storage.database),
-    storage.user.eventFiles.removeAll.bind(storage.user.eventFiles)
-  ], callback);
+  deleteUsersDataDirectory();
+  storage.user.eventFiles.removeAll();
+  storage.database.dropDatabase(callback);
 }
 
-function getDumpFolder(versionNum) {
+/**
+ * @returns {any}
+ */
+function getDumpFolder (versionNum) {
   return path.resolve(__dirname, 'data/dumps', versionNum);
 }
 
-function getDumpDBSubfolder(dumpFolder) {
+/**
+ * @returns {any}
+ */
+function getDumpDBSubfolder (dumpFolder) {
   return path.resolve(dumpFolder, 'db');
 }
 
-function getDumpFilesArchive(dumpFolder) {
+/**
+ * @returns {any}
+ */
+function getDumpFilesArchive (dumpFolder) {
   return path.resolve(dumpFolder, 'event-files.tar.gz');
 }
 
-function buildCustomAccountProperties() {
+/**
+ * @returns {{}}
+ */
+function buildCustomAccountProperties () {
   const accountStreams = getConfigUnsafe(true).get('custom:systemStreams:account');
-  if (accountStreams == null) return {};
-
+  if (accountStreams == null) { return {}; }
   const customProperties = {};
-  accountStreams.forEach(stream => {
+  accountStreams.forEach((stream) => {
     customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);
   });
   return customProperties;
+}
+
+function deleteUsersDataDirectory () {
+  const basePath = userLocalDirectory.getBasePath();
+  fs.rmSync(basePath, { recursive: true, force: true });
 }

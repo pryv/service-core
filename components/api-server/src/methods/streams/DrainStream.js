@@ -1,12 +1,12 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var Writable = require('stream').Writable,
-    inherits = require('util').inherits,
-    errors = require('errors').factory;
+const Writable = require('stream').Writable;
+const inherits = require('util').inherits;
+const errors = require('errors').factory;
 
 module.exports = DrainStream;
 
@@ -20,7 +20,7 @@ module.exports = DrainStream;
  *                            or the limit was reached, generating an error
  * @constructor
  */
-function DrainStream(params, callback) {
+function DrainStream (params, callback) {
   Writable.call(this, { objectMode: true });
 
   this.limit = 100000;
@@ -34,7 +34,13 @@ function DrainStream(params, callback) {
 
   if (callback) {
     this.on('finish', function () {
-      callback(null, this.array);
+      if (params.isArray) {
+        return callback(null, this.array);
+      }
+      if (this.array.length !== 1) {
+        return callback(new Error('Expected to find 1 item in array got: ' + JSON.stringify(this.array)));
+      }
+      callback(null, this.array[0]);
     });
   }
 
@@ -43,7 +49,7 @@ function DrainStream(params, callback) {
 
 inherits(DrainStream, Writable);
 
-DrainStream.prototype._write = function(object, enc, next) {
+DrainStream.prototype._write = function (object, enc, next) {
   this.size++;
 
   if (this.size > this.limit) {

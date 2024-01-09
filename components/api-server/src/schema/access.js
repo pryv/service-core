@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -21,13 +21,13 @@ const _ = require('lodash');
 exports = module.exports = function (action) {
   if (action === Action.STORE) { action = Action.READ; } // read items === stored items
 
-  var base = object({
-    'token': string({minLength: 1}),
-    'apiEndpoint': string({minLength: 1}),
-    'name': string({minLength: 1}),
-    'permissions': permissions(action),
-    'lastUsed': helpers.number(),
-    'integrity': string({nullable: true}),
+  const base = object({
+    token: string({ minLength: 1 }),
+    apiEndpoint: string({ minLength: 1 }),
+    name: string({ minLength: 1 }),
+    permissions: permissions(action),
+    lastUsed: helpers.number(),
+    integrity: string({ nullable: true })
   }, {
     additionalProperties: false
   });
@@ -43,102 +43,102 @@ exports = module.exports = function (action) {
     base.properties.calls = object({});
   }
 
-  var personal = _.cloneDeep(base);
+  const personal = structuredClone(base);
   _.extend(personal.properties, {
-    'type': string({enum: ['personal']})
+    type: string({ enum: ['personal'] })
   });
 
-  var app = _.cloneDeep(base);
+  const app = structuredClone(base);
   _.extend(app.properties, {
-    'type': string({enum: ['app']}),
-    'deviceName': string()
+    type: string({ enum: ['app'] }),
+    deviceName: string()
   });
 
-  var shared = _.cloneDeep(base);
+  const shared = structuredClone(base);
   _.extend(shared.properties, {
-    'type': string({enum: ['shared']})
+    type: string({ enum: ['shared'] })
   });
 
   switch (action) {
     case Action.READ:
-      personal.required = [ 'id', 'token', 'name', 'type',
-        'created', 'createdBy', 'modified', 'modifiedBy' ];
-      app.required = [ 'id', 'token', 'name', 'type', 'permissions',
-        'created', 'createdBy', 'modified', 'modifiedBy' ];
-      shared.required = [ 'id', 'token', 'name', 'type', 'permissions',
-        'created', 'createdBy', 'modified', 'modifiedBy' ];
+      personal.required = ['id', 'token', 'name', 'type',
+        'created', 'createdBy', 'modified', 'modifiedBy'];
+      app.required = ['id', 'token', 'name', 'type', 'permissions',
+        'created', 'createdBy', 'modified', 'modifiedBy'];
+      shared.required = ['id', 'token', 'name', 'type', 'permissions',
+        'created', 'createdBy', 'modified', 'modifiedBy'];
       break;
-      
+
     case Action.CREATE:
-      personal.required = [ 'name' ];
-      app.required = [ 'name', 'permissions' ];
-      shared.required = [ 'name', 'permissions' ];
-      
+      personal.required = ['name'];
+      app.required = ['name', 'permissions'];
+      shared.required = ['name', 'permissions'];
+
       // Allow expireAfter to set expiry on new access
-      app.properties.expireAfter = helpers.number(); 
-      shared.properties.expireAfter = helpers.number(); 
-      
+      app.properties.expireAfter = helpers.number();
+      shared.properties.expireAfter = helpers.number();
+
       // Allow to attach clientData to new access
-      personal.properties.clientData = helpers.object({}); 
-      app.properties.clientData = helpers.object({}); 
-      shared.properties.clientData = helpers.object({}); 
+      personal.properties.clientData = helpers.object({});
+      app.properties.clientData = helpers.object({});
+      shared.properties.clientData = helpers.object({});
 
       break;
-      
+
     case Action.UPDATE:
       // Allow expireAfter to set expiry on access
-      app.properties.expireAfter = helpers.number(); 
-      app.properties.expires = helpers.null(); 
+      app.properties.expireAfter = helpers.number();
+      app.properties.expires = helpers.null();
 
-      shared.properties.expireAfter = helpers.number(); 
-      shared.properties.expires = helpers.null(); 
-      
+      shared.properties.expireAfter = helpers.number();
+      shared.properties.expires = helpers.null();
+
       // Allow to attach clientData to access
-      personal.properties.clientData = helpers.object({}, {nullable: true}); 
-      app.properties.clientData = helpers.object({}, {nullable: true}); 
-      shared.properties.clientData = helpers.object({}, {nullable: true}); 
+      personal.properties.clientData = helpers.object({}, { nullable: true });
+      app.properties.clientData = helpers.object({}, { nullable: true });
+      shared.properties.clientData = helpers.object({}, { nullable: true });
 
       break;
   }
-    
-  var res = {
+
+  const res = {
     id: helpers.getTypeURI('access', action),
-    anyOf: [ personal, app, shared ]
+    anyOf: [personal, app, shared]
   };
-  
+
   // whitelist for properties that can be updated
   if (action === Action.UPDATE) {
     res.alterableProperties = [
       'name', 'deviceName', 'permissions', 'expireAfter', 'expires', 'clientData'];
   }
-  
+
   return res;
 };
 
-var permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only', 'none']});
+const permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only', 'none'] });
 
-var featureSetting = exports.featureSetting = string({ enum: ['forbidden']});
+const featureSetting = exports.featureSetting = string({ enum: ['forbidden'] });
 
-var permissions = exports.permissions = function (action) {
-  var streamPermission = object({
-    'streamId': {
+const permissions = exports.permissions = function (action) {
+  const streamPermission = object({
+    streamId: {
       type: ['string', 'null']
     },
-    'level': permissionLevel
+    level: permissionLevel
   }, {
     id: 'streamPermission',
     additionalProperties: false,
-    required: [ 'streamId', 'level' ]
+    required: ['streamId', 'level']
   });
   if (action === Action.CREATE) {
     // accept additional props for the app authorization process
-    streamPermission.properties.defaultName = string({pattern: '\\w+' /*not empty*/ });
+    streamPermission.properties.defaultName = string({ pattern: '\\w+' /* not empty */ });
     streamPermission.properties.name = string();
   }
 
-  var featurePermission = object({
-    'feature': string(),
-    'setting': featureSetting
+  const featurePermission = object({
+    feature: string(),
+    setting: featureSetting
   }, {
     id: 'featurePermission',
     additionalProperties: false,

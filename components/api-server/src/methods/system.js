@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -11,13 +11,11 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const { getStorageLayer } = require('storage');
+const { getStorageLayer, getUsersLocalIndex } = require('storage');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const { getUsersRepository } = require('business/src/users');
 
 const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUtils');
-
-const usersIndex = require('business/src/users/UsersLocalIndex');
 
 const { platform } = require('platform');
 
@@ -34,9 +32,9 @@ module.exports = async function (systemAPI, api) {
   const usersRepository = await getUsersRepository();
   const userProfileStorage = storageLayer.profile;
   const userAccessesStorage = storageLayer.accesses;
+  const usersIndex = await getUsersLocalIndex();
 
   await platform.init();
-  await usersIndex.init();
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
@@ -82,15 +80,16 @@ module.exports = async function (systemAPI, api) {
   }
 
   function getUserInfoSetAccessStats (context, params, result, next) {
-    const info = _.defaults(result.userInfo, {
-      lastAccess: 0,
-      callsTotal: 0,
-      callsDetail: {},
-      callsPerAccess: {}
-    });
+    const info = result.userInfo ??= {};
+    info.lastAccess ??= 0;
+    info.callsTotal ??= 0;
+    info.callsDetail ??= {};
+    info.callsPerAccess ??= {};
+
     getAPIMethodKeys().forEach(function (methodKey) {
       info.callsDetail[methodKey] = 0;
     });
+
     userAccessesStorage.find(context.user, {}, null, function (err, accesses) {
       if (err) { return next(errors.unexpectedError(err)); }
 
@@ -111,9 +110,6 @@ module.exports = async function (systemAPI, api) {
           });
         }
       });
-      // Since we've merged new keys into _the old userInfo_ on result, we don't
-      // need to return our result here, since we've modified the result in
-      // place.
 
       next();
     });

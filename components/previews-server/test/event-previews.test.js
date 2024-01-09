@@ -1,14 +1,12 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-/* global describe, before, beforeEach, it */
 
 const should = require('chai').should(); /* eslint-disable-line */
 
-require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -16,7 +14,6 @@ const errors = require('errors');
 const fs = require('fs');
 const bluebird = require('bluebird');
 const gm = require('gm');
-const rimraf = require('rimraf');
 const { assert } = require('chai');
 const storage = helpers.dependencies.storage;
 const testData = helpers.data;
@@ -27,7 +24,7 @@ const { getMall } = require('mall');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('event previews', function () {
-  const user = Object.assign({}, testData.users[0]);
+  const user = structuredClone(testData.users[0]);
   const token = testData.accesses[2].token;
   const basePath = '/' + user.username + '/events';
   let request = null;
@@ -57,8 +54,8 @@ describe('event previews', function () {
   });
 
   describe('GET /<event id>/preview', function () {
-    beforeEach(function (done) {
-      rimraf(storage.user.eventFiles.settings.previewsDirPath, done);
+    beforeEach(function () {
+      storage.user.eventFiles.removeAllPreviews();
     });
 
     it('[NRT9] must return JPEG previews for "picture/attached" events and cache the result',
@@ -67,14 +64,13 @@ describe('event previews', function () {
         const event = testData.events[2];
 
         const res = await request.get(path(event.id), token);
-
         await checkSizeFits(res.body, {}, { width: 256, height: 256 });
 
         res.statusCode.should.eql(200);
         res.header['content-type'].should.eql('image/jpeg');
 
         const eventFiles = storage.user.eventFiles;
-        const cachedPath = eventFiles.getPreviewFilePath(user, event.id, 256);
+        const cachedPath = eventFiles.getPreviewPath(user, event.id, 256);
 
         const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
 
@@ -147,7 +143,7 @@ describe('event previews', function () {
         function retrieveInitialPreview (stepDone) {
           request.get(path(event.id), token).end(function (res) {
             res.statusCode.should.eql(200);
-            cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+            cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
             cachedStats = fs.statSync(cachedPath);
             stepDone();
           });
@@ -182,7 +178,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
-          cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+          cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
           const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           cachedFileModified = modified.toString();
         },
@@ -222,7 +218,7 @@ describe('event previews', function () {
     });
 
     it('[VIJO] must forbid requests missing an access token', function (done) {
-      const url = require('url').resolve(server.url, path(testData.events[2].id));
+      const url = new URL(path(testData.events[2].id), server.url).toString();
       superagent.get(url).end((res) => {
         assert.strictEqual(res.status, 401);
         done();
@@ -259,7 +255,7 @@ describe('event previews', function () {
 
     it('[DQF6] must return a proper error if event data is corrupted (no attached file)', function (done) {
       const event = testData.events[2];
-      const filePath = storage.user.eventFiles.getAttachedFilePath(user, event.id, event.attachments[0].id);
+      const filePath = storage.user.eventFiles.getAttachmentPath(user.id, event.id, event.attachments[0].id);
       const tempPath = filePath + '_bak';
       async.series([
         function removeFile (stepDone) {
@@ -299,7 +295,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
-          aCachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+          aCachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
           // add delay as the attribute is written after the response is sent
           setTimeout(
             async function () {
@@ -312,7 +308,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           assert.strictEqual(res.statusCode, 200);
-          anotherCachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 512);
+          anotherCachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 512);
           await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
         },
         async function hackLastAccessTime () {
@@ -333,13 +329,12 @@ describe('event previews', function () {
 
     it('[G5JR] must ignore files with no readable extended attribute', async function () {
       const event = testData.events[2];
-      let cachedPath;
       const resGet = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
         cb(null, res);
       }));
 
       resGet.statusCode.should.eql(200);
-      cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+      const cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
 
       const lastAccessed = await xattr.get(cachedPath, 'user.pryv.lastAccessed');
       assert.isNotNull(lastAccessed);

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -43,7 +43,7 @@ module.exports = [
     time: 1390225767.971,
     duration: 7140,
     type: 'activity/pryv',
-    tags: [ ],
+    tags: [],
     clientData: {
       stringProp: 'O Brother',
       numberProp: 1
@@ -99,7 +99,7 @@ module.exports = [
       url: 'http://yay.boo',
       body: 'Happy-happy-dance-dance'
     },
-    tags: [ ],
+    tags: [],
     description: 'Mark for specific stream',
     created: 1390243767.971,
     createdBy: 'test',
@@ -112,7 +112,7 @@ module.exports = [
     time: 1390245627.971,
     duration: 3600,
     type: 'activity/pryv',
-    tags: [ ],
+    tags: [],
     created: 1390245627.971,
     createdBy: 'test',
     modified: 1390245627.971,
@@ -124,7 +124,7 @@ module.exports = [
     time: 1390283367.971,
     duration: 7200,
     type: 'activity/pryv',
-    tags: [ ],
+    tags: [],
     created: 1390283367.971,
     createdBy: 'test',
     modified: 1390283367.971,
@@ -135,7 +135,7 @@ module.exports = [
     streamId: 's_2',
     time: 1390286967.971,
     type: 'activity/pryv',
-    tags: [ ],
+    tags: [],
     created: 1390286967.971,
     createdBy: 'test',
     modified: 1390286967.971,
@@ -147,7 +147,7 @@ module.exports = [
     time: 1390290567.971,
     duration: 3600,
     type: 'activity/pryv',
-    tags: [ ],
+    tags: [],
     created: 1390290567.971,
     createdBy: 'test',
     modified: 1390290567.971,
@@ -159,7 +159,7 @@ module.exports = [
     time: 1390315767.971,
     duration: null,
     type: 'activity/pryv',
-    tags: [ ],
+    tags: [],
     description: 'One hour ago',
     created: 1390315767.971,
     createdBy: 'test',
@@ -172,7 +172,7 @@ module.exports = [
     time: 1390317567.971,
     type: 'temperature/c',
     content: 37.2,
-    tags: [ ],
+    tags: [],
     description: 'Deleted event',
     trashed: true,
     created: 1390318467.971,
@@ -186,7 +186,7 @@ module.exports = [
     time: 1390318467.971,
     duration: null,
     type: 'activity/pryv',
-    tags: [ ],
+    tags: [],
     description: '15 mins ago',
     created: 1390318467.971,
     createdBy: 'test',

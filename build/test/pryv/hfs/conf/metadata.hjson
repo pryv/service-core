@@ -1,0 +1,37 @@
+{
+  "metadataUpdater": {
+    "host": "127.0.0.1",
+    "port": 9000
+  },
+
+  "userFiles": {
+    "path": "/app/data/users"
+  },
+  
+  "logs": {
+    "console": {
+      "level": "info"
+    }
+  },
+  
+  "database": {
+    "host": "mongodb",
+    "port": 27017,
+    "name": "pryv-node"
+  },
+
+  "serviceInfoUrl": "https://reg.single.pryv.io/service/info",
+
+  "backwardCompatibility": {
+    "systemStreams": {
+      "prefix": {
+        "isActive": false
+      }
+    },
+    "tags": {"isActive":false,"rootStreamId":"tags-migrated","streamIdPrefix":"tag-migrated-"}
+  },
+
+  "nats": {
+    "uri": "https://core:4222"
+  }
+}

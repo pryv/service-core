@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -8,10 +8,10 @@
 const timestamp = require('unix-timestamp');
 const { getConfig } = require('@pryv/boiler');
 
-const userAccountStorage = require('./userAccountStorage');
 const errors = require('errors').factory;
 
 let singleton = null;
+let userAccountStorage = null;
 
 /**
  * Return the password rules singleton, initializing it with the given settings if needed.
@@ -24,7 +24,8 @@ module.exports = async function get () {
 };
 
 async function init () {
-  await userAccountStorage.init();
+  const { getUserAccountStorage } = require('storage');
+  userAccountStorage = await getUserAccountStorage();
   const config = await getConfig();
   const charCategoriesRegExps = {
     lowercase: /[a-z]/,

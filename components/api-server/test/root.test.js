@@ -1,25 +1,23 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 'use strict';
 
-/*global describe, before, after, it */
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
+const { assert } = require('chai');
+const cuid = require('cuid');
+const bluebird = require('bluebird');
+const superagent = require('superagent'); // for basic auth
 
 require('./test-helpers');
 const helpers = require('./helpers');
 const ErrorIds = require('errors').ErrorIds;
 const methodsSchema = require('../src/schema/generalMethods');
 const validation = helpers.validation;
-const timestamp = require('unix-timestamp');
-const _ = require('lodash');
-const chai = require('chai');
-const assert = chai.assert;
-const cuid = require('cuid');
-const bluebird = require('bluebird');
-const superagent = require('superagent'); // for basic auth
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -29,14 +27,13 @@ const { integrity } = require('business');
 
 let isAuditActive = false;
 
-describe('[ROOT] root', function() {
+describe('[ROOT] root', function () {
   let user, user2;
 
   before(async () => {
     const config = await getConfig();
-    isAuditActive = (! config.get('openSource:isActive')) && config.get('audit:active');
+    isAuditActive = (!config.get('openSource:isActive')) && config.get('audit:active');
   });
-
 
   let mongoFixtures;
   before(async function () {
@@ -48,12 +45,12 @@ describe('[ROOT] root', function() {
   });
 
   let username, personalAccess, personalAccessToken,
-      appAccessToken1, appAccessId1,
-      sharedAccessToken, sharedAccess,
-      stream, streamId, 
-      stream2, streamId2,
-      stream3, streamId3,
-      username2, appAccess2Token;
+    appAccessToken1, appAccessId1,
+    sharedAccessToken, sharedAccess,
+    stream, streamId,
+    stream2, streamId2,
+    streamId3,
+    username2, appAccess2Token;
   before(() => {
     username = cuid();
     personalAccessToken = cuid();
@@ -76,27 +73,27 @@ describe('[ROOT] root', function() {
   });
 
   before(async function () {
-    // delete all database before start 
+    // delete all database before start
     user = await mongoFixtures.user(username, {});
     personalAccess = await user.access({
-      type: 'personal', token: personalAccessToken,
+      type: 'personal', token: personalAccessToken
     });
     personalAccess = personalAccess.attrs;
     stream = await user.stream({ id: streamId });
     await stream.event();
     stream = stream.attrs;
     stream2 = await user.stream({ id: streamId2 });
-    stream3 = await user.stream({ id: streamId3 });
+    await user.stream({ id: streamId3 });
     await stream2.event();
     stream2 = stream.attrs;
     await user.access({
       id: appAccessId1,
-      type: 'app', 
+      type: 'app',
       token: appAccessToken1,
       permissions: [{
         streamId: '*',
-        level: 'manage',
-      }],
+        level: 'manage'
+      }]
     });
     sharedAccess = await user.access({
       token: sharedAccessToken,
@@ -123,15 +120,15 @@ describe('[ROOT] root', function() {
       permissions: [{
         streamId: stream.id,
         defaultName: stream.name,
-        level: 'read',
-      }],
+        level: 'read'
+      }]
     });
 
     user2 = user2.attrs;
   });
 
-  describe('GET /', function() {
-    it('[UA7B] should return basic server meta information as JSON when requested', async function() {
+  describe('GET /', function () {
+    it('[UA7B] should return basic server meta information as JSON when requested', async function () {
       const res = await server.request()
         .get('/')
         .set('Accept', 'application/json');
@@ -140,7 +137,7 @@ describe('[ROOT] root', function() {
       validation.checkMeta(res.body);
     });
 
-    it('[TO50] should return basic server meta information as text otherwise', async function() {
+    it('[TO50] should return basic server meta information as text otherwise', async function () {
       const res = await server.request()
         .get('/')
         .set('Accept', 'text/html');
@@ -149,15 +146,15 @@ describe('[ROOT] root', function() {
       assert.match(res.text, /Pryv API/);
     });
 
-    it('[TS3D] should return an error if trying to access an unknown user account', async function() {
+    it('[TS3D] should return an error if trying to access an unknown user account', async function () {
       const res = await server.request()
         .get('/unknown_user/events');
       assert.equal(res.status, 404); // 404 does not throw
     });
   });
 
-  describe('All requests:', function() {
-    it('[TJHO] should return correct common HTTP headers + meta data in response body', async function() {
+  describe('All requests:', function () {
+    it('[TJHO] should return correct common HTTP headers + meta data in response body', async function () {
       const origin = 'https://test.pryv.io';
       const allowMethod = 'GET';
       const allowHeaders = 'Content-Type';
@@ -185,14 +182,14 @@ describe('[ROOT] root', function() {
       assert.notExists(res.headers['x-powered-by']);
     });
 
-    it('[OQ3G] should return meta data in response body for errors as well', async function() {
+    it('[OQ3G] should return meta data in response body for errors as well', async function () {
       const res = await server.request()
         .get('/' + username + '/bad-path');
       assert.equal(res.status, 404);
       validation.checkMeta(res.body);
     });
 
-    it('[P06Y] should properly translate the Host header\'s username (i.e. subdomain)', async function() {
+    it('[P06Y] should properly translate the Host header\'s username (i.e. subdomain)', async function () {
       const res = await server.request()
         .get('/events')
         .set('Authorization', appAccessToken1)
@@ -200,7 +197,7 @@ describe('[ROOT] root', function() {
       assert.equal(res.status, 200);
     });
 
-    it('[R3H5] should translate the username in subdomain also when it only contains numbers', async function() {
+    it('[R3H5] should translate the username in subdomain also when it only contains numbers', async function () {
       const res = await server.request()
         .post('/' + username2 + '/auth/login')
         .send({
@@ -215,7 +212,7 @@ describe('[ROOT] root', function() {
       assert.equal(res.status, 200);
     });
 
-    it('[5IQK] should support POSTing "urlencoded" content with _json and _auth fields', async function() {
+    it('[5IQK] should support POSTing "urlencoded" content with _json and _auth fields', async function () {
       const res = await server.request()
         .post('/' + username + '/streams')
         .type('form')
@@ -224,17 +221,17 @@ describe('[ROOT] root', function() {
       assert.equal(res.status, 201);
     });
 
-    it('[2YEI] should support POSTing "urlencoded" content with _json, _method (PUT) and _auth fields', async function() {
+    it('[2YEI] should support POSTing "urlencoded" content with _json, _method (PUT) and _auth fields', async function () {
       const res = await server.request()
         .post('/' + username + '/streams/' + streamId)
         .type('form')
         .send({ _auth: appAccessToken1 })
         .send({ _method: 'PUT' })
-        .send({ _json: JSON.stringify({ name: 'Abrhackadabra' }) });  
+        .send({ _json: JSON.stringify({ name: 'Abrhackadabra' }) });
       assert.equal(res.status, 200);
     });
 
-    it('[VJTP] should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields', async function() {
+    it('[VJTP] should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields', async function () {
       const res = await server.request()
         .post('/' + username + '/streams/' + streamId3)
         .type('form')
@@ -244,7 +241,7 @@ describe('[ROOT] root', function() {
       assert.equal(res.status, 200);
     });
 
-    it('[6D5O] should properly handle JSON errors when POSTing "urlencoded" content with _json field', async function() {
+    it('[6D5O] should properly handle JSON errors when POSTing "urlencoded" content with _json field', async function () {
       const res = await server.request()
         .post('/' + username + '/streams')
         .type('form')
@@ -254,10 +251,8 @@ describe('[ROOT] root', function() {
       assert.equal(res.status, 400);
     });
 
-    it('[J2WP] trackingFunctions should update the access\'s "last used" time and *internal* request counters', async function() {
-      let expectedTime;
+    it('[J2WP] trackingFunctions should update the access\'s "last used" time and *internal* request counters', async function () {
       const calledMethodKey = 'events:get';
-      let originalCallCount;
 
       // checkOriginalAccess;
       let access = await bluebird.fromCallback(cb => {
@@ -268,7 +263,7 @@ describe('[ROOT] root', function() {
           cb
         );
       });
-      originalCallCount =
+      const originalCallCount =
         access.calls && access.calls[calledMethodKey]
           ? access.calls[calledMethodKey]
           : 0;
@@ -277,7 +272,7 @@ describe('[ROOT] root', function() {
       let res = await server.request()
         .get('/' + username + '/events')
         .set('Authorization', personalAccessToken);
-      expectedTime = timestamp.now();
+      const expectedTime = timestamp.now();
 
       // checkUpdatedAccess
       access = await bluebird.fromCallback(cb => {
@@ -289,7 +284,7 @@ describe('[ROOT] root', function() {
         );
       });
       assert.exists(access.lastUsed); //
-      assert.approximately(Math.round(access.lastUsed), 
+      assert.approximately(Math.round(access.lastUsed),
         Math.round(expectedTime), 5);
 
       assert.exists(access.calls);
@@ -306,49 +301,48 @@ describe('[ROOT] root', function() {
       const exposed = _.find(res.body.accesses, { token: personalAccessToken });
       assert.notExists(exposed.calls);
     });
-
   });
 
-  
-  describe('OPTIONS /', function() {
-    it('[PDMA] should return OK', async function() {
+  describe('OPTIONS /', function () {
+    it('[PDMA] should return OK', async function () {
       const res = await server.request()
         .options('/');
       assert.equal(res.status, 200);
     });
   });
 
-  describe('GET /access-info', function() {
-
-    it('[0MI8] must return current access information', async function() {
+  describe('GET /access-info', function () {
+    it('[0MI8] must return current access information', async function () {
       const res = await server.request()
         .get('/' + username + '/access-info')
         .set('Authorization', sharedAccessToken);
-      
+
       // extend sharedAccess with audit rights
       if (isAuditActive) {
         sharedAccess.permissions.push({
-          streamId: ':_audit:access-' + sharedAccess.id, 
-          level: 'read'});
+          streamId: ':_audit:access-' + sharedAccess.id,
+          level: 'read'
+        });
       }
 
       validation.check(
         res,
         {
           status: 200,
-          schema: methodsSchema.getAccessInfo.result, 
+          schema: methodsSchema.getAccessInfo.result,
           body: _.merge(
-            sharedAccess, 
-            { user: {
-              username: username
-            }}),
+            sharedAccess,
+            {
+              user: {
+                username
+              }
+            })
         }
       );
     });
   });
 
   describe('Accept Basic Auth request', function () {
-
     let url;
     before(function () {
       url = server.baseUrl;
@@ -375,7 +369,7 @@ describe('[ROOT] root', function() {
       const fullurl = url.replace('http://', 'http://' + sharedAccess.token + ':@');
       const res = await superagent
         .get(fullurl + '/' + user.username + '/access-info');
-      assert.equal(res.status, 200);        
+      assert.equal(res.status, 200);
     });
 
     it('[M54U] must return a 401 error when basic auth is missing using https://@user.domain/', async function () {
@@ -387,10 +381,9 @@ describe('[ROOT] root', function() {
       } catch (e) {
         assert.equal(e.response.status, 401);
       }
-      
     });
 
-    it('[TPH4] must return a 403 error when using https://:token@user.domain/', async function() {
+    it('[TPH4] must return a 403 error when using https://:token@user.domain/', async function () {
       const fullurl = url.replace('http://', 'http://:' + sharedAccess.token + '@');
       try {
         await superagent
@@ -400,16 +393,13 @@ describe('[ROOT] root', function() {
         assert.equal(e.response.status, 403);
       }
     });
-  
   });
 
-  
-  describe('POST / (i.e. batch call)', function() {
-
+  describe('POST / (i.e. batch call)', function () {
     let eventsNotifCount;
     before(function () {
       eventsNotifCount = 0;
-      
+
       server.on('axon-events-changed', function () {
         eventsNotifCount++;
       });
@@ -418,7 +408,7 @@ describe('[ROOT] root', function() {
     const testType = 'test/test';
 
     // fixes #198
-    it('[2IV3] must be able to create streams with non-star permissions access', async function() {
+    it('[2IV3] must be able to create streams with non-star permissions access', async function () {
       const midParentId = 'sonofParent';
       const calls = [
         {
@@ -426,7 +416,7 @@ describe('[ROOT] root', function() {
           params: {
             parentId: stream.id,
             id: midParentId,
-            name: 'Son of Parent',
+            name: 'Son of Parent'
           }
         },
         {
@@ -434,12 +424,12 @@ describe('[ROOT] root', function() {
           params: {
             parentId: midParentId,
             id: 'whatever-123',
-            name: 'grand son stream',
+            name: 'grand son stream'
           }
         }
       ];
       const res = await server.request()
-        .post('/' + username) 
+        .post('/' + username)
         .set('Authorization', sharedAccessToken)
         .send(calls);
       assert.equal(res.status, 200);
@@ -449,7 +439,7 @@ describe('[ROOT] root', function() {
       assert.exists(results[1].stream);
     });
 
-    it('[ORT3] must execute the given method calls and return the results', async function() {
+    it('[ORT3] must execute the given method calls and return the results', async function () {
       const calls = [
         {
           method: 'events.create',
@@ -457,8 +447,8 @@ describe('[ROOT] root', function() {
             streamIds: [streamId2],
             time: timestamp.now(),
             type: testType,
-            description: 'valid event A',
-          },
+            description: 'valid event A'
+          }
         },
         {
           method: 'events.create',
@@ -468,8 +458,8 @@ describe('[ROOT] root', function() {
             duration: timestamp.duration('1h'),
             type: testType,
             description: 'valid event B',
-            tags: ['hop'],
-          },
+            tags: ['hop']
+          }
         },
         {
           method: 'events.create',
@@ -477,9 +467,9 @@ describe('[ROOT] root', function() {
             time: timestamp.now('2h'),
             type: testType,
             streamIds: ['unknown'],
-            description: 'invalid event C (unknown stream)',
-          },
-        },
+            description: 'invalid event C (unknown stream)'
+          }
+        }
       ];
 
       const res = await server.request()
@@ -488,7 +478,7 @@ describe('[ROOT] root', function() {
         .send(calls);
       validation.check(res, {
         status: 200,
-        schema: methodsSchema.callBatch.result,
+        schema: methodsSchema.callBatch.result
       });
 
       const results = res.body.results;
@@ -496,30 +486,24 @@ describe('[ROOT] root', function() {
       assert.exists(results[0].event);
       validation.checkObjectEquality(
         results[0].event,
-        _.defaults(
-          {
-            id: results[0].event.id,
-            tags: [],
-            integrity: results[0].event.integrity
-          },
-          _.extend(calls[0].params, { streamId: calls[0].params.streamIds[0]})
-        ),
+        Object.assign({}, calls[0].params, {
+          streamId: calls[0].params.streamIds[0],
+          id: results[0].event.id,
+          tags: [],
+          integrity: results[0].event.integrity
+        }),
         integrity.events.isActive ? [] : ['integrity']
       );
 
       assert.exists(results[1].event);
       validation.checkObjectEquality(
         results[1].event,
-        _.defaults(
-          {
-            id: results[1].event.id,
-            integrity: results[1].event.integrity
-          },
-          _.extend(calls[1].params, { 
-            streamId: calls[1].params.streamIds[0],
-            streamIds: calls[1].params.streamIds.concat(calls[1].params.tags.map(t => TAG_PREFIX + t))
-          }),
-        ),
+        Object.assign({}, calls[1].params, {
+          streamId: calls[1].params.streamIds[0],
+          streamIds: calls[1].params.streamIds.concat(calls[1].params.tags.map(t => TAG_PREFIX + t)),
+          id: results[1].event.id,
+          integrity: results[1].event.integrity
+        }),
         integrity.events.isActive ? [] : ['integrity']
       );
       assert.exists(results[2].error);
@@ -528,15 +512,15 @@ describe('[ROOT] root', function() {
     });
 
     it('[TVPI] must execute the method calls containing events.get and ' +
-        'return the results', async function() {
+        'return the results', async function () {
       const streamId = 'batch-call-streamId';
       const calls = [
         {
           method: 'streams.create',
           params: {
             id: streamId,
-            name: 'batch call root stream',
-          },
+            name: 'batch call root stream'
+          }
         },
         {
           method: 'events.create',
@@ -544,66 +528,12 @@ describe('[ROOT] root', function() {
             streamIds: [streamId],
             type: 'note/txt',
             content: 'Hi, i am an event in a batch call',
-            time: timestamp.now(),
-          },
+            time: timestamp.now()
+          }
         },
         {
           method: 'events.get',
-          params: { modifiedSince: -1000000, includeDeletions: true },
-        },
-      ];
-      const res = await server
-        .request()
-        .post('/' + username)
-        .send(calls)
-        .set('authorization', appAccessToken1);
-      validation.check(res, {
-        status: 200,
-        schema: methodsSchema.callBatch.result,
-      });
-
-      validation.checkMeta(res.body);
-      const results = res.body.results;
-      assert.equal(results.length, calls.length, 'method call results');
-      assert.exists(results[0].stream);
-      validation.checkObjectEquality(
-        results[0].stream,
-        _.defaults(
-          {
-            parentId: null,
-          },
-          calls[0].params
-        )
-      );
-      assert.exists(results[1].event);
-      validation.checkObjectEquality(
-        results[1].event,
-        _.defaults(
-          {
-            tags: [],
-            id: results[1].event.id,
-            integrity: results[1].event.integrity 
-          },
-          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
-        ),
-        integrity.events.isActive ? []: ['integrity']
-      );
-
-      const getEventsResult = results[2];
-      assert.exists(getEventsResult.events);
-      assert.exists(getEventsResult.eventDeletions);
-    });
-
-    // fixes #222
-    it('[U4RB] should not add a null meta field in the response', async function() {
-      const streamId = 'batch-call-streamId-meta';
-      const calls = [
-        {
-          method: 'streams.create',
-          params: {
-            id: streamId,
-            name: 'i don\'t want meta !',
-          },
+          params: { modifiedSince: -1000000, includeDeletions: true }
         }
       ];
       const res = await server
@@ -613,28 +543,117 @@ describe('[ROOT] root', function() {
         .set('authorization', appAccessToken1);
       validation.check(res, {
         status: 200,
-        schema: methodsSchema.callBatch.result,
+        schema: methodsSchema.callBatch.result
       });
 
       validation.checkMeta(res.body);
       const results = res.body.results;
-      for(let i = 0; i < results.length; i++) {
+      assert.equal(results.length, calls.length, 'method call results');
+      assert.exists(results[0].stream);
+      validation.checkObjectEquality(
+        results[0].stream,
+        Object.assign({}, calls[0].params, {
+          parentId: null
+        })
+      );
+      assert.exists(results[1].event);
+      validation.checkObjectEquality(
+        results[1].event,
+        Object.assign({}, calls[1].params, {
+          streamId: calls[1].params.streamIds[0],
+          tags: [],
+          id: results[1].event.id,
+          integrity: results[1].event.integrity
+        }),
+        integrity.events.isActive ? [] : ['integrity']
+      );
+
+      const getEventsResult = results[2];
+      assert.exists(getEventsResult.events);
+      assert.exists(getEventsResult.eventDeletions);
+    });
+
+    // fixes #222
+    it('[U4RB] should not add a null meta field in the response', async function () {
+      const streamId = 'batch-call-streamId-meta';
+      const calls = [
+        {
+          method: 'streams.create',
+          params: {
+            id: streamId,
+            name: 'i don\'t want meta !'
+          }
+        }
+      ];
+      const res = await server
+        .request()
+        .post('/' + username)
+        .send(calls)
+        .set('authorization', appAccessToken1);
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.callBatch.result
+      });
+
+      validation.checkMeta(res.body);
+      const results = res.body.results;
+      for (let i = 0; i < results.length; i++) {
         assert.notInclude(Object.keys(results[i]), 'meta');
       }
     });
 
-    it('[WGVY] must return an error if the sent data is badly formatted', async function() {
+    it('[WGVY] must return an error if the sent data is badly formatted', async function () {
       const calls = [
         {
           method: 'events.create',
-          badProperty: 'bad value',
-        },
+          badProperty: 'bad value'
+        }
       ];
       const res = await server.request()
         .post('/' + username)
         .send(calls)
         .set('authorization', appAccessToken1);
       validation.checkErrorInvalidParams(res);
+    });
+
+    it('[TV17] streamed results such as stream.delete should be serialiazed', async function () {
+      const calls = [
+        {
+          method: 'streams.create',
+          params: {
+            parentId: stream.id,
+            id: 'blop',
+            name: 'Blop'
+          }
+        },
+        {
+          method: 'events.create',
+          params: {
+            streamIds: ['blop'],
+            type: 'actvity/plain'
+          }
+        },
+        {
+          method: 'streams.delete',
+          params: {
+            id: 'blop'
+          }
+        },
+        {
+          method: 'streams.delete',
+          params: {
+            mergeEventsWithParent: false,
+            id: 'blop'
+          }
+        }
+      ];
+      const res = await server.request()
+        .post('/' + username)
+        .send(calls)
+        .set('authorization', appAccessToken1);
+      const deleteStreamResult = res.body?.results[3];
+      assert.exists(deleteStreamResult?.updatedEvents);
+      assert.exists(deleteStreamResult?.streamDeletion);
     });
   });
 });

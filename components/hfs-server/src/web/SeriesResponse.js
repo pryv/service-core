@@ -1,44 +1,39 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-// @flow
-
-const business = require('business');
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
-
-/** Represents a response in series format. 
- * 
- * This class is used to represent a series response. It serializes to JSON. 
+/** Represents a response in series format.
+ *
+ * This class is used to represent a series response. It serializes to JSON.
  */
 class SeriesResponse {
-  matrix: business.series.DataMatrix; 
-  
-  /** Constructs a series response from an existing data matrix. 
+  matrix;
+  /** Constructs a series response from an existing data matrix.
    */
-  constructor(mat: business.series.DataMatrix) {
-    this.matrix = mat; 
+  constructor (mat) {
+    this.matrix = mat;
   }
 
-  /** Answers the client with a series response (JSON). 
+  /** Answers the client with a series response (JSON).
+   * @param {express$Response} res
+   * @returns {void}
    */
-  answer(res: express$Response) {
-    res
-      .json(this)
-      .status(200);
+  answer (res) {
+    res.json(this).status(200);
   }
-  
-  /** Serializes this response to JSON. 
+
+  /** Serializes this response to JSON.
+   * @returns {any}
    */
-  toJSON() {
+  toJSON () {
     return setCommonMeta({
-      format: 'flatJSON', 
-      fields: this.matrix.columns, 
-      points: this.matrix.data, 
+      format: 'flatJSON',
+      fields: this.matrix.columns,
+      points: this.matrix.data
     });
   }
 }
-
 module.exports = SeriesResponse;

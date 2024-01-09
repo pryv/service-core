@@ -1,78 +1,78 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
 
-/* global describe, before, after, it, assert, cuid, audit, config, initTests, initCore, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix */
+/* global assert, cuid, initTests, initCore, charlatan, coreRequest, getNewFixture, addActionStreamIdPrefix, addAccessStreamIdPrefix, CONSTANTS */
 
+const timestamp = require('unix-timestamp');
 
-describe('Audit legacy route', function() {
+describe('Audit legacy route', function () {
   let user, username, password, access, appAccess;
   let personalToken;
-  let auditPath;
   let mongoFixtures;
-  
+  let eventsPath, accessesPath, auditPath;
+
   const streamId = 'yo';
-  before(async function() {
+  before(async function () {
     await initTests();
     await initCore();
     password = cuid();
     mongoFixtures = getNewFixture();
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
-      password: password,
+      password
     });
 
     username = user.attrs.username;
-    await user.stream({id: streamId, name: 'YO'});
+    await user.stream({ id: streamId, name: 'YO' });
     access = await user.access({
       type: 'personal',
-      token: cuid(),
+      token: cuid()
     });
     personalToken = access.attrs.token;
     await user.session(personalToken);
     user = user.attrs;
     accessesPath = '/' + username + '/accesses/';
     eventsPath = '/' + username + '/events/';
-    auditPath =  '/' + username + '/audit/logs/';
-    
+    auditPath = '/' + username + '/audit/logs/';
+
     const res = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)
-      .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: streamId, level: 'manage'}]});
+      .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId, level: 'manage' }] });
     appAccess = res.body.access;
     assert.exists(appAccess);
   });
 
-  after(async function() {
+  after(async function () {
     await mongoFixtures.clean();
   });
 
-  function validGet(path) { return coreRequest.get(path).set('Authorization', appAccess.token);}
-  function validPost(path) { return coreRequest.post(path).set('Authorization', appAccess.token);}
-  function forbiddenGet(path) {return coreRequest.get(path).set('Authorization', 'whatever');}
+  function validGet (path) { return coreRequest.get(path).set('Authorization', appAccess.token); }
+  function validPost (path) { return coreRequest.post(path).set('Authorization', appAccess.token); }
 
   let start, stop;
   before(async () => {
-    start = Date.now() / 1000;
+    start = timestamp.now();
     await validGet(eventsPath);
     await validPost(eventsPath)
-      .send({ streamIds: [streamId], type: 'count/generic', content: 2});
-    stop = Date.now() / 1000;
+      .send({ streamIds: [streamId], type: 'count/generic', content: 2 });
+    stop = timestamp.now();
     await validGet(eventsPath);
     await validGet(eventsPath)
-      .query({streams: ['other']});
+      .query({ streams: ['other'] });
   });
 
   it('[QXCH] must retrieve logs by time range', async () => {
     const res = await coreRequest
       .get(auditPath)
       .set('Authorization', appAccess.token)
-      .query({fromTime: start, toTime: stop});
+      .query({ fromTime: start, toTime: stop });
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
     assert.isAtLeast(logs.length, 2);
-    for (let event of logs) {
+    for (const event of logs) {
       assert.isAtLeast(event.time, start);
       assert.isAtMost(event.time, stop);
     }
@@ -83,11 +83,11 @@ describe('Audit legacy route', function() {
     const res = await coreRequest
       .get(auditPath)
       .set('Authorization', appAccess.token)
-      .query({streams: [':_audit:action-events.get'] });
+      .query({ streams: [':_audit:action-events.get'] });
     assert.equal(res.status, 200);
     const logs = res.body.auditLogs;
     assert.isAtLeast(logs.length, 1);
-    for (let event of logs) {
+    for (const event of logs) {
       assert.exists(event.content);
       assert.equal(event.content.action, 'events.get');
     }
@@ -116,18 +116,18 @@ describe('Audit legacy route', function() {
 
   it('[R1ZF] Invalid token should return an error', async () => {
     const res = await coreRequest
-    .get(auditPath)
-    .set('Authorization', 'invalid');
+      .get(auditPath)
+      .set('Authorization', 'invalid');
     assert.strictEqual(res.status, 403);
     assert.exists(res.body.error);
-    assert.equal(res.body.error.id, 'invalid-access-token')
+    assert.equal(res.body.error.id, 'invalid-access-token');
   });
 
   it('[RQUA] StreamId not starting with ":audit:"  should return an error', async () => {
     const res = await coreRequest
-    .get(auditPath)
-    .set('Authorization', appAccess.token)
-    .query({streams: ['toto'] });
+      .get(auditPath)
+      .set('Authorization', appAccess.token)
+      .query({ streams: ['toto'] });
     assert.strictEqual(res.status, 400);
     assert.exists(res.body.error);
     assert.equal(res.body.error.id, 'invalid-request-structure');
@@ -135,7 +135,7 @@ describe('Audit legacy route', function() {
   });
 });
 
-function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
+function validateResults (auditLogs, expectedAccessId, expectedErrorId) {
   assert.isArray(auditLogs);
 
   auditLogs.forEach(event => {
@@ -152,7 +152,7 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
     assert.isString(event.content.source.ip);
 
     if (expectedAccessId) {
-     assert.include(event.streamIds, addAccessStreamIdPrefix(expectedAccessId), 'missing Access StreamId');
+      assert.include(event.streamIds, addAccessStreamIdPrefix(expectedAccessId), 'missing Access StreamId');
     }
 
     if (expectedErrorId) {
@@ -160,5 +160,5 @@ function validateResults(auditLogs, expectedAccessId, expectedErrorId) {
       assert.strictEqual(event.content.error.id, expectedErrorId);
       assert.isString(event.content.error.message);
     }
-  }); 
+  });
 }

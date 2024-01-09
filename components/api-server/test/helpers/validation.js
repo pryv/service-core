@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -23,7 +23,7 @@ const isOpenSource = require('@pryv/boiler').getConfigUnsafe('true').get('openSo
 /**
  * Expose common JSON schemas.
  */
-var schemas = exports.schemas = {
+const schemas = exports.schemas = {
   access: require('../../src/schema/access'),
   event: require('../../src/schema/event'),
   followedSlice: require('../../src/schema/followedSlice'),
@@ -33,10 +33,10 @@ var schemas = exports.schemas = {
     type: 'object',
     additionalProperties: false,
     properties: {
-      'error': require('../../src/schema/methodError'),
-      'meta': {type: 'object'}
+      error: require('../../src/schema/methodError'),
+      meta: { type: 'object' }
     },
-    required: [ 'error', 'meta' ]
+    required: ['error', 'meta']
   }
 };
 
@@ -50,7 +50,7 @@ var schemas = exports.schemas = {
  *    - {Function} sanitizeFn A data cleanup function to apply before checking response body
  *    - {String} sanitizeTarget The key of the response body property to apply the sanitize fn to
  *    - {Object} body Optional
- * @param {Function} done Optional
+ * @param {Function} [done] Optional
  */
 exports.check = function (response, expected, done) {
   assert.exists(response, '"response" must be a valid HTTP response object');
@@ -58,7 +58,7 @@ exports.check = function (response, expected, done) {
   response.statusCode.should.eql(expected.status);
 
   // ignore common metadata
-  var meta = response.body.meta;
+  const meta = response.body.meta;
   delete response.body.meta;
 
   if (expected.schema) {
@@ -79,7 +79,7 @@ exports.check = function (response, expected, done) {
   }
 
   if (expected.sanitizeFn) {
-    expect(expected.sanitizeTarget).to.exist;
+    assert.exists(expected.sanitizeTarget);
     expected.sanitizeFn(response.body[expected.sanitizeTarget]);
   }
   if (expected.body) {
@@ -92,26 +92,26 @@ exports.check = function (response, expected, done) {
   if (done) { done(); }
 };
 
-function checkEventDeletionIntegrity(e) {
-  //deletion integrity can be null
+function checkEventDeletionIntegrity (e) {
+  // deletion integrity can be null
   if (e.intergity != null) checkEventIntegrity(e);
 }
 
-function checkEventIntegrity(e) {
-  if (! integrity.events.isActive) return;
+function checkEventIntegrity (e) {
+  if (!integrity.events.isActive) return;
   if (isOpenSource) return;
   const int = integrity.events.hash(e);
-  if (e.integrity != int) {
-    throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(e, null, 2)));
+  if (e.integrity !== int) {
+    throw (new Error('Received item with bad integrity checkum. \nexpected [' + int + '] \ngot: \n' + JSON.stringify(e, null, 2)));
   }
 }
 
-function checkAccessIntegrity(access) {
-  if (! integrity.accesses.isActive) return;
+function checkAccessIntegrity (access) {
+  if (!integrity.accesses.isActive) return;
   if (isOpenSource) return;
   const int = integrity.accesses.hash(access);
-  if (access.integrity != int) {
-    throw(new Error('Received item with bad integrity checkum. \nexpected ['+ int + '] \ngot: \n' + JSON.stringify(access, null, 2)));
+  if (access.integrity !== int) {
+    throw (new Error('Received item with bad integrity checkum. \nexpected [' + int + '] \ngot: \n' + JSON.stringify(access, null, 2)));
   }
 }
 
@@ -123,7 +123,7 @@ function checkAccessIntegrity(access) {
  *    - {Number} status
  *    - {String} id
  *    - {Object} data Optional
- * @param {Function} done Optional
+ * @param {Function} [done] Optional
  */
 exports.checkError = function (response, expected, done) {
   response.statusCode.should.eql(expected.status);
@@ -139,9 +139,8 @@ exports.checkError = function (response, expected, done) {
   if (done) done();
 };
 
-function checkJSON(response, schema) {
-  /*jshint -W030 */
-  response.should.be.json;
+function checkJSON (response, schema) {
+  assert.include(response.headers['content-type'], 'application/json');
   checkSchema(response.body, schema);
 }
 
@@ -153,7 +152,7 @@ function checkJSON(response, schema) {
  */
 function checkSchema (data, schema) {
   validator.validate(data, schema).should.equal(true,
-    util.inspect(validator.getLastErrors(), {depth: 5}));
+    util.inspect(validator.getLastErrors(), { depth: 5 }));
 }
 exports.checkSchema = checkSchema;
 
@@ -167,14 +166,14 @@ exports.checkStoredItem = function (item, schemaName) {
   checkSchema(item, schemas[schemaName](Action.STORE));
 };
 
-function checkMeta(parentObject) {
-  expect(parentObject.meta).to.exist;
+function checkMeta (parentObject) {
+  assert.exists(parentObject.meta);
 
   const meta = parentObject.meta;
 
   assert.match(meta.apiVersion, /^\d+\.\d+\.\d+/);
   assert.match(meta.serverTime, /^\d+\.?\d*$/);
-  expect(meta.serial).to.exist;
+  assert.exists(meta.serial);
 }
 exports.checkMeta = checkMeta;
 
@@ -188,9 +187,9 @@ exports.checkErrorInvalidParams = function (res, done) {
   const body = res.body;
   const error = body.error;
 
-  expect(error).to.exist;
+  assert.exists(error);
   expect(error.id).to.equal(ErrorIds.InvalidParametersFormat);
-  expect(res.body.error.data).to.exist; // expect validation errors
+  assert.exists(res.body.error.data); // expect validation errors
 
   if (done) done();
 };
@@ -239,57 +238,55 @@ exports.checkErrorUnknown = function (res, done) {
  * `actual` and `expected` if not empty).
  */
 exports.checkObjectEquality = checkObjectEquality;
-function checkObjectEquality(actual, expected, verifiedProps = []) {
-  var isApprox = false;
+function checkObjectEquality (actual, expected, verifiedProps = []) {
+  let isApprox = false;
   if (expected.created) {
     checkApproxTimeEquality(actual.created, expected.created);
-    isApprox = isApprox || actual.created != expected.created ;
+    isApprox = isApprox || actual.created !== expected.created;
   }
   verifiedProps.push('created');
 
-  if (! expected.createdBy) {
+  if (!expected.createdBy) {
     verifiedProps.push('createdBy');
   }
 
   if (expected.modified) {
     checkApproxTimeEquality(actual.modified, expected.modified);
-    isApprox = isApprox || actual.modified != expected.modified ;
+    isApprox = isApprox || actual.modified !== expected.modified;
   }
   verifiedProps.push('modified');
 
   if (expected.deleted) {
     checkApproxTimeEquality(actual.deleted, expected.deleted);
-    isApprox = isApprox || actual.deleted != expected.deleted ;
+    isApprox = isApprox || actual.deleted !== expected.deleted;
   }
   verifiedProps.push('deleted');
 
-  if (! expected.modifiedBy) {
+  if (!expected.modifiedBy) {
     verifiedProps.push('modifiedBy');
   }
 
   if (expected.children != null) {
-    expect(actual.children).to.exist;
+    assert.exists(actual.children);
     assert.strictEqual(actual.children.length, expected.children.length);
 
-    for (var i = 0, n = expected.children.length; i < n; i++) {
+    for (let i = 0, n = expected.children.length; i < n; i++) {
       const subApprox = checkObjectEquality(actual.children[i], expected.children[i]);
-      isApprox = isApprox || subApprox ;
+      isApprox = isApprox || subApprox;
     }
   }
   verifiedProps.push('children');
 
-
   if (expected.attachments != null) {
-    expect(actual.attachments).to.exist;
+    assert.exists(actual.attachments);
 
     assert.strictEqual(actual.attachments.length, expected.attachments.length,
       `Must have ${expected.attachments.length} attachments.`);
 
     const expectMap = new Map();
-    for (let ex of expected.attachments)
-      expectMap.set(ex.id, ex);
+    for (const ex of expected.attachments) { expectMap.set(ex.id, ex); }
 
-    for (let act of actual.attachments) {
+    for (const act of actual.attachments) {
       const ex = expectMap.get(act.id);
       assert.isNotNull(ex);
 
@@ -304,10 +301,10 @@ function checkObjectEquality(actual, expected, verifiedProps = []) {
   const remaining = _.omit(actual, verifiedProps);
   const expectedRemaining = _.omit(expected, verifiedProps);
   assert.deepEqual(remaining, expectedRemaining);
-  return isApprox; //(forward to eventual recursive calls)
+  return isApprox; // (forward to eventual recursive calls)
 }
 
-function checkApproxTimeEquality(actual, expected, epsilon=2) {
+function checkApproxTimeEquality (actual, expected, epsilon = 2) {
   const diff = (expected - actual);
   assert.isBelow(Math.abs(diff), epsilon);
 }
@@ -318,8 +315,8 @@ function checkApproxTimeEquality(actual, expected, epsilon=2) {
  */
 exports.checkHeaders = function (response, expectedHeaders) {
   expectedHeaders.forEach(function (expected) {
-    var value = response.headers[expected.name.toLowerCase()];
-    expect(value).to.exist;
+    const value = response.headers[expected.name.toLowerCase()];
+    assert.exists(value);
     if (expected.value) {
       value.should.eql(expected.value);
     }
@@ -343,8 +340,8 @@ exports.checkFilesReadToken = function (eventOrEvents, access, secret) {
     checkEvent(eventOrEvents);
   }
 
-  function checkEvent(evt) {
-    if (! evt.attachments) { return; }
+  function checkEvent (evt) {
+    if (!evt.attachments) { return; }
 
     evt.attachments.forEach(function (att) {
       att.readToken.should.eql(encryption.fileReadToken(att.id, access.id, access.token, secret));
@@ -359,7 +356,7 @@ exports.checkFilesReadToken = function (eventOrEvents, access, secret) {
  * @param {Object} event
  */
 exports.sanitizeEvent = function (event) {
-  if (! event ) { return; }
+  if (!event) { return; }
 
   delete event.streamId;
 
@@ -378,7 +375,7 @@ exports.sanitizeEvent = function (event) {
  * @param {Array} events
  */
 exports.sanitizeEvents = function (events) {
-  if (! events) { return; }
+  if (!events) { return; }
 
   events.forEach(exports.sanitizeEvent);
   return events;
@@ -391,17 +388,7 @@ exports.sanitizeEvents = function (events) {
  * @returns {Array}
  */
 exports.removeDeletions = function (items) {
-  return items.filter(function (e) { return ! e.deleted; });
-};
-
-/**
- * Strips off items history from the given array
- *
- * @param {Array} items
- * @returns {Array}
- */
-exports.removeHistory = function (items) {
-  return items.filter(function (e) { return ! e.headId; });
+  return items.filter(function (e) { return !e.deleted; });
 };
 
 /**
@@ -411,7 +398,7 @@ exports.removeHistory = function (items) {
  * @returns {Array}
  */
 exports.removeDeletionsAndHistory = function (items) {
-  return items.filter(function (e) { return ! (e.deleted || e.headId); });
+  return items.filter(function (e) { return !(e.deleted || e.headId); });
 };
 
 exports.removeAccountStreamsEvents = function (items) {
@@ -428,11 +415,11 @@ exports.separateAccountStreamsAndOtherEvents = function (items) {
   const accountStreamsEvents = items.filter(function (e) {
     return (e.streamIds) && (e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
-  return { events: normalEvents, accountStreamsEvents: accountStreamsEvents }
-}
+  return { events: normalEvents, accountStreamsEvents };
+};
 
 exports.removeAccountStreams = function (streams) {
-  var i = streams.length
+  let i = streams.length;
   while (i--) {
     if (streams[i]?.id === SystemStreamsSerializer.options.STREAM_ID_ACCOUNT) {
       streams.splice(i, 1);
@@ -450,9 +437,9 @@ exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
 
   // -- ADD stores
   const mall = await getMall();
-  for (const store of [...mall.stores.values()].reverse()) { // cloning array before reversing it!
-    if (isShown(store.id)) {
-      const stream = streamsUtils.createStoreRootStream(store, {
+  for (const storeDescription of [...mall.storeDescriptionsByStore.values()].reverse()) {
+    if (isShown(storeDescription.id)) {
+      const stream = streamsUtils.createStoreRootStream(storeDescription, {
         children: [],
         childrenHidden: true // To be discussed
       });
@@ -516,10 +503,8 @@ exports.validateAccountEvents = function (actualAccountEvents) {
         }
         // validate type
         assert.equal(event.type, expectedAccountStreams[streamId].type, `type mismatch between ${event} and ${expectedAccountStreams[streamId]}`);
-        return;
       }
     });
     assert.isTrue(foundEvent, `account event ${streamId} not found.`);
   });
-  return;
-}
+};

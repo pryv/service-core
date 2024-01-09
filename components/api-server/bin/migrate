@@ -3,7 +3,6 @@
 // Binary for launching the db migration process.
 
 const { getApplication } = require('api-server/src/application');
-const bluebird = require('bluebird');
 const { getLogger, getConfig } = require('@pryv/boiler');
 let logger;
 
@@ -40,9 +39,9 @@ let logger;
       logger.error(e, e);
       process.exit(1);
     });
-})()
+})();
 
-async function connectAndMigrate(app) {
+async function connectAndMigrate (app) {
   logger.info('Connecting to storage...');
   await app.storageLayer.waitForConnection();
 

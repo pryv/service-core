@@ -1,12 +1,11 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const Readable = require('stream').Readable,
-      inherits = require('util').inherits,
-      _ = require('lodash');
+const Readable = require('stream').Readable;
+const inherits = require('util').inherits;
 
 module.exports = Source;
 
@@ -16,9 +15,9 @@ module.exports = Source;
  * @param array
  * @constructor
  */
-function Source(array) {
-  Readable.call(this, {objectMode: true});
-  this.array = _.cloneDeep(array); // shift changes in place
+function Source (array) {
+  Readable.call(this, { objectMode: true });
+  this.array = structuredClone(array); // shift changes in place
 }
 
 inherits(Source, Readable);
@@ -26,9 +25,8 @@ inherits(Source, Readable);
 Source.prototype._read = function () {
   if (!this.array || this.array.length === 0) {
     this.push(null);
-  }
-  else {
-    var reading = this.array.shift();
+  } else {
+    const reading = this.array.shift();
     this.push(reading);
   }
 };

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright (C) 2012–2022 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
@@ -16,20 +16,28 @@ class MallTransaction {
    */
   storeTransactions;
 
-  constructor(mall) {
+  constructor (mall) {
     this.mall = mall;
     this.storeTransactions = new Map();
   }
 
-  async getStoreTransaction(storeId) {
+  async getStoreTransaction (storeId) {
     if (this.storeTransactions.has(storeId)) {
       return this.storeTransactions.get(storeId);
     }
-    const store = this.mall.stores.get(storeId);
+    const store = this.mall.storesById.get(storeId);
+    // stubbing transaction when not supported (not yet documented in DataStore)
+    if (store.newTransaction == null) {
+      return new StoreTransactionStub();
+    }
     const transaction = await store.newTransaction();
-    this.storeTransactions.set(store.id, transaction);
+    this.storeTransactions.set(storeId, transaction);
     return transaction;
   }
 }
 
 module.exports = MallTransaction;
+
+class StoreTransactionStub {
+  async exec (func) { return await func(); }
+}

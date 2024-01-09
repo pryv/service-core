@@ -13,37 +13,22 @@ _help:
 setup-dev-env:
     scripts/setup-dev-env
 
-# Install node modules afresh
-install *params: clean
-    npm install {{params}}
+# Setup/update private repositories (also run by setup-dev-env)
+setup-private-libs:
+    scripts/setup-private-libs
 
-# Clean up dist and node modules
+# Install node modules afresh (no optionals)
+install *params: clean
+    npm install --omit=optional {{params}}
+
+# Clean up node modules
 clean:
-    rm -rf dist
     rm -rf node_modules
     rm -rf components/**/node_modules
 
 # Install node modules strictly as specified (typically for CI)
 install-stable:
     npm ci
-
-# Compile code to dist for dev (with source maps)
-compile-dev: _prepare-dist
-    babel ./components --out-dir=dist/components --copy-files --include-dotfiles --source-maps both
-
-# Compile code to dist for dev, then watch and recompile on changes
-compile-watch: _prepare-dist
-    babel ./components --verbose --watch --out-dir=dist/components --copy-files --include-dotfiles --source-maps both
-
-# Compile code to dist for release
-compile-release: _prepare-dist
-    babel ./components --verbose --out-dir=dist/components --copy-files --include-dotfiles
-
-# Prepare dist and copy installed packages there
-_prepare-dist:
-    mkdir -p dist
-    rsync -a --delete node_modules/ dist/node_modules/
-
 
 # –––––––––––––----------------------------------------------------------------
 # Run
@@ -55,24 +40,32 @@ start-deps:
         --prefix-colors "cyan,green,magenta" \
         nats-server scripts/start-mongo influxd
 
-# Start the given server component for dev (expects 'dist/{component}/bin/server')
+# Start the given server component for dev (expects '{component}/bin/server')
 start component *params:
-    cd dist/components/{{component}} && \
+    cd components/{{component}} && \
     NODE_ENV=development bin/server {{params}}
 
 # Start the given server component for dev, automatically restarting on file changes (requires nodemon)
 start-mon component:
-    cd dist/components/{{component}} && \
+    cd components/{{component}} && \
     NODE_ENV=development nodemon bin/server
 
-# Run the given component binary for dev (expects 'dist/{component}/bin/{bin}')
+# Run the given component binary for dev (expects '{component}/bin/{bin}')
 run component bin:
-    cd dist/components/{{component}} && \
+    cd components/{{component}} && \
     NODE_ENV=development bin/{{bin}}
 
 # –––––––––––––----------------------------------------------------------------
 # Test & related
 # –––––––––––––----------------------------------------------------------------
+
+# Run code linting on the entire repo
+lint *options:
+    eslint {{options}} .
+
+# Run code linting only on changed files
+lint-changes *options:
+    eslint {{options}} $(git diff --name-only HEAD | grep -E '\.(js|jsx)$' | xargs)
 
 # Tag each test with a unique id if missing
 tag-tests:
@@ -83,7 +76,7 @@ test component *params:
     NODE_ENV=test COMPONENT={{component}} scripts/components-run \
         npx mocha -- {{params}}
 
-# Run tests with sqlite poc storage
+# Same as `test` but using SQLite PoC storage
 test-sqlite component *params:
     database__engine=sqlite NODE_ENV=test COMPONENT={{component}} scripts/components-run  \
         npx mocha -- {{params}}
@@ -110,6 +103,10 @@ test-cover component *params:
     NODE_ENV=test COMPONENT={{component}} nyc --reporter=html --report-dir=./coverage \
         scripts/components-run npx mocha -- {{params}}
 
+# Run all possible tests (with both Mongo and SQLite storage) and generate HTML coverage report
+test-cover-all:
+    NODE_ENV=test nyc --reporter=html --report-dir=./coverage scripts/coverage
+
 # Set up test results report generation
 test-results-init-repo:
     scripts/test-results/init-repo
@@ -129,23 +126,37 @@ trace:
 
 # Dump/restore MongoDB test data; command must be 'dump' or 'restore'
 test-data command version:
-    NODE_ENV=development node dist/components/test-helpers/scripts/{{command}}-test-data {{version}}
+    NODE_ENV=development node components/test-helpers/scripts/{{command}}-test-data {{version}}
 
 # Cleanup users data and MongoDB data in `var-pryv/`
 clean-data:
-    yes | rm -rf ./var-pryv/users/*
-    killall mongod
-    sleep 2
-    yes | rm -rf ./var-pryv/mongodb-data/*
-    ./scripts/start-mongo
+    rm -rf ./var-pryv/users/*
+    (killall mongod && sleep 2) || echo "MongoDB was not running"
+    rm -rf ./var-pryv/mongodb-data/*
+    DEVELOPMENT=true ./scripts/start-mongo
+
+# Run security assessment and output to `security-assessment`
+security-assessment:
+    rm -rf ./security-assessment/
+    mkdir -p ./security-assessment/source-code
+    cp -rv justfile ./components package* README.md test scripts build .eslintrc.yml .mocharc.js LICENSE CHANGELOG.md ./security-assessment/source-code/
+    cp -rv coverage ./security-assessment/
+    npm audit --json > ./security-assessment/npm-audit-result.json
+
+# Run OWASP ZAP, writing output to `security-assessment` (requires OWASP ZAP app)
+security-assessment-owasp:
+    echo "make sure to start api-server with: just start api-server"
+    /Applications/OWASP\ ZAP.app/Contents/Java/zap.sh  -quickurl http://127.0.0.1:3000 -quickout /tmp/owasp-zap-automated-scan.html
+    cp /tmp/owasp-zap-automated-scan.html ./security-assessment/
+
+# Run Grype audit, writing output to `security-assessment` (requires Grype and local Docker containers)
+security-assessment-grype:
+    mkdir -p ./security-assessment/
+    grype local/pryvio/core:test  -o template -t build/grype-html.tmpl > ./security-assessment/grype.html
 
 # –––––––––––––----------------------------------------------------------------
 # Misc. utils
 # –––––––––––––----------------------------------------------------------------
-
-# Generate Flow.js coverage report
-flow-cover:
-    flow-coverage-report -i 'components/**/*.js' -t html
 
 # Update default event types from online reference
 update-event-types:
