@@ -6,15 +6,15 @@ Events are the primary units of content in Pryv. An event is a timestamped piece
 
 The API supports versioning, allowing to retrieve all previous versions of a specific event, necessary for audit activities. It is also possible for events to have a duration to represent a period instead of a single point in time, and the API includes specific functionality to deal with periods.
 
-See also [standard event types](http://api.pryv.com/event-types/#directory).
+See also [standard event types](http://pryv.github.io/event-types/#directory).
 
 |            |                                                              |
 | ---------: | ------------------------------------------------------------ |
-|       `id` | [identifier](http://api.pryv.com/reference/#data-structure-identifier) (readonly, unique) -  The identifier ([collision-resistant cuid](https://usecuid.org/)) for the event. Automatically generated if not set when creating the event. |
-| `streamId` | [identifier](http://api.pryv.com/reference/#data-structure-identifier) - The id of the belonging stream. |
-|     `time` | [timestamp](http://api.pryv.com/reference/#data-structure-timestamp) -  The event's time. For period events, this is the time the event started. |
+|       `id` | [identifier](http://pryv.github.io/reference/#data-structure-identifier) (readonly, unique) -  The identifier ([collision-resistant cuid](https://usecuid.org/)) for the event. Automatically generated if not set when creating the event. |
+| `streamId` | [identifier](http://pryv.github.io/reference/#data-structure-identifier) - The id of the belonging stream. |
+|     `time` | [timestamp](http://pryv.github.io/reference/#data-structure-timestamp) -  The event's time. For period events, this is the time the event started. |
 | `duration` |                                                              |
-|     `type` | string -  The type of the event. See the [event type directory](http://api.pryv.com/event-types/#directory) for a list of standard types. If the event is a high frequency series, the type starts with the prefix 'series:'. |
+|     `type` | string -  The type of the event. See the [event type directory](http://pryv.github.io/event-types/#directory) for a list of standard types. If the event is a high frequency series, the type starts with the prefix 'series:'. |
 |  `content` | any (optional) -  The `type`-specific content of the event, if any. Leave empty if this event is a series event. |
 
 ## Series
@@ -23,7 +23,7 @@ Series are collections of homogenous data points. They should be used instead of
 
 To store a data series in Pryv, you first create an event that has the type "series:X". The created series will store many values that all have the type X. Then you can start adding data to the series.
 
-Each data point in a series has a `"timestamp"` field containing the timestamp for the data point. For [types](http://api.pryv.com/event-types/#directory) that store a single value (like "mass/kg") they contain a single additional field called `"value"`. Types that contain multiple fields (like "position/wgs84") will possibly have many fields, whose names can be inferred from the [type reference](http://api.pryv.com/event-types/#position). In the above example ("position/wgs84") there would be the fields `"latitude"`, `"longitude"` and possibly one of the optional fields `"altitude"`, `"horizontalAccuracy"`, `"verticalAccuracy"`, `"speed"`, `"bearing"`. Optional fields can either be given or not; missing values will be returned as null.
+Each data point in a series has a `"timestamp"` field containing the timestamp for the data point. For [types](http://pryv.github.io/event-types/#directory) that store a single value (like "mass/kg") they contain a single additional field called `"value"`. Types that contain multiple fields (like "position/wgs84") will possibly have many fields, whose names can be inferred from the [type reference](http://pryv.github.io/event-types/#position). In the above example ("position/wgs84") there would be the fields `"latitude"`, `"longitude"` and possibly one of the optional fields `"altitude"`, `"horizontalAccuracy"`, `"verticalAccuracy"`, `"speed"`, `"bearing"`. Optional fields can either be given or not; missing values will be returned as null.
 
 Series data can be encoded in transit in one of the following data formats.
 
@@ -72,7 +72,7 @@ You should submit multiple data points in a single API call to Pryv as follows (
 | id   | `events.create` |
 | HTTP | POST /events    |
 
-Records a new event. It is recommended that events recorded this way are completed events, i.e. either period events with a known duration or mark events. To start a running period event, use [Start period](http://api.pryv.com/reference/#methods-events-events-start) instead.
+Records a new event. It is recommended that events recorded this way are completed events, i.e. either period events with a known duration or mark events. To start a running period event, use [Start period](http://pryv.github.io/reference/#methods-events-events-start) instead.
 
 In addition to JSON, this request accepts standard multipart/form-data content to support the creation of event with attached files in a single request. When sending a multipart request, one content part must hold the JSON (application/json) for the new event and all other content parts must be the attached files.
 
@@ -80,7 +80,7 @@ To create an event that can hold high frequency series data, you will need to sp
 
 #### PARAMETERS
 
-The new event's data: see [Event](http://api.pryv.com/reference/#data-structure-event).
+The new event's data: see [Event](http://pryv.github.io/reference/#data-structure-event).
 
 #### RESULT
 
@@ -88,8 +88,8 @@ The new event's data: see [Event](http://api.pryv.com/reference/#data-structure-
 
 |           |                                                              |
 | --------- | ------------------------------------------------------------ |
-| event     | [event](http://api.pryv.com/reference/#data-structure-event) - The created [event](http://api.pryv.com/reference/#data-structure-event). |
-| stoppedId | [identifier](http://api.pryv.com/reference/#data-structure-identifier) - Only in `singleActivity` streams. If set, indicates the id of the previously running period event that was stopped as a consequence of inserting the new event. |
+| event     | [event](http://pryv.github.io/reference/#data-structure-event) - The created [event](http://pryv.github.io/reference/#data-structure-event). |
+| stoppedId | [identifier](http://pryv.github.io/reference/#data-structure-identifier) - Only in `singleActivity` streams. If set, indicates the id of the previously running period event that was stopped as a consequence of inserting the new event. |
 
 #### ERRORS
 

@@ -202,7 +202,7 @@ It is possible to extend the API and previews servers with custom code, via the 
     - `user` (object): the user object (properties include `id`)
     - `accessToken` (string): as read in the `Authorization` header or `auth` parameter
     - `callerId` (string): optional additional id passed after `accessToken` in auth after a separating space (auth format is thus `<access-token>[ <caller-id>]`)
-    - `access` (object): the access object (see [API doc](https://api.pryv.com/reference/#access) for structure)
+    - `access` (object): the access object (see [API doc](https://pryv.github.io/reference/#access) for structure)
 
 
 ## About event types definitions
