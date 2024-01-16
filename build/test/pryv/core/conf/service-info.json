@@ -5,7 +5,7 @@
   "register": "http://reg.rec.la:3000",
   "name": "Pryv Docker Local",
   "home": "http://sw.rec.la",
-  "support": "https://pryv.com/helpdesk",
+  "support": "https://github.com/orgs/pryv/discussions",
   "terms": "https://pryv.com/terms-of-use/",
   "eventTypes": "https://pryv.github.io/event-types/flat.json",
   "assets": {
