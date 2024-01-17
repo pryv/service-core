@@ -43,6 +43,10 @@ fs.readdirSync(paths.components).forEach(function (name) {
     shell: true // required to use `npx`
   });
 
+  if (!fs.existsSync(componentOutputPath)) {
+    console.error('Cannot find file ' + componentOutputPath + ' for component ' + name);
+    return;
+  } 
   const componentResults = JSON.parse(fs.readFileSync(componentOutputPath));
   componentResults.componentName = name;
   testResults.push(componentResults);
