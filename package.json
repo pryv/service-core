@@ -60,7 +60,7 @@
     "nats": "^2.9.0",
     "opentracing": "^0.14.5",
     "protobufjs": "^6.11.3",
-    "rec.la": "^0.3.2",
+    "backloop.dev": "latest",
     "shimmer": "^1.2.0",
     "slug": "^5.3.0",
     "socket.io": "^4.6.1",

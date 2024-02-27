@@ -116,7 +116,7 @@ describe('Audit', function () {
         now = timestamp.now();
         res = await coreRequest
           .post(createUserPath('/auth/login'))
-          .set('Origin', 'https://sw.rec.la')
+          .set('Origin', 'https://sw.backloop.dev')
           .send({
             username,
             password,
