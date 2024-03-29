@@ -60,10 +60,11 @@ module.exports = ds.createDataStore({
     await userEvents._deleteUser(userId);
   },
 
-  async getUserStorageSize (userId) {
-    const streamsSize = await userStreams._getUserStorageSize(userId);
-    const eventsSize = await userEvents._getUserStorageSize(userId);
-    return streamsSize + eventsSize;
+  async getUserStorageInfos (userId) {
+    const streams = await userStreams._getStorageInfos(userId);
+    const events = await userEvents._getStorageInfos(userId);
+    const files = await userEvents._getFilesStorageInfos(userId);
+    return { streams, events, files };
   }
 });
 

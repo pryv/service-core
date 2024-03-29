@@ -216,9 +216,14 @@ module.exports = ds.createUserEvents({
     return res;
   },
 
-  async _getUserStorageSize (userId) {
-    // TODO: fix this total HACK
-    return await this.eventsCollection.countDocuments({ userId });
+  async _getStorageInfos (userId) {
+    const count = await this.eventsCollection.countDocuments({ userId });
+    return { count };
+  },
+
+  async _getFilesStorageInfos (userId) {
+    const sizeKb = await this.eventsFileStorage.getTotalSize({ id: userId });
+    return { sizeKb };
   },
 
   /**

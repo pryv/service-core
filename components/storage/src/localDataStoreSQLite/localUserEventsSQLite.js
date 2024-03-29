@@ -201,10 +201,15 @@ module.exports = ds.createUserEvents({
    * @param {string} userId
    * @returns {Promise<any>}
    */
-  async _getUserStorageSize (userId) {
+  async _getStorageInfos (userId) {
     const db = await this.storage.forUser(userId);
-    // TODO: fix this total HACK
-    return db.countEvents();
+    const count = db.countEvents();
+    return { count };
+  },
+
+  async _getFilesStorageInfos (userId) {
+    const sizeKb = await this.eventsFileStorage.getTotalSize({ userId });
+    return { sizeKb };
   },
 
   /**

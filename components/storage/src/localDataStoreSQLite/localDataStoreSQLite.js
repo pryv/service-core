@@ -52,10 +52,11 @@ module.exports = ds.createDataStore({
     await userEvents._deleteUser(uid);
   },
 
-  async getUserStorageSize (uid) {
+  async getUserStorageInfos (uid) {
     // TODO: ultimately here we should simply look at the DB file size
-    const streamsSize = await userStreams._getUserStorageSize(uid);
-    const eventsSize = await userEvents._getUserStorageSize(uid);
-    return streamsSize + eventsSize;
+    const streams = await userStreams._getStorageInfos(uid);
+    const events = await userEvents._getStorageInfos(uid);
+    const files = await userEvents._getFilesStorageInfos(uid);
+    return { streams, events, files };
   }
 });
