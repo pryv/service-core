@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const storage = require('storage');
-const _ = require('lodash');
 
 const { getConfigUnsafe, getLogger } = require('@pryv/boiler');
 const config = getConfigUnsafe(true);
@@ -15,7 +14,7 @@ const database = storage.getDatabaseSync(true);
 /**
  * Test process dependencies.
  */
-const deps = module.exports = {
+module.exports = {
   settings: config.get(),
   storage: {
     database,
@@ -38,8 +37,3 @@ const deps = module.exports = {
     await this.storage.user.eventFiles.init();
   }
 };
-
-const dbDocumentsItems = _.values(_.pick(deps.storage.user,
-  'accesses', 'followedSlices', 'profile'));
-const attFilesItems = _.values(_.pick(deps.storage.user, 'eventFiles'));
-deps.storage.size = new storage.Size(dbDocumentsItems, attFilesItems);
