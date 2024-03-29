@@ -213,6 +213,7 @@ module.exports = ds.createUserEvents({
   async _deleteUser (userId) {
     const query = { userId };
     const res = await this.eventsCollection.deleteMany(query, {});
+    await this.eventsFileStorage.removeAllForUser({ id: userId });
     return res;
   },
 
@@ -233,6 +234,7 @@ module.exports = ds.createUserEvents({
     const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
     const query = { userId, streamIds: { $nin: allAccountStreamIds } };
     const res = await this.eventsCollection.deleteMany(query, {});
+    await this.eventsFileStorage.removeAllForUser({ id: userId });
     return res;
   }
 });

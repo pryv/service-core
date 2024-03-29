@@ -127,14 +127,6 @@ EventFiles.prototype.removeAllForUser = function (user) {
 };
 
 /**
- * Primarily meant for tests.
- * Synchronous until all related code is async/await.
- */
-EventFiles.prototype.removeAll = function () {
-  fs.rmSync(this.settings.attachmentsDirPath, { recursive: true, force: true });
-};
-
-/**
  * @param {String} userId
  * @param {String} eventId
  * @param {String} fileId

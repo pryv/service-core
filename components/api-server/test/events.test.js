@@ -1801,8 +1801,7 @@ describe('events', function () {
   function resetEvents (done) {
     eventsNotifCount = 0;
     async.series([
-      testData.resetEvents,
-      testData.resetAttachments
+      testData.resetEvents
     ], done);
   }
 });

@@ -65,7 +65,6 @@ describe('[PGTD] DELETE /users/:username', () => {
     influx = produceInfluxConnection(app.config);
     influxRepository = new InfluxRepository(influx);
     usersRepository = await getUsersRepository();
-    app.storageLayer.eventFiles.removeAll();
     username1 = charlatan.Internet.userName();
     username2 = charlatan.Internet.userName();
     authKey = config.get('auth:adminAccessKey');
@@ -74,7 +73,6 @@ describe('[PGTD] DELETE /users/:username', () => {
   after(async function () {
     config.injectTestConfig({});
     await mongoFixtures.context.cleanEverything();
-    app.storageLayer.eventFiles.removeAll();
   });
   describe('[USAD] depending on "user-account:delete"  config parameter', function () {
     let personalAccessToken;

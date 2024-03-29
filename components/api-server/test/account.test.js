@@ -59,7 +59,6 @@ describe('[ACCO] account', function () {
       testData.resetFollowedSlices,
 
       testData.resetStreams,
-      testData.resetAttachments,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
         request = helpers.request(server.url);
@@ -222,7 +221,6 @@ describe('[ACCO] account', function () {
         testData.resetFollowedSlices,
 
         testData.resetStreams,
-        testData.resetAttachments,
         server.ensureStarted.bind(server, helpers.dependencies.settings),
         function (stepDone) {
           request = helpers.request(server.url);

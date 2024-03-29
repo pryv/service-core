@@ -56,8 +56,7 @@ describe('[ACCP] Access permissions', function () {
   describe('Events', function () {
     before(function (done) {
       async.series([
-        testData.resetStreams,
-        testData.resetAttachments
+        testData.resetStreams
       ], done);
     });
 
