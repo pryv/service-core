@@ -94,7 +94,9 @@ module.exports = ds.createUserEvents({
   },
 
   async addAttachment (userId, eventId, attachmentItem, transaction) {
-    const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId);
+    const desiredId = attachmentItem.id || null; // id is assigned during tests (to be removed)
+    delete attachmentItem.id;
+    const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId, desiredId);
     const attachment = Object.assign({ id: fileId }, attachmentItem);
     delete attachment.attachmentData;
     const event = await this.getOne(userId, eventId);
@@ -126,6 +128,7 @@ module.exports = ds.createUserEvents({
       return attachment.id !== fileId;
     });
     await this.eventsFileStorage.removeAttachment(userId, eventId, fileId);
+    this.setIntegrityOnEvent(newEventData);
     await this.update(userId, newEventData, transaction);
     return newEventData;
   },

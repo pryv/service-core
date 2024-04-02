@@ -107,8 +107,23 @@ exports.resetEvents = function resetEvents (done, user) {
       await mall.events.localRemoveAllNonAccountEventsForUser(user.id);
     },
     async function createEvents () {
-      await mall.events.createManyForTests(user.id, eventsToWrite);
-      await restoreAttachments(user.id);
+      for (const event of eventsToWrite) {
+        const eventSource = structuredClone(event);
+        if (eventSource.attachments != null && eventSource.attachments.length > 0) {
+          const attachments = eventSource.attachments;
+          delete eventSource.attachments;
+          const attachmentItems = [];
+          for (const file of attachments) {
+            const filePath = path.resolve(__dirname, 'data/attachments/' + file.fileName);
+            file.attachmentData = fs.createReadStream(filePath);
+            attachmentItems.push(file);
+          }
+          const e = await mall.events.createWithAttachments(user.id, eventSource, attachmentItems);
+          event.attachments = e.attachements;
+        } else {
+          await mall.events.create(user.id, eventSource, null, true);
+        }
+      }
     },
     function removeZerosDuration (done2) {
       events.forEach((e) => {
@@ -161,14 +176,15 @@ function resetMongoDBCollectionFor (storage, user, items, done) {
  */
 const testsAttachmentsDirPath = (exports.testsAttachmentsDirPath = path.join(__dirname, '/data/attachments/'));
 
-const attachments = (exports.attachments = {
+const attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
   document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
   document_modified: getAttachmentInfo('document', 'document.modified.pdf', 'application/pdf'),
   image: getAttachmentInfo('image', 'image (space and special chars)é__.png', 'image/png'),
   imageBigger: getAttachmentInfo('imageBigger', 'image-bigger.jpg', 'image/jpeg'),
   text: getAttachmentInfo('text', 'text.txt', 'text/plain')
-});
+};
+exports.attachments = attachments;
 
 // following https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
 // compute sri with openssl
@@ -200,26 +216,6 @@ function getAttachmentInfo (id, filename, type) {
     type,
     integrity
   };
-}
-
-async function restoreAttachments (userId) {
-  if (!userId) {
-    userId = defaultUser;
-  }
-  storage.user.eventFiles.removeAllForUser({ id: userId });
-  await copyAttachmentFn(attachments.document, userId, events[0].id);
-  await copyAttachmentFn(attachments.image, userId, events[0].id);
-  await copyAttachmentFn(attachments.imageBigger, userId, events[2].id);
-  await copyAttachmentFn(attachments.animatedGif, userId, events[12].id);
-}
-
-/**
- * @returns {(callback: any) => any}
- */
-async function copyAttachmentFn (attachmentInfo, userId, eventId) {
-  const tmpPath = '/tmp/' + attachmentInfo.filename;
-  childProcess.execSync('cp "' + attachmentInfo.path + '" "' + tmpPath + '"');
-  return await storage.user.eventFiles.saveAttachmentFromTemp(tmpPath, userId, eventId, attachmentInfo.id);
 }
 
 // data dump & restore (for testing data migration)

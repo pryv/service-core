@@ -99,7 +99,7 @@ describe('events', function () {
         let accountStreamsEvents;
         async.series([
           async function createEvents () {
-            return mall.events.createMany(user.id, additionalEvents);
+            for (const event of additionalEvents) await mall.events.create(user.id, event);
           },
           function getDefault (stepDone) {
             request.get(basePath).end(function (res) {
