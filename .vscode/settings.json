@@ -6,5 +6,6 @@
   "files.watcherExclude": {
     "**/var-pryv/**": true
   },
-  "semistandard.enable": false
+  "semistandard.enable": false,
+  "terminal.integrated.bellDuration": 10000
 }

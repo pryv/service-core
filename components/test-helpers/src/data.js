@@ -25,6 +25,7 @@ const charlatan = require('charlatan');
 const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 const logger = getLogger('test-helpers:data');
+const { integrity } = require('business');
 
 // users
 
@@ -91,6 +92,21 @@ exports.resetFollowedSlices = function (done, user) {
 // events
 
 const events = (exports.events = require('./data/events'));
+const dynCreateAttachmentIdMap = {}; // contains real ids of created attachment per event:
+exports.dynCreateAttachmentIdMap = dynCreateAttachmentIdMap;
+
+// add createdAttachmentsId to events
+function addCorrectAttachmentIds (allEvents) {
+  const allEventsCorrected = structuredClone(allEvents);
+  for (const e of allEventsCorrected) {
+    if (dynCreateAttachmentIdMap[e.id]) {
+      e.attachments = dynCreateAttachmentIdMap[e.id];
+    }
+    integrity.events.set(e);
+  }
+  return allEventsCorrected;
+}
+exports.addCorrectAttachmentIds = addCorrectAttachmentIds;
 
 exports.resetEvents = function resetEvents (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
@@ -119,7 +135,7 @@ exports.resetEvents = function resetEvents (done, user) {
             attachmentItems.push(file);
           }
           const e = await mall.events.createWithAttachments(user.id, eventSource, attachmentItems);
-          event.attachments = e.attachements;
+          dynCreateAttachmentIdMap[event.id] = e.attachments;
         } else {
           await mall.events.create(user.id, eventSource, null, true);
         }
@@ -177,11 +193,8 @@ function resetMongoDBCollectionFor (storage, user, items, done) {
 const testsAttachmentsDirPath = (exports.testsAttachmentsDirPath = path.join(__dirname, '/data/attachments/'));
 
 const attachments = {
-  animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
   document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
-  document_modified: getAttachmentInfo('document', 'document.modified.pdf', 'application/pdf'),
   image: getAttachmentInfo('image', 'image (space and special chars)é__.png', 'image/png'),
-  imageBigger: getAttachmentInfo('imageBigger', 'image-bigger.jpg', 'image/jpeg'),
   text: getAttachmentInfo('text', 'text.txt', 'text/plain')
 };
 exports.attachments = attachments;

@@ -319,7 +319,7 @@ describe('[ACCO] account', function () {
     });
 
     it('[93AP] must be approximately updated (diff) when deleting an attached file', async function () {
-      const deletedAtt = testData.events[0].attachments[0];
+      const deletedAtt = testData.dynCreateAttachmentIdMap[testData.events[0].id][0];
       const initialStorageInfo = await mall.getUserStorageInfos(user.id);
 
       const path = '/' + user.username + '/events/' + testData.events[0].id + '/' +

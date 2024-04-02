@@ -25,6 +25,7 @@ const ErrorIds = require('errors').ErrorIds;
 const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/eventsMethods');
 const testData = helpers.data;
+const addCorrectAttachmentIds = testData.addCorrectAttachmentIds;
 
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { integrity } = require('business');
@@ -32,7 +33,7 @@ const { getMall } = require('mall');
 
 require('date-utils');
 
-describe('events', function () {
+describe('[EVNT] events', function () {
   const user = structuredClone(testData.users[0]);
   const basePath = '/' + user.username + '/events';
   const testType = 'test/test';
@@ -124,12 +125,15 @@ describe('events', function () {
             stepDone();
           },
           function checkResponse (stepDone) {
+            const allEventsCorrected = addCorrectAttachmentIds(allEvents);
+            const body = { events: _.take(_.sortBy(allEventsCorrected, 'time').reverse(), 20 - accountStreamsEvents.length) };
+
             validation.check(response, {
               status: 200,
               schema: methodsSchema.get.result,
               sanitizeFn: validation.sanitizeEvents,
               sanitizeTarget: 'events',
-              body: { events: _.take(_.sortBy(allEvents, 'time').reverse(), 20 - accountStreamsEvents.length) }
+              body
             }, stepDone);
           },
           testData.resetEvents
@@ -144,13 +148,14 @@ describe('events', function () {
           sortAscending: false // explicitly set default value to check it works too...
         };
         request.get(basePath).query(params).end(function (res) {
+          const correctedEvents = addCorrectAttachmentIds(_.at(testData.events, 9, 7, 6, 4, 3, 2, 1, 0));
           validation.check(res, {
             status: 200,
             schema: methodsSchema.get.result,
             sanitizeFn: validation.sanitizeEvents,
             sanitizeTarget: 'events',
             body: {
-              events: _.at(testData.events, 9, 7, 6, 4, 3, 2, 1, 0)
+              events: correctedEvents
             }
           }, done);
         });
@@ -173,13 +178,14 @@ describe('events', function () {
         fromTime: timestamp.now('-48h')
       };
       request.get(basePath).query(params).end(function (res) {
+        const correctedEvents = addCorrectAttachmentIds(_.at(testData.events, 3, 2, 0));
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: _.at(testData.events, 3, 2, 0)
+            events: correctedEvents
           }
         }, done);
       });
@@ -197,7 +203,7 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: _.at(testData.events, 11, 3, 2, 0)
+            events: addCorrectAttachmentIds(_.at(testData.events, 11, 3, 2, 0))
           }
         }, done);
       });
@@ -215,7 +221,7 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: _.at(testData.events, 12, 4, 2)
+            events: addCorrectAttachmentIds(_.at(testData.events, 12, 4, 2))
           }
         }, done);
       });
@@ -267,7 +273,7 @@ describe('events', function () {
             sanitizeFn: validation.sanitizeEvents,
             sanitizeTarget: 'events',
             body: {
-              events: _.at(testData.events, 1, 2, 3)
+              events: addCorrectAttachmentIds(_.at(testData.events, 1, 2, 3))
             }
           }, done);
         });
@@ -323,7 +329,7 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: _.at(testData.events, 2)
+            events: addCorrectAttachmentIds(_.at(testData.events, 2))
           }
         }, done);
       });
@@ -394,8 +400,8 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: _.sortBy(validation.removeDeletionsAndHistory(testData.events), 'time')
-              .reverse()
+            events: addCorrectAttachmentIds(_.sortBy(validation.removeDeletionsAndHistory(testData.events), 'time')
+              .reverse())
           }
         }, done);
       });
@@ -425,7 +431,7 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events
+            events: addCorrectAttachmentIds(events)
           }
         }, done);
       });
@@ -482,7 +488,7 @@ describe('events', function () {
               sanitizeFn: validation.sanitizeEvents,
               sanitizeTarget: 'events',
               body: {
-                events,
+                events: addCorrectAttachmentIds(events),
                 eventDeletions
               }
             }, cb));
@@ -509,7 +515,7 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events
+            events: addCorrectAttachmentIds(events)
           }
         }, done);
       });
@@ -526,8 +532,9 @@ describe('events', function () {
     it('[F29M] must return the attached file with the correct headers', function (done) {
       const event = testData.events[0];
       const attachment = event.attachments[0];
+      const effectiveAttachmentId = testData.dynCreateAttachmentIdMap[event.id][0].id;
 
-      request.get(path(event.id) + '/' + attachment.id).end(function (res) {
+      request.get(path(event.id) + '/' + effectiveAttachmentId).end(function (res) {
         res.statusCode.should.eql(200);
 
         res.headers.should.have.property('content-type', attachment.type);
@@ -1295,6 +1302,10 @@ describe('events', function () {
 
             const updatedEvent = validation.sanitizeEvent(res.body.event);
             const expectedAttachments = event.attachments.slice();
+
+            // reset new attachment id after creation
+            for (let i = 0; i < expectedAttachments.length; i++) expectedAttachments[i].id = updatedEvent.attachments[i].id;
+
             const attData = {
               id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
               fileName: testData.attachments.text.filename,
@@ -1306,7 +1317,6 @@ describe('events', function () {
 
             const attachments = updatedEvent.attachments;
             should(attachments.length).be.eql(expectedAttachments.length);
-
             attachments.should.eql(expectedAttachments);
 
             attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
@@ -1380,7 +1390,7 @@ describe('events', function () {
             expected.tags = ['yippiya'];
             expected.modified = time;
             expected.modifiedBy = access.id;
-            expected.attachments = original.attachments;
+            expected.attachments = testData.dynCreateAttachmentIdMap[expected.id];
             expected.streamIds = data.streamIds.concat(expected.tags.map(t => TAG_PREFIX + t));
             validation.checkObjectEquality(res.body.event, expected);
 
@@ -1686,7 +1696,8 @@ describe('events', function () {
 
     it('[RW8M] must delete the attachment (reference in event + file)', function (done) {
       const event = testData.events[0];
-      const fPath = path(event.id) + '/' + event.attachments[0].id;
+      const attachmentId = testData.dynCreateAttachmentIdMap[event.id][0].id;
+      const fPath = path(event.id) + '/' + attachmentId;
       request.del(fPath).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -1704,6 +1715,7 @@ describe('events', function () {
         delete expected.modified;
         expected.modifiedBy = access.id;
         expected.modified = updatedEvent.modified;
+        expected.attachments = structuredClone(testData.dynCreateAttachmentIdMap[event.id]);
         expected.attachments.shift();
         integrity.events.set(expected);
         validation.checkObjectEquality(updatedEvent, expected);
