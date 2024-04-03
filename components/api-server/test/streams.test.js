@@ -6,11 +6,9 @@
  */
 
 const async = require('async');
-const fs = require('fs');
 const should = require('should'); // explicit require to benefit from static function
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert;
 
@@ -920,38 +918,10 @@ describe('[STRE] streams', function () {
             assert.equal(actual.id, e.id);
           });
 
-          const dirPath = eventFilesStorage.getEventPath(user.id, deletedEventWithAtt.id);
-
-          // some time after returning to the client. Let's hang around and try
-          // this several times.
-          await bluebird.fromCallback(cb => {
-            assertEventuallyTrue(
-              () => !fs.existsSync(dirPath),
-              5, // second(s)
-              'Event directory must be deleted' + dirPath,
-              cb
-            );
-          });
+          const eventHasAttachments = eventFilesStorage.tests.checkIfEventHasAttachments(user.id, deletedEventWithAtt.id);
+          eventHasAttachments.should.be.false('Event attachments must be deleted');
         }
       ], done);
-
-      function assertEventuallyTrue (property, maxWaitSeconds, msg, cb) {
-        const deadline = new Date().getTime() + maxWaitSeconds;
-        const checker = () => {
-          if (new Date().getTime() > deadline) {
-            return cb(new chai.AssertionError('Timeout: ' + msg));
-          }
-
-          const result = property();
-          if (result) return cb();
-
-          // assert: result is false, try again in a bit.
-          setImmediate(checker);
-        };
-
-        // Launch first check
-        setImmediate(checker);
-      }
     });
 
     it('[1U1M] must return a correct error if the item is unknown', function (done) {

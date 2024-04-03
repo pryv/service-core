@@ -84,7 +84,6 @@ class Deletion {
    */
   async validateUserFilepaths (context, params, result, next) {
     const dirPaths = [
-      this.storageLayer.eventFiles.getUserPath(context.user.id),
       path.join(this.config.get('eventFiles:previewsDirPath'), context.user.id)
     ];
     // NOTE User specific paths are constructed by appending the user _id_ to the

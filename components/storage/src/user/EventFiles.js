@@ -38,7 +38,7 @@ EventFiles.prototype.init = async function () {
  * @returns {Promise<number>}
  */
 EventFiles.prototype.getTotalSize = async function (user) {
-  const userPath = this.getUserPath(user.id);
+  const userPath = getUserPath(user.id);
   try {
     await fs.promises.access(userPath);
   } catch (err) {
@@ -46,6 +46,20 @@ EventFiles.prototype.getTotalSize = async function (user) {
     return 0;
   }
   return getDirectorySize(userPath);
+};
+
+EventFiles.prototype.tests = {
+
+  checkAllFilesDeletedForUserId: function (userId) {
+    const pathToUserFiles = getUserPath(userId);
+    const userFileExists = fs.existsSync(pathToUserFiles);
+    return !userFileExists;
+  },
+
+  checkIfEventHasAttachments: function (userId, eventId) {
+    const dirPath = getEventPath(userId, eventId);
+    return fs.existsSync(dirPath);
+  }
 };
 
 /**
@@ -115,7 +129,7 @@ async function cleanupIfEmpty (dirPath) {
 }
 
 EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
-  const dirPath = this.getEventPath(userId, eventId);
+  const dirPath = getEventPath(userId, eventId);
   await fs.promises.rm(dirPath, { recursive: true, force: true });
 };
 
@@ -123,7 +137,7 @@ EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
  * Synchronous until all related code is async/await.
  */
 EventFiles.prototype.removeAllForUser = function (user) {
-  fs.rmSync(this.getUserPath(user.id), { recursive: true, force: true });
+  fs.rmSync(getUserPath(user.id), { recursive: true, force: true });
 };
 
 /**
@@ -132,23 +146,23 @@ EventFiles.prototype.removeAllForUser = function (user) {
  * @param {String} fileId
  */
 EventFiles.prototype.getAttachmentPath = function (userId, eventId, fileId) {
-  return path.join(this.getEventPath(userId, eventId), fileId);
+  return path.join(getEventPath(userId, eventId), fileId);
 };
 
 /**
  * @param {String} userId
  * @param {String} eventId
  */
-EventFiles.prototype.getEventPath = function (userId, eventId) {
-  return path.join(this.getUserPath(userId), eventId);
-};
+function getEventPath (userId, eventId) {
+  return path.join(getUserPath(userId), eventId);
+}
 
 /**
  * @param {String} userId
  */
-EventFiles.prototype.getUserPath = function (userId) {
+function getUserPath (userId) {
   return userLocalDirectory.getPathForUser(userId, ATTACHMENT_DIRNAME);
-};
+}
 
 /**
  * Ensures the preview path for the specific event exists.

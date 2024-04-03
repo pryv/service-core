@@ -1801,8 +1801,8 @@ describe('[EVNT] events', function () {
           integrity.events.set(expected);
           validation.checkObjectEquality(deletion.integrity, expected.integrity);
 
-          const dirPath = eventFilesStorage.getEventPath(user.id, id);
-          fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
+          const eventHasAttachments = eventFilesStorage.tests.checkIfEventHasAttachments(user.id, id);
+          eventHasAttachments.should.eql(false, 'deleted event directory existence');
         }
       ],
       done

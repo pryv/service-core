@@ -248,9 +248,8 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert(sessions === null || sessions === []);
         });
         it(`[${testIDs[i][2]}] should delete user event files`, async function () {
-          const pathToUserFiles = app.storageLayer.eventFiles.getUserPath(userToDelete.attrs.id);
-          const userFileExists = fs.existsSync(pathToUserFiles);
-          assert.isFalse(userFileExists);
+          const userFilesDeleted = app.storageLayer.eventFiles.tests.checkAllFilesDeletedForUserId(userToDelete.attrs.id);
+          assert.isTrue(userFilesDeleted);
         });
         it(`[${testIDs[i][8]}] should delete HF data`, async function () {
           if (isOpenSource) { this.skip(); }
