@@ -1064,63 +1064,67 @@ describe('[EVNT] events', function () {
             testData.attachments.document.filename)
           .attach('image', testData.attachments.image.path,
             testData.attachments.image.filename)
-          .end(function (res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.create.result
-            });
+          .end(async function (res) {
+            try {
+              validation.check(res, {
+                status: 201,
+                schema: methodsSchema.create.result
+              });
 
-            createdEvent = res.body.event;
+              createdEvent = res.body.event;
 
-            validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
-            validation.sanitizeEvent(createdEvent);
-            expected = _.extend(data, {
-              id: createdEvent.id,
-              integrity: createdEvent.integrity,
-              attachments: [
-                {
-                  id: createdEvent.attachments[0].id,
-                  fileName: testData.attachments.document.filename,
-                  type: testData.attachments.document.type,
-                  size: testData.attachments.document.size,
-                  integrity: testData.attachments.document.integrity
-                },
-                {
-                  id: createdEvent.attachments[1].id,
-                  fileName: testData.attachments.image.filename,
-                  type: testData.attachments.image.type,
-                  size: testData.attachments.image.size,
-                  integrity: testData.attachments.image.integrity
-                }
-              ],
-              streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t))
-            });
+              validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
+              validation.sanitizeEvent(createdEvent);
+              expected = _.extend(data, {
+                id: createdEvent.id,
+                integrity: createdEvent.integrity,
+                attachments: [
+                  {
+                    id: createdEvent.attachments[0].id,
+                    fileName: testData.attachments.document.filename,
+                    type: testData.attachments.document.type,
+                    size: testData.attachments.document.size,
+                    integrity: testData.attachments.document.integrity
+                  },
+                  {
+                    id: createdEvent.attachments[1].id,
+                    fileName: testData.attachments.image.filename,
+                    type: testData.attachments.image.type,
+                    size: testData.attachments.image.size,
+                    integrity: testData.attachments.image.integrity
+                  }
+                ],
+                streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t))
+              });
 
-            expected.created = createdEvent.created;
-            expected.createdBy = createdEvent.createdBy;
-            expected.modified = createdEvent.modified;
-            expected.modifiedBy = createdEvent.modifiedBy;
-            if (!integrity.attachments.isActive) {
-              delete expected.attachments[0].integrity;
-              delete expected.attachments[1].integrity;
+              expected.created = createdEvent.created;
+              expected.createdBy = createdEvent.createdBy;
+              expected.modified = createdEvent.modified;
+              expected.modifiedBy = createdEvent.modifiedBy;
+              if (!integrity.attachments.isActive) {
+                delete expected.attachments[0].integrity;
+                delete expected.attachments[1].integrity;
+              }
+              if (!integrity.events.isActive) {
+                delete expected.integrity;
+              }
+              integrity.events.set(expected);
+              validation.checkObjectEquality(createdEvent, expected);
+
+              // check attached files
+              assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+                createdEvent.attachments[0].id,
+                testData.attachments.document.filename));
+              assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+                createdEvent.attachments[1].id,
+                testData.attachments.image.filename));
+
+              eventsNotifCount.should.eql(1, 'events notifications');
+
+              done();
+            } catch (e) {
+              done(e);
             }
-            if (!integrity.events.isActive) {
-              delete expected.integrity;
-            }
-            integrity.events.set(expected);
-            validation.checkObjectEquality(createdEvent, expected);
-
-            // check attached files
-            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
-              createdEvent.attachments[0].id,
-              testData.attachments.document.filename).should.equal('');
-            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
-              createdEvent.attachments[1].id,
-              testData.attachments.image.filename).should.equal('');
-
-            eventsNotifCount.should.eql(1, 'events notifications');
-
-            done();
           });
       }
 
@@ -1148,44 +1152,48 @@ describe('[EVNT] events', function () {
         .attach('$name.with:special-chars/',
           fs.createReadStream(testData.attachments.document.path),
           { filename: 'file.name.with.many.dots.pdf' })
-        .end(function (res) {
-          validation.check(res, {
-            status: 201,
-            schema: methodsSchema.create.result
-          });
+        .end(async function (res) {
+          try {
+            validation.check(res, {
+              status: 201,
+              schema: methodsSchema.create.result
+            });
 
-          const createdEvent = validation.sanitizeEvent(res.body.event);
-          const expected = _.extend(data, {
-            id: createdEvent.id,
-            attachments: [
-              {
-                id: createdEvent.attachments[0].id,
-                fileName: 'file.name.with.many.dots.pdf',
-                type: testData.attachments.document.type,
-                size: testData.attachments.document.size,
-                integrity: testData.attachments.document.integrity
-              }
-            ],
-            streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
-            integrity: createdEvent.integrity
-          });
+            const createdEvent = validation.sanitizeEvent(res.body.event);
+            const expected = _.extend(data, {
+              id: createdEvent.id,
+              attachments: [
+                {
+                  id: createdEvent.attachments[0].id,
+                  fileName: 'file.name.with.many.dots.pdf',
+                  type: testData.attachments.document.type,
+                  size: testData.attachments.document.size,
+                  integrity: testData.attachments.document.integrity
+                }
+              ],
+              streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+              integrity: createdEvent.integrity
+            });
 
-          if (!integrity.attachments.isActive) {
-            delete expected.attachments[0].integrity;
+            if (!integrity.attachments.isActive) {
+              delete expected.attachments[0].integrity;
+            }
+            if (!integrity.events.isActive) {
+              delete expected.integrity;
+            }
+            validation.checkObjectEquality(createdEvent, expected);
+
+            // check attached files
+            assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+              createdEvent.attachments[0].id,
+              testData.attachments.document.filename));
+
+            eventsNotifCount.should.eql(1, 'events notifications');
+
+            done();
+          } catch (e) {
+            done(e);
           }
-          if (!integrity.events.isActive) {
-            delete expected.integrity;
-          }
-          validation.checkObjectEquality(createdEvent, expected);
-
-          // check attached files
-          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
-            createdEvent.attachments[0].id,
-            testData.attachments.document.filename).should.equal('');
-
-          eventsNotifCount.should.eql(1, 'events notifications');
-
-          done();
         });
     });
 
@@ -1226,62 +1234,66 @@ describe('[EVNT] events', function () {
           testData.attachments.image.fileName)
         .attach('text', testData.attachments.text.path,
           testData.attachments.text.fileName)
-        .end(function (res) {
-          validation.check(res, {
-            status: 200,
-            schema: methodsSchema.update.result
-          });
+        .end(async function (res) {
+          try {
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.update.result
+            });
 
-          const updatedEvent = res.body.event;
-          validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
-          validation.sanitizeEvent(updatedEvent);
+            const updatedEvent = res.body.event;
+            validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
+            validation.sanitizeEvent(updatedEvent);
 
-          const updatedEventAttachments = {};
-          updatedEvent.attachments.forEach(function (attachment) {
-            updatedEventAttachments[attachment.fileName] = attachment;
-          });
+            const updatedEventAttachments = {};
+            updatedEvent.attachments.forEach(function (attachment) {
+              updatedEventAttachments[attachment.fileName] = attachment;
+            });
 
-          const expected = structuredClone(event);
-          expected.attachments = [];
-          updatedEvent.attachments.forEach(function (attachment) {
-            if (attachment.fileName === testData.attachments.image.filename) {
-              const attData = {
-                id: attachment.id,
-                fileName: testData.attachments.image.filename,
-                type: testData.attachments.image.type,
-                size: testData.attachments.image.size
-              };
-              if (integrity.attachments.isActive) attData.integrity = testData.attachments.image.integrity;
-              expected.attachments.push(attData);
-            }
-            if (attachment.fileName === testData.attachments.text.filename) {
-              const attData = {
-                id: attachment.id,
-                fileName: testData.attachments.text.filename,
-                type: testData.attachments.text.type,
-                size: testData.attachments.text.size
-              };
-              if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
-              expected.attachments.push(attData);
-            }
-          });
-          expected.modified = updatedEvent.modified;
-          expected.modifiedBy = access.id;
-          integrity.events.set(expected);
+            const expected = structuredClone(event);
+            expected.attachments = [];
+            updatedEvent.attachments.forEach(function (attachment) {
+              if (attachment.fileName === testData.attachments.image.filename) {
+                const attData = {
+                  id: attachment.id,
+                  fileName: testData.attachments.image.filename,
+                  type: testData.attachments.image.type,
+                  size: testData.attachments.image.size
+                };
+                if (integrity.attachments.isActive) attData.integrity = testData.attachments.image.integrity;
+                expected.attachments.push(attData);
+              }
+              if (attachment.fileName === testData.attachments.text.filename) {
+                const attData = {
+                  id: attachment.id,
+                  fileName: testData.attachments.text.filename,
+                  type: testData.attachments.text.type,
+                  size: testData.attachments.text.size
+                };
+                if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
+                expected.attachments.push(attData);
+              }
+            });
+            expected.modified = updatedEvent.modified;
+            expected.modifiedBy = access.id;
+            integrity.events.set(expected);
 
-          validation.checkObjectEquality(updatedEvent, expected);
+            validation.checkObjectEquality(updatedEvent, expected);
 
-          // check attached files
-          attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-            updatedEventAttachments[testData.attachments.image.filename].id,
-            testData.attachments.image.filename).should.equal('');
-          attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-            updatedEventAttachments[testData.attachments.text.filename].id,
-            testData.attachments.text.filename).should.equal('');
+            // check attached files
+            assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+              updatedEventAttachments[testData.attachments.image.filename].id,
+              testData.attachments.image.filename));
+            assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+              updatedEventAttachments[testData.attachments.text.filename].id,
+              testData.attachments.text.filename));
 
-          eventsNotifCount.should.eql(1, 'events notifications');
+            eventsNotifCount.should.eql(1, 'events notifications');
 
-          done();
+            done();
+          } catch (e) {
+            done(e);
+          }
         });
     });
 
@@ -1294,38 +1306,42 @@ describe('[EVNT] events', function () {
           .attach('text',
             testData.attachments.text.path,
             testData.attachments.text.fileName)
-          .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.update.result
-            });
+          .end(async function (res) {
+            try {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result
+              });
 
-            const updatedEvent = validation.sanitizeEvent(res.body.event);
-            const expectedAttachments = event.attachments.slice();
+              const updatedEvent = validation.sanitizeEvent(res.body.event);
+              const expectedAttachments = event.attachments.slice();
 
-            // reset new attachment id after creation
-            for (let i = 0; i < expectedAttachments.length; i++) expectedAttachments[i].id = updatedEvent.attachments[i].id;
+              // reset new attachment id after creation
+              for (let i = 0; i < expectedAttachments.length; i++) expectedAttachments[i].id = updatedEvent.attachments[i].id;
 
-            const attData = {
-              id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
-              fileName: testData.attachments.text.filename,
-              type: testData.attachments.text.type,
-              size: testData.attachments.text.size
-            };
-            if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
-            expectedAttachments.push(attData);
+              const attData = {
+                id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
+                fileName: testData.attachments.text.filename,
+                type: testData.attachments.text.type,
+                size: testData.attachments.text.size
+              };
+              if (integrity.attachments.isActive) attData.integrity = testData.attachments.text.integrity;
+              expectedAttachments.push(attData);
 
-            const attachments = updatedEvent.attachments;
-            should(attachments.length).be.eql(expectedAttachments.length);
-            attachments.should.eql(expectedAttachments);
+              const attachments = updatedEvent.attachments;
+              should(attachments.length).be.eql(expectedAttachments.length);
+              attachments.should.eql(expectedAttachments);
 
-            attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-              attachments[attachments.length - 1].id,
-              testData.attachments.text.filename).should.equal('');
+              assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+                attachments[attachments.length - 1].id,
+                testData.attachments.text.filename));
 
-            eventsNotifCount.should.eql(1, 'events notifications');
+              eventsNotifCount.should.eql(1, 'events notifications');
 
-            done();
+              done();
+            } catch (e) {
+              done(e);
+            }
           });
       });
   });
@@ -1723,9 +1739,9 @@ describe('[EVNT] events', function () {
         const time = timestamp.now();
         should(updatedEvent.modified).be.approximately(time, 2);
 
-        const filePath = eventFilesStorage.getAttachmentPath(user.id, event.id,
+        const attachmentExists = eventFilesStorage.tests.checkIfAttachmentExists(user.id, event.id,
           event.attachments[0].id);
-        fs.existsSync(filePath).should.eql(false, 'deleted file existence');
+        attachmentExists.should.eql(false, 'deleted file existence');
 
         eventsNotifCount.should.eql(1, 'events notifications');
 

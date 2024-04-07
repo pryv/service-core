@@ -59,6 +59,22 @@ EventFiles.prototype.tests = {
   checkIfEventHasAttachments: function (userId, eventId) {
     const dirPath = getEventPath(userId, eventId);
     return fs.existsSync(dirPath);
+  },
+
+  checkIfAttachmentExists: function (userId, eventId, attachmentId) {
+    const filePath = getAttachmentPath(userId, eventId, attachmentId);
+    return fs.existsSync(filePath);
+  }
+};
+
+/**
+ * Method Used By preview Server
+ * Active only if files are stored on the fileSystem
+ */
+EventFiles.prototype.previewsOnly = {
+
+  getAttachmentPath: function (userId, eventId, attachmentId) {
+    return getAttachmentPath(userId, eventId, attachmentId);
   }
 };
 
@@ -98,7 +114,7 @@ EventFiles.prototype.saveAttachmentFromTemp = async function (tempPath, userId, 
 
 EventFiles.prototype.saveAttachmentFromStream = async function (readableStream, userId, eventId, fileId) {
   fileId = fileId || cuid();
-  const filePath = this.getAttachmentPath(userId, eventId, fileId);
+  const filePath = getAttachmentPath(userId, eventId, fileId);
   const dirPath = path.dirname(filePath);
   await mkdirp(dirPath);
   const writeStream = fs.createWriteStream(filePath);
@@ -107,12 +123,12 @@ EventFiles.prototype.saveAttachmentFromStream = async function (readableStream, 
 };
 
 EventFiles.prototype.getAttachmentStream = function (userId, eventId, fileId) {
-  const filePath = this.getAttachmentPath(userId, eventId, fileId);
+  const filePath = getAttachmentPath(userId, eventId, fileId);
   return fs.createReadStream(filePath);
 };
 
 EventFiles.prototype.removeAttachment = async function (userId, eventId, fileId) {
-  const filePath = this.getAttachmentPath(userId, eventId, fileId);
+  const filePath = getAttachmentPath(userId, eventId, fileId);
   await fs.promises.unlink(filePath);
   await cleanupIfEmpty(path.dirname(filePath));
 };
@@ -145,9 +161,9 @@ EventFiles.prototype.removeAllForUser = function (user) {
  * @param {String} eventId
  * @param {String} fileId
  */
-EventFiles.prototype.getAttachmentPath = function (userId, eventId, fileId) {
+function getAttachmentPath (userId, eventId, fileId) {
   return path.join(getEventPath(userId, eventId), fileId);
-};
+}
 
 /**
  * @param {String} userId

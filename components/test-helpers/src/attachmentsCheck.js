@@ -7,7 +7,7 @@
 /**
  * Test helper functions for attached files.
  */
-const childProcess = require('child_process');
+const fs = require('fs');
 const path = require('path');
 const testData = require('./data');
 const eventFilesStorage = require('./dependencies').storage.user.eventFiles;
@@ -15,17 +15,27 @@ const eventFilesStorage = require('./dependencies').storage.user.eventFiles;
 // is identical to the original file. (Runs command-line util `cmp`
 // underneath).
 //
-exports.compareTestAndAttachedFiles = function (user, eventId, fileId, originalFileName) {
+exports.compareTestAndAttachedFiles = async function (user, eventId, fileId, originalFileName) {
   if (originalFileName == null) {
     originalFileName = fileId;
   }
-  return cmp(eventFilesStorage.getAttachmentPath(user.id, eventId, fileId), path.join(testData.testsAttachmentsDirPath, originalFileName));
+  const attachmentStream = eventFilesStorage.getAttachmentStream(user.id, eventId, fileId);
+  const sourceStream = fs.createReadStream(path.join(testData.testsAttachmentsDirPath, originalFileName));
+  const attachmentBuffer = await streamToBuffer(attachmentStream);
+  const sourceBuffer = await streamToBuffer(sourceStream);
+
+  return Buffer.compare(attachmentBuffer, sourceBuffer) === 0;
 };
-/**
- * @returns {any}
- */
-function cmp (filePathA, filePathB) {
-  return childProcess
-    .execSync('cmp "' + filePathA + '" "' + filePathB + '"')
-    .toString();
+
+async function streamToBuffer (readableStream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    readableStream.on('data', data => {
+      chunks.push(data);
+    });
+    readableStream.on('end', () => {
+      resolve(Buffer.concat(chunks));
+    });
+    readableStream.on('error', reject);
+  });
 }

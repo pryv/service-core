@@ -14,7 +14,7 @@ const helpers = require('test-helpers');
 const testData = helpers.data;
 const { getMall } = require('mall');
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
-const { remove, pathExists } = require('fs-extra');
+const { remove } = require('fs-extra');
 const path = require('path');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -55,8 +55,8 @@ describe('Migration - 1.9.0', function () {
     for (const event of allUserEvents) {
       if (event.attachments) {
         for (const attachment of event.attachments) {
-          const attachmentPath = eventFiles.getAttachmentPath(userWithAttachments, event.id, attachment.id);
-          assert.isTrue(await pathExists(attachmentPath), attachmentPath + ' should exists');
+          const attachmentExists = eventFiles.tests.checkIfAttachmentExists(userWithAttachments, event.id, attachment.id);
+          assert.isTrue(attachmentExists, attachment.id + ' should exists');
         }
       }
     }
