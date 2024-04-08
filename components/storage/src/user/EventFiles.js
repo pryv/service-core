@@ -100,18 +100,6 @@ async function getDirectorySize (dirPath) {
 
   return (await Promise.all(paths)).flat(Infinity).reduce((i, size) => i + size, 0);
 }
-
-/**
- * @param tempPath The current, temporary path of the file to save (the file will actually be moved
- *                 from that path)
- */
-EventFiles.prototype.saveAttachmentFromTemp = async function (tempPath, userId, eventId, fileId) {
-  const readStream = fs.createReadStream(tempPath);
-  fileId = await this.saveAttachmentFromStream(readStream, userId, eventId, fileId);
-  await fs.promises.unlink(tempPath);
-  return fileId;
-};
-
 EventFiles.prototype.saveAttachmentFromStream = async function (readableStream, userId, eventId, fileId) {
   fileId = fileId || cuid();
   const filePath = getAttachmentPath(userId, eventId, fileId);
@@ -179,42 +167,3 @@ function getEventPath (userId, eventId) {
 function getUserPath (userId) {
   return userLocalDirectory.getPathForUser(userId, ATTACHMENT_DIRNAME);
 }
-
-/**
- * Ensures the preview path for the specific event exists.
- * Only support JPEG preview images (fixed size) at the moment.
- *
- * @param {Object} user
- * @param {String} eventId
- * @param {Number} dimension
- * @param {Function} callback (error, previewPath)
- */
-EventFiles.prototype.ensurePreviewPath = function (user, eventId, dimension, callback) {
-  const dirPath = path.join(this.settings.previewsDirPath, user.id, eventId);
-  mkdirp(dirPath).then(function (res, err) {
-    if (err) { return callback(err); }
-    callback(null, path.join(dirPath, getPreviewFileName(dimension)));
-  });
-};
-
-/**
- * @param {Object} user
- * @param {String} eventId
- * @param {Number} dimension
- * @returns {String}
- */
-EventFiles.prototype.getPreviewPath = function (user, eventId, dimension) {
-  return path.join(this.settings.previewsDirPath, user.id, eventId, getPreviewFileName(dimension));
-};
-
-function getPreviewFileName (dimension) {
-  return dimension + '.jpg';
-}
-
-/**
- * Primarily meant for tests.
- * Synchronous until all related code is async/await.
- */
-EventFiles.prototype.removeAllPreviews = function () {
-  fs.rmSync(this.settings.previewsDirPath, { recursive: true, force: true });
-};

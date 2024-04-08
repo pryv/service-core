@@ -426,7 +426,9 @@ async function initiateUserWithData (username) {
   if (!isOpenSource) { user.webhook({ id: charlatan.Lorem.word() }, charlatan.Lorem.word()); }
   const filePath = `test-file-${username}`;
   fs.writeFileSync(filePath, 'Just some text');
-  await app.storageLayer.eventFiles.saveAttachmentFromTemp(path.resolve(filePath), username, charlatan.Lorem.word());
+  const fsStream = fs.createReadStream(path.resolve(filePath));
+  await app.storageLayer.eventFiles.saveAttachmentFromStream(fsStream, username, charlatan.Lorem.word());
+  await fs.promises.unlink(filePath);
   if (!isOpenSource) {
     const usersSeries = await influxRepository.get(`user.${username}`, `event.${cuid()}`);
     const data = new DataMatrix(['deltaTime', 'value'], [

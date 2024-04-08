@@ -22,6 +22,7 @@ const xattr = require('fs-xattr');
 const superagent = require('superagent');
 const { getMall } = require('mall');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const attachmentManagement = require('../src/attachmentManagement');
 
 describe('event previews', function () {
   const user = structuredClone(testData.users[0]);
@@ -54,7 +55,7 @@ describe('event previews', function () {
 
   describe('GET /<event id>/preview', function () {
     beforeEach(function () {
-      storage.user.eventFiles.removeAllPreviews();
+      attachmentManagement.removeAllPreviews();
     });
 
     it('[NRT9] must return JPEG previews for "picture/attached" events and cache the result',
@@ -68,8 +69,7 @@ describe('event previews', function () {
         res.statusCode.should.eql(200);
         res.header['content-type'].should.eql('image/jpeg');
 
-        const eventFiles = storage.user.eventFiles;
-        const cachedPath = eventFiles.getPreviewPath(user, event.id, 256);
+        const cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
 
         const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
 
@@ -142,7 +142,7 @@ describe('event previews', function () {
         function retrieveInitialPreview (stepDone) {
           request.get(path(event.id), token).end(function (res) {
             res.statusCode.should.eql(200);
-            cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
+            cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
             cachedStats = fs.statSync(cachedPath);
             stepDone();
           });
@@ -177,7 +177,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
-          cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
+          cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
           const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           cachedFileModified = modified.toString();
         },
@@ -295,7 +295,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
-          aCachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
+          aCachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
           // add delay as the attribute is written after the response is sent
           setTimeout(
             async function () {
@@ -308,7 +308,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           assert.strictEqual(res.statusCode, 200);
-          anotherCachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 512);
+          anotherCachedPath = attachmentManagement.getPreviewPath(user, event.id, 512);
           await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
         },
         async function hackLastAccessTime () {
@@ -334,7 +334,7 @@ describe('event previews', function () {
       }));
 
       resGet.statusCode.should.eql(200);
-      const cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
+      const cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
 
       const lastAccessed = await xattr.get(cachedPath, 'user.pryv.lastAccessed');
       assert.isNotNull(lastAccessed);

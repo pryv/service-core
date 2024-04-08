@@ -17,6 +17,8 @@ const bluebird = require('bluebird');
 const getAuth = require('middleware/src/getAuth');
 const { getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
+const attachmentManagement = require('../attachmentManagement');
+
 // constants
 const StandardDimensions = [256, 512, 768, 1024];
 const SmallestStandardDimension = StandardDimensions[0];
@@ -81,7 +83,7 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
         width: req.query.width || req.query.w,
         height: req.query.height || req.query.h
       });
-      previewPath = await bluebird.fromCallback((cb) => userEventFilesStorage.ensurePreviewPath(req.context.user, req.params.id, Math.max(targetSize.width, targetSize.height), cb));
+      previewPath = await attachmentManagement.ensurePreviewPath(req.context.user, req.params.id, Math.max(targetSize.width, targetSize.height));
       try {
         const cacheModified = await xattr.get(previewPath, Cache.EventModifiedXattrKey);
         cached = cacheModified.toString() === event.modified.toString();
