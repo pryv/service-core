@@ -62,6 +62,7 @@ module.exports = async function produceAccessesApiMethods (api) {
   const storageLayer = await getStorageLayer();
 
   const isStreamIdPrefixBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
+  const isFerret = config.get('database:isFerret');
 
   // RETRIEVAL
 
@@ -313,8 +314,14 @@ module.exports = async function produceAccessesApiMethods (api) {
 
   function createAccess (context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
+    if (params.type === 'shared') params.deviceName = null;
     accessesRepository.insertOne(context.user, params, function (err, newAccess) {
       if (err != null) {
+        if (isFerret) {
+          if (err.isDuplicate) {
+            return next(errors.itemAlreadyExists('access', { info: 'FerretDB does not provide duplicate information' }));
+          }
+        }
         // Duplicate errors
         if (err.isDuplicateIndex('token')) {
           return next(errors.itemAlreadyExists('access', { token: '(hidden)' }));

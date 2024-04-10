@@ -31,6 +31,7 @@ describe('accesses (personal)', function () {
   let sessionAccessId = null;
   let request = null;
   let mall = null;
+  let isFerret = false;
 
   function path (id) {
     return basePath + '/' + id;
@@ -54,8 +55,9 @@ describe('accesses (personal)', function () {
   }
 
   before(async function () {
-    await getConfig(); // needed for ApiEndpoint.build();
+    const config = await getConfig(); // needed for ApiEndpoint.build();
     mall = await getMall();
+    isFerret = config.get('database:isFerret');
   });
 
   before(function (done) {
@@ -160,6 +162,7 @@ describe('accesses (personal)', function () {
               modified: time,
               createdBy: sessionAccessId,
               modifiedBy: sessionAccessId,
+              deviceName: null,
               name: 'New Access',
               permissions: [
                 {
@@ -463,11 +466,16 @@ describe('accesses (personal)', function () {
         });
     });
 
-    it('[GZTH] must return an error if an access with the same name already exists', function (done) {
+    it('[GZTH] must return an error if an shared access with the same name already exists', function (done) {
       const data = {
         name: testData.accesses[2].name,
         permissions: []
       };
+      let expectedData = { type: 'shared', name: testData.accesses[2].name, deviceName: null };
+      if (isFerret) {
+        expectedData = { info: 'FerretDB does not provide duplicate information' };
+      }
+
       req()
         .post(basePath)
         .send(data)
@@ -475,7 +483,7 @@ describe('accesses (personal)', function () {
           validation.checkError(res, {
             status: 409,
             id: ErrorIds.ItemAlreadyExists,
-            data: { type: 'shared', name: testData.accesses[2].name }
+            data: expectedData
           }, done);
         });
     });
@@ -489,6 +497,14 @@ describe('accesses (personal)', function () {
         deviceName: existing.deviceName,
         permissions: []
       };
+      let expectedData = {
+        type: existing.type,
+        name: existing.name,
+        deviceName: existing.deviceName
+      };
+      if (isFerret) {
+        expectedData = { info: 'FerretDB does not provide duplicate information' };
+      }
       req()
         .post(basePath)
         .send(data)
@@ -496,11 +512,7 @@ describe('accesses (personal)', function () {
           validation.checkError(res, {
             status: 409,
             id: ErrorIds.ItemAlreadyExists,
-            data: {
-              type: existing.type,
-              name: existing.name,
-              deviceName: existing.deviceName
-            }
+            data: expectedData
           }, done);
         });
     });

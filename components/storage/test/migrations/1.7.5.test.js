@@ -27,10 +27,12 @@ describe('Migration - 1.7.5', function () {
   let accessesCollection;
 
   before(async function () {
+    if (database.isFerret) this.skip();
     accessesCollection = await database.getCollection({ name: 'accesses' });
   });
 
   after(async function () {
+    if (database.isFerret) return;
     // erase all
     await accessesCollection.deleteMany({});
   });
