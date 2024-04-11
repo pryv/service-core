@@ -14,7 +14,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const userStreams = require('./localUserStreams');
 const userEvents = require('./localUserEvents');
 const LocalTransaction = require('./LocalTransaction');
-const EventFiles = require('../eventFiles/EventLocalFiles');
+const { getEventFiles } = require('../eventFiles/getEventFiles');
 
 module.exports = ds.createDataStore({
 
@@ -26,8 +26,7 @@ module.exports = ds.createDataStore({
     // init events
     const eventsCollection = await database.getCollection({ name: 'events' });
     // file storage
-    const eventFilesStorage = new EventFiles();
-    await eventFilesStorage.init();
+    const eventFilesStorage = await getEventFiles();
 
     for (const item of eventsIndexes) {
       item.options.background = true;

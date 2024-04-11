@@ -15,7 +15,7 @@ const userStreams = require('../localDataStore/localUserStreams');
 const userEvents = require('./localUserEventsSQLite');
 const LocalTransaction = require('../localDataStore/LocalTransaction');
 const { getStorage } = require('../userSQLite');
-const EventFiles = require('../eventFiles/EventLocalFiles');
+const { getEventFiles } = require('../eventFiles/getEventFiles');
 
 module.exports = ds.createDataStore({
 
@@ -26,8 +26,7 @@ module.exports = ds.createDataStore({
     const database = await storage.getDatabase();
 
     // init events
-    const eventFilesStorage = new EventFiles();
-    await eventFilesStorage.init();
+    const eventFilesStorage = await getEventFiles();
 
     const userStorage = await getStorage('local');
     userEvents.init(userStorage, eventFilesStorage, this.settings, params.integrity.setOnEvent);
