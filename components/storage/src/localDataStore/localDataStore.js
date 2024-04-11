@@ -14,7 +14,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const userStreams = require('./localUserStreams');
 const userEvents = require('./localUserEvents');
 const LocalTransaction = require('./LocalTransaction');
-const EventFiles = require('../user/EventFiles');
+const EventFiles = require('../eventFiles/EventLocalFiles');
 
 module.exports = ds.createDataStore({
 

@@ -15,7 +15,7 @@ const userStreams = require('../localDataStore/localUserStreams');
 const userEvents = require('./localUserEventsSQLite');
 const LocalTransaction = require('../localDataStore/LocalTransaction');
 const { getStorage } = require('../userSQLite');
-const EventFiles = require('../user/EventFiles');
+const EventFiles = require('../eventFiles/EventLocalFiles');
 
 module.exports = ds.createDataStore({
 
