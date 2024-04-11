@@ -18,4 +18,4 @@ ${PRYV_CONF_ROOT}/pryv/influxdb/log \
 ${PRYV_CONF_ROOT}/pryv/core/log
 
 
-HOSTNAME=l.rec.la docker-compose -f ${PRYV_CONF_ROOT}/pryv.yml up
+HOSTNAME=l.backloop.dev docker-compose -f ${PRYV_CONF_ROOT}/pryv.yml up

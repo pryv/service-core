@@ -35,7 +35,7 @@ const indexes = [
     options: { unique: true }
   },
   {
-    index: { username: 1, accessToken: 1 },
+    index: { url: 1, accessToken: 1 },
     options: { unique: true }
   }
 ];

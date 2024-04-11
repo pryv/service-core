@@ -1,5 +1,5 @@
 ---
-domain: "rec.la"
+domain: "backloop.dev"
 serviceInfoUrl: "file:///app/conf/service-info.json"
 http:
   ip: "0.0.0.0"
@@ -17,13 +17,13 @@ eventFiles:
   attachmentsDirPath: "/app/data/attachments"
   previewsDirPath: "/app/data/previews"
 auth:
-  trustedApps: "*@https://pryv.github.io*, *@https://*.rec.la*"
+  trustedApps: "*@https://pryv.github.io*, *@https://*.rec.la*, *@https://*.backloop.dev*"
   sessionMaxAge: 1209600000
-  ssoCookieDomain: ".rec.la"
+  ssoCookieDomain: ".backloop.dev"
   ssoCookieSignSecret: "khsgd-uezoc-hszdt"
   filesReadTokenSecret: "itqyg-plhz-tsfdu"
   passwordResetRequestMaxAge: 3600000
-  passwordResetPageURL: "https://sw.rec.la/access/reset-password.html"
+  passwordResetPageURL: "https://sw.backloop.dev/access/reset-password.html"
   adminAccessKey: "no-key-admin"
   passwordComplexityMinCharCategories: 1
   passwordComplexityMinLength: 6
@@ -115,4 +115,4 @@ service:
   home: https://pryv.com/open-pryv-non-configured-page/
   eventTypes: https://pryv.github.io/event-types/flat.json
   assets:
-    definitions: https://my-computer.rec.la:4443/www/assets/index.json
+    definitions: https://my-computer.backloop.dev:4443/www/assets/index.json
