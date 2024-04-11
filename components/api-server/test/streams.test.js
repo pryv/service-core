@@ -18,7 +18,6 @@ const server = helpers.dependencies.instanceManager;
 const commonTests = helpers.commonTests;
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
-const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/streamsMethods');
 
 const testData = helpers.data;
@@ -847,6 +846,7 @@ describe('[STRE] streams', function () {
         return e.streamIds[0] === id;
       });
       const deletedEventWithAtt = deletedEvents[0];
+      let deletedEventWithAttPost = null;
       let deletionTime;
 
       const ADD_N_EVENTS = 100;
@@ -857,6 +857,7 @@ describe('[STRE] streams', function () {
             .attach('image', testData.attachments.image.path,
               testData.attachments.image.fileName)
             .end(function (res) {
+              deletedEventWithAttPost = res.body.event;
               validation.check(res, { status: 200 });
               eventsNotifCount = 0; // reset
               stepDone();
@@ -917,9 +918,12 @@ describe('[STRE] streams', function () {
               'Deletion time must be correct.');
             assert.equal(actual.id, e.id);
           });
-
-          const eventHasAttachments = eventFilesStorage.tests.checkIfEventHasAttachments(user.id, deletedEventWithAtt.id);
-          eventHasAttachments.should.be.false('Event attachments must be deleted');
+          try {
+            await mall.events.getAttachment(user.id, { id: deletedEventWithAttPost.id }, deletedEventWithAttPost.attachments[0].id);
+            throw new Error('Should not find attachment');
+          } catch (err) {
+            err.id.should.eql('unknown-resource');
+          }
         }
       ], done);
     });

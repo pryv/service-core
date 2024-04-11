@@ -112,7 +112,7 @@ module.exports = ds.createUserEvents({
    * @returns {Promise<any>}
    */
   async getAttachment (userId, eventId, fileId) {
-    return this.eventsFileStorage.getAttachmentStream(userId, eventId, fileId);
+    return await this.eventsFileStorage.getAttachmentStream(userId, eventId, fileId);
   },
 
   /**

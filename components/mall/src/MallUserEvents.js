@@ -230,7 +230,7 @@ class MallUserEvents {
   /**
    * @param {string} userId
    * @param {string} fileId
-   * @returns {Promise<any>}
+   * @returns {Promise<ReadableStream>}
    */
   async getAttachment (userId, eventData, fileId) {
     const [storeId, storeEventId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);

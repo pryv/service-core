@@ -23,7 +23,6 @@ const { getVersions } = require('./util');
 
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 const userWithAttachments = 'u_0';
-const { assert } = require('chai');
 const storage = require('storage');
 
 describe('Migration - 1.9.0', function () {
@@ -52,13 +51,12 @@ describe('Migration - 1.9.0', function () {
 
   it('Check attachments', async () => {
     const mall = await getMall();
-    const eventFiles = (await storage.getStorageLayer()).eventFiles;
     const allUserEvents = await mall.events.get(userWithAttachments, {});
     for (const event of allUserEvents) {
       if (event.attachments) {
         for (const attachment of event.attachments) {
-          const attachmentExists = eventFiles.tests.checkIfAttachmentExists(userWithAttachments, event.id, attachment.id);
-          assert.isTrue(attachmentExists, attachment.id + ' should exists');
+          // throw error if does not exists
+          await mall.events.getAttachment(userWithAttachments, { id: event.id }, attachment.id);
         }
       }
     }

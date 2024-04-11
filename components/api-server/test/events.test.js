@@ -22,7 +22,6 @@ const attachmentsCheck = helpers.attachmentsCheck;
 const commonTests = helpers.commonTests;
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
-const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/eventsMethods');
 const testData = helpers.data;
 const addCorrectAttachmentIds = testData.addCorrectAttachmentIds;
@@ -1710,43 +1709,43 @@ describe('[EVNT] events', function () {
   describe('DELETE /<event id>/<file id>', function () {
     beforeEach(resetEvents);
 
-    it('[RW8M] must delete the attachment (reference in event + file)', function (done) {
+    it('[RW8M] must delete the attachment (reference in event + file)', async function () {
       const event = testData.events[0];
       const attachmentId = testData.dynCreateAttachmentIdMap[event.id][0].id;
       const fPath = path(event.id) + '/' + attachmentId;
-      request.del(fPath).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
-
-        const updatedEvent = res.body.event;
-        validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
-        validation.sanitizeEvent(updatedEvent);
-        const expected = structuredClone(testData.events[0]);
-        expected.attachments = expected.attachments.slice();
-        // NOTE We cannot be sure that we still are at the exact same second that
-        // we were just now when we did the call. So don't use time here, test
-        // for time delta below.
-        delete expected.modified;
-        expected.modifiedBy = access.id;
-        expected.modified = updatedEvent.modified;
-        expected.attachments = structuredClone(testData.dynCreateAttachmentIdMap[event.id]);
-        expected.attachments.shift();
-        integrity.events.set(expected);
-        validation.checkObjectEquality(updatedEvent, expected);
-
-        const time = timestamp.now();
-        should(updatedEvent.modified).be.approximately(time, 2);
-
-        const attachmentExists = eventFilesStorage.tests.checkIfAttachmentExists(user.id, event.id,
-          event.attachments[0].id);
-        attachmentExists.should.eql(false, 'deleted file existence');
-
-        eventsNotifCount.should.eql(1, 'events notifications');
-
-        done();
+      const res = await request.del(fPath);
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.update.result
       });
+
+      const updatedEvent = res.body.event;
+      validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
+      validation.sanitizeEvent(updatedEvent);
+      const expected = structuredClone(testData.events[0]);
+      expected.attachments = expected.attachments.slice();
+      // NOTE We cannot be sure that we still are at the exact same second that
+      // we were just now when we did the call. So don't use time here, test
+      // for time delta below.
+      delete expected.modified;
+      expected.modifiedBy = access.id;
+      expected.modified = updatedEvent.modified;
+      expected.attachments = structuredClone(testData.dynCreateAttachmentIdMap[event.id]);
+      expected.attachments.shift();
+      integrity.events.set(expected);
+      validation.checkObjectEquality(updatedEvent, expected);
+
+      const time = timestamp.now();
+      should(updatedEvent.modified).be.approximately(time, 2);
+
+      try {
+        await mall.events.getAttachment(user.id, { id: event.id }, event.attachments[0].id);
+        throw new Error('Should not find attachment');
+      } catch (err) {
+        err.id.should.eql('unknown-resource');
+      }
+
+      eventsNotifCount.should.eql(1, 'events notifications');
     });
 
     it('[ZLZN] must return an error if not existing', function (done) {
@@ -1785,24 +1784,24 @@ describe('[EVNT] events', function () {
     });
 
     it('[73CD] must delete the event when already trashed including all its attachments', function (done) {
-      const id = testData.events[0].id;
+      const eventId = testData.events[0].id;
       let event;
 
       async.series([
         async function getEvent () {
-          event = await mall.events.getOne(user.id, id);
+          event = await mall.events.getOne(user.id, eventId);
         },
         async function trashEvent () {
           event.trashed = true;
           await mall.events.update(user.id, event);
         },
         function deleteEvent (stepDone) {
-          request.del(path(id)).end(function (res) {
+          request.del(path(eventId)).end(function (res) {
             validation.check(res, {
               status: 200,
               schema: methodsSchema.del.result
             });
-            res.body.eventDeletion.should.eql({ id });
+            res.body.eventDeletion.should.eql({ id: eventId });
             eventsNotifCount.should.eql(1, 'events notifications');
             stepDone();
           });
@@ -1810,15 +1809,20 @@ describe('[EVNT] events', function () {
         async function verifyEventData () {
           const deletedEvents = await mall.events.getDeletions('local', user.id, { deletedSince: 0 });
           const deletion = _.find(deletedEvents, function (event) {
-            return event.id === id;
+            return event.id === eventId;
           });
           assert.exists(deletion);
-          const expected = { id, deleted: deletion.deleted };
+          const expected = { id: eventId, deleted: deletion.deleted };
           integrity.events.set(expected);
           validation.checkObjectEquality(deletion.integrity, expected.integrity);
-
-          const eventHasAttachments = eventFilesStorage.tests.checkIfEventHasAttachments(user.id, id);
-          eventHasAttachments.should.eql(false, 'deleted event directory existence');
+          for (const attachment of event.attachments) {
+            try {
+              await mall.events.getAttachment(user.id, { id: eventId }, attachment.id);
+              throw new Error('Should not find attachment');
+            } catch (err) {
+              err.id.should.eql('unknown-resource');
+            }
+          }
         }
       ],
       done

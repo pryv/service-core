@@ -13,6 +13,8 @@ const path = require('path');
 const { pipeline } = require('stream/promises');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const userLocalDirectory = require('../userLocalDirectory');
+const ds = require('@pryv/datastore');
+const errors = ds.errors;
 
 const ATTACHMENT_DIRNAME = 'attachments';
 
@@ -45,25 +47,6 @@ EventFiles.prototype.getTotalSize = async function (userId) {
     return 0;
   }
   return getDirectorySize(userPath);
-};
-
-EventFiles.prototype.tests = {
-
-  checkAllFilesDeletedForUserId: function (userId) {
-    const pathToUserFiles = getUserPath(userId);
-    const userFileExists = fs.existsSync(pathToUserFiles);
-    return !userFileExists;
-  },
-
-  checkIfEventHasAttachments: function (userId, eventId) {
-    const dirPath = getEventPath(userId, eventId);
-    return fs.existsSync(dirPath);
-  },
-
-  checkIfAttachmentExists: function (userId, eventId, attachmentId) {
-    const filePath = getAttachmentPath(userId, eventId, attachmentId);
-    return fs.existsSync(filePath);
-  }
 };
 
 /**
@@ -109,8 +92,11 @@ EventFiles.prototype.saveAttachmentFromStream = async function (readableStream, 
   return fileId;
 };
 
-EventFiles.prototype.getAttachmentStream = function (userId, eventId, fileId) {
+EventFiles.prototype.getAttachmentStream = async function (userId, eventId, fileId) {
   const filePath = getAttachmentPath(userId, eventId, fileId);
+  if (!fs.existsSync(filePath)) {
+    throw errors.unknownResource('attachment', JSON.stringify({ userId, eventId, fileId }));
+  }
   return fs.createReadStream(filePath);
 };
 
