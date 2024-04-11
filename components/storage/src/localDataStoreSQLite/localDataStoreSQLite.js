@@ -21,6 +21,7 @@ module.exports = ds.createDataStore({
 
   async init (params) {
     this.settings = params.settings;
+
     await SystemStreamsSerializer.init();
     const database = await storage.getDatabase();
 
@@ -30,6 +31,7 @@ module.exports = ds.createDataStore({
 
     const userStorage = await getStorage('local');
     userEvents.init(userStorage, eventFilesStorage, this.settings, params.integrity.setOnEvent);
+    eventFilesStorage.attachToEventStore(userEvents, params.integrity.setOnEvent);
 
     // init streams
     const streamsCollection = await database.getCollection({ name: 'streams' });

@@ -93,46 +93,6 @@ module.exports = ds.createUserEvents({
     }
   },
 
-  async addAttachment (userId, eventId, attachmentItem, transaction) {
-    const desiredId = attachmentItem.id || null; // id is assigned during tests (to be removed)
-    delete attachmentItem.id;
-    const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId, desiredId);
-    const attachment = Object.assign({ id: fileId }, attachmentItem);
-    delete attachment.attachmentData;
-    const event = await this.getOne(userId, eventId);
-    event.attachments ??= [];
-    event.attachments.push(attachment);
-    this.setIntegrityOnEvent(event);
-    await this.update(userId, event, transaction);
-    return event;
-  },
-  /**
-   * @param {string} userId
-   * @param {string} fileId
-   * @returns {Promise<any>}
-   */
-  async getAttachment (userId, eventId, fileId) {
-    return await this.eventsFileStorage.getAttachmentStream(userId, eventId, fileId);
-  },
-
-  /**
-   * @param {string} userId
-   * @param {string} fileId
-   * @param {Transaction} transaction
-   * @returns {Promise<any>}
-   */
-  async deleteAttachment (userId, eventId, fileId, transaction) {
-    const eventData = await this.getOne(userId, eventId);
-    const newEventData = structuredClone(eventData);
-    newEventData.attachments = newEventData.attachments.filter((attachment) => {
-      return attachment.id !== fileId;
-    });
-    await this.eventsFileStorage.removeAttachment(userId, eventId, fileId);
-    this.setIntegrityOnEvent(newEventData);
-    await this.update(userId, newEventData, transaction);
-    return newEventData;
-  },
-
   /**
    * @returns {Promise<any>}
    */
@@ -212,7 +172,7 @@ module.exports = ds.createUserEvents({
   },
 
   async _getFilesStorageInfos (userId) {
-    const sizeKb = await this.eventsFileStorage.getTotalSize(userId);
+    const sizeKb = await this.eventsFileStorage.getFileStorageInfos(userId);
     return { sizeKb };
   },
 

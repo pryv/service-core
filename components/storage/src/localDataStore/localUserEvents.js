@@ -104,34 +104,6 @@ module.exports = ds.createUserEvents({
     }
   },
 
-  async addAttachment (userId, eventId, attachmentItem, transaction) {
-    delete attachmentItem.id;
-    const fileId = await this.eventsFileStorage.saveAttachmentFromStream(attachmentItem.attachmentData, userId, eventId);
-    const attachment = Object.assign({ id: fileId }, attachmentItem);
-    delete attachment.attachmentData;
-    const event = await this.getOne(userId, eventId);
-    event.attachments ??= [];
-    event.attachments.push(attachment);
-    this.setIntegrityOnEvent(event);
-    await this.update(userId, event, transaction);
-    return event;
-  },
-
-  async getAttachment (userId, eventId, fileId) {
-    return await this.eventsFileStorage.getAttachmentStream(userId, eventId, fileId);
-  },
-
-  async deleteAttachment (userId, eventId, fileId, transaction) {
-    const event = await this.getOne(userId, eventId);
-    event.attachments = event.attachments.filter((attachment) => {
-      return attachment.id !== fileId;
-    });
-    await this.eventsFileStorage.removeAttachment(userId, eventId, fileId);
-    this.setIntegrityOnEvent(event);
-    await this.update(userId, event, transaction);
-    return event;
-  },
-
   async update (userId, eventData, transaction) {
     const update = structuredClone(eventData);
     update._id = update.id;
@@ -225,7 +197,7 @@ module.exports = ds.createUserEvents({
   },
 
   async _getFilesStorageInfos (userId) {
-    const sizeKb = await this.eventsFileStorage.getTotalSize(userId);
+    const sizeKb = await this.eventsFileStorage.getFileStorageInfos(userId);
     return { sizeKb };
   },
 
