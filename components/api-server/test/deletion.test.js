@@ -298,7 +298,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert(sessions !== null || sessions !== []);
         });
         it(`[${testIDs[i][4]}] should not delete other user event files`, async function () {
-          const totalFilesSize = await app.storageLayer.eventFiles.getTotalSize({ id: username2 });
+          const totalFilesSize = await app.storageLayer.eventFiles.getTotalSize(username2);
           assert.notEqual(totalFilesSize, 0);
         });
         it(`[${testIDs[i][7]}] should delete on register`, async function () {

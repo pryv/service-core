@@ -10,7 +10,6 @@ const fs = require('fs');
 const mkdirp = require('mkdirp');
 const path = require('path');
 
-const { toString } = require('utils');
 const { pipeline } = require('stream/promises');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const userLocalDirectory = require('../userLocalDirectory');
@@ -37,12 +36,12 @@ EventFiles.prototype.init = async function () {
  * @param {Object} user
  * @returns {Promise<number>}
  */
-EventFiles.prototype.getTotalSize = async function (user) {
-  const userPath = getUserPath(user.id);
+EventFiles.prototype.getTotalSize = async function (userId) {
+  const userPath = getUserPath(userId);
   try {
     await fs.promises.access(userPath);
   } catch (err) {
-    this.logger.debug('No attachments dir for user ' + toString.user(user));
+    this.logger.debug('No attachments dir for user ' + userId);
     return 0;
   }
   return getDirectorySize(userPath);
@@ -140,8 +139,8 @@ EventFiles.prototype.removeAllForEvent = async function (userId, eventId) {
 /**
  * Synchronous until all related code is async/await.
  */
-EventFiles.prototype.removeAllForUser = function (user) {
-  fs.rmSync(getUserPath(user.id), { recursive: true, force: true });
+EventFiles.prototype.removeAllForUser = function (userId) {
+  fs.rmSync(getUserPath(userId), { recursive: true, force: true });
 };
 
 /**

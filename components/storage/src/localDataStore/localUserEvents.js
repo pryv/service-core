@@ -215,7 +215,7 @@ module.exports = ds.createUserEvents({
   async _deleteUser (userId) {
     const query = { userId };
     const res = await this.eventsCollection.deleteMany(query, {});
-    await this.eventsFileStorage.removeAllForUser({ id: userId });
+    await this.eventsFileStorage.removeAllForUser(userId);
     return res;
   },
 
@@ -225,7 +225,7 @@ module.exports = ds.createUserEvents({
   },
 
   async _getFilesStorageInfos (userId) {
-    const sizeKb = await this.eventsFileStorage.getTotalSize({ id: userId });
+    const sizeKb = await this.eventsFileStorage.getTotalSize(userId);
     return { sizeKb };
   },
 
@@ -236,7 +236,7 @@ module.exports = ds.createUserEvents({
     const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
     const query = { userId, streamIds: { $nin: allAccountStreamIds } };
     const res = await this.eventsCollection.deleteMany(query, {});
-    await this.eventsFileStorage.removeAllForUser({ id: userId });
+    await this.eventsFileStorage.removeAllForUser(userId);
     return res;
   }
 });
