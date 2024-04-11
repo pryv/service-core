@@ -15,7 +15,6 @@ const fs = require('fs');
 const bluebird = require('bluebird');
 const gm = require('gm');
 const { assert } = require('chai');
-const storage = helpers.dependencies.storage;
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
@@ -248,28 +247,6 @@ describe('event previews', function () {
             res.body.error.id.should.eql(errors.ErrorIds.CorruptedData);
             stepDone();
           });
-        }
-      ], done);
-    });
-
-    it('[DQF6] must return a proper error if event data is corrupted (no attached file)', function (done) {
-      const event = testData.events[2];
-      event.attachments = testData.dynCreateAttachmentIdMap[event.id];
-      const filePath = storage.user.eventFiles.previewsOnly.getAttachmentPath(user.id, event.id, event.attachments[0].id);
-      const tempPath = filePath + '_bak';
-      async.series([
-        function removeFile (stepDone) {
-          fs.rename(filePath, tempPath, stepDone);
-        },
-        function getPreview (stepDone) {
-          request.get(path(event.id), token).end(function (res) {
-            res.statusCode.should.eql(422);
-            res.body.error.id.should.eql(errors.ErrorIds.CorruptedData);
-            stepDone();
-          });
-        },
-        function restoreFile (stepDone) {
-          fs.rename(tempPath, filePath, stepDone);
         }
       ], done);
     });

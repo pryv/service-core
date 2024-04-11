@@ -50,17 +50,6 @@ EventFiles.prototype.getTotalSize = async function (userId) {
 };
 
 /**
- * Method Used By preview Server
- * Active only if files are stored on the fileSystem
- */
-EventFiles.prototype.previewsOnly = {
-
-  getAttachmentPath: function (userId, eventId, attachmentId) {
-    return getAttachmentPath(userId, eventId, attachmentId);
-  }
-};
-
-/**
  *
  * @param {string} dirPath
  * @returns {Promise<number>}

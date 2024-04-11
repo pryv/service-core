@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+const fs = require('fs');
 const path = require('path');
 const Cache = require('../cache');
 const childProcess = require('child_process');
@@ -62,11 +63,17 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
       if (!canHavePreview(event)) {
         return res.sendStatus(204);
       }
+
       const attachment = getSourceAttachment(event);
       if (attachment == null) {
         throw errors.corruptedData('Corrupt event data: expected an attachment.');
       }
-      const attachmentPath = userEventFilesStorage.previewsOnly.getAttachmentPath(context.user.id, id, attachment.id);
+      const attachmentPath = await attachmentManagement.ensurePreviewPath(req.context.user, req.params.id, 0);
+      if (!fs.existsSync(attachmentPath)) { // load file
+        const attachmentStream = await mall.events.getAttachment(context.user.id, { id }, attachment.id);
+        await fs.promises.writeFile(attachmentPath, attachmentStream);
+      }
+      await xattr.set(attachmentPath, Cache.LastAccessedXattrKey, timestamp.now().toString());
       // Get aspect ratio
       if (attachment.width != null) {
         originalSize = { width: attachment.width, height: attachment.height };
