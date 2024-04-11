@@ -1,6 +1,13 @@
 
 ## 1.9
 
+### 1.9.2
+- Refactored Attachments (Event Files) Logic to b modular
+
+### 1.9.1
+- Implemented furretDB compatibility
+- Replaced rec.la by backloop.dev
+
 ### 1.9.0
 
 - Remove FlowType and convert (best-effort) typing information into JSDoc comments
