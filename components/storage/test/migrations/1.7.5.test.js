@@ -16,6 +16,7 @@ const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
+const userLocalDirectory = require('storage').userLocalDirectory;
 
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 
@@ -27,6 +28,7 @@ describe('Migration - 1.7.5', function () {
   let accessesCollection;
 
   before(async function () {
+    await userLocalDirectory.init();
     if (database.isFerret) this.skip();
     accessesCollection = await database.getCollection({ name: 'accesses' });
   });

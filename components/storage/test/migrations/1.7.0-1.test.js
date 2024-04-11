@@ -20,6 +20,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const DOT = '.';
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
+const userLocalDirectory = require('storage').userLocalDirectory;
 
 const { getVersions, compareIndexes } = require('./util');
 
@@ -33,6 +34,7 @@ describe('Migration - 1.7.x', function () {
   let webhooksCollection;
 
   before(async function () {
+    await userLocalDirectory.init();
     if (database.isFerret) this.skip();
     eventsCollection = await database.getCollection({ name: 'events' });
     usersCollection = await database.getCollection({ name: 'users' });

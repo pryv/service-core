@@ -19,6 +19,7 @@ const getAuth = require('middleware/src/getAuth');
 const { getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 const attachmentManagement = require('../attachmentManagement');
+const { getConfig } = require('@pryv/boiler');
 
 // constants
 const StandardDimensions = [256, 512, 768, 1024];
@@ -31,11 +32,11 @@ const StandardDimensionsLength = StandardDimensions.length;
  * @param expressApp
  * @param initContextMiddleware
  * @param loadAccessMiddleware
- * @param userEventFilesStorage
  * @param logging
  */
-module.exports = async function (expressApp, initContextMiddleware, loadAccessMiddleware, userEventFilesStorage, logging) {
+module.exports = async function (expressApp, initContextMiddleware, loadAccessMiddleware, logging) {
   const mall = await getMall();
+  const previewsCacheCleanUpCronTime = (await getConfig()).get('eventFiles:previewsCacheCleanUpCronTime') || '00 00 2 * * *';
   // SERVING PREVIEWS
   expressApp.all('/*', getAuth);
   expressApp.all('/:username/events/*', initContextMiddleware, loadAccessMiddleware);
@@ -187,8 +188,7 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
     });
   }
   const cronJob = new CronJob({
-    cronTime: userEventFilesStorage.settings.previewsCacheCleanUpCronTime ||
-            '00 00 2 * * *',
+    cronTime: previewsCacheCleanUpCronTime,
     onTick: function () {
       if (workerRunning) {
         return;
