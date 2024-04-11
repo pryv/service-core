@@ -20,6 +20,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const DOT = '.';
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
+const userLocalDirectory = require('storage').userLocalDirectory;
 
 const { getVersions, compareIndexes } = require('./util');
 
@@ -33,6 +34,7 @@ describe('Migration - 1.7.x', function () {
   let webhooksCollection;
 
   before(async function () {
+    await userLocalDirectory.init();
     if (database.isFerret) this.skip();
     eventsCollection = await database.getCollection({ name: 'events' });
     usersCollection = await database.getCollection({ name: 'users' });
@@ -52,9 +54,7 @@ describe('Migration - 1.7.x', function () {
     const versions0 = getVersions('1.7.0');
     const versions1 = getVersions('1.7.1');
     const newIndexes = testData.getStructure('1.7.0').indexes;
-
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
-
     // get backup of users
     const usersCursor = usersCollection.find({});
     const users = await usersCursor.toArray();
@@ -72,7 +72,9 @@ describe('Migration - 1.7.x', function () {
 
     // perform migration
     await versions0.migrateIfNeeded();
+
     await versions1.migrateIfNeeded();
+
     // verify that user accounts were migrated to events
     for (const user of users) {
       // we must verify that all system streamIds were translated to another prefix

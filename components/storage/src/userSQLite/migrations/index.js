@@ -20,7 +20,9 @@ module.exports = {
 
 async function migrateUserDBsIfNeeded (storage) {
   const usersBaseDirectory = userLocalDirectory.getBasePath();
-
+  if (!fs.existsSync(usersBaseDirectory)) {
+    fs.mkdirSync(usersBaseDirectory, { recursive: true });
+  }
   const auditDBVersionFile = path.join(usersBaseDirectory, `audit-db-version-${storage.getVersion()}.txt`);
   if (fs.existsSync(auditDBVersionFile)) {
     logger.debug('Audit db version file found, skipping migration for ' + storage.getVersion());
@@ -30,6 +32,7 @@ async function migrateUserDBsIfNeeded (storage) {
   const result = { migrated: 0, skipped: 0 };
 
   await foreachUserDirectory(checkUserDir, usersBaseDirectory, logger);
+
   logger.info(`Migration done for ${storage.getVersion()}: ${result.migrated} migrated, ${result.skipped} skipped`);
   fs.writeFileSync(auditDBVersionFile, 'DO NOT DELETE THIS FILE - IT IS USED TO DETECT MIGRATION SUCCESS');
 
@@ -77,6 +80,10 @@ async function foreachUserDirectory (asyncCallBack, userDataPath, logger) {
   await loop(userDataPath, '');
 
   async function loop (loopPath, tail) {
+    if (!fs.existsSync(loopPath)) {
+      logger.error('Cannot find dir' + loopPath);
+      return;
+    }
     const fileNames = fs.readdirSync(loopPath);
 
     for (const fileName of fileNames) {

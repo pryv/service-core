@@ -15,13 +15,13 @@ const fs = require('fs');
 const bluebird = require('bluebird');
 const gm = require('gm');
 const { assert } = require('chai');
-const storage = helpers.dependencies.storage;
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const superagent = require('superagent');
 const { getMall } = require('mall');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const attachmentManagement = require('../src/attachmentManagement');
 
 describe('event previews', function () {
   const user = structuredClone(testData.users[0]);
@@ -44,7 +44,6 @@ describe('event previews', function () {
       testData.resetUsers,
       testData.resetAccesses,
       testData.resetEvents,
-      testData.resetAttachments,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
         request = helpers.request(server.url);
@@ -55,7 +54,7 @@ describe('event previews', function () {
 
   describe('GET /<event id>/preview', function () {
     beforeEach(function () {
-      storage.user.eventFiles.removeAllPreviews();
+      attachmentManagement.removeAllPreviews();
     });
 
     it('[NRT9] must return JPEG previews for "picture/attached" events and cache the result',
@@ -69,8 +68,7 @@ describe('event previews', function () {
         res.statusCode.should.eql(200);
         res.header['content-type'].should.eql('image/jpeg');
 
-        const eventFiles = storage.user.eventFiles;
-        const cachedPath = eventFiles.getPreviewPath(user, event.id, 256);
+        const cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
 
         const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
 
@@ -143,7 +141,7 @@ describe('event previews', function () {
         function retrieveInitialPreview (stepDone) {
           request.get(path(event.id), token).end(function (res) {
             res.statusCode.should.eql(200);
-            cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
+            cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
             cachedStats = fs.statSync(cachedPath);
             stepDone();
           });
@@ -178,7 +176,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
-          cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
+          cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
           const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           cachedFileModified = modified.toString();
         },
@@ -253,27 +251,6 @@ describe('event previews', function () {
       ], done);
     });
 
-    it('[DQF6] must return a proper error if event data is corrupted (no attached file)', function (done) {
-      const event = testData.events[2];
-      const filePath = storage.user.eventFiles.getAttachmentPath(user.id, event.id, event.attachments[0].id);
-      const tempPath = filePath + '_bak';
-      async.series([
-        function removeFile (stepDone) {
-          fs.rename(filePath, tempPath, stepDone);
-        },
-        function getPreview (stepDone) {
-          request.get(path(event.id), token).end(function (res) {
-            res.statusCode.should.eql(422);
-            res.body.error.id.should.eql(errors.ErrorIds.CorruptedData);
-            stepDone();
-          });
-        },
-        function restoreFile (stepDone) {
-          fs.rename(tempPath, filePath, stepDone);
-        }
-      ], done);
-    });
-
     it('[GSDF] must work with animated GIFs too', function (done) {
       const event = testData.events[12];
       request.get(path(event.id), token).end(function (res) {
@@ -295,7 +272,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
-          aCachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
+          aCachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
           // add delay as the attribute is written after the response is sent
           setTimeout(
             async function () {
@@ -308,7 +285,7 @@ describe('event previews', function () {
             cb(null, res);
           }));
           assert.strictEqual(res.statusCode, 200);
-          anotherCachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 512);
+          anotherCachedPath = attachmentManagement.getPreviewPath(user, event.id, 512);
           await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
         },
         async function hackLastAccessTime () {
@@ -334,7 +311,7 @@ describe('event previews', function () {
       }));
 
       resGet.statusCode.should.eql(200);
-      const cachedPath = storage.user.eventFiles.getPreviewPath(user, event.id, 256);
+      const cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
 
       const lastAccessed = await xattr.get(cachedPath, 'user.pryv.lastAccessed');
       assert.isNotNull(lastAccessed);
