@@ -13,7 +13,7 @@ const errors = require('errors').factory;
 const { getServiceRegisterConn } = require('platform/src/service_register');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-const DB = require('./DB');
+const getPlatformDB = require('./getPlatformDB');
 
 const platformCheckIntegrity = require('./platformCheckIntegrity');
 
@@ -29,7 +29,6 @@ class Platform {
 
   constructor () {
     this.#initialized = false;
-    this.#db = new DB();
   }
 
   async init () {
@@ -37,10 +36,11 @@ class Platform {
       logger.warn('Platform already initialized, skipping');
       return this;
     }
+
     this.initialized = true;
     this.#config = await getConfig();
     const isDnsLess = this.#config.get('dnsLess:isActive');
-    await this.#db.init();
+    this.#db = await getPlatformDB();
     if (!isDnsLess) {
       this.#serviceRegisterConn = await getServiceRegisterConn();
     }

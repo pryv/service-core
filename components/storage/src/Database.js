@@ -5,7 +5,6 @@
  * Proprietary and confidential
  */
 const MongoClient = require('mongodb').MongoClient;
-const _ = require('lodash');
 const { setTimeout } = require('timers/promises');
 
 const { getLogger } = require('@pryv/boiler');
@@ -180,9 +179,7 @@ class Database {
     if (indexes == null) { return; }
     if (initializedCollections[collectionName]) { return; }
     for (const item of indexes) {
-      item.options = _.merge({}, item.options, {
-        background: true
-      });
+      if (item.options.background !== false) item.options.background = true;
       this.ferretIndexAndOptionsAdaptationsIfNeeded(item);
       await collection.createIndex(item.index, item.options);
     }

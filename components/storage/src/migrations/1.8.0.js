@@ -8,7 +8,7 @@
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getUsersRepository } = require('business/src/users/repository');
 const { getLogger } = require('@pryv/boiler');
-const PlatformWideDB = require('platform/src/DB');
+const getPlatformDB = require('platform/src/getPlatformDB');
 
 /**
  * v1.7.5:
@@ -65,8 +65,7 @@ module.exports = async function (context, callback) {
   }
 
   async function migrateIndexedFieldsToPlatform () {
-    const platformWideDB = new PlatformWideDB();
-    await platformWideDB.init();
+    const platformWideDB = await getPlatformDB();
     // Retrieve all existing users
     const usersRepository = await getUsersRepository();
     const users = await usersRepository.getAll();
@@ -126,6 +125,5 @@ module.exports = async function (context, callback) {
         }
       }
     }
-    await platformWideDB.close();
   }
 };
