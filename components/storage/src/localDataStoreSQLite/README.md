@@ -24,4 +24,4 @@ When this PoC passes the tests suites, it might be documented as an option.
 
 # License
 
-[UNLICENSED](LICENSE)
+[BSD-3-Clause](LICENSE)

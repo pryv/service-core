@@ -4,6 +4,6 @@
   "private": true,
   "description": "Express server supporting client apps with event previews",
   "homepage": "https://pryv.com",
-  "license": "UNLICENSED",
-  "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)"
+  "license": "BSD-3-Clause",
+  "author": "Pryv <info@pryv.com> (https://pryv.com)"
 }

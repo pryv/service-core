@@ -8,4 +8,4 @@ Exposes internal storages and "dynamic mapping" of external storage to api-serve
 
 # License
 
-[UNLICENSED](LICENSE)
+[BSD-3-Clause](LICENSE)

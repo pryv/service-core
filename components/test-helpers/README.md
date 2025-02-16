@@ -15,4 +15,4 @@ Shared utilities and data for testing.
 
 # License
 
-[UNLICENSED](LICENSE)
+[BSD-3-Clause](LICENSE)

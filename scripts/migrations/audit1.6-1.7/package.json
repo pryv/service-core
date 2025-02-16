@@ -4,8 +4,8 @@
   "private": true,
   "description": "",
   "homepage": "https://pryv.com",
-  "license": "UNLICENSED",
-  "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
+  "license": "BSD-3-Clause",
+  "author": "Pryv <info@pryv.com> (https://pryv.com)",
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

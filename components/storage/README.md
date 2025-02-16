@@ -23,4 +23,4 @@ Handles storage of user data on MongoDB.
 
 # License
 
-[UNLICENSED](LICENSE)
+[BSD-3-Clause](LICENSE)

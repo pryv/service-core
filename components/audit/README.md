@@ -36,4 +36,4 @@ Was implemented in dnsLess=False but seems it was never used
 
 # License
 
-[UNLICENSED](LICENSE)
+[BSD-3-Clause](LICENSE)

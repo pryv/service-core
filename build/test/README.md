@@ -13,4 +13,4 @@ use: `TEST_PRYVLIB_DNSLESS_URL="http://l.backloop.dev:3000/" just test all` from
 
 # License
 
-[UNLICENSED](LICENSE)
+[BSD-3-Clause](LICENSE)

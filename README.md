@@ -252,4 +252,4 @@ Or increase the number of authorized files using: `ulimit -n 1024` (or more if n
 
 # License
 
-[UNLICENSED](LICENSE)
+[BSD-3-Clause](LICENSE)

@@ -30,4 +30,4 @@ Acceptance tests covering the API methods use the HTTP API (that was implemented
 
 # License
 
-[UNLICENSED](LICENSE)
+[BSD-3-Clause](LICENSE)

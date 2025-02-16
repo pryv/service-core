@@ -1,8 +1,8 @@
 /**
  * @license
- * Copyright (C) 2012–2024 Pryv S.A. https://pryv.com - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
+ * Copyright (C) Pryv https://pryv.com
+ * This file is part of Pryv.io and released under BSD-Clause-3 License
+ * Refer to LICENSE file
  */
 
 const cuid = require('cuid');
@@ -122,7 +122,7 @@ describe('permissions selfRevoke', function () {
       assert.equal(res.body.error.id, 'invalid-parameters-format');
     });
 
-    it('[UZR] an appToken with managed rights should allow to create an access with selfRevoke forbidden', async function () {
+    it('[UZRA] an appToken with managed rights should allow to create an access with selfRevoke forbidden', async function () {
       const res = await server.request()
         .post(basePathAccess)
         .set('Authorization', appToken)
