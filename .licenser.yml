@@ -1,4 +1,11 @@
 files:
+  ".mocharc.js":
+    header:
+      startBlock: |
+        /**
+         * @license
+      linePrefix: " * "
+      endBlock: " */"
   "**/*.js":
     header:
       startBlock: |
