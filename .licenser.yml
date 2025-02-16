@@ -1,5 +1,5 @@
 files:
-  ".mocharc.js":
+  "**/.mocharc.js":
     header:
       startBlock: |
         /**
