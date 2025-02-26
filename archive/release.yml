@@ -1,3 +1,4 @@
+# previous version made to publish on Azure should be adapted to publish on dockerHub
 name: Service core publish release
 
 on:

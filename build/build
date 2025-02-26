@@ -16,7 +16,7 @@ then
   fi
   version=$2"-preview"
   echo "This is a preview build: it will be published to the Docker registry with tag: ${version}"
-  host='eu.gcr.io'
+  host='docker.io'
   release=true
 elif [ "$1" != "test" ]
 then
@@ -25,7 +25,7 @@ then
   if [ -e release_build ]; then
     echo "This is a release build, it will update 'latest' tags."
   fi
-  host='eu.gcr.io'
+  host='docker.io'
   release=true
 
   # Copy the release version to the project root, so we can later display it to
@@ -36,8 +36,6 @@ else ## test
   host=localhost
   release=false
 fi
-
-
 
 
 echo "---------------------------- building core base --------------------------------"

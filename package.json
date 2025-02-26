@@ -32,7 +32,7 @@
     "async": "^2.6.4",
     "awaiting": "^3.0.0",
     "axon": "2.0.x",
-    "backloop.dev": "^2.0.1",
+    "backloop.dev": "^2.0.5",
     "bcrypt": "^5.1.0",
     "better-sqlite3": "^7.6.2",
     "bluebird": "^3.5.0",

@@ -249,6 +249,11 @@ influxd
 
 Or increase the number of authorized files using: `ulimit -n 1024` (or more if needed)
 
+## Contributing
+
+### Todo 
+realease github workflow has been archived in `archives` it needs to rewritten to publish on dockerHub
+
 
 # License
 

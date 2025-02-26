@@ -1,6 +1,6 @@
 ARG BUILD_HOST
 ARG BUILD_VERSION
-FROM ${BUILD_HOST}/pryvio/base:${BUILD_VERSION}
+FROM ${BUILD_HOST}/pryvio/base:1.9.0
 LABEL maintainer="Pryv<tech@pryv.com>"
 
 ARG TARGET_DIR="/app/bin"
