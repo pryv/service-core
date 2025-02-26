@@ -37,9 +37,5 @@ jobs:
         username: ${{ secrets.REGISTRY_PRYV_USERNAME }}
         password: ${{ secrets.REGISTRY_PRYV_PASSWORD }}
 
-    # needed to run here, as we are fetching deps from private repos, inside docker builder is not authenticated
-    - name: Setup private libraries
-      run: just setup-private-libs
-
     - name: Build and deploy
       run: ./build/build
