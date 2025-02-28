@@ -42,7 +42,6 @@ services:
     welcomeTemplate: "welcome-email"
     resetPasswordTemplate: "reset-password"
 reporting:
-  licenseName: "PRYV-DOCKER-TEST"
   templateVersion: "1.8.1"
 updates:
   ignoreProtectedFields: false

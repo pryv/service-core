@@ -84,18 +84,6 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "START api-server with service-reporting nock",
-            "program": "${workspaceFolder}/components/api-server/bin/server",
-            "env": {"NODE_ENV":"development", "NODE_TLS_REJECT_UNAUTHORIZED":"0", "SERVICE_REPORTING_NOCK": "1"},
-            "outFiles": ["${workspaceFolder}/**/*.js"],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen",
-            "runtimeArgs": ["--nolazy"],
-            "sourceMapPathOverrides": { "webpack:///*": "${workspaceRoot}/*" }
-        },
-        {
-            "type": "node",
-            "request": "launch",
             "name": "START hfs-server",
             "program": "${workspaceFolder}/components/hfs-server/bin/server",
             "env": {"NODE_ENV":"development", "NODE_TLS_REJECT_UNAUTHORIZED":"0"},
