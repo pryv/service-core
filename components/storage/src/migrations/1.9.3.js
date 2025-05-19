@@ -7,12 +7,12 @@
 const { getLogger } = require('@pryv/boiler');
 
 /**
- * v1.9.2:
+ * v1.9.3:
  * - nothing to do
  */
 module.exports = async function (context, callback) {
-  const logger = getLogger('migration-1.9.2');
-  logger.info('V1.9.0 => v1.9.2 Migration started');
-  logger.info('V1.9.0 => v1.9.2 Migration finished');
+  const logger = getLogger('migration-1.9.3');
+  logger.info('V1.9.2 => v1.9.3 Migration started');
+  logger.info('V1.9.2 => v1.9.3 Migration finished');
   callback();
 };

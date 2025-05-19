@@ -26,7 +26,7 @@ module.exports = produceHandleErrorMiddleware;
 function produceHandleErrorMiddleware (logging) {
   const logger = logging.getLogger('error-middleware');
   const config = getConfigUnsafe();
-  const isAuditActive = !config.get('openSource:isActive') && config.get('audit:active');
+  const isAuditActive = config.get('audit:active');
   let audit;
   if (isAuditActive) {
     audit = require('audit');

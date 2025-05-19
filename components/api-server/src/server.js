@@ -41,6 +41,7 @@ class Server {
     const config = await getConfig();
     this.config = config;
     this.isOpenSource = config.get('openSource:isActive');
+    this.isAuditActive = config.get('audit:active');
     const defaultParam = this.findDefaultParam();
     if (defaultParam != null) {
       this.logger.error(`Config parameter "${defaultParam}" has a default value, please change it`);
@@ -116,7 +117,7 @@ class Server {
     await require('./methods/profile')(app.api);
     await require('./methods/streams')(app.api);
     await require('./methods/events')(app.api);
-    if (!this.isOpenSource) {
+    if (this.isAuditActive) {
       require('audit/src/methods/audit-logs')(app.api);
     }
     this.logger.debug('api methods registered');

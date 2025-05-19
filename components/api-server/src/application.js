@@ -132,7 +132,7 @@ class Application {
     logger.debug('Init started');
     this.config = await getConfig();
     this.isOpenSource = this.config.get('openSource:isActive');
-    this.isAuditActive = !this.isOpenSource && this.config.get('audit:active');
+    this.isAuditActive = this.config.get('audit:active');
     await userLocalDirectory.init();
     if (this.isAuditActive) {
       const audit = require('audit');

@@ -12,7 +12,7 @@ const Result = require('./Result');
 const _ = require('lodash');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-let audit, throwIfMethodIsNotDeclared, isOpenSource, isAuditActive;
+let audit, throwIfMethodIsNotDeclared, isAuditActive;
 
 // When storing full events.get request instead of streaming it, the maximum
 // array size before returning an error.
@@ -65,8 +65,7 @@ class API {
     this.map = new Map();
     this.filters = [];
     const config = getConfigUnsafe();
-    isOpenSource = config.get('openSource:isActive');
-    isAuditActive = !isOpenSource && config.get('audit:active');
+    isAuditActive = config.get('audit:active');
     if (isAuditActive) {
       audit = require('audit');
       throwIfMethodIsNotDeclared =

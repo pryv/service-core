@@ -111,7 +111,7 @@ async function all () {
     const config = await getConfig();
     isOpenSource = config.get('openSource:isActive');
   }
-  if (isOpenSource) return;
+  // if (isOpenSource) return;
   await events();
   await accesses();
 }

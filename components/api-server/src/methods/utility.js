@@ -20,8 +20,7 @@ const updateAccessUsageStats = require('./helpers/updateAccessUsageStats');
 module.exports = async function (api) {
   const logger = getLogger('methods:batch');
   const config = await getConfig();
-  const isOpenSource = config.get('openSource:isActive');
-  const isAuditActive = !isOpenSource && config.get('audit:active');
+  const isAuditActive = config.get('audit:active');
   const updateAccessUsage = await updateAccessUsageStats();
   const passwordRules = await getPasswordRules();
   let audit;

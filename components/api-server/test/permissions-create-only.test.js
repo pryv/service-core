@@ -24,7 +24,7 @@ describe('permissions create-only level', () => {
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     const config = await getConfig();
-    isAuditActive = (!config.get('openSource:isActive')) && config.get('audit:active');
+    isAuditActive = config.get('audit:active');
   });
   after(async () => {
     await mongoFixtures.clean();

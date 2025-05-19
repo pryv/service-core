@@ -1,6 +1,9 @@
 
 ## 1.9
 
+### 1.9.3
+- Modifications to allow usage of Audit in Open-Pryv.io
+
 ### 1.9.2
 - Refactored Attachments (Event Files) Logic to b modular
 

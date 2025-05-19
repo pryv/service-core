@@ -32,7 +32,7 @@ describe('[ROOT] root', function () {
 
   before(async () => {
     const config = await getConfig();
-    isAuditActive = (!config.get('openSource:isActive')) && config.get('audit:active');
+    isAuditActive = config.get('audit:active');
   });
 
   let mongoFixtures;

@@ -25,7 +25,7 @@ let isAuditActive = false;
 describe('[ACCP] Access permissions', function () {
   before(async () => {
     const config = await getConfig();
-    isAuditActive = (!config.get('openSource:isActive')) && config.get('audit:active');
+    isAuditActive = config.get('audit:active');
   });
 
   const user = structuredClone(testData.users[0]);

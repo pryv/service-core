@@ -56,7 +56,6 @@ const { integrity } = require('business');
 
 module.exports = async function produceAccessesApiMethods (api) {
   const config = await getConfig();
-  const isOpenSource = config.get('openSource:isActive');
   const dbFindOptions = { projection: { calls: 0, deleted: 0 } };
   const mall = await getMall();
   const storageLayer = await getStorageLayer();
@@ -589,7 +588,6 @@ module.exports = async function produceAccessesApiMethods (api) {
         integrity: result.access.integrity
       };
       if (process.env.NODE_ENV === 'test' &&
-                !isOpenSource &&
                 integrity.accesses.isActive) {
         // double check integrity when running tests only
         if (result.access.integrity !== integrity.accesses.hash(result.access)) {

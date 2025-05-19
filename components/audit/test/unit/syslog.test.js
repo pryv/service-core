@@ -5,13 +5,19 @@
  * Refer to LICENSE file
  */
 /* global assert, cuid, config, initTests, audit, _ */
+const os = require('os');
 
 const SyslogWatch = require('storage/test/userSQLite/support/SyslogWatch');
 
-describe('Syslog', () => {
+describe('Syslog', function () {
   const userId = cuid();
   const createdBy = cuid();
   let syslogWatch;
+
+  if (os.type() === 'Darwin') {
+    console.log('** to fix - sylog monitoring not working anymore on OSX **');
+    return;
+  }
 
   before(async () => {
     await initTests();

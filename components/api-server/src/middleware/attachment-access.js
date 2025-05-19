@@ -22,8 +22,7 @@ async function middlewareFactory () {
   config = await getConfig();
   mall = await getMall();
   // -- Audit
-  isAuditActive =
-        !config.get('openSource:isActive') && config.get('audit:active');
+  isAuditActive = config.get('audit:active');
   if (isAuditActive) {
     const throwIfMethodIsNotDeclared = require('audit/src/ApiMethods').throwIfMethodIsNotDeclared;
     throwIfMethodIsNotDeclared('events.getAttachment');

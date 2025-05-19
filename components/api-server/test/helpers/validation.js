@@ -18,7 +18,6 @@ const util = require('util');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { integrity } = require('business');
-const isOpenSource = require('@pryv/boiler').getConfigUnsafe('true').get('openSource:isActive');
 
 /**
  * Expose common JSON schemas.
@@ -104,7 +103,6 @@ function checkEventDeletionIntegrity (e) {
 
 function checkEventIntegrity (e) {
   if (!integrity.events.isActive) return;
-  if (isOpenSource) return;
   const int = integrity.events.hash(e);
   if (e.integrity !== int) {
     throw (new Error('Received item with bad integrity checkum. \nexpected [' + int + '] \ngot: \n' + JSON.stringify(e, null, 2)));
@@ -113,7 +111,6 @@ function checkEventIntegrity (e) {
 
 function checkAccessIntegrity (access) {
   if (!integrity.accesses.isActive) return;
-  if (isOpenSource) return;
   const int = integrity.accesses.hash(access);
   if (access.integrity !== int) {
     throw (new Error('Received item with bad integrity checkum. \nexpected [' + int + '] \ngot: \n' + JSON.stringify(access, null, 2)));
