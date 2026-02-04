@@ -7,8 +7,7 @@
 
 // A test for the updater service.
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const helpers = require('./test-helpers');
 const rpc = require('tprpc');
 const metadata = require('metadata');
@@ -49,9 +48,9 @@ describe('Metadata Updater', () => {
       userId: 'userName',
       eventId: 'eventId'
     });
-    assert.isTrue(update.found);
+    assert.strictEqual(update.found, true);
     const deadline = update.deadline;
     const min5 = 5 * 60; // STALE_LIMIT
-    assert.approximately(deadline, now + min5, 2);
+    assert.ok(Math.abs(deadline - (now + min5)) <= 2);
   });
 });

@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
@@ -26,7 +26,7 @@ describe('[UAST] Users Account Storage', () => {
       const password = `pass_${i}`;
       const passwordHash = await encryption.hash(password);
       const createdPassword = await userAccountStorage.addPasswordHash(userId, passwordHash, 'test', timestamp.add(now, `-${i}d`));
-      assert.exists(createdPassword.time);
+      assert.ok(createdPassword.time != null);
       createdPassword.password = password;
       passwords.push(createdPassword);
     }
@@ -47,7 +47,7 @@ describe('[UAST] Users Account Storage', () => {
         assert.equal(e.message, 'UNIQUE constraint failed: passwords.time');
         return;
       }
-      assert.isFalse(true, 'should throw an error');
+      assert.fail('should throw an error');
     });
   });
 
@@ -73,19 +73,19 @@ describe('[UAST] Users Account Storage', () => {
     it('[1OQP] must return true when looking for existing passwords', async () => {
       for (const password of passwords) {
         const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, password.password, passwords.length);
-        assert.isTrue(passwordExists, 'should find password ' + JSON.stringify(password));
+        assert.strictEqual(passwordExists, true, 'should find password ' + JSON.stringify(password));
       }
     });
 
     it('[DO33] must return false when looking for a non-existing password', async () => {
       const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, 'unknown-password', passwords.length);
-      assert.isFalse(passwordExists, 'should not find password with non-existing hash');
+      assert.strictEqual(passwordExists, false, 'should not find password with non-existing hash');
     });
 
     it('[FEYP] must return false when looking for an existing password that is beyond the given range', async () => {
       const oldestPassword = passwords[0];
       const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, oldestPassword.password, passwords.length - 1);
-      assert.isFalse(passwordExists, 'should not find password beyond the given range: ' + JSON.stringify(oldestPassword));
+      assert.strictEqual(passwordExists, false, 'should not find password beyond the given range: ' + JSON.stringify(oldestPassword));
     });
   });
 });

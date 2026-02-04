@@ -6,8 +6,7 @@
  */
 
 const path = require('path');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const sinon = require('sinon');
 require('@pryv/boiler').init({ appName: 'tprpc-test', baseConfigDir: '' });
 const rpc = require('tprpc');
@@ -94,6 +93,6 @@ describe('Base API', () => {
       caught = true;
       assert.strictEqual(err.message, '(remote error) Error: server-side error');
     }
-    assert.isTrue(caught);
+    assert.strictEqual(caught, true);
   });
 });

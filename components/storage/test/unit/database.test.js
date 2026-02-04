@@ -5,8 +5,7 @@
  * Refer to LICENSE file
  */
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const Database = require('../../src/Database');
 const { getConfig } = require('@pryv/boiler');
 
@@ -47,25 +46,25 @@ describe('Database', () => {
     });
     it('[9UBA] must detect mongo duplicate errors with isDuplicateError', (done) => {
       database.insertOne(collectionInfo, { name: 'toto', username: 'mrtoto', age: 22 }, (err) => {
-        assert.isNotNull(err);
-        assert.isTrue(Database.isDuplicateError(err));
+        assert.ok(err != null);
+        assert.strictEqual(Database.isDuplicateError(err), true);
         done();
       });
     });
     it('[W1FO] must augment mongo duplicate errors with duplicate check utilities', (done) => {
       database.insertOne(collectionInfo, { name: 'toto', username: 'mrtoto', age: 22 }, (err) => {
-        assert.isNotNull(err);
+        assert.ok(err != null);
         // we ensure that err contains the isDuplicate boolean with assert
         const isDuplicate = err.isDuplicate;
-        assert.isBoolean(isDuplicate);
-        assert.isTrue(isDuplicate);
+        assert.strictEqual(typeof isDuplicate, 'boolean');
+        assert.strictEqual(isDuplicate, true);
         // we ensure that err contains the isDuplicateIndex function with assert
         const isDuplicateIndex = err.isDuplicateIndex;
-        assert.isFunction(isDuplicateIndex);
+        assert.strictEqual(typeof isDuplicateIndex, 'function');
         if (database.isFerret) return done();
-        assert.isTrue(err.isDuplicateIndex('name'));
-        assert.isTrue(err.isDuplicateIndex('username'));
-        assert.isFalse(err.isDuplicateIndex('age'));
+        assert.strictEqual(err.isDuplicateIndex('name'), true);
+        assert.strictEqual(err.isDuplicateIndex('username'), true);
+        assert.strictEqual(err.isDuplicateIndex('age'), false);
         done();
       });
     });
@@ -78,8 +77,8 @@ describe('Database', () => {
         try {
           // we ensure that err contains the string errmsg with assert
           const errMsg = err.errmsg;
-          assert.isString(errMsg);
-          assert.include(errMsg, duplicateMsg, 'Mongo duplicate error message changed!');
+          assert.strictEqual(typeof errMsg, 'string');
+          assert.ok(errMsg.includes(duplicateMsg), 'Mongo duplicate error message changed!');
           done();
         } catch (err) {
           done(err);

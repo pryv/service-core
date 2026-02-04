@@ -8,8 +8,7 @@
 const temp = require('temp').track();
 const path = require('path');
 const fs = require('fs');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const logger = require('@pryv/boiler').getLogger('compile.test');
 const rpc = require('tprpc');
 
@@ -28,7 +27,7 @@ describe('Type Compilation', function () {
     definition.writeTypeSignature('base.js.flow', tmpDirPath);
     const typesigPath = path.join(tmpDirPath, 'base.js.flow');
     const stat = fs.statSync(typesigPath);
-    assert.isTrue(stat.isFile());
+    assert.strictEqual(stat.isFile(), true);
     await assertContains(typesigPath, `
       export interface ISearchResponse {
         results: Array<IResult>;  // id = 1

@@ -6,8 +6,7 @@
  */
 
 const cuid = require('cuid');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const charlatan = require('charlatan');
 
 const { databaseFixture } = require('test-helpers');

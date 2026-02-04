@@ -6,8 +6,7 @@
  */
 
 const path = require('path');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const { getAPIVersion } = require('../../src/project_version');

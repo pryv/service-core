@@ -5,8 +5,7 @@
  * Refer to LICENSE file
  */
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const charlatan = require('charlatan');
 require('test-helpers/src/api-server-tests-config');
 const { databaseFixture } = require('test-helpers');
@@ -53,10 +52,10 @@ describe('Users repository', () => {
           email: charlatan.Internet.email()
         });
         await usersRepository.insertOne(userObj);
-        assert.isTrue(false);
+        assert.fail('should have thrown');
       } catch (err) {
         assert.equal(err.id, ErrorIds.ItemAlreadyExists);
-        assert.deepEqual(err.data, { username });
+        assert.deepStrictEqual(err.data, { username });
       }
     });
     it('[6CFE] must throw an item already exists error when email field is not unique', async () => {
@@ -68,10 +67,10 @@ describe('Users repository', () => {
           email
         });
         await usersRepository.insertOne(userObj);
-        assert.isTrue(false);
+        assert.fail('should have thrown');
       } catch (err) {
         assert.equal(err.id, ErrorIds.ItemAlreadyExists);
-        assert.deepEqual(err.data, { email });
+        assert.deepStrictEqual(err.data, { email });
       }
     });
   });
