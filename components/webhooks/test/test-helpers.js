@@ -37,7 +37,7 @@ process.on('unhandledRejection', unhandledRejection);
  */
 function unhandledRejection (reason, promise) {
   console.warn(
-    // eslint-disable-line no-console
+
     'Unhandled promise rejection:', promise, 'reason:', reason.stack || reason);
 }
 const storage = require('storage');

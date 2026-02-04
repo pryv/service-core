@@ -6,7 +6,6 @@
  */
 
 // TODO: enable linting again once implementation finished
-/* eslint-disable */
 
 /* global assert, initTests, initCore, getNewFixture, charlatan, cuid, coreRequest  */
 

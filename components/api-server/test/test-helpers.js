@@ -15,7 +15,7 @@ const logger = getLogger('test-helpers');
  */
 function unhandledRejection (reason, promise) {
   logger.warn(
-    // eslint-disable-line no-console
+
     'Unhandled promise rejection:', promise, 'reason:', reason.stack || reason);
 }
 // Set up a context for spawning api-servers.

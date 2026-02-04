@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         # IMPORTANT: Node.js version must match our Docker base image's (see release-packaging repo)
-        node-version: [18.16.0]
+        node-version: [22.18.0]
 
     steps:
     - name: Install `just`

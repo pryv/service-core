@@ -99,7 +99,7 @@ async function start () {
 const loggerLaunch = getLogger('launch');
 // And now:
 start().catch((err) => {
-  loggerLaunch.error(err, err); // eslint-disable-line no-console
+  loggerLaunch.error(err, err);
 });
 
 /**

@@ -23,9 +23,9 @@ module.exports = ds.createDataStore({
   streams: auditUserStreams,
   events: auditUserEvents,
 
-  async deleteUser (userId) {}, // eslint-disable-line no-unused-vars
+  async deleteUser (userId) {},
 
-  async getUserStorageInfos (userId) { // eslint-disable-line no-unused-vars
+  async getUserStorageInfos (userId) {
     return { };
   }
 });

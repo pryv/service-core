@@ -23,9 +23,9 @@ module.exports = ds.createDataStore({
     return this;
   },
 
-  async deleteUser (userId) {}, // eslint-disable-line no-unused-vars
+  async deleteUser (userId) {},
 
-  async getUserStorageInfos (userId) { return { }; } // eslint-disable-line no-unused-vars
+  async getUserStorageInfos (userId) { return { }; }
 });
 
 function createUserStreams () {
@@ -117,7 +117,7 @@ function createUserEvents () {
     /**
      * @returns Array
      */
-    async get (userId, storeQuery, options) { // eslint-disable-line no-unused-vars
+    async get (userId, storeQuery, options) {
       const query = localStorePrepareQuery(storeQuery);
       const lastStreamCall = await keyValueData.get(userId, 'lastStreamCall');
       let events = [{

@@ -455,7 +455,7 @@ describe('accesses', () => {
               .send(attrs);
             access = res.body.access;
             if (!res.ok && res.body.error != null) {
-              console.error(res.body.error); // eslint-disable-line no-console
+              console.error(res.body.error);
               // console.dir(res.body.error.data[0].inner);
             }
           });
@@ -485,7 +485,7 @@ describe('accesses', () => {
               .send(attrs);
             access = res.body.access;
             if (!res.ok && res.body.error != null) {
-              console.error(res.body.error); // eslint-disable-line no-console
+              console.error(res.body.error);
               // console.dir(res.body.error.data[0].inner);
             }
           });

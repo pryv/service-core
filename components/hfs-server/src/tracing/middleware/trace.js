@@ -16,7 +16,7 @@ const cls = require('../cls');
  * @param {express$NextFunction} next
  * @returns {unknown}
  */
-function tracingMiddleware (ctx, req, res, next // eslint-disable-line no-unused-vars
+function tracingMiddleware (ctx, req, res, next
 ) {
   const Tags = opentracing.Tags;
   const tracer = ctx.tracer;

@@ -17,7 +17,6 @@ const { APIError } = require('errors');
  *    to them properly.
  */
 module.exports = function produceErrorHandlingMiddleware (logger) {
-  /* eslint-disable no-unused-vars */
   return function handleError (error, req, res, next) {
     let safeError;
     if (error != null && error instanceof APIError) { safeError = error; } else {

@@ -31,7 +31,7 @@ class ChildProcess {
    */
   unhandledRejection (reason, promise) {
     logger.warn(
-      // eslint-disable-line no-console
+
       'Unhandled promise rejection:', promise, 'reason:', reason.stack || reason);
   }
 

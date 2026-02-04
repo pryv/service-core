@@ -32,7 +32,7 @@ function produceHandleErrorMiddleware (logging) {
     audit = require('audit');
   }
   // NOTE next is not used, since the request is terminated on all errors.
-  /* eslint-disable no-unused-vars */
+
   return async function handleError (error, req, res, next) {
     if (!(error instanceof APIError) && error.status) {
       // it should be coming from Express' bodyParser: just wrap the error

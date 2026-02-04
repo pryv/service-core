@@ -235,7 +235,7 @@ class InfluxRowType {
    * @returns {Promise<any>}
    */
   callValidator (validator,
-    // eslint-disable-line no-unused-vars
+
     content) {
     return Promise.reject(new Error('No validation for influx row types.'));
   }
