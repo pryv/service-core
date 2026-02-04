@@ -4,12 +4,12 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
+require('test-helpers/src/api-server-tests-config');
 const async = require('async');
-const should = require('should');
+const assert = require('node:assert');
 const request = require('superagent');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const assert = require('chai').assert;
 const bluebird = require('bluebird');
 const os = require('os');
 const fs = require('fs');
@@ -56,22 +56,22 @@ describe('[SYRO] system route', function () {
   it('[JT1A] should parse correctly usernames starting with "system"', async () => {
     const res = await server.request().get('/' + username + '/events')
       .set('authorization', 'dummy');
-    should.exist(res.body.error);
-    res.body.error.id.should.eql('invalid-access-token');
+    assert.ok(res.body.error);
+    assert.strictEqual(res.body.error.id, 'invalid-access-token');
   });
 
   it('[CHEK] System check Platform integrity ', async () => {
     const res = await request.get(new URL('/system/check-platform-integrity', server.url()).toString())
       .set('authorization', config.get('auth:adminAccessKey'));
-    should.exists(res.body.checks);
+    assert.ok(res.body.checks);
     const checkLength = 2;
-    should.equal(res.body.checks.length, checkLength);
+    assert.strictEqual(res.body.checks.length, checkLength);
     for (let i = 0; i < checkLength; i++) {
       const check = res.body.checks[i];
-      should.exist(check.title);
-      should.exist(check.infos);
-      should.exist(check.errors);
-      should.equal(check.errors.length, 0);
+      assert.ok(check.title);
+      assert.ok(check.infos);
+      assert.ok(check.errors);
+      assert.strictEqual(check.errors.length, 0);
     }
   });
 
@@ -108,7 +108,7 @@ describe('[SYRO] system route', function () {
       assert.equal(res.status, 204);
     });
     it('[3HE9] should delete the user\'s "mfa" profile property', async () => {
-      assert.isUndefined(profileRes.body.profile.mfa);
+      assert.equal(profileRes.body.profile.mfa, undefined);
     });
     it('[I2PU] should not delete anything else in the profile', () => {
       assert.deepEqual(profileRes.body.profile.restOfProfile, restOfProfile);
@@ -206,11 +206,11 @@ describe('[SYER] system (ex-register)', function () {
           schema: methodsSchema.createUser.result
         });
         await setTimeout(1000);
-        mailSent.should.eql(true);
+        assert.strictEqual(mailSent, true);
 
         // getUpdatedUsers
         const users = await usersRepository.getAll(true);
-        users.length.should.eql(originalCount + 1, 'users');
+        assert.strictEqual(users.length, originalCount + 1, 'users');
 
         const expected = structuredClone(newUserData);
         expected.storageUsed = { dbDocuments: 0, attachedFiles: 0 };
@@ -222,7 +222,7 @@ describe('[SYER] system (ex-register)', function () {
         delete expected.passwordHash;
         const account = actual.getReadableAccount();
         account.username = newUserData.username;
-        account.should.eql(expected);
+        assert.deepStrictEqual(account, expected);
       });
     });
 
@@ -261,7 +261,7 @@ describe('[SYER] system (ex-register)', function () {
         function registerNewUser (stepDone) {
           const newUserDataExpected = structuredClone(newUserData);
           post(newUserDataExpected, function (err, res) {
-            should.not.exists(err);
+            assert.ok(err == null);
             validation.check(res, {
               status: 201,
               schema: methodsSchema.createUser.result
@@ -280,7 +280,7 @@ describe('[SYER] system (ex-register)', function () {
         async function () {
           const settings = structuredClone(helpers.dependencies.settings);
 
-          should(process.env.NODE_ENV).be.eql('test');
+          assert.strictEqual(process.env.NODE_ENV, 'test');
 
           // setup mail server mock, persisting over the next tests
           helpers.instanceTestSetup.set(settings, {
@@ -315,8 +315,8 @@ describe('[SYER] system (ex-register)', function () {
 
           // getUpdatedUsers
           const users = await usersRepository.getAll();
-          users.length.should.eql(originalCount, 'users');
-          should.not.exist(_.find(users, { id: createdUserId }));
+          assert.strictEqual(users.length, originalCount, 'users');
+          assert.ok(_.find(users, { id: createdUserId }) == null);
         });
 
       it('[ZG1L] must support the old "/register" path for backwards-compatibility', function (done) {
@@ -325,7 +325,7 @@ describe('[SYER] system (ex-register)', function () {
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .send(newUserDataExpected)
           .end(function (err, res) {
-            should.not.exists(err);
+            assert.ok(err == null);
             validation.check(res, {
               status: 201
             }, done);
@@ -387,7 +387,7 @@ describe('[SYER] system (ex-register)', function () {
         try {
           await bluebird.fromCallback(
             (cb) => post(data, cb));
-          assert.isTrue(false);
+          assert.fail('should have thrown');
         } catch (err) {
           assert.equal(err.response.status, 409);
           assert.equal(err.response.body.error.id, ErrorIds.ItemAlreadyExists);
@@ -526,8 +526,8 @@ describe('[SYER] system (ex-register)', function () {
           if (err) {
             return callback(err);
           }
-          should(data.indexOf(newUserDataExpected.passwordHash)).be.equal(-1);
-          if (/passwordHash/.test(data)) { should(data.indexOf('(hidden password)')).be.aboveOrEqual(0); }
+          assert.strictEqual(data.indexOf(newUserDataExpected.passwordHash), -1);
+          if (/passwordHash/.test(data)) { assert.ok(data.indexOf('(hidden password)') >= 0); }
           callback();
         });
       }
@@ -537,7 +537,7 @@ describe('[SYER] system (ex-register)', function () {
           if (err) {
             return callback(err);
           }
-          should(data.indexOf('passwordHash=')).be.equal(-1);
+          assert.strictEqual(data.indexOf('passwordHash='), -1);
           callback();
         });
       }
@@ -560,7 +560,7 @@ describe('[SYER] system (ex-register)', function () {
           request.get(path(user.username))
             .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
             .end(function (err, res) {
-              should.not.exists(err);
+              assert.ok(err == null);
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.getUserInfo.result
@@ -588,27 +588,19 @@ describe('[SYER] system (ex-register)', function () {
           request.get(path(user.username))
             .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
             .end(function (err, res) {
-              should.not.exists(err);
+              assert.ok(err == null);
               const info = res.body.userInfo;
 
-              assert.approximately(info.lastAccess, expectedTime, 2);
+              assert.ok(Math.abs(info.lastAccess - expectedTime) <= 2);
 
-              info.callsTotal
-                .should.eql(originalInfo.callsTotal + 2,
-                  'calls total');
-              info.callsDetail['events:get']
-                .should.eql(originalInfo.callsDetail['events:get'] + 2,
-                  'calls detail');
+              assert.strictEqual(info.callsTotal, originalInfo.callsTotal + 2, 'calls total');
+              assert.strictEqual(info.callsDetail['events:get'], originalInfo.callsDetail['events:get'] + 2, 'calls detail');
 
               const accessKey1 = testData.accesses[4].name; // app access
               const accessKey2 = 'shared'; // shared access
 
-              info.callsPerAccess[accessKey1]
-                .should.eql(originalInfo.callsPerAccess[accessKey1] + 1,
-                  'calls per access (personal)');
-              info.callsPerAccess[accessKey2]
-                .should.eql(originalInfo.callsPerAccess[accessKey2] + 1,
-                  'calls per access (shared)');
+              assert.strictEqual(info.callsPerAccess[accessKey1], originalInfo.callsPerAccess[accessKey1] + 1, 'calls per access (personal)');
+              assert.strictEqual(info.callsPerAccess[accessKey2], originalInfo.callsPerAccess[accessKey2] + 1, 'calls per access (shared)');
 
               stepDone();
             });

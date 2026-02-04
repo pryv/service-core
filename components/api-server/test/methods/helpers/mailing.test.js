@@ -4,8 +4,7 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const nock = require('nock');
 const mailing = require('../../../src/methods/helpers/mailing');
 
@@ -30,7 +29,7 @@ describe('Mailing helper methods', () => {
     };
 
     mailing.sendmail(emailSettings, template, recipient, substitutions, lang, (err) => {
-      assert.isNotNull(err);
+      assert.ok(err != null);
     });
   });
 
@@ -41,7 +40,7 @@ describe('Mailing helper methods', () => {
     };
 
     mailing.sendmail(emailSettings, template, recipient, substitutions, lang, (err) => {
-      assert.isNotNull(err);
+      assert.ok(err != null);
     });
   });
 
@@ -66,7 +65,7 @@ describe('Mailing helper methods', () => {
       });
 
       it('[GU60] should not be empty', () => {
-        assert.isNotNull(requestBody);
+        assert.ok(requestBody != null);
       });
 
       it('[8JJU] should contain a valid auth key', () => {
@@ -74,18 +73,18 @@ describe('Mailing helper methods', () => {
       });
 
       it('[G906] should contain a valid recipient', () => {
-        assert.deepEqual(requestBody.message.to, [recipient]);
+        assert.deepStrictEqual(requestBody.message.to, [recipient]);
       });
 
       it('[KBE0] should contain a valid substitution of variables', () => {
-        assert.deepEqual(requestBody.message.global_merge_vars, [
+        assert.deepStrictEqual(requestBody.message.global_merge_vars, [
           { name: 'name', content: recipient.name },
           { name: 'email', content: recipient.email }
         ]);
       });
 
       it('[2ABY] should contain valid tags', () => {
-        assert.deepEqual(requestBody.message.tags, [template]);
+        assert.deepStrictEqual(requestBody.message.tags, [template]);
       });
     });
   });
@@ -111,7 +110,7 @@ describe('Mailing helper methods', () => {
       });
 
       it('[LHCB] should not be empty', () => {
-        assert.isNotNull(requestBody);
+        assert.ok(requestBody != null);
       });
 
       it('[9UEU] should contain a valid auth key', () => {
@@ -124,7 +123,7 @@ describe('Mailing helper methods', () => {
       });
 
       it('[UT8M] should contain a valid substitution of variables', () => {
-        assert.deepEqual(requestBody.substitutions, substitutions);
+        assert.deepStrictEqual(requestBody.substitutions, substitutions);
       });
     });
   });

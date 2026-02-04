@@ -7,8 +7,7 @@
 
 require('test-helpers/src/api-server-tests-config');
 require('api-server/test/unit/test-helper');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const { connect, JSONCodec } = require('nats');
 const { encode } = JSONCodec();
 const { getConfig } = require('@pryv/boiler');
@@ -55,7 +54,7 @@ describe('NatsSubscriber', () => {
         while (msgs.length === 0) {
           await new Promise((resolve) => setTimeout(resolve, 50));
         }
-        assert.deepEqual(msgs, ['onTestMessage']);
+        assert.deepStrictEqual(msgs, ['onTestMessage']);
       });
       it('[47BP] ignores messages from other users', async () => {
         rawClient.publish('barbaz', encode({ eventName: 'onTestMessage1' }));
@@ -66,7 +65,7 @@ describe('NatsSubscriber', () => {
         // We've received the second message and not the first. Apart from waiting
         // a long time for the first _not_ to arrive, this is the best assertion we
         // will get.
-        assert.deepEqual(msgs, ['onTestMessage2']);
+        assert.deepStrictEqual(msgs, ['onTestMessage2']);
       });
     });
     describe('unsubscribe()', function () {
@@ -81,7 +80,7 @@ describe('NatsSubscriber', () => {
         // We've received the second message and not the first. Apart from waiting
         // a long time for the first _not_ to arrive, this is the best assertion we
         // will get.
-        assert.deepEqual(msgs, ['onTestMessage1']);
+        assert.deepStrictEqual(msgs, ['onTestMessage1']);
       });
     });
   });

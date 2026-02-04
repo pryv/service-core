@@ -6,7 +6,7 @@
  */
 
 const { safetyCleanDuplicate } = require('platform/src/service_register');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 
 describe('Service Register Errors', function () {
   it('[LPD4] Should remove not matching params from duplicate Error', (done) => {
@@ -22,9 +22,9 @@ describe('Service Register Errors', function () {
     };
 
     const res = safetyCleanDuplicate(foundDuplicates, null, params);
-    assert.exists(res.email);
-    assert.exists(res.username);
-    assert.isUndefined(res.extra);
+    assert.ok(res.email != null);
+    assert.ok(res.username != null);
+    assert.strictEqual(res.extra, undefined);
     done();
   });
 });

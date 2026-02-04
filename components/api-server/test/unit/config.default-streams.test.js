@@ -5,9 +5,8 @@
  * Refer to LICENSE file
  */
 
-const chai = require('chai');
+const assert = require('node:assert');
 const nconf = require('nconf');
-const assert = chai.assert;
 const systemStreamsConfig = require('api-server/config/components/systemStreams');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const treeUtils = require('utils/src/treeUtils');
@@ -124,7 +123,7 @@ describe('[SSDC] SystemStreams config', () => {
         'active',
         'unique'
       ].forEach((streamId) => {
-        assert.exists(treeUtils.findById(PRIVATE_PREFIX + streamId));
+        assert.ok(treeUtils.findById(PRIVATE_PREFIX + streamId) != null);
       });
     });
     it('[PVDC] must prefix custom streams with the customer prefix', () => {
@@ -137,7 +136,7 @@ describe('[SSDC] SystemStreams config', () => {
         customRootStreamId,
         'field2'
       ].forEach((streamId) => {
-        assert.exists(treeUtils.findById(CUSTOMER_PREFIX + streamId));
+        assert.ok(treeUtils.findById(CUSTOMER_PREFIX + streamId) != null);
       });
     });
   });
@@ -161,7 +160,7 @@ describe('[SSDC] SystemStreams config', () => {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw');
       } catch (err) {
-        assert.include(err.message, `Config error: Custom system stream id unicity collision with default one. Deactivate retro-compatibility prefix or change streamId: "${streamId}".`);
+        assert.ok(err.message.includes(`Config error: Custom system stream id unicity collision with default one. Deactivate retro-compatibility prefix or change streamId: "${streamId}".`));
       }
     });
   });
@@ -189,7 +188,7 @@ describe('[SSDC] SystemStreams config', () => {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw');
       } catch (err) {
-        assert.include(err.message, `Config error: Custom system stream id duplicate. Remove duplicate custom system stream with streamId: "${streamId}".`);
+        assert.ok(err.message.includes(`Config error: Custom system stream id duplicate. Remove duplicate custom system stream with streamId: "${streamId}".`));
       }
     });
   });
@@ -209,7 +208,7 @@ describe('[SSDC] SystemStreams config', () => {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw.');
       } catch (err) {
-        assert.include(err.message, 'Config error: custom system stream cannot be unique and not indexed. Stream: ');
+        assert.ok(err.message.includes('Config error: custom system stream cannot be unique and not indexed. Stream: '));
       }
     });
   });
@@ -227,7 +226,7 @@ describe('[SSDC] SystemStreams config', () => {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw.');
       } catch (err) {
-        assert.include(err.message, 'Config error: custom system stream cannot be unique and not indexed. Stream: ');
+        assert.ok(err.message.includes('Config error: custom system stream cannot be unique and not indexed. Stream: '));
       }
     });
   });
@@ -246,7 +245,7 @@ describe('[SSDC] SystemStreams config', () => {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw.');
       } catch (err) {
-        assert.include(err.message, 'Config error: custom "other" system stream cannot be unique. Only "account" streams can be unique. Stream: ');
+        assert.ok(err.message.includes('Config error: custom "other" system stream cannot be unique. Only "account" streams can be unique. Stream: '));
       }
     });
   });
@@ -265,7 +264,7 @@ describe('[SSDC] SystemStreams config', () => {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw.');
       } catch (err) {
-        assert.include(err.message, 'Config error: custom "other" system stream cannot be indexed. Only "account" streams can be indexed. Stream: ');
+        assert.ok(err.message.includes('Config error: custom "other" system stream cannot be indexed. Only "account" streams can be indexed. Stream: '));
       }
     });
   });
@@ -284,7 +283,7 @@ describe('[SSDC] SystemStreams config', () => {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw.');
       } catch (err) {
-        assert.include(err.message, 'Config error: custom "other" system stream cannot be non-editable. Only "account" streams can be non-editable. Stream: ');
+        assert.ok(err.message.includes('Config error: custom "other" system stream cannot be non-editable. Only "account" streams can be non-editable. Stream: '));
       }
     });
   });
@@ -303,7 +302,7 @@ describe('[SSDC] SystemStreams config', () => {
         systemStreamsConfig.load(store);
         assert.fail('supposed to throw.');
       } catch (err) {
-        assert.include(err.message, 'Config error: custom "other" system stream cannot be required at registration. Only "account" streams can be required at registration. Stream: ');
+        assert.ok(err.message.includes('Config error: custom "other" system stream cannot be required at registration. Only "account" streams can be required at registration. Stream: '));
       }
     });
   });

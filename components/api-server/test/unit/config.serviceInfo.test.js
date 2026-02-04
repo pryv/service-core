@@ -5,8 +5,7 @@
  * Refer to LICENSE file
  */
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const { getConfig } = require('@pryv/boiler');
 const testServiceInfo = require('../../../../test/service-info.json');
 

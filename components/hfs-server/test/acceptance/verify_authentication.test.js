@@ -7,16 +7,15 @@
 
 // Tests that exercise auth checks that have been disabled in other tests.
 
-const should = require('should');
-const chai = require('chai');
-const assert = chai.assert;
+require('test-helpers/src/api-server-tests-config');
+const assert = require('node:assert');
 const storage = require('storage');
 const { databaseFixture } = require('test-helpers');
 const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 
-describe('Metadata Loader', function () {
+describe('[METL] Metadata Loader', function () {
   let database, pryv, mall;
   before(async function () {
     await require('business/src/system-streams/serializer').init();
@@ -48,11 +47,11 @@ describe('Metadata Loader', function () {
   it('[U6F2] should allow write access to series', function () {
     const metadata = loader.forSeries(USER_NAME, EVENT_ID, ACCESS_TOKEN);
     return metadata.then((metadata) => {
-      should(metadata.canWrite()).be.true();
+      assert.strictEqual(metadata.canWrite(), true);
     });
   });
 });
-describe('Metadata Cache', function () {
+describe('[METC] Metadata Cache', function () {
   let config;
   before(async function () {
     config = await getConfig();

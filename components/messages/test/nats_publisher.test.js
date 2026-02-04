@@ -7,8 +7,7 @@
 
 require('test-helpers/src/api-server-tests-config');
 require('api-server/test/unit/test-helper');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const { connect, JSONCodec } = require('nats');
 const { decode } = JSONCodec();
 
@@ -31,7 +30,7 @@ describe('NatsPublisher', () => {
     (async () => {
       for await (const m of sub) {
         const msg = decode(m.data);
-        assert.deepEqual(msg.eventName, 'onTestMessage');
+        assert.deepStrictEqual(msg.eventName, 'onTestMessage');
         sub.unsubscribe();
         done();
       }

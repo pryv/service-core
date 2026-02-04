@@ -7,8 +7,7 @@
 
 // Tests the heap package as far as we need it.
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const Heap = require('heap');
 
 describe('Heap', () => {
@@ -23,7 +22,7 @@ describe('Heap', () => {
       assert.strictEqual(v, 1);
     });
     it('[S15J] returns null if the heap is empty', () => {
-      assert.isUndefined(heap.pop());
+      assert.strictEqual(heap.pop(), undefined);
     });
   });
 });

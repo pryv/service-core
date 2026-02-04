@@ -6,8 +6,19 @@
  */
 
 require('./test-helper');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const { pubsub } = require('messages');
+
+// Helper to replace chai's deepInclude
+function assertDeepInclude (array, value) {
+  const found = array.some(item => {
+    try {
+      assert.deepStrictEqual(item, value);
+      return true;
+    } catch { return false; }
+  });
+  assert.ok(found, `Expected array to deep-include ${JSON.stringify(value)}`);
+}
 
 describe('Notifications', () => {
   let axonMsgs = [];
@@ -37,10 +48,10 @@ describe('Notifications', () => {
       pubsub.status.emit(pubsub.SERVER_READY);
     });
     it('[B76G] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, pubsub.SERVER_READY);
+      assertDeepInclude(emittedMsgs, pubsub.SERVER_READY);
     });
     it('[SRAU] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, ['axon-server-ready']);
+      assertDeepInclude(axonMsgs, ['axon-server-ready']);
     });
   });
   describe('#accountChanged', () => {
@@ -48,10 +59,10 @@ describe('Notifications', () => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     });
     it('[P6ZD] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
+      assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     });
     it('[Q96S] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, ['axon-account-changed', 'USERNAME']);
+      assertDeepInclude(axonMsgs, ['axon-account-changed', 'USERNAME']);
     });
   });
   describe('#accessesChanged', () => {
@@ -59,10 +70,10 @@ describe('Notifications', () => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     });
     it('[P5CG] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
+      assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     });
     it('[VSN6] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, ['axon-accesses-changed', 'USERNAME']);
+      assertDeepInclude(axonMsgs, ['axon-accesses-changed', 'USERNAME']);
     });
   });
   describe('#followedSlicesChanged', () => {
@@ -70,10 +81,10 @@ describe('Notifications', () => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
     });
     it('[VU4A] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
+      assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
     });
     it('[UD2B] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, [
+      assertDeepInclude(axonMsgs, [
         'axon-followed-slices-changed',
         'USERNAME'
       ]);
@@ -84,10 +95,10 @@ describe('Notifications', () => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_STREAMS_CHANGED);
     });
     it('[LDUQ] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_STREAMS_CHANGED);
+      assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_STREAMS_CHANGED);
     });
     it('[BUR1] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, ['axon-streams-changed', 'USERNAME']);
+      assertDeepInclude(axonMsgs, ['axon-streams-changed', 'USERNAME']);
     });
   });
   describe('#eventsChanged', () => {
@@ -95,10 +106,10 @@ describe('Notifications', () => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_EVENTS_CHANGED);
     });
     it('[N8RI] notifies internal listeners', () => {
-      assert.deepInclude(emittedMsgs, pubsub.USERNAME_BASED_EVENTS_CHANGED);
+      assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     });
     it('[TRMW] notifies axon listeners', () => {
-      assert.deepInclude(axonMsgs, ['axon-events-changed', 'USERNAME']);
+      assertDeepInclude(axonMsgs, ['axon-events-changed', 'USERNAME']);
     });
   });
 });

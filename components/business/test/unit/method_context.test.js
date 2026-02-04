@@ -8,8 +8,7 @@
 require('test-helpers/src/api-server-tests-config');
 const timestamp = require('unix-timestamp');
 const sinon = require('sinon');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const MethodContext = require('../../src/MethodContext');
 
 const contextSource = {
@@ -24,7 +23,7 @@ describe('MethodContext', () => {
     it('[ZRW8] should parse token out', () => {
       const mc = new MethodContext(contextSource, username, 'TOKEN', customAuthStep);
       assert.strictEqual(mc.accessToken, 'TOKEN');
-      assert.isNull(mc.callerId);
+      assert.strictEqual(mc.callerId, null);
     });
     it('[AUIY] should also parse the callerId when available', () => {
       const mc = new MethodContext(contextSource, username, 'TOKEN CALLERID', customAuthStep);
@@ -60,7 +59,7 @@ describe('MethodContext', () => {
       } catch (err) {
         caught = true;
       }
-      assert.isTrue(caught);
+      assert.strictEqual(caught, true);
     });
   });
 });

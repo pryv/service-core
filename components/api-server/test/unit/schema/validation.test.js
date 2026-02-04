@@ -6,7 +6,7 @@
  */
 
 require('../test-helper');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const { tryCoerceStringValues } = require('../../../src/schema/validation');
 
 describe('tryCoerceStringValues', () => {
@@ -15,18 +15,18 @@ describe('tryCoerceStringValues', () => {
     const types = { a: 'boolean', b: 'number' };
     tryCoerceStringValues(object, types);
     const expect = { a: true, b: 2343, c: 'foobar' };
-    assert.deepEqual(object, expect);
+    assert.deepStrictEqual(object, expect);
   });
   it("[X26S] doesn't create keys in object", () => {
     const o = {};
     const t = { a: 'number' };
     tryCoerceStringValues(o, t);
-    assert.lengthOf(Object.keys(o), 0, 'Keys have been created in target.');
+    assert.strictEqual(Object.keys(o).length, 0, 'Keys have been created in target.');
   });
   it('[4MHH] should convert to array', () => {
     const obj = { a: '1', b: 'test' };
     tryCoerceStringValues(obj, { a: 'array', b: 'array' });
-    assert.deepEqual(obj, { a: ['1'], b: ['test'] });
+    assert.deepStrictEqual(obj, { a: ['1'], b: ['test'] });
   });
   it('[X8PY] number conversion works', () => {
     ok('123', 123);

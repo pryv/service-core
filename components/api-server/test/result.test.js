@@ -10,7 +10,7 @@ require('./test-helpers');
 const Result = require('../src/Result');
 const Transform = require('stream').Transform;
 const inherits = require('util').inherits;
-const should = require('should');
+const assert = require('node:assert');
 const Source = require('./helpers').SourceStream;
 
 describe('Result', function () {
@@ -23,8 +23,8 @@ describe('Result', function () {
       const s2 = new Source(a2);
 
       function expectation (err, content) {
-        should.not.exist(err);
-        content.should.eql({ events: a1.concat(a2) });
+        assert.ok(err == null);
+        assert.deepStrictEqual(content, { events: a1.concat(a2) });
         done();
       }
       res.addToConcatArrayStream('events', s1);
@@ -40,8 +40,8 @@ describe('Result', function () {
       res.a = 'a';
 
       function expectation (err, content) {
-        should.not.exist(err);
-        content.a.should.eql('a');
+        assert.ok(err == null);
+        assert.strictEqual(content.a, 'a');
         done();
       }
 
@@ -58,9 +58,9 @@ describe('Result', function () {
       const s2 = new Source(array2);
 
       function expectation (err, content) {
-        should.not.exist(err);
-        (content[arrayName1]).should.eql(array1);
-        (content[arrayName2]).should.eql(array2);
+        assert.ok(err == null);
+        assert.deepStrictEqual(content[arrayName1], array1);
+        assert.deepStrictEqual(content[arrayName2], array2);
         done();
       }
 
@@ -80,8 +80,8 @@ describe('Result', function () {
       const s2 = new Source(array2);
 
       function expectation (err, content) {
-        should.exist(err);
-        should.not.exist(content);
+        assert.ok(err != null);
+        assert.ok(content == null);
         done();
       }
 
@@ -98,8 +98,8 @@ describe('Result', function () {
       const p1 = s1.pipe(new SimpleTransformStream());
 
       function expectation (err, content) {
-        should.exist(err);
-        should.not.exist(content);
+        assert.ok(err != null);
+        assert.ok(content == null);
         done();
       }
 

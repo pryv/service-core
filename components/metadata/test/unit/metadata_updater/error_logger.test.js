@@ -6,8 +6,7 @@
  */
 
 const sinon = require('sinon');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const { ErrorLogger } = require('../../../src/metadata_updater/error_logger');
 
 describe('ErrorLogger', () => {
@@ -50,7 +49,7 @@ describe('ErrorLogger', () => {
     target.foo.rejects('foobar');
 
     const ret = subject.foo('a', 'b', 'c');
-    assert.instanceOf(ret, Promise);
+    assert.ok(ret instanceof Promise);
     await ret
       .then(() => assert.fail())
       .catch((err) => assert.strictEqual(err.toString(), 'foobar'));
