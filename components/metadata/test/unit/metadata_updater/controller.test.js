@@ -7,8 +7,7 @@
 
 // Tests the Metadata Updater Controller.
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const sinon = require('sinon');
 const { PendingUpdate, PendingUpdatesMap } = require('../../../src/metadata_updater/pending_updates');
 const { Controller } = require('../../../src/metadata_updater/controller');
@@ -45,10 +44,10 @@ describe('Metadata Updater/Controller', () => {
 
         if (callTimestamps.length >= 2) {
           // First call happens immediately.
-          assert.approximately(now, callTimestamps[0], 50);
+          assert.ok(Math.abs(now - callTimestamps[0]) <= 50);
 
           // And the second call 10 ms afterwards
-          assert.approximately(callTimestamps[0], callTimestamps[1], 20);
+          assert.ok(Math.abs(callTimestamps[0] - callTimestamps[1]) <= 20);
 
           done();
         }
@@ -63,7 +62,7 @@ describe('Metadata Updater/Controller', () => {
     it('[2W9C] constructs an Flush operation for the update and returns it', () => {
       const flush = controller.flushOp(update);
 
-      assert.instanceOf(flush, Flush);
+      assert.ok(flush instanceof Flush);
     });
   });
   describe('#act', () => {

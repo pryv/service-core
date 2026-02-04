@@ -5,8 +5,7 @@
  * Refer to LICENSE file
  */
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const { BatchRequest, BatchRequestElement } = require('../../../src/series/batch_request');
 const { TypeRepository } = require('../../../src/types');
 
@@ -66,7 +65,7 @@ describe('BatchRequest', () => {
       try {
         await BatchRequest.parse(obj, resolver);
       } catch (err) {
-        assert.isNotNull(err);
+        assert.ok(err != null);
         assert.strictEqual(err.message, errorMessage);
       }
     }
@@ -74,7 +73,7 @@ describe('BatchRequest', () => {
       try {
         await BatchRequest.parse(obj, resolver);
       } catch (err) {
-        assert.isNull(err);
+        assert.strictEqual(err, null);
       }
     }
   });
@@ -112,7 +111,7 @@ describe('BatchRequestElement', () => {
       try {
         await BatchRequestElement.parse(obj, resolver);
       } catch (err) {
-        assert.isNotNull(err);
+        assert.ok(err != null);
         assert.strictEqual(err.message, errorMessage);
       }
     }
@@ -120,7 +119,7 @@ describe('BatchRequestElement', () => {
       try {
         await BatchRequestElement.parse(obj, resolver);
       } catch (err) {
-        assert.isNull(err);
+        assert.strictEqual(err, null);
       }
     }
   });

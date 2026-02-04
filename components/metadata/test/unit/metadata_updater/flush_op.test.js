@@ -7,8 +7,7 @@
 
 // A test for the flush operation that flushes updates to disk.
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const cuid = require('cuid');
 require('test-helpers/src/api-server-tests-config');
 const storage = require('storage');
@@ -82,7 +81,7 @@ describe('Flush', () => {
       await op.run();
       const event = await mall.events.getOne(userId, eventId);
       assert.strictEqual(event.modifiedBy, 'author123');
-      assert.approximately(event.modified, modifiedTime, 3);
+      assert.ok(Math.abs(event.modified - modifiedTime) <= 3);
       assert.strictEqual(event.duration, toDeltaTime);
     });
   });
@@ -110,8 +109,8 @@ describe('Flush', () => {
       const event = await mall.events.getOne(userId, eventWithContentId);
       const content = event.content;
       assert.strictEqual(content.elementType, 'mass/kg');
-      assert.deepEqual(content.fields, ['value']);
-      assert.deepEqual(content.required, ['value']);
+      assert.deepStrictEqual(content.fields, ['value']);
+      assert.deepStrictEqual(content.required, ['value']);
     });
     it('[UD1B] update event duration if over current Duration', async () => {
       const update = makeUpdate(now, {

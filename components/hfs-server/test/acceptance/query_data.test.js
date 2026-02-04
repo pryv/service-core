@@ -9,8 +9,7 @@
 
 const { ErrorIds } = require('errors');
 const cuid = require('cuid');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const superagent = require('superagent');
 const { spawnContext, produceMongoConnection } = require('./test-helpers');
 const testHelpers = require('test-helpers');
@@ -105,15 +104,15 @@ describe('Querying data from a HF series', function () {
       .request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', accessToken);
-    chai.expect(res).to.have.property('status').that.eql(200);
-    chai.expect(res.body).to.have.property('meta');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.body.meta !== undefined);
   });
   it("[XAI2] should accept a query when the authorized permission is on the event's 2nd streamId", async function () {
     const res = await server
       .request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', secondStreamToken);
-    chai.expect(res).to.have.property('status').that.eql(200);
+    assert.strictEqual(res.status, 200);
   });
   it('[I2ZH] should refuse a query for an unknown user', function () {
     return server
@@ -122,7 +121,7 @@ describe('Querying data from a HF series', function () {
       .set('authorization', 'someToken')
       .expect(404)
       .then((res) => {
-        assert.isNotNull(res.body.error);
+        assert.ok(res.body.error);
         assert.strictEqual(res.body.error.id, ErrorIds.UnknownResource);
       });
   });
@@ -132,7 +131,7 @@ describe('Querying data from a HF series', function () {
       .get(`/${userId}/events/${eventId}/series`)
       .expect(401)
       .then((res) => {
-        assert.isNotNull(res.body.error);
+        assert.ok(res.body.error);
         assert.strictEqual(res.body.error.id, ErrorIds.MissingHeader);
       });
   });
@@ -143,7 +142,7 @@ describe('Querying data from a HF series', function () {
       .set('authorization', 'invalid-auth')
       .expect(403)
       .then((res) => {
-        assert.isNotNull(res.body.error);
+        assert.ok(res.body.error);
         assert.strictEqual(res.body.error.id, ErrorIds.InvalidAccessToken);
       });
   });
@@ -157,7 +156,7 @@ describe('Querying data from a HF series', function () {
       .expect(404)
       .then((res) => {
         const error = res.body.error;
-        assert.isNotNull(error);
+        assert.ok(error);
         assert.strictEqual(error.id, ErrorIds.UnknownResource);
         assert.match(error.message, /Unknown event/);
       });

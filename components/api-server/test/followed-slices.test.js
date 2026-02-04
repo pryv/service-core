@@ -6,8 +6,7 @@
  */
 
 const async = require('async');
-const should = require('should'); // explicit require to benefit from static functions
-const { assert } = require('chai');
+const assert = require('node:assert');
 const _ = require('lodash');
 const { getConfig } = require('@pryv/boiler');
 
@@ -91,7 +90,7 @@ describe('[FOLS] followed slices', function () {
       async.series([
         function countInitial (stepDone) {
           storage.countAll(user, function (err, count) {
-            assert.notExists(err);
+            assert.ok(err == null);
             originalCount = count;
             stepDone();
           });
@@ -103,15 +102,15 @@ describe('[FOLS] followed slices', function () {
               schema: methodsSchema.create.result
             });
             createdSlice = res.body.followedSlice;
-            followedSlicesNotifCount.should.eql(1, 'followed slices notifications');
+            assert.strictEqual(followedSlicesNotifCount, 1, 'followed slices notifications');
             stepDone();
           });
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, followedSlices) {
-            assert.notExists(err);
+            assert.ok(err == null);
 
-            followedSlices.length.should.eql(originalCount + 1, 'followed slices');
+            assert.strictEqual(followedSlices.length, originalCount + 1, 'followed slices');
 
             const expected = structuredClone(data);
             expected.id = createdSlice.id;
@@ -119,7 +118,7 @@ describe('[FOLS] followed slices', function () {
               return slice.id === createdSlice.id;
             });
             validation.checkStoredItem(actual, 'followedSlice');
-            actual.should.eql(expected);
+            assert.deepStrictEqual(actual, expected);
 
             stepDone();
           });
@@ -192,9 +191,9 @@ describe('[FOLS] followed slices', function () {
         });
 
         const expected = Object.assign({}, original, newSliceData);
-        res.body.followedSlice.should.eql(expected);
+        assert.deepStrictEqual(res.body.followedSlice, expected);
 
-        followedSlicesNotifCount.should.eql(1, 'followed slices notifications');
+        assert.strictEqual(followedSlicesNotifCount, 1, 'followed slices notifications');
         done();
       });
     });
@@ -244,20 +243,20 @@ describe('[FOLS] followed slices', function () {
               status: 200,
               schema: methodsSchema.del.result
             });
-            followedSlicesNotifCount.should.eql(1, 'followed slices notifications');
+            assert.strictEqual(followedSlicesNotifCount, 1, 'followed slices notifications');
             stepDone();
           });
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, slices) {
-            assert.notExists(err);
+            assert.ok(err == null);
 
-            slices.length.should.eql(testData.followedSlices.length - 1, 'followed slices');
+            assert.strictEqual(slices.length, testData.followedSlices.length - 1, 'followed slices');
 
             const deletedSlice = _.find(slices, function (slice) {
               return slice.id === deletedId;
             });
-            should.not.exist(deletedSlice);
+            assert.ok(deletedSlice == null);
 
             stepDone();
           });

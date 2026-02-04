@@ -7,8 +7,7 @@
 
 // Tests pertaining to storing data in a hf series.
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const DataMatrix = require('../../../src/series/data_matrix');
 const { ParseFailure } = require('../../../src/series/errors');
 const Row = require('../../../src/series/row');
@@ -89,8 +88,8 @@ describe('DataMatrix', function () {
       ]);
       let times = 0;
       matrix.eachRow((row, idx) => {
-        if (idx === 0) { assert.deepEqual(row.values, [1, 2, 3]); }
-        if (idx === 1) { assert.deepEqual(row.values, [4, 5, 6]); }
+        if (idx === 0) { assert.deepStrictEqual(row.values, [1, 2, 3]); }
+        if (idx === 1) { assert.deepStrictEqual(row.values, [4, 5, 6]); }
         assert.strictEqual(row.columnNames, headers);
         times += 1;
       });
@@ -122,7 +121,7 @@ describe('DataMatrix', function () {
       matrix.transform(() => {
         return 42; // don't ask
       });
-      assert.deepEqual(matrix.at(0), [42, 42, 42]);
+      assert.deepStrictEqual(matrix.at(0), [42, 42, 42]);
     });
   });
   describe('#minmax()', () => {

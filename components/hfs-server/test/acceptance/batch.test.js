@@ -5,8 +5,7 @@
  * Refer to LICENSE file
  */
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const cuid = require('cuid');
 const rpc = require('tprpc');
 const metadata = require('metadata');
@@ -191,8 +190,8 @@ describe('Storing BATCH data in a HF series', function () {
         .post(`/${userId}/series/batch`)
         .set('authorization', accessToken)
         .send(data);
-      chai.expect(res).to.have.property('status').that.eql(200);
-      chai.expect(res.body).to.have.property('meta');
+      assert.strictEqual(res.status, 200);
+      assert.ok(res.body.meta !== undefined);
     });
     it("[QHM5] should fail without 'Authorization' header", async () => {
       const data = {
@@ -338,7 +337,7 @@ describe('Storing BATCH data in a HF series', function () {
         await storeData(server.request(), data)
         // .then(res => console.log(res.body));
           .expect(200);
-        assert.isTrue(updaterCalled);
+        assert.strictEqual(updaterCalled, true);
       });
     });
     function storeData (request, data) {

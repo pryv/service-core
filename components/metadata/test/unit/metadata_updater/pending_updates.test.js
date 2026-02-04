@@ -7,8 +7,7 @@
 
 // Tests for the PendingUpdatesMap and its helper classes.
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const sinon = require('sinon');
 const { PendingUpdatesMap, PendingUpdate } = require('../../../src/metadata_updater/pending_updates');
 
@@ -30,7 +29,7 @@ describe('PendingUpdatesMap', () => {
       map.merge(update1);
       const value = map.get(update1.key());
       if (value == null) { throw new Error('Should not be null.'); }
-      assert.deepEqual(value, update1);
+      assert.deepStrictEqual(value, update1);
     });
     it('[JJ2Y] merges updates with preexisting updates via #merge', () => {
       sinon.stub(update1, 'merge');
@@ -119,13 +118,13 @@ describe('PendingUpdate', () => {
       assert.strictEqual(req1.eventId, 'event');
       // update2 is later (timestamp), and thus this is the last author
       assert.strictEqual(req1.author, 'token2');
-      assert.approximately(req1.timestamp, now + 10, 1);
+      assert.ok(Math.abs(req1.timestamp - (now + 10)) <= 1);
       // dataExtent is merged by widening the range covered as far as possible.
-      assert.approximately(req1.dataExtent.from, now - 200, 1, 'update2 covers more of the past, and thus wins for from');
-      assert.approximately(req1.dataExtent.to, now, 1, 'update1 covers more in the present and wins');
-      assert.approximately(update1.deadline, now + 20, 1, 'earlier deadline wins');
+      assert.ok(Math.abs(req1.dataExtent.from - (now - 200)) <= 1, 'update2 covers more of the past, and thus wins for from');
+      assert.ok(Math.abs(req1.dataExtent.to - now) <= 1, 'update1 covers more in the present and wins');
+      assert.ok(Math.abs(update1.deadline - (now + 20)) <= 1, 'earlier deadline wins');
       // Latter timestamp wins, so this is now + 10 + 10...
-      assert.approximately(update1.cooldown, now + 10 + 10, 1, 'cooldown is reset to now+COOLDOWN_TIME on every merge');
+      assert.ok(Math.abs(update1.cooldown - (now + 10 + 10)) <= 1, 'cooldown is reset to now+COOLDOWN_TIME on every merge');
     });
     it('[HS79] fails when key is not equal', () => {
       const failing = makeUpdate(now, {
@@ -151,12 +150,12 @@ describe('PendingUpdate', () => {
     });
     it('[79JJ] returns `cooldown` when deadline is far away', () => {
       const flushAt = update.flushAt();
-      assert.approximately(flushAt, update.cooldown, 1);
+      assert.ok(Math.abs(flushAt - update.cooldown) <= 1);
     });
     it('[OQLP] returns `deadline` when deadline is < `cooldown`', () => {
       update.cooldown = update.deadline - 1;
       const flushAt = update.flushAt();
-      assert.approximately(flushAt, update.cooldown, 1);
+      assert.ok(Math.abs(flushAt - update.cooldown) <= 1);
     });
   });
 });
