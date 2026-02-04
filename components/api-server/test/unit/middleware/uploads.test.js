@@ -7,10 +7,11 @@
 
 'use strict';
 
+require('test-helpers/src/api-server-tests-config');
 const express = require('express');
 const bodyParser = require('body-parser');
 const supertest = require('supertest');
-const should = require('should');
+const assert = require('node:assert');
 const { fixturePath, fixtureFile } = require('../test-helper');
 const uploads = require('../../../src/middleware/uploads');
 
@@ -30,12 +31,12 @@ describe('uploads middleware', function () {
         .post('/path')
         .attach('file', fixturePath('somefile'), fixtureFile('somefile'));
       return rq.then((res) => {
-        should(res.statusCode).be.eql(200);
+        assert.strictEqual(res.statusCode, 200);
         const files = res.body.files;
-        if (!Array.isArray(files)) { throw new Error('AF: must be an array'); }
+        assert.ok(Array.isArray(files), 'must be an array');
         const file = files[0];
-        if (file == null || file.originalname == null) { throw new Error('AF: should not be null'); }
-        should(file.originalname).be.eql('somefile');
+        assert.ok(file != null && file.originalname != null, 'should not be null');
+        assert.strictEqual(file.originalname, 'somefile');
       });
     });
   });

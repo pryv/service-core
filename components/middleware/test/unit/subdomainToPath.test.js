@@ -7,7 +7,7 @@
 
 const supertest = require('supertest');
 const express = require('express');
-const should = require('should');
+const assert = require('node:assert');
 const subdomainToPath = require('middleware/src/subdomainToPath')([]);
 
 describe('subdomainToPath middleware', function () {
@@ -24,7 +24,7 @@ describe('subdomainToPath middleware', function () {
         .set('Host', host)
         .expect(200)
         .then((res) => {
-          should(res.body.path).be.eql(path + '/path');
+          assert.strictEqual(res.body.path, path + '/path');
         });
     }
     it('[V0R9] should not transform illegal usernames', function () {

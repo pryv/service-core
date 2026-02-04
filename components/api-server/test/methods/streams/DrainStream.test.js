@@ -9,15 +9,15 @@
 
 const DrainStream = require('../../../src/methods/streams/DrainStream');
 const _ = require('lodash');
-const should = require('should');
+const assert = require('node:assert');
 
 describe('DrainStream', function () {
   it('[AFWR] must be fed objects and return them in the callback', function (done) {
     const input = [{ a: 'a' }, { b: 'b' }, { c: 'c' }];
 
     function expectation (err, array) {
-      should.not.exist(err);
-      (_.isEqual(array, input)).should.be.true();
+      assert.strictEqual(err, null);
+      assert.strictEqual(_.isEqual(array, input), true);
       done();
     }
 
@@ -31,7 +31,7 @@ describe('DrainStream', function () {
 
   it('[23UQ] must return an error when the provided limit is exceeded', function (done) {
     function expectation (err) {
-      should.exist(err);
+      assert.ok(err);
       done();
     }
 

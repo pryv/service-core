@@ -7,7 +7,8 @@
 
 'use strict';
 
-const should = require('should');
+require('test-helpers/src/api-server-tests-config');
+const assert = require('node:assert');
 const express = require('express');
 const authMod = require('api-server/src/routes/auth/login');
 
@@ -47,24 +48,16 @@ describe('Authentication', function () {
     const keys = ['a', 'b'];
 
     it('[IKAI] returns true if all properties exist', function () {
-      should(
-        hasProperties(obj, keys)
-      ).be.ok();
+      assert.strictEqual(hasProperties(obj, keys), true);
     });
     it('[K2PZ] returns false if not all properties exist', function () {
-      should(
-        hasProperties(obj, ['a', 'c'])
-      ).be.false();
+      assert.strictEqual(hasProperties(obj, ['a', 'c']), false);
     });
     it('[U2NA] returns false if null is given', function () {
-      should(
-        hasProperties(null, ['a', 'c'])
-      ).be.false();
+      assert.strictEqual(hasProperties(null, ['a', 'c']), false);
     });
     it('[WJ7J] returns false if a string is given', function () {
-      should(
-        hasProperties('a string', ['a', 'c'])
-      ).be.false();
+      assert.strictEqual(hasProperties('a string', ['a', 'c']), false);
     });
   });
 });

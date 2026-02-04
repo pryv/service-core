@@ -5,8 +5,9 @@
  * Refer to LICENSE file
  */
 
+require('test-helpers/src/api-server-tests-config');
 const concurrentSafeWrite = require('../../src/sqliteUtils/concurrentSafeWrite');
-const { assert } = require('chai');
+const assert = require('node:assert');
 
 describe('[UCSQ] userSQLite Storage concurent Writes', () => {
   before(async () => {
@@ -21,7 +22,7 @@ describe('[UCSQ] userSQLite Storage concurent Writes', () => {
       throw mockBusyError();
     }
     await concurrentSafeWrite.execute(statement, 21);
-    assert.equal(callCount, 21);
+    assert.strictEqual(callCount, 21);
   });
 
   it('[9H7P] should fail when max retries is reached when SQLITE_BUSY', async () => {
@@ -34,9 +35,9 @@ describe('[UCSQ] userSQLite Storage concurent Writes', () => {
     }
     try {
       await concurrentSafeWrite.execute(statement, 5);
-      assert.isTrue(false, 'should not be reached');
+      assert.fail('should not be reached');
     } catch (err) {
-      assert.equal(err.message, 'Failed write action on SQLite after 5 retries');
+      assert.strictEqual(err.message, 'Failed write action on SQLite after 5 retries');
     }
   });
 });

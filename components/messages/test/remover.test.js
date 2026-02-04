@@ -8,7 +8,7 @@
 require('test-helpers/src/api-server-tests-config');
 const { pubsub } = require('messages');
 
-const { assert } = require('chai');
+const assert = require('node:assert');
 
 describe('Pubsub removers', function () {
   it('[LVNK] remover works', done => {
@@ -17,14 +17,14 @@ describe('Pubsub removers', function () {
     pubsub.notifications.emit('toto', 'titi');
 
     function messageReceived (msg) {
-      assert.equal(msg, 'titi');
+      assert.strictEqual(msg, 'titi');
       titiReceived = true;
       removable();
       pubsub.notifications.emit('toto', 'tata'); // should not be received
     }
 
     setTimeout(() => {
-      assert.isTrue(titiReceived, 'should have recived titi message');
+      assert.strictEqual(titiReceived, true, 'should have recived titi message');
       done();
     }, 50);
   });

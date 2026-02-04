@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-const should = require('should');
+const assert = require('node:assert');
 const superagent = require('superagent');
 const Application = require('../../src/application');
 
@@ -22,7 +22,7 @@ describe('Server', () => {
     return new URL(path, baseUrl).toString();
   }
   it('[O84I] can be constructed', function () {
-    should.exist(server);
+    assert.ok(server);
   });
   describe('.start', function () {
     beforeEach(async function () {
@@ -36,7 +36,7 @@ describe('Server', () => {
       const statusUrl = toUrl('/system/status');
       const response = request.get(statusUrl);
       return response.then((res) => {
-        should.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
       });
     });
   });

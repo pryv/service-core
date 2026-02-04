@@ -5,7 +5,8 @@
  * Refer to LICENSE file
  */
 
-const should = require('should');
+require('test-helpers/src/api-server-tests-config');
+const assert = require('node:assert');
 
 const controllerFactory = require('../../../src/web/controller');
 const controller = controllerFactory({});
@@ -22,10 +23,10 @@ describe('Controller', () => {
       };
 
       controller.storeSeriesData(req, {}, (err, res) => {
-        should.not.exist(res);
-        should.exist(err);
-        should(err).be.instanceof(APIError);
-        should(err.id).be.equal(ErrorIds.MissingHeader);
+        assert.strictEqual(res, undefined);
+        assert.ok(err);
+        assert.ok(err instanceof APIError);
+        assert.strictEqual(err.id, ErrorIds.MissingHeader);
         done();
       });
     });
@@ -37,10 +38,10 @@ describe('Controller', () => {
       };
 
       controller.storeSeriesData(req, {}, (err, res) => {
-        should.not.exist(res);
-        should.exist(err);
-        should(err).be.instanceof(APIError);
-        should(err.id).be.equal(ErrorIds.InvalidItemId);
+        assert.strictEqual(res, undefined);
+        assert.ok(err);
+        assert.ok(err instanceof APIError);
+        assert.strictEqual(err.id, ErrorIds.InvalidItemId);
         done();
       });
     });

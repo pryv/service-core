@@ -7,9 +7,8 @@
 
 // Unit test for type repository
 
-const should = require('should');
-const chai = require('chai');
-const assert = chai.assert;
+require('test-helpers/src/api-server-tests-config');
+const assert = require('node:assert');
 const { TypeRepository } = require('../../src/types');
 const { getConfig } = require('@pryv/boiler');
 
@@ -34,74 +33,74 @@ describe('business.types.TypeRepository', function () {
       try {
         await repository.tryUpdate('bahbahblacksheep');
       } catch (err) {
-        should(err.message).match(/Could not update event types/);
+        assert.match(err.message, /Could not update event types/);
       }
     });
   });
   describe('basic types like mass/kg', function () {
     it('[EEWV] should be known', function () {
-      should(repository.isKnown('mass/kg')).be.true();
+      assert.strictEqual(repository.isKnown('mass/kg'), true);
     });
     it('[J0CJ] should return a type instance allowing conversion', function () {
       const eventType = repository.lookup('mass/kg');
-      should(eventType.requiredFields()).be.eql(['value']);
-      should(eventType.optionalFields()).be.eql([]);
-      should(eventType.fields()).be.eql(['value']);
+      assert.deepStrictEqual(eventType.requiredFields(), ['value']);
+      assert.deepStrictEqual(eventType.optionalFields(), []);
+      assert.deepStrictEqual(eventType.fields(), ['value']);
       const fieldType = eventType.forField('value');
-      should(fieldType.coerce('1234')).be.eql(1234);
-      should(fieldType.coerce(1234)).be.eql(1234);
+      assert.strictEqual(fieldType.coerce('1234'), 1234);
+      assert.strictEqual(fieldType.coerce(1234), 1234);
     });
     it('[8WI1] should throw when conversion fails', function () {
       const eventType = repository.lookup('mass/kg');
       const fieldType = eventType.forField('value');
-      should.throws(() => fieldType.coerce({}), Error);
+      assert.throws(() => fieldType.coerce({}), Error);
     });
     it('[WKCS] should coerce to number during validation', function () {
       const eventType = repository.lookup('mass/kg');
       const validator = repository.validator();
       return eventType
         .callValidator(validator, '123')
-        .then((val) => should(val).be.eql(123));
+        .then((val) => assert.strictEqual(val, 123));
     });
   });
   describe('boolean type boolean/bool', function () {
     it('[E2Y1] should be known', function () {
-      should(repository.isKnown('boolean/bool')).be.true();
+      assert.strictEqual(repository.isKnown('boolean/bool'), true);
     });
     it('[8FHU] should return a type instance allowing conversion', function () {
       const eventType = repository.lookup('boolean/bool');
-      should(eventType.requiredFields()).be.eql(['value']);
-      should(eventType.optionalFields()).be.eql([]);
-      should(eventType.fields()).be.eql(['value']);
+      assert.deepStrictEqual(eventType.requiredFields(), ['value']);
+      assert.deepStrictEqual(eventType.optionalFields(), []);
+      assert.deepStrictEqual(eventType.fields(), ['value']);
       const fieldType = eventType.forField('value');
-      should(fieldType.coerce('true')).be.eql(true);
-      should(fieldType.coerce(true)).be.eql(true);
-      should(fieldType.coerce('false')).be.eql(false);
-      should(fieldType.coerce(false)).be.eql(false);
+      assert.strictEqual(fieldType.coerce('true'), true);
+      assert.strictEqual(fieldType.coerce(true), true);
+      assert.strictEqual(fieldType.coerce('false'), false);
+      assert.strictEqual(fieldType.coerce(false), false);
     });
     it('[8U3U] should coerce to boolean during validation', function () {
       const eventType = repository.lookup('boolean/bool');
       const validator = repository.validator();
       return eventType
         .callValidator(validator, 'true')
-        .then((val) => should(val).be.eql(true));
+        .then((val) => assert.strictEqual(val, true));
     });
   });
   describe('complex types like position/wgs84', function () {
     it('[05LA] should be known', function () {
-      should(repository.isKnown('position/wgs84')).be.true();
+      assert.strictEqual(repository.isKnown('position/wgs84'), true);
     });
     it('[0QZ3] should return a complex type instance', function () {
       const eventType = repository.lookup('position/wgs84');
-      should(eventType.requiredFields()).be.eql(['latitude', 'longitude']);
-      should(eventType.optionalFields()).be.eql([
+      assert.deepStrictEqual(eventType.requiredFields(), ['latitude', 'longitude']);
+      assert.deepStrictEqual(eventType.optionalFields(), [
         'altitude',
         'horizontalAccuracy',
         'verticalAccuracy',
         'speed',
         'bearing'
       ]);
-      should(eventType.fields()).be.eql([
+      assert.deepStrictEqual(eventType.fields(), [
         'latitude',
         'longitude',
         'altitude',
@@ -128,23 +127,23 @@ describe('business.types.TypeRepository', function () {
       assert.strictEqual(inner.coerce('123'), '123');
     });
     it('[5PMM] does NOT handle requiredFields fully yet: only surface requirements are returned', () => {
-      assert.deepEqual(type.requiredFields(), ['id', 'message']);
+      assert.deepStrictEqual(type.requiredFields(), ['id', 'message']);
     });
   });
   describe('placeholder types like picture/attached', () => {
     it('[78HI] should be known', function () {
-      assert.isTrue(repository.isKnown('picture/attached'));
+      assert.strictEqual(repository.isKnown('picture/attached'), true);
     });
     it('[85BQ] should return a type instance allowing conversion', function () {
       const eventType = repository.lookup('picture/attached');
-      assert.deepEqual(eventType.requiredFields(), ['value']);
-      assert.deepEqual(eventType.optionalFields(), []);
-      assert.deepEqual(eventType.fields(), ['value']);
+      assert.deepStrictEqual(eventType.requiredFields(), ['value']);
+      assert.deepStrictEqual(eventType.optionalFields(), []);
+      assert.deepStrictEqual(eventType.fields(), ['value']);
       // The type 'null' ignores content submitted to it and stores a 'null'
       // in the content field.
       const fieldType = eventType.forField('value');
-      assert.deepEqual(fieldType.coerce('some value'), null);
-      assert.deepEqual(fieldType.coerce(132136), null);
+      assert.strictEqual(fieldType.coerce('some value'), null);
+      assert.strictEqual(fieldType.coerce(132136), null);
     });
   });
   describe('series types like series:mass/kg', function () {
@@ -153,14 +152,14 @@ describe('business.types.TypeRepository', function () {
       done();
     });
     it('[SQNQ] should be known', function () {
-      should(repository.isKnown('series:position/wgs84')).be.true();
-      should(repository.isKnown('series:mass/kg')).be.true();
+      assert.strictEqual(repository.isKnown('series:position/wgs84'), true);
+      assert.strictEqual(repository.isKnown('series:mass/kg'), true);
     });
     it('[IR3B] should inform about fields correctly', function () {
       const eventType = repository.lookup('series:mass/kg');
-      should(eventType.requiredFields()).be.eql(['deltaTime', 'value']);
-      should(eventType.optionalFields()).be.eql([]);
-      should(eventType.fields()).be.eql(['deltaTime', 'value']);
+      assert.deepStrictEqual(eventType.requiredFields(), ['deltaTime', 'value']);
+      assert.deepStrictEqual(eventType.optionalFields(), []);
+      assert.deepStrictEqual(eventType.fields(), ['deltaTime', 'value']);
     });
   });
   describe('validate()', function () {
@@ -178,7 +177,7 @@ describe('business.types.TypeValidator', function () {
   });
   it('[AE3Q] should be produced via a type repository', function () {
     const validator = repository.validator();
-    should(validator.constructor.name).be.eql('TypeValidator');
+    assert.strictEqual(validator.constructor.name, 'TypeValidator');
   });
   it('[JT1F] should validate simple types', function () {
     const validator = repository.validator();

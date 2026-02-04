@@ -6,7 +6,7 @@
  */
 
 const treeUtils = require('../src/treeUtils');
-const should = require('should'); // explicit require to benefit from static functions
+const assert = require('node:assert');
 
 describe('tree utils', function () {
   const testArray = [
@@ -87,28 +87,28 @@ describe('tree utils', function () {
   describe('buildTree()', function () {
     it('[32CB] must build a correct tree for a given consistent array', function () {
       const res = treeUtils.buildTree(testArray, true /* strip parent ids */);
-      res.should.eql(testTree);
-      should.notStrictEqual(res[0], testArray[0], 'should not return the original objects but copies instead');
+      assert.deepStrictEqual(res, testTree);
+      assert.notStrictEqual(res[0], testArray[0], 'should not return the original objects but copies instead');
     });
 
     it('[VVVS] must throw an error if objects do not contain the necessary properties', function () {
-      (function () { treeUtils.buildTree(invalidArray); }).should.throw();
+      assert.throws(() => { treeUtils.buildTree(invalidArray); });
     });
 
     it('[CEUF] must throw an error if the object in argument is not an array', function () {
-      (function () { treeUtils.buildTree(testArray[0]); }).should.throw();
+      assert.throws(() => { treeUtils.buildTree(testArray[0]); });
     });
   });
 
   describe('flattenTree()', function () {
     it('[11JJ] must build a correct array for a given tree', function () {
       const res = treeUtils.flattenTree(testTree);
-      res.should.eql(testArray);
-      should.notStrictEqual(res[0], testTree[0], 'should not return the original objects but copies instead');
+      assert.deepStrictEqual(res, testArray);
+      assert.notStrictEqual(res[0], testTree[0], 'should not return the original objects but copies instead');
     });
 
     it('[OVJM] must throw an error if the object in argument is not an array', function () {
-      (function () { treeUtils.flattenTree(testTree[0]); }).should.throw();
+      assert.throws(() => { treeUtils.flattenTree(testTree[0]); });
     });
   });
 
@@ -117,14 +117,14 @@ describe('tree utils', function () {
       const foundItem = treeUtils.findInTree(testTree, function (item) {
         return item.someProperty === true;
       });
-      should.strictEqual(foundItem, testTree[0].children[1]);
+      assert.strictEqual(foundItem, testTree[0].children[1]);
     });
 
     it('[SI6L] must return null if no item matches the given iterator function', function () {
       const foundItem = treeUtils.findInTree(testTree, function (item) {
         return item.someProperty === 'missing value';
       });
-      should.not.exist(foundItem);
+      assert.strictEqual(foundItem, null);
     });
   });
 
@@ -157,8 +157,8 @@ describe('tree utils', function () {
           children: []
         }
       ];
-      filteredTree.should.eql(expected);
-      should.notStrictEqual(filteredTree[0], testTree[0], 'should not return the original objects but copies instead');
+      assert.deepStrictEqual(filteredTree, expected);
+      assert.notStrictEqual(filteredTree[0], testTree[0], 'should not return the original objects but copies instead');
     });
   });
 
@@ -172,14 +172,14 @@ describe('tree utils', function () {
         const expected = testArray.map(function (item) {
           return item.id;
         });
-        ids.should.eql(expected);
+        assert.deepStrictEqual(ids, expected);
       });
   });
 
   describe('expandIds()', function () {
     it('[PFJP] must return an array with the ids passed in argument plus those of all their descendants',
       function () {
-        treeUtils.expandIds(testTree, ['root-1']).should.eql([
+        assert.deepStrictEqual(treeUtils.expandIds(testTree, ['root-1']), [
           'root-1', 'child-1.1', 'child-1.1.1', 'child-1.2'
         ]);
       });

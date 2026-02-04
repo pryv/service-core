@@ -7,10 +7,11 @@
 
 'use strict';
 
+require('test-helpers/src/api-server-tests-config');
 const ArraySerializationStream = require('../../../src/methods/streams/ArraySerializationStream');
 const Writable = require('stream').Writable;
 const inherits = require('util').inherits;
-const should = require('should');
+const assert = require('node:assert');
 const Source = require('../../helpers').SourceStream;
 
 describe('ArraySerializationStream', function () {
@@ -24,7 +25,7 @@ describe('ArraySerializationStream', function () {
       it(`[${testIDs[i + 3]}] must return a valid array when receiving limit` + sign + i + ' items',
         function (done) {
           const n = arraySize + i;
-          n.should.be.above(0);
+          assert.ok(n > 0);
           pipeAndCheck(n, true, null, done);
         }
       );
@@ -57,14 +58,14 @@ describe('ArraySerializationStream', function () {
     new Source(items)
       .pipe(new ArraySerializationStream(name, isFirst))
       .pipe(new DestinationStream(isFirst, (err, res) => {
-        should.not.exist(err);
-        should.exist(res);
+        assert.strictEqual(err, null);
+        assert.ok(res);
         if (typeof (resultMapping) === 'function') {
           res = resultMapping(res);
         }
         res = JSON.parse(res);
-        should.exist(res[name]);
-        res[name].should.eql(items);
+        assert.ok(res[name]);
+        assert.deepStrictEqual(res[name], items);
         done();
       }));
   }

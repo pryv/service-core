@@ -6,7 +6,7 @@
  */
 
 const loadAccessMiddleware = require('../../src/loadAccess');
-const should = require('should');
+const assert = require('node:assert');
 const bluebird = require('bluebird');
 
 describe('loadAccess middleware', function () {
@@ -46,7 +46,7 @@ describe('loadAccess middleware', function () {
       req.auth = 'valid';
       // Mocking req and res
       await bluebird.fromCallback(cb => loadAccess(req, res, cb));
-      should(res.headers['Pryv-Access-Id']).be.eql('validAccess');
+      assert.strictEqual(res.headers['Pryv-Access-Id'], 'validAccess');
     });
     it('[UDW7] should still set the Pryv-access-id header in case of error (e.g. expired token)', async function () {
       req.auth = 'expired';
@@ -54,8 +54,8 @@ describe('loadAccess middleware', function () {
         // Mocking req and res
         await bluebird.fromCallback(cb => loadAccess(req, res, cb));
       } catch (err) {
-        should.exist(err);
-        should(res.headers['Pryv-Access-Id']).be.eql('expiredAccess');
+        assert.ok(err);
+        assert.strictEqual(res.headers['Pryv-Access-Id'], 'expiredAccess');
       }
     });
   });
@@ -64,7 +64,7 @@ describe('loadAccess middleware', function () {
       req.auth = 'invalid';
       // Mocking req and res
       await bluebird.fromCallback(cb => loadAccess(req, res, cb));
-      should.not.exist(res.headers['Pryv-Access-Id']);
+      assert.strictEqual(res.headers['Pryv-Access-Id'], undefined);
     });
   });
 });
