@@ -6,7 +6,7 @@
  */
 
 const cuid = require('cuid');
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const timestamp = require('unix-timestamp');
 const assert = require('node:assert');
 const charlatan = require('charlatan');
@@ -22,7 +22,7 @@ const { ErrorIds } = require('errors/src');
 const storage = require('test-helpers').dependencies.storage.user.webhooks;
 const { Webhook } = require('business').webhooks;
 
-describe('webhooks', () => {
+describe('[WH01] webhooks', () => {
   let mongoFixtures;
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -55,7 +55,7 @@ describe('webhooks', () => {
     server.stop();
   });
 
-  describe('GET /', () => {
+  describe('[WH02] GET /', () => {
     before(() => {
       username = cuid();
       return mongoFixtures.user(username, {}, (user) => {
@@ -165,7 +165,7 @@ describe('webhooks', () => {
     });
   });
 
-  describe('GET /:webhookId', () => {
+  describe('[WH03] GET /:webhookId', () => {
     const url = 'yololo';
     const minIntervalMs = 10000;
     const maxRetries = 5;
@@ -299,7 +299,7 @@ describe('webhooks', () => {
     });
   });
 
-  describe('POST /', () => {
+  describe('[WH04] POST /', () => {
     const usedUrl = 'https://existing.com/notifications';
 
     before(async () => {
@@ -362,9 +362,8 @@ describe('webhooks', () => {
           });
         });
         it('[XKLU] should save it to the storage', async () => {
-          const storedWebhook = await bluebird.fromCallback(
-            cb => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb)
-          );
+          const findOneAsync = promisify((u, q, o, cb) => storage.findOne(u, q, o, cb));
+          const storedWebhook = await findOneAsync({ id: username }, { id: { $eq: webhook.id } }, {});
           assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
             validation.removeTrackingPropertiesForOne(webhook));
         });
@@ -434,9 +433,8 @@ describe('webhooks', () => {
           });
         });
         it('[UC6J] should save it to the storage', async () => {
-          const storedWebhook = await bluebird.fromCallback(
-            cb => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb)
-          );
+          const findOneAsync = promisify((u, q, o, cb) => storage.findOne(u, q, o, cb));
+          const storedWebhook = await findOneAsync({ id: username }, { id: { $eq: webhook.id } }, {});
           assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
             validation.removeTrackingPropertiesForOne(webhook));
         });
@@ -461,7 +459,7 @@ describe('webhooks', () => {
     });
   });
 
-  describe('PUT /:webhookId', () => {
+  describe('[WH05] PUT /:webhookId', () => {
     const url = 'yololo';
     const minIntervalMs = 10000;
     const maxRetries = 5;
@@ -555,9 +553,8 @@ describe('webhooks', () => {
             });
           });
           it('[JSOH] should apply the changes to the storage', async () => {
-            const storedWebhook = await bluebird.fromCallback((cb) =>
-              storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb)
-            );
+            const findOneAsync = promisify((u, q, o, cb) => storage.findOne(u, q, o, cb));
+            const storedWebhook = await findOneAsync({ id: username }, { id: { $eq: webhookId1 } }, {});
             assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
               validation.removeTrackingPropertiesForOne(webhook));
           });
@@ -664,7 +661,7 @@ describe('webhooks', () => {
     });
   });
 
-  describe('DELETE /:webhookId', () => {
+  describe('[WH06] DELETE /:webhookId', () => {
     before(() => {
       personalAccessToken = cuid();
       appAccessId1 = cuid();
@@ -743,9 +740,8 @@ describe('webhooks', () => {
         });
 
         it('[KA98] should delete it in the storage', async () => {
-          const deletedWebhook = await bluebird.fromCallback((cb) =>
-            storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb)
-          );
+          const findOneAsync = promisify((u, q, o, cb) => storage.findOne(u, q, o, cb));
+          const deletedWebhook = await findOneAsync({ id: username }, { id: { $eq: webhookId1 } }, {});
           assert.ok(deletedWebhook == null);
         });
       });
@@ -842,7 +838,7 @@ describe('webhooks', () => {
     });
   });
 
-  describe('POST /:webhookId/test', () => {
+  describe('[WH07] POST /:webhookId/test', () => {
     const port = 5553;
     const postPath = '/notifications';
 

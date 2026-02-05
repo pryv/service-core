@@ -156,7 +156,7 @@ describe('[ACCP] accesses (app)', function () {
     ], done);
   });
 
-  describe('GET /', function () {
+  describe('[AA01] GET /', function () {
     before(resetAccesses);
 
     it("[YEHW] must return shared accesses whose permissions are a subset of the current one's", function (done) {
@@ -181,7 +181,7 @@ describe('[ACCP] accesses (app)', function () {
     });
   });
 
-  describe('POST /', function () {
+  describe('[AA02] POST /', function () {
     beforeEach(resetAccesses);
 
     it('[QVHS] must create a new shared access with the sent data and return it', function (done) {
@@ -301,7 +301,7 @@ describe('[ACCP] accesses (app)', function () {
     });
   });
 
-  describe('PUT /<token>', function () {
+  describe('[AA03] PUT /<token>', function () {
     beforeEach(resetAccesses);
 
     it('[11UZ]  must return a 410 (Gone)', function (done) {
@@ -315,7 +315,7 @@ describe('[ACCP] accesses (app)', function () {
     });
   });
 
-  describe('DELETE /<id>', function () {
+  describe('[AA04] DELETE /<id>', function () {
     beforeEach(resetAccesses);
 
     it('[5BOO] must delete the shared access', function (done) {

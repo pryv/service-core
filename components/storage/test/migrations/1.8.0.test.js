@@ -9,7 +9,7 @@
  * Tests data migration between versions.
  */
 
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
@@ -27,7 +27,7 @@ const { getUsersLocalIndex } = require('storage');
 
 const { platform } = require('platform');
 
-describe('Migration - 1.8.0', function () {
+describe('[MG80] Migration - 1.8.0', function () {
   this.timeout(20000);
   let initialEventsUsers;
   let usersIndex;
@@ -36,7 +36,8 @@ describe('Migration - 1.8.0', function () {
     if (database.isFerret) this.skip();
     const newVersion = getVersions('1.8.0');
     await SystemStreamsSerializer.init();
-    await bluebird.fromCallback(cb => testData.restoreFromDump('1.7.5', mongoFolder, cb));
+    const restoreFromDumpAsync = promisify(testData.restoreFromDump);
+    await restoreFromDumpAsync('1.7.5', mongoFolder);
 
     // collect users from events
     initialEventsUsers = await getInitialEventsUsers();

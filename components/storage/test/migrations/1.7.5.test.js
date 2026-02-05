@@ -11,7 +11,7 @@
 
 /* global assert */
 
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
@@ -22,7 +22,7 @@ const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 
 const { getVersions } = require('./util');
 
-describe('Migration - 1.7.5', function () {
+describe('[MG75] Migration - 1.7.5', function () {
   this.timeout(20000);
 
   let accessesCollection;
@@ -42,7 +42,8 @@ describe('Migration - 1.7.5', function () {
   it('[MA7J] must handle data migration from 1.7.1 to 1.7.5', async function () {
     const newVersion = getVersions('1.7.5');
 
-    await bluebird.fromCallback(cb => testData.restoreFromDump('1.7.1', mongoFolder, cb));
+    const restoreFromDumpAsync = promisify(testData.restoreFromDump);
+    await restoreFromDumpAsync('1.7.1', mongoFolder);
 
     // verify accesses afterwards
     const previousAccessesWithSystemStreamPermissions = await accessesCollection.find({ 'permissions.streamId': { $regex: /^\./ } }).toArray();

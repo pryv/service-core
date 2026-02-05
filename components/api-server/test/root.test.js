@@ -10,7 +10,7 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const assert = require('node:assert');
 const cuid = require('cuid');
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const superagent = require('superagent'); // for basic auth
 
 require('./test-helpers');
@@ -127,7 +127,7 @@ describe('[ROOT] root', function () {
     user2 = user2.attrs;
   });
 
-  describe('GET /', function () {
+  describe('[RT01] GET /', function () {
     it('[UA7B] should return basic server meta information as JSON when requested', async function () {
       const res = await server.request()
         .get('/')
@@ -153,7 +153,7 @@ describe('[ROOT] root', function () {
     });
   });
 
-  describe('All requests:', function () {
+  describe('[RT02] All requests:', function () {
     it('[TJHO] should return correct common HTTP headers + meta data in response body', async function () {
       const origin = 'https://test.pryv.io';
       const allowMethod = 'GET';
@@ -252,16 +252,11 @@ describe('[ROOT] root', function () {
 
     it('[J2WP] trackingFunctions should update the access\'s "last used" time and *internal* request counters', async function () {
       const calledMethodKey = 'events:get';
+      const findOneAsync = promisify((u, query, opts, cb) =>
+        helpers.dependencies.storage.user.accesses.findOne(u, query, opts, cb));
 
       // checkOriginalAccess;
-      let access = await bluebird.fromCallback(cb => {
-        helpers.dependencies.storage.user.accesses.findOne(
-          user,
-          { token: personalAccessToken },
-          null,
-          cb
-        );
-      });
+      let access = await findOneAsync(user, { token: personalAccessToken }, null);
       const originalCallCount =
         access.calls && access.calls[calledMethodKey]
           ? access.calls[calledMethodKey]
@@ -274,14 +269,7 @@ describe('[ROOT] root', function () {
       const expectedTime = timestamp.now();
 
       // checkUpdatedAccess
-      access = await bluebird.fromCallback(cb => {
-        helpers.dependencies.storage.user.accesses.findOne(
-          user,
-          { token: personalAccessToken },
-          null,
-          cb
-        );
-      });
+      access = await findOneAsync(user, { token: personalAccessToken }, null);
       assert.ok(access.lastUsed); //
       assert.ok(Math.abs(Math.round(access.lastUsed) - Math.round(expectedTime)) <= 5);
 
@@ -301,7 +289,7 @@ describe('[ROOT] root', function () {
     });
   });
 
-  describe('OPTIONS /', function () {
+  describe('[RT03] OPTIONS /', function () {
     it('[PDMA] should return OK', async function () {
       const res = await server.request()
         .options('/');
@@ -309,7 +297,7 @@ describe('[ROOT] root', function () {
     });
   });
 
-  describe('GET /access-info', function () {
+  describe('[RT04] GET /access-info', function () {
     it('[0MI8] must return current access information', async function () {
       const res = await server.request()
         .get('/' + username + '/access-info')
@@ -340,7 +328,7 @@ describe('[ROOT] root', function () {
     });
   });
 
-  describe('Accept Basic Auth request', function () {
+  describe('[RT05] Accept Basic Auth request', function () {
     let url;
     before(function () {
       url = server.baseUrl;
@@ -393,7 +381,7 @@ describe('[ROOT] root', function () {
     });
   });
 
-  describe('POST / (i.e. batch call)', function () {
+  describe('[RT06] POST / (i.e. batch call)', function () {
     let eventsNotifCount;
     before(function () {
       eventsNotifCount = 0;

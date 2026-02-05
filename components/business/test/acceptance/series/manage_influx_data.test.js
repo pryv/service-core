@@ -5,6 +5,8 @@
  * Refer to LICENSE file
  */
 
+require('../../test-helpers');
+
 const assert = require('node:assert');
 
 // Tests pertaining to managing influx data - acceptance tests that actually write.

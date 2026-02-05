@@ -21,7 +21,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, produceInfluxConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { pubsub } = require('messages');
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const { getMall } = require('mall');
 const cache = require('cache');
 const { MESSAGES } = require('cache/src/synchro');
@@ -231,7 +231,7 @@ describe('[PGTD] DELETE /users/:username', () => {
             app.storageLayer.webhooks
           ];
           const collectionsNotEmptyChecks = dbCollections.map(async function (coll) {
-            const collectionEntriesForUser = await bluebird.fromCallback((cb) => coll.find({ id: username1 }, {}, {}, cb));
+            const collectionEntriesForUser = await promisify((id, o1, o2, cb) => coll.find(id, o1, o2, cb))({ id: username1 }, {}, {});
             assert.ok(collectionEntriesForUser.length === 0);
           });
           await Promise.all(collectionsNotEmptyChecks);
@@ -246,7 +246,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           });
           streams = streams.filter((s) => !SystemStreamsSerializer.isSystemStreamId(s.id));
           assert.ok(streams.length === 0);
-          const sessions = await bluebird.fromCallback((cb) => app.storageLayer.sessions.getMatching({ username: username1 }, cb));
+          const sessions = await promisify((q, cb) => app.storageLayer.sessions.getMatching(q, cb))({ username: username1 });
           assert(sessions === null || sessions === []);
         });
         it(`[${testIDs[i][2]}] should delete user event files`, async function () {
@@ -281,7 +281,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           const dbCollections = [app.storageLayer.accesses];
           if (!isOpenSource) { dbCollections.push(app.storageLayer.webhooks); }
           const collectionsEmptyChecks = dbCollections.map(async function (coll) {
-            const collectionEntriesForUser = await bluebird.fromCallback((cb) => coll.find({ id: username2 }, {}, {}, cb));
+            const collectionEntriesForUser = await promisify((id, o1, o2, cb) => coll.find(id, o1, o2, cb))({ id: username2 }, {}, {});
             assert.ok(collectionEntriesForUser.length > 0);
           });
           await Promise.all(collectionsEmptyChecks);
@@ -296,7 +296,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           });
           streams = streams.filter((s) => !SystemStreamsSerializer.isSystemStreamId(s.id));
           assert.ok(streams.length > 0);
-          const sessions = await bluebird.fromCallback((cb) => app.storageLayer.sessions.getMatching({ username: username2 }, cb));
+          const sessions = await promisify((q, cb) => app.storageLayer.sessions.getMatching(q, cb))({ username: username2 });
           assert(sessions !== null || sessions !== []);
         });
         it(`[${testIDs[i][4]}] should not delete other user event files`, async function () {
@@ -309,7 +309,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert.strictEqual(deletedOnRegister, true);
         });
       });
-      describe('when given invalid authorization key', function () {
+      describe('[DL01] when given invalid authorization key', function () {
         before(async function () {
           res = await request
             .delete(`/users/${username1}`)
@@ -319,7 +319,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert.strictEqual(res.status, 404);
         });
       });
-      describe('when given not existing username', function () {
+      describe('[DL02] when given not existing username', function () {
         before(async function () {
           res = await request
             .delete(`/users/${username1}`)
@@ -331,7 +331,7 @@ describe('[PGTD] DELETE /users/:username', () => {
       });
     });
   });
-  describe('User - Create - Delete - Create - Login', function () {
+  describe('[DL03] User - Create - Delete - Create - Login', function () {
     const usernamex = charlatan.Internet.userName().replace('_', '-') + 'x';
     it('[JBZM] should be able to recreate this user, and login', async function () {
       nock(regUrl)

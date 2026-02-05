@@ -12,7 +12,6 @@
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const assert = require('node:assert');
-const bluebird = require('bluebird');
 const async = require('async');
 const io = require('socket.io-client');
 const queryString = require('qs');
@@ -30,7 +29,7 @@ const testData = helpers.data;
 const { integrity } = require('business');
 const { ConditionVariable } = require('test-helpers').syncPrimitives;
 
-describe('Socket.IO', function () {
+describe('[SK01] Socket.IO', function () {
   const user = structuredClone(testData.users[0]);
   const namespace = '/' + user.username;
   const otherUser = testData.users[1];
@@ -185,7 +184,7 @@ describe('Socket.IO', function () {
     });
   });
 
-  describe('calling API methods', function () {
+  describe('[SK02] calling API methods', function () {
     it('[FI6F] must properly route method call messages for events and return the results, including meta', function (done) {
       ioCons.con = connect(namespace, { auth: token });
       const params = {
@@ -343,14 +342,14 @@ describe('Socket.IO', function () {
       });
       await createStream(createConnection, { name: 'foo' });
       await createStream(createConnection, { name: 'bar' });
-      return bluebird.all(donePromises);
+      return Promise.all(donePromises);
       function createStream (conn, params) {
-        return bluebird.fromCallback((cb) => conn.emit('streams.create', params, cb));
+        return new Promise((resolve) => conn.emit('streams.create', params, resolve));
       }
     });
   });
 
-  describe('when using an access with a "create-only" permission', function () {
+  describe('[SK03] when using an access with a "create-only" permission', function () {
     it('[K2OO] must allow a connection', function (done) {
       let streamId, createOnlyToken;
       async.series([
@@ -401,7 +400,7 @@ describe('Socket.IO', function () {
     });
   });
 
-  describe('when spawning 2 api-server processes, A and B', () => {
+  describe('[SK04] when spawning 2 api-server processes, A and B', () => {
     // Servers A and B, length will be 2
     let servers = [];
 
@@ -434,7 +433,7 @@ describe('Socket.IO', function () {
         for (const server of servers) { server.stop(); }
       }
       // Spawn two new servers.
-      servers = await bluebird.all(context.spawn_multi(2));
+      servers = await Promise.all(context.spawn_multi(2));
       // give a chance to Socket.io to set-up.
       await sleep(1000);
     });
@@ -481,7 +480,7 @@ describe('Socket.IO', function () {
         content: '1',
         streamId: stream.id
       };
-      return bluebird.fromCallback((cb) => conn.emit('events.create', attributes, cb));
+      return new Promise((resolve) => conn.emit('events.create', attributes, resolve));
     }
   });
 });

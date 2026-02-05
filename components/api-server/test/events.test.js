@@ -7,7 +7,6 @@
 
 const assert = require('node:assert');
 const supertest = require('supertest');
-const bluebird = require('bluebird');
 const async = require('async');
 const fs = require('fs');
 const timestamp = require('unix-timestamp');
@@ -75,7 +74,7 @@ describe('[EVNT] events', function () {
     ], done);
   });
 
-  describe('GET /', function () {
+  describe('[EV01] GET /', function () {
     before(resetEvents);
 
     it('[WC8C] must return the last 20 non-trashed events (sorted descending) by default',
@@ -450,7 +449,7 @@ describe('[EVNT] events', function () {
       });
     });
 
-    it('[B766] must include event deletions (since that time) when requested', function (done) {
+    it('[B766] must include event deletions (since that time) when requested', async function () {
       const params = {
         state: 'all',
         modifiedSince: timestamp.now('-45m'),
@@ -472,27 +471,20 @@ describe('[EVNT] events', function () {
         return (e.modified >= timestamp.now('-45m'));
       });
 
-      request.get(basePath).query(params).end(async function (res) {
-        try {
-          // lets separate core events from all other events and validate them separatelly
-          const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
-          res.body.events = separatedEvents.events;
-          const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-          validation.validateAccountEvents(actualAccountStreamsEvents);
-          await bluebird.fromCallback(
-            (cb) => validation.check(res, {
-              status: 200,
-              schema: methodsSchema.get.result,
-              sanitizeFn: validation.sanitizeEvents,
-              sanitizeTarget: 'events',
-              body: {
-                events: addCorrectAttachmentIds(events),
-                eventDeletions
-              }
-            }, cb));
-          done();
-        } catch (error) {
-          done(error);
+      const res = await request.get(basePath).query(params);
+      // lets separate core events from all other events and validate them separately
+      const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
+      res.body.events = separatedEvents.events;
+      const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+      validation.validateAccountEvents(actualAccountStreamsEvents);
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.get.result,
+        sanitizeFn: validation.sanitizeEvents,
+        sanitizeTarget: 'events',
+        body: {
+          events: addCorrectAttachmentIds(events),
+          eventDeletions
         }
       });
     });
@@ -524,7 +516,7 @@ describe('[EVNT] events', function () {
     });
   });
 
-  describe('GET /<event id>/<file id>', function () {
+  describe('[EV02] GET /<event id>/<file id>', function () {
     before(resetEvents);
 
     it('[F29M] must return the attached file with the correct headers', function (done) {
@@ -701,7 +693,7 @@ describe('[EVNT] events', function () {
     });
   });
 
-  describe('POST /', function () {
+  describe('[EV03] POST /', function () {
     beforeEach(resetEvents);
 
     it('[1GR6] must create an event with the sent data, returning it', function (done) {
@@ -1035,7 +1027,7 @@ describe('[EVNT] events', function () {
     });
   });
 
-  describe('POST / (multipart content)', function () {
+  describe('[EV04] POST / (multipart content)', function () {
     beforeEach(resetEvents);
 
     it('[4CUV] must create a new event with the uploaded files', function (finalDone) {
@@ -1221,7 +1213,7 @@ describe('[EVNT] events', function () {
     });
   });
 
-  describe('POST /<event id> (multipart content)', function () {
+  describe('[EV05] POST /<event id> (multipart content)', function () {
     beforeEach(resetEvents);
 
     it('[ZI01] must add the uploaded files to the event as attachments', function (done) {
@@ -1344,7 +1336,7 @@ describe('[EVNT] events', function () {
       });
   });
 
-  describe('GET /<id>', () => {
+  describe('[EV06] GET /<id>', () => {
     beforeEach(resetEvents);
 
     it('[8GSS] allows access at level=read', async () => {
@@ -1369,7 +1361,7 @@ describe('[EVNT] events', function () {
     });
   });
 
-  describe('PUT /<id>', function () {
+  describe('[EV07] PUT /<id>', function () {
     beforeEach(resetEvents);
 
     it('[4QRU] must modify the event with the sent data', function (done) {
@@ -1518,7 +1510,7 @@ describe('[EVNT] events', function () {
         });
     });
 
-    describe('forbidden updates of protected fields', function () {
+    describe('[EV08] forbidden updates of protected fields', function () {
       const event = {
         type: 'note/txt',
         content: 'forbidden event update test',
@@ -1641,7 +1633,7 @@ describe('[EVNT] events', function () {
   });
 
   // Fixes #208
-  describe('PUT HF/non-HF events', function () {
+  describe('[EV09] PUT HF/non-HF events', function () {
     const streamId = testData.streams[0].id;
     const normalEvent = { streamIds: [streamId], type: 'activity/plain' };
     const hfEvent = { streamIds: [streamId], type: 'series:activity/plain' };
@@ -1705,7 +1697,7 @@ describe('[EVNT] events', function () {
     });
   });
 
-  describe('DELETE /<event id>/<file id>', function () {
+  describe('[EV10] DELETE /<event id>/<file id>', function () {
     beforeEach(resetEvents);
 
     it('[RW8M] must delete the attachment (reference in event + file)', async function () {
@@ -1757,7 +1749,7 @@ describe('[EVNT] events', function () {
     });
   });
 
-  describe('DELETE /<id>', function () {
+  describe('[EV11] DELETE /<id>', function () {
     beforeEach(resetEvents);
 
     it('[AT5Y] must flag the event as trashed', function (done) {

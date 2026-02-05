@@ -10,7 +10,7 @@ const assert = require('node:assert');
 const request = require('superagent');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const os = require('os');
 const fs = require('fs');
 const { setTimeout } = require('timers/promises');
@@ -75,7 +75,7 @@ describe('[SYRO] system route', function () {
     }
   });
 
-  describe('DELETE /mfa', () => {
+  describe('[SY01] DELETE /mfa', () => {
     let username, mfaPath, profilePath, res, profileRes, token, restOfProfile;
 
     before(async () => {
@@ -144,7 +144,7 @@ describe('[SYER] system (ex-register)', function () {
   // the mock service in order to test email sending, the second one
   // reconfigures it so that it just replies OK for subsequent tests.
   // DEPRECATED: remove (along with all other references to `create-user`) after all reg servers updated
-  describe('POST /create-user (DEPRECATED)', function () {
+  describe('[SY02] POST /create-user (DEPRECATED)', function () {
     function path () {
       return basePath() + '/create-user';
     }
@@ -163,7 +163,7 @@ describe('[SYER] system (ex-register)', function () {
       language: 'fr'
     };
 
-    describe('when email sending really works', function () {
+    describe('[SY03] when email sending really works', function () {
       before(async function () {
         await mongoFixtures.context.cleanEverything();
       });
@@ -200,7 +200,8 @@ describe('[SYER] system (ex-register)', function () {
 
         const originalCount = originalUsers.length;
         // create user
-        const res = await bluebird.fromCallback(cb => post(newUserData, cb));
+        const postAsync = promisify(post);
+        const res = await postAsync(newUserData);
         validation.check(res, {
           status: 201,
           schema: methodsSchema.createUser.result
@@ -273,7 +274,7 @@ describe('[SYER] system (ex-register)', function () {
       ], callback);
     }
 
-    describe('when it just replies OK', function () {
+    describe('[SY04] when it just replies OK', function () {
       before(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
       it('[9K71] must run the process but not save anything for test username "backloop"',
@@ -305,7 +306,8 @@ describe('[SYER] system (ex-register)', function () {
             email: 'backloop@backloop.dev',
             language: 'fr'
           };
-          const res = await bluebird.fromCallback(cb => post(data, cb));
+          const postAsync2 = promisify(post);
+          const res = await postAsync2(data);
 
           validation.check(res, {
             status: 201,
@@ -363,8 +365,9 @@ describe('[SYER] system (ex-register)', function () {
             email: 'roudoudou@choupinou.ch',
             language: 'fr'
           };
+          const postAsync3 = promisify(post);
           try {
-            await bluebird.fromCallback(cb => post(data, cb));
+            await postAsync3(data);
             throw new Error('The response should not be successful');
           } catch (err) {
             validation.checkError(err.response, {
@@ -384,9 +387,9 @@ describe('[SYER] system (ex-register)', function () {
           language: 'fr'
         };
 
+        const postAsync4 = promisify(post);
         try {
-          await bluebird.fromCallback(
-            (cb) => post(data, cb));
+          await postAsync4(data);
           assert.fail('should have thrown');
         } catch (err) {
           assert.equal(err.response.status, 409);
@@ -423,7 +426,7 @@ describe('[SYER] system (ex-register)', function () {
       });
     });
 
-    describe('when we log into a temporary log file', function () {
+    describe('[SY05] when we log into a temporary log file', function () {
       let logFilePath = '';
 
       beforeEach(function (done) {
@@ -544,7 +547,7 @@ describe('[SYER] system (ex-register)', function () {
     });
   });
 
-  describe('GET /user-info/{username}', function () {
+  describe('[SY06] GET /user-info/{username}', function () {
     const user = structuredClone(testData.users[0]);
     function path (username) {
       return basePath() + '/user-info/' + username;

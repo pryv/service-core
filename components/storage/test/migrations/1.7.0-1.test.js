@@ -11,7 +11,7 @@
 
 /* global assert */
 
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
@@ -24,7 +24,7 @@ const userLocalDirectory = require('storage').userLocalDirectory;
 
 const { getVersions, compareIndexes } = require('./util');
 
-describe('Migration - 1.7.x', function () {
+describe('[MG70] Migration - 1.7.x', function () {
   this.timeout(20000);
 
   let eventsCollection;
@@ -54,7 +54,8 @@ describe('Migration - 1.7.x', function () {
     const versions0 = getVersions('1.7.0');
     const versions1 = getVersions('1.7.1');
     const newIndexes = testData.getStructure('1.7.0').indexes;
-    await bluebird.fromCallback(cb => testData.restoreFromDump('1.6.21', mongoFolder, cb));
+    const restoreFromDumpAsync = promisify(testData.restoreFromDump);
+    await restoreFromDumpAsync('1.6.21', mongoFolder);
     // get backup of users
     const usersCursor = usersCollection.find({});
     const users = await usersCursor.toArray();
@@ -98,7 +99,7 @@ describe('Migration - 1.7.x', function () {
       }
     }
 
-    const migratedIndexes = await bluebird.fromCallback(cb => eventsCollection.listIndexes({}).toArray(cb));
+    const migratedIndexes = await eventsCollection.listIndexes({}).toArray();
     compareIndexes(newIndexes.events, migratedIndexes);
 
     // ----------------- tag migrations

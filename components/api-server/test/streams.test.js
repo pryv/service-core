@@ -65,7 +65,7 @@ describe('[STRE] streams', function () {
     ], done);
   });
 
-  describe('GET /', function () {
+  describe('[ST01] GET /', function () {
     before(resetData);
 
     it('[TG78] must return non-trashed streams (as a tree) by default', function (done) {
@@ -162,7 +162,7 @@ describe('[STRE] streams', function () {
     });
   });
 
-  describe('POST /', function () {
+  describe('[ST02] POST /', function () {
     beforeEach(resetData);
 
     it('[ENVV] must create a new "root" stream with the sent data, returning it', function (done) {
@@ -416,7 +416,7 @@ describe('[STRE] streams', function () {
     });
   });
 
-  describe('PUT /<id>', function () {
+  describe('[ST03] PUT /<id>', function () {
     beforeEach(resetData);
 
     it('[SO48] must modify the stream with the sent data', function (done) {
@@ -596,7 +596,7 @@ describe('[STRE] streams', function () {
         });
     });
 
-    describe('forbidden updates of protected fields', function () {
+    describe('[ST04] forbidden updates of protected fields', function () {
       const streamId = 'forbidden_stream_update_test';
       const stream = {
         id: streamId,

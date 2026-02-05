@@ -7,7 +7,7 @@
 
 const cuid = require('cuid');
 const path = require('path');
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const nock = require('nock');
 const assert = require('node:assert');
 const supertest = require('supertest');
@@ -26,7 +26,7 @@ const { produceMongoConnection } = require('api-server/test/test-helpers');
 
 const { getConfig } = require('@pryv/boiler');
 
-describe('Accesses with account streams', function () {
+describe('[AD01] Accesses with account streams', function () {
   let config;
   let app;
   let request;
@@ -73,8 +73,9 @@ describe('Accesses with account streams', function () {
   }
 
   async function getAccessInDb (id) {
-    return await bluebird.fromCallback(
-      (cb) => user.storage.accesses.findOne({ id: user.attrs.id }, { _id: id }, null, cb));
+    const findOneAsync = promisify((userId, query, opts, cb) =>
+      user.storage.accesses.findOne(userId, query, opts, cb));
+    return await findOneAsync({ id: user.attrs.id }, { _id: id }, null);
   }
 
   before(async function () {
@@ -99,8 +100,8 @@ describe('Accesses with account streams', function () {
     request = supertest(app.expressApp);
   });
 
-  describe('POST /accesses', () => {
-    describe('When using a personal access', () => {
+  describe('[AD02] POST /accesses', () => {
+    describe('[AD03] When using a personal access', () => {
       describe('to create an access for visible account streams', () => {
         describe('with a read-level permission', () => {
           let systemEmailStreamId;
@@ -263,9 +264,9 @@ describe('Accesses with account streams', function () {
     });
   });
 
-  describe('DELETE /accesses', () => {
-    describe('When using a personal access', () => {
-      describe('to delete an account stream access', () => {
+  describe('[AD04] DELETE /accesses', () => {
+    describe('[AD05] When using a personal access', () => {
+      describe('[AD06] to delete an account stream access', () => {
         let streamId;
         const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
         before(async function () {

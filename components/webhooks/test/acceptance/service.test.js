@@ -10,7 +10,6 @@ const assert = require('node:assert');
 const awaiting = require('awaiting');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const bluebird = require('bluebird');
 
 const { webhooksStorage } = require('../test-helpers');
 
@@ -30,7 +29,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 
 const BOOT_MESSAGE = require('../../src/messages').BOOT_MESSAGE;
 
-describe('webhooks', function () {
+describe('[WH01] webhooks', function () {
   let user, username,
     streamId, appAccessId, appAccessToken,
     webhook, webhook2, webhookId,
@@ -71,8 +70,8 @@ describe('webhooks', function () {
     webhooksApp.stop();
   });
 
-  describe('when loading Webhooks on startup', function () {
-    describe('when booting the webhooks application', function () {
+  describe('[WH02] when loading Webhooks on startup', function () {
+    describe('[WH03] when booting the webhooks application', function () {
       before(function () {
         username = cuid();
         streamId = cuid();
@@ -138,8 +137,8 @@ describe('webhooks', function () {
       });
     });
 
-    describe('when creating an event in a Webhook scope', function () {
-      describe('when the notifications server is running', function () {
+    describe('[WH04] when creating an event in a Webhook scope', function () {
+      describe('[WH05] when the notifications server is running', function () {
         before(async function () {
           notificationsServer = new HttpServer(postPath, 200);
           await notificationsServer.listen(port);
@@ -215,7 +214,7 @@ describe('webhooks', function () {
   });
 
   describe('[BBB] when creating a Webhook through api-server', function () {
-    describe('when the notifications server is running returning 400', function () {
+    describe('[WH06] when the notifications server is running returning 400', function () {
       before(async function () {
         webhooksApp = new WebhooksApp();
         await webhooksApp.setup();
@@ -269,7 +268,7 @@ describe('webhooks', function () {
               .set('Authorization', appAccessToken)
           );
         });
-        await bluebird.all(webhooksDeletes);
+        await Promise.all(webhooksDeletes);
       });
       before(async function () {
         const res = await apiServer.request()
@@ -339,7 +338,7 @@ describe('webhooks', function () {
     });
   });
 
-  describe('when there are running webhooks', function () {
+  describe('[WH07] when there are running webhooks', function () {
     before(function () {
       username = cuid();
       appAccessId = cuid();
@@ -382,7 +381,7 @@ describe('webhooks', function () {
       }));
     });
 
-    describe('when deleting a webhook through API server', function () {
+    describe('[WH08] when deleting a webhook through API server', function () {
       before(async function () {
         await apiServer.request()
           .delete(`/${username}/webhooks/${webhookId}`)

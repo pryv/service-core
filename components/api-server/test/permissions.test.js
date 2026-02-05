@@ -53,7 +53,7 @@ describe('[ACCP] Access permissions', function () {
     ], done);
   });
 
-  describe('Events', function () {
+  describe('[AP01] Events', function () {
     before(function (done) {
       async.series([
         testData.resetStreams
@@ -171,7 +171,7 @@ describe('[ACCP] Access permissions', function () {
     });
   });
 
-  describe('Streams', function () {
+  describe('[AP02] Streams', function () {
     before(testData.resetEvents);
 
     beforeEach(testData.resetStreams);
@@ -299,7 +299,7 @@ describe('[ACCP] Access permissions', function () {
       });
   });
 
-  describe('Auth and change tracking', function () {
+  describe('[AP03] Auth and change tracking', function () {
     before(testData.resetStreams);
 
     beforeEach(testData.resetEvents);
@@ -324,7 +324,7 @@ describe('[ACCP] Access permissions', function () {
       });
     });
 
-    describe('custom auth step (e.g. to validate/parse caller id)', function () {
+    describe('[AP04] custom auth step (e.g. to validate/parse caller id)', function () {
       const fileName = 'customAuthStepFn.js';
       const srcPath = path.join(__dirname, 'permissions.fixtures', fileName);
       const destPath = path.join(__dirname, '../../../custom-extensions', fileName);

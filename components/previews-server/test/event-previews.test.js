@@ -10,7 +10,7 @@ const server = helpers.dependencies.instanceManager;
 const async = require('async');
 const errors = require('errors');
 const fs = require('fs');
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const gm = require('gm');
 const assert = require('node:assert');
 const testData = helpers.data;
@@ -21,7 +21,7 @@ const { getMall } = require('mall');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const attachmentManagement = require('../src/attachmentManagement');
 
-describe('event previews', function () {
+describe('[EP01] event previews', function () {
   const user = structuredClone(testData.users[0]);
   const token = testData.accesses[2].token;
   const basePath = '/' + user.username + '/events';
@@ -117,8 +117,8 @@ describe('event previews', function () {
      * @param done
      */
     async function checkSizeFits (imageBuffer, minTargetSize, maxTargetSize) {
-      const size = await bluebird.fromCallback(
-        (cb) => gm(imageBuffer).size({ bufferStream: true }, cb));
+      const gmSizeAsync = promisify((buffer, cb) => gm(buffer).size({ bufferStream: true }, cb));
+      const size = await gmSizeAsync(imageBuffer);
 
       assert.ok(size.width >= (minTargetSize.width || 0));
       assert.ok(size.width <= maxTargetSize.width);
@@ -171,9 +171,7 @@ describe('event previews', function () {
           event = await mall.events.getOne(user.id, eventId);
         },
         async function retrieveInitialPreview () {
-          const res = await bluebird.fromCallback(cb => request.get(path(eventId), token).end((res) => {
-            cb(null, res);
-          }));
+          const res = await new Promise((resolve) => request.get(path(eventId), token).end((res) => resolve(res)));
           assert.strictEqual(res.statusCode, 200);
           cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
           const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
@@ -188,9 +186,7 @@ describe('event previews', function () {
           updatedEvent = await mall.events.update(user.id, event);
         },
         async function retrieveAgain () {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
-            cb(null, res);
-          }));
+          const res = await new Promise((resolve) => request.get(path(event.id), token).end((res) => resolve(res)));
           assert.strictEqual(res.statusCode, 200);
           let modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           modified = modified.toString();
@@ -267,9 +263,7 @@ describe('event previews', function () {
       let aCachedPath, anotherCachedPath;
       async.series([
         async function retrieveAPreview () {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
-            cb(null, res);
-          }));
+          const res = await new Promise((resolve) => request.get(path(event.id), token).end((res) => resolve(res)));
           assert.strictEqual(res.statusCode, 200);
           aCachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
           // add delay as the attribute is written after the response is sent
@@ -280,9 +274,7 @@ describe('event previews', function () {
             }, 50);
         },
         async function retrieveAnotherPreview () {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).query({ h: 511 }).end((res) => {
-            cb(null, res);
-          }));
+          const res = await new Promise((resolve) => request.get(path(event.id), token).query({ h: 511 }).end((res) => resolve(res)));
           assert.strictEqual(res.statusCode, 200);
           anotherCachedPath = attachmentManagement.getPreviewPath(user, event.id, 512);
           await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
@@ -292,9 +284,7 @@ describe('event previews', function () {
           await xattr.set(aCachedPath, 'user.pryv.lastAccessed', twoWeeksAgo.toString());
         },
         async function cleanupCache () {
-          const res = await bluebird.fromCallback(cb => request.post(basePath, token).end((res) => {
-            cb(null, res);
-          }));
+          const res = await new Promise((resolve) => request.post(basePath, token).end((res) => resolve(res)));
           assert.strictEqual(res.statusCode, 200);
           await xattr.get(aCachedPath, 'user.pryv.lastAccessed');
           const lastAccessed = await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
@@ -305,9 +295,7 @@ describe('event previews', function () {
 
     it('[G5JR] must ignore files with no readable extended attribute', async function () {
       const event = testData.events[2];
-      const resGet = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
-        cb(null, res);
-      }));
+      const resGet = await new Promise((resolve) => request.get(path(event.id), token).end((res) => resolve(res)));
 
       assert.strictEqual(resGet.statusCode, 200);
       const cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
@@ -316,9 +304,7 @@ describe('event previews', function () {
       assert.ok(lastAccessed);
       await xattr.remove(cachedPath, 'user.pryv.lastAccessed');
 
-      const resPost = await bluebird.fromCallback(cb => request.post(basePath, token).end((res) => {
-        cb(null, res);
-      }));
+      const resPost = await new Promise((resolve) => request.post(basePath, token).end((res) => resolve(res)));
 
       assert.strictEqual(resPost.statusCode, 200);
       const stat = fs.statSync(cachedPath);

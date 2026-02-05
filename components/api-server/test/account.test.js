@@ -8,7 +8,7 @@
 const assert = require('node:assert');
 const _ = require('lodash');
 const async = require('async');
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const fs = require('fs');
 const timestamp = require('unix-timestamp');
 
@@ -66,7 +66,7 @@ describe('[ACCO] account', function () {
     ], done);
   });
 
-  describe('GET /', function () {
+  describe('[AC01] GET /', function () {
     beforeEach(async () => { await resetUsers(); });
 
     it('[PHSB] must return the user\'s account details', function (done) {
@@ -92,7 +92,7 @@ describe('[ACCO] account', function () {
     });
   });
 
-  describe('PUT /', function () {
+  describe('[AC02] PUT /', function () {
     beforeEach(async () => { await resetUsers(); });
 
     it('[0PPV] must modify account details with the sent data, notifying register if e-mail changed',
@@ -210,7 +210,7 @@ describe('[ACCO] account', function () {
     });
   }
 
-  describe('storage space monitoring', function () {
+  describe('[AC03] storage space monitoring', function () {
     before(function (done) {
       async.series([
         testData.resetUsers,
@@ -245,7 +245,8 @@ describe('[ACCO] account', function () {
       // On Ubuntu with ext4 FileSystem the size difference is 4k, not 1k. I still dunno why.
       assert.ok(Math.abs(storageInfoInitial.local.files.sizeKb - expectedAttsSize) <= filesystemBlockSize);
 
-      await bluebird.fromCallback(cb => addEventWithAttachment(newAtt, cb));
+      const addEventWithAttachmentAsync = promisify(addEventWithAttachment);
+      await addEventWithAttachmentAsync(newAtt);
       const storageInfoAfter = await mall.getUserStorageInfos(user.id);
 
       // hard to know what the exact difference should be, so we just expect it's bigger
@@ -267,8 +268,8 @@ describe('[ACCO] account', function () {
       assert.ok(initialStorageInfo.local.files.sizeKb > 0);
 
       // Add an attachment
-      await bluebird.fromCallback(
-        (cb) => addEventWithAttachment(newAtt, cb));
+      const addEventWithAttachmentAsync2 = promisify(addEventWithAttachment);
+      await addEventWithAttachmentAsync2(newAtt);
 
       // Another nightly task
       execSync('node ./bin/nightly');
@@ -363,7 +364,7 @@ describe('[ACCO] account', function () {
     }
   });
 
-  describe('/change-password', function () {
+  describe('[AC04] /change-password', function () {
     before(async () => { await resetUsers(); });
 
     const path = basePath + '/change-password';
@@ -428,7 +429,7 @@ describe('[ACCO] account', function () {
         await server.ensureStartedAsync(settings);
       });
 
-      describe('Complexity rules:', function () {
+      describe('[AC05] Complexity rules:', function () {
         it('[1YPT] must return an error if the new password is too short', async () => {
           const data = Object.assign({}, baseData, { newPassword: helpers.passwordRules.passwords.badTooShort });
           const res = await request.post(path).send(data);
@@ -470,7 +471,7 @@ describe('[ACCO] account', function () {
         });
       });
 
-      describe('Reuse rules:', function () {
+      describe('[AC06] Reuse rules:', function () {
         it('[AFX4] must return an error if the new password is found in the N last passwords used', async () => {
           const passwordsHistory = await setupPasswordHistory(settings.auth.passwordPreventReuseHistoryLength);
           const data = Object.assign({}, baseData, { newPassword: passwordsHistory[0] });
@@ -505,7 +506,7 @@ describe('[ACCO] account', function () {
         }
       });
 
-      describe('Age rules:', function () {
+      describe('[AC07] Age rules:', function () {
         const passwordAgeSettings = _.merge(structuredClone(settings), { auth: { passwordAgeMinDays: 1 } });
 
         it('[J4O6] must return an error if the current password’s age is below the set minimum', async () => {
@@ -546,7 +547,7 @@ describe('[ACCO] account', function () {
     });
   });
 
-  describe('/request-password-reset and /reset-password', function () {
+  describe('[AC08] /request-password-reset and /reset-password', function () {
     beforeEach(async () => {
       await resetUsers;
       server.removeAllListeners('password-reset-token');

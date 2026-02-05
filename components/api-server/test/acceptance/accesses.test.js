@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const lodash = require('lodash');
 const assert = require('node:assert');
 const cuid = require('cuid');
@@ -17,7 +17,7 @@ const helpers = require('../helpers');
 const databaseFixture = helpers.databaseFixture;
 const { getUserAccountStorage } = require('storage');
 
-describe('accesses', () => {
+describe('[AC01] accesses', () => {
   let storage, produceMongoConnection, context;
   let userAccountStorage;
 
@@ -29,7 +29,7 @@ describe('accesses', () => {
     userAccountStorage = await getUserAccountStorage();
   });
 
-  describe('access deletions', () => {
+  describe('[AC02] access deletions', () => {
     let userId, streamId, activeToken, deletedToken, accessToken;
     before(async () => {
       userId = cuid();
@@ -42,7 +42,7 @@ describe('accesses', () => {
       const mongoFixtures = databaseFixture(await produceMongoConnection());
       await mongoFixtures.context.cleanEverything();
     });
-    describe('when given a few existing accesses', () => {
+    describe('[AC03] when given a few existing accesses', () => {
       const deletedTimestamp = timestamp.now('-1h');
       let mongoFixtures;
       before(async () => {
@@ -72,7 +72,7 @@ describe('accesses', () => {
       after(() => {
         server.stop();
       });
-      describe('accesses.get', () => {
+      describe('[AC04] accesses.get', () => {
         let res, accesses, deletions;
         before(async () => {
           res = await server
@@ -106,8 +106,8 @@ describe('accesses', () => {
           assert.strictEqual(deletedAccess.deleted, deletedTimestamp);
         });
       });
-      describe('accesses.create', () => {
-        describe('for a valid access', () => {
+      describe('[AC05] accesses.create', () => {
+        describe('[AC06] for a valid access', () => {
           let createdAccess;
           const access = {
             name: 'whatever',
@@ -139,16 +139,14 @@ describe('accesses', () => {
             assert.deepEqual(access, _.pick(createdAccess, ['name', 'permissions', 'type']));
             assert.ok(createdAccess.deleted == null);
           });
-          it('[A4JP] should contain the field "deleted:null" in the database', (done) => {
-            storage.findAll({ id: userId }, {}, (err, accesses) => {
-              assert.ok(err == null);
-              const deletedAccess = accesses.find((a) => a.name === access.name);
-              assert.equal(deletedAccess.deleted, null);
-              done();
-            });
+          it('[A4JP] should contain the field "deleted:null" in the database', async () => {
+            const findAllAsync = promisify((query, opts, cb) => storage.findAll(query, opts, cb));
+            const accesses = await findAllAsync({ id: userId }, {});
+            const deletedAccess = accesses.find((a) => a.name === access.name);
+            assert.ok(deletedAccess.deleted == null, 'deleted field should be null or undefined');
           });
         });
-        describe('for a deleted access', () => {
+        describe('[AC07] for a deleted access', () => {
           let res, error;
           const deletedAccess = {
             name: 'whatever',
@@ -177,7 +175,7 @@ describe('accesses', () => {
           });
         });
       });
-      describe('accesses.update', () => {
+      describe('[AC08] accesses.update', () => {
         let res, error, activeAccess;
         before(async () => {
           res = await server
@@ -203,7 +201,7 @@ describe('accesses', () => {
       });
     });
   });
-  describe('Delete app access', () => {
+  describe('[AC09] Delete app access', () => {
     let username, streamId, access, sharedAccess1, sharedAccess2, sharedAccess3, expiredSharedAccess;
     before(() => {
       username = cuid();
@@ -284,7 +282,7 @@ describe('accesses', () => {
     after(() => {
       server.stop();
     });
-    describe('when deleting an app access that created shared accesses', () => {
+    describe('[AC10] when deleting an app access that created shared accesses', () => {
       let res;
       before(async () => {
         res = await server
@@ -312,26 +310,22 @@ describe('accesses', () => {
         assert.strictEqual(found3, false);
       });
       it('[IVWP] should delete it and the accesses it created, not touching the expired ones', async () => {
-        await bluebird.fromCallback((callback) => {
-          storage.findAll({ id: username }, {}, (err, accesses) => {
-            assert.ok(err == null);
-            const deletedAccess = accesses.find((a) => a.id === access.id);
-            const deletedShared1 = accesses.find((a) => a.id === sharedAccess1.id);
-            const deletedShared2 = accesses.find((a) => a.id === sharedAccess2.id);
-            const notDeletedAccess3 = accesses.find((a) => a.id === sharedAccess3.id);
-            const notDeletedAccess4 = accesses.find((a) => a.id === expiredSharedAccess.id);
-            assert.ok(deletedAccess.deleted);
-            assert.ok(deletedShared1.deleted);
-            assert.ok(deletedShared2.deleted);
-            assert.ok(notDeletedAccess3.deleted == null);
-            assert.ok(notDeletedAccess4.deleted == null);
-            callback();
-          });
-        });
+        const findAllAsync = promisify((query, opts, cb) => storage.findAll(query, opts, cb));
+        const accesses = await findAllAsync({ id: username }, {});
+        const deletedAccess = accesses.find((a) => a.id === access.id);
+        const deletedShared1 = accesses.find((a) => a.id === sharedAccess1.id);
+        const deletedShared2 = accesses.find((a) => a.id === sharedAccess2.id);
+        const notDeletedAccess3 = accesses.find((a) => a.id === sharedAccess3.id);
+        const notDeletedAccess4 = accesses.find((a) => a.id === expiredSharedAccess.id);
+        assert.ok(deletedAccess.deleted);
+        assert.ok(deletedShared1.deleted);
+        assert.ok(deletedShared2.deleted);
+        assert.ok(notDeletedAccess3.deleted == null);
+        assert.ok(notDeletedAccess4.deleted == null);
       });
     });
   });
-  describe('access expiry', () => {
+  describe('[AC11] access expiry', () => {
     // Uses dynamic fixtures:
     // Set up a few ids that we'll use for testing. NOTE that these ids will
     // change on every test run.
@@ -346,7 +340,7 @@ describe('accesses', () => {
       hasExpiryId = cuid();
       hasExpiryToken = cuid();
     });
-    describe('when given a few existing accesses', () => {
+    describe('[AC12] when given a few existing accesses', () => {
       let mongoFixtures;
       before(async () => {
         mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -393,8 +387,8 @@ describe('accesses', () => {
         server.stop();
       });
       const isExpired = (e) => e.expires != null && timestamp.now() > e.expires;
-      describe('accesses.get', () => {
-        describe('vanilla version', () => {
+      describe('[AC13] accesses.get', () => {
+        describe('[AC14] vanilla version', () => {
           let res;
           let accesses;
           beforeEach(async () => {
@@ -413,7 +407,7 @@ describe('accesses', () => {
             }
           });
         });
-        describe('when given the includeExpired=true parameter', () => {
+        describe('[AC15] when given the includeExpired=true parameter', () => {
           let res;
           let accesses;
           beforeEach(async () => {
@@ -432,8 +426,8 @@ describe('accesses', () => {
           });
         });
       });
-      describe('accesses.create', () => {
-        describe('when called with expireAfter>0', () => {
+      describe('[AC16] accesses.create', () => {
+        describe('[AC17] when called with expireAfter>0', () => {
           const attrs = {
             name: 'For colleagues (1)',
             type: 'app',
@@ -463,7 +457,7 @@ describe('accesses', () => {
             assert.ok(access.expires > timestamp.now());
           });
         });
-        describe('when called with expireAfter=0', () => {
+        describe('[AC18] when called with expireAfter=0', () => {
           const attrs = {
             name: 'For colleagues (2)',
             expireAfter: 0,
@@ -493,7 +487,7 @@ describe('accesses', () => {
             assert.ok(timestamp.now() > access.expires);
           });
         });
-        describe('when called with expireAfter<0', () => {
+        describe('[AC19] when called with expireAfter<0', () => {
           const attrs = {
             name: 'For colleagues (3)',
             expireAfter: -100,
@@ -518,7 +512,7 @@ describe('accesses', () => {
             assert.strictEqual(res.body.error.message, 'expireAfter cannot be negative.');
           });
         });
-        describe('Store accesses', () => {
+        describe('[AC20] Store accesses', () => {
           it('[JZWH] create an access on :dummy: store', async () => {
             const attrs = {
               name: 'Dummy Access',
@@ -565,8 +559,8 @@ describe('accesses', () => {
           });
         });
       });
-      describe('accesses.checkApp', () => {
-        describe('when the matching access is not expired', () => {
+      describe('[AC21] accesses.checkApp', () => {
+        describe('[AC22] when the matching access is not expired', () => {
           let res;
           beforeEach(async () => {
             res = await server
@@ -589,7 +583,7 @@ describe('accesses', () => {
             assert.strictEqual(res.body.matchingAccess.token, hasExpiryToken);
           });
         });
-        describe('when the matching access is expired', () => {
+        describe('[AC23] when the matching access is expired', () => {
           let res;
           beforeEach(async () => {
             res = await server
@@ -611,14 +605,14 @@ describe('accesses', () => {
           });
         });
       });
-      describe('other API accesses', () => {
+      describe('[AC24] other API accesses', () => {
         function apiAccess (token) {
           return server
             .request()
             .get(`/${userId}/events`)
             .set('Authorization', token);
         }
-        describe('using an expired access', () => {
+        describe('[AC25] using an expired access', () => {
           let res;
           beforeEach(async () => {
             res = await apiAccess(expiredToken);
@@ -633,7 +627,7 @@ describe('accesses', () => {
             assert.strictEqual(error.message, 'Access has expired.');
           });
         });
-        describe('using a valid access', () => {
+        describe('[AC26] using a valid access', () => {
           let res;
           beforeEach(async () => {
             res = await apiAccess(accessToken);
@@ -645,7 +639,7 @@ describe('accesses', () => {
       });
     });
   });
-  describe('access client data', () => {
+  describe('[AC27] access client data', () => {
     function sampleAccess (name, clientData) {
       return {
         id: cuid(),
@@ -683,7 +677,7 @@ describe('accesses', () => {
         emptyClientDataAccess
       ];
     });
-    describe('when given a few existing accesses', () => {
+    describe('[AC28] when given a few existing accesses', () => {
       let mongoFixtures;
       before(async () => {
         mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -704,7 +698,7 @@ describe('accesses', () => {
       after(() => {
         server.stop();
       });
-      describe('accesses.get', () => {
+      describe('[AC29] accesses.get', () => {
         let res, accesses;
         before(async () => {
           res = await server
@@ -727,7 +721,7 @@ describe('accesses', () => {
           }
         });
       });
-      describe('accesses.create', () => {
+      describe('[AC30] accesses.create', () => {
         function sampleAccess (name, clientData) {
           return {
             name,
@@ -748,7 +742,7 @@ describe('accesses', () => {
           assert.ok(access);
           return access;
         }
-        describe('when called with clientData={}', () => {
+        describe('[AC31] when called with clientData={}', () => {
           let res, access;
           before(async () => {
             res = await server
@@ -763,7 +757,7 @@ describe('accesses', () => {
             assert.deepEqual(access.clientData, {});
           });
         });
-        describe('when called with clientData=null', () => {
+        describe('[AC32] when called with clientData=null', () => {
           let res;
           before(async () => {
             res = await server
@@ -777,7 +771,7 @@ describe('accesses', () => {
             assert.ok(res.body.error);
           });
         });
-        describe('when called with complex clientData', () => {
+        describe('[AC33] when called with complex clientData', () => {
           let res, access;
           before(async () => {
             res = await server
@@ -793,7 +787,7 @@ describe('accesses', () => {
           });
         });
       });
-      describe('accesses.checkApp', () => {
+      describe('[AC34] accesses.checkApp', () => {
         async function checkAppRequest (req) {
           const res = await server
             .request()
@@ -805,7 +799,7 @@ describe('accesses', () => {
           assert.ok(res.body.error == null);
           return res.body;
         }
-        describe('when the provided clientData matches the existing clientData', () => {
+        describe('[AC35] when the provided clientData matches the existing clientData', () => {
           let body;
           before(async () => {
             body = await checkAppRequest({
@@ -819,7 +813,7 @@ describe('accesses', () => {
             assert.strictEqual(body.matchingAccess.id, existingAccess.id);
           });
         });
-        describe('when the provided clientData does not match the existing clientData', () => {
+        describe('[AC36] when the provided clientData does not match the existing clientData', () => {
           let body;
           before(async () => {
             body = await checkAppRequest({
@@ -833,7 +827,7 @@ describe('accesses', () => {
             assert.strictEqual(body.mismatchingAccess.id, existingAccess.id);
           });
         });
-        describe('when no clientData is provided but existing access has one', () => {
+        describe('[AC37] when no clientData is provided but existing access has one', () => {
           let body;
           before(async () => {
             body = await checkAppRequest({
@@ -849,7 +843,7 @@ describe('accesses', () => {
       });
     });
   });
-  describe('access-info', () => {
+  describe('[AC38] access-info', () => {
     let mongoFixtures;
     const userId = cuid();
     let user;

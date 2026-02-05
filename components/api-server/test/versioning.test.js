@@ -22,7 +22,7 @@ const { getMall } = require('mall');
 
 require('date-utils');
 
-describe('Versioning', function () {
+describe('[VERS] Versioning', function () {
   let mall = null;
   before(async () => {
     mall = await getMall();
@@ -80,7 +80,7 @@ describe('Versioning', function () {
   const normalStream = testData.streams[7];
   const childStream = normalStream.children[0];
 
-  describe('Events', function () {
+  describe('[VE01] Events', function () {
     it('[RWIA] must not return history when calling events.get', function (done) {
       const queryParams = { limit: 100 };
 
@@ -100,7 +100,7 @@ describe('Versioning', function () {
       });
     });
 
-    describe('deletionMode', function () {
+    describe('[VE02] deletionMode', function () {
       beforeEach(testData.resetEvents);
 
       it('[FLLW] must delete the event\'s history when deleting it with deletionMode=keep-nothing',
@@ -227,7 +227,7 @@ describe('Versioning', function () {
       });
     });
 
-    describe('events.getOne', function () {
+    describe('[VE03] events.getOne', function () {
       it('[YRI7] must not return an event\'s history when calling getOne with includeHistory flag off',
         function (done) {
           request.get(pathToEvent(eventWithHistory.id)).query({ includeHistory: false }).end(
@@ -258,7 +258,7 @@ describe('Versioning', function () {
         });
     });
 
-    describe('forceKeepHistory is OFF', function () {
+    describe('[VE04] forceKeepHistory is OFF', function () {
       before(function (done) {
         const settings = structuredClone(helpers.dependencies.settings);
         settings.versioning.forceKeepHistory = false;
@@ -297,7 +297,7 @@ describe('Versioning', function () {
       });
     });
 
-    describe('forceKeepHistory is ON', function () {
+    describe('[VE05] forceKeepHistory is ON', function () {
       beforeEach(testData.resetEvents);
 
       before(function (done) {
@@ -397,7 +397,7 @@ describe('Versioning', function () {
     });
   });
 
-  describe('Streams', function () {
+  describe('[VE06] Streams', function () {
     before(function (done) {
       const settings = structuredClone(helpers.dependencies.settings);
       settings.versioning = {
@@ -575,7 +575,7 @@ describe('Versioning', function () {
     });
   });
 
-  describe('Users', function () {
+  describe('[VE07] Users', function () {
     const req = require('superagent');
     before(async function () {
       const settings = structuredClone(helpers.dependencies.settings);

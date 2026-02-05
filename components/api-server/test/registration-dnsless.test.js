@@ -8,7 +8,7 @@ const nock = require('nock');
 const assert = require('node:assert');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 const cuid = require('cuid');
 
 const { getApplication } = require('api-server/src/application');
@@ -26,7 +26,6 @@ describe('[BMM2] registration: DNS-less', () => {
   let mongoFixtures;
   let app;
   let request;
-  let res;
 
   before(async function () {
     nock.cleanAll();
@@ -61,7 +60,7 @@ describe('[BMM2] registration: DNS-less', () => {
     request = supertest(app.expressApp);
   });
 
-  describe('POST /users', () => {
+  describe('[RD01] POST /users', () => {
     function generateRegisterBody () {
       return {
         username: charlatan.Lorem.characters(7),
@@ -73,41 +72,45 @@ describe('[BMM2] registration: DNS-less', () => {
       };
     }
 
-    describe('when given valid input', function () {
-      let registerData;
-      before(async function () {
-        registerData = generateRegisterBody();
-        nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
-        res = await request.post('/users').send(registerData);
-      });
-      it('[KB3T] should respond with status 201', function () {
-        assert.strictEqual(res.status, 201);
-      });
-      it('[VDA8] should respond with a username and apiEndpoint in the request body', async () => {
-        assert.strictEqual(res.body.username, registerData.username);
-        const usersRepository = await getUsersRepository();
-        const user = await usersRepository.getUserByUsername(registerData.username);
-        const personalAccess = await bluebird.fromCallback(
-          (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
-        const initUser = new User(user);
-        assert.strictEqual(res.body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
-      });
-      it('[LPLP] Valid access token exists in the response', async function () {
-        assert.ok(res.body.apiEndpoint);
-        const token = res.body.apiEndpoint.split('//')[1].split('@')[0];
-
-        // check that I can get events with this token
-        const res2 = await request.get(`/${res.body.username}/events`)
-          .set('authorization', token);
-        assert.strictEqual(res2.status, 200);
-        assert.ok(res2.body.events.length > 0);
-      });
-      it('[M5XB] should store all the fields', function () {});
+    it('[KB3T] should respond with status 201 when given valid input', async function () {
+      const registerData = generateRegisterBody();
+      nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
+      const res = await request.post('/users').send(registerData);
+      assert.strictEqual(res.status, 201, '[KB3T] should respond with status 201');
+      assert.strictEqual(res.body.username, registerData.username, '[VDA8] should respond with username');
     });
 
-    describe('Schema validation', function () {
+    it('[VDA8] should respond with correct apiEndpoint for valid registration', async function () {
+      const registerData = generateRegisterBody();
+      nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
+      const res = await request.post('/users').send(registerData);
+      assert.strictEqual(res.body.username, registerData.username);
+      const usersRepository = await getUsersRepository();
+      const user = await usersRepository.getUserByUsername(registerData.username);
+      const findOneAsync = promisify((query, opts, extra, cb) =>
+        app.storageLayer.accesses.findOne(query, opts, extra, cb));
+      const personalAccess = await findOneAsync({ id: user.id }, {}, null);
+      const initUser = new User(user);
+      assert.strictEqual(res.body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
+    });
+
+    it('[LPLP] Valid access token exists in the response', async function () {
+      const registerData = generateRegisterBody();
+      nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
+      const res = await request.post('/users').send(registerData);
+      assert.ok(res.body.apiEndpoint);
+      const token = res.body.apiEndpoint.split('//')[1].split('@')[0];
+
+      // check that I can get events with this token
+      const res2 = await request.get(`/${res.body.username}/events`)
+        .set('authorization', token);
+      assert.strictEqual(res2.status, 200);
+      assert.ok(res2.body.events.length > 0);
+    });
+
+    describe('[RD02] Schema validation', function () {
       describe(
-        'when given an invalid username parameter',
+        '[RD03] when given an invalid username parameter',
         testInvalidParameterValidation(
           'username',
           {
@@ -121,7 +124,7 @@ describe('[BMM2] registration: DNS-less', () => {
       );
 
       describe(
-        'when given an invalid password parameter',
+        '[RD04] when given an invalid password parameter',
         testInvalidParameterValidation(
           'password',
           {
@@ -134,7 +137,7 @@ describe('[BMM2] registration: DNS-less', () => {
       );
 
       describe(
-        'when given an invalid email parameter',
+        '[RD05] when given an invalid email parameter',
         testInvalidParameterValidation(
           'email', {
             maxLength: 300,
@@ -145,7 +148,7 @@ describe('[BMM2] registration: DNS-less', () => {
       );
 
       describe(
-        'when given an invalid appId parameter',
+        '[RD06] when given an invalid appId parameter',
         testInvalidParameterValidation(
           'appId',
           {
@@ -158,7 +161,7 @@ describe('[BMM2] registration: DNS-less', () => {
       );
 
       describe(
-        'when given an invalid invitationToken parameter',
+        '[RD07] when given an invalid invitationToken parameter',
         testInvalidParameterValidation(
           'invitationToken',
           {
@@ -169,7 +172,7 @@ describe('[BMM2] registration: DNS-less', () => {
       );
 
       describe(
-        'when given an invalid referer parameter',
+        '[RD08] when given an invalid referer parameter',
         testInvalidParameterValidation(
           'referer',
           {
@@ -182,7 +185,7 @@ describe('[BMM2] registration: DNS-less', () => {
       );
 
       describe(
-        'when given an invalid language parameter',
+        '[RD09] when given an invalid language parameter',
         testInvalidParameterValidation(
           'language',
           {
@@ -195,42 +198,36 @@ describe('[BMM2] registration: DNS-less', () => {
       );
     });
 
-    describe('Property values uniqueness', function () {
-      describe('username property', function () {
-        let registerData;
-        before(async function () {
-          const registerData1ReuseUsername = generateRegisterBody();
-          nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
-          res = await request.post('/users').send(registerData1ReuseUsername);
-          assert.strictEqual(res.status, 201);
+    describe('[RD10] Property values uniqueness', function () {
+      it('[LZ1K] should respond with status 409 and correct error for duplicate username/email', async function () {
+        const registerData1ReuseUsername = generateRegisterBody();
+        nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
+        let res = await request.post('/users').send(registerData1ReuseUsername);
+        assert.strictEqual(res.status, 201);
 
-          const registerData1ReuseEmail = generateRegisterBody();
-          nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
-          res = await request.post('/users').send(registerData1ReuseEmail);
-          assert.strictEqual(res.status, 201);
+        const registerData1ReuseEmail = generateRegisterBody();
+        nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
+        res = await request.post('/users').send(registerData1ReuseEmail);
+        assert.strictEqual(res.status, 201);
 
-          // create a user with the same username and email from two other users
-          registerData = generateRegisterBody();
-          registerData.username = registerData1ReuseUsername.username;
-          registerData.email = registerData1ReuseEmail.email;
-          nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
-          res = await request.post('/users').send(registerData);
-        });
-        it('[LZ1K] should respond with status 409', function () {
-          assert.strictEqual(res.status, 409);
-        });
-        it('[M2HD] should respond with the correct error message', function () {
-          assert.ok(res.error);
-          assert.ok(res.error.text);
+        // create a user with the same username and email from two other users
+        const registerData = generateRegisterBody();
+        registerData.username = registerData1ReuseUsername.username;
+        registerData.email = registerData1ReuseEmail.email;
+        nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
+        res = await request.post('/users').send(registerData);
 
-          // changed to new error format to match the cluster
-          const error = JSON.parse(res.error.text);
-          assert.deepEqual(error.error.data, { username: registerData.username, email: registerData.email });
-        });
+        assert.strictEqual(res.status, 409, '[LZ1K] should respond with status 409');
+        assert.ok(res.error, '[M2HD] should have error');
+        assert.ok(res.error.text, '[M2HD] should have error text');
+
+        // changed to new error format to match the cluster
+        const error = JSON.parse(res.error.text);
+        assert.deepEqual(error.error.data, { username: registerData.username, email: registerData.email }, '[M2HD] should respond with the correct error data');
       });
     });
 
-    describe('When providing an indexed value that is neither a number nor a string', () => {
+    describe('[RD11] When providing an indexed value that is neither a number nor a string', () => {
       function generateInvalidBodyWith (incorrectValue) {
         return {
           username: charlatan.Lorem.characters(7),
@@ -241,13 +238,11 @@ describe('[BMM2] registration: DNS-less', () => {
         };
       }
 
-      describe('by providing an object', () => {
-        it('[S6PS] must return an error', async () => {
-          const res = await request.post('/users').send(generateInvalidBodyWith({
-            [charlatan.Lorem.characters(5)]: charlatan.Lorem.words(10).join(' ')
-          }));
-          assert.strictEqual(res.status, 400);
-        });
+      it('[S6PS] must return an error when providing an object', async () => {
+        const res = await request.post('/users').send(generateInvalidBodyWith({
+          [charlatan.Lorem.characters(5)]: charlatan.Lorem.words(10).join(' ')
+        }));
+        assert.strictEqual(res.status, 400);
       });
     });
 
@@ -257,22 +252,18 @@ describe('[BMM2] registration: DNS-less', () => {
       testTags
     ) {
       return () => {
-        before(async function () {
+        it(`[${testTags[0]}] should respond with status 400 and correct error message`, async function () {
           const invalidRegisterBody = Object.assign(
             {},
             generateRegisterBody(),
             registerBodyModification
           );
-          res = await request.post('/users').send(invalidRegisterBody);
-        });
-        it(`[${testTags[0]}] should respond with status 400`, function () {
-          assert.strictEqual(res.status, 400);
-        });
-        it(`[${testTags[1]}] should respond with the correct error message`, function () {
-          assert.ok(res.error);
-          assert.ok(res.error.text);
+          const res = await request.post('/users').send(invalidRegisterBody);
+          assert.strictEqual(res.status, 400, `[${testTags[0]}] should respond with status 400`);
+          assert.ok(res.error, `[${testTags[1]}] should have error`);
+          assert.ok(res.error.text, `[${testTags[1]}] should have error text`);
           const error = JSON.parse(res.error.text);
-          assert.ok(error.error.data[0].param.includes(expectedErrorParam));
+          assert.ok(error.error.data[0].param.includes(expectedErrorParam), `[${testTags[1]}] should respond with the correct error message`);
         });
       };
     }
@@ -281,7 +272,7 @@ describe('[BMM2] registration: DNS-less', () => {
       return () => {
         if (constraints.minLength) {
           describe(
-            'that is too short',
+            `[${testTags.pop()}] that is too short`,
             verifyInvalidInputResponse(
               {
                 [parameterName]: charlatan.Lorem.characters(
@@ -295,7 +286,7 @@ describe('[BMM2] registration: DNS-less', () => {
         }
         if (constraints.maxLength) {
           describe(
-            'that is too long',
+            `[${testTags.pop()}] that is too long`,
             verifyInvalidInputResponse(
               {
                 [parameterName]: charlatan.Lorem.characters(
@@ -309,7 +300,7 @@ describe('[BMM2] registration: DNS-less', () => {
         }
         if (constraints.lettersAndDashesOnly) {
           describe(
-            'that has invalid characters',
+            `[${testTags.pop()}] that has invalid characters`,
             verifyInvalidInputResponse(
               {
                 [parameterName]: "/#+]\\'"
@@ -326,7 +317,7 @@ describe('[BMM2] registration: DNS-less', () => {
           }
           if (val) {
             describe(
-              'that has an invalid type',
+              `[${testTags.pop()}] that has an invalid type`,
               verifyInvalidInputResponse(
                 {
                   [parameterName]: val
@@ -339,7 +330,7 @@ describe('[BMM2] registration: DNS-less', () => {
         }
         if (!constraints.allowNull) {
           describe(
-            'that is null',
+            `[${testTags.pop()}] that is null`,
             verifyInvalidInputResponse(
               {
                 [parameterName]: null
@@ -353,7 +344,7 @@ describe('[BMM2] registration: DNS-less', () => {
     }
   });
 
-  describe('GET /reg/:username/check', function () {
+  describe('[RD12] GET /reg/:username/check', function () {
     const existingUsername = 'exist-' + cuid();
     before(async function () {
       await mongoFixtures.user(existingUsername);
@@ -369,7 +360,7 @@ describe('[BMM2] registration: DNS-less', () => {
       assert.strictEqual(res.body.reserved, false);
     });
 
-    it('[153Q] when checking a valid taken username, it should respond with status 409 and the correct error', async () => {
+    it('[153Q] when checking a valid taken username, it should respond with status 200 and reserved:true', async () => {
       const res = await request.get(path(existingUsername));
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.body.reserved, true);

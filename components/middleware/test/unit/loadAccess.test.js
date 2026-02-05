@@ -7,10 +7,11 @@
 
 const loadAccessMiddleware = require('../../src/loadAccess');
 const assert = require('node:assert');
-const bluebird = require('bluebird');
+const { promisify } = require('util');
 
-describe('loadAccess middleware', function () {
+describe('[LA01] loadAccess middleware', function () {
   const loadAccess = loadAccessMiddleware();
+  const loadAccessAsync = promisify((req, res, cb) => loadAccess(req, res, cb));
   // Mocking request and response context/headers
   let req, res;
   beforeEach(async () => {
@@ -41,29 +42,29 @@ describe('loadAccess middleware', function () {
     };
   });
 
-  describe('when an access is actually loaded in request context', function () {
+  describe('[LA02] when an access is actually loaded in request context', function () {
     it('[OD3D] should add the access id as Pryv-access-id header if token is valid', async function () {
       req.auth = 'valid';
       // Mocking req and res
-      await bluebird.fromCallback(cb => loadAccess(req, res, cb));
+      await loadAccessAsync(req, res);
       assert.strictEqual(res.headers['Pryv-Access-Id'], 'validAccess');
     });
     it('[UDW7] should still set the Pryv-access-id header in case of error (e.g. expired token)', async function () {
       req.auth = 'expired';
       try {
         // Mocking req and res
-        await bluebird.fromCallback(cb => loadAccess(req, res, cb));
+        await loadAccessAsync(req, res);
       } catch (err) {
         assert.ok(err);
         assert.strictEqual(res.headers['Pryv-Access-Id'], 'expiredAccess');
       }
     });
   });
-  describe('when the access can not be loaded (e.g. invalid token)', function () {
+  describe('[LA03] when the access can not be loaded (e.g. invalid token)', function () {
     it('[9E2D] should not set the Pryv-access-id header', async function () {
       req.auth = 'invalid';
       // Mocking req and res
-      await bluebird.fromCallback(cb => loadAccess(req, res, cb));
+      await loadAccessAsync(req, res);
       assert.strictEqual(res.headers['Pryv-Access-Id'], undefined);
     });
   });

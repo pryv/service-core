@@ -6,10 +6,10 @@
  */
 
 const assert = require('node:assert');
+const { promisify } = require('util');
 const _ = require('lodash');
 const nock = require('nock');
 const charlatan = require('charlatan');
-const bluebird = require('bluebird');
 const supertest = require('supertest');
 
 const helpers = require('./helpers');
@@ -126,7 +126,7 @@ describe('[REGC] registration: cluster', function () {
     return request;
   }
 
-  describe('POST /users (create user)', function () {
+  describe('[RC01] POST /users (create user)', function () {
     describe('[WAUW] when a user with the same username (not email) already exists in core but not in register', () => {
       let oldEmail, firstUser, secondUser, firstValidationRequest, firstRegistrationRequest, serviceRegisterRequestsPUT;
 
@@ -189,7 +189,8 @@ describe('[REGC] registration: cluster', function () {
         assert.strictEqual(body.username, userData.username);
         const usersRepository = await getUsersRepository();
         const user = await usersRepository.getUserByUsername(userData.username);
-        const personalAccess = await bluebird.fromCallback((cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
+        const findOneAsync = promisify((query, opts, extra, cb) => app.storageLayer.accesses.findOne(query, opts, extra, cb));
+        const personalAccess = await findOneAsync({ id: user.id }, {}, null);
         const initUser = new User(userData);
         assert.strictEqual(body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
       });
@@ -276,7 +277,7 @@ describe('[REGC] registration: cluster', function () {
       });
     });
 
-    describe('when a user with the same username/email already exists in core but not in register', () => {
+    describe('[RC02] when a user with the same username/email already exists in core but not in register', () => {
       let firstValidationRequest;
       let firstRegistrationRequest;
 
@@ -346,7 +347,7 @@ describe('[REGC] registration: cluster', function () {
       });
     });
 
-    describe('when the username exists in register', () => {
+    describe('[RC03] when the username exists in register', () => {
       before(async () => {
         userData = _.extend({}, defaults(), { username: 'wactiv' });
         serviceRegisterRequests = [];
@@ -380,7 +381,7 @@ describe('[REGC] registration: cluster', function () {
       });
     });
 
-    describe('when the email exists in register', () => {
+    describe('[RC04] when the email exists in register', () => {
       before(async () => {
         userData = _.extend({}, defaults(), { email: 'wactiv@pryv.io' });
         serviceRegisterRequests = [];
@@ -414,7 +415,7 @@ describe('[REGC] registration: cluster', function () {
       });
     });
 
-    describe('when the user and email exist in register', () => {
+    describe('[RC05] when the user and email exist in register', () => {
       before(async () => {
         userData = _.extend({}, defaults(), {
           username: 'wactiv',
@@ -456,7 +457,7 @@ describe('[REGC] registration: cluster', function () {
       });
     });
 
-    describe('when there is a simultaneous registration', () => {
+    describe('[RC06] when there is a simultaneous registration', () => {
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
@@ -492,8 +493,8 @@ describe('[REGC] registration: cluster', function () {
       });
     });
 
-    describe('when invitationTokens are undefined', () => {
-      describe('and a random string is provided as "invitationToken"', () => {
+    describe('[RC07] when invitationTokens are undefined', () => {
+      describe('[RC08] and a random string is provided as "invitationToken"', () => {
         before(async () => {
           userData = defaults();
           userData.invitationToken = charlatan.Lorem.characters(25);
@@ -535,7 +536,7 @@ describe('[REGC] registration: cluster', function () {
         });
       });
 
-      describe('and "invitationToken" is missing', () => {
+      describe('[RC09] and "invitationToken" is missing', () => {
         const serviceRegisterValidate = [];
         const serviceRegisterCreateUser = [];
         before(async () => {
@@ -579,8 +580,8 @@ describe('[REGC] registration: cluster', function () {
       });
     });
 
-    describe('when invitationTokens are defined', () => {
-      describe('when a valid one is provided', () => {
+    describe('[RC10] when invitationTokens are defined', () => {
+      describe('[RC11] when a valid one is provided', () => {
         before(async () => {
           userData = defaults();
           serviceRegisterRequests = [];
@@ -626,7 +627,7 @@ describe('[REGC] registration: cluster', function () {
         });
       });
 
-      describe('when an invalid one is provided', () => {
+      describe('[RC12] when an invalid one is provided', () => {
         before(async () => {
           userData = defaults();
           serviceRegisterRequests = [];
@@ -654,8 +655,8 @@ describe('[REGC] registration: cluster', function () {
       });
     });
 
-    describe('when invitationTokens are set to [] (forbidden creation)', () => {
-      describe('when any string is provided', () => {
+    describe('[RC13] when invitationTokens are set to [] (forbidden creation)', () => {
+      describe('[RC14] when any string is provided', () => {
         before(async () => {
           userData = defaults();
           serviceRegisterRequests = [];
@@ -683,8 +684,8 @@ describe('[REGC] registration: cluster', function () {
       });
     });
 
-    describe('when custom account streams validation exists', () => {
-      describe('when email is set as required and it is not set in the request', () => {
+    describe('[RC15] when custom account streams validation exists', () => {
+      describe('[RC16] when email is set as required and it is not set in the request', () => {
         before(async () => {
           userData = defaults();
           // remove email from the request
@@ -710,7 +711,7 @@ describe('[REGC] registration: cluster', function () {
         });
       });
 
-      describe('when field does not match custom validation settings', () => {
+      describe('[RC17] when field does not match custom validation settings', () => {
         before(async () => {
           userData = userData = defaults();
           userData.insurancenumber = 'abc';

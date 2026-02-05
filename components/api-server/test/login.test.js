@@ -23,7 +23,7 @@ const { UserRepositoryOptions } = require('business/src/users');
 const { getUserAccountStorage } = require('storage');
 const encryption = require('utils').encryption;
 
-describe('auth', function () {
+describe('[AUTH] auth', function () {
   this.timeout(5000);
   let userAccountStorage;
 
@@ -58,7 +58,7 @@ describe('auth', function () {
     appId: 'pryv-test'
   };
 
-  describe('/login', function () {
+  describe('[AU01] /login', function () {
     function path (username) {
       return basePath(username) + '/login';
     }
@@ -323,7 +323,7 @@ describe('auth', function () {
     });
 
     // cf. GH issue #3
-    describe('when we log into a temporary log file', function () {
+    describe('[AU02] when we log into a temporary log file', function () {
       let logFilePath = '';
 
       beforeEach(function (done) {
@@ -497,7 +497,7 @@ describe('auth', function () {
     });
   });
 
-  describe('/logout', function () {
+  describe('[AU03] /logout', function () {
     function path (username) {
       return basePath(username) + '/logout';
     }
@@ -566,7 +566,7 @@ describe('auth', function () {
     });
   });
 
-  describe('SSO support', function () {
+  describe('[AU04] SSO support', function () {
     // WARNING: exceptionally, tests in here are interdependent and their sequence matters
     const persistentReq2 = request.agent();
 

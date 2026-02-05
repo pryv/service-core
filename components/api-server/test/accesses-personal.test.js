@@ -24,7 +24,7 @@ const { getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
 const { getMall } = require('mall');
 
-describe('accesses (personal)', function () {
+describe('[ACSF] accesses (personal)', function () {
   const user = structuredClone(testData.users[0]);
   const basePath = '/' + user.username + '/accesses';
   let sessionAccessId = null;
@@ -81,7 +81,7 @@ describe('accesses (personal)', function () {
     ], done);
   });
 
-  describe('GET /', function () {
+  describe('[AS01] GET /', function () {
     before(resetAccesses);
 
     it('[K5BF] must return all accesses (including personal ones)', function (done) {
@@ -110,7 +110,7 @@ describe('accesses (personal)', function () {
     });
   });
 
-  describe('POST /', function () {
+  describe('[AS02] POST /', function () {
     beforeEach(function (done) {
       async.series([resetAccesses, testData.resetStreams], done);
     });
@@ -571,7 +571,7 @@ describe('accesses (personal)', function () {
     });
   });
 
-  describe('PUT /<token>', function () {
+  describe('[AS03] PUT /<token>', function () {
     beforeEach(resetAccesses);
 
     it('[U04A] must return a 410 (Gone)', function (done) {
@@ -587,7 +587,7 @@ describe('accesses (personal)', function () {
     });
   });
 
-  describe('DELETE /<id>', function () {
+  describe('[AS04] DELETE /<id>', function () {
     beforeEach(resetAccesses);
 
     it('[S8EK] must delete the shared access', (done) => {
@@ -648,7 +648,7 @@ describe('accesses (personal)', function () {
     });
   });
 
-  describe('POST /check-app', function () {
+  describe('[AS05] POST /check-app', function () {
     before(resetAccesses);
 
     const path = basePath + '/check-app';
