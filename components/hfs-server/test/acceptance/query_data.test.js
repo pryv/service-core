@@ -15,7 +15,7 @@ const { spawnContext, produceMongoConnection } = require('./test-helpers');
 const testHelpers = require('test-helpers');
 const databaseFixture = testHelpers.databaseFixture;
 
-describe('Querying data from a HF series', function () {
+describe('[HFSQ] Querying data from a HF series', function () {
   let database, pryv;
   before(async function () {
     database = await produceMongoConnection();

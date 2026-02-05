@@ -12,7 +12,7 @@ const assert = require('node:assert');
 const logger = require('@pryv/boiler').getLogger('compile.test');
 const rpc = require('tprpc');
 
-describe('Type Compilation', function () {
+describe('[TCMP] Type Compilation', function () {
   let tmpDirPath;
   beforeEach(() => {
     tmpDirPath = temp.mkdirSync();

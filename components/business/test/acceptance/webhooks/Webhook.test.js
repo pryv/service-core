@@ -21,8 +21,8 @@ const userStorage = require('test-helpers').dependencies.storage.user.events;
 
 const { getAPIVersion } = require('middleware/src/project_version');
 
-describe('Webhook', () => {
-  describe('send()', () => {
+describe('[WHBK] Webhook', () => {
+  describe('[WB01] send()', () => {
     const repository = new WebhooksRepository(storage, userStorage);
     let notificationsServer;
     let postPath = '/notifications';
@@ -35,8 +35,8 @@ describe('Webhook', () => {
       await repository.deleteForUser(user);
     });
 
-    describe('when sending to an existing endpoint', () => {
-      describe('when the endpoint answers ASAP', () => {
+    describe('[WB02] when sending to an existing endpoint', () => {
+      describe('[WB03] when the endpoint answers ASAP', () => {
         before(async () => {
           notificationsServer = new HttpServer(postPath, 200);
           await notificationsServer.listen();
@@ -102,7 +102,7 @@ describe('Webhook', () => {
         });
       });
 
-      describe('when the endpoint answers with a long delay', () => {
+      describe('[WB04] when the endpoint answers with a long delay', () => {
         postPath = '/delayed';
         url = makeUrl(postPath);
         const minIntervalMs = 50;
@@ -150,7 +150,7 @@ describe('Webhook', () => {
       });
     });
 
-    describe('when sending to an unexistant endpoint', () => {
+    describe('[WB05] when sending to an unexistant endpoint', () => {
       let webhook, requestTimestamp, storedWebhook;
 
       before(async () => {
@@ -196,8 +196,8 @@ describe('Webhook', () => {
       });
     });
 
-    describe('when scheduling for a retry', () => {
-      describe('when the notifications service is down', () => {
+    describe('[WB06] when scheduling for a retry', () => {
+      describe('[WB07] when the notifications service is down', () => {
         before(async () => {
           postPath = '/notifs2222';
           url = 'http://127.0.0.1:' + PORT + postPath;
@@ -262,7 +262,7 @@ describe('Webhook', () => {
       });
     });
 
-    describe('when throttling frequent calls', () => {
+    describe('[WB08] when throttling frequent calls', () => {
       before(async () => {
         postPath = '/notifs3';
         url = 'http://127.0.0.1:' + PORT + postPath;
@@ -323,7 +323,7 @@ describe('Webhook', () => {
       });
     });
 
-    describe('when the webhook becomes inactive after failures', () => {
+    describe('[WB09] when the webhook becomes inactive after failures', () => {
       let webhook, storedWebhook;
       before(async () => {
         postPath = '/notifs5';
@@ -372,7 +372,7 @@ describe('Webhook', () => {
       });
     });
 
-    describe('when the runs array gets shifted', () => {
+    describe('[WB10] when the runs array gets shifted', () => {
       const message = 'hello';
       let webhook;
       before(async () => {

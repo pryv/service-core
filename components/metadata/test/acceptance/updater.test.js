@@ -12,7 +12,7 @@ const helpers = require('./test-helpers');
 const rpc = require('tprpc');
 const metadata = require('metadata');
 
-describe('Metadata Updater', () => {
+describe('[MUPT] Metadata Updater', () => {
   // Set up the server end
   let server;
   before(async () => {

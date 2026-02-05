@@ -10,7 +10,7 @@
 const { integrity } = require('business');
 const timestamp = require('unix-timestamp');
 
-describe('Audit events integrity', function () {
+describe('[AINT] Audit events integrity', function () {
   let user, username, password, access, appAccess;
   let personalToken;
   let mongoFixtures;

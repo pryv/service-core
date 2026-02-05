@@ -6,7 +6,7 @@
  */
 /* global validation, assert, apiMethods, AuditFilter */
 
-describe('AuditFilter', () => {
+describe('[AFLT] AuditFilter', () => {
   function buildFilter (include = ['all'], exclude = []) {
     return {
       methods: {
@@ -15,7 +15,7 @@ describe('AuditFilter', () => {
       }
     };
   }
-  describe('validation', () => {
+  describe('[AF01] validation', () => {
     it('[3QJJ] must accept an existing method', () => {
       const method = 'events.get';
       assert.strictEqual(apiMethods.AUDITED_METHODS_MAP[method], true);
@@ -56,7 +56,7 @@ describe('AuditFilter', () => {
     });
   });
 
-  describe('initialization', () => {
+  describe('[AF02] initialization', () => {
     it('[H8RB] must expand aggregate methods', () => {
       const filter = new AuditFilter({ syslogFilter: buildFilter(), storageFilter: buildFilter(['events.all']) });
       apiMethods.AUDITED_METHODS.forEach(m => {

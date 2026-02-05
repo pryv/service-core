@@ -9,8 +9,8 @@ const assert = require('node:assert');
 const { BatchRequest, BatchRequestElement } = require('../../../src/series/batch_request');
 const { TypeRepository } = require('../../../src/types');
 
-describe('BatchRequest', () => {
-  describe('.parse', () => {
+describe('[BRQS] BatchRequest', () => {
+  describe('[BR01] .parse', () => {
     const typeRepo = new TypeRepository();
     const type = typeRepo.lookup('series:position/wgs84');
     const resolver = () => Promise.resolve(type);
@@ -78,8 +78,8 @@ describe('BatchRequest', () => {
     }
   });
 });
-describe('BatchRequestElement', () => {
-  describe('.parse(obj)', () => {
+describe('[BREL] BatchRequestElement', () => {
+  describe('[BE01] .parse(obj)', () => {
     const typeRepo = new TypeRepository();
     const type = typeRepo.lookup('series:position/wgs84');
     const resolver = () => Promise.resolve(type);

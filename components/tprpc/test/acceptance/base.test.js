@@ -12,7 +12,7 @@ require('@pryv/boiler').init({ appName: 'tprpc-test', baseConfigDir: '' });
 const rpc = require('tprpc');
 const { Corpus } = require('../fixtures/base');
 
-describe('Base API', () => {
+describe('[BAPI] Base API', () => {
   const endpoint = '127.0.0.1:4020';
 
   // Loads the service definition

@@ -16,7 +16,7 @@ const { getConfig } = require('@pryv/boiler');
 const { connect, JSONCodec } = require('nats');
 const { encode } = JSONCodec();
 
-describe('Synchro', function () {
+describe('[SYNC] Synchro', function () {
   let natsClient;
 
   before(async function () {

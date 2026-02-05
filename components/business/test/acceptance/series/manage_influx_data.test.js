@@ -18,7 +18,7 @@ const Repository = series.Repository;
 const DataMatrix = series.DataMatrix;
 const userStorage = require('test-helpers').dependencies.storage.user.events;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-describe('Manage InfluxDB data (business.series.*)', function () {
+describe('[MXDB] Manage InfluxDB data (business.series.*)', function () {
   const connection = new influx.InfluxDB({
     host: '127.0.0.1'
   });

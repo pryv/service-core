@@ -11,7 +11,7 @@
 
 require('test-helpers/src/api-server-tests-config');
 
-describe('Per-store key-value DB', () => {
+describe('[KVDB] Per-store key-value DB', () => {
   let user, username, password, access;
   let personalToken;
   let mongoFixtures;

@@ -14,8 +14,8 @@ const userStorage = require('test-helpers').dependencies.storage.user.events;
 const Repository = series.Repository;
 const DataMatrix = series.DataMatrix;
 
-describe('business.series.Repository', function () {
-  describe('with stubbed out connection', function () {
+describe('[SREP] business.series.Repository', function () {
+  describe('[SR01] with stubbed out connection', function () {
     const namespace = 'pryv-userdb.USER_ID'; // influx database
     const seriesName = 'event.EVENT_ID'; // influx measurement
     const data = new DataMatrix(['deltaTime', 'a', 'b'], [[0, 1, 2]]);

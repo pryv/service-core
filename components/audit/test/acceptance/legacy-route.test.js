@@ -9,7 +9,7 @@
 
 const timestamp = require('unix-timestamp');
 
-describe('Audit legacy route', function () {
+describe('[ALGR] Audit legacy route', function () {
   let user, username, password, access, appAccess;
   let personalToken;
   let mongoFixtures;

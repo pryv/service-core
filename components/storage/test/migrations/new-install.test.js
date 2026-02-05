@@ -11,7 +11,7 @@ const timestamp = require('unix-timestamp');
 const { getVersions } = require('./util');
 const { getConfig } = require('@pryv/boiler');
 
-describe('Migrations - new install', () => {
+describe('[MGNI] Migrations - new install', () => {
   const versions = getVersions();
   let isOpenSource = false;
 

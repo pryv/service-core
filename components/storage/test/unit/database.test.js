@@ -9,7 +9,7 @@ const assert = require('node:assert');
 const Database = require('../../src/Database');
 const { getConfig } = require('@pryv/boiler');
 
-describe('Database', () => {
+describe('[DBSE] Database', () => {
   let connectionSettings;
   let database;
   beforeEach(async () => {
@@ -19,12 +19,12 @@ describe('Database', () => {
     database = new Database(connectionSettings);
     await database.ensureConnect();
   });
-  describe('#close()', () => {
+  describe('[DB01] #close()', () => {
     it('[BYRG] closes the database connection', async () => {
       await database.close();
     });
   });
-  describe('Mongo duplicate errors', () => {
+  describe('[DB02] Mongo duplicate errors', () => {
     const collectionInfo = {
       name: 'duplicateTest',
       indexes: [

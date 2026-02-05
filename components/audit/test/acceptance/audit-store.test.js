@@ -9,7 +9,7 @@
 
 const timestamp = require('unix-timestamp');
 
-describe('Audit Streams and Events', function () {
+describe('[ASTE] Audit Streams and Events', function () {
   let user, username, password, access, appAccess, anotherAppAccess;
   let personalToken;
   let eventsPath, streamsPath, accessesPath;
@@ -73,7 +73,7 @@ describe('Audit Streams and Events', function () {
     await validGet(eventsPath, anotherAppAccess);
   });
 
-  describe('streams.get', () => {
+  describe('[AS01] streams.get', () => {
     it('[U2PV] must retrieve access and actions substreams ', async () => {
       const res = await coreRequest
         .get(streamsPath)
@@ -136,7 +136,7 @@ describe('Audit Streams and Events', function () {
     });
   });
 
-  describe('events.get', () => {
+  describe('[AS02] events.get', () => {
     it('[TJ8S] must retrieve logs by time range', async () => {
       const res = await coreRequest
         .get(eventsPath)

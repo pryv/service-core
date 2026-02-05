@@ -118,7 +118,7 @@ describe('[AUDI] Audit logs events', () => {
     }
   }
 
-  describe('GET /events', () => {
+  describe('[AU01] GET /events', () => {
     it('[0BK7] must not return null values or trashed=false', async () => {
       const res = await get('/events', { streams: [':_audit:action-events.get'] }, personalToken);
       const events = res.body.events;
@@ -142,7 +142,7 @@ describe('[AUDI] Audit logs events', () => {
     });
   });
 
-  describe('GET /audit/logs', () => {
+  describe('[AU02] GET /audit/logs', () => {
     it('[RV4W] must return a valid id field', async () => {
       const res = await get('/audit/logs', {}, personalToken);
       const logs = res.body.auditLogs;

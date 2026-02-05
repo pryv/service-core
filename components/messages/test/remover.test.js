@@ -10,7 +10,7 @@ const { pubsub } = require('messages');
 
 const assert = require('node:assert');
 
-describe('Pubsub removers', function () {
+describe('[PRMV] Pubsub removers', function () {
   it('[LVNK] remover works', done => {
     const removable = pubsub.notifications.onAndGetRemovable('toto', messageReceived);
     let titiReceived = false;

@@ -20,7 +20,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { defaults: dataStoreDefaults } = require('@pryv/datastore');
 const treeUtils = require('utils/src/treeUtils');
 
-describe('System streams', function () {
+describe('[SYSS] System streams', function () {
   let app;
   let request;
   let res;
@@ -63,8 +63,8 @@ describe('System streams', function () {
     request = supertest(app.expressApp);
   });
 
-  describe('GET /streams', () => {
-    describe('When using a personal access', () => {
+  describe('[SS01] GET /streams', () => {
+    describe('[SS02] When using a personal access', () => {
       it('[9CGO] Should return all streams - including system ones', async () => {
         const expectedRes = [];
         validation.addStoreStreams(expectedRes);
@@ -153,9 +153,9 @@ describe('System streams', function () {
     });
   });
 
-  describe('POST /streams', () => {
-    describe('When using a personal access', () => {
-      describe('to create a child to a system stream', () => {
+  describe('[SS03] POST /streams', () => {
+    describe('[SS04] When using a personal access', () => {
+      describe('[SS05] to create a child to a system stream', () => {
         before(async function () {
           await createUser();
           res = await request.post(basePath)
@@ -175,10 +175,10 @@ describe('System streams', function () {
     });
   });
 
-  describe('PUT /streams/<id>', () => {
-    describe('When using a personal access', () => {
+  describe('[SS06] PUT /streams/<id>', () => {
+    describe('[SS07] When using a personal access', () => {
       let streamData;
-      describe('to update a system stream', () => {
+      describe('[SS08] to update a system stream', () => {
         before(async function () {
           await createUser();
           streamData = {
@@ -198,9 +198,9 @@ describe('System streams', function () {
     });
   });
 
-  describe('DELETE /streams/<id>', () => {
-    describe('When using a personal access', () => {
-      describe('to delete a system stream', () => {
+  describe('[SS09] DELETE /streams/<id>', () => {
+    describe('[SS10] When using a personal access', () => {
+      describe('[SS11] to delete a system stream', () => {
         before(async function () {
           await createUser();
           res = await request.delete(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))

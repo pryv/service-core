@@ -18,7 +18,7 @@ const { Flush } = require('../../../src/metadata_updater/flush');
 const { getMall } = require('mall');
 let mall;
 
-describe('Flush', () => {
+describe('[FLSH] Flush', () => {
   const connection = produceMongoConnection();
   const now = timestamp.now();
   const initialDuration = 100;
@@ -64,7 +64,7 @@ describe('Flush', () => {
       duration: initialDuration
     });
   });
-  describe('event with no existing metadata', () => {
+  describe('[FL01] event with no existing metadata', () => {
     // Constructs a flush op from a fake update
     let op;
     beforeEach(() => {
@@ -85,7 +85,7 @@ describe('Flush', () => {
       assert.strictEqual(event.duration, toDeltaTime);
     });
   });
-  describe('event with existing metadata', () => {
+  describe('[FL02] event with existing metadata', () => {
     // Constructs a flush op from a fake update
     let op;
     beforeEach(() => {

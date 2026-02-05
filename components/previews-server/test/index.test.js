@@ -10,14 +10,14 @@ const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const request = require('superagent');
 
-describe('(index)', function () {
+describe('[PIDX] (index)', function () {
   function path (a) {
     return new URL(a || '/', server.url).toString();
   }
 
   before(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
-  describe('OPTIONS /', function () {
+  describe('[PI01] OPTIONS /', function () {
     it('[E5MW] should return OK', async function () {
       const res = await request.options(path());
       assert.strictEqual(res.statusCode, 200);

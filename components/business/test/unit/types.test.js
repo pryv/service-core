@@ -13,7 +13,7 @@ const { getConfig } = require('@pryv/boiler');
 
 let isOpenSource = false;
 
-describe('business.types.TypeRepository', function () {
+describe('[TYPR] business.types.TypeRepository', function () {
   before(async () => {
     isOpenSource = (await getConfig()).get('openSource:isActive');
   });
@@ -21,7 +21,7 @@ describe('business.types.TypeRepository', function () {
   beforeEach(() => {
     repository = new TypeRepository();
   });
-  describe('type list update', function () {
+  describe('[TY01] type list update', function () {
     const sourceURL = 'https://pryv.github.io/event-types/flat.json';
     it('[WMDW] should work (must be called manually)', async function () {
       // NOTE This test uses an internet URL. If internet is down, it will
@@ -36,7 +36,7 @@ describe('business.types.TypeRepository', function () {
       }
     });
   });
-  describe('basic types like mass/kg', function () {
+  describe('[TY02] basic types like mass/kg', function () {
     it('[EEWV] should be known', function () {
       assert.strictEqual(repository.isKnown('mass/kg'), true);
     });
@@ -62,7 +62,7 @@ describe('business.types.TypeRepository', function () {
         .then((val) => assert.strictEqual(val, 123));
     });
   });
-  describe('boolean type boolean/bool', function () {
+  describe('[TY03] boolean type boolean/bool', function () {
     it('[E2Y1] should be known', function () {
       assert.strictEqual(repository.isKnown('boolean/bool'), true);
     });
@@ -85,7 +85,7 @@ describe('business.types.TypeRepository', function () {
         .then((val) => assert.strictEqual(val, true));
     });
   });
-  describe('complex types like position/wgs84', function () {
+  describe('[TY04] complex types like position/wgs84', function () {
     it('[05LA] should be known', function () {
       assert.strictEqual(repository.isKnown('position/wgs84'), true);
     });
@@ -110,7 +110,7 @@ describe('business.types.TypeRepository', function () {
       ]);
     });
   });
-  describe('complex types on several levels like message/facebook', () => {
+  describe('[TY05] complex types on several levels like message/facebook', () => {
     let type;
     beforeEach(() => {
       type = repository.lookup('message/facebook');
@@ -129,7 +129,7 @@ describe('business.types.TypeRepository', function () {
       assert.deepStrictEqual(type.requiredFields(), ['id', 'message']);
     });
   });
-  describe('placeholder types like picture/attached', () => {
+  describe('[TY06] placeholder types like picture/attached', () => {
     it('[78HI] should be known', function () {
       assert.strictEqual(repository.isKnown('picture/attached'), true);
     });
@@ -145,7 +145,7 @@ describe('business.types.TypeRepository', function () {
       assert.strictEqual(fieldType.coerce(132136), null);
     });
   });
-  describe('series types like series:mass/kg', function () {
+  describe('[TY07] series types like series:mass/kg', function () {
     before(function (done) {
       if (isOpenSource) { this.skip(); }
       done();
@@ -161,7 +161,7 @@ describe('business.types.TypeRepository', function () {
       assert.deepStrictEqual(eventType.fields(), ['deltaTime', 'value']);
     });
   });
-  describe('validate()', function () {
+  describe('[TY08] validate()', function () {
     it("[VK9J] should accept an array as a known type's event content", async () => {
       await repository.tryUpdate('file://test/fixtures/event-types.json');
       const event = { content: [1, 2, 3], type: 'pryv-test/array-num' };
@@ -169,7 +169,7 @@ describe('business.types.TypeRepository', function () {
     });
   });
 });
-describe('business.types.TypeValidator', function () {
+describe('[TYPV] business.types.TypeValidator', function () {
   let repository;
   beforeEach(() => {
     repository = new TypeRepository();

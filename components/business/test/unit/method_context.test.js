@@ -16,8 +16,8 @@ const contextSource = {
   ip: '127.0.0.1'
 };
 
-describe('MethodContext', () => {
-  describe('#parseAuth', () => {
+describe('[MCTX] MethodContext', () => {
+  describe('[MC01] #parseAuth', () => {
     const username = 'USERNAME';
     const customAuthStep = null;
     it('[ZRW8] should parse token out', () => {
@@ -32,7 +32,7 @@ describe('MethodContext', () => {
     });
   });
 
-  describe('#retrieveAccessFromId', () => {
+  describe('[MC02] #retrieveAccessFromId', () => {
     const username = 'USERNAME';
     const customAuthStep = null;
     let access;

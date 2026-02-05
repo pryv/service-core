@@ -13,7 +13,7 @@ const { produceMongoConnection } = require('api-server/test/test-helpers');
 const { getUsersRepository, User } = require('business/src/users');
 const { ErrorIds } = require('errors');
 
-describe('Users repository', () => {
+describe('[USRP] Users repository', () => {
   let mongoFixtures;
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -25,7 +25,7 @@ describe('Users repository', () => {
   let username;
   let email;
   let customRegistrationUniqueField;
-  describe('createUser()', () => {
+  describe('[UR01] createUser()', () => {
     before(async () => {
       username = charlatan.Lorem.characters(10);
       customRegistrationUniqueField = charlatan.App.name();

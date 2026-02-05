@@ -17,7 +17,7 @@ const STREAMS = {
   T: { }
 };
 
-describe('Cache', function () {
+describe('[CACH] Cache', function () {
   let user, username, password, access, appAccess;
   let personalToken;
   let mongoFixtures;

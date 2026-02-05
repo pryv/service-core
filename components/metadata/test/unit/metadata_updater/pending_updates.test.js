@@ -11,8 +11,8 @@ const assert = require('node:assert');
 const sinon = require('sinon');
 const { PendingUpdatesMap, PendingUpdate } = require('../../../src/metadata_updater/pending_updates');
 
-describe('PendingUpdatesMap', () => {
-  describe('#merge and #get', () => {
+describe('[PUMP] PendingUpdatesMap', () => {
+  describe('[PU01] #merge and #get', () => {
     let map;
     beforeEach(() => {
       map = new PendingUpdatesMap();
@@ -39,7 +39,7 @@ describe('PendingUpdatesMap', () => {
       sinon.assert.calledWith(update1.merge, update2);
     });
   });
-  describe('#elapsed', () => {
+  describe('[PU02] #elapsed', () => {
     let map;
     beforeEach(() => {
       map = new PendingUpdatesMap();
@@ -79,8 +79,8 @@ describe('PendingUpdatesMap', () => {
     });
   });
 });
-describe('PendingUpdate', () => {
-  describe('#merge', () => {
+describe('[PDUP] PendingUpdate', () => {
+  describe('[PD01] #merge', () => {
     const now = new Date() / 1e3;
     let update1;
     beforeEach(() => {
@@ -133,7 +133,7 @@ describe('PendingUpdate', () => {
       assert.throws(() => update1.merge(failing));
     });
   });
-  describe('#flushAt()', () => {
+  describe('[PD02] #flushAt()', () => {
     const now = new Date() / 1e3;
     let update;
     beforeEach(() => {

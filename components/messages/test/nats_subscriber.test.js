@@ -14,7 +14,7 @@ const { getConfig } = require('@pryv/boiler');
 
 const natsPubsub = require('../src/nats_pubsub');
 
-describe('NatsSubscriber', () => {
+describe('[NSUB] NatsSubscriber', () => {
   it('[DMMP] should construct', async () => {
     await natsPubsub.init();
   });
@@ -26,7 +26,7 @@ describe('NatsSubscriber', () => {
     };
     return await natsPubsub.subscribe(username, stub);
   }
-  describe('when subscribed to "foobar"', () => {
+  describe('[NS01] when subscribed to "foobar"', () => {
     let msgs;
     let rawClient;
     let natsSUB;
@@ -48,7 +48,7 @@ describe('NatsSubscriber', () => {
     afterEach(() => {
       rawClient.close();
     });
-    describe('subscribe("USERNAME")', () => {
+    describe('[NS02] subscribe("USERNAME")', () => {
       it('[4MAI] accepts messages from USERNAME.sok1 and dispatches them to sinks', async () => {
         await rawClient.publish('foobar', encode({ eventName: 'onTestMessage' }));
         while (msgs.length === 0) {
@@ -68,7 +68,7 @@ describe('NatsSubscriber', () => {
         assert.deepStrictEqual(msgs, ['onTestMessage2']);
       });
     });
-    describe('unsubscribe()', function () {
+    describe('[NS03] unsubscribe()', function () {
       this.timeout(1000);
       it('[L49E] should unsubscribe from NATS', async () => {
         rawClient.publish('foobar', encode({ eventName: 'onTestMessage1' }));

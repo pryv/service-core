@@ -13,8 +13,8 @@ const { ParseFailure } = require('../../../src/series/errors');
 const Row = require('../../../src/series/row');
 const { TypeRepository } = require('../../../src/types');
 
-describe('DataMatrix', function () {
-  describe('.parse(obj)', () => {
+describe('[DMTX] DataMatrix', function () {
+  describe('[DM01] .parse(obj)', () => {
     const typeRepo = new TypeRepository();
     const type = typeRepo.lookup('series:position/wgs84');
     it('[576J] should accept the happy path', () => {
@@ -79,7 +79,7 @@ describe('DataMatrix', function () {
       }, ParseFailure);
     }
   });
-  describe('#eachRow', function () {
+  describe('[DM02] #eachRow', function () {
     it('[QUQ3] should iterate over all matrix rows', function () {
       const headers = ['a', 'b', 'c'];
       const matrix = new DataMatrix(headers, [
@@ -96,7 +96,7 @@ describe('DataMatrix', function () {
       assert.strictEqual(times, 2);
     });
   });
-  describe('#transform', function () {
+  describe('[DM03] #transform', function () {
     it('[L03R] should call fn for each cell', function () {
       const headers = ['a', 'b', 'c'];
       const matrix = new DataMatrix(headers, [
@@ -124,7 +124,7 @@ describe('DataMatrix', function () {
       assert.deepStrictEqual(matrix.at(0), [42, 42, 42]);
     });
   });
-  describe('#minmax()', () => {
+  describe('[DM04] #minmax()', () => {
     it('[QGY6] returns the minimum and maximum deltaTime used', () => {
       const headers = ['a', 'b', 'deltaTime'];
       const matrix = new DataMatrix(headers, [
@@ -150,8 +150,8 @@ describe('DataMatrix', function () {
     });
   });
 });
-describe('business.series.Row', function () {
-  describe('toStruct', function () {
+describe('[SROW] business.series.Row', function () {
+  describe('[SR01] toStruct', function () {
     it('[NJ4G] should return a js object for the row', function () {
       const row = new Row([1, 2], ['a', 'b']);
       const obj = row.toStruct();

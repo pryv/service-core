@@ -14,8 +14,8 @@ const controller = controllerFactory({});
 const APIError = require('errors/src/APIError');
 const ErrorIds = require('errors/src/ErrorIds');
 
-describe('Controller', () => {
-  describe('storeSeriesData', () => {
+describe('[HFCT] Controller', () => {
+  describe('[HC01] storeSeriesData', () => {
     it('[3BYC] should reject queries if the authorization header is missing', (done) => {
       const req = {
         params: {},

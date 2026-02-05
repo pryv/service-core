@@ -116,8 +116,8 @@ describe('[ACCO] Account with system streams', function () {
     config.injectTestConfig({});
   });
 
-  describe('GET /account', () => {
-    describe('and when user has multiple events per stream and additional streams events', () => {
+  describe('[DA01] GET /account', () => {
+    describe('[DA02] and when user has multiple events per stream and additional streams events', () => {
       let allVisibleAccountEvents;
       let scope;
       before(async function () {
@@ -181,8 +181,8 @@ describe('[ACCO] Account with system streams', function () {
     });
   });
 
-  describe('POST /change-password', () => {
-    describe('and when valid data is provided', () => {
+  describe('[DA03] POST /change-password', () => {
+    describe('[DA04] and when valid data is provided', () => {
       let passwordBefore;
       const passwordAfter = charlatan.Lorem.characters(7);
       let user;
@@ -208,8 +208,8 @@ describe('[ACCO] Account with system streams', function () {
     });
   });
 
-  describe('PUT /account', () => {
-    describe('when updating the username', () => {
+  describe('[DA05] PUT /account', () => {
+    describe('[DA06] when updating the username', () => {
       before(async function () {
         await createUser();
         // modify account info
@@ -226,7 +226,7 @@ describe('[ACCO] Account with system streams', function () {
         assert.strictEqual(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
       });
     });
-    describe('when updating non editable fields', () => {
+    describe('[DA07] when updating non editable fields', () => {
       before(async function () {
         await createUser();
         // modify account info
@@ -243,8 +243,8 @@ describe('[ACCO] Account with system streams', function () {
         assert.strictEqual(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
       });
     });
-    describe('when updating a unique field that is already taken', () => {
-      describe('and the field is not unique in mongodb', () => {
+    describe('[DA08] when updating a unique field that is already taken', () => {
+      describe('[DA09] and the field is not unique in mongodb', () => {
         let scope;
         let user2;
         before(async function () {
@@ -275,7 +275,7 @@ describe('[ACCO] Account with system streams', function () {
       });
     });
 
-    describe('when updating email and language and non-active fields exists', () => {
+    describe('[DA10] when updating email and language and non-active fields exists', () => {
       const newEmail = charlatan.Internet.email();
       const newLanguage = charlatan.Lorem.characters(2);
       let activeEmailBefore;

@@ -125,8 +125,8 @@ describe('[FG5R] Events of system streams', () => {
     config.injectTestConfig({});
   });
 
-  describe('GET /events', () => {
-    describe('When using a personal access', () => {
+  describe('[ED01] GET /events', () => {
+    describe('[ED02] When using a personal access', () => {
       before(async function () {
         await createUser();
         res = await request.get(basePath).set('authorization', access.token);
@@ -144,7 +144,7 @@ describe('[FG5R] Events of system streams', () => {
         });
       });
     });
-    describe('When using a shared access with a read-level permission on the .account stream', () => {
+    describe('[ED03] When using a shared access with a read-level permission on the .account stream', () => {
       let separatedEvents;
       before(async function () {
         await createUser();
@@ -174,7 +174,7 @@ describe('[FG5R] Events of system streams', () => {
       });
     });
 
-    describe('When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
+    describe('[ED04] When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
       let sharedAccess;
       let systemStreamId;
       before(async function () {
@@ -201,7 +201,7 @@ describe('[FG5R] Events of system streams', () => {
       });
     });
 
-    describe('When using a shared access with a read-level permission on all streams (star)', () => {
+    describe('[ED05] When using a shared access with a read-level permission on all streams (star)', () => {
       let sharedAccess;
       before(async function () {
         await createUser();
@@ -222,7 +222,7 @@ describe('[FG5R] Events of system streams', () => {
     });
   });
 
-  describe('GET /events/<id>', () => {
+  describe('[ED06] GET /events/<id>', () => {
     async function findDefaultCoreEvent (streamId) {
       return await getOneEvent(user.attrs.id, streamId);
     }
@@ -294,7 +294,7 @@ describe('[FG5R] Events of system streams', () => {
     });
   });
 
-  describe('POST /events', () => {
+  describe('[ED07] POST /events', () => {
     let eventData;
     describe('When using a personal access', () => {
       describe('to create an editable system event', () => {
@@ -665,7 +665,7 @@ describe('[FG5R] Events of system streams', () => {
     });
   });
 
-  describe('PUT /events/<id>', () => {
+  describe('[ED08] PUT /events/<id>', () => {
     describe('when using a personal access', () => {
       describe('to update an editable system event', () => {
         let scope;
@@ -1157,7 +1157,7 @@ describe('[FG5R] Events of system streams', () => {
     });
   });
 
-  describe('DELETE /events/<id>', () => {
+  describe('[ED09] DELETE /events/<id>', () => {
     describe('When using a personal access', () => {
       describe('to delete an editable streams event', () => {
         describe('that has no ‘active’ streamId', () => {

@@ -10,12 +10,12 @@
 const assert = require('node:assert');
 const Heap = require('heap');
 
-describe('Heap', () => {
+describe('[HEAP] Heap', () => {
   let heap;
   beforeEach(() => {
     heap = new Heap();
   });
-  describe('#pop', () => {
+  describe('[HP01] #pop', () => {
     it('[CW89] pops an item', () => {
       heap.push(1);
       const v = heap.pop();

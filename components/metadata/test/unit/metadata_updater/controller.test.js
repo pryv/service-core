@@ -14,7 +14,7 @@ const { Controller } = require('../../../src/metadata_updater/controller');
 const { Flush } = require('../../../src/metadata_updater/flush');
 const { getLogger } = require('@pryv/boiler');
 
-describe('Metadata Updater/Controller', () => {
+describe('[MUCT] Metadata Updater/Controller', () => {
   const logger = getLogger('metadata');
   let map;
   let controller;
@@ -33,7 +33,7 @@ describe('Metadata Updater/Controller', () => {
     controller.stop();
   });
 
-  describe('#runEach(ms)', () => {
+  describe('[CT01] #runEach(ms)', () => {
     it('[9TJ0] starts a timer and runs #act every n ms', (done) => {
       const now = Number(new Date());
       const callTimestamps = [];
@@ -56,7 +56,7 @@ describe('Metadata Updater/Controller', () => {
       controller.runEach(10);
     });
   });
-  describe('#flushOp(update)', () => {
+  describe('[CT02] #flushOp(update)', () => {
     const now = new Date() / 1e3;
     const update = makeUpdate(now, {});
     it('[2W9C] constructs an Flush operation for the update and returns it', () => {
@@ -65,7 +65,7 @@ describe('Metadata Updater/Controller', () => {
       assert.ok(flush instanceof Flush);
     });
   });
-  describe('#act', () => {
+  describe('[CT03] #act', () => {
     const now = new Date() / 1e3;
 
     // Stores two 'update's in the `map`.

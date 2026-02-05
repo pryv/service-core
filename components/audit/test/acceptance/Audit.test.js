@@ -9,7 +9,7 @@
 
 const timestamp = require('unix-timestamp');
 
-describe('Audit', function () {
+describe('[AUDT] Audit', function () {
   let user, username, password, access, readAccess;
   let eventsPath, auditPath;
 
@@ -59,7 +59,7 @@ describe('Audit', function () {
     await mongoFixtures.clean();
   });
 
-  describe('when making valid API calls', function () {
+  describe('[AT01] when making valid API calls', function () {
     let res, now;
     const query = { limit: '1' }; // casting to string as audit saves query before coercion
     before(async function () {
@@ -90,7 +90,7 @@ describe('Audit', function () {
       assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_VALID);
     });
 
-    describe('when making a call that is not audited', function () {
+    describe('[AT02] when making a call that is not audited', function () {
       before(async function () {
         assert.strictEqual(apiMethods.AUDITED_METHODS_MAP['service.info'], undefined);
         resetSpies();
@@ -109,7 +109,7 @@ describe('Audit', function () {
         assert.strictEqual(storageSpy.calledOnce, false);
       });
     });
-    describe('when making a call that has its own custom accessId', function () {
+    describe('[AT03] when making a call that has its own custom accessId', function () {
       let log;
       before(async function () {
         resetSpies();
@@ -144,7 +144,7 @@ describe('Audit', function () {
         assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_VALID);
       });
     });
-    describe('when making a call that has no userId', function () {
+    describe('[AT04] when making a call that has no userId', function () {
       before(async function () {
         resetSpies();
         res = await coreRequest
@@ -170,7 +170,7 @@ describe('Audit', function () {
     });
   });
 
-  describe('when making invalid API calls', function () {
+  describe('[AT05] when making invalid API calls', function () {
     let res;
     describe('for an unknown user', function () {
       before(async function () {
@@ -380,7 +380,7 @@ describe('Audit', function () {
     });
   });
 
-  describe('Filtering', function () {
+  describe('[AT06] Filtering', function () {
     describe('when filtering by calledMethods', function () {
       after(async function () {
         config.injectTestConfig({});

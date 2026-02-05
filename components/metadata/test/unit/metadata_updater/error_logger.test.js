@@ -9,7 +9,7 @@ const sinon = require('sinon');
 const assert = require('node:assert');
 const { ErrorLogger } = require('../../../src/metadata_updater/error_logger');
 
-describe('ErrorLogger', () => {
+describe('[ERLG] ErrorLogger', () => {
   let logger;
   let target, subject;
   beforeEach(() => {

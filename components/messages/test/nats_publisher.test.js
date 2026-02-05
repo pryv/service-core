@@ -14,7 +14,7 @@ const { decode } = JSONCodec();
 const natsPubsub = require('../src/nats_pubsub');
 const { getConfig } = require('@pryv/boiler');
 // function decode(x) {return x};
-describe('NatsPublisher', () => {
+describe('[NPUB] NatsPublisher', () => {
   let natsConnection;
   before(async () => {
     const natsUri = (await getConfig()).get('nats:uri');

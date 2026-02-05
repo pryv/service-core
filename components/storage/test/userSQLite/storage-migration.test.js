@@ -18,7 +18,7 @@ const os = require('os');
 const { getLogger } = require('@pryv/boiler');
 const Storage = require('../../src/userSQLite/Storage');
 
-describe('SQLite user-centric storage migration', () => {
+describe('[SQLM] SQLite user-centric storage migration', () => {
   let logger;
   before(async () => {
     logger = getLogger('sqlite-storage-migration-test');

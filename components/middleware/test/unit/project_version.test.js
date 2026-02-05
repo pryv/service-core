@@ -13,8 +13,8 @@ const { getAPIVersion } = require('../../src/project_version');
 
 const versionFilePath = path.join(__dirname, '../../../../', '.api-version');
 
-describe('APIVersion#version', () => {
-  describe('when a ".api-version" file exists in the project and is !== that 1.2.3', () => {
+describe('[APIV] APIVersion#version', () => {
+  describe('[AV01] when a ".api-version" file exists in the project and is !== that 1.2.3', () => {
     before(() => {
       fs.writeFileSync(versionFilePath, '1.2.4', {
         encoding: 'utf-8'
@@ -31,7 +31,7 @@ describe('APIVersion#version', () => {
       assert.strictEqual(version, '1.2.4');
     });
   });
-  describe('when a ".api-version" file exists in the project and is 1.2.3', () => {
+  describe('[AV02] when a ".api-version" file exists in the project and is 1.2.3', () => {
     before(() => {
       const versionRead = fs.readFileSync(versionFilePath, {
         encoding: 'utf-8'

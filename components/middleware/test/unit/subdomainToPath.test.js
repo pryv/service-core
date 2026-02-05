@@ -10,8 +10,8 @@ const express = require('express');
 const assert = require('node:assert');
 const subdomainToPath = require('middleware/src/subdomainToPath')([]);
 
-describe('subdomainToPath middleware', function () {
-  describe('using a minimal application', function () {
+describe('[SDTP] subdomainToPath middleware', function () {
+  describe('[SD01] using a minimal application', function () {
     const app = express();
     const request = supertest(app);
     app.use(subdomainToPath);

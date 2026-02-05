@@ -9,7 +9,7 @@ const os = require('os');
 
 const SyslogWatch = require('storage/test/userSQLite/support/SyslogWatch');
 
-describe('Syslog', function () {
+describe('[SYSL] Syslog', function () {
   const userId = cuid();
   const createdBy = cuid();
   let syslogWatch;
@@ -39,7 +39,7 @@ describe('Syslog', function () {
     return e;
   }
 
-  describe('receive message and write them to syslog', () => {
+  describe('[SY01] receive message and write them to syslog', () => {
     it('[F8SH] default message', function (done) {
       this.timeout(5000);
       const randomString = cuid();
