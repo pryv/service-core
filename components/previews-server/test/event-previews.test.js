@@ -50,7 +50,7 @@ describe('[EP01] event previews', function () {
     ], done);
   });
 
-  describe('GET /<event id>/preview', function () {
+  describe('[EP02] GET /<event id>/preview', function () {
     beforeEach(function () {
       attachmentManagement.removeAllPreviews();
     });
@@ -255,7 +255,7 @@ describe('[EP01] event previews', function () {
     });
   });
 
-  describe('POST /clean-up-cache', function () {
+  describe('[EP03] POST /clean-up-cache', function () {
     const basePath = '/' + user.username + '/clean-up-cache';
 
     it('[FUYE] must clean up cached previews not accessed for one week by default', function (done) {

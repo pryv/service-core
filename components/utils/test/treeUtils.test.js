@@ -8,7 +8,7 @@
 const treeUtils = require('../src/treeUtils');
 const assert = require('node:assert');
 
-describe('tree utils', function () {
+describe('[TRUT] tree utils', function () {
   const testArray = [
     {
       id: 'root-1',
@@ -84,7 +84,7 @@ describe('tree utils', function () {
     }
   ];
 
-  describe('buildTree()', function () {
+  describe('[TU01] buildTree()', function () {
     it('[32CB] must build a correct tree for a given consistent array', function () {
       const res = treeUtils.buildTree(testArray, true /* strip parent ids */);
       assert.deepStrictEqual(res, testTree);
@@ -100,7 +100,7 @@ describe('tree utils', function () {
     });
   });
 
-  describe('flattenTree()', function () {
+  describe('[TU02] flattenTree()', function () {
     it('[11JJ] must build a correct array for a given tree', function () {
       const res = treeUtils.flattenTree(testTree);
       assert.deepStrictEqual(res, testArray);
@@ -112,7 +112,7 @@ describe('tree utils', function () {
     });
   });
 
-  describe('findInTree()', function () {
+  describe('[TU03] findInTree()', function () {
     it('[S1N0] must return the first item matching the given iterator function', function () {
       const foundItem = treeUtils.findInTree(testTree, function (item) {
         return item.someProperty === true;
@@ -128,7 +128,7 @@ describe('tree utils', function () {
     });
   });
 
-  describe('filterTree()', function () {
+  describe('[TU04] filterTree()', function () {
     it('[YIE6] must return only items matching the given iterator function', function () {
       const filteredTree = treeUtils.filterTree(testTree, true /* keep orphans */, function (item) {
         return item.someProperty === false;
@@ -162,7 +162,7 @@ describe('tree utils', function () {
     });
   });
 
-  describe('collect()', function () {
+  describe('[TU05] collect()', function () {
     it('[AU44] must return an array with values matching the iterator function for each item in the tree',
       function () {
         const ids = treeUtils.collect(testTree, function (item) {
@@ -176,7 +176,7 @@ describe('tree utils', function () {
       });
   });
 
-  describe('expandIds()', function () {
+  describe('[TU06] expandIds()', function () {
     it('[PFJP] must return an array with the ids passed in argument plus those of all their descendants',
       function () {
         assert.deepStrictEqual(treeUtils.expandIds(testTree, ['root-1']), [

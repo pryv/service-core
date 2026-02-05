@@ -20,7 +20,7 @@ function assertDeepInclude (array, value) {
   assert.ok(found, `Expected array to deep-include ${JSON.stringify(value)}`);
 }
 
-describe('Notifications', () => {
+describe('[NOTF] Notifications', () => {
   let axonMsgs = [];
   let emittedMsgs = [];
   // Clear out received messages before each test.
@@ -43,7 +43,7 @@ describe('Notifications', () => {
     // attach "fake" axonSocket to pubsub.
     pubsub.setTestNotifier(axonSocket);
   });
-  describe('#serverReady', () => {
+  describe('[NF01] #serverReady', () => {
     beforeEach(() => {
       pubsub.status.emit(pubsub.SERVER_READY);
     });
@@ -54,7 +54,7 @@ describe('Notifications', () => {
       assertDeepInclude(axonMsgs, ['axon-server-ready']);
     });
   });
-  describe('#accountChanged', () => {
+  describe('[NF02] #accountChanged', () => {
     beforeEach(() => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     });
@@ -65,7 +65,7 @@ describe('Notifications', () => {
       assertDeepInclude(axonMsgs, ['axon-account-changed', 'USERNAME']);
     });
   });
-  describe('#accessesChanged', () => {
+  describe('[NF03] #accessesChanged', () => {
     beforeEach(() => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     });
@@ -76,7 +76,7 @@ describe('Notifications', () => {
       assertDeepInclude(axonMsgs, ['axon-accesses-changed', 'USERNAME']);
     });
   });
-  describe('#followedSlicesChanged', () => {
+  describe('[NF04] #followedSlicesChanged', () => {
     beforeEach(() => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
     });
@@ -90,7 +90,7 @@ describe('Notifications', () => {
       ]);
     });
   });
-  describe('#streamsChanged', () => {
+  describe('[NF05] #streamsChanged', () => {
     beforeEach(() => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_STREAMS_CHANGED);
     });
@@ -101,7 +101,7 @@ describe('Notifications', () => {
       assertDeepInclude(axonMsgs, ['axon-streams-changed', 'USERNAME']);
     });
   });
-  describe('#eventsChanged', () => {
+  describe('[NF06] #eventsChanged', () => {
     beforeEach(() => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_EVENTS_CHANGED);
     });

@@ -12,13 +12,13 @@ const metadata = require('metadata');
 const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
 
-describe('Storing BATCH data in a HF series', function () {
+describe('[HFBT] Storing BATCH data in a HF series', function () {
   let database;
   before(async function () {
     database = await produceMongoConnection();
   });
   const influx = produceInfluxConnection();
-  describe('Use Case: Store data in InfluxDB, Verification on either half', function () {
+  describe('[HB01] Use Case: Store data in InfluxDB, Verification on either half', function () {
     let server;
     before(async () => {
       server = await spawnContext.spawn();
@@ -112,7 +112,7 @@ describe('Storing BATCH data in a HF series', function () {
       }
     });
   });
-  describe('POST /:user_name/series/batch', () => {
+  describe('[HB02] POST /:user_name/series/batch', () => {
     let server;
     before(async () => {
       server = await spawnContext.spawn();
@@ -206,7 +206,7 @@ describe('Storing BATCH data in a HF series', function () {
       const body = response.body;
       assert.strictEqual(body.error.id, 'missing-header');
     });
-    describe('when the token has no permissions on the event', () => {
+    describe('[HB03] when the token has no permissions on the event', () => {
       let server;
       before(async () => {
         server = await spawnContext.spawn();
@@ -223,7 +223,7 @@ describe('Storing BATCH data in a HF series', function () {
         assert.strictEqual(response.statusCode, 403);
       });
     });
-    describe('when the token has a "create-only" permission', () => {
+    describe('[HB04] when the token has a "create-only" permission', () => {
       let server;
       before(async () => {
         server = await spawnContext.spawn();
@@ -284,7 +284,7 @@ describe('Storing BATCH data in a HF series', function () {
         assert.equal(res.status, 200);
       });
     });
-    describe('when using a metadata updater stub', () => {
+    describe('[HB05] when using a metadata updater stub', () => {
       // A stub for the real service. Tests might replace parts of this to do
       // custom assertions.
       let stub;

@@ -31,7 +31,7 @@ describe('[SSDC] SystemStreams config', () => {
   after(async () => {
     await SystemStreamsSerializer.reloadSerializer();
   });
-  describe('when valid custom systemStreams are provided', () => {
+  describe('[SD01] when valid custom systemStreams are provided', () => {
     let customStreams, customStreamIds;
     before(async () => {
       customStreams = {
@@ -140,7 +140,7 @@ describe('[SSDC] SystemStreams config', () => {
       });
     });
   });
-  describe('When retro-compatibility is activated and a streamId unicity conflict exists between a custom system streamId and a default one', () => {
+  describe('[SD02] When retro-compatibility is activated and a streamId unicity conflict exists between a custom system streamId and a default one', () => {
     it('[3Z9N] must throw a config error', () => {
       const streamId = 'language';
       const customStreams = {
@@ -164,7 +164,7 @@ describe('[SSDC] SystemStreams config', () => {
       }
     });
   });
-  describe('When custom system streams contain duplicate streamIds', () => {
+  describe('[SD03] When custom system streams contain duplicate streamIds', () => {
     it('[CHEF] must throw a config error', () => {
       const streamId = 'field1';
       const customStreams = {
@@ -192,7 +192,7 @@ describe('[SSDC] SystemStreams config', () => {
       }
     });
   });
-  describe('When providing a custom system stream that is unique but not indexed', () => {
+  describe('[SD04] When providing a custom system stream that is unique but not indexed', () => {
     it('[42A1] must throw a config error', () => {
       const store = new nconf.Provider();
       store.use('memory');
@@ -212,7 +212,7 @@ describe('[SSDC] SystemStreams config', () => {
       }
     });
   });
-  describe('When providing a custom system stream that has an invalid type', () => {
+  describe('[SD05] When providing a custom system stream that has an invalid type', () => {
     it.skip('[LU0A] must throw a config error', () => {
       const store = new nconf.Provider();
       store.use('memory');
@@ -230,7 +230,7 @@ describe('[SSDC] SystemStreams config', () => {
       }
     });
   });
-  describe('When providing an "other" custom stream that is unique', () => {
+  describe('[SD06] When providing an "other" custom stream that is unique', () => {
     it('[GZEK] must throw a config error', async () => {
       const store = new nconf.Provider();
       store.use('memory');
@@ -249,7 +249,7 @@ describe('[SSDC] SystemStreams config', () => {
       }
     });
   });
-  describe('When providing an "other" custom stream that is indexed', () => {
+  describe('[SD07] When providing an "other" custom stream that is indexed', () => {
     it('[2IBL] must throw a config error', async () => {
       const store = new nconf.Provider();
       store.use('memory');
@@ -268,7 +268,7 @@ describe('[SSDC] SystemStreams config', () => {
       }
     });
   });
-  describe('When providing an "other" custom stream that is non editable', () => {
+  describe('[SD08] When providing an "other" custom stream that is non editable', () => {
     it('[655X] must throw a config error', async () => {
       const store = new nconf.Provider();
       store.use('memory');
@@ -287,7 +287,7 @@ describe('[SSDC] SystemStreams config', () => {
       }
     });
   });
-  describe('When providing an "other" custom stream that is required at registration', () => {
+  describe('[SD09] When providing an "other" custom stream that is required at registration', () => {
     it('[OJJ0] must throw a config error', async () => {
       const store = new nconf.Provider();
       store.use('memory');

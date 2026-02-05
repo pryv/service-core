@@ -13,8 +13,8 @@ const inherits = require('util').inherits;
 const assert = require('node:assert');
 const Source = require('./helpers').SourceStream;
 
-describe('Result', function () {
-  describe('concatStream', function () {
+describe('[RSLT] Result', function () {
+  describe('[RS01] concatStream', function () {
     it('[36RQ] must concatenate multiple streams in a single Array', function (done) {
       const res = new Result();
       const a1 = ['a', 'b', 'c'];
@@ -34,7 +34,7 @@ describe('Result', function () {
     });
   });
 
-  describe('toObject()', function () {
+  describe('[RS02] toObject()', function () {
     it('[NKHF] must return the result\'s content when not storing streams', function (done) {
       const res = new Result();
       res.a = 'a';

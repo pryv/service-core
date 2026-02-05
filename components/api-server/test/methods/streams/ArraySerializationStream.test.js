@@ -14,10 +14,10 @@ const inherits = require('util').inherits;
 const assert = require('node:assert');
 const Source = require('../../helpers').SourceStream;
 
-describe('ArraySerializationStream', function () {
+describe('[ARSR] ArraySerializationStream', function () {
   const arraySize = new ArraySerializationStream('getSize', true).size;
 
-  describe('testing around the array size limit', function () {
+  describe('[AR01] testing around the array size limit', function () {
     const testIDs = ['U21Z', 'MKNL', 'MUPF', 'CM4Q', 'F8S9', '6T4V', 'QBOS', 'BY67', 'JNVS', 'N9HG'];
 
     for (let i = -3; i <= 3; i++) {
@@ -32,7 +32,7 @@ describe('ArraySerializationStream', function () {
     }
   });
 
-  describe('testing with small number of items', function () {
+  describe('[AR02] testing with small number of items', function () {
     const testIDs = ['69F6', 'BJRT', 'YJI0', 'EKQQ', '5SUK', 'FPL8', 'ZMO9', 'WFSL', '1YQS', '25IQ'];
 
     for (let i = 0; i <= 3; i++) {

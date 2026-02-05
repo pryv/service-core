@@ -21,7 +21,7 @@ let mongoFixtures;
 let infoHttpServer;
 let mockInfo;
 const infoHttpServerPort = 5123;
-describe('Service', () => {
+describe('[SINF] Service', () => {
   before(async () => {
     const config = await getConfig();
     mockInfo = config.get('service');
@@ -39,7 +39,7 @@ describe('Service', () => {
     infoHttpServer.close();
   });
 
-  describe('GET /service/info', () => {
+  describe('[SN01] GET /service/info', () => {
     it('[FR4K] must return all service info', async () => {
       const path = '/' + username + '/service/info';
       const res = await server.request().get(path);

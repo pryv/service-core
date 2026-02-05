@@ -226,8 +226,8 @@ describe('[FG5R] Events of system streams', () => {
     async function findDefaultCoreEvent (streamId) {
       return await getOneEvent(user.attrs.id, streamId);
     }
-    describe('When using a personal access', () => {
-      describe('to retrieve a visible system event', () => {
+    describe('[ED10] When using a personal access', () => {
+      describe('[ED11] to retrieve a visible system event', () => {
         let defaultEvent;
         const streamId = 'language';
         let systemStreamId;
@@ -245,7 +245,7 @@ describe('[FG5R] Events of system streams', () => {
           assert.strictEqual(res.body.event.streamId, systemStreamId);
         });
       });
-      describe('to retrieve a non visible system event', () => {
+      describe('[ED12] to retrieve a non visible system event', () => {
         before(async function () {
           await createUser();
           const defaultEvent = await findDefaultCoreEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken'));
@@ -261,7 +261,7 @@ describe('[FG5R] Events of system streams', () => {
       });
     });
 
-    describe('When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
+    describe('[ED13] When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
       let defaultEvent;
       let systemStreamId;
       before(async () => {
@@ -296,9 +296,9 @@ describe('[FG5R] Events of system streams', () => {
 
   describe('[ED07] POST /events', () => {
     let eventData;
-    describe('When using a personal access', () => {
-      describe('to create an editable system event', () => {
-        describe('which is non indexed and non unique', () => {
+    describe('[ED14] When using a personal access', () => {
+      describe('[ED15] to create an editable system event', () => {
+        describe('[ED16] which is non indexed and non unique', () => {
           before(async function () {
             await createUser();
             eventData = {
@@ -333,8 +333,8 @@ describe('[FG5R] Events of system streams', () => {
             assert.deepStrictEqual(allEvents[1].streamIds, [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
           });
         });
-        describe('which is indexed', function () {
-          describe('when the new value is valid', () => {
+        describe('[ED17] which is indexed', function () {
+          describe('[ED18] when the new value is valid', () => {
             before(async function () {
               await createUser();
               eventData = {
@@ -392,7 +392,7 @@ describe('[FG5R] Events of system streams', () => {
             });
           });
 
-          describe('when the new value is invalid', () => {
+          describe('[ED19] when the new value is invalid', () => {
             before(async function () {
               await createUser();
               eventData = {
@@ -411,7 +411,7 @@ describe('[FG5R] Events of system streams', () => {
             });
           });
         });
-        describe('which is indexed and unique', () => {
+        describe('[ED20] which is indexed and unique', () => {
           describe('[WCIU] whose content is unique', () => {
             let allEventsInDb;
             let streamId;
@@ -473,7 +473,7 @@ describe('[FG5R] Events of system streams', () => {
               });
             });
           });
-          describe('whose content is already taken in register', () => {
+          describe('[ED21] whose content is already taken in register', () => {
             before(async function () {
               if (isDnsLess) this.skip();
               await createUser();
@@ -546,7 +546,7 @@ describe('[FG5R] Events of system streams', () => {
         });
       });
 
-      describe('to create a non editable system event', () => {
+      describe('[ED22] to create a non editable system event', () => {
         before(async () => {
           await createUser();
           eventData = {
@@ -570,7 +570,7 @@ describe('[FG5R] Events of system streams', () => {
       });
     });
 
-    describe('when using a shared access with a contribute-level permission on a system stream', () => {
+    describe('[ED23] when using a shared access with a contribute-level permission on a system stream', () => {
       let sharedAccess;
       const streamId = 'email';
       let systemStreamId;
@@ -630,7 +630,7 @@ describe('[FG5R] Events of system streams', () => {
       });
     });
 
-    describe('when using a shared access with a manage-level permission on all streams (star)', () => {
+    describe('[ED24] when using a shared access with a manage-level permission on all streams (star)', () => {
       let sharedAccess;
       let systemStreamId;
       before(async function () {
@@ -666,8 +666,8 @@ describe('[FG5R] Events of system streams', () => {
   });
 
   describe('[ED08] PUT /events/<id>', () => {
-    describe('when using a personal access', () => {
-      describe('to update an editable system event', () => {
+    describe('[ED25] when using a personal access', () => {
+      describe('[ED26] to update an editable system event', () => {
         let scope;
         let serviceRegisterRequest;
         async function editEvent (streamId, isFaulty = false) {
@@ -684,7 +684,7 @@ describe('[FG5R] Events of system streams', () => {
           return res;
         }
 
-        describe('which is non indexed and non unique', () => {
+        describe('[ED27] which is non indexed and non unique', () => {
           before(async function () {
             await createUser();
             eventData = {
@@ -708,7 +708,7 @@ describe('[FG5R] Events of system streams', () => {
               SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
           });
 
-          describe('by adding the “active” streamId', () => {
+          describe('[ED28] by adding the "active" streamId', () => {
             let streamId;
             before(async function () {
               streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber');
@@ -734,8 +734,8 @@ describe('[FG5R] Events of system streams', () => {
               assert.deepStrictEqual(allEvents[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
           });
-          describe('by changing its steamIds', () => {
-            describe('when editing with 2 streamIds at the time', () => {
+          describe('[ED29] by changing its steamIds', () => {
+            describe('[ED30] when editing with 2 streamIds at the time', () => {
               let streamIds;
               before(async function () {
                 streamIds = [
@@ -762,7 +762,7 @@ describe('[FG5R] Events of system streams', () => {
                 assert.ok(streamIds.every(id => res.body.error.data.streamIds.includes(id)));
               });
             });
-            describe('when substituting a system stream with another one', () => {
+            describe('[ED31] when substituting a system stream with another one', () => {
               before(async function () {
                 await createUser();
                 eventData = {
@@ -787,12 +787,12 @@ describe('[FG5R] Events of system streams', () => {
           });
         });
 
-        describe('which is indexed', function () {
+        describe('[ED32] which is indexed', function () {
           before(function () {
             if (isDnsLess) this.skip();
           });
-          describe('as register is working', () => {
-            describe('when the new value is valid', () => {
+          describe('[ED33] as register is working', () => {
+            describe('[ED34] when the new value is valid', () => {
               const streamId = 'language';
               let systemStreamId;
               before(async function () {
@@ -826,7 +826,7 @@ describe('[FG5R] Events of system streams', () => {
                   fieldsToDelete: {}
                 });
               });
-              describe('by adding the “active” streamId', () => {
+              describe('[ED35] by adding the "active" streamId', () => {
                 before(async function () {
                   await createUser();
                   const streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
@@ -856,7 +856,7 @@ describe('[FG5R] Events of system streams', () => {
                 });
               });
             });
-            describe('when the new value is invalid', () => {
+            describe('[ED36] when the new value is invalid', () => {
               const streamId = 'language';
               let systemStreamId;
               before(async function () {
@@ -869,7 +869,7 @@ describe('[FG5R] Events of system streams', () => {
               });
             });
           });
-          describe('as register is out', () => {
+          describe('[ED37] as register is out', () => {
             const streamId = 'language';
             let systemStreamId;
             before(async function () {
@@ -908,8 +908,8 @@ describe('[FG5R] Events of system streams', () => {
           });
         });
 
-        describe('which is unique', () => {
-          describe('by updating a unique field that is valid', () => {
+        describe('[ED38] which is unique', () => {
+          describe('[ED39] by updating a unique field that is valid', () => {
             const streamId = 'email';
             let systemStreamId;
             before(async function () {
@@ -942,7 +942,7 @@ describe('[FG5R] Events of system streams', () => {
                 fieldsToDelete: {}
               });
             });
-            describe('by adding the “active” streamId', () => {
+            describe('[ED40] by adding the "active" streamId', () => {
               before(async () => {
                 await createUser();
                 const streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
@@ -977,8 +977,8 @@ describe('[FG5R] Events of system streams', () => {
               });
             });
           });
-          describe('by updating a unique field that is already taken', () => {
-            describe('with a field that is not unique in register', () => {
+          describe('[ED41] by updating a unique field that is already taken', () => {
+            describe('[ED42] with a field that is not unique in register', () => {
               let systemStreamId;
               before(async function () {
                 if (isDnsLess) this.skip();
@@ -1034,7 +1034,7 @@ describe('[FG5R] Events of system streams', () => {
                 });
               });
             });
-            describe('with a field that is not unique in mongodb', () => {
+            describe('[ED43] with a field that is not unique in mongodb', () => {
               before(async function () {
                 const streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
                 const user1 = await createUser();
@@ -1070,7 +1070,7 @@ describe('[FG5R] Events of system streams', () => {
         });
       });
 
-      describe('to update a non editable system event', () => {
+      describe('[ED44] to update a non editable system event', () => {
         before(async function () {
           await createUser();
           eventData = {
@@ -1093,8 +1093,8 @@ describe('[FG5R] Events of system streams', () => {
         });
       });
     });
-    describe('when using a shared access with a contribute-level access on a system stream', () => {
-      describe('to update an editable system event', () => {
+    describe('[ED45] when using a shared access with a contribute-level access on a system stream', () => {
+      describe('[ED46] to update an editable system event', () => {
         before(async function () {
           const user2 = await createUser();
           const sharedAccess = await user2.access({
@@ -1125,8 +1125,8 @@ describe('[FG5R] Events of system streams', () => {
         });
       });
     });
-    describe('when using a shared access with a manage-level permission on all streams (star)', () => {
-      describe('to update an editable system event', () => {
+    describe('[ED47] when using a shared access with a manage-level permission on all streams (star)', () => {
+      describe('[ED48] to update an editable system event', () => {
         before(async function () {
           await createUser();
           const sharedAccess = await user.access({
@@ -1158,10 +1158,10 @@ describe('[FG5R] Events of system streams', () => {
   });
 
   describe('[ED09] DELETE /events/<id>', () => {
-    describe('When using a personal access', () => {
-      describe('to delete an editable streams event', () => {
-        describe('that has no ‘active’ streamId', () => {
-          describe('which is unique', () => {
+    describe('[ED49] When using a personal access', () => {
+      describe('[ED50] to delete an editable streams event', () => {
+        describe("[ED51] that has no 'active' streamId", () => {
+          describe('[ED52] which is unique', () => {
             const streamId = 'email';
             let systemStreamId;
             let initialEvent;
@@ -1198,7 +1198,7 @@ describe('[FG5R] Events of system streams', () => {
               });
             });
           });
-          describe('which is indexed', () => {
+          describe('[ED53] which is indexed', () => {
             let streamId;
             let initialEvent;
             before(async function () {
@@ -1227,7 +1227,7 @@ describe('[FG5R] Events of system streams', () => {
             });
           });
         });
-        describe('that has the ‘active’ streamId', () => {
+        describe("[ED54] that has the 'active' streamId", () => {
           let streamId;
           let initialEvent;
           before(async function () {
@@ -1246,7 +1246,7 @@ describe('[FG5R] Events of system streams', () => {
           });
         });
       });
-      describe('to delete a non editable system event', () => {
+      describe('[ED55] to delete a non editable system event', () => {
         let streamId;
         let initialEvent;
         before(async function () {
@@ -1276,7 +1276,7 @@ describe('[FG5R] Events of system streams', () => {
       });
     });
 
-    describe('when using a shared access with a contribute-level access on a system stream', () => {
+    describe('[ED56] when using a shared access with a contribute-level access on a system stream', () => {
       let streamId;
       let initialEvent;
       before(async function () {
@@ -1304,7 +1304,7 @@ describe('[FG5R] Events of system streams', () => {
       });
     });
 
-    describe('when using a shared access with a manage-level permission on all streams (star)', () => {
+    describe('[ED57] when using a shared access with a manage-level permission on all streams (star)', () => {
       const streamId = 'email';
       let systemStreamId;
       let initialEvent;

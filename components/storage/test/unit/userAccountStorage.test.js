@@ -36,7 +36,7 @@ describe('[UAST] Users Account Storage', () => {
     await userLocalDirectory.deleteUserDirectory(userId);
   });
 
-  describe('addPasswordHash()', () => {
+  describe('[UA01] addPasswordHash()', () => {
     it('[B2I7] must throw an error if two passwords are added with the same time', async () => {
       const userId2 = cuid();
       const now = timestamp.now();
@@ -51,7 +51,7 @@ describe('[UAST] Users Account Storage', () => {
     });
   });
 
-  describe('getCurrentPasswordTime()', () => {
+  describe('[UA02] getCurrentPasswordTime()', () => {
     it('[85PW] must return the time of the current password', async () => {
       const uId = cuid();
       const time = timestamp.now('-1w');
@@ -69,7 +69,7 @@ describe('[UAST] Users Account Storage', () => {
     });
   });
 
-  describe('passwordExistsInHistory()', () => {
+  describe('[UA03] passwordExistsInHistory()', () => {
     it('[1OQP] must return true when looking for existing passwords', async () => {
       for (const password of passwords) {
         const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, password.password, passwords.length);

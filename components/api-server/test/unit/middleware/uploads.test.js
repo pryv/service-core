@@ -15,7 +15,7 @@ const assert = require('node:assert');
 const { fixturePath, fixtureFile } = require('../test-helper');
 const uploads = require('../../../src/middleware/uploads');
 
-describe('uploads middleware', function () {
+describe('[UPLD] uploads middleware', function () {
   function app () {
     const app = express();
     const verifyAssumptions = (req, res) => {
@@ -25,7 +25,7 @@ describe('uploads middleware', function () {
     return app;
   }
   const request = supertest(app());
-  describe('hasFileUpload', function () {
+  describe('[UP01] hasFileUpload', function () {
     it('[GY5H] should parse file uploads', function () {
       const rq = request
         .post('/path')

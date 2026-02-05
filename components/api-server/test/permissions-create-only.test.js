@@ -192,8 +192,8 @@ describe('[PCRO] permissions create-only level', () => {
     }
 
     describe('[PC02] Accesses', function () {
-      describe('GET /', function () {
-        describe('when using an access with a "create-only" permissions', function () {
+      describe('[PC07] GET /', function () {
+        describe('[PC08] when using an access with a "create-only" permissions', function () {
           let accesses;
           before(async function () {
             const res = await server.request()
@@ -208,8 +208,8 @@ describe('[PCRO] permissions create-only level', () => {
         });
       });
 
-      describe('POST /', function () {
-        describe('when using an access with a "create-only" permission', function () {
+      describe('[PC09] POST /', function () {
+        describe('[PC10] when using an access with a "create-only" permission', function () {
           it('[X4Z1] a masterToken should allow to create an access with a "create-only" permissions', async function () {
             const res = await server.request()
               .post(basePath)
@@ -358,7 +358,7 @@ describe('[PCRO] permissions create-only level', () => {
         });
       });
 
-      describe('PUT /', function () {
+      describe('[PC11] PUT /', function () {
         it('[1WXJ] should forbid updating accesses', async function () {
           const res = await server.request()
             .put(reqPath(readAccessId))
@@ -372,7 +372,7 @@ describe('[PCRO] permissions create-only level', () => {
         });
       });
 
-      describe('DELETE /', function () {
+      describe('[PC12] DELETE /', function () {
         it('[G6IP] should forbid deleting accesses', async function () {
           const res = await server.request()
             .del(reqPath(readAccessId))
@@ -393,7 +393,7 @@ describe('[PCRO] permissions create-only level', () => {
       return `${basePath}/${id}`;
     }
 
-    describe('GET /', function () {
+    describe('[PC13] GET /', function () {
       it('[CKF3] should return an error list when fetching explicitly "create-only" streams', async function () {
         const query = {
           streams: [streamCreateOnlyId]
@@ -433,7 +433,7 @@ describe('[PCRO] permissions create-only level', () => {
       });
     });
 
-    describe('GET /:id', function () {
+    describe('[PC14] GET /:id', function () {
       it('[N61I] should forbid fetching an event when using a "create-only" permission', async function () {
         const res = await server
           .request()
@@ -443,7 +443,7 @@ describe('[PCRO] permissions create-only level', () => {
       });
     });
 
-    describe('POST /', function () {
+    describe('[PC15] POST /', function () {
       it('[0G8I] should forbid creating events for out of scope streams', async function () {
         const params = {
           type: 'test/test',
@@ -472,7 +472,7 @@ describe('[PCRO] permissions create-only level', () => {
       });
     });
 
-    describe('PUT /', function () {
+    describe('[PC16] PUT /', function () {
       it('[V0UO] should forbid updating events for "create-only" streams', async function () {
         const params = {
           content: 12
@@ -488,7 +488,7 @@ describe('[PCRO] permissions create-only level', () => {
       // because they are covered by the GET above
     });
 
-    describe('DELETE /', function () {
+    describe('[PC17] DELETE /', function () {
       it('[5OUT] should forbid deleting events for "create-only" streams', async function () {
         const res = await server
           .request()
@@ -528,7 +528,7 @@ describe('[PCRO] permissions create-only level', () => {
       });
       // not covering addAttachment as it calls events.update
 
-      describe('GET /events/{id}/{fileId}[/{fileName}]', function () {
+      describe('[PC18] GET /events/{id}/{fileId}[/{fileName}]', function () {
         it('[VTU4] should be forbidden', async function () {
           const res = await server
             .request()
@@ -538,7 +538,7 @@ describe('[PCRO] permissions create-only level', () => {
         });
       });
 
-      describe('POST /events/{id}', function () {
+      describe('[PC19] POST /events/{id}', function () {
         it('[8J8O] should be forbidden', async function () {
           const res = await server.request()
             .post(reqPath(eventId))
@@ -549,7 +549,7 @@ describe('[PCRO] permissions create-only level', () => {
         });
       });
 
-      describe('DELETE /events/{id}/{fileId}', function () {
+      describe('[PC20] DELETE /events/{id}/{fileId}', function () {
         it('[GY6M] should be forbidden', async function () {
           const res = await server
             .request()
@@ -571,7 +571,7 @@ describe('[PCRO] permissions create-only level', () => {
       return `${basePath}/${id}`;
     }
 
-    describe('GET /', function () {
+    describe('[PC21] GET /', function () {
       it('[J12F] should only return streams for which permissions are defined', async function () {
         const res = await server
           .request()
@@ -585,7 +585,7 @@ describe('[PCRO] permissions create-only level', () => {
       });
     });
 
-    describe('POST /', function () {
+    describe('[PC22] POST /', function () {
       it('[TFWF] should forbid creating child streams in "create-only" streams', async function () {
         const data = {
           name: charlatan.Lorem.word(),
@@ -600,7 +600,7 @@ describe('[PCRO] permissions create-only level', () => {
       });
     });
 
-    describe('PUT /', function () {
+    describe('[PC23] PUT /', function () {
       it('[PCO8] should forbid updating "create-only" streams', async function () {
         const res = await server
           .request()
@@ -611,7 +611,7 @@ describe('[PCRO] permissions create-only level', () => {
       });
     });
 
-    describe('DELETE /', function () {
+    describe('[PC24] DELETE /', function () {
       it('[PCO9] should forbid deleting "create-only" streams', async function () {
         const res = await server
           .request()
@@ -629,7 +629,7 @@ describe('[PCRO] permissions create-only level', () => {
       basePath = `/${username}/webhooks`;
     });
 
-    describe('CREATE /', function () {
+    describe('[PC25] CREATE /', function () {
       it('[3AE9] should allow creating webhooks', async function () {
         const res = await server
           .request()

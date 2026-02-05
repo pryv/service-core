@@ -8,7 +8,7 @@
 const { safetyCleanDuplicate } = require('platform/src/service_register');
 const assert = require('node:assert');
 
-describe('Service Register Errors', function () {
+describe('[SREG] Service Register Errors', function () {
   it('[LPD4] Should remove not matching params from duplicate Error', (done) => {
     const foundDuplicates = {
       email: 'toto',

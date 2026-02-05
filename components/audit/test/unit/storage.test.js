@@ -7,7 +7,7 @@
 
 /* global assert, cuid, audit, initTests */
 
-describe('Audit Storage', () => {
+describe('[ASTO] Audit Storage', () => {
   const userId = cuid();
   const createdBy = cuid();
 
@@ -15,7 +15,7 @@ describe('Audit Storage', () => {
     await initTests();
   });
 
-  describe('receive message and write it into its own database', () => {
+  describe('[AS01] receive message and write it into its own database', () => {
     let userStrorage;
 
     async function sendAndWait (event) {

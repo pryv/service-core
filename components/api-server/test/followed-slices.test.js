@@ -54,7 +54,7 @@ describe('[FOLS] followed slices', function () {
     ], done);
   });
 
-  describe('GET /', function () {
+  describe('[FS01] GET /', function () {
     before(resetFollowedSlices);
 
     it('[TNKS] must return all followed slices (ordered by user name, then access token)',
@@ -75,7 +75,7 @@ describe('[FOLS] followed slices', function () {
     });
   });
 
-  describe('POST /', function () {
+  describe('[FS02] POST /', function () {
     beforeEach(resetFollowedSlices);
 
     it('[HVYA] must create a new followed slice with the sent data, returning it', function (done) {
@@ -175,7 +175,7 @@ describe('[FOLS] followed slices', function () {
       });
   });
 
-  describe('PUT /<id>', function () {
+  describe('[FS03] PUT /<id>', function () {
     beforeEach(resetFollowedSlices);
 
     it('[LM08] must modify the followed slice with the sent data', function (done) {
@@ -231,7 +231,7 @@ describe('[FOLS] followed slices', function () {
       });
   });
 
-  describe('DELETE /<id>', function () {
+  describe('[FS04] DELETE /<id>', function () {
     beforeEach(resetFollowedSlices);
 
     it('[U7LY] must delete the followed slice', function (done) {

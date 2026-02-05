@@ -17,7 +17,7 @@ const superagent = require('superagent');
 const { promisify } = require('util');
 
 const N_ITEMS = 2000;
-describe('events streaming with ' + N_ITEMS + ' entries', function () {
+describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
   this.timeout(60 * 2 * 1000);
 
   let mongoFixtures;

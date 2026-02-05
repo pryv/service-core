@@ -9,7 +9,7 @@ const assert = require('node:assert');
 const superagent = require('superagent');
 const Application = require('../../src/application');
 
-describe('Server', () => {
+describe('[HFSV] Server', () => {
   const request = superagent;
   let application, server;
   before(async () => {
@@ -24,7 +24,7 @@ describe('Server', () => {
   it('[O84I] can be constructed', function () {
     assert.ok(server);
   });
-  describe('.start', function () {
+  describe('[HS01] .start', function () {
     beforeEach(async function () {
       await server.start();
     });

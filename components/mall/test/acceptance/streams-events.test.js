@@ -61,8 +61,8 @@ describe('[MSTE] Stores Streams & Events', function () {
     await mongoFixtures.clean();
   });
 
-  describe('Streams', function () {
-    describe('GET', function () {
+  describe('[MS01] Streams', function () {
+    describe('[MS02] GET', function () {
       it('[1Q12] Must retrieve dummy streams when querying parentId', async () => {
         const res = await coreRequest
           .get(streamsPath)
@@ -147,7 +147,7 @@ describe('[MSTE] Stores Streams & Events', function () {
       });
     });
 
-    describe('CREATE', function () {
+    describe('[MS03] CREATE', function () {
       it('[2Q12] Create a stream under dummy', async () => {
         const res = await coreRequest
           .post(streamsPath)
@@ -178,7 +178,7 @@ describe('[MSTE] Stores Streams & Events', function () {
       });
     });
 
-    describe('UPDATE', function () {
+    describe('[MS04] UPDATE', function () {
       it('[3Q12] Create a stream under dummy', async () => {
         const res = await coreRequest
           .put(streamsPath + ':dummy:mariana')
@@ -201,8 +201,8 @@ describe('[MSTE] Stores Streams & Events', function () {
     });
   });
 
-  describe('Events', function () {
-    describe('GET', function () {
+  describe('[MS05] Events', function () {
+    describe('[MS06] GET', function () {
       it('[XD21] personal token must retrive :dummy: events', async () => {
         const res = await coreRequest
           .get(eventsPath)
@@ -233,7 +233,7 @@ describe('[MSTE] Stores Streams & Events', function () {
       });
     });
 
-    describe('CREATE', function () {
+    describe('[MS07] CREATE', function () {
       it('[YD21] create event on :dummy:', async () => {
         const res = await coreRequest
           .post(eventsPath)
@@ -270,7 +270,7 @@ describe('[MSTE] Stores Streams & Events', function () {
       });
     });
 
-    describe('UPDATE', function () {
+    describe('[MS08] UPDATE', function () {
       it('[ZD21] update event :dummy:dummyevent0', async () => {
         const res = await coreRequest
           .put(eventsPath + ':dummy:dummyevent0')

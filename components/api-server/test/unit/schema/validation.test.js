@@ -9,7 +9,7 @@ require('../test-helper');
 const assert = require('node:assert');
 const { tryCoerceStringValues } = require('../../../src/schema/validation');
 
-describe('tryCoerceStringValues', () => {
+describe('[CSVL] tryCoerceStringValues', () => {
   it('[DTZ1] should behave as documented in the method', () => {
     const object = { a: 'true', b: '2343', c: 'foobar' };
     const types = { a: 'boolean', b: 'number' };

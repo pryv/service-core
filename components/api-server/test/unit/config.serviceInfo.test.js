@@ -9,15 +9,15 @@ const assert = require('node:assert');
 const { getConfig } = require('@pryv/boiler');
 const testServiceInfo = require('../../../../test/service-info.json');
 
-describe('config: serviceInfo', () => {
+describe('[SVIF] config: serviceInfo', () => {
   let config;
   let isOpenSource;
   before(async () => {
     config = await getConfig();
     isOpenSource = config.get('openSource:isActive');
   });
-  describe('when dnsLess is disabled', () => {
-    describe('when "serviceInfoUrl" points to a file', () => {
+  describe('[SI01] when dnsLess is disabled', () => {
+    describe('[SI02] when "serviceInfoUrl" points to a file', () => {
       it('[D2P7] should load serviceInfo', () => {
         const serviceInfo = config.get('service');
         if (!isOpenSource) {

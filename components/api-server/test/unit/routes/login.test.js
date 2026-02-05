@@ -12,7 +12,7 @@ const assert = require('node:assert');
 const express = require('express');
 const authMod = require('api-server/src/routes/auth/login');
 
-describe('Authentication', function () {
+describe('[AUTN] Authentication', function () {
   const settings = {
     auth: {
       sessionMaxAge: 3600 * 1000
@@ -41,7 +41,7 @@ describe('Authentication', function () {
     },
     getCustomAuthFunction: () => { }
   };
-  describe('hasProperties', function () {
+  describe('[AT01] hasProperties', function () {
     // FLOW Mock out the settings object for this unit test
     const { hasProperties } = authMod(express(), { settings });
     const obj = { a: 1, b: 2 };

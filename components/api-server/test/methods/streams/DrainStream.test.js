@@ -11,7 +11,7 @@ const DrainStream = require('../../../src/methods/streams/DrainStream');
 const _ = require('lodash');
 const assert = require('node:assert');
 
-describe('DrainStream', function () {
+describe('[DRNM] DrainStream', function () {
   it('[AFWR] must be fed objects and return them in the callback', function (done) {
     const input = [{ a: 'a' }, { b: 'b' }, { c: 'c' }];
 

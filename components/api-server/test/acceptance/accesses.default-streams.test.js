@@ -102,8 +102,8 @@ describe('[AD01] Accesses with account streams', function () {
 
   describe('[AD02] POST /accesses', () => {
     describe('[AD03] When using a personal access', () => {
-      describe('to create an access for visible account streams', () => {
-        describe('with a read-level permission', () => {
+      describe('[AD07] to create an access for visible account streams', () => {
+        describe('[AD08] with a read-level permission', () => {
           let systemEmailStreamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
           before(async function () {
@@ -122,7 +122,7 @@ describe('[AD01] Accesses with account streams', function () {
             assert.strictEqual(res.body.events[0].streamId, systemEmailStreamId);
           });
 
-          describe('for the “account” stream', () => {
+          describe('[AD09] for the "account" stream', () => {
             let streamId;
             const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
@@ -141,7 +141,7 @@ describe('[AD01] Accesses with account streams', function () {
               validation.validateAccountEvents(res.body.events);
             });
           });
-          describe('for the “storageUsed” stream', () => {
+          describe('[AD10] for the "storageUsed" stream', () => {
             let streamId;
             const permissionLevel = AccessLogic.PERMISSION_LEVEL_READ;
             before(async function () {
@@ -168,7 +168,7 @@ describe('[AD01] Accesses with account streams', function () {
             });
           });
         });
-        describe('with a create-only-level permission', () => {
+        describe('[AD11] with a create-only-level permission', () => {
           let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CREATE_ONLY;
           before(async function () {
@@ -182,7 +182,7 @@ describe('[AD01] Accesses with account streams', function () {
             assert.deepStrictEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
           });
         });
-        describe('with a contribute-level permission', () => {
+        describe('[AD12] with a contribute-level permission', () => {
           let streamId;
           const permissionLevel = AccessLogic.PERMISSION_LEVEL_CONTRIBUTE;
           before(async function () {
@@ -216,7 +216,7 @@ describe('[AD01] Accesses with account streams', function () {
           });
         });
 
-        describe('with a manage-level permission', () => {
+        describe('[AD13] with a manage-level permission', () => {
           let streamId;
           before(async function () {
             streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
@@ -234,7 +234,7 @@ describe('[AD01] Accesses with account streams', function () {
           });
         });
       });
-      describe('to create an access for not visible account streams', () => {
+      describe('[AD14] to create an access for not visible account streams', () => {
         let streamId;
         before(async function () {
           streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken');
@@ -251,7 +251,7 @@ describe('[AD01] Accesses with account streams', function () {
           });
         });
       });
-      describe('to create an access for unexisting system streams', () => {
+      describe('[AD15] to create an access for unexisting system streams', () => {
         before(async function () {
           const streamId = ':system:' + charlatan.Lorem.characters(10);
           await createUserAndAccess('read', streamId);

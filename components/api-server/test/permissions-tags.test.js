@@ -12,7 +12,7 @@ const charlatan = require('charlatan');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
-describe('Access permissions - Tags', function () {
+describe('[PTAG] Access permissions - Tags', function () {
   let mongoFixtures;
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());

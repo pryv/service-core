@@ -8,7 +8,7 @@ const assert = require('node:assert');
 const nock = require('nock');
 const mailing = require('../../../src/methods/helpers/mailing');
 
-describe('Mailing helper methods', () => {
+describe('[MAIL] Mailing helper methods', () => {
   const template = 'welcome';
   const recipient = {
     name: 'bob',
@@ -44,7 +44,7 @@ describe('Mailing helper methods', () => {
     });
   });
 
-  describe('using Mandrill', () => {
+  describe('[ML01] using Mandrill', () => {
     const baseURL = 'https://mandrillapp.local';
     const path = '/messages/send';
     const emailSettings = {
@@ -53,7 +53,7 @@ describe('Mailing helper methods', () => {
       key: 'v3ryStrongK3y'
     };
 
-    describe('validating request body', () => {
+    describe('[ML02] validating request body', () => {
       let requestBody;
       before((done) => {
         nock(baseURL)
@@ -89,7 +89,7 @@ describe('Mailing helper methods', () => {
     });
   });
 
-  describe('using Microservice', () => {
+  describe('[ML03] using Microservice', () => {
     const baseURL = 'https://127.0.0.1:9000/sendmail/';
     const path = '/' + template + '/' + lang;
     const emailSettings = {
@@ -98,7 +98,7 @@ describe('Mailing helper methods', () => {
       key: 'v3ryStrongK3y'
     };
 
-    describe('validating request body', () => {
+    describe('[ML04] validating request body', () => {
       let requestBody;
       before((done) => {
         nock(baseURL)
