@@ -12,8 +12,8 @@ const accessesSchema = require('../src/schema/access');
 const assert = require('node:assert');
 const async = require('async');
 
-describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', function () {
-  describe('with streams schema', function () {
+describe('[FRBD] methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', function () {
+  describe('[FB01] with streams schema', function () {
     const protectedFields = ['id', 'children', 'created', 'createdBy', 'modified', 'modifiedBy'];
 
     it('[DMGV] must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {
@@ -29,7 +29,7 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
     });
   });
 
-  describe('with events schema', function () {
+  describe('[FB02] with events schema', function () {
     const protectedFields = ['id', 'attachments', 'created', 'createdBy', 'modified', 'modifiedBy'];
 
     it('[0RQM] must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {
@@ -45,7 +45,7 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
     });
   });
 
-  describe('with accesses schema', function () {
+  describe('[FB03] with accesses schema', function () {
     const protectedFields = ['id', 'token', 'type', 'lastUsed', 'created', 'createdBy', 'modified', 'modifiedBy'];
 
     it('[GP6C] must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {

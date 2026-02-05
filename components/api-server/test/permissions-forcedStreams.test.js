@@ -34,8 +34,8 @@ const EVENTS = {
 };
 const EVENT4ID = {}; // will be filled by fixtures
 
-describe('permissions forcedStreams', function () {
-  describe('GET /events with forcedStreams', function () {
+describe('[PFRC] permissions forcedStreams', function () {
+  describe('[PF01] GET /events with forcedStreams', function () {
     let server;
     before(async () => {
       server = await context.spawn();

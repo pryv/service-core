@@ -22,8 +22,8 @@ const { produceMongoConnection, context } = require('./test-helpers');
 
 require('date-utils');
 
-describe('events.streamIds', function () {
-  describe('events', function () {
+describe('[MSTR] events.streamIds', function () {
+  describe('[MS01] events', function () {
     let server;
     before(async () => {
       server = await context.spawn();
@@ -164,7 +164,7 @@ describe('events.streamIds', function () {
       return basePathEvent + eventId;
     }
 
-    describe('GET /events', function () {
+    describe('[MS02] GET /events', function () {
       it('[WJ0S] must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
           .get(basePathEvent)
@@ -177,7 +177,7 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('GET /events/:id', function () {
+    describe('[MS03] GET /events/:id', function () {
       it('[IJQZ] must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
           .get(eventPath(eventIdAB))
@@ -188,7 +188,7 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('POST /events', function () {
+    describe('[MS04] POST /events', function () {
       it('[X4PX] must forbid to provide both streamId and streamIds', async function () {
         const res = await server.request()
           .post(basePathEvent)
@@ -204,7 +204,7 @@ describe('events.streamIds', function () {
         assert.strictEqual(err.id, ErrorIds.InvalidOperation);
       });
 
-      describe('when using "streamId"', function () {
+      describe('[MS05] when using "streamId"', function () {
         it('[1YUV] must return streamIds & streamId', async function () {
           const res = await server.request()
             .post(basePathEvent)
@@ -221,7 +221,7 @@ describe('events.streamIds', function () {
         });
       });
 
-      describe('when using "streamIds"', function () {
+      describe('[MS06] when using "streamIds"', function () {
         it('[VXMG] must return streamIds & streamId containing the first one', async function () {
           const res = await server.request()
             .post(basePathEvent)
@@ -283,7 +283,7 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('PUT /events/:id', function () {
+    describe('[MS07] PUT /events/:id', function () {
       it('[BBBX] must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
           .put(eventPath(eventIdA))
@@ -320,7 +320,7 @@ describe('events.streamIds', function () {
         assert.strictEqual(err.id, ErrorIds.InvalidOperation);
       });
 
-      describe('when modifying streamIds', function () {
+      describe('[MS08] when modifying streamIds', function () {
         it('[TQHG] must forbid providing an unknown streamId', async function () {
           const unknownStreamId = 'does-not-exist';
           const res = await server.request()
@@ -386,7 +386,7 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('POST /event/start', function () {
+    describe('[MS09] POST /event/start', function () {
       function path () {
         return basePathEvent + 'start';
       }
@@ -405,7 +405,7 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('POST /event/stop', function () {
+    describe('[MS10] POST /event/stop', function () {
       function path () {
         return basePathEvent + 'stop';
       }
@@ -424,7 +424,7 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('DELETE /events/:id', function () {
+    describe('[MS11] DELETE /events/:id', function () {
       function eventPath (eventId) {
         return basePathEvent + eventId;
       }
@@ -467,7 +467,7 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('GET /events/:id/:fileId -- attachments', () => {
+    describe('[MS12] GET /events/:id/:fileId -- attachments', () => {
       let userId, streamId, event,
         appToken, appReadToken,
         sharedToken, sharedReadToken;
@@ -577,7 +577,7 @@ describe('events.streamIds', function () {
     });
   });
 
-  describe('streams', function () {
+  describe('[MS13] streams', function () {
     let server;
     before(async () => {
       server = await context.spawn();
@@ -688,7 +688,7 @@ describe('events.streamIds', function () {
       return basePathEvent + eventId;
     }
 
-    describe('POST /streams', function () {
+    describe('[MS14] POST /streams', function () {
       it('[EGW2] must forbid setting the "singleActivity" field', async function () {
         const res = await server.request()
           .post(basePathStream)
@@ -701,7 +701,7 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('PUT /streams/:id', function () {
+    describe('[MS15] PUT /streams/:id', function () {
       it('[EY79] must forbid setting the "singleActivity" field', async function () {
         const res = await server.request()
           .put(pathStreamId(streamAId))
@@ -713,9 +713,9 @@ describe('events.streamIds', function () {
       });
     });
 
-    describe('DELETE /streams', function () {
-      describe('When the stream\'s event is part of at least another stream outside of its descendants', function () {
-        describe('when mergeEventsWithParent=false', function () {
+    describe('[MS16] DELETE /streams', function () {
+      describe('[MS17] When the stream\'s event is part of at least another stream outside of its descendants', function () {
+        describe('[MS18] when mergeEventsWithParent=false', function () {
           it('[TWDG] must not delete events, but remove the deleted streamId from their streamIds', async function () {
             for (let i = 0; i < 2; i++) {
               await server.request()
@@ -732,8 +732,8 @@ describe('events.streamIds', function () {
         });
       });
 
-      describe('When the event is part of the stream and its children', function () {
-        describe('when mergeEventsWithParent=false', function () {
+      describe('[MS19] When the event is part of the stream and its children', function () {
+        describe('[MS20] when mergeEventsWithParent=false', function () {
           it('[6SBU] must delete the events', async function () {
             for (let i = 0; i < 2; i++) {
               await server.request()
@@ -759,7 +759,7 @@ describe('events.streamIds', function () {
           });
         });
 
-        describe('when mergeEventsWithParent=true', function () {
+        describe('[MS21] when mergeEventsWithParent=true', function () {
           it('[2FRR] must not delete events, but remove all streamIds and add its parentId', async function () {
             for (let i = 0; i < 2; i++) {
               await server.request()

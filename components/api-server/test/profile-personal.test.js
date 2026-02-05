@@ -16,7 +16,7 @@ const storage = helpers.dependencies.storage.user.profile;
 const testData = helpers.data;
 const _ = require('lodash');
 
-describe('profile (personal)', function () {
+describe('[PRFP] profile (personal)', function () {
   const user = structuredClone(testData.users[0]);
   const basePath = '/' + user.username + '/profile';
   let request = null; // must be set after server instance started
@@ -35,7 +35,7 @@ describe('profile (personal)', function () {
     ], done);
   });
 
-  describe('GET', function () {
+  describe('[PP01] GET', function () {
     before(testData.resetProfile);
 
     it('[J61R] /public must return publicly shared key-value profile info',
@@ -68,7 +68,7 @@ describe('profile (personal)', function () {
     });
   });
 
-  describe('PUT', function () {
+  describe('[PP02] PUT', function () {
     beforeEach(testData.resetProfile);
 
     it('[M28R] /public must add/update/remove the specified keys without touching the others',

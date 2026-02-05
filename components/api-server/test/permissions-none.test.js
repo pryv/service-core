@@ -33,8 +33,8 @@ const EVENTS = {
 };
 const EVENT4ID = {}; // will be filled by fixtures
 
-describe('permissions none', function () {
-  describe('GET /events with none permissions', function () {
+describe('[PNON] permissions none', function () {
+  describe('[PN01] GET /events with none permissions', function () {
     let server;
     before(async () => {
       server = await context.spawn();

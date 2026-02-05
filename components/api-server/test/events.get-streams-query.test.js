@@ -108,7 +108,7 @@ function customExpand (streamId, storeId = 'local', excludedIds = []) {
 }
 
 describe('[EGSQ] events.get streams query', function () {
-  describe('Internal query helpers', function () {
+  describe('[EQ01] Internal query helpers', function () {
     async function validateQuery (query) {
       if (!Array.isArray(query)) query = [query];
       query = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(query);
@@ -117,7 +117,7 @@ describe('[EGSQ] events.get streams query', function () {
       return expandedQuery;
     }
 
-    describe('when transforming streams parameters', function () {
+    describe('[EQ02] when transforming streams parameters', function () {
       it('[D2B5] must convert strings array to expanded array inside [{any: []}]', async function () {
         const res = await validateQuery(['A', 'B']);
         assert.deepStrictEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local' }]);
@@ -206,7 +206,7 @@ describe('[EGSQ] events.get streams query', function () {
         assert.deepStrictEqual(res, [{ any: ['D', 'E', 'F', '.account', '.account-email'], and: [{ not: ['A', 'B', 'C'] }], storeId: 'local' }]);
       });
 
-      describe('with multiple stores', function () {
+      describe('[EQ03] with multiple stores', function () {
         it('[U6GS] group query streamIds per store', async function () {
           const res = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(['A', ':_audit:test']);
           assert.deepStrictEqual(res, [{ any: ['A'] }, { any: [':_audit:test'] }]);
@@ -228,7 +228,7 @@ describe('[EGSQ] events.get streams query', function () {
       });
     });
 
-    describe('exception and errors', function () {
+    describe('[EQ04] exception and errors', function () {
       it('[IOLA] must throw on malformed expressions', async function () {
         const malformed = {
           'streams queries and streamIds cannot be mixed': [
@@ -269,7 +269,7 @@ describe('[EGSQ] events.get streams query', function () {
       });
     });
 
-    describe('toMongoQuery()', function () {
+    describe('[EQ05] toMongoQuery()', function () {
       it('[KKIH] must convert to MongoDB including expansion', async function () {
         const clean = await validateQuery(['A', 'B']);
         const storeQuery = eventsQueryUtils.normalizeStreamQuery(clean);
@@ -321,7 +321,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
   });
 
-  describe('GET /events with streams queries', function () {
+  describe('[EQ06] GET /events with streams queries', function () {
     let server;
     before(async () => {
       server = await context.spawn();
@@ -595,7 +595,7 @@ describe('[EGSQ] events.get streams query', function () {
       assert.strictEqual(events.length, 4);
     });
 
-    describe('edge cases', () => {
+    describe('[EQ07] edge cases', () => {
       it('[X8B1] must return an error on non-existing stream', async function () {
         const res = await server.request()
           .get(basePathEvent)

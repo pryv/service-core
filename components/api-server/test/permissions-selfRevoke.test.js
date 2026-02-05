@@ -15,7 +15,7 @@ const { produceMongoConnection, context } = require('./test-helpers');
 
 require('date-utils');
 
-describe('permissions selfRevoke', function () {
+describe('[PSLF] permissions selfRevoke', function () {
   let server;
   before(async () => {
     server = await context.spawn();
@@ -29,7 +29,7 @@ describe('permissions selfRevoke', function () {
     mongoFixtures = databaseFixture((await produceMongoConnection()));
   });
 
-  describe('POST /accesses', function () {
+  describe('[PS01] POST /accesses', function () {
     let username,
       personalToken,
       appToken,

@@ -16,7 +16,7 @@ const methodsSchema = require('../src/schema/profileMethods');
 const testData = helpers.data;
 const _ = require('lodash');
 
-describe('profile (app)', function () {
+describe('[PRFA] profile (app)', function () {
   const user = structuredClone(testData.users[0]);
   const basePath = '/' + user.username + '/profile';
   let request = null; // must be set after server instance started
@@ -33,7 +33,7 @@ describe('profile (app)', function () {
     ], done);
   });
 
-  describe('GET /public', function () {
+  describe('[PA01] GET /public', function () {
     before(testData.resetProfile);
 
     const path = basePath + '/public';
@@ -49,7 +49,7 @@ describe('profile (app)', function () {
     });
   });
 
-  describe('GET /app', function () {
+  describe('[PA02] GET /app', function () {
     before(testData.resetProfile);
 
     const path = basePath + '/app';
@@ -89,7 +89,7 @@ describe('profile (app)', function () {
     });
   });
 
-  describe('PUT /app', function () {
+  describe('[PA03] PUT /app', function () {
     beforeEach(testData.resetProfile);
 
     const path = basePath + '/app';

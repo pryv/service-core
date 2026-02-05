@@ -18,7 +18,7 @@ const { produceMongoConnection, context } = require('./test-helpers');
 const { getConfig } = require('@pryv/boiler');
 let isAuditActive = true;
 
-describe('permissions create-only level', () => {
+describe('[PCRO] permissions create-only level', () => {
   let mongoFixtures;
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -181,7 +181,7 @@ describe('permissions create-only level', () => {
     });
   });
 
-  describe('Permissions - create-only level', function () {
+  describe('[PC01] Permissions - create-only level', function () {
     let basePath;
     before(() => {
       basePath = `/${username}/accesses`;
@@ -191,7 +191,7 @@ describe('permissions create-only level', () => {
       return `${basePath}/${id}`;
     }
 
-    describe('Accesses', function () {
+    describe('[PC02] Accesses', function () {
       describe('GET /', function () {
         describe('when using an access with a "create-only" permissions', function () {
           let accesses;
@@ -383,7 +383,7 @@ describe('permissions create-only level', () => {
     });
   });
 
-  describe('Events', function () {
+  describe('[PC03] Events', function () {
     let basePath;
     before(() => {
       basePath = `/${username}/events`;
@@ -500,7 +500,7 @@ describe('permissions create-only level', () => {
       // because they are covered by the GET above
     });
 
-    describe('attachments', function () {
+    describe('[PC04] attachments', function () {
       let eventId, fileId;
       before(async function () {
         const res = await server.request()
@@ -561,7 +561,7 @@ describe('permissions create-only level', () => {
     });
   });
 
-  describe('Streams', function () {
+  describe('[PC05] Streams', function () {
     let basePath;
     before(() => {
       basePath = `/${username}/streams`;
@@ -622,7 +622,7 @@ describe('permissions create-only level', () => {
     });
   });
 
-  describe('Webhooks', function () {
+  describe('[PC06] Webhooks', function () {
     let basePath;
     before(function () {
       if (settings.openSource.isActive) this.skip();
