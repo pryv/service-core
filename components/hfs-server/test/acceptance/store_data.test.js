@@ -32,7 +32,7 @@ describe('[SDHF] Storing data in a HF series', function () {
     pryv = databaseFixture(database);
   });
   const influx = produceInfluxConnection();
-  describe('Use Case: Store data in InfluxDB, Verification on either half', function () {
+  describe('[SD01] Use Case: Store data in InfluxDB, Verification on either half', function () {
     let server;
     before(async () => {
       logger.debug('spawning');
@@ -170,7 +170,7 @@ describe('[SDHF] Storing data in a HF series', function () {
       await storeData({ deltaTime: 10, value: 54 }, secondStreamToken);
     });
   });
-  describe('UPDATE and DELETE on handling event affect the serie', function () {
+  describe('[SD02] UPDATE and DELETE on handling event affect the serie', function () {
     this.timeout(5000);
     // TODO Worry about deleting data that we stored in earlier tests.
     let hfServer;
@@ -347,10 +347,10 @@ describe('[SDHF] Storing data in a HF series', function () {
       assert.strictEqual(rows2.length, 0);
     });
   });
-  describe('POST /events/EVENT_ID/series', function () {
+  describe('[SD03] POST /events/EVENT_ID/series', function () {
     // TODO Worry about deleting data that we stored in earlier tests.
     let server;
-    describe('bypassing authentication', () => {
+    describe('[SD31] bypassing authentication', () => {
       const EVENT_ID = 'EVENTID';
       function storeData (data) {
         const request = server.request();
@@ -384,7 +384,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           ]
         };
       }
-      describe('with auth success', function () {
+      describe('[SD32] with auth success', function () {
         before(async () => {
           logger.debug('spawning');
           server = await spawnContext.spawn();
@@ -448,7 +448,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           assert.strictEqual(headers['access-control-allow-credentials'], 'true');
           assert.strictEqual(headers['access-control-allow-origin'], 'https://foo.bar.baz');
         });
-        describe('when request is malformed', function () {
+        describe('[SD33] when request is malformed', function () {
           malformed('format is not flatJSON', {
             format: 'JSON',
             fields: ['deltaTime', 'value'],
@@ -502,7 +502,7 @@ describe('[SDHF] Storing data in a HF series', function () {
             });
           }
         });
-        describe('when using a metadata updater stub', () => {
+        describe('[SD34] when using a metadata updater stub', () => {
           // A stub for the real service. Tests might replace parts of this to do
           // custom assertions.
           let stub;
@@ -550,7 +550,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           });
         });
       });
-      describe('with auth failure', function () {
+      describe('[SD35] with auth failure', function () {
         before(async () => {
           logger.debug('spawning');
           server = await spawnContext.spawn();
@@ -574,7 +574,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         });
       });
     });
-    describe('storing data in different formats', () => {
+    describe('[SD36] storing data in different formats', () => {
       // Spawns a server.
       before(async () => {
         logger.debug('spawning');
@@ -693,7 +693,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         }
       });
     });
-    describe('complex types such as ratio/generic', () => {
+    describe('[SD37] complex types such as ratio/generic', () => {
       // Spawns a server.
       before(async () => {
         logger.debug('spawning');
@@ -762,7 +762,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           .send(requestData);
         return response;
       }
-      describe('null fields', () => {
+      describe('[SD38] null fields', () => {
         it('[7UZT] accept null fields', async () => {
           const headers = ['deltaTime', 'latitude', 'longitude', 'speed'];
           const data = [
@@ -785,7 +785,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           assert.strictEqual(res.body.error.id, 'invalid-request-structure');
         });
       });
-      describe('when not all required fields are given', () => {
+      describe('[SD39] when not all required fields are given', () => {
         const now = 6;
         const args = [
           ['deltaTime', 'value'],
@@ -821,7 +821,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           [now - 1, 1, 3, 3]
         ]), false);
       });
-      describe("when field names don't match the type", () => {
+      describe("[SD40] when field names don't match the type", () => {
         const now = 6;
         const args = [
           ['deltaTime', 'value', 'relativeFrom'],
@@ -842,7 +842,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         });
       });
     });
-    describe('complex types such as position/wgs84', () => {
+    describe('[SD41] complex types such as position/wgs84', () => {
       // Spawns a server.
       before(async () => {
         logger.debug('spawning');
@@ -911,7 +911,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         ]), false);
       });
     });
-    describe('using a "create-only" permissions', () => {
+    describe('[SD42] using a "create-only" permissions', () => {
       before(async () => {
         server = await spawnContext.spawn();
       });

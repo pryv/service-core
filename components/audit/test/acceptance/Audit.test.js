@@ -99,14 +99,10 @@ describe('[AUDT] Audit', function () {
           .get(createUserPath('/service/info'));
       });
 
-      it('[NJFO] must return 200', function () {
-        assert.strictEqual(res.status, 200);
-      });
-      it('[V10L] must not log it in syslog', function () {
-        assert.strictEqual(sysLogSpy.calledOnce, false);
-      });
-      it('[9RWP] must not save it to storage', function () {
-        assert.strictEqual(storageSpy.calledOnce, false);
+      it('[NJFO] validates the response', function () {
+        assert.strictEqual(res.status, 200, '[NJFO] must return 200');
+        assert.strictEqual(sysLogSpy.calledOnce, false, '[V10L] must not log it in syslog');
+        assert.strictEqual(storageSpy.calledOnce, false, '[9RWP] must not save it to storage');
       });
     });
     describe('[AT03] when making a call that has its own custom accessId', function () {
@@ -124,11 +120,9 @@ describe('[AUDT] Audit', function () {
           });
       });
 
-      it('[81O6] must return 200', function () {
-        assert.strictEqual(res.status, 200);
-      });
-      it('[L92X] must log it in syslog', function () {
-        assert.strictEqual(sysLogSpy.calledOnce, true);
+      it('[81O6] validates the response', function () {
+        assert.strictEqual(res.status, 200, '[81O6] must return 200');
+        assert.strictEqual(sysLogSpy.calledOnce, true, '[L92X] must log it in syslog');
       });
       it('[G7UV] must return logs when queried', async function () {
         res = await coreRequest
@@ -158,38 +152,30 @@ describe('[AUDT] Audit', function () {
           });
       });
 
-      it('[JU8F] must return 201', function () {
-        assert.strictEqual(res.status, 201);
-      });
-      it('[KPPH] must log it in syslog', function () {
-        assert.strictEqual(sysLogSpy.calledOnce, true);
-      });
-      it('[EI1U] must not log it to storage', async function () {
-        assert.strictEqual(storageSpy.calledOnce, false);
+      it('[JU8F] validates the response', function () {
+        assert.strictEqual(res.status, 201, '[JU8F] must return 201');
+        assert.strictEqual(sysLogSpy.calledOnce, true, '[KPPH] must log it in syslog');
+        assert.strictEqual(storageSpy.calledOnce, false, '[EI1U] must not log it to storage');
       });
     });
   });
 
   describe('[AT05] when making invalid API calls', function () {
     let res;
-    describe('for an unknown user', function () {
+    describe('[AT51] for an unknown user', function () {
       before(async function () {
         resetSpies();
         res = await coreRequest
           .get('/unknown-username/events/')
           .set('Authorization', 'doesnt-matter');
       });
-      it('[LFSW] must return 400', function () {
-        assert.strictEqual(res.status, 404);
-      });
-      it('[GM2Y] must not log it in syslog', function () {
-        assert.strictEqual(sysLogSpy.calledOnce, false);
-      });
-      it('[2IQO] must not save it to storage', function () {
-        assert.strictEqual(storageSpy.calledOnce, false);
+      it('[LFSW] validates the response', function () {
+        assert.strictEqual(res.status, 404, '[LFSW] must return 404');
+        assert.strictEqual(sysLogSpy.calledOnce, false, '[GM2Y] must not log it in syslog');
+        assert.strictEqual(storageSpy.calledOnce, false, '[2IQO] must not save it to storage');
       });
     });
-    describe('with errorId "invalid-request-structure"', function () {
+    describe('[AT52] with errorId "invalid-request-structure"', function () {
       let now;
       const query = { streams: JSON.stringify({ any: ['A', 'Z', true] }) }; // copied from 30NV
       before(async function () {
@@ -217,7 +203,7 @@ describe('[AUDT] Audit', function () {
         assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
-    describe('with errorId "invalid-parameters-format"', function () {
+    describe('[AT53] with errorId "invalid-parameters-format"', function () {
       let now;
       const query = { fromTime: 'yo' };
       before(async function () {
@@ -245,7 +231,7 @@ describe('[AUDT] Audit', function () {
         assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
-    describe('with errorId "unknown-referenced-resource"', function () {
+    describe('[AT54] with errorId "unknown-referenced-resource"', function () {
       let now;
       const query = { streams: ['does-not-exist', 'neither'] };
       before(async function () {
@@ -273,7 +259,7 @@ describe('[AUDT] Audit', function () {
         assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
-    describe('with errorId "invalid-access-token"', function () {
+    describe('[AT55] with errorId "invalid-access-token"', function () {
       let now;
       before(async function () {
         now = timestamp.now();
@@ -299,7 +285,7 @@ describe('[AUDT] Audit', function () {
         assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
-    describe('with errorId "forbidden"', function () {
+    describe('[AT56] with errorId "forbidden"', function () {
       let now;
       before(async function () {
         now = timestamp.now();
@@ -329,7 +315,7 @@ describe('[AUDT] Audit', function () {
         assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
-    describe('with errorId "unknown-resource"', function () {
+    describe('[AT57] with errorId "unknown-resource"', function () {
       let now;
       before(async function () {
         now = timestamp.now();
@@ -354,7 +340,7 @@ describe('[AUDT] Audit', function () {
         assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
-    describe('with a malformed request body', function () {
+    describe('[AT58] with a malformed request body', function () {
       let now;
       before(async function () {
         now = timestamp.now();
@@ -381,12 +367,12 @@ describe('[AUDT] Audit', function () {
   });
 
   describe('[AT06] Filtering', function () {
-    describe('when filtering by calledMethods', function () {
+    describe('[AT61] when filtering by calledMethods', function () {
       after(async function () {
         config.injectTestConfig({});
         await audit.reloadConfig();
       });
-      describe('when including all', function () {
+      describe('[AT62] when including all', function () {
         before(async function () {
           config.injectTestConfig({
             audit: {
@@ -400,16 +386,14 @@ describe('[AUDT] Audit', function () {
             audit.eventForUser(cuid(), fakeAuditEvent(method));
           });
         });
-        it('[ADZL] must log it in syslog', function () {
+        it('[ADZL] validates logging and storage', function () {
           const numAudited = apiMethods.AUDITED_METHODS.length;
-          assert.strictEqual(sysLogSpy.callCount, numAudited);
-        });
-        it('[5243] must save it to storage', function () {
           const numStored = apiMethods.AUDITED_METHODS.length - apiMethods.WITHOUT_USER_METHODS.length;
-          assert.strictEqual(storageSpy.callCount, numStored);
+          assert.strictEqual(sysLogSpy.callCount, numAudited, '[ADZL] must log it in syslog');
+          assert.strictEqual(storageSpy.callCount, numStored, '[5243] must save it to storage');
         });
       });
-      describe('when including all, but a few', function () {
+      describe('[AT63] when including all, but a few', function () {
         const exclude = ['events.get', 'auth.register', 'streams.create'];
         before(async function () {
           config.injectTestConfig({
@@ -424,18 +408,16 @@ describe('[AUDT] Audit', function () {
             audit.eventForUser(cuid(), fakeAuditEvent(method));
           });
         });
-        it('[Q2H9] must log it in syslog', function () {
+        it('[Q2H9] validates logging and storage', function () {
           const logged = apiMethods.AUDITED_METHODS.filter(m => !exclude.includes(m));
-          assert.strictEqual(sysLogSpy.callCount, logged.length);
-        });
-        it('[BGXC] must save it to storage', function () {
           const stored = apiMethods.AUDITED_METHODS
             .filter(m => !apiMethods.WITHOUT_USER_METHODS.includes(m))
             .filter(m => !exclude.includes(m));
-          assert.strictEqual(storageSpy.callCount, stored.length);
+          assert.strictEqual(sysLogSpy.callCount, logged.length, '[Q2H9] must log it in syslog');
+          assert.strictEqual(storageSpy.callCount, stored.length, '[BGXC] must save it to storage');
         });
       });
-      describe('when only including a few', function () {
+      describe('[AT64] when only including a few', function () {
         const include = ['events.get', 'auth.register', 'streams.create'];
         before(async function () {
           config.injectTestConfig({
@@ -450,18 +432,16 @@ describe('[AUDT] Audit', function () {
             audit.eventForUser(cuid(), fakeAuditEvent(method));
           });
         });
-        it('[WDZ9] must log it in syslog', function () {
+        it('[WDZ9] validates logging and storage', function () {
           const logged = apiMethods.AUDITED_METHODS.filter(m => include.includes(m));
-          assert.strictEqual(sysLogSpy.callCount, logged.length);
-        });
-        it('[E7S0] must save it to storage', function () {
           const stored = apiMethods.AUDITED_METHODS
             .filter(m => !apiMethods.WITHOUT_USER_METHODS.includes(m))
             .filter(m => include.includes(m));
-          assert.strictEqual(storageSpy.callCount, stored.length);
+          assert.strictEqual(sysLogSpy.callCount, logged.length, '[WDZ9] must log it in syslog');
+          assert.strictEqual(storageSpy.callCount, stored.length, '[E7S0] must save it to storage');
         });
       });
-      describe('when including nothing', function () {
+      describe('[AT65] when including nothing', function () {
         before(async function () {
           config.injectTestConfig({
             audit: {
@@ -475,14 +455,12 @@ describe('[AUDT] Audit', function () {
             audit.eventForUser(cuid(), fakeAuditEvent(method));
           });
         });
-        it('[NP6H] must log it in syslog', function () {
-          assert.strictEqual(sysLogSpy.callCount, 0);
-        });
-        it('[LV1C] must save it to storage', function () {
-          assert.strictEqual(storageSpy.callCount, 0);
+        it('[NP6H] validates logging and storage', function () {
+          assert.strictEqual(sysLogSpy.callCount, 0, '[NP6H] must log it in syslog');
+          assert.strictEqual(storageSpy.callCount, 0, '[LV1C] must save it to storage');
         });
       });
-      describe('when using a method aggregate (here "events.all")', function () {
+      describe('[AT66] when using a method aggregate (here "events.all")', function () {
         const auditedMethods = [];
         before(async function () {
           config.injectTestConfig({
@@ -498,14 +476,12 @@ describe('[AUDT] Audit', function () {
             audit.eventForUser(cuid(), fakeAuditEvent(method));
           });
         });
-        it('[L2KG] must log it in syslog', function () {
-          assert.strictEqual(sysLogSpy.callCount, auditedMethods.length);
-        });
-        it('[HSQS] must save it to storage', function () {
-          assert.strictEqual(storageSpy.callCount, auditedMethods.length);
+        it('[L2KG] validates logging and storage', function () {
+          assert.strictEqual(sysLogSpy.callCount, auditedMethods.length, '[L2KG] must log it in syslog');
+          assert.strictEqual(storageSpy.callCount, auditedMethods.length, '[HSQS] must save it to storage');
         });
       });
-      describe('when excluding a few', function () {
+      describe('[AT67] when excluding a few', function () {
         let stored = [];
         let logged = [];
         before(async function () {
@@ -524,14 +500,12 @@ describe('[AUDT] Audit', function () {
           stored = apiMethods.WITH_USER_METHODS.filter(m => !excluded.includes(m));
           logged = apiMethods.AUDITED_METHODS.filter(m => !excluded.includes(m));
         });
-        it('[JBPZ] must log it in syslog', function () {
-          assert.strictEqual(sysLogSpy.callCount, logged.length);
-        });
-        it('[1ESH] must save it to storage', function () {
-          assert.strictEqual(storageSpy.callCount, stored.length);
+        it('[JBPZ] validates logging and storage', function () {
+          assert.strictEqual(sysLogSpy.callCount, logged.length, '[JBPZ] must log it in syslog');
+          assert.strictEqual(storageSpy.callCount, stored.length, '[1ESH] must save it to storage');
         });
       });
-      describe('when including and excluding some - without intersection', function () {
+      describe('[AT68] when including and excluding some - without intersection', function () {
         let stored = [];
         let logged = [];
         before(async function () {
@@ -551,14 +525,12 @@ describe('[AUDT] Audit', function () {
           stored = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') || m === 'getAccessInfo'));
           logged = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') || m === 'getAccessInfo'));
         });
-        it('[6GVQ] must log it in syslog', function () {
-          assert.strictEqual(sysLogSpy.callCount, logged.length);
-        });
-        it('[R7BF] must save it to storage', function () {
-          assert.strictEqual(storageSpy.callCount, stored.length);
+        it('[6GVQ] validates logging and storage', function () {
+          assert.strictEqual(sysLogSpy.callCount, logged.length, '[6GVQ] must log it in syslog');
+          assert.strictEqual(storageSpy.callCount, stored.length, '[R7BF] must save it to storage');
         });
       });
-      describe('when including and excluding some - with intersection', function () {
+      describe('[AT69] when including and excluding some - with intersection', function () {
         let stored = [];
         let logged = [];
         before(async function () {
@@ -578,11 +550,9 @@ describe('[AUDT] Audit', function () {
           stored = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') && m !== 'events.get'));
           logged = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') && m !== 'events.get'));
         });
-        it('[UK0K] must log it in syslog', function () {
-          assert.strictEqual(sysLogSpy.callCount, logged.length);
-        });
-        it('[UOFZ] must save it to storage', function () {
-          assert.strictEqual(storageSpy.callCount, stored.length);
+        it('[UK0K] validates logging and storage', function () {
+          assert.strictEqual(sysLogSpy.callCount, logged.length, '[UK0K] must log it in syslog');
+          assert.strictEqual(storageSpy.callCount, stored.length, '[UOFZ] must save it to storage');
         });
       });
     });
