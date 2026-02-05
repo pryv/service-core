@@ -606,6 +606,33 @@ class Database {
   }
 
   /**
+   * Drops the actual MongoDB collection (including indexes).
+   * Primarily for tests when indexes need to be recreated.
+   * @param {CollectionInfo} collectionInfo
+   * @param {DatabaseCallback} callback
+   * @returns {void}
+   */
+  async dropCollectionFully (collectionInfo, callback) {
+    try {
+      await this.ensureConnect();
+      // Clear caches so indexes will be recreated on next access
+      delete this.initializedCollections[collectionInfo.name];
+      delete this.collectionConnectionsCache[collectionInfo.name];
+      // Get collection directly without creating indexes
+      const collection = this.db.collection(collectionInfo.name);
+      collection.drop((err) => {
+        // Ignore "ns not found" error (collection doesn't exist)
+        if (err && err.codeName !== 'NamespaceNotFound') {
+          return callback(err);
+        }
+        callback(null);
+      });
+    } catch (err) {
+      callback(err);
+    }
+  }
+
+  /**
    * Primarily meant for tests.
    *
    * @param {DatabaseCallback} callback  undefined
@@ -655,11 +682,13 @@ class Database {
   static handleDuplicateError (err) {
     err.isDuplicate = Database.isDuplicateError(err);
     err.isDuplicateIndex = (key) => {
-      if (err != null && err.errmsg != null && err.isDuplicate) {
+      // Check both errmsg (older drivers) and message (newer drivers)
+      const errorMessage = err?.errmsg || err?.message;
+      if (err != null && errorMessage != null && err.isDuplicate) {
         if (DBisFerret) return true;
         // This check depends on the MongoDB storage engine
         // We assume WiredTiger here (and not MMapV1).
-        const matching = err.errmsg.match(/index:(.+) dup key:/);
+        const matching = errorMessage.match(/index:(.+) dup key:/);
         if (Array.isArray(matching) && matching.length >= 2) {
           const matchingKeys = matching[1];
           return (matchingKeys.includes(` ${key}`) ||

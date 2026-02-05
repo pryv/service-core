@@ -371,6 +371,14 @@ BaseStorage.prototype.dropCollection = function (userOrUserId, callback) {
   this.database.dropCollection(this.getCollectionInfo(userOrUserId), callback);
 };
 
+/**
+ * Drops the actual MongoDB collection (including indexes).
+ * Primarily for tests when indexes need to be recreated.
+ */
+BaseStorage.prototype.dropCollectionFully = function (userOrUserId, callback) {
+  this.database.dropCollectionFully(this.getCollectionInfo(userOrUserId), callback);
+};
+
 // for tests only (at the moment)
 
 /**

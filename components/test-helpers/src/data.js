@@ -86,7 +86,8 @@ const followedSlices = (exports.followedSlices =
     require('./data/followedSlices')(followedSlicesURL));
 
 exports.resetFollowedSlices = function (done, user) {
-  resetMongoDBCollectionFor(storage.user.followedSlices, user || defaultUser, followedSlices, done);
+  // Drop collection first to ensure indexes are recreated correctly
+  resetMongoDBCollectionWithDrop(storage.user.followedSlices, user || defaultUser, followedSlices, done);
 };
 
 // events
@@ -181,6 +182,18 @@ exports.resetStreams = function (done, user) {
 function resetMongoDBCollectionFor (storage, user, items, done) {
   async.series([
     storage.removeAll.bind(storage, user),
+    storage.insertMany.bind(storage, user, items)
+  ], done);
+}
+
+/**
+ * Drops collection first to ensure indexes are recreated correctly.
+ * Use when collection schema/indexes have changed.
+ * @returns {void}
+ */
+function resetMongoDBCollectionWithDrop (storage, user, items, done) {
+  async.series([
+    storage.dropCollectionFully.bind(storage, user),
     storage.insertMany.bind(storage, user, items)
   ], done);
 }
