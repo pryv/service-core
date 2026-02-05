@@ -5,28 +5,16 @@
  * Refer to LICENSE file
  */
 
-const cuid = require('cuid');
-const assert = require('node:assert');
-
-require('./test-helpers');
-
-const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid */
 
 require('date-utils');
 
 describe('[PSLF] permissions selfRevoke', function () {
-  let server;
-  before(async () => {
-    server = await context.spawn();
-  });
-  after(() => {
-    server.stop();
-  });
-
   let mongoFixtures;
   before(async function () {
-    mongoFixtures = databaseFixture((await produceMongoConnection()));
+    await initTests();
+    await initCore();
+    mongoFixtures = getNewFixture();
   });
 
   describe('[PS01] POST /accesses', function () {
@@ -69,7 +57,7 @@ describe('[PSLF] permissions selfRevoke', function () {
     });
 
     it('[JYL5] must list accesses with forbidden selfRevoke by GET /accesses', async () => {
-      const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
+      const res = await coreRequest.post(basePathAccess).set('Authorization', personalToken).send({
         type: 'app',
         name: 'toto',
         permissions: [{
@@ -86,7 +74,7 @@ describe('[PSLF] permissions selfRevoke', function () {
 
       // --- check that permissions are visible with a .get()
 
-      const res3 = await server.request().get(basePathAccess).set('Authorization', personalToken);
+      const res3 = await coreRequest.get(basePathAccess).set('Authorization', personalToken);
       assert.strictEqual(res3.status, 200);
       assert.ok(res3.body.accesses);
       let found;
@@ -106,7 +94,7 @@ describe('[PSLF] permissions selfRevoke', function () {
     });
 
     it('[JYU5] must forbid creating accesses with selfRevoke different than forbidden ', async () => {
-      const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
+      const res = await coreRequest.post(basePathAccess).set('Authorization', personalToken).send({
         type: 'app',
         name: 'toto',
         permissions: [{
@@ -123,7 +111,7 @@ describe('[PSLF] permissions selfRevoke', function () {
     });
 
     it('[UZRA] an appToken with managed rights should allow to create an access with selfRevoke forbidden', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .post(basePathAccess)
         .set('Authorization', appToken)
         .send({
@@ -191,7 +179,7 @@ describe('[PSLF] permissions selfRevoke', function () {
       const accessDef = accessDefs[testKey];
       it(`[${accessDef.testCode}] ` + testKey, async function () {
         const access = accesses[testKey];
-        const res = await server.request().delete(basePathAccess + access.id).set('Authorization', access.token);
+        const res = await coreRequest.delete(basePathAccess + access.id).set('Authorization', access.token);
 
         if (access.selfRevoke) {
           assert.strictEqual(res.status, 200);

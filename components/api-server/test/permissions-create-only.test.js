@@ -5,23 +5,21 @@
  * Refer to LICENSE file
  */
 
-const cuid = require('cuid');
-const assert = require('node:assert');
-const charlatan = require('charlatan');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, charlatan */
 
 const helpers = require('./helpers');
 const testData = helpers.data;
 const settings = structuredClone(helpers.dependencies.settings);
 
-const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
 const { getConfig } = require('@pryv/boiler');
 let isAuditActive = true;
 
 describe('[PCRO] permissions create-only level', () => {
   let mongoFixtures;
   before(async function () {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    await initTests();
+    await initCore();
+    mongoFixtures = getNewFixture();
     const config = await getConfig();
     isAuditActive = config.get('audit:active');
   });
@@ -62,14 +60,6 @@ describe('[PCRO] permissions create-only level', () => {
     createOnlyEventId = cuid();
     streamParentIdAndCreateOnlyEventId = cuid();
     eventOutId = cuid();
-  });
-
-  let server;
-  before(async () => {
-    server = await context.spawn();
-  });
-  after(() => {
-    server.stop();
   });
 
   before(async () => {
@@ -196,7 +186,7 @@ describe('[PCRO] permissions create-only level', () => {
         describe('[PC08] when using an access with a "create-only" permissions', function () {
           let accesses;
           before(async function () {
-            const res = await server.request()
+            const res = await coreRequest
               .get(basePath)
               .set('Authorization', createOnlyToken);
             accesses = res.body.accesses;
@@ -211,7 +201,7 @@ describe('[PCRO] permissions create-only level', () => {
       describe('[PC09] POST /', function () {
         describe('[PC10] when using an access with a "create-only" permission', function () {
           it('[X4Z1] a masterToken should allow to create an access with a "create-only" permissions', async function () {
-            const res = await server.request()
+            const res = await coreRequest
               .post(basePath)
               .set('Authorization', masterToken)
               .send({
@@ -228,7 +218,7 @@ describe('[PCRO] permissions create-only level', () => {
           });
 
           it('[ATCO] an appToken with managed rights should allow to create an access with a "create-only" permissions', async function () {
-            const res = await server.request()
+            const res = await coreRequest
               .post(basePath)
               .set('Authorization', manageAccessToken)
               .send({
@@ -245,7 +235,7 @@ describe('[PCRO] permissions create-only level', () => {
           });
 
           it('[ATCY] an appToken with managed rights should allow to create an access with a "create-only" permissions and selfRevoke forbidden', async function () {
-            const res = await server.request()
+            const res = await coreRequest
               .post(basePath)
               .set('Authorization', manageAccessToken)
               .send({
@@ -265,7 +255,7 @@ describe('[PCRO] permissions create-only level', () => {
           });
 
           it('[ATCR] an appToken with read rights should be forbidden to create an access with a "create-only" permissions', async function () {
-            const res = await server.request()
+            const res = await coreRequest
               .post(basePath)
               .set('Authorization', readAccessToken)
               .send({
@@ -282,7 +272,7 @@ describe('[PCRO] permissions create-only level', () => {
           });
 
           it('[ATCC] an appToken with contribute rights should be allowed to create an access with a "create-only" permissions', async function () {
-            const res = await server.request()
+            const res = await coreRequest
               .post(basePath)
               .set('Authorization', contributeAccessToken)
               .send({
@@ -299,8 +289,7 @@ describe('[PCRO] permissions create-only level', () => {
           });
 
           it('[FEGI] a createOnlyToken should forbid to create an access with a "read" level permission permission', async function () {
-            const res = await server
-              .request()
+            const res = await coreRequest
               .post(basePath)
               .set('Authorization', coWithContributeParentToken)
               .send({
@@ -318,8 +307,7 @@ describe('[PCRO] permissions create-only level', () => {
             assert.ok(res.body.access == null);
           });
           it('[SL4P] should forbid to create an access with a "contribute" level permission', async function () {
-            const res = await server
-              .request()
+            const res = await coreRequest
               .post(basePath)
               .set('Authorization', coWithContributeParentToken)
               .send({
@@ -337,8 +325,7 @@ describe('[PCRO] permissions create-only level', () => {
             assert.ok(res.body.access == null);
           });
           it('[ZX1M] should forbid to create an access with a "manage" level permission', async function () {
-            const res = await server
-              .request()
+            const res = await coreRequest
               .post(basePath)
               .set('Authorization', coWithContributeParentToken)
               .send({
@@ -360,7 +347,7 @@ describe('[PCRO] permissions create-only level', () => {
 
       describe('[PC11] PUT /', function () {
         it('[1WXJ] should forbid updating accesses', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .put(reqPath(readAccessId))
             .set('Authorization', createOnlyToken)
             .send({
@@ -374,7 +361,7 @@ describe('[PCRO] permissions create-only level', () => {
 
       describe('[PC12] DELETE /', function () {
         it('[G6IP] should forbid deleting accesses', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .del(reqPath(readAccessId))
             .set('Authorization', createOnlyToken);
           assert.strictEqual(res.status, 403);
@@ -399,8 +386,7 @@ describe('[PCRO] permissions create-only level', () => {
           streams: [streamCreateOnlyId]
         };
 
-        const res = await server
-          .request()
+        const res = await coreRequest
           .get(basePath)
           .set('Authorization', createOnlyToken)
           .query(query);
@@ -409,8 +395,7 @@ describe('[PCRO] permissions create-only level', () => {
       });
 
       it('[V4KJ] should not return events when fetching "create-only" streams that are children of "read" streams', async function () {
-        const res = await server
-          .request()
+        const res = await coreRequest
           .get(basePath)
           .set('Authorization', coWithReadParentToken);
         const events = res.body.events;
@@ -421,8 +406,7 @@ describe('[PCRO] permissions create-only level', () => {
       });
 
       it('[SYRW] should not return events when fetching "create-only" streams that are children of "contribute" streams', async function () {
-        const res = await server
-          .request()
+        const res = await coreRequest
           .get(basePath)
           .set('Authorization', coWithContributeParentToken);
         const events = res.body.events;
@@ -435,8 +419,7 @@ describe('[PCRO] permissions create-only level', () => {
 
     describe('[PC14] GET /:id', function () {
       it('[N61I] should forbid fetching an event when using a "create-only" permission', async function () {
-        const res = await server
-          .request()
+        const res = await coreRequest
           .get(reqPath(createOnlyEventId))
           .set('Authorization', createOnlyToken);
         assert.strictEqual(res.status, 403); // recieve unexistant to avoid discovery
@@ -450,8 +433,7 @@ describe('[PCRO] permissions create-only level', () => {
           streamId: streamOutId
         };
 
-        const res = await server
-          .request()
+        const res = await coreRequest
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .send(params);
@@ -463,8 +445,7 @@ describe('[PCRO] permissions create-only level', () => {
           type: 'test/test',
           streamId: streamCreateOnlyId
         };
-        const res = await server
-          .request()
+        const res = await coreRequest
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .send(params);
@@ -477,8 +458,7 @@ describe('[PCRO] permissions create-only level', () => {
         const params = {
           content: 12
         };
-        const res = await server
-          .request()
+        const res = await coreRequest
           .put(reqPath(createOnlyEventId))
           .set('Authorization', createOnlyToken)
           .send(params);
@@ -490,8 +470,7 @@ describe('[PCRO] permissions create-only level', () => {
 
     describe('[PC17] DELETE /', function () {
       it('[5OUT] should forbid deleting events for "create-only" streams', async function () {
-        const res = await server
-          .request()
+        const res = await coreRequest
           .del(reqPath(createOnlyEventId))
           .set('Authorization', createOnlyToken);
         assert.strictEqual(res.status, 403);
@@ -503,7 +482,7 @@ describe('[PCRO] permissions create-only level', () => {
     describe('[PC04] attachments', function () {
       let eventId, fileId;
       before(async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .field('event', JSON.stringify({
@@ -519,10 +498,10 @@ describe('[PCRO] permissions create-only level', () => {
 
       // cleaning up explicitly as we are not using fixtures
       after(async function () {
-        await server.request()
+        await coreRequest
           .delete(reqPath(eventId))
           .set('Authorization', masterToken);
-        await server.request()
+        await coreRequest
           .delete(reqPath(eventId))
           .set('Authorization', masterToken);
       });
@@ -530,8 +509,7 @@ describe('[PCRO] permissions create-only level', () => {
 
       describe('[PC18] GET /events/{id}/{fileId}[/{fileName}]', function () {
         it('[VTU4] should be forbidden', async function () {
-          const res = await server
-            .request()
+          const res = await coreRequest
             .get(reqPath(eventId) + `/${fileId}`)
             .set('Authorization', createOnlyToken);
           assert.strictEqual(res.status, 403);
@@ -540,7 +518,7 @@ describe('[PCRO] permissions create-only level', () => {
 
       describe('[PC19] POST /events/{id}', function () {
         it('[8J8O] should be forbidden', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .post(reqPath(eventId))
             .set('Authorization', createOnlyToken)
             .attach('document', testData.attachments.document.path,
@@ -551,8 +529,7 @@ describe('[PCRO] permissions create-only level', () => {
 
       describe('[PC20] DELETE /events/{id}/{fileId}', function () {
         it('[GY6M] should be forbidden', async function () {
-          const res = await server
-            .request()
+          const res = await coreRequest
             .delete(reqPath(eventId) + `/${fileId}`)
             .set('Authorization', createOnlyToken);
           assert.strictEqual(res.status, 403);
@@ -573,8 +550,7 @@ describe('[PCRO] permissions create-only level', () => {
 
     describe('[PC21] GET /', function () {
       it('[J12F] should only return streams for which permissions are defined', async function () {
-        const res = await server
-          .request()
+        const res = await coreRequest
           .get(basePath)
           .set('Authorization', createOnlyToken)
           .query({ state: 'all' });
@@ -591,8 +567,7 @@ describe('[PCRO] permissions create-only level', () => {
           name: charlatan.Lorem.word(),
           parentId: streamCreateOnlyId
         };
-        const res = await server
-          .request()
+        const res = await coreRequest
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .send(data);
@@ -602,8 +577,7 @@ describe('[PCRO] permissions create-only level', () => {
 
     describe('[PC23] PUT /', function () {
       it('[PCO8] should forbid updating "create-only" streams', async function () {
-        const res = await server
-          .request()
+        const res = await coreRequest
           .put(reqPath(streamCreateOnlyId))
           .set('Authorization', createOnlyToken)
           .send({ name: charlatan.Lorem.word() });
@@ -613,8 +587,7 @@ describe('[PCRO] permissions create-only level', () => {
 
     describe('[PC24] DELETE /', function () {
       it('[PCO9] should forbid deleting "create-only" streams', async function () {
-        const res = await server
-          .request()
+        const res = await coreRequest
           .del(reqPath(streamCreateOnlyId))
           .set('Authorization', createOnlyToken);
         assert.strictEqual(res.status, 403);
@@ -631,8 +604,7 @@ describe('[PCRO] permissions create-only level', () => {
 
     describe('[PC25] CREATE /', function () {
       it('[3AE9] should allow creating webhooks', async function () {
-        const res = await server
-          .request()
+        const res = await coreRequest
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .send({

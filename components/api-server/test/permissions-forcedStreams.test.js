@@ -5,11 +5,7 @@
  * Refer to LICENSE file
  */
 
-const cuid = require('cuid');
-const assert = require('node:assert');
-
-const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid */
 
 /**
  * Structure
@@ -36,17 +32,14 @@ const EVENT4ID = {}; // will be filled by fixtures
 
 describe('[PFRC] permissions forcedStreams', function () {
   describe('[PF01] GET /events with forcedStreams', function () {
-    let server;
-    before(async () => {
-      server = await context.spawn();
-    });
-    after(() => {
-      server.stop();
-    });
-
     let mongoFixtures;
     before(async function () {
-      mongoFixtures = databaseFixture(await produceMongoConnection());
+      await initTests();
+      await initCore();
+      mongoFixtures = getNewFixture();
+    });
+    after(async () => {
+      await mongoFixtures.clean();
     });
 
     let user,
@@ -95,12 +88,9 @@ describe('[PFRC] permissions forcedStreams', function () {
         await user.event(event);
       }
     });
-    after(async () => {
-      await mongoFixtures.clean();
-    });
 
     it('[SO2E] must not see events  on "B" when querying *', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenForcedB)
         .query({ });
@@ -116,7 +106,7 @@ describe('[PFRC] permissions forcedStreams', function () {
     });
 
     it('[ELFF] must refuse querying C', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenForcedB)
         .query({ streams: ['C'] });

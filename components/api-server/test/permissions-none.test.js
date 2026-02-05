@@ -5,10 +5,7 @@
  * Refer to LICENSE file
  */
 
-const cuid = require('cuid');
-const assert = require('node:assert');
-const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid */
 
 /**
  * Structure
@@ -35,17 +32,14 @@ const EVENT4ID = {}; // will be filled by fixtures
 
 describe('[PNON] permissions none', function () {
   describe('[PN01] GET /events with none permissions', function () {
-    let server;
-    before(async () => {
-      server = await context.spawn();
-    });
-    after(() => {
-      server.stop();
-    });
-
     let mongoFixtures;
     before(async function () {
-      mongoFixtures = databaseFixture(await produceMongoConnection());
+      await initTests();
+      await initCore();
+      mongoFixtures = getNewFixture();
+    });
+    after(async () => {
+      await mongoFixtures.clean();
     });
 
     let user,
@@ -94,12 +88,9 @@ describe('[PNON] permissions none', function () {
         await user.event(event);
       }
     });
-    after(async () => {
-      await mongoFixtures.clean();
-    });
 
     it('[VVOA] must not see event in "none" level stream', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenForcedB)
         .query({ });

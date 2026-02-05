@@ -1,11 +1,8 @@
 {
-  "debug.node.autoAttach": "on",
-  "previewjsdoc.autoOpenBrowser": false,
   "files.exclude": {
   },
   "files.watcherExclude": {
     "**/var-pryv/**": true
   },
-  "semistandard.enable": false,
   "terminal.integrated.bellDuration": 10000
 }

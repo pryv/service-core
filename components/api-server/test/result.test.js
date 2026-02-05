@@ -6,11 +6,11 @@
  */
 'use strict';
 
-require('./test-helpers');
+/* global assert */
+
 const Result = require('../src/Result');
 const Transform = require('stream').Transform;
 const inherits = require('util').inherits;
-const assert = require('node:assert');
 const Source = require('./helpers').SourceStream;
 
 describe('[RSLT] Result', function () {

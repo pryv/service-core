@@ -5,33 +5,22 @@
  * Refer to LICENSE file
  */
 
-const cuid = require('cuid');
-const assert = require('node:assert');
-const charlatan = require('charlatan');
-
-const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, charlatan */
 
 describe('[PTAG] Access permissions - Tags', function () {
   let mongoFixtures;
+
   before(async function () {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    await initTests();
+    await initCore();
+    mongoFixtures = getNewFixture();
   });
+
   after(async () => {
     await mongoFixtures.clean();
   });
 
-  let server;
-  before(async () => {
-    server = await context.spawn();
-  });
-  after(() => {
-    server.stop();
-  });
-
-  let username,
-    basePath,
-    token;
+  let username, basePath, token;
 
   before(async () => {
     username = cuid();
@@ -46,13 +35,16 @@ describe('[PTAG] Access permissions - Tags', function () {
   });
 
   it('[F93X] must return a 400 error when attempting to create an access with tag-based permissions', async () => {
-    const res = await server.request().post(basePath).set('Authorization', token).send({
-      name: charlatan.Lorem.word(10),
-      permissions: [{
-        tag: charlatan.Lorem.word(10),
-        level: 'read'
-      }]
-    });
+    const res = await coreRequest
+      .post(basePath)
+      .set('Authorization', token)
+      .send({
+        name: charlatan.Lorem.word(10),
+        permissions: [{
+          tag: charlatan.Lorem.word(10),
+          level: 'read'
+        }]
+      });
     assert.equal(res.status, 400);
   });
 });
