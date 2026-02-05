@@ -59,11 +59,11 @@ describe('Migration - 1.7.5', function () {
       if (access._id === accessToCheck._id) isAccessToCheckProcessed = true;
       for (const permission of access.permissions) {
         if (permission.streamId != null) {
-          assert.isFalse(hasDotStreamId(permission.streamId));
+          assert.strictEqual(hasDotStreamId(permission.streamId), false);
         }
       }
     }
-    assert.isTrue(isAccessToCheckProcessed);
+    assert.strictEqual(isAccessToCheckProcessed, true);
 
     function hasDotStreamId (streamId) {
       return streamId.indexOf('.') > -1;

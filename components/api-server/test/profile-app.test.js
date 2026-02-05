@@ -6,6 +6,7 @@
  */
 
 require('./test-helpers');
+const assert = require('node:assert');
 const helpers = require('./helpers');
 const ErrorIds = require('errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
@@ -107,7 +108,7 @@ describe('profile (app)', function () {
 
         const expectedData = _.extend(structuredClone(appProfile.data), data);
         delete expectedData.keyTwo;
-        res.body.profile.should.eql(expectedData);
+        assert.deepStrictEqual(res.body.profile, expectedData);
 
         done();
       });

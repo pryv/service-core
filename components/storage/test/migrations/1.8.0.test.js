@@ -9,13 +9,13 @@
  * Tests data migration between versions.
  */
 
-/* global assert */
-
 const bluebird = require('bluebird');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
+
+const assert = require('node:assert');
 
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 
@@ -66,17 +66,17 @@ describe('Migration - 1.8.0', function () {
       }
       delete initialEventsUsers[username];
     }
-    assert.isEmpty(Object.keys(initialEventsUsers), 'Not all users migrated');
+    assert.equal(Object.keys(initialEventsUsers).length, 0, 'Not all users migrated');
   });
 
   it('[PH6C] must handle userIndex/repository migration from 1.7.5 to 1.8.0', async () => {
     const { errors } = await usersIndex.checkIntegrity();
-    assert.isEmpty(errors, 'Found error(s) in the userIndex vs events check');
+    assert.equal(errors.length, 0, 'Found error(s) in the userIndex vs events check');
   });
 
   it('[URHS] must handle platfrom migration from 1.7.5 to 1.8.0', async () => {
     const { errors } = await platform.checkIntegrity();
-    assert.isEmpty(errors, 'Found error(s) in the platform vs Users check');
+    assert.equal(errors.length, 0, 'Found error(s) in the platform vs Users check');
   });
 });
 

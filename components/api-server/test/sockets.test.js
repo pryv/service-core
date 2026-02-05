@@ -11,12 +11,10 @@
 
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const { assert } = require('chai');
+const assert = require('node:assert');
 const bluebird = require('bluebird');
 const async = require('async');
 const io = require('socket.io-client');
-// explicit require to benefit from static functions
-const should = require('should');
 const queryString = require('qs');
 const charlatan = require('charlatan');
 const superagent = require('superagent');
@@ -130,8 +128,8 @@ describe('Socket.IO', function () {
     const res = await superagent
       .get(url)
       .set('Origin', 'https://www.bogus.com:6752');
-    assert.equal(res.headers['access-control-allow-origin'], 'https://www.bogus.com:6752');
-    assert.equal(res.headers['access-control-allow-credentials'], 'true');
+    assert.strictEqual(res.headers['access-control-allow-origin'], 'https://www.bogus.com:6752');
+    assert.strictEqual(res.headers['access-control-allow-credentials'], 'true');
   });
 
   it('[VGKX] must connect with twice user name in the path (DnsLess)', function (done) {
@@ -198,7 +196,7 @@ describe('Socket.IO', function () {
         limit: 1000
       };
       ioCons.con.emit('events.get', params, async function (err, result) {
-        assert.notExists(err);
+        assert.ok(err == null);
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(result.events);
         result.events = separatedEvents.events;
         validation.checkSchema(result, eventsMethodsSchema.get.result);
@@ -211,13 +209,13 @@ describe('Socket.IO', function () {
         const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
         validation.validateAccountEvents(actualAccountStreamsEvents);
         expectedEvents.forEach(integrity.events.set);
-        result.events.should.eql(testData.addCorrectAttachmentIds(expectedEvents));
+        assert.deepStrictEqual(result.events, testData.addCorrectAttachmentIds(expectedEvents));
         // check deletions
         const deleted = _.filter(testData.events, { deleted: true });
         for (const el of deleted) {
           const deletion = _.find(result.eventDeletions, { id: el.id });
-          should(deletion).not.be.empty();
-          should(deletion.deleted).be.true();
+          assert.ok(deletion);
+          assert.strictEqual(deletion.deleted, true);
         }
         // check untrashed
         const resultEvents = _.sortBy(result.events, 'id');
@@ -226,7 +224,7 @@ describe('Socket.IO', function () {
           .sortBy('id')
           .value();
         activeTestEvents.forEach(integrity.events.set);
-        should(resultEvents).be.eql(testData.addCorrectAttachmentIds(activeTestEvents));
+        assert.deepStrictEqual(resultEvents, testData.addCorrectAttachmentIds(activeTestEvents));
         validation.checkMeta(result);
         done();
       });
@@ -237,10 +235,10 @@ describe('Socket.IO', function () {
       const expected = structuredClone(testData.streams);
       validation.addStoreStreams(expected);
       ioCons.con.emit('streams.get', { state: 'all' }, function (err, result) {
-        assert.notExists(err);
+        assert.ok(err == null);
         result.streams = validation.removeAccountStreams(result.streams);
         validation.checkSchema(result, streamsMethodsSchema.get.result);
-        result.streams.should.eql(validation.removeDeletions(expected));
+        assert.deepStrictEqual(result.streams, validation.removeDeletions(expected));
         done();
       });
     });
@@ -248,8 +246,8 @@ describe('Socket.IO', function () {
     it('[TO6Z] must accept streamQuery as Javascript Object', function (done) {
       ioCons.con = connect(namespace, { auth: token });
       ioCons.con.emit('events.get', { streams: { any: ['s_0_1'], all: ['s_8'] } }, function (err, res) {
-        should(err).be.null();
-        should(res.events).not.be.null();
+        assert.ok(err == null);
+        assert.ok(res.events != null);
         done();
       });
     });
@@ -258,7 +256,7 @@ describe('Socket.IO', function () {
       ioCons.con = connect(namespace, { auth: token });
       ioCons.con.emit('events.get', {} /* no callback here */);
       process.nextTick(function () {
-        server.crashed().should.eql(false);
+        assert.strictEqual(server.crashed(), false);
         done();
       });
     });
@@ -267,7 +265,7 @@ describe('Socket.IO', function () {
       ioCons.con = connect(namespace, { auth: token });
       ioCons.con.emit('badTarget.get', {}, function (err) {
         validation.checkSchema(err, validation.schemas.errorResult);
-        err.error.id.should.eql(ErrorIds.InvalidMethod);
+        assert.deepStrictEqual(err.error.id, ErrorIds.InvalidMethod);
         done();
       });
     });
@@ -276,7 +274,7 @@ describe('Socket.IO', function () {
       ioCons.con = connect(namespace, { auth: token });
       ioCons.con.emit('streams.badMethod', {}, function (err) {
         validation.checkSchema(err, validation.schemas.errorResult);
-        err.error.id.should.eql(ErrorIds.InvalidMethod);
+        assert.deepStrictEqual(err.error.id, ErrorIds.InvalidMethod);
         done();
       });
     });
@@ -365,7 +363,7 @@ describe('Socket.IO', function () {
               name: charlatan.Lorem.word()
             })
             .end(function (err, res) {
-              assert.notExists(err);
+              assert.ok(err == null);
               streamId = res.body.stream.id;
               stepDone();
             });
@@ -385,7 +383,7 @@ describe('Socket.IO', function () {
               ]
             })
             .end(function (err, res) {
-              assert.notExists(err);
+              assert.ok(err == null);
               createOnlyToken = res.body.access.token;
               stepDone();
             });

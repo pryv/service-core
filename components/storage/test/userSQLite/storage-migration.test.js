@@ -40,7 +40,7 @@ describe('SQLite user-centric storage migration', () => {
     await v1user.init();
 
     const resMigrate = await migrate0to1(v0dbPath, v1user, logger);
-    assert.equal(resMigrate.count, 298);
+    assert.strictEqual(resMigrate.count, 298);
   });
 
   it('[RXVF] check userDir and perform migration when needed', async function () {
@@ -48,11 +48,11 @@ describe('SQLite user-centric storage migration', () => {
     const srcDir = path.join(__dirname, './support/migration-userDirV0');
     const tempUserDir = path.join(os.tmpdir(), 'pryv.io-test-userdir-' + Math.random().toString(36).substring(2, 8));
     await copy(srcDir, tempUserDir);
-    assert.isFalse(await pathExists(path.join(tempUserDir, 'audit-db-version-1.0.0.txt')));
+    assert.strictEqual(await pathExists(path.join(tempUserDir, 'audit-db-version-1.0.0.txt')), false);
     setUserBasePathTestOnly(tempUserDir);
     const storage = new Storage('audit');
     await storage.init();
-    assert.isTrue(await pathExists(path.join(tempUserDir, 'audit-db-version-1.0.0.txt')));
+    assert.strictEqual(await pathExists(path.join(tempUserDir, 'audit-db-version-1.0.0.txt')), true);
     storage.close();
   });
 });

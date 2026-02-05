@@ -6,7 +6,7 @@
  */
 
 const cuid = require('cuid');
-const { assert } = require('chai');
+const assert = require('node:assert');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
@@ -103,14 +103,14 @@ describe('permissions none', function () {
         .get(basePathEvent)
         .set('Authorization', tokenForcedB)
         .query({ });
-      assert.exists(res.body.events);
+      assert.ok(res.body.events != null);
       const events = res.body.events;
       events.forEach(e => {
         let ebFound = false;
         for (const eb of ['E', 'B']) {
           if (e.streamIds.includes(eb)) ebFound = true;
         }
-        assert.isFalse(ebFound);
+        assert.strictEqual(ebFound, false);
       });
     });
   });

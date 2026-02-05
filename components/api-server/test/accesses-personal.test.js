@@ -7,8 +7,7 @@
 
 const async = require('async');
 const charlatan = require('charlatan');
-const { assert } = require('chai');
-const should = require('should');
+const assert = require('node:assert');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
@@ -74,7 +73,7 @@ describe('accesses (personal)', function () {
           stepDone('request is null');
         }
         storage.findOne(user, { token: request && request.token }, null, function (err, access) {
-          assert.notExists(err);
+          assert.ok(err == null);
           sessionAccessId = access.id;
           stepDone();
         });
@@ -130,7 +129,7 @@ describe('accesses (personal)', function () {
       async.series([
         function countInitial (stepDone) {
           storage.countAll(user, function (err, count) {
-            assert.notExists(err);
+            assert.ok(err == null);
             originalCount = count;
             stepDone();
           });
@@ -146,14 +145,14 @@ describe('accesses (personal)', function () {
                 schema: methodsSchema.create.result
               });
               createdAccess = res.body.access;
-              should(accessesNotifCount).be.eql(1, 'accesses notifications');
+              assert.strictEqual(accessesNotifCount, 1, 'accesses notifications');
               stepDone();
             });
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, accesses) {
-            assert.notExists(err);
-            accesses.length.should.eql(originalCount + 1, 'accesses');
+            assert.ok(err == null);
+            assert.strictEqual(accesses.length, originalCount + 1, 'accesses');
             const expected = {
               id: createdAccess.id,
               token: createdAccess.token,
@@ -245,29 +244,29 @@ describe('accesses (personal)', function () {
               expected.modifiedBy = res.body.access.modifiedBy;
               integrity.accesses.set(expected);
               validation.checkObjectEquality(res.body.access, expected);
-              should(accessesNotifCount).be.eql(1, 'accesses notifications');
+              assert.strictEqual(accessesNotifCount, 1, 'accesses notifications');
               stepDone();
             });
         },
         async function verifyNewStream () {
           const newStream = await mall.streams.getOneWithNoChildren(user.id, data.permissions[1].streamId);
-          should.exist(newStream);
+          assert.ok(newStream);
           validation.checkStoredItem(newStream, 'stream');
-          newStream.name.should.eql(data.permissions[1].defaultName);
+          assert.strictEqual(newStream.name, data.permissions[1].defaultName);
 
           const undeletedStream = await mall.streams.getOneWithNoChildren(user.id, data.permissions[3].streamId);
-          should.exist(undeletedStream);
+          assert.ok(undeletedStream);
           validation.checkStoredItem(undeletedStream, 'stream');
-          undeletedStream.name.should.eql(data.permissions[3].defaultName);
+          assert.strictEqual(undeletedStream.name, data.permissions[3].defaultName);
         },
         async function verifyRestoredStream () {
           const streams = await mall.streams.get(user.id, {
             id: data.permissions[2].streamId
           });
-          should.exist(streams[0]);
+          assert.ok(streams[0]);
           const stream = streams[0];
-          should.exist(stream);
-          should.not.exist(stream.trashed);
+          assert.ok(stream);
+          assert.ok(stream.trashed == null);
         }
       ], done);
     });
@@ -328,7 +327,7 @@ describe('accesses (personal)', function () {
           expected.modifiedBy = res.body.access.modifiedBy;
           integrity.accesses.set(expected);
           validation.checkObjectEquality(res.body.access, expected);
-          should(accessesNotifCount).be.eql(1, 'accesses notifications');
+          assert.strictEqual(accessesNotifCount, 1, 'accesses notifications');
           done();
         });
     });
@@ -385,7 +384,7 @@ describe('accesses (personal)', function () {
             status: 201,
             schema: methodsSchema.create.result
           });
-          res.body.access.token.should.eql('pas-encode-de-bleu');
+          assert.strictEqual(res.body.access.token, 'pas-encode-de-bleu');
           done();
         });
     });
@@ -605,14 +604,14 @@ describe('accesses (personal)', function () {
                 schema: methodsSchema.del.result,
                 body: { accessDeletion: { id: deletedAccess.id } }
               });
-              should(accessesNotifCount).be.eql(1, 'accesses notifications');
+              assert.strictEqual(accessesNotifCount, 1, 'accesses notifications');
               stepDone();
             });
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, accesses) {
-            assert.notExists(err);
-            accesses.length.should.eql(testData.accesses.length, 'accesses');
+            assert.ok(err == null);
+            assert.strictEqual(accesses.length, testData.accesses.length, 'accesses');
             const expected = _.assign({
               deleted: deletionTime
             }, deletedAccess);
@@ -632,7 +631,7 @@ describe('accesses (personal)', function () {
             status: 200,
             schema: methodsSchema.del.result
           });
-          should(accessesNotifCount).be.eql(1, 'accesses notifications');
+          assert.strictEqual(accessesNotifCount, 1, 'accesses notifications');
           done();
         });
     });
@@ -682,11 +681,11 @@ describe('accesses (personal)', function () {
         .send(data)
         .end(function (res) {
           validation.check(res, { status: 200, schema: methodsSchema.checkApp.result });
-          should.exist(res.body.checkedPermissions);
+          assert.ok(res.body.checkedPermissions);
           const expected = structuredClone(data.requestedPermissions);
           expected[0].name = testData.streams[0].name;
           delete expected[0].defaultName;
-          res.body.checkedPermissions.should.eql(expected);
+          assert.deepStrictEqual(res.body.checkedPermissions, expected);
           done();
         });
     });
@@ -711,11 +710,11 @@ describe('accesses (personal)', function () {
             status: 200,
             schema: methodsSchema.checkApp.result
           });
-          should.exist(res.body.checkedPermissions);
+          assert.ok(res.body.checkedPermissions);
           const expected = structuredClone(data.requestedPermissions);
           expected[0].name = 'Dummy Store';
           delete expected[0].defaultName;
-          res.body.checkedPermissions.should.eql(expected);
+          assert.deepStrictEqual(res.body.checkedPermissions, expected);
           done();
         });
     });
@@ -746,12 +745,12 @@ describe('accesses (personal)', function () {
             status: 200,
             schema: methodsSchema.checkApp.result
           });
-          should.exist(res.body.checkedPermissions);
+          assert.ok(res.body.checkedPermissions);
           const expected = structuredClone(data.requestedPermissions);
           expected[0].name = testData.streams[0].name;
           delete expected[0].defaultName;
           delete expected[1].defaultName;
-          res.body.checkedPermissions.should.eql(expected);
+          assert.deepStrictEqual(res.body.checkedPermissions, expected);
           done();
         });
     });
@@ -776,10 +775,10 @@ describe('accesses (personal)', function () {
             status: 200,
             schema: methodsSchema.checkApp.result
           });
-          should.exist(res.body.matchingAccess);
-          res.body.matchingAccess.token.should.eql(testData.accesses[4].token);
-          should.not.exist(res.body.checkedPermissions);
-          should.not.exist(res.body.mismatchingAccess);
+          assert.ok(res.body.matchingAccess);
+          assert.strictEqual(res.body.matchingAccess.token, testData.accesses[4].token);
+          assert.ok(res.body.checkedPermissions == null);
+          assert.ok(res.body.mismatchingAccess == null);
           done();
         });
     });
@@ -805,14 +804,14 @@ describe('accesses (personal)', function () {
             status: 200,
             schema: methodsSchema.checkApp.result
           });
-          should.exist(res.body.checkedPermissions);
+          assert.ok(res.body.checkedPermissions);
           const expected = structuredClone(data.requestedPermissions);
           expected[0].name = testData.streams[0].name;
           delete expected[0].defaultName;
-          res.body.checkedPermissions.should.eql(expected);
-          should.exist(res.body.mismatchingAccess);
-          res.body.mismatchingAccess.id.should.eql(testData.accesses[4].id);
-          should.not.exist(res.body.matchingAccess);
+          assert.deepStrictEqual(res.body.checkedPermissions, expected);
+          assert.ok(res.body.mismatchingAccess);
+          assert.strictEqual(res.body.mismatchingAccess.id, testData.accesses[4].id);
+          assert.ok(res.body.matchingAccess == null);
           done();
         });
     });
@@ -836,12 +835,12 @@ describe('accesses (personal)', function () {
             status: 200,
             schema: methodsSchema.checkApp.result
           });
-          should.exist(res.body.checkedPermissions);
-          should.exist(res.body.error);
-          res.body.error.id.should.eql(ErrorIds.ItemAlreadyExists);
+          assert.ok(res.body.checkedPermissions);
+          assert.ok(res.body.error);
+          assert.strictEqual(res.body.error.id, ErrorIds.ItemAlreadyExists);
           const expected = structuredClone(data.requestedPermissions);
           expected[0].defaultName = testData.streams[3].name + ' (1)';
-          res.body.checkedPermissions.should.eql(expected);
+          assert.deepStrictEqual(res.body.checkedPermissions, expected);
           done();
         });
     });

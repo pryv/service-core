@@ -6,6 +6,7 @@
  */
 
 require('./test-helpers');
+const assert = require('node:assert');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -55,7 +56,7 @@ describe('profile (personal)', function () {
 
     it('[36B1] must return an appropriate error for other paths', function (done) {
       request.get(basePath + '/unknown-profile').end(function (res) {
-        res.statusCode.should.eql(404);
+        assert.strictEqual(res.statusCode, 404);
         done();
       });
     });
@@ -97,7 +98,7 @@ describe('profile (personal)', function () {
 
         const expectedData = _.extend(structuredClone(original.data), data);
         delete expectedData.keyTwo;
-        res.body.profile.should.eql(expectedData);
+        assert.deepStrictEqual(res.body.profile, expectedData);
 
         done();
       });
@@ -105,7 +106,7 @@ describe('profile (personal)', function () {
 
     it('[Q99E] must return an appropriate error for other paths', function (done) {
       request.put(basePath + '/unknown-profile').send({ an: 'update' }).end(function (res) {
-        res.statusCode.should.eql(404);
+        assert.strictEqual(res.statusCode, 404);
         done();
       });
     });

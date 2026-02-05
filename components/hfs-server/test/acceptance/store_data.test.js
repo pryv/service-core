@@ -7,8 +7,7 @@
 
 // Tests pertaining to storing data in a hf series.
 
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const cuid = require('cuid');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
@@ -162,7 +161,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           .expect(200)
           .then((res) => {
             const points = res.body.points || [];
-            assert.isNotEmpty(points);
+            assert.ok(points.length > 0);
             assert.deepEqual(points[0], [2, 1234]);
           }));
       }
@@ -208,7 +207,7 @@ describe('[SDHF] Storing data in a HF series', function () {
       const effectiveAttrs = lodash.merge({ streamIds: [parentStreamId], time: timestamp.now() }, attrs);
       const usersRepository = await getUsersRepository();
       const user = await usersRepository.getUserById(userId);
-      assert.isNotNull(user);
+      assert.ok(user);
       const event = await mall.events.create(user.id, effectiveAttrs);
       const requestData = {
         format: 'flatJSON',
@@ -282,7 +281,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         .expect(200)
         .then((res) => {
           const points = res.body.points || [];
-          assert.isNotEmpty(points);
+          assert.ok(points.length > 0);
           assert.deepEqual(points[5], [6, 6]);
         }));
     });
@@ -315,7 +314,7 @@ describe('[SDHF] Storing data in a HF series', function () {
       assert.strictEqual(result2.status, 400);
       const error = result2.body.error;
       assert.strictEqual(error.id, 'invalid-operation');
-      assert.typeOf(error.message, 'string');
+      assert.strictEqual(typeof error.message, 'string');
       assert.strictEqual(error.message, `The referenced event "${result.event.id}" is trashed.`);
       assert.deepEqual(error.data, { trashedReference: 'eventId' });
     });
@@ -404,7 +403,7 @@ describe('[SDHF] Storing data in a HF series', function () {
             .then(queryData)
             .then((response) => {
               // Verify HTTP response content
-              assert.isNotNull(response);
+              assert.ok(response);
               assert.deepEqual(response.fields, ['deltaTime', 'value']);
               assert.deepEqual(response.points, data.points);
             });
@@ -413,8 +412,8 @@ describe('[SDHF] Storing data in a HF series', function () {
         it('[TL0D] should return core-metadata in every call', async function () {
           const data = produceData();
           const res = await storeData(data);
-          chai.expect(res).to.have.property('status').that.eql(200);
-          chai.expect(res.body).to.have.property('meta');
+          assert.strictEqual(res.status, 200);
+          assert.ok(res.body.meta);
         });
         it('[RESC] should reject non-JSON bodies', function () {
           const response = server
@@ -547,7 +546,7 @@ describe('[SDHF] Storing data in a HF series', function () {
             };
             const data = produceData();
             await storeData(data).expect(200);
-            assert.isTrue(updaterCalled);
+            assert.strictEqual(updaterCalled, true);
           });
         });
       });
@@ -570,7 +569,7 @@ describe('[SDHF] Storing data in a HF series', function () {
             .then((res) => {
               const error = res.body.error;
               assert.strictEqual(error.id, 'forbidden');
-              assert.typeOf(error.message, 'string');
+              assert.strictEqual(typeof error.message, 'string');
             });
         });
       });
@@ -606,7 +605,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         const effectiveAttrs = lodash.merge({ streamIds: [parentStreamId], time: timestamp.now() }, attrs);
         const usersRepository = await getUsersRepository();
         const user = await usersRepository.getUserById(userId);
-        assert.isNotNull(user);
+        assert.ok(user);
         const event = await mall.events.create(user.id, effectiveAttrs);
         const requestData = {
           format: 'flatJSON',
@@ -641,7 +640,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           [now - 2, 2],
           [now - 1, 3]
         ]);
-        assert.isTrue(result.ok);
+        assert.strictEqual(result.ok, true);
       });
       it('[3WGH] stores data of complex types', async () => {
         const now = 6;
@@ -650,7 +649,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           [now - 2, 2, 2],
           [now - 1, 3, 2]
         ]);
-        assert.isTrue(ok);
+        assert.strictEqual(ok, true);
       });
       it("[1NDB] doesn't accept data in non-series format", async () => {
         const now = 6;
@@ -659,7 +658,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           [now - 2, 2],
           [now - 1, 3]
         ]);
-        assert.isFalse(ok);
+        assert.strictEqual(ok, false);
         const error = body.error;
         assert.strictEqual(error.id, 'invalid-operation');
       });
@@ -667,7 +666,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         const aLargeString = '2222222'.repeat(100);
         const now = 20;
         const result = await tryStore({ type: 'series:call/telephone' }, ['deltaTime', 'value'], [[now - 10, aLargeString]]);
-        assert.isTrue(result.ok);
+        assert.strictEqual(result.ok, true);
       });
       it('[ZL7C] stores floats', async () => {
         const now = 10000000;
@@ -676,7 +675,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           Math.random() * 1e6
         ]);
         const result = await tryStore({ type: 'series:mass/kg' }, ['deltaTime', 'value'], aHundredRandomFloats);
-        assert.isTrue(result.ok);
+        assert.strictEqual(result.ok, true);
         const query = `select * from "event.${result.event.id}"`;
         const opts = {
           database: `user.${result.user.id}`
@@ -689,8 +688,8 @@ describe('[SDHF] Storing data in a HF series', function () {
           if (typeof exp[1] !== 'number') { throw new Error('AF: ridiculous flow inference removal'); }
           const expectedTs = Number(exp[0]);
           const expectedValue = Number(exp[1]);
-          assert.approximately(expectedTs, influxTimestamp, 0.1);
-          assert.approximately(expectedValue, act.value, 0.001);
+          assert.ok(Math.abs(expectedTs - influxTimestamp) <= 0.1);
+          assert.ok(Math.abs(expectedValue - act.value) <= 0.001);
         }
       });
     });
@@ -772,7 +771,7 @@ describe('[SDHF] Storing data in a HF series', function () {
             [3, 2, 3, 4]
           ];
           const res = await storeOp(headers, data, positionEventId);
-          assert.equal(res.body.status, 'ok');
+          assert.strictEqual(res.body.status, 'ok');
         });
         it('[7UTT] do not accept null for required fields', async () => {
           const headers = ['deltaTime', 'latitude', 'longitude', 'speed'];
@@ -782,8 +781,8 @@ describe('[SDHF] Storing data in a HF series', function () {
             [3, 2, 3, 4]
           ];
           const res = await storeOp(headers, data, positionEventId);
-          assert.exists(res.body.error);
-          assert.equal(res.body.error.id, 'invalid-request-structure');
+          assert.ok(res.body.error);
+          assert.strictEqual(res.body.error.id, 'invalid-request-structure');
         });
       });
       describe('when not all required fields are given', () => {
@@ -797,7 +796,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           ]
         ];
         it('[FNDT] refuses to store when not all required fields are given', async () => {
-          assert.isFalse(await tryStore(...args));
+          assert.strictEqual(await tryStore(...args), false);
         });
         it('[H525] returns error id "invalid-request-structure"', async () => {
           const { status, id, message } = await failStore(...args);
@@ -808,19 +807,19 @@ describe('[SDHF] Storing data in a HF series', function () {
       });
       it('[DTZ2] refuses to store when deltaTime is present twice (ambiguous!)', async () => {
         const now = 6;
-        assert.isFalse(await tryStore(['deltaTime', 'deltaTime', 'value', 'relativeTo'], [
+        assert.strictEqual(await tryStore(['deltaTime', 'deltaTime', 'value', 'relativeTo'], [
           [now - 3, now - 6, 1, 1],
           [now - 2, now - 5, 2, 2],
           [now - 1, now - 4, 3, 3]
-        ]));
+        ]), false);
       });
       it('[UU4R] refuses to store when other fields are present twice (ambiguous!)', async () => {
         const now = 6;
-        assert.isFalse(await tryStore(['deltaTime', 'value', 'value', 'relativeTo'], [
+        assert.strictEqual(await tryStore(['deltaTime', 'value', 'value', 'relativeTo'], [
           [now - 3, 3, 1, 1],
           [now - 2, 2, 2, 2],
           [now - 1, 1, 3, 3]
-        ]));
+        ]), false);
       });
       describe("when field names don't match the type", () => {
         const now = 6;
@@ -833,7 +832,7 @@ describe('[SDHF] Storing data in a HF series', function () {
           ]
         ];
         it("[AJMS] refuses to store when field names don't match the type", async () => {
-          assert.isFalse(await tryStore(...args));
+          assert.strictEqual(await tryStore(...args), false);
         });
         it('[7CR7] returns the error message with the id "invalid-request-structure"', async () => {
           const { status, id, message } = await failStore(...args);
@@ -892,24 +891,24 @@ describe('[SDHF] Storing data in a HF series', function () {
       }
       it('[UDHO] allows storing any number of optional fields, on each request', async () => {
         const now = 6;
-        assert.isTrue(await tryStore(['deltaTime', 'latitude', 'longitude', 'altitude'], [
+        assert.strictEqual(await tryStore(['deltaTime', 'latitude', 'longitude', 'altitude'], [
           [now - 3, 1, 2, 3],
           [now - 2, 2, 3, 4],
           [now - 1, 3, 4, 5]
-        ]));
-        assert.isTrue(await tryStore(['deltaTime', 'latitude', 'longitude', 'altitude', 'speed'], [
+        ]), true);
+        assert.strictEqual(await tryStore(['deltaTime', 'latitude', 'longitude', 'altitude', 'speed'], [
           [now - 3, 1, 2, 3, 160],
           [now - 2, 2, 3, 4, 170],
           [now - 1, 3, 4, 5, 180]
-        ]));
+        ]), true);
       });
       it('[JDTH] refuses unknown fields', async () => {
         const now = 6;
-        assert.isFalse(await tryStore(['deltaTime', 'latitude', 'longitude', 'depth'], [
+        assert.strictEqual(await tryStore(['deltaTime', 'latitude', 'longitude', 'depth'], [
           [now - 3, 1, 2, 3],
           [now - 2, 2, 3, 4],
           [now - 1, 3, 4, 5]
-        ]));
+        ]), false);
       });
     });
     describe('using a "create-only" permissions', () => {
@@ -958,7 +957,7 @@ describe('[SDHF] Storing data in a HF series', function () {
               [2, 2]
             ]
           });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
       });
     });
   });

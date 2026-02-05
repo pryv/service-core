@@ -6,7 +6,7 @@
  */
 const cuid = require('cuid');
 const path = require('path');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('errors').ErrorIds;
@@ -148,7 +148,7 @@ describe('System streams', function () {
         await createUser();
         res = await request.get(basePath).set('authorization', access.token);
 
-        assert.deepEqual(res.body.streams, expectedRes);
+        assert.deepStrictEqual(res.body.streams, expectedRes);
       });
     });
   });
@@ -166,10 +166,10 @@ describe('System streams', function () {
             .set('authorization', access.token);
         });
         it('[GRI4] should return status 400', async () => {
-          assert.equal(res.status, 400);
+          assert.strictEqual(res.status, 400);
         });
         it('[XP07] should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+          assert.strictEqual(res.body.error.id, ErrorIds.InvalidOperation);
         });
       });
     });
@@ -189,10 +189,10 @@ describe('System streams', function () {
             .set('authorization', access.token);
         });
         it('[SLIR] should return status 400', async () => {
-          assert.equal(res.status, 400);
+          assert.strictEqual(res.status, 400);
         });
         it('[V6HC] should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+          assert.strictEqual(res.body.error.id, ErrorIds.InvalidOperation);
         });
       });
     });
@@ -207,10 +207,10 @@ describe('System streams', function () {
             .set('authorization', access.token);
         });
         it('[1R35] should return status 400', async () => {
-          assert.equal(res.status, 400);
+          assert.strictEqual(res.status, 400);
         });
         it('[4939] should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+          assert.strictEqual(res.body.error.id, ErrorIds.InvalidOperation);
         });
       });
     });

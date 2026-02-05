@@ -6,8 +6,7 @@
  */
 
 const cuid = require('cuid');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const charlatan = require('charlatan');
 
 const helpers = require('./helpers');
@@ -203,8 +202,8 @@ describe('permissions create-only level', () => {
             accesses = res.body.accesses;
           });
           it('[HOTO] should return an empty list', async function () {
-            assert.exists(accesses);
-            assert.equal(accesses.length, 0);
+            assert.ok(accesses);
+            assert.strictEqual(accesses.length, 0);
           });
         });
       });
@@ -223,9 +222,9 @@ describe('permissions create-only level', () => {
                   level: 'create-only'
                 }]
               });
-            assert.equal(res.status, 201);
+            assert.strictEqual(res.status, 201);
             const access = res.body.access;
-            assert.exists(access);
+            assert.ok(access);
           });
 
           it('[ATCO] an appToken with managed rights should allow to create an access with a "create-only" permissions', async function () {
@@ -240,9 +239,9 @@ describe('permissions create-only level', () => {
                   level: 'create-only'
                 }]
               });
-            assert.equal(res.status, 201);
+            assert.strictEqual(res.status, 201);
             const access = res.body.access;
-            assert.exists(access);
+            assert.ok(access);
           });
 
           it('[ATCY] an appToken with managed rights should allow to create an access with a "create-only" permissions and selfRevoke forbidden', async function () {
@@ -260,9 +259,9 @@ describe('permissions create-only level', () => {
                   setting: 'forbidden'
                 }]
               });
-            assert.equal(res.status, 201);
+            assert.strictEqual(res.status, 201);
             const access = res.body.access;
-            assert.exists(access);
+            assert.ok(access);
           });
 
           it('[ATCR] an appToken with read rights should be forbidden to create an access with a "create-only" permissions', async function () {
@@ -277,9 +276,9 @@ describe('permissions create-only level', () => {
                   level: 'create-only'
                 }]
               });
-            assert.equal(res.status, 403);
+            assert.strictEqual(res.status, 403);
             const error = res.body.error;
-            assert.exists(error);
+            assert.ok(error);
           });
 
           it('[ATCC] an appToken with contribute rights should be allowed to create an access with a "create-only" permissions', async function () {
@@ -294,9 +293,9 @@ describe('permissions create-only level', () => {
                   level: 'create-only'
                 }]
               });
-            assert.equal(res.status, 201);
+            assert.strictEqual(res.status, 201);
             const access = res.body.access;
-            assert.exists(access);
+            assert.ok(access);
           });
 
           it('[FEGI] a createOnlyToken should forbid to create an access with a "read" level permission permission', async function () {
@@ -314,9 +313,9 @@ describe('permissions create-only level', () => {
                 ]
               });
             const error = res.body.error;
-            assert.exists(error);
-            assert.equal(res.status, 403);
-            assert.notExists(res.body.access);
+            assert.ok(error);
+            assert.strictEqual(res.status, 403);
+            assert.ok(res.body.access == null);
           });
           it('[SL4P] should forbid to create an access with a "contribute" level permission', async function () {
             const res = await server
@@ -333,9 +332,9 @@ describe('permissions create-only level', () => {
                 ]
               });
             const error = res.body.error;
-            assert.exists(error);
-            assert.equal(res.status, 403);
-            assert.notExists(res.body.access);
+            assert.ok(error);
+            assert.strictEqual(res.status, 403);
+            assert.ok(res.body.access == null);
           });
           it('[ZX1M] should forbid to create an access with a "manage" level permission', async function () {
             const res = await server
@@ -352,9 +351,9 @@ describe('permissions create-only level', () => {
                 ]
               });
             const error = res.body.error;
-            assert.exists(error);
-            assert.equal(res.status, 403);
-            assert.notExists(res.body.access);
+            assert.ok(error);
+            assert.strictEqual(res.status, 403);
+            assert.ok(res.body.access == null);
           });
         });
       });
@@ -369,7 +368,7 @@ describe('permissions create-only level', () => {
                 a: 'b'
               }
             });
-          assert.equal(res.status, 410);
+          assert.strictEqual(res.status, 410);
         });
       });
 
@@ -378,7 +377,7 @@ describe('permissions create-only level', () => {
           const res = await server.request()
             .del(reqPath(readAccessId))
             .set('Authorization', createOnlyToken);
-          assert.equal(res.status, 403);
+          assert.strictEqual(res.status, 403);
         });
       });
     });
@@ -405,8 +404,8 @@ describe('permissions create-only level', () => {
           .get(basePath)
           .set('Authorization', createOnlyToken)
           .query(query);
-        assert.equal(res.status, 403);
-        assert.equal(res.body.error.id, 'forbidden');
+        assert.strictEqual(res.status, 403);
+        assert.strictEqual(res.body.error.id, 'forbidden');
       });
 
       it('[V4KJ] should not return events when fetching "create-only" streams that are children of "read" streams', async function () {
@@ -415,9 +414,9 @@ describe('permissions create-only level', () => {
           .get(basePath)
           .set('Authorization', coWithReadParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 1);
+        assert.strictEqual(events.length, 1);
         for (const event of events) {
-          assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
+          assert.ok(event.streamIds.includes(streamParentId), 'Should only include "readable" streamId');
         }
       });
 
@@ -427,9 +426,9 @@ describe('permissions create-only level', () => {
           .get(basePath)
           .set('Authorization', coWithContributeParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 1);
+        assert.strictEqual(events.length, 1);
         for (const event of events) {
-          assert.include(event.streamIds, streamParentId, 'Should only include "readable" streamId');
+          assert.ok(event.streamIds.includes(streamParentId), 'Should only include "readable" streamId');
         }
       });
     });
@@ -440,7 +439,7 @@ describe('permissions create-only level', () => {
           .request()
           .get(reqPath(createOnlyEventId))
           .set('Authorization', createOnlyToken);
-        assert.equal(res.status, 403); // recieve unexistant to avoid discovery
+        assert.strictEqual(res.status, 403); // recieve unexistant to avoid discovery
       });
     });
 
@@ -456,7 +455,7 @@ describe('permissions create-only level', () => {
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .send(params);
-        assert.equal(res.status, 403);
+        assert.strictEqual(res.status, 403);
       });
 
       it('[F406] should allow creating events for "create-only" streams', async function () {
@@ -469,7 +468,7 @@ describe('permissions create-only level', () => {
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .send(params);
-        assert.equal(res.status, 201);
+        assert.strictEqual(res.status, 201);
       });
     });
 
@@ -483,7 +482,7 @@ describe('permissions create-only level', () => {
           .put(reqPath(createOnlyEventId))
           .set('Authorization', createOnlyToken)
           .send(params);
-        assert.equal(res.status, 403);
+        assert.strictEqual(res.status, 403);
       });
       // skipping cases "... streams that are children of "read" streams" & "... streams that are children of "contribute" streams"
       // because they are covered by the GET above
@@ -495,7 +494,7 @@ describe('permissions create-only level', () => {
           .request()
           .del(reqPath(createOnlyEventId))
           .set('Authorization', createOnlyToken);
-        assert.equal(res.status, 403);
+        assert.strictEqual(res.status, 403);
       });
       // skipping cases "... streams that are children of "read" streams" & "... streams that are children of "contribute" streams"
       // because they are covered by the GET above
@@ -513,7 +512,7 @@ describe('permissions create-only level', () => {
           }))
           .attach('document', testData.attachments.document.path,
             testData.attachments.document.filename);
-        assert.equal(res.status, 201);
+        assert.strictEqual(res.status, 201);
         eventId = res.body.event.id;
         fileId = res.body.event.fileId;
       });
@@ -535,7 +534,7 @@ describe('permissions create-only level', () => {
             .request()
             .get(reqPath(eventId) + `/${fileId}`)
             .set('Authorization', createOnlyToken);
-          assert.equal(res.status, 403);
+          assert.strictEqual(res.status, 403);
         });
       });
 
@@ -546,7 +545,7 @@ describe('permissions create-only level', () => {
             .set('Authorization', createOnlyToken)
             .attach('document', testData.attachments.document.path,
               testData.attachments.document.filename + '-2');
-          assert.equal(res.status, 403);
+          assert.strictEqual(res.status, 403);
         });
       });
 
@@ -556,7 +555,7 @@ describe('permissions create-only level', () => {
             .request()
             .delete(reqPath(eventId) + `/${fileId}`)
             .set('Authorization', createOnlyToken);
-          assert.equal(res.status, 403);
+          assert.strictEqual(res.status, 403);
         });
       });
     });
@@ -580,9 +579,9 @@ describe('permissions create-only level', () => {
           .set('Authorization', createOnlyToken)
           .query({ state: 'all' });
         const streams = res.body.streams;
-        assert.equal(streams.length, isAuditActive ? 2 : 1);
+        assert.strictEqual(streams.length, isAuditActive ? 2 : 1);
         const stream = streams[0];
-        assert.equal(stream.id, streamCreateOnlyId);
+        assert.strictEqual(stream.id, streamCreateOnlyId);
       });
     });
 
@@ -597,7 +596,7 @@ describe('permissions create-only level', () => {
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .send(data);
-        assert.equal(res.status, 403);
+        assert.strictEqual(res.status, 403);
       });
     });
 
@@ -608,7 +607,7 @@ describe('permissions create-only level', () => {
           .put(reqPath(streamCreateOnlyId))
           .set('Authorization', createOnlyToken)
           .send({ name: charlatan.Lorem.word() });
-        assert.equal(res.status, 403);
+        assert.strictEqual(res.status, 403);
       });
     });
 
@@ -618,7 +617,7 @@ describe('permissions create-only level', () => {
           .request()
           .del(reqPath(streamCreateOnlyId))
           .set('Authorization', createOnlyToken);
-        assert.equal(res.status, 403);
+        assert.strictEqual(res.status, 403);
       });
     });
   });
@@ -639,7 +638,7 @@ describe('permissions create-only level', () => {
           .send({
             url: charlatan.Internet.url()
           });
-        assert.equal(res.status, 201);
+        assert.strictEqual(res.status, 201);
       });
     });
 

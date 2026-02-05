@@ -8,7 +8,7 @@
 
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const { assert } = require('chai');
+const assert = require('node:assert');
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 const superagent = require('superagent'); // for basic auth
@@ -132,8 +132,8 @@ describe('[ROOT] root', function () {
       const res = await server.request()
         .get('/')
         .set('Accept', 'application/json');
-      assert.equal(res.status, 200);
-      assert.include(res.header['content-type'], 'application/json');
+      assert.strictEqual(res.status, 200);
+      assert.ok(res.header['content-type'].includes('application/json'));
       validation.checkMeta(res.body);
     });
 
@@ -141,15 +141,15 @@ describe('[ROOT] root', function () {
       const res = await server.request()
         .get('/')
         .set('Accept', 'text/html');
-      assert.equal(res.status, 200);
-      assert.include(res.header['content-type'], 'text/html');
-      assert.match(res.text, /Pryv API/);
+      assert.strictEqual(res.status, 200);
+      assert.ok(res.header['content-type'].includes('text/html'));
+      assert.ok(/Pryv API/.test(res.text));
     });
 
     it('[TS3D] should return an error if trying to access an unknown user account', async function () {
       const res = await server.request()
         .get('/unknown_user/events');
-      assert.equal(res.status, 404); // 404 does not throw
+      assert.strictEqual(res.status, 404); // 404 does not throw
     });
   });
 
@@ -164,7 +164,7 @@ describe('[ROOT] root', function () {
         .set('Authorization', appAccessToken1)
         .set('Access-Control-Request-Method', allowMethod)
         .set('Access-Control-Request-Headers', allowHeaders);
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
       validation.checkHeaders(res, [
         { name: 'Access-Control-Allow-Origin', value: origin },
         { name: 'Access-Control-Allow-Methods', value: allowMethod },
@@ -174,18 +174,17 @@ describe('[ROOT] root', function () {
       ]);
       validation.checkMeta(res.body);
 
-      assert.match(
-        res.headers['api-version'],
-        /^\d+\.\d+\.\d+(-.*)?$/,
+      assert.ok(
+        /^\d+\.\d+\.\d+(-.*)?$/.test(res.headers['api-version']),
         'API-Version looks like 1.2.3-432-fag343da.'
       );
-      assert.notExists(res.headers['x-powered-by']);
+      assert.ok(res.headers['x-powered-by'] == null);
     });
 
     it('[OQ3G] should return meta data in response body for errors as well', async function () {
       const res = await server.request()
         .get('/' + username + '/bad-path');
-      assert.equal(res.status, 404);
+      assert.strictEqual(res.status, 404);
       validation.checkMeta(res.body);
     });
 
@@ -194,7 +193,7 @@ describe('[ROOT] root', function () {
         .get('/events')
         .set('Authorization', appAccessToken1)
         .set('Host', username + '.pryv.local');
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
 
     it('[R3H5] should translate the username in subdomain also when it only contains numbers', async function () {
@@ -209,7 +208,7 @@ describe('[ROOT] root', function () {
         .set('Origin', 'http://test.pryv.local')
         .set('Authorization', appAccess2Token);
 
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
 
     it('[5IQK] should support POSTing "urlencoded" content with _json and _auth fields', async function () {
@@ -218,7 +217,7 @@ describe('[ROOT] root', function () {
         .type('form')
         .send({ _auth: appAccessToken1 })
         .send({ _json: JSON.stringify({ name: 'New stream1' }) });
-      assert.equal(res.status, 201);
+      assert.strictEqual(res.status, 201);
     });
 
     it('[2YEI] should support POSTing "urlencoded" content with _json, _method (PUT) and _auth fields', async function () {
@@ -228,7 +227,7 @@ describe('[ROOT] root', function () {
         .send({ _auth: appAccessToken1 })
         .send({ _method: 'PUT' })
         .send({ _json: JSON.stringify({ name: 'Abrhackadabra' }) });
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
 
     it('[VJTP] should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields', async function () {
@@ -238,7 +237,7 @@ describe('[ROOT] root', function () {
         .query({ mergeEventsWithParent: false })
         .send({ _auth: appAccessToken1 })
         .send({ _method: 'DELETE' });
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
 
     it('[6D5O] should properly handle JSON errors when POSTing "urlencoded" content with _json field', async function () {
@@ -248,7 +247,7 @@ describe('[ROOT] root', function () {
         .unset('authorization')
         .send({ _auth: appAccessToken1 })
         .send({ _json: '{"name": "New stream"' }); // <- missing closing brace
-      assert.equal(res.status, 400);
+      assert.strictEqual(res.status, 400);
     });
 
     it('[J2WP] trackingFunctions should update the access\'s "last used" time and *internal* request counters', async function () {
@@ -283,13 +282,12 @@ describe('[ROOT] root', function () {
           cb
         );
       });
-      assert.exists(access.lastUsed); //
-      assert.approximately(Math.round(access.lastUsed),
-        Math.round(expectedTime), 5);
+      assert.ok(access.lastUsed); //
+      assert.ok(Math.abs(Math.round(access.lastUsed) - Math.round(expectedTime)) <= 5);
 
-      assert.exists(access.calls);
-      assert.exists(access.calls[calledMethodKey]);
-      assert.equal(access.calls[calledMethodKey],
+      assert.ok(access.calls);
+      assert.ok(access.calls[calledMethodKey]);
+      assert.strictEqual(access.calls[calledMethodKey],
         originalCallCount + 1,
         'number of calls'
       );
@@ -299,7 +297,7 @@ describe('[ROOT] root', function () {
         .get('/' + username + '/accesses')
         .set('Authorization', personalAccessToken);
       const exposed = _.find(res.body.accesses, { token: personalAccessToken });
-      assert.notExists(exposed.calls);
+      assert.ok(exposed.calls == null);
     });
   });
 
@@ -307,7 +305,7 @@ describe('[ROOT] root', function () {
     it('[PDMA] should return OK', async function () {
       const res = await server.request()
         .options('/');
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
   });
 
@@ -355,21 +353,21 @@ describe('[ROOT] root', function () {
       const fullurl = url.replace('http://', 'http://' + sharedAccess.token + '@');
       const res = await superagent
         .get(fullurl + '/' + user.username + '/access-info');
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
 
     it('[0MI0] must accept the https://token:anystring@user.domain/ AUTH schema', async function () {
       const fullurl = url.replace('http://', 'http://' + sharedAccess.token + ':anystring@');
       const res = await superagent
         .get(fullurl + '/' + user.username + '/access-info');
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
 
     it('[3W3Y] must accept the https://token:@user.domain/ AUTH schema', async function () {
       const fullurl = url.replace('http://', 'http://' + sharedAccess.token + ':@');
       const res = await superagent
         .get(fullurl + '/' + user.username + '/access-info');
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
 
     it('[M54U] must return a 401 error when basic auth is missing using https://@user.domain/', async function () {
@@ -379,7 +377,7 @@ describe('[ROOT] root', function () {
           .get(fullurl + '/' + user.username + '/access-info');
         assert.fail('this should have thrown');
       } catch (e) {
-        assert.equal(e.response.status, 401);
+        assert.strictEqual(e.response.status, 401);
       }
     });
 
@@ -390,7 +388,7 @@ describe('[ROOT] root', function () {
           .get(fullurl + '/' + user.username + '/access-info');
         assert.fail('this should have thrown');
       } catch (e) {
-        assert.equal(e.response.status, 403);
+        assert.strictEqual(e.response.status, 403);
       }
     });
   });
@@ -432,11 +430,11 @@ describe('[ROOT] root', function () {
         .post('/' + username)
         .set('Authorization', sharedAccessToken)
         .send(calls);
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
       const results = res.body.results;
-      assert.exists(results);
-      assert.exists(results[0].stream);
-      assert.exists(results[1].stream);
+      assert.ok(results);
+      assert.ok(results[0].stream);
+      assert.ok(results[1].stream);
     });
 
     it('[ORT3] must execute the given method calls and return the results', async function () {
@@ -482,8 +480,8 @@ describe('[ROOT] root', function () {
       });
 
       const results = res.body.results;
-      assert.equal(results.length, calls.length, 'method call results');
-      assert.exists(results[0].event);
+      assert.strictEqual(results.length, calls.length, 'method call results');
+      assert.ok(results[0].event);
       validation.checkObjectEquality(
         results[0].event,
         Object.assign({}, calls[0].params, {
@@ -495,7 +493,7 @@ describe('[ROOT] root', function () {
         integrity.events.isActive ? [] : ['integrity']
       );
 
-      assert.exists(results[1].event);
+      assert.ok(results[1].event);
       validation.checkObjectEquality(
         results[1].event,
         Object.assign({}, calls[1].params, {
@@ -506,9 +504,9 @@ describe('[ROOT] root', function () {
         }),
         integrity.events.isActive ? [] : ['integrity']
       );
-      assert.exists(results[2].error);
-      assert.equal(results[2].error.id, ErrorIds.UnknownReferencedResource);
-      assert.equal(eventsNotifCount, 2, 'events notifications');
+      assert.ok(results[2].error);
+      assert.strictEqual(results[2].error.id, ErrorIds.UnknownReferencedResource);
+      assert.strictEqual(eventsNotifCount, 2, 'events notifications');
     });
 
     it('[TVPI] must execute the method calls containing events.get and ' +
@@ -548,15 +546,15 @@ describe('[ROOT] root', function () {
 
       validation.checkMeta(res.body);
       const results = res.body.results;
-      assert.equal(results.length, calls.length, 'method call results');
-      assert.exists(results[0].stream);
+      assert.strictEqual(results.length, calls.length, 'method call results');
+      assert.ok(results[0].stream);
       validation.checkObjectEquality(
         results[0].stream,
         Object.assign({}, calls[0].params, {
           parentId: null
         })
       );
-      assert.exists(results[1].event);
+      assert.ok(results[1].event);
       validation.checkObjectEquality(
         results[1].event,
         Object.assign({}, calls[1].params, {
@@ -569,8 +567,8 @@ describe('[ROOT] root', function () {
       );
 
       const getEventsResult = results[2];
-      assert.exists(getEventsResult.events);
-      assert.exists(getEventsResult.eventDeletions);
+      assert.ok(getEventsResult.events);
+      assert.ok(getEventsResult.eventDeletions);
     });
 
     // fixes #222
@@ -598,7 +596,7 @@ describe('[ROOT] root', function () {
       validation.checkMeta(res.body);
       const results = res.body.results;
       for (let i = 0; i < results.length; i++) {
-        assert.notInclude(Object.keys(results[i]), 'meta');
+        assert.ok(!Object.keys(results[i]).includes('meta'));
       }
     });
 
@@ -652,8 +650,8 @@ describe('[ROOT] root', function () {
         .send(calls)
         .set('authorization', appAccessToken1);
       const deleteStreamResult = res.body?.results[3];
-      assert.exists(deleteStreamResult?.updatedEvents);
-      assert.exists(deleteStreamResult?.streamDeletion);
+      assert.ok(deleteStreamResult?.updatedEvents);
+      assert.ok(deleteStreamResult?.streamDeletion);
     });
   });
 });

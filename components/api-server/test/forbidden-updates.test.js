@@ -9,11 +9,8 @@ const commonFns = require('../src/methods/helpers/commonFunctions');
 const streamSchema = require('../src/schema/stream');
 const eventsSchema = require('../src/schema/event');
 const accessesSchema = require('../src/schema/access');
-const should = require('should');
+const assert = require('node:assert');
 const async = require('async');
-
-const chai = require('chai');
-const assert = chai.assert;
 
 describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', function () {
   describe('with streams schema', function () {
@@ -72,10 +69,10 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
         let warningLogged = false;
         const logger = {
           warn: function (msg) {
-            should(ignoreProtectedFieldUpdates).be.true();
-            should(msg.indexOf('Forbidden update was attempted on the following protected field(s)') >= 0).be.true();
-            should(msg.indexOf('Server has "ignoreProtectedFieldUpdates" turned on: Fields are not updated, but no error is thrown.') >= 0).be.true();
-            should(msg.indexOf(protectedField) >= 0).be.true();
+            assert.strictEqual(ignoreProtectedFieldUpdates, true);
+            assert.ok(msg.indexOf('Forbidden update was attempted on the following protected field(s)') >= 0);
+            assert.ok(msg.indexOf('Server has "ignoreProtectedFieldUpdates" turned on: Fields are not updated, but no error is thrown.') >= 0);
+            assert.ok(msg.indexOf(protectedField) >= 0);
 
             warningLogged = true;
           }
@@ -86,16 +83,16 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
         catchForbiddenUpdate(null, forbiddenUpdate, null, function (err) {
           // Strict mode: we expect a forbidden error
           if (!ignoreProtectedFieldUpdates) {
-            should.exist(err);
-            should(err.id).be.equal('forbidden');
-            should(err.httpStatus).be.equal(403);
+            assert.ok(err != null);
+            assert.strictEqual(err.id, 'forbidden');
+            assert.strictEqual(err.httpStatus, 403);
             stepDone();
           } else { // Non-strict mode: we do not expect an error but a warning log
             if (err != null) return stepDone(err);
 
             // From here we expect a warning log to be triggered (see logger above).
             // We throw an explicit error if this is not the case
-            assert.isTrue(warningLogged, 'Warning was not logged.');
+            assert.strictEqual(warningLogged, true, 'Warning was not logged.');
 
             return stepDone();
           }

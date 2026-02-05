@@ -10,7 +10,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('api-server/test/test-helpers');
 const charlatan = require('charlatan');
 const cuid = require('cuid');
-const { assert } = require('chai');
+const assert = require('node:assert');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('[AUDI] Audit logs events', () => {
@@ -122,10 +122,10 @@ describe('[AUDI] Audit logs events', () => {
     it('[0BK7] must not return null values or trashed=false', async () => {
       const res = await get('/events', { streams: [':_audit:action-events.get'] }, personalToken);
       const events = res.body.events;
-      assert.isNotNull(events[0]);
+      assert.ok(events[0]);
       const event = events[0];
       for (const [key, val] of Object.entries(event)) {
-        assert.isNotNull(val, `"null" property ${key} of event is present.`);
+        assert.ok(val, `"null" property ${key} of event is present.`);
       }
       if (event.trashed != null && event.trashed === false) assert.fail('trashed=false is present.');
     });
@@ -133,12 +133,12 @@ describe('[AUDI] Audit logs events', () => {
       await get('/events', { auth: actionsToken }, null);
       const res = await get('/events', { streams: [':_audit:action-events.get'] }, personalToken);
       const event = res.body.events[0];
-      assert.notProperty(event.content.query, 'auth', 'token provided in query is present.');
+      assert.ok(!('auth' in event.content.query), 'token provided in query is present.');
     });
     it('[R8MS] must escape special characters', async () => {
       // it made the server crash
       const res = await get('/events', { streams: [':_system:username"'] }, personalToken); // trailing " (quote) in streamId parameter
-      assert.equal(res.status, 400, 'status should be 400');
+      assert.strictEqual(res.status, 400, 'status should be 400');
     });
   });
 
@@ -147,7 +147,7 @@ describe('[AUDI] Audit logs events', () => {
       const res = await get('/audit/logs', {}, personalToken);
       const logs = res.body.auditLogs;
       for (const log of logs) {
-        assert.notEqual(log.id.substring(':_audit:'.length), 'undefined');
+        assert.notStrictEqual(log.id.substring(':_audit:'.length), 'undefined');
       }
     });
   });

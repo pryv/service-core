@@ -6,7 +6,7 @@
  */
 
 const cuid = require('cuid');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const awaiting = require('awaiting');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
@@ -122,19 +122,19 @@ describe('webhooks', function () {
       });
 
       it('[YD6N] should send a boot message to all active webhooks', async function () {
-        assert.equal(notificationsServer.getMessageCount(), 1);
+        assert.strictEqual(notificationsServer.getMessageCount(), 1);
         const activeWebhook = await repository.getById(user, webhook.id);
-        assert.equal(activeWebhook.runCount, 1);
+        assert.strictEqual(activeWebhook.runCount, 1);
         const messages = notificationsServer.getMessages();
-        assert.equal(messages[0], BOOT_MESSAGE);
+        assert.strictEqual(messages[0], BOOT_MESSAGE);
         const metas = notificationsServer.getMetas();
-        assert.equal(metas[0].apiVersion, webhooksService.apiVersion);
-        assert.equal(metas[0].serial, webhooksService.serial);
-        assert.approximately(metas[0].serverTime, timestamp.now(), 100);
+        assert.strictEqual(metas[0].apiVersion, webhooksService.apiVersion);
+        assert.strictEqual(metas[0].serial, webhooksService.serial);
+        assert.ok(Math.abs(metas[0].serverTime - timestamp.now()) <= 100);
       });
       it('[UM4T] should send nothing to inactive webhooks', async function () {
         const inactiveWebhook = await repository.getById(user, webhook2.id);
-        assert.equal(inactiveWebhook.runCount, 0);
+        assert.strictEqual(inactiveWebhook.runCount, 0);
       });
     });
 
@@ -197,18 +197,18 @@ describe('webhooks', function () {
 
         it('[3TMH] should send API call to the notifications server', async function () {
           await awaiting.event(notificationsServer, 'received');
-          assert.isTrue(notificationsServer.isMessageReceived());
+          assert.strictEqual(notificationsServer.isMessageReceived(), true);
         });
 
         it('[7N4L] should update the Webhook\'s data to the storage', async function () {
           await new Promise(resolve => { setTimeout(resolve, 1000); });
           const updatedWebhook = await repository.getById(user, webhook.id);
-          assert.equal(updatedWebhook.runCount, 1, 'wrong runCount');
+          assert.strictEqual(updatedWebhook.runCount, 1, 'wrong runCount');
           const runs = updatedWebhook.runs;
-          assert.equal(runs.length, 1, 'wrong amount of runs');
+          assert.strictEqual(runs.length, 1, 'wrong amount of runs');
           const run = runs[0];
-          assert.equal(run.status, 200);
-          assert.approximately(run.timestamp, requestTimestamp, 0.5);
+          assert.strictEqual(run.status, 200);
+          assert.ok(Math.abs(run.timestamp - requestTimestamp) <= 0.5);
         });
       });
     });
@@ -290,7 +290,7 @@ describe('webhooks', function () {
           }
           await awaiting.delay(10);
         }
-        assert.isTrue(isWebhookActive);
+        assert.strictEqual(isWebhookActive, true);
       });
 
       it('[8Q4E] should deactivate after failures', async function () {
@@ -315,7 +315,7 @@ describe('webhooks', function () {
           .get(`/${username}/webhooks`)
           .set('Authorization', appAccessToken);
         const webhook = res.body.webhooks[0];
-        assert.equal(webhook.state, 'inactive');
+        assert.strictEqual(webhook.state, 'inactive');
       });
 
       it('[PY61] should be run again when updating its state', async function () {
@@ -324,7 +324,7 @@ describe('webhooks', function () {
           .set('Authorization', appAccessToken)
           .send({ state: 'active' });
         const webhook = res.body.webhook;
-        assert.equal(webhook.state, 'active');
+        assert.strictEqual(webhook.state, 'active');
         res = await apiServer.request()
           .post(`/${username}/streams`)
           .set('Authorization', appAccessToken)
@@ -332,9 +332,9 @@ describe('webhooks', function () {
             id: cuid(),
             name: cuid()
           });
-        assert.exists(res.body.stream);
+        assert.ok(res.body.stream);
         await awaiting.event(notificationsServer, 'received');
-        assert.equal(notificationsServer.getMessageCount() > 6, true);
+        assert.strictEqual(notificationsServer.getMessageCount() > 6, true);
       });
     });
   });
@@ -401,7 +401,7 @@ describe('webhooks', function () {
           });
           await awaiting.delay(10);
         }
-        assert.isFalse(isWebhookActive);
+        assert.strictEqual(isWebhookActive, false);
       });
     });
   });

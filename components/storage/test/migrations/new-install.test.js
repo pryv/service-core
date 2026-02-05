@@ -24,12 +24,12 @@ describe('Migrations - new install', () => {
   it('[OVYL] must set the initial version to the package file version and not perform other migrations', async () => {
     await versions.migrateIfNeeded();
     const v = await versions.getCurrent();
-    assert.exists(v);
+    assert.ok(v != null);
     if (isOpenSource) {
-      assert.isTrue(process.env.npm_package_version.startsWith(v._id), process.env.npm_package_version + ' should starts with' + v.id);
+      assert.strictEqual(process.env.npm_package_version.startsWith(v._id), true, process.env.npm_package_version + ' should starts with' + v.id);
     } else {
-      assert.equal(v._id, process.env.npm_package_version);
+      assert.strictEqual(v._id, process.env.npm_package_version);
     }
-    assert.approximately(v.initialInstall, timestamp.now(), 1000);
+    assert.ok(Math.abs(v.initialInstall - timestamp.now()) <= 1000);
   });
 });

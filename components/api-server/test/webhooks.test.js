@@ -8,8 +8,7 @@
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const charlatan = require('charlatan');
 
 const helpers = require('./helpers');
@@ -105,12 +104,12 @@ describe('webhooks', () => {
       });
       it('[67CX] should fetch all webhooks reachable by an app token', () => {
         webhooks.forEach(w => {
-          assert.equal(w.accessId, appAccessId1);
+          assert.strictEqual(w.accessId, appAccessId1);
         });
       });
       it('[WSJG] should not fetch any Webhook outside its scope', () => {
         webhooks.forEach(w => {
-          assert.notEqual(w.accessId, appAccessId2);
+          assert.notStrictEqual(w.accessId, appAccessId2);
         });
       });
     });
@@ -143,8 +142,8 @@ describe('webhooks', () => {
             found2 = true;
           }
         });
-        assert.isTrue(found1, 'did not find webhook1');
-        assert.isTrue(found2, 'did not find webhook2');
+        assert.strictEqual(found1, true, 'did not find webhook1');
+        assert.strictEqual(found2, true, 'did not find webhook2');
       });
     });
 
@@ -747,7 +746,7 @@ describe('webhooks', () => {
           const deletedWebhook = await bluebird.fromCallback((cb) =>
             storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb)
           );
-          assert.notExists(deletedWebhook);
+          assert.ok(deletedWebhook == null);
         });
       });
 
@@ -925,7 +924,7 @@ describe('webhooks', () => {
           });
 
           it('[Q7KL] should send a POST request to the URL', async () => {
-            assert.isTrue(notificationsServer.isMessageReceived());
+            assert.strictEqual(notificationsServer.isMessageReceived(), true);
           }).timeout(1000);
         });
 
@@ -997,7 +996,7 @@ describe('webhooks', () => {
         });
 
         it('[SBI7] should send a POST request to the URL', async () => {
-          assert.isTrue(notificationsServer.isMessageReceived());
+          assert.strictEqual(notificationsServer.isMessageReceived(), true);
         }).timeout(1000);
       });
     });
@@ -1022,7 +1021,7 @@ describe('webhooks', () => {
         });
 
         it('[C62I] should send a POST request to the URL', async () => {
-          assert.isTrue(notificationsServer.isMessageReceived());
+          assert.strictEqual(notificationsServer.isMessageReceived(), true);
         }).timeout(1000);
       });
     });

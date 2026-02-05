@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const timestamp = require('unix-timestamp');
 const awaiting = require('awaiting');
 
@@ -72,33 +72,33 @@ describe('Webhook', () => {
         });
 
         it('[Q7B2] should send it', () => {
-          assert.equal(notificationsServer.getMessages()[0], message, 'Webhook sent wrong message.');
+          assert.strictEqual(notificationsServer.getMessages()[0], message, 'Webhook sent wrong message.');
         });
         it('[FICW] should add a log to runs', () => {
-          assert.equal(runs.length, 1);
-          assert.equal(storedWebhook.runs.length, 1);
+          assert.strictEqual(runs.length, 1);
+          assert.strictEqual(storedWebhook.runs.length, 1);
         });
         it('[2VRK] should add the correct status to the last run', () => {
-          assert.equal(runs[0].status, 200);
-          assert.equal(storedWebhook.runs[0].status, 200);
+          assert.strictEqual(runs[0].status, 200);
+          assert.strictEqual(storedWebhook.runs[0].status, 200);
         });
         it('[AOCP] should add the correct timestamp to the last run', () => {
-          assert.approximately(runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
-          assert.approximately(storedWebhook.runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
+          assert.ok(Math.abs(runs[0].timestamp - requestTimestamp) <= 0.5, 'Timestamp is unsynced.');
+          assert.ok(Math.abs(storedWebhook.runs[0].timestamp - requestTimestamp) <= 0.5, 'Timestamp is unsynced.');
         });
         it('[2M6F] should increment runCount', () => {
-          assert.equal(webhook.runCount, 1);
-          assert.equal(storedWebhook.runCount, 1);
+          assert.strictEqual(webhook.runCount, 1);
+          assert.strictEqual(storedWebhook.runCount, 1);
         });
         it('[S1CY] should not increment failCount', () => {
-          assert.equal(webhook.failCount, 0);
-          assert.equal(storedWebhook.failCount, 0);
+          assert.strictEqual(webhook.failCount, 0);
+          assert.strictEqual(storedWebhook.failCount, 0);
         });
         it('[22X1] should send the meta', () => {
           const meta = notificationsServer.getMetas()[0];
-          assert.equal(meta.apiVersion, apiVersion);
-          assert.equal(meta.serial, serial);
-          assert.approximately(meta.serverTime, requestTimestamp, 0.5);
+          assert.strictEqual(meta.apiVersion, apiVersion);
+          assert.strictEqual(meta.serial, serial);
+          assert.ok(Math.abs(meta.serverTime - requestTimestamp) <= 0.5);
         });
       });
 
@@ -143,9 +143,9 @@ describe('Webhook', () => {
 
         it('[SRDL] should send the second message after the first', async () => {
           const receivedMessages = notificationsServer.getMessages();
-          assert.equal(receivedMessages.length, 2);
-          assert.equal(receivedMessages[0], firstMessage);
-          assert.equal(receivedMessages[1], secondMessage);
+          assert.strictEqual(receivedMessages.length, 2);
+          assert.strictEqual(receivedMessages[0], firstMessage);
+          assert.strictEqual(receivedMessages[1], secondMessage);
         });
       });
     });
@@ -171,28 +171,28 @@ describe('Webhook', () => {
       });
 
       it('[6UJH] should add a log to runs', () => {
-        assert.equal(webhook.runs.length, 1);
-        assert.equal(storedWebhook.runs.length, 1);
+        assert.strictEqual(webhook.runs.length, 1);
+        assert.strictEqual(storedWebhook.runs.length, 1);
       });
       it('[VKUA] should add the no status to the last run', () => {
-        assert.equal(webhook.runs[0].status, 0);
-        assert.equal(storedWebhook.runs[0].status, 0);
+        assert.strictEqual(webhook.runs[0].status, 0);
+        assert.strictEqual(storedWebhook.runs[0].status, 0);
       });
       it('[40UZ] should add the correct timestamp to the last run', () => {
-        assert.approximately(webhook.runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
-        assert.approximately(storedWebhook.runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
+        assert.ok(Math.abs(webhook.runs[0].timestamp - requestTimestamp) <= 0.5, 'Timestamp is unsynced.');
+        assert.ok(Math.abs(storedWebhook.runs[0].timestamp - requestTimestamp) <= 0.5, 'Timestamp is unsynced.');
       });
       it('[UE17] should increment runCount', () => {
-        assert.equal(webhook.runCount, 1, 'runCount should be 1');
-        assert.equal(storedWebhook.runCount, 1, 'runCount should be 1');
+        assert.strictEqual(webhook.runCount, 1, 'runCount should be 1');
+        assert.strictEqual(storedWebhook.runCount, 1, 'runCount should be 1');
       });
       it('[UJ2Y] should increment failCount', () => {
-        assert.equal(webhook.failCount, 1, 'failCount should be 1');
-        assert.equal(storedWebhook.failCount, 1, 'failCount should be 1');
+        assert.strictEqual(webhook.failCount, 1, 'failCount should be 1');
+        assert.strictEqual(storedWebhook.failCount, 1, 'failCount should be 1');
       });
       it('[V5NH] should increment currentRetries', () => {
-        assert.equal(webhook.currentRetries, 1, 'in memory currentRetries should be 1');
-        assert.equal(storedWebhook.currentRetries, 1, 'stored currentRetries should be 1');
+        assert.strictEqual(webhook.currentRetries, 1, 'in memory currentRetries should be 1');
+        assert.strictEqual(storedWebhook.currentRetries, 1, 'stored currentRetries should be 1');
       });
     });
 
@@ -230,34 +230,34 @@ describe('Webhook', () => {
         });
 
         it('[E5VQ] should save the run', () => {
-          assert.equal(run.status, 503);
-          assert.approximately(run.timestamp, requestTimestamp, 0.1);
+          assert.strictEqual(run.status, 503);
+          assert.ok(Math.abs(run.timestamp - requestTimestamp) <= 0.1);
           assert.deepEqual(run, webhook.lastRun);
-          assert.equal(storedRun.status, 503);
-          assert.approximately(storedRun.timestamp, requestTimestamp, 0.1);
+          assert.strictEqual(storedRun.status, 503);
+          assert.ok(Math.abs(storedRun.timestamp - requestTimestamp) <= 0.1);
           assert.deepEqual(storedRun, storedWebhook.lastRun);
         });
         it('[XP7G] should increment currentRetries', () => {
-          assert.equal(webhook.currentRetries, 1);
-          assert.equal(storedWebhook.currentRetries, 1);
+          assert.strictEqual(webhook.currentRetries, 1);
+          assert.strictEqual(storedWebhook.currentRetries, 1);
         });
         it('[9AL1] should schedule for a retry', () => {
-          assert.exists(webhook.timeout);
+          assert.ok(webhook.timeout);
         });
         it('[OHLY] should send scheduled messages after an interval', async () => {
           notificationsServer.setResponseStatus(201);
           await awaiting.event(notificationsServer, 'received');
-          assert.isTrue(notificationsServer.isMessageReceived());
+          assert.strictEqual(notificationsServer.isMessageReceived(), true);
           // firstMessage is received the first time although it returns a 503.
           assert.deepEqual(notificationsServer.getMessages(),
             [firstMessage, firstMessage]);
         });
         it('[1VIT] should reset error tracking properties', async () => {
           storedWebhook = await repository.getById(user, webhook.id);
-          assert.notExists(webhook.timeout);
-          assert.equal(webhook.currentRetries, 0);
-          assert.equal(webhook.messageBuffer.size, 0);
-          assert.equal(storedWebhook.currentRetries, 0, 'stored currentRetries should be 0');
+          assert.ok(webhook.timeout == null);
+          assert.strictEqual(webhook.currentRetries, 0);
+          assert.strictEqual(webhook.messageBuffer.size, 0);
+          assert.strictEqual(storedWebhook.currentRetries, 0, 'stored currentRetries should be 0');
         });
       });
     });
@@ -299,9 +299,9 @@ describe('Webhook', () => {
       });
 
       it('[73TG] should only send the message once', () => {
-        assert.equal(notificationsServer.getMessageCount(), 1, 'server should receive the message once');
-        assert.equal(runs.length, 1, 'Webhook should have 1 run');
-        assert.equal(storedWebhook.runs.length, 1, 'Webhook should have 1 run');
+        assert.strictEqual(notificationsServer.getMessageCount(), 1, 'server should receive the message once');
+        assert.strictEqual(runs.length, 1, 'Webhook should have 1 run');
+        assert.strictEqual(storedWebhook.runs.length, 1, 'Webhook should have 1 run');
         assert.deepEqual(notificationsServer.getMessages(), [firstMessage]);
       });
       it('[WPMH] should accumulate messages', () => {
@@ -309,17 +309,17 @@ describe('Webhook', () => {
           [firstMessage, secondMessage, thirdMessage]);
       });
       it('[YLWK] should schedule for a retry after minInterval', () => {
-        assert.exists(webhook.timeout);
+        assert.ok(webhook.timeout);
       });
       it('[OZGP] should send scheduled messages after an interval', async () => {
         notificationsServer.resetMessageReceived();
         await awaiting.event(notificationsServer, 'received');
-        assert.isTrue(notificationsServer.isMessageReceived());
+        assert.strictEqual(notificationsServer.isMessageReceived(), true);
         assert.deepEqual(notificationsServer.getMessages(),
           [firstMessage, firstMessage, secondMessage, thirdMessage]);
       });
       it('[86OP] should remove the timeout afterwards', () => {
-        assert.notExists(webhook.timeout);
+        assert.ok(webhook.timeout == null);
       });
     });
 
@@ -357,18 +357,18 @@ describe('Webhook', () => {
         await awaiting.event(notificationsServer, 'received');
       });
       it('[PX10] should update the state to inactive', () => {
-        assert.equal(webhook.state, 'inactive');
+        assert.strictEqual(webhook.state, 'inactive');
       });
       it('[BLNP] should update the stored version', async () => {
         storedWebhook = await repository.getById(user, webhook.id);
-        assert.equal(storedWebhook.state, 'inactive');
+        assert.strictEqual(storedWebhook.state, 'inactive');
       });
       it('[ODNM] should not run anymore', async () => {
         const msgCount = notificationsServer.getMessageCount();
         const runCount = webhook.runCount;
         await webhook.send();
-        assert.equal(notificationsServer.getMessageCount(), msgCount);
-        assert.equal(webhook.runCount, runCount);
+        assert.strictEqual(notificationsServer.getMessageCount(), msgCount);
+        assert.strictEqual(webhook.runCount, runCount);
       });
     });
 

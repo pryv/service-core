@@ -6,12 +6,12 @@
  */
 'use strict';
 // Helper methods and setup for all unit tests.
-const should = require('should');
+const assert = require('node:assert');
 const superagent = require('superagent');
 const request = require('supertest');
 require('test-helpers/src/api-server-tests-config');
 module.exports = {
-  should,
+  assert,
   superagent,
   request
 };

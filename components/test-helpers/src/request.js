@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 const superagent = require('superagent');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 module.exports = request;
 /**
  * Helper for HTTP requests. Returns a SuperAgent request:
@@ -54,9 +54,9 @@ Request.prototype.login = function (user, callback) {
     .set('Origin', 'http://test.pryv.local')
     .send(authData)
     .end(function (err, res) {
-      assert.isNull(err?.message || null, 'Request must be a success');
-      assert.isDefined(res, 'Request has a result');
-      res.statusCode.should.eql(200);
+      assert.strictEqual(err?.message || null, null, 'Request must be a success');
+      assert.ok(res !== undefined, 'Request has a result');
+      assert.strictEqual(res.statusCode, 200);
       if (res.body.token == null) {
         return callback(new Error('Expected "token" in login response body.'));
       }

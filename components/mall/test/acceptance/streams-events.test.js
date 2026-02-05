@@ -48,13 +48,13 @@ describe('[MSTE] Stores Streams & Events', function () {
       .set('Authorization', personalToken)
       .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId, level: 'manage' }, { streamId: ':dummy:', level: 'manage' }] });
     appAccessDummy = res.body.access;
-    assert.exists(appAccessDummy);
+    assert.ok(appAccessDummy);
 
     const res2 = await coreRequest.post(accessesPath)
       .set('Authorization', personalToken)
       .send({ type: 'app', name: 'app access master', token: 'app-token-master', permissions: [{ streamId: '*', level: 'manage' }] });
     appAccessMaster = res2.body.access;
-    assert.exists(appAccessMaster);
+    assert.ok(appAccessMaster);
   });
 
   after(async function () {
@@ -69,11 +69,11 @@ describe('[MSTE] Stores Streams & Events', function () {
           .set('Authorization', appAccessDummy.token)
           .query({ parentId: ':dummy:' });
         const streams = res.body.streams;
-        assert.exists(streams);
-        assert.equal(streams.length, 1);
-        assert.equal(streams[0].children.length, 2);
-        assert.equal(streams[0].name, user.username);
-        assert.equal(streams[0].parentId, ':dummy:');
+        assert.ok(streams);
+        assert.strictEqual(streams.length, 1);
+        assert.strictEqual(streams[0].children.length, 2);
+        assert.strictEqual(streams[0].name, user.username);
+        assert.strictEqual(streams[0].parentId, ':dummy:');
       });
 
       it('[UVQ2] Must retrieve "yo" streams and ":dummy:" when requesting "*"', async () => {
@@ -82,12 +82,12 @@ describe('[MSTE] Stores Streams & Events', function () {
           .set('Authorization', appAccessDummy.token)
           .query({});
         const streams = res.body.streams;
-        assert.exists(streams);
-        assert.equal(streams.length, !isAuditActive ? 2 : 3);
-        assert.equal(streams[0].id, streamId);
-        assert.equal(streams[0].children.length, 1);
-        assert.equal(streams[1].id, ':dummy:');
-        if (isAuditActive) { assert.equal(streams[2].id, ':_audit:access-' + appAccessDummy.id); }
+        assert.ok(streams);
+        assert.strictEqual(streams.length, !isAuditActive ? 2 : 3);
+        assert.strictEqual(streams[0].id, streamId);
+        assert.strictEqual(streams[0].children.length, 1);
+        assert.strictEqual(streams[1].id, ':dummy:');
+        if (isAuditActive) { assert.strictEqual(streams[2].id, ':_audit:access-' + appAccessDummy.id); }
       });
 
       it('[XC20] master token must retrieve "yo" streams and all stores when requesting "*"', async () => {
@@ -96,15 +96,15 @@ describe('[MSTE] Stores Streams & Events', function () {
           .set('Authorization', appAccessMaster.token)
           .query({});
         const streams = res.body.streams;
-        assert.exists(streams);
+        assert.ok(streams);
         // we also get helpers here, because with the current implementation, it is returned.
-        assert.equal(streams.length, !isAuditActive ? 4 : 5);
-        assert.equal(streams[0].id, ':dummy:');
-        assert.equal(streams[1].id, ':faulty:');
+        assert.strictEqual(streams.length, !isAuditActive ? 4 : 5);
+        assert.strictEqual(streams[0].id, ':dummy:');
+        assert.strictEqual(streams[1].id, ':faulty:');
         if (isAuditActive) {
-          assert.equal(streams[2].id, ':_audit:');
-          assert.equal(streams[3].id, streamId);
-          assert.equal(streams[3].children.length, 1);
+          assert.strictEqual(streams[2].id, ':_audit:');
+          assert.strictEqual(streams[3].id, streamId);
+          assert.strictEqual(streams[3].children.length, 1);
         }
       });
 
@@ -142,7 +142,7 @@ describe('[MSTE] Stores Streams & Events', function () {
           .query({});
         const streams = res.body.streams;
         for (const stream of streams) {
-          assert.notExists(stream.parentId);
+          assert.ok(stream.parentId == null);
         }
       });
     });
@@ -154,9 +154,9 @@ describe('[MSTE] Stores Streams & Events', function () {
           .set('Authorization', appAccessDummy.token)
           .send({ id: ':dummy:fluffy', name: 'Fluffy', parentId: ':dummy:' });
         const stream = res.body.stream;
-        assert.equal(stream.id, ':dummy:fluffy');
-        assert.equal(stream.parentId, ':dummy:');
-        assert.equal(stream.name, 'Bluppy');
+        assert.strictEqual(stream.id, ':dummy:fluffy');
+        assert.strictEqual(stream.parentId, ':dummy:');
+        assert.strictEqual(stream.name, 'Bluppy');
       });
 
       it('[2Q13] Should fail creating outside of store', async () => {
@@ -164,8 +164,8 @@ describe('[MSTE] Stores Streams & Events', function () {
           .post(streamsPath)
           .set('Authorization', personalToken)
           .send({ id: ':dummy:fluffy', name: 'Fluffy', parentId: 'yo' });
-        assert.equal(res.body.error.id, 'invalid-request-structure');
-        assert.equal(res.body.error.message, 'streams cannot have an id different non matching from their parentId store');
+        assert.strictEqual(res.body.error.id, 'invalid-request-structure');
+        assert.strictEqual(res.body.error.message, 'streams cannot have an id different non matching from their parentId store');
       });
 
       it('[2Q14] Should fail creating outside of store 2', async () => {
@@ -173,8 +173,8 @@ describe('[MSTE] Stores Streams & Events', function () {
           .post(streamsPath)
           .set('Authorization', personalToken)
           .send({ id: ':dummy:fluffy', name: 'Fluffy' });
-        assert.equal(res.body.error.id, 'invalid-request-structure');
-        assert.equal(res.body.error.message, 'streams cannot have an id different non matching from their parentId store');
+        assert.strictEqual(res.body.error.id, 'invalid-request-structure');
+        assert.strictEqual(res.body.error.message, 'streams cannot have an id different non matching from their parentId store');
       });
     });
 
@@ -185,9 +185,9 @@ describe('[MSTE] Stores Streams & Events', function () {
           .set('Authorization', personalToken)
           .send({ name: 'Fluffy' });
         const stream = res.body.stream;
-        assert.equal(stream.id, ':dummy:mariana');
-        assert.equal(stream.parentId, ':dummy:');
-        assert.equal(stream.name, 'Bluppy');
+        assert.strictEqual(stream.id, ':dummy:mariana');
+        assert.strictEqual(stream.parentId, ':dummy:');
+        assert.strictEqual(stream.name, 'Bluppy');
       });
 
       it('[3Q13] Should fail moving a stream outside of store', async () => {
@@ -195,8 +195,8 @@ describe('[MSTE] Stores Streams & Events', function () {
           .put(streamsPath + ':dummy:mariana')
           .set('Authorization', personalToken)
           .send({ parentId: 'yo' });
-        assert.equal(res.body.error.id, 'invalid-request-structure');
-        assert.equal(res.body.error.message, 'streams cannot have an id different non matching from their parentId store');
+        assert.strictEqual(res.body.error.id, 'invalid-request-structure');
+        assert.strictEqual(res.body.error.message, 'streams cannot have an id different non matching from their parentId store');
       });
     });
   });
@@ -210,7 +210,7 @@ describe('[MSTE] Stores Streams & Events', function () {
           .set('Authorization', personalToken)
           .query({});
         checkDummyEvent0(res.body);
-        assert.exists(res.body.events[1], 'We should also get events from antonia');
+        assert.ok(res.body.events[1], 'We should also get events from antonia');
       });
 
       it('[XD22] master token must retrive :dummy: events', async () => {
@@ -229,7 +229,7 @@ describe('[MSTE] Stores Streams & Events', function () {
           .set('Authorization', appAccessDummy.token)
           .query({});
         checkDummyEvent0(res.body);
-        assert.exists(res.body.events.length, 1, 'There should be only one event in mariana');
+        assert.ok(res.body.events.length, 1, 'There should be only one event in mariana');
       });
     });
 
@@ -239,7 +239,7 @@ describe('[MSTE] Stores Streams & Events', function () {
           .post(eventsPath)
           .send({ type: 'note/txt', content: 'hello', streamIds: [':dummy:mariana'] })
           .set('Authorization', appAccessDummy.token);
-        assert.equal(res.body.event.content, 'Received');
+        assert.strictEqual(res.body.event.content, 'Received');
       });
 
       it('[YD22] create with a given id on :dummy:', async () => {
@@ -247,8 +247,8 @@ describe('[MSTE] Stores Streams & Events', function () {
           .post(eventsPath)
           .send({ id: ':dummy:fluffy', type: 'note/txt', content: 'hello', streamIds: [':dummy:mariana'] })
           .set('Authorization', appAccessDummy.token);
-        assert.equal(res.body.event.id, ':dummy:fluffy');
-        assert.equal(res.body.event.content, 'Received');
+        assert.strictEqual(res.body.event.id, ':dummy:fluffy');
+        assert.strictEqual(res.body.event.content, 'Received');
       });
 
       it('[YD23] should fail on mismatching stream and id in store', async () => {
@@ -256,8 +256,8 @@ describe('[MSTE] Stores Streams & Events', function () {
           .post(eventsPath)
           .send({ id: ':dummy:fluffy', type: 'note/txt', content: 'hello', streamIds: ['yo'] })
           .set('Authorization', appAccessMaster.token);
-        assert.equal(res.body.error.id, 'invalid-request-structure');
-        assert.equal(res.body.error.message, 'Cannot create or update an event with id and streamIds belonging to different stores');
+        assert.strictEqual(res.body.error.id, 'invalid-request-structure');
+        assert.strictEqual(res.body.error.message, 'Cannot create or update an event with id and streamIds belonging to different stores');
       });
 
       it('[YD24] should fail on mismatching stream in store and id', async () => {
@@ -265,8 +265,8 @@ describe('[MSTE] Stores Streams & Events', function () {
           .post(eventsPath)
           .send({ id: 'cslpldeicsd0nmkkl7dif1qtk', type: 'note/txt', content: 'hello', streamIds: [':dummy:mariana'] })
           .set('Authorization', appAccessMaster.token);
-        assert.equal(res.body.error.id, 'invalid-request-structure');
-        assert.equal(res.body.error.message, 'Cannot create or update an event with id and streamIds belonging to different stores');
+        assert.strictEqual(res.body.error.id, 'invalid-request-structure');
+        assert.strictEqual(res.body.error.message, 'Cannot create or update an event with id and streamIds belonging to different stores');
       });
     });
 
@@ -276,7 +276,7 @@ describe('[MSTE] Stores Streams & Events', function () {
           .put(eventsPath + ':dummy:dummyevent0')
           .send({ content: 'bye' })
           .set('Authorization', appAccessDummy.token);
-        assert.equal(res.body.event.content, 'bye');
+        assert.strictEqual(res.body.event.content, 'bye');
       });
 
       it('[ZD22] should fail moving an event to another store', async () => {
@@ -284,28 +284,28 @@ describe('[MSTE] Stores Streams & Events', function () {
           .put(eventsPath + ':dummy:dummyevent0')
           .send({ streamIds: ['yo'] })
           .set('Authorization', appAccessDummy.token);
-        assert.equal(res.body.error.id, 'invalid-request-structure');
-        assert.equal(res.body.error.message, 'Cannot create or update an event with id and streamIds belonging to different stores');
+        assert.strictEqual(res.body.error.id, 'invalid-request-structure');
+        assert.strictEqual(res.body.error.message, 'Cannot create or update an event with id and streamIds belonging to different stores');
       });
     });
   });
 });
 
 function checkDummyEvent0 (body) {
-  assert.notExists(body.error);
-  assert.exists(body.events, 'Should receive events object');
-  assert.exists(body.events[0], 'Should receive at least on event');
+  assert.ok(body.error == null);
+  assert.ok(body.events, 'Should receive events object');
+  assert.ok(body.events[0], 'Should receive at least on event');
   const event = body.events[0];
-  assert.equal(event.id, ':dummy:dummyevent0');
+  assert.strictEqual(event.id, ':dummy:dummyevent0');
 }
 
 function checkDummyStreamsStructure (body) {
-  assert.notExists(body.error);
-  assert.exists(body.streams);
+  assert.ok(body.error == null);
+  assert.ok(body.streams);
   const streams = body.streams;
-  assert.equal(streams.length, 1, 'Should find one stream');
-  assert.equal(streams[0].id, ':dummy:myself', 'Should find myself stream');
-  assert.equal(streams[0].children.length, 2, 'myself stream should have two children');
-  assert.equal(streams[0].children[0].id, ':dummy:mariana', 'myself stream should have mariana children');
-  assert.equal(streams[0].children[1].id, ':dummy:antonia', 'myself stream should have antonia children');
+  assert.strictEqual(streams.length, 1, 'Should find one stream');
+  assert.strictEqual(streams[0].id, ':dummy:myself', 'Should find myself stream');
+  assert.strictEqual(streams[0].children.length, 2, 'myself stream should have two children');
+  assert.strictEqual(streams[0].children[0].id, ':dummy:mariana', 'myself stream should have mariana children');
+  assert.strictEqual(streams[0].children[1].id, ':dummy:antonia', 'myself stream should have antonia children');
 }

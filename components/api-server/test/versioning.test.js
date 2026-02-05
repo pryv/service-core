@@ -8,7 +8,7 @@
 const async = require('async');
 const _ = require('lodash');
 const charlatan = require('charlatan');
-const { assert } = require('chai');
+const assert = require('node:assert');
 
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
@@ -92,9 +92,9 @@ describe('Versioning', function () {
           schema: eventsMethodsSchema.get.result
         });
         const events = res.body.events;
-        (events.length).should.be.above(0);
+        assert.ok(events.length > 0);
         events.forEach(function (event) {
-          assert.notExists(event.headId);
+          assert.ok(event.headId == null);
         });
         done();
       });
@@ -116,15 +116,15 @@ describe('Versioning', function () {
                   status: 200,
                   schema: eventsMethodsSchema.del.result
                 });
-                res.body.eventDeletion.id.should.eql(trashedEventWithHistory.id);
+                assert.strictEqual(res.body.eventDeletion.id, trashedEventWithHistory.id);
                 stepDone();
               });
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted () {
               const event = await mall.events.getOne(user.id, trashedEventWithHistory.id);
               const eventHistory = await mall.events.getHistory(user.id, trashedEventWithHistory.id);
-              eventHistory.length.should.be.eql(0); // empty history
-              assert.exists(event.deleted);
+              assert.strictEqual(eventHistory.length, 0); // empty history
+              assert.ok(event.deleted);
             }
           ], done);
         });
@@ -147,24 +147,24 @@ describe('Versioning', function () {
             },
             async function findDeletionInStorageAndCheckThatHistoryIsDeleted () {
               const deletedEvent = await mall.events.getOne(user.id, trashedEventWithHistory.id);
-              assert.exists(deletedEvent);
+              assert.ok(deletedEvent);
 
-              (Object.keys(deletedEvent).length).should.eql(integrity.events.isActive ? 5 : 4);
-              deletedEvent.id.should.eql(trashedEventWithHistory.id);
-              assert.exists(deletedEvent.deleted);
-              assert.exists(deletedEvent.modified);
-              assert.exists(deletedEvent.modifiedBy);
-              if (integrity.events.isActive) assert.exists(deletedEvent.integrity);
+              assert.strictEqual(Object.keys(deletedEvent).length, integrity.events.isActive ? 5 : 4);
+              assert.strictEqual(deletedEvent.id, trashedEventWithHistory.id);
+              assert.ok(deletedEvent.deleted);
+              assert.ok(deletedEvent.modified);
+              assert.ok(deletedEvent.modifiedBy);
+              if (integrity.events.isActive) assert.ok(deletedEvent.integrity);
 
               const eventHistory = await mall.events.getHistory(user.id, trashedEventWithHistory.id);
-              eventHistory.length.should.be.eql(2);
+              assert.strictEqual(eventHistory.length, 2);
               eventHistory.forEach(function (event) {
                 // integrity is lost
-                (Object.keys(event).length).should.eql(3);
-                assert.exists(event.id);
-                assert.equal(event.id, trashedEventWithHistory.id);
-                assert.exists(event.modified);
-                assert.exists(event.modifiedBy);
+                assert.strictEqual(Object.keys(event).length, 3);
+                assert.ok(event.id);
+                assert.strictEqual(event.id, trashedEventWithHistory.id);
+                assert.ok(event.modified);
+                assert.ok(event.modifiedBy);
               });
             }
           ], done);
@@ -189,39 +189,39 @@ describe('Versioning', function () {
           },
           async function verifyDeletedHeadInStory () {
             const event = await mall.events.getOne(user.id, trashedEventWithHistory.id);
-            assert.exists(event);
+            assert.ok(event);
             const expected = structuredClone(trashedEventWithHistory);
             delete expected.streamId;
             // this comes from the storage .. no need to test tags
             delete expected.tags;
             expected.deleted = event.deleted;
             integrity.events.set(expected);
-            event.should.eql(expected);
+            assert.deepStrictEqual(event, expected);
           },
           async function checkThatHistoryIsUnchanged () {
             const eventHistory = await mall.events.getHistory(user.id, trashedEventWithHistory.id);
 
             // TODO clean this test
             const checked = { first: false, second: false };
-            (eventHistory.length).should.eql(2);
+            assert.strictEqual(eventHistory.length, 2);
             eventHistory.forEach(function (event) {
               if (event.modified === testData.events[20].modified) {
                 const expected = structuredClone(testData.events[20]);
                 expected.id = expected.headId;
                 delete expected.headId;
                 delete expected.tags;// this comes from the storage .. no need to test tags
-                event.should.eql(expected);
+                assert.deepStrictEqual(event, expected);
                 checked.first = true;
               } else if (event.modified === testData.events[21].modified) {
                 const expected = structuredClone(testData.events[21]);
                 expected.id = expected.headId;
                 delete expected.headId;
                 delete expected.tags;// this comes from the storage .. no need to test tags
-                event.should.eql(expected);
+                assert.deepStrictEqual(event, expected);
                 checked.second = true;
               }
             });
-            checked.should.eql({ first: true, second: true });
+            assert.deepStrictEqual(checked, { first: true, second: true });
           }
         ], done);
       });
@@ -236,7 +236,7 @@ describe('Versioning', function () {
                 status: 200,
                 schema: eventsMethodsSchema.getOne.result
               });
-              assert.notExists(res.body.history);
+              assert.ok(res.body.history == null);
               done();
             }
           );
@@ -250,7 +250,7 @@ describe('Versioning', function () {
                 status: 200,
                 schema: eventsMethodsSchema.getOne.result
               });
-              assert.exists(res.body.history);
+              assert.ok(res.body.history);
 
               done();
             }
@@ -288,8 +288,8 @@ describe('Versioning', function () {
                   status: 200,
                   schema: eventsMethodsSchema.getOne.result
                 });
-                assert.exists(res.body);
-                (res.body.history.length).should.eql(0);
+                assert.ok(res.body);
+                assert.strictEqual(res.body.history.length, 0);
                 stepDone();
               });
           }
@@ -340,22 +340,21 @@ describe('Versioning', function () {
                     status: 200,
                     schema: eventsMethodsSchema.getOne.result
                   });
-                  assert.exists(res.body);
-                  assert.exists(res.body.history);
-                  (res.body.history.length).should.eql(2);
+                  assert.ok(res.body);
+                  assert.ok(res.body.history);
+                  assert.strictEqual(res.body.history.length, 2);
                   const history = res.body.history;
                   let time = 0;
                   history.forEach(function (previousVersion) {
                     delete previousVersion.streamId;
-                    (previousVersion.id).should.eql(eventWithNoHistory.id);
+                    assert.strictEqual(previousVersion.id, eventWithNoHistory.id);
                     // check sorted by modified field
                     if (time !== 0) {
-                      (previousVersion.modified).should.be.above(time);
+                      assert.ok(previousVersion.modified > time);
                     }
                     time = previousVersion.modified;
-                    (_.omit(previousVersion, ['modified', 'modifiedBy', 'content', 'tags', 'integrity']))
-                      .should.eql(_.omit(eventWithNoHistory,
-                        ['modified', 'modifiedBy', 'content', 'tags', 'integrity']));
+                    assert.deepStrictEqual(_.omit(previousVersion, ['modified', 'modifiedBy', 'content', 'tags', 'integrity']),
+                      _.omit(eventWithNoHistory, ['modified', 'modifiedBy', 'content', 'tags', 'integrity']));
                   });
                   stepDone();
                 });
@@ -382,15 +381,14 @@ describe('Versioning', function () {
                     status: 200,
                     schema: eventsMethodsSchema.getOne.result
                   });
-                  assert.exists(res.body);
-                  assert.exists(res.body.history);
-                  (res.body.history.length).should.eql(1);
+                  assert.ok(res.body);
+                  assert.ok(res.body.history);
+                  assert.strictEqual(res.body.history.length, 1);
                   const previousVersion = res.body.history[0];
                   delete previousVersion.streamId;
-                  (previousVersion.id).should.eql(eventWithNoHistory.id);
-                  (_.omit(previousVersion, ['modified', 'modifiedBy', 'trashed', 'integrity', 'tags']))
-                    .should.eql(_.omit(eventWithNoHistory,
-                      ['modified', 'modifiedBy', 'integrity', 'tags']));
+                  assert.strictEqual(previousVersion.id, eventWithNoHistory.id);
+                  assert.deepStrictEqual(_.omit(previousVersion, ['modified', 'modifiedBy', 'trashed', 'integrity', 'tags']),
+                    _.omit(eventWithNoHistory, ['modified', 'modifiedBy', 'integrity', 'tags']));
                   stepDone();
                 });
           }
@@ -425,7 +423,7 @@ describe('Versioning', function () {
                 status: 200,
                 schema: streamsMethodsSchema.del.result
               });
-              res.body.streamDeletion.id.should.eql(childStream.id);
+              assert.strictEqual(res.body.streamDeletion.id, childStream.id);
               stepDone();
             });
         },
@@ -437,13 +435,13 @@ describe('Versioning', function () {
                 schema: eventsMethodsSchema.getOne.result
               });
               const event = res.body.event;
-              event.streamId.should.eql(normalStream.id);
+              assert.strictEqual(event.streamId, normalStream.id);
               const history = res.body.history;
-              assert.exists(history);
-              history.length.should.eql(2);
+              assert.ok(history);
+              assert.strictEqual(history.length, 2);
               history.forEach(function (previousVersion) {
-                previousVersion.id.should.eql(eventOnChildStream.id);
-                previousVersion.streamId.should.eql(childStream.id);
+                assert.strictEqual(previousVersion.id, eventOnChildStream.id);
+                assert.strictEqual(previousVersion.streamId, childStream.id);
               });
               stepDone();
             });
@@ -466,19 +464,19 @@ describe('Versioning', function () {
                 status: 200,
                 schema: streamsMethodsSchema.del.result
               });
-              res.body.streamDeletion.id.should.eql(childStream.id);
+              assert.strictEqual(res.body.streamDeletion.id, childStream.id);
               stepDone();
             });
         },
         async function findDeletionInStorage () {
           const event = await mall.events.getOne(user.id, eventOnChildStream.id);
-          assert.exists(event);
-          event.id.should.eql(eventOnChildStream.id);
-          assert.exists(event.deleted);
+          assert.ok(event);
+          assert.strictEqual(event.id, eventOnChildStream.id);
+          assert.ok(event.deleted);
         },
         async function checkThatHistoryIsDeleted () {
           const events = await mall.events.getHistory(user.id, eventOnChildStream.id);
-          events.length.should.be.eql(0);
+          assert.strictEqual(events.length, 0);
         }
       ], done);
     });
@@ -498,31 +496,31 @@ describe('Versioning', function () {
                 status: 200,
                 schema: streamsMethodsSchema.del.result
               });
-              res.body.streamDeletion.id.should.eql(childStream.id);
+              assert.strictEqual(res.body.streamDeletion.id, childStream.id);
               stepDone();
             });
         },
         async function verifyDeletedHeadInStorage () {
           const event = await mall.events.getOne(user.id, eventOnChildStream.id);
 
-          assert.exists(event);
-          (Object.keys(event).length).should.eql(integrity.events.isActive ? 5 : 4);
-          event.id.should.eql(eventOnChildStream.id);
-          assert.exists(event.deleted);
-          assert.exists(event.modified);
-          assert.exists(event.modifiedBy);
-          if (integrity.events.isActive) assert.exists(event.integrity);
+          assert.ok(event);
+          assert.strictEqual(Object.keys(event).length, integrity.events.isActive ? 5 : 4);
+          assert.strictEqual(event.id, eventOnChildStream.id);
+          assert.ok(event.deleted);
+          assert.ok(event.modified);
+          assert.ok(event.modifiedBy);
+          if (integrity.events.isActive) assert.ok(event.integrity);
         },
         async function verifyDeletedHistoryInStorage () {
           const events = await mall.events.getHistory(user.id, eventOnChildStream.id);
 
-          events.length.should.be.eql(1);
+          assert.strictEqual(events.length, 1);
           events.forEach(function (event) {
-            (Object.keys(event).length).should.eql(3);
-            assert.exists(event.id);
-            assert.equal(event.id, eventOnChildStream.id);
-            assert.exists(event.modified);
-            assert.exists(event.modifiedBy);
+            assert.strictEqual(Object.keys(event).length, 3);
+            assert.ok(event.id);
+            assert.strictEqual(event.id, eventOnChildStream.id);
+            assert.ok(event.modified);
+            assert.ok(event.modifiedBy);
           });
         }
       ], done);
@@ -543,33 +541,33 @@ describe('Versioning', function () {
                 status: 200,
                 schema: streamsMethodsSchema.del.result
               });
-              res.body.streamDeletion.id.should.eql(childStream.id);
+              assert.strictEqual(res.body.streamDeletion.id, childStream.id);
               stepDone();
             });
         },
         async function verifyDeletedHeadInStory () {
           const event = await mall.events.getOne(user.id, eventOnChildStream.id);
 
-          assert.exists(event);
+          assert.ok(event);
           const expected = structuredClone(eventOnChildStream);
           delete expected.streamId;
           expected.deleted = event.deleted;
           // we can remove tags as it comes from the db
           delete expected.tags;
           integrity.events.set(expected);
-          event.should.eql(expected);
+          assert.deepStrictEqual(event, expected);
         },
         async function checkThatHistoryIsUnchanged () {
           const events = await mall.events.getHistory(user.id, eventOnChildStream.id);
 
-          (events.length).should.eql(1);
+          assert.strictEqual(events.length, 1);
           events.forEach(function (event) {
-            event.id.should.eql(eventOnChildStream.id);
+            assert.strictEqual(event.id, eventOnChildStream.id);
             if (event.id === testData.events[26].id) {
               // we can remove tags as it comes from the db
               const expected = structuredClone(testData.events[26]);
               delete expected.tags;
-              event.should.eql(expected);
+              assert.deepStrictEqual(event, expected);
             }
           });
         }
@@ -639,7 +637,7 @@ describe('Versioning', function () {
         .get(buildPath(`/${user1.username}/events/${oldEmailEvent.id}`))
         .set('Authorization', token)
         .query({ includeHistory: true });
-      assert.equal(resGet.body.history[0].content, oldEmailEvent.content);
+      assert.strictEqual(resGet.body.history[0].content, oldEmailEvent.content);
 
       // 4.
       const user2 = _.merge(generateRegisterBody(), { email: oldEmailEvent.content });
@@ -652,7 +650,7 @@ describe('Versioning', function () {
         .set('Authorization', token2)
         .query({ streams: [SystemStreamSerializer.addCustomerPrefixToStreamId('email')] });
       const emailEvent = resEvents2.body.events[0];
-      assert.equal(emailEvent.content, oldEmailEvent.content);
+      assert.strictEqual(emailEvent.content, oldEmailEvent.content);
     });
   });
 });

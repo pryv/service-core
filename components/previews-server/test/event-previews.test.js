@@ -5,8 +5,6 @@
  * Refer to LICENSE file
  */
 
-const should = require('chai').should(); /* eslint-disable-line */
-
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -14,7 +12,7 @@ const errors = require('errors');
 const fs = require('fs');
 const bluebird = require('bluebird');
 const gm = require('gm');
-const { assert } = require('chai');
+const assert = require('node:assert');
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
@@ -65,14 +63,14 @@ describe('event previews', function () {
         const res = await request.get(path(event.id), token);
         await checkSizeFits(res.body, {}, { width: 256, height: 256 });
 
-        res.statusCode.should.eql(200);
-        res.header['content-type'].should.eql('image/jpeg');
+        assert.strictEqual(res.statusCode, 200);
+        assert.strictEqual(res.header['content-type'], 'image/jpeg');
 
         const cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
 
         const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
 
-        modified.toString().should.eql(event.modified.toString());
+        assert.strictEqual(modified.toString(), event.modified.toString());
       });
 
     it('[FEWU] must accept ".jpg" extension in the path (backwards-compatibility)', function (done) {
@@ -80,7 +78,7 @@ describe('event previews', function () {
       request
         .get(path(event.id) + '.jpg', token)
         .end(function (res) {
-          res.statusCode.should.eql(200);
+          assert.strictEqual(res.statusCode, 200);
           done();
         });
     });
@@ -93,8 +91,8 @@ describe('event previews', function () {
 
       await checkSizeFits(res.body, { height: 280 }, { width: 512, height: 512 });
 
-      res.statusCode.should.eql(200);
-      res.header['content-type'].should.eql('image/jpeg');
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(res.header['content-type'], 'image/jpeg');
     });
 
     it('[415L] must limit the desired size to the biggest standard size if too big', async function () {
@@ -108,8 +106,8 @@ describe('event previews', function () {
 
       await checkSizeFits(res.body, { width: 280 }, { width: 1024, height: 1024 });
 
-      res.statusCode.should.eql(200);
-      res.header['content-type'].should.eql('image/jpeg');
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(res.header['content-type'], 'image/jpeg');
     });
 
     /**
@@ -122,14 +120,15 @@ describe('event previews', function () {
       const size = await bluebird.fromCallback(
         (cb) => gm(imageBuffer).size({ bufferStream: true }, cb));
 
-      assert.isAtLeast(size.width, minTargetSize.width || 0);
-      assert.isAtMost(size.width, maxTargetSize.width);
+      assert.ok(size.width >= (minTargetSize.width || 0));
+      assert.ok(size.width <= maxTargetSize.width);
 
-      assert.isAtLeast(size.height, minTargetSize.height || 0);
-      assert.isAtMost(size.height, maxTargetSize.height);
+      assert.ok(size.height >= (minTargetSize.height || 0));
+      assert.ok(size.height <= maxTargetSize.height);
 
-      assert.isTrue(
+      assert.strictEqual(
         size.width === maxTargetSize.width || size.height === maxTargetSize.height,
+        true,
         'Either dimension needs to be maxed out.'
       );
     }
@@ -140,7 +139,7 @@ describe('event previews', function () {
       async.series([
         function retrieveInitialPreview (stepDone) {
           request.get(path(event.id), token).end(function (res) {
-            res.statusCode.should.eql(200);
+            assert.strictEqual(res.statusCode, 200);
             cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
             cachedStats = fs.statSync(cachedPath);
             stepDone();
@@ -148,7 +147,7 @@ describe('event previews', function () {
         },
         function retrieveAgain (stepDone) {
           request.get(path(event.id), token).end(function (res) {
-            res.statusCode.should.eql(200);
+            assert.strictEqual(res.statusCode, 200);
 
             const newStats = fs.statSync(cachedPath);
 
@@ -175,7 +174,7 @@ describe('event previews', function () {
           const res = await bluebird.fromCallback(cb => request.get(path(eventId), token).end((res) => {
             cb(null, res);
           }));
-          res.statusCode.should.eql(200);
+          assert.strictEqual(res.statusCode, 200);
           cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
           const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           cachedFileModified = modified.toString();
@@ -192,25 +191,25 @@ describe('event previews', function () {
           const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
             cb(null, res);
           }));
-          res.statusCode.should.eql(200);
+          assert.strictEqual(res.statusCode, 200);
           let modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
           modified = modified.toString();
-          modified.should.not.eql(cachedFileModified);
-          modified.should.eql(updatedEvent.modified.toString());
+          assert.notStrictEqual(modified, cachedFileModified);
+          assert.strictEqual(modified, updatedEvent.modified.toString());
         }
       ], done);
     });
 
     it('[7Y91] must respond with "no content" if the event type is not supported', function (done) {
       request.get(path(testData.events[1].id), token).end(function (res) {
-        res.statusCode.should.eql(204);
+        assert.strictEqual(res.statusCode, 204);
         done();
       });
     });
 
     it('[61N8] must return a proper error if the event does not exist', function (done) {
       request.get(path('unknown-event'), token).end(function (res) {
-        res.statusCode.should.eql(404);
+        assert.strictEqual(res.statusCode, 404);
         done();
       });
     });
@@ -226,7 +225,7 @@ describe('event previews', function () {
     it('[FAK4] must forbid requests with unauthorized accesses', function (done) {
       const unauthToken = testData.accesses[3].token;
       request.get(path(testData.events[2].id), unauthToken).end(function (res) {
-        res.statusCode.should.eql(403);
+        assert.strictEqual(res.statusCode, 403);
         done();
       });
     });
@@ -243,8 +242,8 @@ describe('event previews', function () {
         },
         function getPreview (stepDone) {
           request.get(path(createdEvent.id), token).end(function (res) {
-            res.statusCode.should.eql(422);
-            res.body.error.id.should.eql(errors.ErrorIds.CorruptedData);
+            assert.strictEqual(res.statusCode, 422);
+            assert.strictEqual(res.body.error.id, errors.ErrorIds.CorruptedData);
             stepDone();
           });
         }
@@ -254,7 +253,7 @@ describe('event previews', function () {
     it('[GSDF] must work with animated GIFs too', function (done) {
       const event = testData.events[12];
       request.get(path(event.id), token).end(function (res) {
-        res.statusCode.should.eql(200);
+        assert.strictEqual(res.statusCode, 200);
         done();
       });
     });
@@ -271,13 +270,13 @@ describe('event previews', function () {
           const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
             cb(null, res);
           }));
-          res.statusCode.should.eql(200);
+          assert.strictEqual(res.statusCode, 200);
           aCachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
           // add delay as the attribute is written after the response is sent
           setTimeout(
             async function () {
               const lastAccessed = await xattr.get(aCachedPath, 'user.pryv.lastAccessed');
-              assert.isNotNull(lastAccessed);
+              assert.ok(lastAccessed);
             }, 50);
         },
         async function retrieveAnotherPreview () {
@@ -299,7 +298,7 @@ describe('event previews', function () {
           assert.strictEqual(res.statusCode, 200);
           await xattr.get(aCachedPath, 'user.pryv.lastAccessed');
           const lastAccessed = await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
-          assert.isNotNull(lastAccessed);
+          assert.ok(lastAccessed);
         }
       ], done);
     });
@@ -310,20 +309,20 @@ describe('event previews', function () {
         cb(null, res);
       }));
 
-      resGet.statusCode.should.eql(200);
+      assert.strictEqual(resGet.statusCode, 200);
       const cachedPath = attachmentManagement.getPreviewPath(user, event.id, 256);
 
       const lastAccessed = await xattr.get(cachedPath, 'user.pryv.lastAccessed');
-      assert.isNotNull(lastAccessed);
+      assert.ok(lastAccessed);
       await xattr.remove(cachedPath, 'user.pryv.lastAccessed');
 
       const resPost = await bluebird.fromCallback(cb => request.post(basePath, token).end((res) => {
         cb(null, res);
       }));
 
-      resPost.statusCode.should.eql(200);
+      assert.strictEqual(resPost.statusCode, 200);
       const stat = fs.statSync(cachedPath);
-      assert.isNotNull(stat);
+      assert.ok(stat);
     });
   });
 });

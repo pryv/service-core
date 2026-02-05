@@ -5,8 +5,7 @@
  * Refer to LICENSE file
  */
 
-const { assert } = require('chai');
-const should = require('should');
+const assert = require('node:assert');
 const _ = require('lodash');
 const async = require('async');
 const fs = require('fs');
@@ -74,21 +73,21 @@ describe('auth', function () {
             .set('Origin', trustedOrigin)
             .send(authData)
             .end(function (err, res) {
-              should.not.exist(err);
+              assert.ok(err == null);
               assert.strictEqual(res.statusCode, 200);
-              should.exist(res.body.token);
-              should.exist(res.body.apiEndpoint);
-              assert.include(res.body.apiEndpoint, res.body.token);
+              assert.ok(res.body.token != null);
+              assert.ok(res.body.apiEndpoint != null);
+              assert.ok(res.body.apiEndpoint.includes(res.body.token));
               checkNoUnwantedCookie(res);
-              should.exist(res.body.preferredLanguage);
+              assert.ok(res.body.preferredLanguage != null);
               assert.strictEqual(res.body.preferredLanguage, user.language);
               stepDone();
             });
         },
         function checkAccess (stepDone) {
           helpers.dependencies.storage.user.accesses.findOne(user, { name: authData.appId }, null, function (err, access) {
-            should.not.exist(err);
-            access.modifiedBy.should.eql(UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
+            assert.ok(err == null);
+            assert.strictEqual(access.modifiedBy, UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
             stepDone();
           });
         }
@@ -104,7 +103,7 @@ describe('auth', function () {
             .set('Origin', trustedOrigin)
             .send(authData)
             .end(function (err, res) {
-              should.not.exist(err);
+              assert.ok(err == null);
               personalToken = res.body.token;
               stepDone();
             });
@@ -120,7 +119,7 @@ describe('auth', function () {
             .set('Origin', trustedOrigin)
             .set('Authorization', personalToken)
             .end(function (err, res) {
-              should.exist(err);
+              assert.ok(err != null);
               assert.strictEqual(res.statusCode, 403);
               assert.strictEqual(res.body.error.id, 'invalid-access-token');
               assert.strictEqual(res.body.error.message, 'Access session has expired.');
@@ -139,7 +138,7 @@ describe('auth', function () {
             .set('Origin', trustedOrigin)
             .send(authData)
             .end(function (err, res) {
-              should.not.exist(err);
+              assert.ok(err == null);
               assert.strictEqual(res.statusCode, 200);
               originalToken = res.body.token;
               stepDone();
@@ -151,11 +150,11 @@ describe('auth', function () {
             .set('Origin', trustedOrigin)
             .send(authData)
             .end(function (err, res) {
-              should.not.exist(err);
+              assert.ok(err == null);
               assert.strictEqual(res.statusCode, 200);
               assert.strictEqual(res.body.token, originalToken);
-              assert.exists(res.body.apiEndpoint);
-              assert.include(res.body.apiEndpoint, originalToken);
+              assert.ok(res.body.apiEndpoint);
+              assert.ok(res.body.apiEndpoint.includes(originalToken));
               stepDone();
             });
         }
@@ -168,7 +167,7 @@ describe('auth', function () {
         .set('Origin', 'https://test.backloop.dev:1234')
         .send(authData)
         .end(function (err, res) {
-          should.not.exist(err);
+          assert.ok(err == null);
           assert.strictEqual(res.statusCode, 200);
           done();
         });
@@ -180,7 +179,7 @@ describe('auth', function () {
         .post(path(authDataNoCORS.username))
         .send(authDataNoCORS)
         .end(function (err, res) {
-          should.not.exist(err);
+          assert.ok(err == null);
           assert.strictEqual(res.statusCode, 200);
           done();
         });
@@ -192,7 +191,7 @@ describe('auth', function () {
         .set('Referer', trustedOrigin)
         .send(authData)
         .end(function (err, res) {
-          should.not.exist(err);
+          assert.ok(err == null);
           assert.strictEqual(res.statusCode, 200);
           done();
         });
@@ -204,8 +203,8 @@ describe('auth', function () {
         .set('Referer', trustedOrigin)
         .send(authData)
         .end(function (err, res) {
-          should.not.exist(err);
-          res.statusCode.should.eql(200);
+          assert.ok(err == null);
+          assert.strictEqual(res.statusCode, 200);
           done();
         });
     });
@@ -216,7 +215,7 @@ describe('auth', function () {
         .set('Origin', trustedOrigin)
         .send(Object.assign({}, authData, { username: authData.username.toUpperCase() }))
         .end(function (err, res) {
-          should.not.exist(err);
+          assert.ok(err == null);
           assert.strictEqual(res.statusCode, 200);
           done();
         });
@@ -232,12 +231,12 @@ describe('auth', function () {
         .set('Origin', trustedOrigin)
         .send(data)
         .end(function (err, res) {
-          should.exist(err);
+          assert.ok(err != null);
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials
           });
-          should.not.exist(res.body.token);
+          assert.ok(res.body.token == null);
           done();
         });
     });
@@ -249,12 +248,12 @@ describe('auth', function () {
         .set('Origin', trustedOrigin)
         .send(data)
         .end(function (err, res) {
-          should.exist(err);
+          assert.ok(err != null);
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials
           });
-          should.not.exist(res.body.token);
+          assert.ok(res.body.token == null);
           done();
         });
     });
@@ -265,12 +264,12 @@ describe('auth', function () {
         .set('Origin', 'http://mismatching.origin')
         .send(authData)
         .end(function (err, res) {
-          should.exist(err);
+          assert.ok(err != null);
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials
           });
-          should.not.exist(res.body.token);
+          assert.ok(res.body.token == null);
           done();
         });
     });
@@ -291,15 +290,15 @@ describe('auth', function () {
           })
           .end(function (err, res) {
             if (err) { return next(err); }
-            should(res.statusCode).be.equal(200);
+            assert.strictEqual(res.statusCode, 200);
             next(null, res.body.token);
           });
       }, function (err, results) {
         if (err) { return done(err); }
         const lastResult = results[1];
         accessStorage.findOne(user, { name: randomId, type: 'personal' }, null, (err, access) => {
-          should.not.exist(err);
-          should(access.token).be.equal(lastResult);
+          assert.ok(err == null);
+          assert.strictEqual(access.token, lastResult);
           done();
         });
       });
@@ -312,13 +311,13 @@ describe('auth', function () {
         .set('Origin', trustedOrigin)
         .send(authData)
         .end(function (err, res) {
-          should.not.exist(err);
+          assert.ok(err == null);
           assert.strictEqual(res.statusCode, 200);
-          should.exist(res.body.token);
+          assert.ok(res.body.token != null);
           checkNoUnwantedCookie(res);
-          should.exist(res.body.preferredLanguage);
+          assert.ok(res.body.preferredLanguage != null);
           assert.strictEqual(res.body.preferredLanguage, user.language);
-          should.not.exist(res.body._private);
+          assert.ok(res.body._private == null);
           done();
         });
     });
@@ -377,7 +376,7 @@ describe('auth', function () {
               .set('Origin', trustedOrigin)
               .send(wrongPasswordData)
               .end(function (err, res) {
-                should.exist(err);
+                assert.ok(err != null);
                 assert.strictEqual(res.statusCode, 401);
                 stepDone();
               });
@@ -390,11 +389,11 @@ describe('auth', function () {
               if (err) {
                 return stepDone(err);
               }
-              assert.isAbove(data.length, 10, 'Issue in configuration, logfile is empty. >> ' + logFilePath);
+              assert.ok(data.length > 10, 'Issue in configuration, logfile is empty. >> ' + logFilePath);
               const passwordFound = data.indexOf(wrongPasswordData.password);
               const hiddenPasswordFound = data.indexOf('"password":"(hidden password)"');
-              assert.equal(passwordFound, -1, 'password is present in logs when it should not. >> \n' + data);
-              assert.isAtLeast(hiddenPasswordFound, 0, 'log with hidden password not found.. >> \n' + data);
+              assert.strictEqual(passwordFound, -1, 'password is present in logs when it should not. >> \n' + data);
+              assert.ok(hiddenPasswordFound >= 0, 'log with hidden password not found.. >> \n' + data);
               stepDone();
             });
           }
@@ -411,7 +410,7 @@ describe('auth', function () {
               .set('Origin', trustedOrigin)
               .send(wrongPasswordData)
               .end(function (err, res) {
-                should.exist(err);
+                assert.ok(err != null);
                 assert.strictEqual(res.statusCode, 400);
                 stepDone();
               });
@@ -421,7 +420,7 @@ describe('auth', function () {
               if (err) {
                 return stepDone(err);
               }
-              should(data.indexOf('password=')).be.equal(-1);
+              assert.strictEqual(data.indexOf('password='), -1);
               stepDone();
             });
           }
@@ -433,11 +432,10 @@ describe('auth', function () {
       if (!res.headers['set-cookie']) {
         return;
       }
-      res.headers['set-cookie']
+      assert.deepStrictEqual(res.headers['set-cookie']
         .filter(function (cookieString) {
           return cookieString.indexOf('sso=') !== 0; // we only want the SSO cookie
-        })
-        .should.eql([]);
+        }), []);
     }
 
     describe('[WPRA] When password rules are enabled', function () {
@@ -466,10 +464,10 @@ describe('auth', function () {
           .post(path(authData.username))
           .set('Origin', trustedOrigin)
           .send(authData);
-        assert.exists(res.body.passwordExpires);
-        assert.approximately(res.body.passwordExpires, timestamp.add(passwordTime, `${maxAge}d`), 1000);
-        assert.exists(res.body.passwordCanBeChanged);
-        assert.approximately(res.body.passwordCanBeChanged, timestamp.add(passwordTime, `${minAge}d`), 1000);
+        assert.ok(res.body.passwordExpires);
+        assert.ok(Math.abs(res.body.passwordExpires - timestamp.add(passwordTime, `${maxAge}d`)) <= 1000);
+        assert.ok(res.body.passwordCanBeChanged);
+        assert.ok(Math.abs(res.body.passwordCanBeChanged - timestamp.add(passwordTime, `${minAge}d`)) <= 1000);
       });
 
       // this test should be kept at the end of the describe as it impacts the configuration
@@ -489,9 +487,9 @@ describe('auth', function () {
           id: ErrorIds.InvalidCredentials
         });
         const expectedExpirationTime = timestamp.add(passwordTime, `${maxAge}d`);
-        assert.include(res.body.error.message, `Password expired since ${timestamp
+        assert.ok(res.body.error.message.includes(`Password expired since ${timestamp
                     .toDate(expectedExpirationTime)
-                    .toISOString()}`);
+                    .toISOString()}`));
         assert.deepEqual(res.body.error.data, {
           expiredTime: expectedExpirationTime
         });
@@ -513,7 +511,7 @@ describe('auth', function () {
             .set('Origin', trustedOrigin)
             .send(authData)
             .end(function (err, res) {
-              assert.notExists(err);
+              assert.ok(err == null);
               token = res.body.token;
               if (typeof token !== 'string') {
                 return stepDone(new Error('AF: not a string'));
@@ -527,7 +525,7 @@ describe('auth', function () {
             .send({})
             .set('authorization', token)
             .end(function (err, res) {
-              assert.notExists(err);
+              assert.ok(err == null);
               assert.strictEqual(res.statusCode, 200);
               stepDone();
             });
@@ -559,7 +557,7 @@ describe('auth', function () {
             .query({ auth: testRequest.token })
             .send({})
             .end(function (err, res) {
-              assert.notExists(err);
+              assert.ok(err == null);
               assert.strictEqual(res.statusCode, 200);
               stepDone();
             });

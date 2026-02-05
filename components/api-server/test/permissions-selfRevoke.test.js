@@ -6,7 +6,7 @@
  */
 
 const cuid = require('cuid');
-const { assert } = require('chai');
+const assert = require('node:assert');
 
 require('./test-helpers');
 
@@ -81,28 +81,28 @@ describe('permissions selfRevoke', function () {
         }]
       });
 
-      assert.equal(res.status, 201);
-      assert.exists(res.body.access);
+      assert.strictEqual(res.status, 201);
+      assert.ok(res.body.access);
 
       // --- check that permissions are visible with a .get()
 
       const res3 = await server.request().get(basePathAccess).set('Authorization', personalToken);
-      assert.equal(res3.status, 200);
-      assert.exists(res3.body.accesses);
+      assert.strictEqual(res3.status, 200);
+      assert.ok(res3.body.accesses);
       let found;
       for (let i = 0; i < res3.body.accesses.length && found == null; i++) {
         if (res3.body.accesses[i].id === res.body.access.id) found = res3.body.accesses[i];
       }
-      assert.isNotNull(found);
-      assert.exists(found.permissions);
+      assert.ok(found != null);
+      assert.ok(found.permissions);
       let featureFound = false;
       for (let i = 0; i < found.permissions.length; i++) {
         if (found.permissions[i].feature === 'selfRevoke') {
-          assert.equal(found.permissions[i].setting, 'forbidden');
+          assert.strictEqual(found.permissions[i].setting, 'forbidden');
           featureFound = true;
         }
       }
-      assert.isTrue(featureFound);
+      assert.strictEqual(featureFound, true);
     });
 
     it('[JYU5] must forbid creating accesses with selfRevoke different than forbidden ', async () => {
@@ -117,9 +117,9 @@ describe('permissions selfRevoke', function () {
           setting: 'bob'
         }]
       });
-      assert.equal(res.status, 400);
-      assert.exists(res.body.error);
-      assert.equal(res.body.error.id, 'invalid-parameters-format');
+      assert.strictEqual(res.status, 400);
+      assert.ok(res.body.error);
+      assert.strictEqual(res.body.error.id, 'invalid-parameters-format');
     });
 
     it('[UZRA] an appToken with managed rights should allow to create an access with selfRevoke forbidden', async function () {
@@ -137,9 +137,9 @@ describe('permissions selfRevoke', function () {
             setting: 'forbidden'
           }]
         });
-      assert.equal(res.status, 201);
+      assert.strictEqual(res.status, 201);
       const access = res.body.access;
-      assert.exists(access);
+      assert.ok(access);
     });
   });
 
@@ -194,11 +194,11 @@ describe('permissions selfRevoke', function () {
         const res = await server.request().delete(basePathAccess + access.id).set('Authorization', access.token);
 
         if (access.selfRevoke) {
-          assert.equal(res.status, 200);
-          assert.exists(res.body.accessDeletion);
-          assert.equal(res.body.accessDeletion.id, access.id);
+          assert.strictEqual(res.status, 200);
+          assert.ok(res.body.accessDeletion);
+          assert.strictEqual(res.body.accessDeletion.id, access.id);
         } else {
-          assert.equal(res.status, 403);
+          assert.strictEqual(res.status, 403);
         }
       });
     }

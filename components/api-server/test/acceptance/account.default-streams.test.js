@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-const { assert } = require('chai');
+const assert = require('node:assert');
 const cuid = require('cuid');
 const charlatan = require('charlatan');
 const nock = require('nock');
@@ -154,7 +154,7 @@ describe('[ACCO] Account with system streams', function () {
         res = await request.get(basePath).set('authorization', access.token);
       });
       it('[XRKX] should return 200', async () => {
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
       });
       it('[JUHR] should return account information in the structure that is defined in system streams and only active values', async () => {
         const emailAccountEvent = allVisibleAccountEvents.find(event =>
@@ -170,13 +170,13 @@ describe('[ACCO] Account with system streams', function () {
         //   event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
         // const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
         //   event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
-        assert.equal(res.body.account.email, emailAccountEvent.content);
-        assert.equal(res.body.account.language, languageAccountEvent.content);
-        assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
-        assert.equal(res.body.account.storageUsed.attachedFiles, attachedFilesAccountEvent.content);
+        assert.strictEqual(res.body.account.email, emailAccountEvent.content);
+        assert.strictEqual(res.body.account.language, languageAccountEvent.content);
+        assert.strictEqual(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
+        assert.strictEqual(res.body.account.storageUsed.attachedFiles, attachedFilesAccountEvent.content);
       });
       it('[R5S0] should return only visible default stream events', async () => {
-        assert.equal(Object.keys(res.body.account).length, 4);
+        assert.strictEqual(Object.keys(res.body.account).length, 4);
       });
     });
   });
@@ -199,11 +199,11 @@ describe('[ACCO] Account with system streams', function () {
           .set('authorization', access.token);
       });
       it('[X9VQ] should return 200', async () => {
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
       });
       it('[ACNE] should find password in password history', async () => {
-        assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordBefore, 2), 'missing previous password in history');
-        assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordAfter, 1), 'missing new password in history');
+        assert.strictEqual(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordBefore, 2), true, 'missing previous password in history');
+        assert.strictEqual(await userAccountStorage.passwordExistsInHistory(user.attrs.id, passwordAfter, 1), true, 'missing new password in history');
       });
     });
   });
@@ -218,12 +218,12 @@ describe('[ACCO] Account with system streams', function () {
           .set('authorization', access.token);
       });
       it('[P69J] should return 400', async () => {
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
       });
       it('[DBM6] should return the correct error', async () => {
         // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
-        assert.equal(res.body.error.data.length, 1);
-        assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
+        assert.strictEqual(res.body.error.data.length, 1);
+        assert.strictEqual(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
       });
     });
     describe('when updating non editable fields', () => {
@@ -235,12 +235,12 @@ describe('[ACCO] Account with system streams', function () {
           .set('authorization', access.token);
       });
       it('[90N3] should return 400', async () => {
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
       });
       it('[QHZ4] should return the correct error', async () => {
         // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
-        assert.equal(res.body.error.data.length, 1);
-        assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
+        assert.strictEqual(res.body.error.data.length, 1);
+        assert.strictEqual(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
       });
     });
     describe('when updating a unique field that is already taken', () => {
@@ -266,11 +266,11 @@ describe('[ACCO] Account with system streams', function () {
             .set('authorization', access.token);
         });
         it('[K3X9] should return a 409 error', async () => {
-          assert.equal(res.status, 409);
+          assert.strictEqual(res.status, 409);
         });
         it('[8TRP] should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
-          assert.deepEqual(res.body.error.data, { email: user2.attrs.email });
+          assert.strictEqual(res.body.error.id, ErrorIds.ItemAlreadyExists);
+          assert.deepStrictEqual(res.body.error.data, { email: user2.attrs.email });
         });
       });
     });
@@ -325,10 +325,10 @@ describe('[ACCO] Account with system streams', function () {
         notActiveLanguageAfter = await getNotActiveEvent('language');
       });
       it('[JJ81] should return 200', async () => {
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
       });
       it('[K9IC] should returned updated account data', async () => {
-        assert.deepEqual(res.body.account, {
+        assert.deepStrictEqual(res.body.account, {
           username: user.attrs.username,
           email: newEmail,
           language: newLanguage,
@@ -336,17 +336,17 @@ describe('[ACCO] Account with system streams', function () {
         });
       });
       it('[JQHX] should update only active events in the database', async () => {
-        assert.deepEqual(notActiveEmailBefore, notActiveEmailAfter);
-        assert.deepEqual(notActiveLanguageBefore, notActiveLanguageAfter);
+        assert.deepStrictEqual(notActiveEmailBefore, notActiveEmailAfter);
+        assert.deepStrictEqual(notActiveLanguageBefore, notActiveLanguageAfter);
         assert.notEqual(activeEmailBefore.content, activeEmailAfter.content);
         assert.notEqual(activeLanguageBefore.content, activeLanguageAfter.content);
-        assert.equal(activeEmailAfter.content, newEmail);
-        assert.equal(activeLanguageAfter.content, newLanguage);
+        assert.strictEqual(activeEmailAfter.content, newEmail);
+        assert.strictEqual(activeLanguageAfter.content, newLanguage);
       });
       it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async function () {
         if (isDnsLess) this.skip();
         // email is already skipped
-        assert.deepEqual(serviceRegisterRequest, {
+        assert.deepStrictEqual(serviceRegisterRequest, {
           username: user.attrs.username,
           user: {
             email: [

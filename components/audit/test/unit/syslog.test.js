@@ -53,8 +53,8 @@ describe('Syslog', function () {
           send({ type: 'log/unknown', content: { message: randomString } });
         },
         function (err, res) { // string found or err
-          assert.notExists(err);
-          assert.include(res, logString);
+          assert.ok(err == null);
+          assert.ok(res.includes(logString));
           done(err);
         });
     });
@@ -72,8 +72,8 @@ describe('Syslog', function () {
           send({ content: { message: randomString } });
         },
         function (err, res) { // string found or err
-          assert.notExists(err);
-          assert.include(res, logString);
+          assert.ok(err == null);
+          assert.ok(res.includes(logString));
           done();
         });
     });
@@ -89,8 +89,8 @@ describe('Syslog', function () {
           send({ type: 'log/test-filtered', content: { message: randomString } });
         },
         function (err, res) { // string found or err
-          assert.notExists(err);
-          assert.include(res, logString);
+          assert.ok(err == null);
+          assert.ok(res.includes(logString));
           done();
         });
     });
@@ -104,8 +104,8 @@ describe('Syslog', function () {
           send({ type: 'log/test-filtered', content: { skip: true, message: randomString } });
         },
         function (err, res) { // string found or err
-          assert.exists(err);
-          assert.equal(err.message, 'Not Found');
+          assert.ok(err != null);
+          assert.strictEqual(err.message, 'Not Found');
           done();
         });
     });

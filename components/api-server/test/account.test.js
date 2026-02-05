@@ -5,8 +5,7 @@
  * Refer to LICENSE file
  */
 
-const assert = require('chai').assert;
-const should = require('should');
+const assert = require('node:assert');
 const _ = require('lodash');
 const async = require('async');
 const bluebird = require('bluebird');
@@ -121,7 +120,7 @@ describe('[ACCO] account', function () {
 
         // fetch service call data from server process
         server.on('reg-server-called', function (sentData) {
-          sentData.should.eql({
+          assert.deepStrictEqual(sentData, {
             fieldsToDelete: {},
             user: {
               email: [
@@ -150,7 +149,7 @@ describe('[ACCO] account', function () {
           function update (stepDone) {
             request.put(basePath).send(updatedData).end(function (res) {
               if (!isOpenSource) { // no notification in openSource
-                assert.isOk(regServerCalled);
+                assert.ok(regServerCalled);
               }
               const expected = Object.assign({}, user, updatedData);
               delete expected.id;
@@ -164,7 +163,7 @@ describe('[ACCO] account', function () {
                 sanitizeFn: cleanUpDetails,
                 sanitizeTarget: 'account'
               });
-              accountNotifCount.should.eql(1, 'account notifications');
+              assert.strictEqual(accountNotifCount, 1, 'account notifications');
               stepDone();
             });
           },
@@ -244,15 +243,15 @@ describe('[ACCO] account', function () {
       }, 0);
 
       // On Ubuntu with ext4 FileSystem the size difference is 4k, not 1k. I still dunno why.
-      assert.approximately(storageInfoInitial.local.files.sizeKb, expectedAttsSize, filesystemBlockSize);
+      assert.ok(Math.abs(storageInfoInitial.local.files.sizeKb - expectedAttsSize) <= filesystemBlockSize);
 
       await bluebird.fromCallback(cb => addEventWithAttachment(newAtt, cb));
       const storageInfoAfter = await mall.getUserStorageInfos(user.id);
 
       // hard to know what the exact difference should be, so we just expect it's bigger
-      assert.isAbove(storageInfoAfter.local.events.count, storageInfoInitial.local.events.count);
-      assert.approximately(storageInfoAfter.local.files.sizeKb, storageInfoInitial.local.files.sizeKb +
-        newAtt.size, filesystemBlockSize);
+      assert.ok(storageInfoAfter.local.events.count > storageInfoInitial.local.events.count);
+      assert.ok(Math.abs(storageInfoAfter.local.files.sizeKb - (storageInfoInitial.local.files.sizeKb +
+        newAtt.size)) <= filesystemBlockSize);
     });
 
     // test nightly job script
@@ -265,7 +264,7 @@ describe('[ACCO] account', function () {
 
       // Verify initial storage usage
       const initialStorageInfo = await mall.getUserStorageInfos(user.id);
-      initialStorageInfo.local.files.sizeKb.should.be.above(0);
+      assert.ok(initialStorageInfo.local.files.sizeKb > 0);
 
       // Add an attachment
       await bluebird.fromCallback(
@@ -277,9 +276,9 @@ describe('[ACCO] account', function () {
       // Verify updated storage usage
       const updatedStorageInfo = await mall.getUserStorageInfos(user.id);
 
-      updatedStorageInfo.local.events.count.should.be.above(initialStorageInfo.local.events.count);
-      updatedStorageInfo.local.files.sizeKb.should.be.approximately(
-        initialStorageInfo.local.files.sizeKb + newAtt.size, filesystemBlockSize);
+      assert.ok(updatedStorageInfo.local.events.count > initialStorageInfo.local.events.count);
+      assert.ok(Math.abs(updatedStorageInfo.local.files.sizeKb -
+        (initialStorageInfo.local.files.sizeKb + newAtt.size)) <= filesystemBlockSize);
     });
 
     function addEventWithAttachment (attachment, callback) {
@@ -311,9 +310,9 @@ describe('[ACCO] account', function () {
         async function checkUpdated () {
           const retrievedUser = await usersRepository.getUserById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
-          retrievedUser.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
-          retrievedUser.storageUsed.attachedFiles.should.be.approximately(
-            initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);
+          assert.deepStrictEqual(retrievedUser.storageUsed.dbDocuments, initialStorageUsed.dbDocuments);
+          assert.ok(Math.abs(retrievedUser.storageUsed.attachedFiles -
+            (initialStorageUsed.attachedFiles + newAtt.size)) <= filesystemBlockSize);
         }
       ], done);
     });
@@ -332,10 +331,9 @@ describe('[ACCO] account', function () {
       }
 
       const updatedStorageInfo = await mall.getUserStorageInfos(user.id);
-      assert.equal(updatedStorageInfo.local.events.count, initialStorageInfo.local.events.count);
-      assert.approximately(updatedStorageInfo.local.files.sizeKb,
-        initialStorageInfo.local.files.sizeKb - deletedAtt.size,
-        filesystemBlockSize);
+      assert.strictEqual(updatedStorageInfo.local.events.count, initialStorageInfo.local.events.count);
+      assert.ok(Math.abs(updatedStorageInfo.local.files.sizeKb -
+        (initialStorageInfo.local.files.sizeKb - deletedAtt.size)) <= filesystemBlockSize);
     });
 
     it('[5WO0] must be approximately updated (diff) when deleting an event', async function () {
@@ -350,10 +348,9 @@ describe('[ACCO] account', function () {
       } catch (e) {}
 
       const updatedStorageInfo = await mall.getUserStorageInfos(user.id);
-      assert.equal(updatedStorageInfo.local.events.count, initialStorageInfo.local.events.count);
-      assert.approximately(updatedStorageInfo.local.files.sizeKb,
-        initialStorageInfo.local.files.sizeKb - getTotalAttachmentsSize(deletedEvt),
-        filesystemBlockSize);
+      assert.strictEqual(updatedStorageInfo.local.events.count, initialStorageInfo.local.events.count);
+      assert.ok(Math.abs(updatedStorageInfo.local.files.sizeKb -
+        (initialStorageInfo.local.files.sizeKb - getTotalAttachmentsSize(deletedEvt))) <= filesystemBlockSize);
     });
 
     function getTotalAttachmentsSize (event) {
@@ -383,7 +380,7 @@ describe('[ACCO] account', function () {
               status: 200,
               schema: methodsSchema.changePassword.result
             });
-            accountNotifCount.should.eql(1, 'account notifications');
+            assert.strictEqual(accountNotifCount, 1, 'account notifications');
             stepDone();
           });
         },
@@ -391,8 +388,8 @@ describe('[ACCO] account', function () {
           request.login(Object.assign({}, user, { password: data.newPassword }), stepDone);
         },
         async function checkPasswordInHistory () {
-          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, data.oldPassword, 2), 'missing previous password in history');
-          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, data.newPassword, 1), 'missing new password in history');
+          assert.strictEqual(await userAccountStorage.passwordExistsInHistory(user.id, data.oldPassword, 2), true, 'missing previous password in history');
+          assert.strictEqual(await userAccountStorage.passwordExistsInHistory(user.id, data.newPassword, 1), true, 'missing new password in history');
         }
       ], done);
     });
@@ -599,15 +596,15 @@ describe('[ACCO] account', function () {
             });
         },
         function verifyStoredRequest (stepDone) {
-          assert.exists(resetToken);
+          assert.ok(resetToken != null);
           pwdResetReqsStorage.get(
             resetToken,
             user.username,
             function (err, resetReq) {
-              assert.notExists(err);
-              assert.exists(resetReq);
-              should(resetReq._id).be.equal(resetToken);
-              should(resetReq.username).be.equal(user.username);
+              assert.ok(err == null);
+              assert.ok(resetReq != null);
+              assert.strictEqual(resetReq._id, resetToken);
+              assert.strictEqual(resetReq.username, user.username);
               stepDone();
             }
           );
@@ -678,7 +675,7 @@ describe('[ACCO] account', function () {
                 status: 200,
                 schema: methodsSchema.requestPasswordReset.result
               });
-              mailSent.should.eql(false);
+              assert.strictEqual(mailSent, false);
               stepDone();
             });
         }
@@ -696,8 +693,8 @@ describe('[ACCO] account', function () {
           pwdResetReqsStorage.generate(
             user1.username,
             function (err, token) {
-              assert.notExists(err);
-              assert.exists(token);
+              assert.ok(err == null);
+              assert.ok(token != null);
               resetToken = token;
               stepDone();
             }
@@ -789,8 +786,8 @@ describe('[ACCO] account', function () {
           pwdResetReqsStorage.generate(
             user.username,
             function (err, token) {
-              assert.notExists(err);
-              assert.exists(token);
+              assert.ok(err == null);
+              assert.ok(token != null);
               resetToken = token;
               stepDone();
             }
@@ -866,15 +863,15 @@ describe('[ACCO] account', function () {
               });
           },
           function verifyStoredRequest (stepDone) {
-            assert.exists(resetToken);
+            assert.ok(resetToken != null);
             pwdResetReqsStorage.get(
               resetToken,
               user.username,
               function (err, resetReq) {
-                should.not.exist(err);
-                assert.exists(resetReq);
-                should(resetReq._id).be.equal(resetToken);
-                should(resetReq.username).be.equal(user.username);
+                assert.ok(err == null);
+                assert.ok(resetReq != null);
+                assert.strictEqual(resetReq._id, resetToken);
+                assert.strictEqual(resetReq.username, user.username);
                 stepDone();
               }
             );

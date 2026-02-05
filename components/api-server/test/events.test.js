@@ -5,12 +5,11 @@
  * Refer to LICENSE file
  */
 
-const { assert } = require('chai');
+const assert = require('node:assert');
 const supertest = require('supertest');
 const bluebird = require('bluebird');
 const async = require('async');
 const fs = require('fs');
-const should = require('should'); // explicit require to benefit from static function
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
@@ -68,7 +67,7 @@ describe('[EVNT] events', function () {
       function (stepDone) {
         helpers.dependencies.storage.user.accesses.findOne(user, { token: request.token },
           null, function (err, acc) {
-            assert.notExists(err);
+            assert.ok(err == null);
             access = acc;
             stepDone();
           });
@@ -238,8 +237,8 @@ describe('[EVNT] events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events'
         });
-        res.body.events.should.containEql(testData.events[8]); // activity/test
-        res.body.events.should.containEql(testData.events[9]); // activity/pryv
+        assert.ok(res.body.events.some(e => e.id === testData.events[8].id)); // activity/test
+        assert.ok(res.body.events.some(e => e.id === testData.events[9].id)); // activity/pryv
         done();
       });
     });
@@ -311,7 +310,7 @@ describe('[EVNT] events', function () {
           status: 200,
           schema: methodsSchema.get.result
         });
-        res.body.events.should.not.containEql(testData.events[27]);
+        assert.ok(!res.body.events.some(e => e.id === testData.events[27].id));
         done();
       });
     });
@@ -445,8 +444,8 @@ describe('[EVNT] events', function () {
       };
 
       request.get(basePath).query(params).end(async function (res) {
-        res.body.should.have.property('error');
-        res.body.error.should.have.property('id', 'invalid-parameters-format');
+        assert.ok(res.body.error);
+        assert.strictEqual(res.body.error.id, 'invalid-parameters-format');
         done();
       });
     });
@@ -534,10 +533,10 @@ describe('[EVNT] events', function () {
       const effectiveAttachmentId = testData.dynCreateAttachmentIdMap[event.id][0].id;
 
       request.get(path(event.id) + '/' + effectiveAttachmentId).end(function (res) {
-        res.statusCode.should.eql(200);
+        assert.strictEqual(res.statusCode, 200);
 
-        res.headers.should.have.property('content-type', attachment.type);
-        res.headers.should.have.property('content-length', attachment.size.toString());
+        assert.strictEqual(res.headers['content-type'], attachment.type);
+        assert.strictEqual(res.headers['content-length'], attachment.size.toString());
 
         done();
       });
@@ -547,10 +546,10 @@ describe('[EVNT] events', function () {
       const event = testData.events[0];
 
       request.get(path(event.id) + '/').end(function (res) {
-        res.statusCode.should.eql(200);
-        res.body.event.should.have.property('attachments');
+        assert.strictEqual(res.statusCode, 200);
+        assert.ok(res.body.event.attachments);
         res.body.event.attachments.forEach(attachment => {
-          attachment.should.have.property('readToken');
+          assert.ok(attachment.readToken);
         });
 
         done();
@@ -572,10 +571,10 @@ describe('[EVNT] events', function () {
               .unset('Authorization')
               .query({ readToken: att.readToken })
               .end(function (res) {
-                res.statusCode.should.eql(200);
+                assert.strictEqual(res.statusCode, 200);
 
-                res.headers.should.have.property('content-type', att.type);
-                res.headers.should.have.property('content-length', att.size.toString());
+                assert.strictEqual(res.headers['content-type'], att.type);
+                assert.strictEqual(res.headers['content-length'], att.size.toString());
 
                 stepDone();
               });
@@ -597,10 +596,10 @@ describe('[EVNT] events', function () {
             .unset('Authorization')
             .query({ readToken: att.readToken })
             .end(function (res) {
-              res.statusCode.should.eql(200);
-              res.headers.should.have.property('content-type', att.type);
-              res.headers.should.have.property('content-length', att.size.toString());
-              res.headers.should.have.property('content-disposition', 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(att.fileName));
+              assert.strictEqual(res.statusCode, 200);
+              assert.strictEqual(res.headers['content-type'], att.type);
+              assert.strictEqual(res.headers['content-length'], att.size.toString());
+              assert.strictEqual(res.headers['content-disposition'], 'attachment; filename*=UTF-8\'\'' + encodeURIComponent(att.fileName));
               stepDone();
             });
         }
@@ -621,10 +620,10 @@ describe('[EVNT] events', function () {
             .unset('Authorization')
             .query({ readToken: att.readToken })
             .end(function (res) {
-              res.statusCode.should.eql(200);
+              assert.strictEqual(res.statusCode, 200);
 
-              res.headers.should.have.property('content-type', att.type);
-              res.headers.should.have.property('content-length', att.size.toString());
+              assert.strictEqual(res.headers['content-type'], att.type);
+              assert.strictEqual(res.headers['content-length'], att.size.toString());
 
               stepDone();
             });
@@ -656,7 +655,7 @@ describe('[EVNT] events', function () {
               .unset('Authorization')
               .query({ readToken: att.readToken })
               .end(function (res) {
-                res.statusCode.should.eql(200);
+                assert.strictEqual(res.statusCode, 200);
                 stepDone();
               });
           }
@@ -742,11 +741,11 @@ describe('[EVNT] events', function () {
         function addNewEvent (stepDone) {
           request.post(basePath).send(data).end(function (res) {
             const event = res?.body.event;
-            assert.exists(event);
-            assert.notEqual(event.created, data.created);
-            assert.notEqual(event.createdBy, data.createdBy);
-            assert.notEqual(event.modified, data.modified);
-            assert.notEqual(event.modifiedBy, data.modifiedBy);
+            assert.ok(event);
+            assert.notStrictEqual(event.created, data.created);
+            assert.notStrictEqual(event.createdBy, data.createdBy);
+            assert.notStrictEqual(event.modified, data.modified);
+            assert.notStrictEqual(event.modifiedBy, data.modifiedBy);
             expected.created = event.created;
             expected.createdBy = event.createdBy;
             expected.modified = event.modified;
@@ -760,14 +759,14 @@ describe('[EVNT] events', function () {
             });
             created = timestamp.now();
             createdEventId = res.body.event.id;
-            eventsNotifCount.should.eql(1, 'events notifications');
+            assert.strictEqual(eventsNotifCount, 1, 'events notifications');
             stepDone();
           });
         },
         async function verifyEventData () {
           const events = await mall.events.get(user.id, {});
 
-          events.length.should.eql(originalCount + 1, 'events');
+          assert.strictEqual(events.length, originalCount + 1, 'events');
 
           const expected = structuredClone(data);
 
@@ -802,7 +801,7 @@ describe('[EVNT] events', function () {
         });
 
         // allow 1 second of lag
-        res.body.event.time.should.be.within(expectedTimestamp - 1, expectedTimestamp);
+        assert.ok(res.body.event.time >= expectedTimestamp - 1 && res.body.event.time <= expectedTimestamp);
 
         done();
       });
@@ -895,11 +894,11 @@ describe('[EVNT] events', function () {
       const data = { streamId: testData.streams[1].id, type: testType };
 
       request.post(basePath).send(data).end(function (res) {
-        should(res.statusCode).be.eql(201);
+        assert.strictEqual(res.statusCode, 201);
 
         const createdEvent = res.body.event;
-        createdEvent.should.have.property('tags');
-        createdEvent.tags.should.eql([]);
+        assert.ok(createdEvent.tags);
+        assert.deepStrictEqual(createdEvent.tags, []);
 
         done();
       });
@@ -915,7 +914,7 @@ describe('[EVNT] events', function () {
       async.series([
         function addNew (stepDone) {
           request.post(basePath).send(data).end(function (res) {
-            should.not.exist(res.body.stoppedId);
+            assert.ok(res.body.stoppedId == null);
             validation.check(res, {
               status: 201,
               schema: methodsSchema.create.result
@@ -928,7 +927,7 @@ describe('[EVNT] events', function () {
           // as event comes from storage we will not find "tags"
           const expected = structuredClone(testData.events[11]);
           delete expected.tags;
-          event.should.eql(expected);
+          assert.deepStrictEqual(event, expected);
         }
       ], done);
     });
@@ -1111,14 +1110,14 @@ describe('[EVNT] events', function () {
               validation.checkObjectEquality(createdEvent, expected);
 
               // check attached files
-              assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+              assert.strictEqual(await attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
                 createdEvent.attachments[0].id,
-                testData.attachments.document.filename));
-              assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+                testData.attachments.document.filename), true);
+              assert.strictEqual(await attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
                 createdEvent.attachments[1].id,
-                testData.attachments.image.filename));
+                testData.attachments.image.filename), true);
 
-              eventsNotifCount.should.eql(1, 'events notifications');
+              assert.strictEqual(eventsNotifCount, 1, 'events notifications');
 
               done();
             } catch (e) {
@@ -1183,11 +1182,11 @@ describe('[EVNT] events', function () {
             validation.checkObjectEquality(createdEvent, expected);
 
             // check attached files
-            assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+            assert.strictEqual(await attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
               createdEvent.attachments[0].id,
-              testData.attachments.document.filename));
+              testData.attachments.document.filename), true);
 
-            eventsNotifCount.should.eql(1, 'events notifications');
+            assert.strictEqual(eventsNotifCount, 1, 'events notifications');
 
             done();
           } catch (e) {
@@ -1280,14 +1279,14 @@ describe('[EVNT] events', function () {
             validation.checkObjectEquality(updatedEvent, expected);
 
             // check attached files
-            assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+            assert.strictEqual(await attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
               updatedEventAttachments[testData.attachments.image.filename].id,
-              testData.attachments.image.filename));
-            assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+              testData.attachments.image.filename), true);
+            assert.strictEqual(await attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
               updatedEventAttachments[testData.attachments.text.filename].id,
-              testData.attachments.text.filename));
+              testData.attachments.text.filename), true);
 
-            eventsNotifCount.should.eql(1, 'events notifications');
+            assert.strictEqual(eventsNotifCount, 1, 'events notifications');
 
             done();
           } catch (e) {
@@ -1328,14 +1327,14 @@ describe('[EVNT] events', function () {
               expectedAttachments.push(attData);
 
               const attachments = updatedEvent.attachments;
-              should(attachments.length).be.eql(expectedAttachments.length);
-              attachments.should.eql(expectedAttachments);
+              assert.strictEqual(attachments.length, expectedAttachments.length);
+              assert.deepStrictEqual(attachments, expectedAttachments);
 
-              assert.isTrue(await attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+              assert.strictEqual(await attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
                 attachments[attachments.length - 1].id,
-                testData.attachments.text.filename));
+                testData.attachments.text.filename), true);
 
-              eventsNotifCount.should.eql(1, 'events notifications');
+              assert.strictEqual(eventsNotifCount, 1, 'events notifications');
 
               done();
             } catch (e) {
@@ -1356,7 +1355,7 @@ describe('[EVNT] events', function () {
       const response = await request.get(path(event.id))
         .set('authorization', access.token);
 
-      assert.isTrue(response.ok);
+      assert.strictEqual(response.ok, true);
       assert.strictEqual(response.body.event.id, event.id);
     });
     it('[IBO4] denies access without authorization', async () => {
@@ -1409,13 +1408,13 @@ describe('[EVNT] events', function () {
             expected.streamIds = data.streamIds.concat(expected.tags.map(t => TAG_PREFIX + t));
             validation.checkObjectEquality(res.body.event, expected);
 
-            eventsNotifCount.should.eql(1, 'events notifications');
+            assert.strictEqual(eventsNotifCount, 1, 'events notifications');
             stepDone();
           });
         },
         async function verifyStoredItem () {
           const dbEvent = await mall.events.getOne(user.id, original.id);
-          dbEvent.duration.should.eql(data.duration);
+          assert.strictEqual(dbEvent.duration, data.duration);
         }
       ], done);
     });
@@ -1442,7 +1441,7 @@ describe('[EVNT] events', function () {
             schema: methodsSchema.update.result
           });
 
-          should(res.body.event.modified).be.approximately(time, 2);
+          assert.ok(Math.abs(res.body.event.modified - time) <= 2);
           const expected = structuredClone(original);
           delete expected.modified;
           expected.modifiedBy = access.id;
@@ -1455,7 +1454,7 @@ describe('[EVNT] events', function () {
           integrity.events.set(expected);
           validation.checkObjectEquality(res.body.event, expected);
 
-          eventsNotifCount.should.eql(1, 'events notifications');
+          assert.strictEqual(eventsNotifCount, 1, 'events notifications');
           done();
         });
       });
@@ -1609,11 +1608,11 @@ describe('[EVNT] events', function () {
                     schema: methodsSchema.update.result
                   });
                   const update = res.body.event;
-                  should(update.id).not.be.equal(forbiddenUpdate.id);
-                  should(update.created).not.be.equal(forbiddenUpdate.created);
-                  should(update.createdBy).not.be.equal(forbiddenUpdate.createdBy);
-                  should(update.modified).not.be.equal(forbiddenUpdate.modified);
-                  should(update.modifiedBy).not.be.equal(forbiddenUpdate.modifiedBy);
+                  assert.notStrictEqual(update.id, forbiddenUpdate.id);
+                  assert.notStrictEqual(update.created, forbiddenUpdate.created);
+                  assert.notStrictEqual(update.createdBy, forbiddenUpdate.createdBy);
+                  assert.notStrictEqual(update.modified, forbiddenUpdate.modified);
+                  assert.notStrictEqual(update.modifiedBy, forbiddenUpdate.modifiedBy);
                   stepDone();
                 });
             }
@@ -1658,10 +1657,10 @@ describe('[EVNT] events', function () {
       async.parallel([
         function createNormalEvent (stepDone) {
           request.post(basePath).send(normalEvent).end(function (res) {
-            assert.exists(res.status);
-            should(res.status).be.eql(201);
+            assert.ok(res.status);
+            assert.strictEqual(res.status, 201);
 
-            assert.exists(res.body.event.id);
+            assert.ok(res.body.event.id);
             normalEventId = res.body.event.id;
 
             stepDone();
@@ -1669,10 +1668,10 @@ describe('[EVNT] events', function () {
         },
         function createHfEvent (stepDone) {
           request.post(basePath).send(hfEvent).end(function (res) {
-            assert.exists(res.status);
-            should(res.status).be.eql(201);
+            assert.ok(res.status);
+            assert.strictEqual(res.status, 201);
 
-            assert.exists(res.body.event.id);
+            assert.ok(res.body.event.id);
             hfEventId = res.body.event.id;
 
             stepDone();
@@ -1683,11 +1682,11 @@ describe('[EVNT] events', function () {
 
     it('[Z7R1] a normal event should not be updated to an hf-event', function (done) {
       request.put(path(normalEventId)).send(hfEvent).end(function (res) {
-        assert.exists(res.status);
-        should(res.status).be.eql(400);
+        assert.ok(res.status);
+        assert.strictEqual(res.status, 400);
 
-        assert.exists(res.body.error.id);
-        should(res.body.error.id).be.eql('invalid-operation');
+        assert.ok(res.body.error.id);
+        assert.strictEqual(res.body.error.id, 'invalid-operation');
 
         done();
       });
@@ -1695,11 +1694,11 @@ describe('[EVNT] events', function () {
 
     it('[Z7R2] An hf-event should not be updated to a normal event', function (done) {
       request.put(path(hfEventId)).send(normalEvent).end(function (res) {
-        assert.exists(res.status);
-        should(res.status).be.eql(400);
+        assert.ok(res.status);
+        assert.strictEqual(res.status, 400);
 
-        assert.exists(res.body.error.id);
-        should(res.body.error.id).be.eql('invalid-operation');
+        assert.ok(res.body.error.id);
+        assert.strictEqual(res.body.error.id, 'invalid-operation');
 
         done();
       });
@@ -1736,16 +1735,16 @@ describe('[EVNT] events', function () {
       validation.checkObjectEquality(updatedEvent, expected);
 
       const time = timestamp.now();
-      should(updatedEvent.modified).be.approximately(time, 2);
+      assert.ok(Math.abs(updatedEvent.modified - time) <= 2);
 
       try {
         await mall.events.getAttachment(user.id, { id: event.id }, event.attachments[0].id);
         throw new Error('Should not find attachment');
       } catch (err) {
-        err.id.should.eql('unknown-resource');
+        assert.strictEqual(err.id, 'unknown-resource');
       }
 
-      eventsNotifCount.should.eql(1, 'events notifications');
+      assert.strictEqual(eventsNotifCount, 1, 'events notifications');
     });
 
     it('[ZLZN] must return an error if not existing', function (done) {
@@ -1773,12 +1772,12 @@ describe('[EVNT] events', function () {
         });
 
         const trashedEvent = res.body.event;
-        trashedEvent.trashed.should.eql(true);
-        trashedEvent.modified.should.be.within(time - 1, time);
-        trashedEvent.modifiedBy.should.eql(access.id);
+        assert.strictEqual(trashedEvent.trashed, true);
+        assert.ok(trashedEvent.modified >= time - 1 && trashedEvent.modified <= time);
+        assert.strictEqual(trashedEvent.modifiedBy, access.id);
         validation.checkFilesReadToken(trashedEvent, access, filesReadTokenSecret);
 
-        eventsNotifCount.should.eql(1, 'events notifications');
+        assert.strictEqual(eventsNotifCount, 1, 'events notifications');
         done();
       });
     });
@@ -1801,8 +1800,8 @@ describe('[EVNT] events', function () {
               status: 200,
               schema: methodsSchema.del.result
             });
-            res.body.eventDeletion.should.eql({ id: eventId });
-            eventsNotifCount.should.eql(1, 'events notifications');
+            assert.deepStrictEqual(res.body.eventDeletion, { id: eventId });
+            assert.strictEqual(eventsNotifCount, 1, 'events notifications');
             stepDone();
           });
         },
@@ -1811,7 +1810,7 @@ describe('[EVNT] events', function () {
           const deletion = _.find(deletedEvents, function (event) {
             return event.id === eventId;
           });
-          assert.exists(deletion);
+          assert.ok(deletion);
           const expected = { id: eventId, deleted: deletion.deleted };
           integrity.events.set(expected);
           validation.checkObjectEquality(deletion.integrity, expected.integrity);
@@ -1820,7 +1819,7 @@ describe('[EVNT] events', function () {
               await mall.events.getAttachment(user.id, { id: eventId }, attachment.id);
               throw new Error('Should not find attachment');
             } catch (err) {
-              err.id.should.eql('unknown-resource');
+              assert.strictEqual(err.id, 'unknown-resource');
             }
           }
         }

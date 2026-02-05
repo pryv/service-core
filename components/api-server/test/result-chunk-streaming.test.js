@@ -6,7 +6,7 @@
  */
 
 const cuid = require('cuid');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 
 const { produceMongoConnection, context } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
@@ -74,8 +74,8 @@ describe('events streaming with ' + N_ITEMS + ' entries', function () {
 
     let lastChunkRecievedAt = Date.now();
     http.request(options, function (res) {
-      assert.equal(res.headers['content-type'], 'application/json');
-      assert.equal(res.headers['transfer-encoding'], 'chunked');
+      assert.strictEqual(res.headers['content-type'], 'application/json');
+      assert.strictEqual(res.headers['transfer-encoding'], 'chunked');
       res.setEncoding('utf8');
       let jsonString = '';
       let chunkCount = 0;
@@ -87,8 +87,8 @@ describe('events streaming with ' + N_ITEMS + ' entries', function () {
         jsonString += chunk;
       });
       res.on('end', () => {
-        assert.equal(JSON.parse(jsonString).events.length, N_ITEMS);
-        assert.isAtLeast(chunkCount, 3, 'Should receive at least 3 chunks');
+        assert.strictEqual(JSON.parse(jsonString).events.length, N_ITEMS);
+        assert.ok(chunkCount >= 3, 'Should receive at least 3 chunks');
         done();
       });
       res.on('error', function (error) {
@@ -106,14 +106,14 @@ describe('events streaming with ' + N_ITEMS + ' entries', function () {
     };
 
     const resultTrash = await superagent.delete(`http://${options.host}:${options.port}${options.path}`);
-    assert.isTrue(resultTrash.body?.stream?.trashed);
+    assert.strictEqual(resultTrash.body?.stream?.trashed, true);
 
     let lastChunkRecievedAt = Date.now();
 
     await promisify(function (callback) {
       http.request(options, function (res) {
-        assert.equal(res.headers['content-type'], 'application/json');
-        assert.equal(res.headers['transfer-encoding'], 'chunked');
+        assert.strictEqual(res.headers['content-type'], 'application/json');
+        assert.strictEqual(res.headers['transfer-encoding'], 'chunked');
         res.setEncoding('utf8');
         let jsonString = '';
         let chunkCount = 0;
@@ -126,8 +126,8 @@ describe('events streaming with ' + N_ITEMS + ' entries', function () {
         });
         res.on('end', () => {
           lastChunkRecievedAt = -1;
-          assert.equal(JSON.parse(jsonString).updatedEvents.length, N_ITEMS);
-          assert.isAtLeast(chunkCount, 3, 'Should receive at least 3 chunks');
+          assert.strictEqual(JSON.parse(jsonString).updatedEvents.length, N_ITEMS);
+          assert.ok(chunkCount >= 3, 'Should receive at least 3 chunks');
           callback();
         });
         res.on('error', function (error) {

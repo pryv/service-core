@@ -9,7 +9,7 @@ const nock = require('nock');
 const cuid = require('cuid');
 const fs = require('fs');
 const path = require('path');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const { getApplication } = require('api-server/src/application');
@@ -94,7 +94,7 @@ describe('[PGTD] DELETE /users/:username', () => {
       res = await request
         .delete(`/users/${username1}`)
         .set('Authorization', personalAccessToken);
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
     it('[IJ5F] Should reject when "personalToken" is active and an invalid token is provided', async function () {
       config.injectTestConfig({
@@ -103,7 +103,7 @@ describe('[PGTD] DELETE /users/:username', () => {
       res = await request
         .delete(`/users/${username1}`)
         .set('Authorization', 'bogus');
-      assert.equal(res.status, 403); // not 404 as when option is not activated
+      assert.strictEqual(res.status, 403); // not 404 as when option is not activated
     });
     it('[NZ6G] Should reject when only "personalToken" is active and a valid admin token is provided', async function () {
       config.injectTestConfig({
@@ -112,7 +112,7 @@ describe('[PGTD] DELETE /users/:username', () => {
       res = await request
         .delete(`/users/${username1}`)
         .set('Authorization', authKey);
-      assert.equal(res.status, 403); // not 404 as when option is not activated
+      assert.strictEqual(res.status, 403); // not 404 as when option is not activated
     });
     it('[UK8H] Should accept when "personalToken" and "adminToken" are active and a valid admin token is provided', async function () {
       config.injectTestConfig({
@@ -121,7 +121,7 @@ describe('[PGTD] DELETE /users/:username', () => {
       res = await request
         .delete(`/users/${username1}`)
         .set('Authorization', authKey);
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
   });
   // ---------------- loop loop -------------- //
@@ -218,12 +218,12 @@ describe('[PGTD] DELETE /users/:username', () => {
           pubsub.setTestNatsDeliverHook(null);
         });
         it(`[${testIDs[i][0]}] should respond with 200`, function () {
-          assert.equal(res.status, 200);
-          assert.equal(res.body.userDeletion.username, username1);
+          assert.strictEqual(res.status, 200);
+          assert.strictEqual(res.body.userDeletion.username, username1);
         });
         it(`[${testIDs[i][1]}] should delete user entries from impacted collections`, async function () {
           const user = await usersRepository.getUserById(username1);
-          assert.notExists(user);
+          assert.ok(user == null);
           const dbCollections = [
             app.storageLayer.accesses,
             app.storageLayer.followedSlices,
@@ -232,12 +232,12 @@ describe('[PGTD] DELETE /users/:username', () => {
           ];
           const collectionsNotEmptyChecks = dbCollections.map(async function (coll) {
             const collectionEntriesForUser = await bluebird.fromCallback((cb) => coll.find({ id: username1 }, {}, {}, cb));
-            assert.empty(collectionEntriesForUser);
+            assert.ok(collectionEntriesForUser.length === 0);
           });
           await Promise.all(collectionsNotEmptyChecks);
           // check events from mall
           const events = await mall.events.get(username1, {});
-          assert.empty(events);
+          assert.ok(events.length === 0);
           // check streams from mall
           let streams = await mall.streams.get(username1, {
             storeId: 'local',
@@ -245,49 +245,49 @@ describe('[PGTD] DELETE /users/:username', () => {
             hideStoreRoots: true
           });
           streams = streams.filter((s) => !SystemStreamsSerializer.isSystemStreamId(s.id));
-          assert.empty(streams);
+          assert.ok(streams.length === 0);
           const sessions = await bluebird.fromCallback((cb) => app.storageLayer.sessions.getMatching({ username: username1 }, cb));
           assert(sessions === null || sessions === []);
         });
         it(`[${testIDs[i][2]}] should delete user event files`, async function () {
           const infos = await mall.getUserStorageInfos(userToDelete.attrs.id);
-          assert.equal(infos.local.files.sizeKb, 0);
+          assert.strictEqual(infos.local.files.sizeKb, 0);
         });
         it(`[${testIDs[i][8]}] should delete HF data`, async function () {
           if (isOpenSource) { this.skip(); }
           const databases = await influx.getDatabases();
           const isFound = databases.indexOf(`user.${userToDelete.attrs.username}`) >= 0;
-          assert.isFalse(isFound);
+          assert.strictEqual(isFound, false);
         });
         it(`[${testIDs[i][9]}] should delete user audit events`, async function () {
           if (!isAuditActive) this.skip();
           const pathToUserAuditData = require('storage').userLocalDirectory.getPathForUser(userToDelete.attrs.id);
           const userFileExists = fs.existsSync(pathToUserAuditData);
-          assert.isFalse(userFileExists);
+          assert.strictEqual(userFileExists, false);
         });
         it(`[${testIDs[i][10]}] should delete user from the cache`, async function () {
           const usersExists = cache.getUserId(userToDelete.attrs.id);
-          assert.isUndefined(usersExists);
+          assert.strictEqual(usersExists, undefined);
           if (pubsub.isNatsEnabled()) {
-            assert.equal(natsDelivered.length, 1);
-            assert.equal(natsDelivered[0].scopeName, 'cache.' + MESSAGES.UNSET_USER);
-            assert.equal(natsDelivered[0].eventName, MESSAGES.UNSET_USER);
-            assert.equal(natsDelivered[0].payload.username, userToDelete.attrs.id);
+            assert.strictEqual(natsDelivered.length, 1);
+            assert.strictEqual(natsDelivered[0].scopeName, 'cache.' + MESSAGES.UNSET_USER);
+            assert.strictEqual(natsDelivered[0].eventName, MESSAGES.UNSET_USER);
+            assert.strictEqual(natsDelivered[0].payload.username, userToDelete.attrs.id);
           }
         });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function () {
           const user = await usersRepository.getUserById(username2);
-          assert.exists(user);
+          assert.ok(user != null);
           const dbCollections = [app.storageLayer.accesses];
           if (!isOpenSource) { dbCollections.push(app.storageLayer.webhooks); }
           const collectionsEmptyChecks = dbCollections.map(async function (coll) {
             const collectionEntriesForUser = await bluebird.fromCallback((cb) => coll.find({ id: username2 }, {}, {}, cb));
-            assert.notEmpty(collectionEntriesForUser);
+            assert.ok(collectionEntriesForUser.length > 0);
           });
           await Promise.all(collectionsEmptyChecks);
           // check events from mall
           const events = await mall.events.get(username2, {});
-          assert.notEmpty(events);
+          assert.ok(events.length > 0);
           // check streams from mall
           let streams = await mall.streams.get(username2, {
             storeId: 'local',
@@ -295,18 +295,18 @@ describe('[PGTD] DELETE /users/:username', () => {
             hideStoreRoots: true
           });
           streams = streams.filter((s) => !SystemStreamsSerializer.isSystemStreamId(s.id));
-          assert.notEmpty(streams);
+          assert.ok(streams.length > 0);
           const sessions = await bluebird.fromCallback((cb) => app.storageLayer.sessions.getMatching({ username: username2 }, cb));
           assert(sessions !== null || sessions !== []);
         });
         it(`[${testIDs[i][4]}] should not delete other user event files`, async function () {
           const sizeInfo = await mall.getUserStorageInfos(username2);
-          assert.notEqual(sizeInfo.local.files.sizeKb, 0);
+          assert.notStrictEqual(sizeInfo.local.files.sizeKb, 0);
         });
         it(`[${testIDs[i][7]}] should delete on register`, async function () {
           if (settingsToTest[i][0]) { this.skip(); } // isDnsLess
           if (!pubsub.isNatsEnabled()) { this.skip(); } // openSource
-          assert.isTrue(deletedOnRegister);
+          assert.strictEqual(deletedOnRegister, true);
         });
       });
       describe('when given invalid authorization key', function () {
@@ -316,7 +316,7 @@ describe('[PGTD] DELETE /users/:username', () => {
             .set('Authorization', 'somekey');
         });
         it(`[${testIDs[i][5]}] should respond with 404`, function () {
-          assert.equal(res.status, 404);
+          assert.strictEqual(res.status, 404);
         });
       });
       describe('when given not existing username', function () {
@@ -326,7 +326,7 @@ describe('[PGTD] DELETE /users/:username', () => {
             .set('Authorization', authKey);
         });
         it(`[${testIDs[i][6]}] should respond with 404`, function () {
-          assert.equal(res.status, 404);
+          assert.strictEqual(res.status, 404);
         });
       });
     });
@@ -363,9 +363,9 @@ describe('[PGTD] DELETE /users/:username', () => {
           username: usernamex,
           password: 'blupblipblop'
         });
-      assert.equal(res.status, 200, 'should login');
-      assert.isString(res.body.apiEndpoint, 'should receive an api Endpoint');
-      assert.isString(res.body.token, 'should receive a token');
+      assert.strictEqual(res.status, 200, 'should login');
+      assert.strictEqual(typeof res.body.apiEndpoint, 'string', 'should receive an api Endpoint');
+      assert.strictEqual(typeof res.body.token, 'string', 'should receive a token');
       await deleteUser();
       async function createUser () {
         res = await request.post('/users').send({
@@ -375,8 +375,8 @@ describe('[PGTD] DELETE /users/:username', () => {
           email: usernamex + '@example.com',
           insurancenumber: '123456789'
         });
-        assert.equal(res.status, 201, 'should create a new user');
-        assert.isString(res.body.apiEndpoint, 'should receive an api Endpoint');
+        assert.strictEqual(res.status, 201, 'should create a new user');
+        assert.strictEqual(typeof res.body.apiEndpoint, 'string', 'should receive an api Endpoint');
         const token = res.body.apiEndpoint.split('//')[1].split('@')[0];
         res = await request
           .post(`/${usernamex}/`)
@@ -391,17 +391,17 @@ describe('[PGTD] DELETE /users/:username', () => {
               params: { streamId: 'diary', type: 'mass/kg', content: 70 }
             }
           ]);
-        assert.equal(res.status, 200, 'should create a stream and an event');
-        assert.isArray(res.body.results, 'should receive an array of results');
-        assert.isObject(res.body.results[0].stream, 'should receive an stream');
-        assert.isObject(res.body.results[1].event, 'should receive an event');
+        assert.strictEqual(res.status, 200, 'should create a stream and an event');
+        assert.ok(Array.isArray(res.body.results), 'should receive an array of results');
+        assert.ok(typeof res.body.results[0].stream === 'object' && res.body.results[0].stream !== null, 'should receive an stream');
+        assert.ok(typeof res.body.results[1].event === 'object' && res.body.results[1].event !== null, 'should receive an event');
       }
       async function deleteUser () {
         res = await request
           .delete(`/users/${usernamex}`)
           .set('Authorization', authKey);
-        assert.equal(res.status, 200, 'should delete the user');
-        assert.equal(res.body.userDeletion?.username, usernamex, 'should receive the deleted username');
+        assert.strictEqual(res.status, 200, 'should delete the user');
+        assert.strictEqual(res.body.userDeletion?.username, usernamex, 'should receive the deleted username');
       }
     });
   });

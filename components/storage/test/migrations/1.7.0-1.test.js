@@ -90,10 +90,10 @@ describe('Migration - 1.7.x', function () {
 
       for (const event of events) {
         for (const streamId of event.streamIds) {
-          assert.isFalse(streamId.startsWith(DOT), `streamId ${streamId} of event ${event} starts with a dot when it should not.`);
+          assert.strictEqual(streamId.startsWith(DOT), false, `streamId ${streamId} of event ${event} starts with a dot when it should not.`);
         }
         for (const uniqueProp of uniqueProperties) {
-          assert.notExists(event[uniqueProp + UNIQUE_SUFFIX], 'unique property ');
+          assert.ok(event[uniqueProp + UNIQUE_SUFFIX] == null, 'unique property ');
         }
       }
     }
@@ -103,31 +103,31 @@ describe('Migration - 1.7.x', function () {
 
     // ----------------- tag migrations
     const eventsWithTags = await eventsCollection.find({ tags: { $exists: true, $ne: [] } }).toArray();
-    assert.equal(eventsWithTags.length, 0);
+    assert.strictEqual(eventsWithTags.length, 0);
     for (const event of previousEventsWithTags) {
       const newEvent = await eventsCollection.findOne({ _id: event._id });
       // check if tags have been added to streamIds
       for (const tag of event.tags) {
-        assert.include(newEvent.streamIds, TAG_PREFIX + tag);
+        assert.ok(newEvent.streamIds.includes(TAG_PREFIX + tag));
         // check if stream exists for this user
         const stream = await streamsCollection.findOne({ userId: event.userId, streamId: TAG_PREFIX + tag });
-        assert.exists(stream);
-        assert.equal(stream.parentId, TAG_ROOT_STREAMID);
+        assert.ok(stream != null);
+        assert.strictEqual(stream.parentId, TAG_ROOT_STREAMID);
       }
     }
 
     // -- permissions
     const permissionsWithTags = await accessesCollection.find({ 'permissions.tag': { $exists: true } }).toArray();
-    assert.equal(permissionsWithTags.length, 0);
+    assert.strictEqual(permissionsWithTags.length, 0);
 
     for (const previousAccess of previousAccessesWithTags) {
       const newAccess = await accessesCollection.findOne({ _id: previousAccess._id });
       const forcedStreamsPerms = newAccess.permissions.filter(p => (p.feature && p.feature === 'forcedStreams'));
-      assert.equal(forcedStreamsPerms.length, 1);
+      assert.strictEqual(forcedStreamsPerms.length, 1);
       const forcedStreams = forcedStreamsPerms[0].streams;
-      assert.isAbove(forcedStreams.length, 0);
+      assert.ok(forcedStreams.length > 0);
       for (const permission of previousAccess.permissions) {
-        if (permission.tag) { assert.include(forcedStreams, TAG_PREFIX + permission.tag); }
+        if (permission.tag) { assert.ok(forcedStreams.includes(TAG_PREFIX + permission.tag)); }
       }
     }
 
@@ -135,11 +135,11 @@ describe('Migration - 1.7.x', function () {
 
     for (const collection of collectionsWithDelete) {
       const newItems = await collection.find({ deleted: { $type: 'date' } }).toArray();
-      assert.equal(newItems.length, 0, collection.namespace + ' should have no item with deleted dates');
+      assert.strictEqual(newItems.length, 0, collection.namespace + ' should have no item with deleted dates');
 
       for (const previousItem of previousItemsWithDelete[collection.namespace]) {
         const newItem = await collection.findOne({ _id: previousItem._id });
-        assert.equal(newItem.deleted, previousItem.deleted.getTime() / 1000);
+        assert.strictEqual(newItem.deleted, previousItem.deleted.getTime() / 1000);
       }
     }
   });

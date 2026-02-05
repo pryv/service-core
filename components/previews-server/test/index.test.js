@@ -5,6 +5,7 @@
  * Refer to LICENSE file
  */
 
+const assert = require('node:assert');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const request = require('superagent');
@@ -19,7 +20,7 @@ describe('(index)', function () {
   describe('OPTIONS /', function () {
     it('[E5MW] should return OK', async function () {
       const res = await request.options(path());
-      res.statusCode.should.eql(200);
+      assert.strictEqual(res.statusCode, 200);
     });
   });
 });

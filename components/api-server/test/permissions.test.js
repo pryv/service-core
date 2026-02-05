@@ -9,7 +9,7 @@ const async = require('async');
 const fs = require('fs');
 const path = require('path');
 const timestamp = require('unix-timestamp');
-const { assert } = require('chai');
+const assert = require('node:assert');
 
 require('./test-helpers');
 const helpers = require('./helpers');
@@ -85,7 +85,7 @@ describe('[ACCP] Access permissions', function () {
           filesReadTokenSecret);
         validation.sanitizeEvents(res.body.events);
         events.forEach(integrity.events.set);
-        res.body.events.should.eql(testData.addCorrectAttachmentIds(events));
+        assert.deepStrictEqual(res.body.events, testData.addCorrectAttachmentIds(events));
         done();
       });
     });
@@ -102,7 +102,7 @@ describe('[ACCP] Access permissions', function () {
           validation.sanitizeEvents(res.body.events);
           res.body.events = validation.removeAccountStreamsEvents(res.body.events);
           const cEvents = testData.addCorrectAttachmentIds(testData.events);
-          res.body.events.should.eql(validation.removeDeletionsAndHistory(cEvents).sort(
+          assert.deepStrictEqual(res.body.events, validation.removeDeletionsAndHistory(cEvents).sort(
             function (a, b) {
               return b.time - a.time;
             }
@@ -121,7 +121,7 @@ describe('[ACCP] Access permissions', function () {
         request.get(basePath, token(1)).unset('Authorization').query(query).end(function (res) {
           const expectedEvent = structuredClone(testData.events[8]);
           expectedEvent.streamId = expectedEvent.streamIds[0];
-          res.body.events.should.eql([expectedEvent]);
+          assert.deepStrictEqual(res.body.events, [expectedEvent]);
           done();
         });
       });
@@ -165,7 +165,7 @@ describe('[ACCP] Access permissions', function () {
         streamId: testData.streams[1].id
       };
       request.post(basePath, token(1)).send(data).end(function (res) {
-        res.statusCode.should.eql(201);
+        assert.strictEqual(res.statusCode, 201);
         done();
       });
     });
@@ -190,10 +190,10 @@ describe('[ACCP] Access permissions', function () {
         if (isAuditActive) {
           expectedStreamids.push(':_audit:access-a_1');
         }
-        assert.exists(res.body.streams);
-        res.body.streams.length.should.eql(expectedStreamids.length);
+        assert.ok(res.body.streams != null);
+        assert.strictEqual(res.body.streams.length, expectedStreamids.length);
         for (const stream of res.body.streams) {
-          assert.include(expectedStreamids, stream.id);
+          assert.ok(expectedStreamids.includes(stream.id));
         }
         done();
       });
@@ -245,7 +245,7 @@ describe('[ACCP] Access permissions', function () {
         parentId: testData.streams[2].children[0].id
       };
       request.post(basePath, token(1)).send(data).end(function (res) {
-        res.statusCode.should.eql(400);
+        assert.strictEqual(res.statusCode, 400);
         done();
       });
     });
@@ -256,7 +256,7 @@ describe('[ACCP] Access permissions', function () {
         parentId: testData.streams[2].children[1].id
       };
       request.post(basePath, token(6)).send(data).end(function (res) {
-        res.statusCode.should.eql(201);
+        assert.strictEqual(res.statusCode, 201);
         done();
       });
     });
@@ -272,7 +272,7 @@ describe('[ACCP] Access permissions', function () {
     it('[KP1Q] must allow deleting child streams in \'managed\' streams', function (done) {
       request.del(reqPath(testData.streams[2].children[0].children[0].id), token(1))
         .end(function (res) {
-          res.statusCode.should.eql(200); // trashed -> considered an update
+          assert.strictEqual(res.statusCode, 200); // trashed -> considered an update
           done();
         });
     });
@@ -293,7 +293,7 @@ describe('[ACCP] Access permissions', function () {
         validation.addStoreStreams(expected);
         request.get(basePath, token(2)).query({ state: 'all' }).end(function (res) {
           res.body.streams = validation.removeAccountStreams(res.body.streams);
-          res.body.streams.should.eql(expected);
+          assert.deepStrictEqual(res.body.streams, expected);
           done();
         });
       });
@@ -315,11 +315,11 @@ describe('[ACCP] Access permissions', function () {
 
     it('[YE49] must handle optional caller id in auth (in addition to token)', function (done) {
       request.post(basePath, auth).send(newEventData).end(function (res) {
-        res.statusCode.should.eql(201);
+        assert.strictEqual(res.statusCode, 201);
         const event = res.body.event;
         const expectedAuthor = testData.accesses[sharedAccessIndex].id + ' ' + callerId;
-        event.createdBy.should.eql(expectedAuthor);
-        event.modifiedBy.should.eql(expectedAuthor);
+        assert.strictEqual(event.createdBy, expectedAuthor);
+        assert.strictEqual(event.modifiedBy, expectedAuthor);
         done();
       });
     });
@@ -366,11 +366,11 @@ describe('[ACCP] Access permissions', function () {
       it('[H58R] must allow access when successful', function (done) {
         const successAuth = token(sharedAccessIndex) + ' Georges (unparsed)';
         request.post(basePath, successAuth).send(newEventData).end(function (res) {
-          res.statusCode.should.eql(201);
+          assert.strictEqual(res.statusCode, 201);
           const event = res.body.event;
           const expectedAuthor = testData.accesses[sharedAccessIndex].id + ' Georges (parsed)';
-          event.createdBy.should.eql(expectedAuthor);
-          event.modifiedBy.should.eql(expectedAuthor);
+          assert.strictEqual(event.createdBy, expectedAuthor);
+          assert.strictEqual(event.modifiedBy, expectedAuthor);
           done();
         });
       });
@@ -380,12 +380,12 @@ describe('[ACCP] Access permissions', function () {
         request.post(basePath, successAuth)
           .set('callerid', 'Georges (unparsed)')
           .send(newEventData).end(function (err, res) {
-            assert.notExists(err);
-            res.statusCode.should.eql(201);
+            assert.ok(err == null);
+            assert.strictEqual(res.statusCode, 201);
             const event = res.body.event;
             const expectedAuthor = testData.accesses[sharedAccessIndex].id + ' Georges (parsed)';
-            event.createdBy.should.eql(expectedAuthor);
-            event.modifiedBy.should.eql(expectedAuthor);
+            assert.strictEqual(event.createdBy, expectedAuthor);
+            assert.strictEqual(event.modifiedBy, expectedAuthor);
             done();
           });
       });
@@ -393,7 +393,7 @@ describe('[ACCP] Access permissions', function () {
       it('[ISE4] must fail properly (i.e. not granting access) when the custom function crashes', function (done) {
         const crashAuth = token(sharedAccessIndex) + ' Please Crash';
         request.post(basePath, crashAuth).send(newEventData).end(function (res) {
-          res.statusCode.should.eql(500);
+          assert.strictEqual(res.statusCode, 500);
           done();
         });
       });
@@ -404,9 +404,9 @@ describe('[ACCP] Access permissions', function () {
         try {
           await server.restartAsync();
         } catch (error) {
-          assert.isNotNull(error);
-          assert.exists(error.message);
-          assert.match(error.message, /Server failed/);
+          assert.ok(error != null);
+          assert.ok(error.message != null);
+          assert.ok(/Server failed/.test(error.message));
         }
       });
     });

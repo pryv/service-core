@@ -7,8 +7,7 @@
 
 const bluebird = require('bluebird');
 const lodash = require('lodash');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
@@ -85,26 +84,26 @@ describe('accesses', () => {
         });
         it('[H7ZS] access should contain tokens and apiEndpoints', () => {
           for (const access of accesses) {
-            assert.exists(access.token);
-            assert.exists(access.apiEndpoint);
-            assert.include(access.apiEndpoint, access.token);
+            assert.ok(access.token);
+            assert.ok(access.apiEndpoint);
+            assert.ok(access.apiEndpoint.includes(access.token));
           }
         });
         it('[P12L] should contain deletions', () => {
-          assert.isNotNull(deletions);
+          assert.ok(deletions);
         });
         it('[BQ7M] contains active accesses', () => {
-          assert.equal(accesses.length, 2);
+          assert.strictEqual(accesses.length, 2);
           const activeAccess = accesses.find((a) => a.token === activeToken);
-          assert.isNotNull(activeAccess);
+          assert.ok(activeAccess);
         });
         it('[NVCQ] contains deleted accesses as well', () => {
-          assert.equal(deletions.length, 1);
-          assert.equal(deletions[0].token, deletedToken);
+          assert.strictEqual(deletions.length, 1);
+          assert.strictEqual(deletions[0].token, deletedToken);
         });
         it('[6ZQL] deleted access are in UTC (seconds) format', () => {
           const deletedAccess = deletions[0];
-          assert.equal(deletedAccess.deleted, deletedTimestamp);
+          assert.strictEqual(deletedAccess.deleted, deletedTimestamp);
         });
       });
       describe('accesses.create', () => {
@@ -129,20 +128,20 @@ describe('accesses', () => {
             createdAccess = res.body.access;
           });
           it('[N3Q1] should contain an access', () => {
-            assert.isNotNull(createdAccess);
+            assert.ok(createdAccess);
           });
           it('[8UOW] access should contain token and apiEndpoint', () => {
-            assert.exists(createdAccess.token);
-            assert.exists(createdAccess.apiEndpoint, 'Missing API endpoint');
-            assert.include(createdAccess.apiEndpoint, createdAccess.token);
+            assert.ok(createdAccess.token);
+            assert.ok(createdAccess.apiEndpoint, 'Missing API endpoint');
+            assert.ok(createdAccess.apiEndpoint.includes(createdAccess.token));
           });
           it('[J77Z] should contain the set values, but no "deleted" field in the API response', () => {
             assert.deepEqual(access, _.pick(createdAccess, ['name', 'permissions', 'type']));
-            assert.notExists(createdAccess.deleted);
+            assert.ok(createdAccess.deleted == null);
           });
           it('[A4JP] should contain the field "deleted:null" in the database', (done) => {
             storage.findAll({ id: userId }, {}, (err, accesses) => {
-              assert.notExists(err);
+              assert.ok(err == null);
               const deletedAccess = accesses.find((a) => a.name === access.name);
               assert.equal(deletedAccess.deleted, null);
               done();
@@ -171,10 +170,10 @@ describe('accesses', () => {
           });
           it('[1DJ6] should return an error', () => {
             error = res.body.error;
-            assert.isNotNull(error);
+            assert.ok(error);
           });
           it('[7ZPK] error should say that the deleted field is forbidden upon creation', () => {
-            assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+            assert.strictEqual(error.id, ErrorIds.InvalidParametersFormat);
           });
         });
       });
@@ -196,10 +195,10 @@ describe('accesses', () => {
           error = res.body.error;
         });
         it('[JNJK] should return an error', () => {
-          assert.isNotNull(error);
+          assert.ok(error);
         });
         it('[OS36] error should say that the deleted field is forbidden upon update', () => {
-          assert.equal(error.id, ErrorIds.Gone);
+          assert.strictEqual(error.id, ErrorIds.Gone);
         });
       });
     });
@@ -296,36 +295,36 @@ describe('accesses', () => {
       it('[WE2O] should return the accessDeletion and relatedDeletions', () => {
         const accessDeletion = res.body.accessDeletion;
         const relatedDeletions = res.body.relatedDeletions;
-        assert.exists(accessDeletion);
-        assert.exists(relatedDeletions);
-        assert.equal(accessDeletion.id, access.id);
+        assert.ok(accessDeletion);
+        assert.ok(relatedDeletions);
+        assert.strictEqual(accessDeletion.id, access.id);
         let found1 = false;
         let found2 = false;
         let found3 = false;
-        assert.equal(relatedDeletions.length, 2);
+        assert.strictEqual(relatedDeletions.length, 2);
         relatedDeletions.forEach((a) => {
           if (a.id === sharedAccess1.id) { found1 = true; }
           if (a.id === sharedAccess2.id) { found2 = true; }
           if (a.id === expiredSharedAccess.id) { found3 = true; }
         });
-        assert.isTrue(found1);
-        assert.isTrue(found2);
-        assert.isFalse(found3);
+        assert.strictEqual(found1, true);
+        assert.strictEqual(found2, true);
+        assert.strictEqual(found3, false);
       });
       it('[IVWP] should delete it and the accesses it created, not touching the expired ones', async () => {
         await bluebird.fromCallback((callback) => {
           storage.findAll({ id: username }, {}, (err, accesses) => {
-            assert.notExists(err);
+            assert.ok(err == null);
             const deletedAccess = accesses.find((a) => a.id === access.id);
             const deletedShared1 = accesses.find((a) => a.id === sharedAccess1.id);
             const deletedShared2 = accesses.find((a) => a.id === sharedAccess2.id);
             const notDeletedAccess3 = accesses.find((a) => a.id === sharedAccess3.id);
             const notDeletedAccess4 = accesses.find((a) => a.id === expiredSharedAccess.id);
-            assert.exists(deletedAccess.deleted);
-            assert.exists(deletedShared1.deleted);
-            assert.exists(deletedShared2.deleted);
-            assert.notExists(notDeletedAccess3.deleted);
-            assert.notExists(notDeletedAccess4.deleted);
+            assert.ok(deletedAccess.deleted);
+            assert.ok(deletedShared1.deleted);
+            assert.ok(deletedShared2.deleted);
+            assert.ok(notDeletedAccess3.deleted == null);
+            assert.ok(notDeletedAccess4.deleted == null);
             callback();
           });
         });
@@ -406,11 +405,11 @@ describe('accesses', () => {
             accesses = res.body.accesses;
           });
           it('[489J] succeeds', () => {
-            assert.isNotNull(accesses);
+            assert.ok(accesses);
           });
           it('[7NPE] contains only active accesses', () => {
             for (const a of accesses) {
-              assert.isFalse(isExpired(a), `Access '${a.name}' is expired`);
+              assert.strictEqual(isExpired(a), false, `Access '${a.name}' is expired`);
             }
           });
         });
@@ -426,10 +425,10 @@ describe('accesses', () => {
             accesses = res.body.accesses;
           });
           it('[PIGE] succeeds', () => {
-            assert.isNotNull(accesses);
+            assert.ok(accesses);
           });
           it('[DZHL] includes expired accesses', () => {
-            assert.isAbove(lodash.filter(accesses, isExpired).length, 0);
+            assert.ok(lodash.filter(accesses, isExpired).length > 0);
           });
         });
       });
@@ -461,7 +460,7 @@ describe('accesses', () => {
           });
           it('[3ONA] creates an access with set expiry timestamp', () => {
             assert.strictEqual(res.status, 201);
-            assert.isAbove(access.expires, timestamp.now());
+            assert.ok(access.expires > timestamp.now());
           });
         });
         describe('when called with expireAfter=0', () => {
@@ -491,7 +490,7 @@ describe('accesses', () => {
           });
           it('[8B65] creates an expired access', () => {
             assert.strictEqual(res.status, 201);
-            assert.isAbove(timestamp.now(), access.expires);
+            assert.ok(timestamp.now() > access.expires);
           });
         });
         describe('when called with expireAfter<0', () => {
@@ -560,9 +559,9 @@ describe('accesses', () => {
               .set('Authorization', accessToken)
               .send(attrs);
             assert.strictEqual(res.status, 501);
-            assert.exists(res.body.error);
-            assert.equal(res.body.error.id, 'api-unavailable');
-            assert.equal(res.body.error.message, 'streams.create');
+            assert.ok(res.body.error);
+            assert.strictEqual(res.body.error.id, 'api-unavailable');
+            assert.strictEqual(res.body.error.message, 'streams.create');
           });
         });
       });
@@ -586,7 +585,7 @@ describe('accesses', () => {
               });
           });
           it('[B66B] returns the matching access', () => {
-            assert.isTrue(res.ok);
+            assert.strictEqual(res.ok, true);
             assert.strictEqual(res.body.matchingAccess.token, hasExpiryToken);
           });
         });
@@ -606,7 +605,7 @@ describe('accesses', () => {
             // permissions.
           });
           it('[DLHJ] returns no match', () => {
-            assert.isUndefined(res.body.matchingAccess);
+            assert.strictEqual(res.body.matchingAccess, undefined);
             const mismatching = res.body.mismatchingAccess;
             assert.strictEqual(mismatching.token, expiredToken);
           });
@@ -629,7 +628,7 @@ describe('accesses', () => {
           });
           it('[KGT4] returns a proper error message', () => {
             const error = res.body.error;
-            assert.isNotNull(error);
+            assert.ok(error);
             assert.strictEqual(error.id, 'forbidden');
             assert.strictEqual(error.message, 'Access has expired.');
           });
@@ -715,7 +714,7 @@ describe('accesses', () => {
           accesses = res.body.accesses;
         });
         it('[KML2] succeeds', () => {
-          assert.exists(accesses);
+          assert.ok(accesses);
         });
         it('[NY85] contains existing accesses with clientData', () => {
           for (const a of accesses) {
@@ -744,9 +743,9 @@ describe('accesses', () => {
         }
         function checkResultingAccess (res) {
           const access = res.body.access;
-          assert.isTrue(res.ok);
-          assert.notExists(res.body.error);
-          assert.exists(access);
+          assert.strictEqual(res.ok, true);
+          assert.ok(res.body.error == null);
+          assert.ok(access);
           return access;
         }
         describe('when called with clientData={}', () => {
@@ -774,8 +773,8 @@ describe('accesses', () => {
               .send(sampleAccess('With null clientData', null));
           });
           it('[E5C1] throws a schema error', () => {
-            assert.isFalse(res.ok);
-            assert.exists(res.body.error);
+            assert.strictEqual(res.ok, false);
+            assert.ok(res.body.error);
           });
         });
         describe('when called with complex clientData', () => {
@@ -801,9 +800,9 @@ describe('accesses', () => {
             .post(`/${userId}/accesses/check-app`)
             .set('Authorization', accessToken)
             .send(req);
-          assert.isTrue(res.ok);
-          assert.exists(res.body);
-          assert.notExists(res.body.error);
+          assert.strictEqual(res.ok, true);
+          assert.ok(res.body);
+          assert.ok(res.body.error == null);
           return res.body;
         }
         describe('when the provided clientData matches the existing clientData', () => {
@@ -816,7 +815,7 @@ describe('accesses', () => {
             });
           });
           it('[U1AM] returns the matching access', () => {
-            assert.exists(body.matchingAccess);
+            assert.ok(body.matchingAccess);
             assert.strictEqual(body.matchingAccess.id, existingAccess.id);
           });
         });
@@ -830,7 +829,7 @@ describe('accesses', () => {
             });
           });
           it('[2EER] returns no match', () => {
-            assert.exists(body.mismatchingAccess);
+            assert.ok(body.mismatchingAccess);
             assert.strictEqual(body.mismatchingAccess.id, existingAccess.id);
           });
         });
@@ -843,7 +842,7 @@ describe('accesses', () => {
             });
           });
           it('[DHZQ] returns no match', () => {
-            assert.exists(body.mismatchingAccess);
+            assert.ok(body.mismatchingAccess);
             assert.strictEqual(body.mismatchingAccess.id, existingAccess.id);
           });
         });
@@ -887,9 +886,9 @@ describe('accesses', () => {
         .get(path())
         .set('Authorization', appToken);
       const body = res.body;
-      assert.exists(body.user);
-      assert.exists(body.user.username);
-      assert.equal(body.user.username, userId);
+      assert.ok(body.user);
+      assert.ok(body.user.username);
+      assert.strictEqual(body.user.username, userId);
     });
     describe('[APRA] When password rules are enabled', async () => {
       const settingsOverride = structuredClone(helpers.passwordRules.settingsOverride);
@@ -914,22 +913,22 @@ describe('accesses', () => {
           .request()
           .get(path())
           .set('Authorization', personalToken);
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const userInfo = res.body.user;
-        assert.exists(userInfo.passwordExpires);
-        assert.approximately(userInfo.passwordExpires, timestamp.add(passwordTime, `${settingsOverride.auth.passwordAgeMaxDays}d`), 1000);
-        assert.exists(userInfo.passwordCanBeChanged);
-        assert.approximately(userInfo.passwordCanBeChanged, timestamp.add(passwordTime, `${settingsOverride.auth.passwordAgeMinDays}d`), 1000);
+        assert.ok(userInfo.passwordExpires);
+        assert.ok(Math.abs(userInfo.passwordExpires - timestamp.add(passwordTime, `${settingsOverride.auth.passwordAgeMaxDays}d`)) <= 1000);
+        assert.ok(userInfo.passwordCanBeChanged);
+        assert.ok(Math.abs(userInfo.passwordCanBeChanged - timestamp.add(passwordTime, `${settingsOverride.auth.passwordAgeMinDays}d`)) <= 1000);
       });
       it('[Q7J6] must not return password information for other accesses', async function () {
         const res = await server
           .request()
           .get(path())
           .set('Authorization', appToken);
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const userInfo = res.body.user;
-        assert.notExists(userInfo.passwordExpires);
-        assert.notExists(userInfo.passwordCanBeChanged);
+        assert.ok(userInfo.passwordExpires == null);
+        assert.ok(userInfo.passwordCanBeChanged == null);
       });
     });
   });

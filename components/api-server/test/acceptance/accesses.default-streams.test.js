@@ -9,7 +9,7 @@ const cuid = require('cuid');
 const path = require('path');
 const bluebird = require('bluebird');
 const nock = require('nock');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
@@ -110,15 +110,15 @@ describe('Accesses with account streams', function () {
             await createUserAndAccess(permissionLevel, systemEmailStreamId);
           });
           it('[UE9G] should return 201', async () => {
-            assert.equal(createAccessResponse.status, 201);
+            assert.strictEqual(createAccessResponse.status, 201);
           });
           it('[BUYP] should create access in the database', async () => {
-            assert.deepEqual(accountAccessData.permissions, [{ streamId: systemEmailStreamId, level: permissionLevel }]);
+            assert.deepStrictEqual(accountAccessData.permissions, [{ streamId: systemEmailStreamId, level: permissionLevel }]);
           });
           it('[S3IQ] should enable user to read visible stream event with this access', async () => {
             res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
-            assert.equal(res.body.events.length, 1);
-            assert.equal(res.body.events[0].streamId, systemEmailStreamId);
+            assert.strictEqual(res.body.events.length, 1);
+            assert.strictEqual(res.body.events[0].streamId, systemEmailStreamId);
           });
 
           describe('for the “account” stream', () => {
@@ -129,14 +129,14 @@ describe('Accesses with account streams', function () {
               await createUserAndAccess(permissionLevel, streamId);
             });
             it('[XEAK] should return 201', async () => {
-              assert.equal(createAccessResponse.status, 201);
+              assert.strictEqual(createAccessResponse.status, 201);
             });
             it('[65I4] should create access in the database', async () => {
-              assert.deepEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
+              assert.deepStrictEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
             });
             it('[L99L] should allow to access visible events in storageUsed', async () => {
               res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
-              assert.equal(res.body.events.length, 6);
+              assert.strictEqual(res.body.events.length, 6);
               validation.validateAccountEvents(res.body.events);
             });
           });
@@ -148,22 +148,22 @@ describe('Accesses with account streams', function () {
               await createUserAndAccess(permissionLevel, streamId);
             });
             it('[EPEP] should return 201', async () => {
-              assert.equal(createAccessResponse.status, 201);
+              assert.strictEqual(createAccessResponse.status, 201);
             });
             it('[U3UM] should create access in the database', async () => {
-              assert.deepEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
+              assert.deepStrictEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
             });
             it('[A4UP] should allow to access visible events in storageUsed', async () => {
               res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
-              assert.equal(res.body.events.length, 2);
-              assert.isTrue([
+              assert.strictEqual(res.body.events.length, 2);
+              assert.strictEqual([
                 SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles'),
                 SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')
-              ].includes(res.body.events[0].streamId));
-              assert.isTrue([
+              ].includes(res.body.events[0].streamId), true);
+              assert.strictEqual([
                 SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles'),
                 SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')
-              ].includes(res.body.events[1].streamId));
+              ].includes(res.body.events[1].streamId), true);
             });
           });
         });
@@ -175,10 +175,10 @@ describe('Accesses with account streams', function () {
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[IWMQ] should return 201', async () => {
-            assert.equal(createAccessResponse.status, 201);
+            assert.strictEqual(createAccessResponse.status, 201);
           });
           it('[APYN] should create access in the database', async () => {
-            assert.deepEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
+            assert.deepStrictEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
           });
         });
         describe('with a contribute-level permission', () => {
@@ -189,10 +189,10 @@ describe('Accesses with account streams', function () {
             await createUserAndAccess(permissionLevel, streamId);
           });
           it('[R0M1] should return 201', async () => {
-            assert.equal(createAccessResponse.status, 201);
+            assert.strictEqual(createAccessResponse.status, 201);
           });
           it('[Q8R8] should create access in the database', async () => {
-            assert.deepEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
+            assert.deepStrictEqual(accountAccessData.permissions, [{ streamId, level: permissionLevel }]);
           });
           it('[TI1X] should allow to create visible stream events', async () => {
             const scope = nock(config.get('services:register:url'));
@@ -209,9 +209,9 @@ describe('Accesses with account streams', function () {
               })
               .set('authorization', accountAccessData.token);
 
-            assert.equal(response.status, 201);
-            assert.exists(response.body.event);
-            assert.equal(response.body.event.streamId, streamId);
+            assert.strictEqual(response.status, 201);
+            assert.ok(response.body.event);
+            assert.strictEqual(response.body.event.streamId, streamId);
           });
         });
 
@@ -222,10 +222,10 @@ describe('Accesses with account streams', function () {
             await createUserAndAccess(AccessLogic.PERMISSION_LEVEL_MANAGE, streamId);
           });
           it('[93HO] should return 400', async () => {
-            assert.equal(createAccessResponse.status, 400);
+            assert.strictEqual(createAccessResponse.status, 400);
           });
           it('[YPHX] should return the correct error', async () => {
-            assert.deepEqual(createAccessResponse.body.error, {
+            assert.deepStrictEqual(createAccessResponse.body.error, {
               id: ErrorIds.InvalidOperation,
               message: ErrorMessages[ErrorIds.TooHighAccessForSystemStreams],
               data: { param: streamId }
@@ -240,10 +240,10 @@ describe('Accesses with account streams', function () {
           await createUserAndAccess('read', streamId);
         });
         it('[ATGU] should return 400', async () => {
-          assert.equal(createAccessResponse.status, 400);
+          assert.strictEqual(createAccessResponse.status, 400);
         });
         it('[Q2KZ] should return the correct error', async () => {
-          assert.deepEqual(createAccessResponse.body.error, {
+          assert.deepStrictEqual(createAccessResponse.body.error, {
             id: ErrorIds.InvalidOperation,
             message: ErrorMessages[ErrorIds.DeniedStreamAccess],
             data: { param: streamId }
@@ -256,8 +256,8 @@ describe('Accesses with account streams', function () {
           await createUserAndAccess('read', streamId);
         });
         it('[KKKS] should return 403 forbidden', async () => {
-          assert.equal(createAccessResponse.status, 403);
-          assert.equal(createAccessResponse.body.error.id, ErrorIds.Forbidden);
+          assert.strictEqual(createAccessResponse.status, 403);
+          assert.strictEqual(createAccessResponse.body.error.id, ErrorIds.Forbidden);
         });
       });
     });
@@ -275,11 +275,11 @@ describe('Accesses with account streams', function () {
             .set('authorization', access.token);
         });
         it('[Z40J] should return 200', async () => {
-          assert.equal(res.status, 200);
+          assert.strictEqual(res.status, 200);
         });
         it('[MP9T] should delete the access in the database', async () => {
           const deletedAccess = await getAccessInDb(createAccessResponse.body.access.id);
-          assert.equal(deletedAccess, null);
+          assert.strictEqual(deletedAccess, null);
         });
       });
     });

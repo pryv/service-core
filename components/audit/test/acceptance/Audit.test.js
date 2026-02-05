@@ -71,28 +71,28 @@ describe('Audit', function () {
     });
 
     it('[WTNL] must return 200', function () {
-      assert.equal(res.status, 200);
+      assert.strictEqual(res.status, 200);
     });
     it('[UZEV] must return logs when queried', async function () {
       res = await coreRequest
         .get(auditPath)
         .set('Authorization', access.token);
       const logs = res.body.auditLogs;
-      assert.exists(logs);
-      assert.equal(logs.length, 1);
+      assert.ok(logs);
+      assert.strictEqual(logs.length, 1);
       const log = logs[0];
       assert.deepEqual(log.streamIds, [addAccessStreamIdPrefix(access.id), addActionStreamIdPrefix('events.get')], 'stream Id of audit log is not access Id');
-      assert.equal(log.content.source.name, 'http', 'source name is wrong');
-      assert.equal(log.content.action, 'events.get', 'action is wrong');
-      assert.approximately(log.created, now, 0.5, 'created timestamp is off');
-      assert.approximately(log.modified, now, 0.5, 'modified timestamp is off');
+      assert.strictEqual(log.content.source.name, 'http', 'source name is wrong');
+      assert.strictEqual(log.content.action, 'events.get', 'action is wrong');
+      assert.ok(Math.abs(log.created - now) <= 0.5, 'created timestamp is off');
+      assert.ok(Math.abs(log.modified - now) <= 0.5, 'modified timestamp is off');
       assert.deepEqual(log.content.query, query);
-      assert.equal(log.type, CONSTANTS.EVENT_TYPE_VALID);
+      assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_VALID);
     });
 
     describe('when making a call that is not audited', function () {
       before(async function () {
-        assert.isUndefined(apiMethods.AUDITED_METHODS_MAP['service.info']);
+        assert.strictEqual(apiMethods.AUDITED_METHODS_MAP['service.info'], undefined);
         resetSpies();
         now = timestamp.now();
         res = await coreRequest
@@ -100,13 +100,13 @@ describe('Audit', function () {
       });
 
       it('[NJFO] must return 200', function () {
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
       });
       it('[V10L] must not log it in syslog', function () {
-        assert.isFalse(sysLogSpy.calledOnce);
+        assert.strictEqual(sysLogSpy.calledOnce, false);
       });
       it('[9RWP] must not save it to storage', function () {
-        assert.isFalse(storageSpy.calledOnce);
+        assert.strictEqual(storageSpy.calledOnce, false);
       });
     });
     describe('when making a call that has its own custom accessId', function () {
@@ -125,23 +125,23 @@ describe('Audit', function () {
       });
 
       it('[81O6] must return 200', function () {
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
       });
       it('[L92X] must log it in syslog', function () {
-        assert.isTrue(sysLogSpy.calledOnce);
+        assert.strictEqual(sysLogSpy.calledOnce, true);
       });
       it('[G7UV] must return logs when queried', async function () {
         res = await coreRequest
           .get(auditPath)
           .set('Authorization', access.token)
           .query({ fromTime: now });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const entries = res.body.auditLogs;
-        assert.exists(entries);
-        assert.equal(entries.length, 1);
+        assert.ok(entries);
+        assert.strictEqual(entries.length, 1);
         log = entries[0];
-        assert.include(log.streamIds, addAccessStreamIdPrefix(MethodContextUtils.AuditAccessIds.VALID_PASSWORD), 'custom accessId saved to streamIds');
-        assert.equal(log.type, CONSTANTS.EVENT_TYPE_VALID);
+        assert.ok(log.streamIds.includes(addAccessStreamIdPrefix(MethodContextUtils.AuditAccessIds.VALID_PASSWORD)), 'custom accessId saved to streamIds');
+        assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_VALID);
       });
     });
     describe('when making a call that has no userId', function () {
@@ -159,13 +159,13 @@ describe('Audit', function () {
       });
 
       it('[JU8F] must return 201', function () {
-        assert.equal(res.status, 201);
+        assert.strictEqual(res.status, 201);
       });
       it('[KPPH] must log it in syslog', function () {
-        assert.isTrue(sysLogSpy.calledOnce);
+        assert.strictEqual(sysLogSpy.calledOnce, true);
       });
       it('[EI1U] must not log it to storage', async function () {
-        assert.isFalse(storageSpy.calledOnce);
+        assert.strictEqual(storageSpy.calledOnce, false);
       });
     });
   });
@@ -180,13 +180,13 @@ describe('Audit', function () {
           .set('Authorization', 'doesnt-matter');
       });
       it('[LFSW] must return 400', function () {
-        assert.equal(res.status, 404);
+        assert.strictEqual(res.status, 404);
       });
       it('[GM2Y] must not log it in syslog', function () {
-        assert.isFalse(sysLogSpy.calledOnce);
+        assert.strictEqual(sysLogSpy.calledOnce, false);
       });
       it('[2IQO] must not save it to storage', function () {
-        assert.isFalse(storageSpy.calledOnce);
+        assert.strictEqual(storageSpy.calledOnce, false);
       });
     });
     describe('with errorId "invalid-request-structure"', function () {
@@ -200,21 +200,21 @@ describe('Audit', function () {
           .query(query);
       });
       it('[7SUK] must return 400', function () {
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
       });
       it('[N5OS] must return logs when queried', async function () {
         res = await coreRequest
           .get(auditPath)
           .set('Authorization', access.token)
           .query({ fromTime: now });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const entries = res.body.auditLogs;
-        assert.exists(entries);
-        assert.equal(entries.length, 1);
+        assert.ok(entries);
+        assert.strictEqual(entries.length, 1);
         const log = entries[0];
-        assert.equal(log.content.id, 'invalid-request-structure');
+        assert.strictEqual(log.content.id, 'invalid-request-structure');
         assert.deepEqual(log.content.query, query);
-        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
+        assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "invalid-parameters-format"', function () {
@@ -228,21 +228,21 @@ describe('Audit', function () {
           .query(query);
       });
       it('[XX4D] must return 400', function () {
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
       });
       it('[BZT8] must return logs when queried', async function () {
         res = await coreRequest
           .get(auditPath)
           .set('Authorization', access.token)
           .query({ fromTime: now });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const entries = res.body.auditLogs;
-        assert.exists(entries);
-        assert.equal(entries.length, 1);
+        assert.ok(entries);
+        assert.strictEqual(entries.length, 1);
         const log = entries[0];
-        assert.equal(log.content.id, 'invalid-parameters-format');
+        assert.strictEqual(log.content.id, 'invalid-parameters-format');
         assert.deepEqual(log.content.query, query);
-        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
+        assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "unknown-referenced-resource"', function () {
@@ -256,21 +256,21 @@ describe('Audit', function () {
           .query(query);
       });
       it('[9ZGI] must return 400', function () {
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
       });
       it('[OBQ8] must return logs when queried', async function () {
         res = await coreRequest
           .get(auditPath)
           .set('Authorization', access.token)
           .query({ fromTime: now });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const entries = res.body.auditLogs;
-        assert.exists(entries);
-        assert.equal(entries.length, 1);
+        assert.ok(entries);
+        assert.strictEqual(entries.length, 1);
         const log = entries[0];
-        assert.equal(log.content.id, 'unknown-referenced-resource');
+        assert.strictEqual(log.content.id, 'unknown-referenced-resource');
         assert.deepEqual(log.content.query, query);
-        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
+        assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "invalid-access-token"', function () {
@@ -282,21 +282,21 @@ describe('Audit', function () {
           .set('Authorization', 'invalid-token');
       });
       it('[ASLZ] must return 403', function () {
-        assert.equal(res.status, 403);
+        assert.strictEqual(res.status, 403);
       });
       it('[6CZ0] must return logs when queried', async function () {
         res = await coreRequest
           .get(auditPath)
           .set('Authorization', access.token)
           .query({ fromTime: now });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const entries = res.body.auditLogs;
-        assert.exists(entries);
-        assert.equal(entries.length, 1);
+        assert.ok(entries);
+        assert.strictEqual(entries.length, 1);
         const log = entries[0];
-        assert.equal(log.content.id, 'invalid-access-token');
+        assert.strictEqual(log.content.id, 'invalid-access-token');
         assert.deepEqual(log.streamIds, [addAccessStreamIdPrefix(AuditAccessIds.INVALID), addActionStreamIdPrefix('events.get')]);
-        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
+        assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "forbidden"', function () {
@@ -313,20 +313,20 @@ describe('Audit', function () {
           });
       });
       it('[WUUW] must return 403', function () {
-        assert.equal(res.status, 403);
+        assert.strictEqual(res.status, 403);
       });
       it('[14LS] must return logs when queried', async function () {
         res = await coreRequest
           .get(auditPath)
           .set('Authorization', access.token)
           .query({ fromTime: now });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const entries = res.body.auditLogs;
-        assert.exists(entries);
-        assert.equal(entries.length, 1);
+        assert.ok(entries);
+        assert.strictEqual(entries.length, 1);
         const log = entries[0];
-        assert.equal(log.content.id, 'forbidden');
-        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
+        assert.strictEqual(log.content.id, 'forbidden');
+        assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with errorId "unknown-resource"', function () {
@@ -338,20 +338,20 @@ describe('Audit', function () {
           .set('Authorization', access.token);
       });
       it('[176G] must return 404', function () {
-        assert.equal(res.status, 404);
+        assert.strictEqual(res.status, 404);
       });
       it('[7132] must return logs when queried', async function () {
         res = await coreRequest
           .get(auditPath)
           .set('Authorization', access.token)
           .query({ fromTime: now });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const entries = res.body.auditLogs;
-        assert.exists(entries);
-        assert.equal(entries.length, 1);
+        assert.ok(entries);
+        assert.strictEqual(entries.length, 1);
         const log = entries[0];
-        assert.equal(log.content.id, 'unknown-resource');
-        assert.equal(log.type, CONSTANTS.EVENT_TYPE_ERROR);
+        assert.strictEqual(log.content.id, 'unknown-resource');
+        assert.strictEqual(log.type, CONSTANTS.EVENT_TYPE_ERROR);
       });
     });
     describe('with a malformed request body', function () {
@@ -365,17 +365,17 @@ describe('Audit', function () {
           .send('{"i am malformed"}');
       });
       it('[DZDP] must return 400', function () {
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
       });
       it('[ZNP4] must not record logs', async function () {
         res = await coreRequest
           .get(auditPath)
           .set('Authorization', access.token)
           .query({ fromTime: now });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const entries = res.body.auditLogs;
-        assert.exists(entries);
-        assert.equal(entries.length, 0);
+        assert.ok(entries);
+        assert.strictEqual(entries.length, 0);
       });
     });
   });
@@ -402,11 +402,11 @@ describe('Audit', function () {
         });
         it('[ADZL] must log it in syslog', function () {
           const numAudited = apiMethods.AUDITED_METHODS.length;
-          assert.equal(sysLogSpy.callCount, numAudited);
+          assert.strictEqual(sysLogSpy.callCount, numAudited);
         });
         it('[5243] must save it to storage', function () {
           const numStored = apiMethods.AUDITED_METHODS.length - apiMethods.WITHOUT_USER_METHODS.length;
-          assert.equal(storageSpy.callCount, numStored);
+          assert.strictEqual(storageSpy.callCount, numStored);
         });
       });
       describe('when including all, but a few', function () {
@@ -426,13 +426,13 @@ describe('Audit', function () {
         });
         it('[Q2H9] must log it in syslog', function () {
           const logged = apiMethods.AUDITED_METHODS.filter(m => !exclude.includes(m));
-          assert.equal(sysLogSpy.callCount, logged.length);
+          assert.strictEqual(sysLogSpy.callCount, logged.length);
         });
         it('[BGXC] must save it to storage', function () {
           const stored = apiMethods.AUDITED_METHODS
             .filter(m => !apiMethods.WITHOUT_USER_METHODS.includes(m))
             .filter(m => !exclude.includes(m));
-          assert.equal(storageSpy.callCount, stored.length);
+          assert.strictEqual(storageSpy.callCount, stored.length);
         });
       });
       describe('when only including a few', function () {
@@ -452,13 +452,13 @@ describe('Audit', function () {
         });
         it('[WDZ9] must log it in syslog', function () {
           const logged = apiMethods.AUDITED_METHODS.filter(m => include.includes(m));
-          assert.equal(sysLogSpy.callCount, logged.length);
+          assert.strictEqual(sysLogSpy.callCount, logged.length);
         });
         it('[E7S0] must save it to storage', function () {
           const stored = apiMethods.AUDITED_METHODS
             .filter(m => !apiMethods.WITHOUT_USER_METHODS.includes(m))
             .filter(m => include.includes(m));
-          assert.equal(storageSpy.callCount, stored.length);
+          assert.strictEqual(storageSpy.callCount, stored.length);
         });
       });
       describe('when including nothing', function () {
@@ -476,10 +476,10 @@ describe('Audit', function () {
           });
         });
         it('[NP6H] must log it in syslog', function () {
-          assert.equal(sysLogSpy.callCount, 0);
+          assert.strictEqual(sysLogSpy.callCount, 0);
         });
         it('[LV1C] must save it to storage', function () {
-          assert.equal(storageSpy.callCount, 0);
+          assert.strictEqual(storageSpy.callCount, 0);
         });
       });
       describe('when using a method aggregate (here "events.all")', function () {
@@ -499,10 +499,10 @@ describe('Audit', function () {
           });
         });
         it('[L2KG] must log it in syslog', function () {
-          assert.equal(sysLogSpy.callCount, auditedMethods.length);
+          assert.strictEqual(sysLogSpy.callCount, auditedMethods.length);
         });
         it('[HSQS] must save it to storage', function () {
-          assert.equal(storageSpy.callCount, auditedMethods.length);
+          assert.strictEqual(storageSpy.callCount, auditedMethods.length);
         });
       });
       describe('when excluding a few', function () {
@@ -525,10 +525,10 @@ describe('Audit', function () {
           logged = apiMethods.AUDITED_METHODS.filter(m => !excluded.includes(m));
         });
         it('[JBPZ] must log it in syslog', function () {
-          assert.equal(sysLogSpy.callCount, logged.length);
+          assert.strictEqual(sysLogSpy.callCount, logged.length);
         });
         it('[1ESH] must save it to storage', function () {
-          assert.equal(storageSpy.callCount, stored.length);
+          assert.strictEqual(storageSpy.callCount, stored.length);
         });
       });
       describe('when including and excluding some - without intersection', function () {
@@ -552,10 +552,10 @@ describe('Audit', function () {
           logged = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') || m === 'getAccessInfo'));
         });
         it('[6GVQ] must log it in syslog', function () {
-          assert.equal(sysLogSpy.callCount, logged.length);
+          assert.strictEqual(sysLogSpy.callCount, logged.length);
         });
         it('[R7BF] must save it to storage', function () {
-          assert.equal(storageSpy.callCount, stored.length);
+          assert.strictEqual(storageSpy.callCount, stored.length);
         });
       });
       describe('when including and excluding some - with intersection', function () {
@@ -579,10 +579,10 @@ describe('Audit', function () {
           logged = apiMethods.WITH_USER_METHODS.filter(m => (m.startsWith('events.') && m !== 'events.get'));
         });
         it('[UK0K] must log it in syslog', function () {
-          assert.equal(sysLogSpy.callCount, logged.length);
+          assert.strictEqual(sysLogSpy.callCount, logged.length);
         });
         it('[UOFZ] must save it to storage', function () {
-          assert.equal(storageSpy.callCount, stored.length);
+          assert.strictEqual(storageSpy.callCount, stored.length);
         });
       });
     });

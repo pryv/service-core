@@ -6,11 +6,9 @@
  */
 
 const async = require('async');
-const should = require('should'); // explicit require to benefit from static function
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 
 require('./test-helpers');
 const helpers = require('./helpers');
@@ -59,7 +57,7 @@ describe('[STRE] streams', function () {
       function (stepDone) {
         helpers.dependencies.storage.user.accesses.findOne(user, { token: request.token },
           null, function (err, access) {
-            assert.notExists(err);
+            assert.ok(err == null);
             accessId = access.id;
             stepDone();
           });
@@ -108,7 +106,7 @@ describe('[STRE] streams', function () {
           status: 200,
           schema: methodsSchema.get.result
         });
-        res.body.streamDeletions.should.eql(_.at(testData.streams, 4));
+        assert.deepStrictEqual(res.body.streamDeletions, _.at(testData.streams, 4));
         done();
       });
     });
@@ -121,7 +119,7 @@ describe('[STRE] streams', function () {
           status: 200,
           schema: methodsSchema.get.result
         });
-        assert.exists(res.body.streamDeletions);
+        assert.ok(res.body.streamDeletions != null);
         done();
       });
     });
@@ -193,7 +191,7 @@ describe('[STRE] streams', function () {
               schema: methodsSchema.create.result
             });
             createdStream = res.body.stream;
-            streamsNotifCount.should.eql(1, 'streams notifications');
+            assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
             stepDone();
           });
         },
@@ -201,7 +199,7 @@ describe('[STRE] streams', function () {
           // server and current "mall" instance are not running on the same instance and cache must me invalidated manually
           cache.unsetStreams(user.id, 'local');
           const streams = await mall.streams.get(user.id, { storeId: 'local', hideRootStreams: true });
-          streams.length.should.eql(originalCount + 1, 'should count one more root stream');
+          assert.strictEqual(streams.length, originalCount + 1, 'should count one more root stream');
 
           const expected = structuredClone(data);
           expected.id = createdStream.id;
@@ -357,7 +355,7 @@ describe('[STRE] streams', function () {
           status: 201,
           schema: methodsSchema.create.result
         });
-        res.body.stream.id.should.eql('pas-encode-de-bleu');
+        assert.strictEqual(res.body.stream.id, 'pas-encode-de-bleu');
         done();
       });
     });
@@ -446,7 +444,7 @@ describe('[STRE] streams', function () {
         delete expected.children;
         validation.checkObjectEquality(res.body.stream, expected);
 
-        streamsNotifCount.should.eql(1, 'streams notifications');
+        assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
         done();
       });
     });
@@ -490,7 +488,7 @@ describe('[STRE] streams', function () {
           delete expected.children;
           validation.checkObjectEquality(res.body.stream, expected);
 
-          streamsNotifCount.should.eql(1, 'streams notifications');
+          assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
           done();
         });
       });
@@ -552,7 +550,7 @@ describe('[STRE] streams', function () {
                 status: 200,
                 schema: methodsSchema.update.result
               });
-              streamsNotifCount.should.eql(1, 'streams notifications');
+              assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
               stepDone();
             });
         },
@@ -660,11 +658,11 @@ describe('[STRE] streams', function () {
                 schema: methodsSchema.update.result
               });
               const stream = res.body.stream;
-              should(stream.id).not.be.equal(forbiddenUpdate.id);
-              should(stream.created).not.be.equal(forbiddenUpdate.created);
-              should(stream.createdBy).not.be.equal(forbiddenUpdate.createdBy);
-              should(stream.modified).not.be.equal(forbiddenUpdate.modified);
-              should(stream.modifiedBy).not.be.equal(forbiddenUpdate.modifiedBy);
+              assert.notStrictEqual(stream.id, forbiddenUpdate.id);
+              assert.notStrictEqual(stream.created, forbiddenUpdate.created);
+              assert.notStrictEqual(stream.createdBy, forbiddenUpdate.createdBy);
+              assert.notStrictEqual(stream.modified, forbiddenUpdate.modified);
+              assert.notStrictEqual(stream.modifiedBy, forbiddenUpdate.modifiedBy);
               stepDone();
             });
           }
@@ -696,11 +694,11 @@ describe('[STRE] streams', function () {
         });
 
         const trashedStream = res.body.stream;
-        trashedStream.trashed.should.eql(true);
-        trashedStream.modified.should.be.within(time - 1, time);
-        trashedStream.modifiedBy.should.eql(accessId);
+        assert.strictEqual(trashedStream.trashed, true);
+        assert.ok(trashedStream.modified >= time - 1 && trashedStream.modified <= time);
+        assert.strictEqual(trashedStream.modifiedBy, accessId);
 
-        streamsNotifCount.should.eql(1, 'streams notifications');
+        assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
         done();
       });
     });
@@ -733,7 +731,7 @@ describe('[STRE] streams', function () {
               status: 200,
               schema: methodsSchema.del.result
             });
-            streamsNotifCount.should.eql(1, 'streams notifications');
+            assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
             stepDone();
           });
         },
@@ -741,17 +739,17 @@ describe('[STRE] streams', function () {
           // parent
           const parentStream = await mall.streams.get(user.id, { id: parent.id, storeId: 'local', childrenDepth: -1, includeTrashed: true });
           const parentChildren = parentStream[0].children;
-          parentChildren.length.should.eql(testData.streams[2].children.length - 1, 'child streams');
+          assert.strictEqual(parentChildren.length, testData.streams[2].children.length - 1, 'child streams');
 
           // deleted stream
           const deletedStreams = await mall.streams.getDeletions(user.id, 0, ['local']);
           const foundDeletedStream = deletedStreams.filter(s => s.id === id)[0];
-          assert.exists(foundDeletedStream, 'cannot find deleted stream');
+          assert.ok(foundDeletedStream != null, 'cannot find deleted stream');
           validation.checkObjectEquality(foundDeletedStream, expectedDeletion);
 
           // child stream
           const foundDeletedChild = deletedStreams.filter(s => s.id === childId)[0];
-          assert.exists(foundDeletedChild, 'cannot find deleted child stream');
+          assert.ok(foundDeletedChild != null, 'cannot find deleted child stream');
           validation.checkObjectEquality(foundDeletedChild, expectedChildDeletion);
         }
       ],
@@ -822,13 +820,13 @@ describe('[STRE] streams', function () {
             });
         },
         function checkNotifs (stepDone) {
-          streamsNotifCount.should.eql(2, 'streams notifications');
-          eventsNotifCount.should.eql(1, 'events notifications');
+          assert.strictEqual(streamsNotifCount, 2, 'streams notifications');
+          assert.strictEqual(eventsNotifCount, 1, 'events notifications');
           stepDone();
         },
         async function verifyLinkedEvents () {
           const linkedEvents = await mall.events.get(user.id, { streams: [{ any: [parentStream.id] }] });
-          _.map(linkedEvents, 'id').should.eql([
+          assert.deepStrictEqual(_.map(linkedEvents, 'id'), [
             testData.events[4].id,
             testData.events[3].id,
             testData.events[2].id,
@@ -892,8 +890,8 @@ describe('[STRE] streams', function () {
                 schema: methodsSchema.del.result
               });
 
-              should(streamsNotifCount).eql(1, 'streams notifications');
-              should(eventsNotifCount).eql(1, 'events notifications');
+              assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
+              assert.strictEqual(eventsNotifCount, 1, 'events notifications');
 
               stepDone();
             });
@@ -905,7 +903,7 @@ describe('[STRE] streams', function () {
           const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
           events = separatedEvents.events;
           const eventsWithoutHistory = testData.events.filter(e => e.headId == null);
-          (events.length + foundDeletedEvents.length).should.eql(eventsWithoutHistory.length + ADD_N_EVENTS, 'events');
+          assert.strictEqual(events.length + foundDeletedEvents.length, eventsWithoutHistory.length + ADD_N_EVENTS, 'events');
 
           // validate account streams events
           const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
@@ -913,16 +911,15 @@ describe('[STRE] streams', function () {
 
           deletedEvents.forEach(function (e) {
             const actual = _.find(foundDeletedEvents, { id: e.id });
-            assert.approximately(
-              actual.deleted, deletionTime, 2,
+            assert.ok(Math.abs(actual.deleted - deletionTime) <= 2,
               'Deletion time must be correct.');
-            assert.equal(actual.id, e.id);
+            assert.strictEqual(actual.id, e.id);
           });
           try {
             await mall.events.getAttachment(user.id, { id: deletedEventWithAttPost.id }, deletedEventWithAttPost.attachments[0].id);
             throw new Error('Should not find attachment');
           } catch (err) {
-            err.id.should.eql('unknown-resource');
+            assert.strictEqual(err.id, 'unknown-resource');
           }
         }
       ], done);

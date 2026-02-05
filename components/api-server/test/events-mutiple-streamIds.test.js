@@ -10,8 +10,7 @@ require('./test-helpers');
 const ErrorIds = require('errors').ErrorIds;
 const _ = require('lodash');
 const cuid = require('cuid');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('node:assert');
 const charlatan = require('charlatan');
 const { integrity } = require('business');
 const timestamp = require('unix-timestamp');
@@ -172,8 +171,8 @@ describe('events.streamIds', function () {
           .set('Authorization', tokenContributeA);
         const events = res.body.events;
         events.forEach(e => {
-          assert.exists(e.streamId);
-          assert.exists(e.streamIds);
+          assert.ok(e.streamId);
+          assert.ok(e.streamIds);
         });
       });
     });
@@ -184,8 +183,8 @@ describe('events.streamIds', function () {
           .get(eventPath(eventIdAB))
           .set('Authorization', tokenContributeAReadB);
         const event = res.body.event;
-        assert.equal(event.streamId, streamAId);
-        assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+        assert.strictEqual(event.streamId, streamAId);
+        assert.deepStrictEqual(event.streamIds, [streamAId, streamBId]);
       });
     });
 
@@ -200,9 +199,9 @@ describe('events.streamIds', function () {
             type: 'count/generic',
             content: 12
           });
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
         const err = res.body.error;
-        assert.equal(err.id, ErrorIds.InvalidOperation);
+        assert.strictEqual(err.id, ErrorIds.InvalidOperation);
       });
 
       describe('when using "streamId"', function () {
@@ -215,10 +214,10 @@ describe('events.streamIds', function () {
               type: 'count/generic',
               content: 12
             });
-          assert.equal(res.status, 201);
+          assert.strictEqual(res.status, 201);
           const event = res.body.event;
-          assert.equal(event.streamId, streamAId);
-          assert.deepEqual(event.streamIds, [streamAId]);
+          assert.strictEqual(event.streamId, streamAId);
+          assert.deepStrictEqual(event.streamIds, [streamAId]);
         });
       });
 
@@ -232,10 +231,10 @@ describe('events.streamIds', function () {
               type: 'count/generic',
               content: 12
             });
-          assert.equal(res.status, 201);
+          assert.strictEqual(res.status, 201);
           const event = res.body.event;
-          assert.equal(event.streamId, streamAId);
-          assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+          assert.strictEqual(event.streamId, streamAId);
+          assert.deepStrictEqual(event.streamIds, [streamAId, streamBId]);
         });
 
         it('[2QZF] must clean duplicate streamIds', async function () {
@@ -247,9 +246,9 @@ describe('events.streamIds', function () {
               type: 'count/generic',
               content: 12
             });
-          assert.equal(res.status, 201);
+          assert.strictEqual(res.status, 201);
           const event = res.body.event;
-          assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+          assert.deepStrictEqual(event.streamIds, [streamAId, streamBId]);
         });
 
         it('[NY0E] must forbid providing an unknown streamId', async function () {
@@ -262,10 +261,10 @@ describe('events.streamIds', function () {
               type: 'count/generic',
               content: 12
             });
-          assert.equal(res.status, 400);
+          assert.strictEqual(res.status, 400);
           const err = res.body.error;
-          assert.equal(err.id, ErrorIds.UnknownReferencedResource);
-          assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
+          assert.strictEqual(err.id, ErrorIds.UnknownReferencedResource);
+          assert.deepStrictEqual(err.data, { streamIds: [unknownStreamId] });
         });
 
         it('[6Z2D] must forbid creating an event in multiple streams, if a contribute permission is missing on at least one stream', async function () {
@@ -277,9 +276,9 @@ describe('events.streamIds', function () {
               type: 'count/generic',
               content: 12
             });
-          assert.equal(res.status, 403);
+          assert.strictEqual(res.status, 403);
           const err = res.body.error;
-          assert.equal(err.id, ErrorIds.Forbidden);
+          assert.strictEqual(err.id, ErrorIds.Forbidden);
         });
       });
     });
@@ -292,10 +291,10 @@ describe('events.streamIds', function () {
           .send({
             content: 'Now I am updated, still in A though.'
           });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const event = res.body.event;
-        assert.equal(event.streamId, eventA.streamIds[0]);
-        assert.deepEqual(event.streamIds, eventA.streamIds);
+        assert.strictEqual(event.streamId, eventA.streamIds[0]);
+        assert.deepStrictEqual(event.streamIds, eventA.streamIds);
       });
 
       it('[42KZ] must allow modification, if you have a contribute permission on at least 1 streamId', async function () {
@@ -305,7 +304,7 @@ describe('events.streamIds', function () {
           .send({
             content: 'Now I am updated, still in AB though.'
           });
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
       });
 
       it('[Q5P7] must forbid to provide both streamId and streamIds', async function () {
@@ -316,9 +315,9 @@ describe('events.streamIds', function () {
             streamId: streamBId,
             streamIds: [streamBId]
           });
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
         const err = res.body.error;
-        assert.equal(err.id, ErrorIds.InvalidOperation);
+        assert.strictEqual(err.id, ErrorIds.InvalidOperation);
       });
 
       describe('when modifying streamIds', function () {
@@ -330,10 +329,10 @@ describe('events.streamIds', function () {
             .send({
               streamIds: [unknownStreamId]
             });
-          assert.equal(res.status, 400);
+          assert.strictEqual(res.status, 400);
           const err = res.body.error;
-          assert.equal(err.id, ErrorIds.UnknownReferencedResource);
-          assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
+          assert.strictEqual(err.id, ErrorIds.UnknownReferencedResource);
+          assert.deepStrictEqual(err.data, { streamIds: [unknownStreamId] });
         });
 
         it('[6Q8B] must allow streamId addition, if you have a contribute permission for it', async function () {
@@ -343,10 +342,10 @@ describe('events.streamIds', function () {
             .send({
               streamIds: [streamAId, streamBId]
             });
-          assert.equal(res.status, 200);
+          assert.strictEqual(res.status, 200);
           const event = res.body.event;
-          assert.equal(event.streamId, streamAId);
-          assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+          assert.strictEqual(event.streamId, streamAId);
+          assert.deepStrictEqual(event.streamIds, [streamAId, streamBId]);
         });
 
         it('[MFF7] must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
@@ -356,9 +355,9 @@ describe('events.streamIds', function () {
             .send({
               streamIds: [streamAId, streamBId]
             });
-          assert.equal(res.status, 403);
+          assert.strictEqual(res.status, 403);
           const err = res.body.error;
-          assert.equal(err.id, ErrorIds.Forbidden);
+          assert.strictEqual(err.id, ErrorIds.Forbidden);
         });
 
         it('[83N6] must allow streamId deletion, if you have a contribute permission for it', async function () {
@@ -368,9 +367,9 @@ describe('events.streamIds', function () {
             .send({
               streamIds: [streamAId]
             });
-          assert.equal(res.status, 200);
+          assert.strictEqual(res.status, 200);
           const event = res.body.event;
-          assert.deepEqual(event.streamIds, [streamAId]);
+          assert.deepStrictEqual(event.streamIds, [streamAId]);
         });
 
         it('[JLS5] must forbid streamId deletion, if you have read but no contribute permission for it', async function () {
@@ -380,9 +379,9 @@ describe('events.streamIds', function () {
             .send({
               streamIds: [streamAId]
             });
-          assert.equal(res.status, 403);
+          assert.strictEqual(res.status, 403);
           const error = res.body.error;
-          assert.equal(error.id, ErrorIds.Forbidden);
+          assert.strictEqual(error.id, ErrorIds.Forbidden);
         });
       });
     });
@@ -400,9 +399,9 @@ describe('events.streamIds', function () {
             streamIds: [streamAId],
             type: 'activity/plain'
           });
-        assert.equal(res.status, 410);
+        assert.strictEqual(res.status, 410);
         const error = res.body.error;
-        assert.equal(error.id, ErrorIds.Gone);
+        assert.strictEqual(error.id, ErrorIds.Gone);
       });
     });
 
@@ -419,9 +418,9 @@ describe('events.streamIds', function () {
             streamId: streamAId,
             type: 'activity/plain'
           });
-        assert.equal(res.status, 410);
+        assert.strictEqual(res.status, 410);
         const error = res.body.error;
-        assert.equal(error.id, ErrorIds.Gone);
+        assert.strictEqual(error.id, ErrorIds.Gone);
       });
     });
 
@@ -434,37 +433,37 @@ describe('events.streamIds', function () {
         const res = await server.request()
           .delete(eventPath(eventIdAB))
           .set('Authorization', tokenContributeAB);
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const event = res.body.event;
-        assert.equal(event.streamId, streamAId);
-        assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+        assert.strictEqual(event.streamId, streamAId);
+        assert.deepStrictEqual(event.streamIds, [streamAId, streamBId]);
       });
 
       it('[T5ZY] must allow trashing, if you have a contribute permission on at least 1 streamId', async function () {
         const res = await server.request()
           .delete(eventPath(eventIdAB))
           .set('Authorization', tokenContributeA);
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const event = res.body.event;
-        assert.equal(event.trashed, true);
+        assert.strictEqual(event.trashed, true);
       });
 
       it('[2G32] must allow deletion, if you have a contribute permission on at least 1 streamId', async function () {
         const res = await server.request()
           .delete(eventPath(trashedEventIdAB))
           .set('Authorization', tokenContributeA);
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const deletion = res.body.eventDeletion;
-        assert.equal(deletion.id, trashedEventIdAB);
+        assert.strictEqual(deletion.id, trashedEventIdAB);
       });
 
       it('[6W5Y] must forbid trashing, if you don\'t have a contribute permission on at least 1 streamId', async function () {
         const res = await server.request()
           .delete(eventPath(eventIdA))
           .set('Authorization', tokenContributeB);
-        assert.equal(res.status, 403);
+        assert.strictEqual(res.status, 403);
         const error = res.body.error;
-        assert.equal(error.id, ErrorIds.Forbidden);
+        assert.strictEqual(error.id, ErrorIds.Forbidden);
       });
     });
 
@@ -533,9 +532,9 @@ describe('events.streamIds', function () {
           .get(path(`events/${event.id}/${event.attachments[0].id}`))
           .set('Authorization', appToken);
         const status = res.status;
-        assert.equal(status, 200);
+        assert.strictEqual(status, 200);
         const retrievedAttachment = res.body;
-        assert.exists(retrievedAttachment);
+        assert.ok(retrievedAttachment);
       });
 
       it('[6YFZ] should retrieve the attachment with the app token correct headers', async () => {
@@ -554,26 +553,26 @@ describe('events.streamIds', function () {
         const res = await server.request()
           .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${appReadToken}`));
         const status = res.status;
-        assert.equal(status, 200);
+        assert.strictEqual(status, 200);
         const retrievedAttachment = res.body;
-        assert.exists(retrievedAttachment);
+        assert.ok(retrievedAttachment);
       });
       it('[9KAF] should retrieve the attachment with the shared access token', async () => {
         const res = await server.request()
           .get(path(`events/${event.id}/${event.attachments[0].id}`))
           .set('Authorization', sharedToken);
         const status = res.status;
-        assert.equal(status, 200);
+        assert.strictEqual(status, 200);
         const retrievedAttachment = res.body;
-        assert.exists(retrievedAttachment);
+        assert.ok(retrievedAttachment);
       });
       it('[9MEL] should retrieve the attachment with the shared access readToken', async () => {
         const res = await server.request()
           .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${sharedReadToken}`));
         const status = res.status;
-        assert.equal(status, 200);
+        assert.strictEqual(status, 200);
         const retrievedAttachment = res.body;
-        assert.exists(retrievedAttachment);
+        assert.ok(retrievedAttachment);
       });
     });
   });
@@ -698,7 +697,7 @@ describe('events.streamIds', function () {
             name: 'something',
             singleActivity: true
           });
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
       });
     });
 
@@ -710,7 +709,7 @@ describe('events.streamIds', function () {
           .send({
             singleActivity: true
           });
-        assert.equal(res.status, 400);
+        assert.strictEqual(res.status, 400);
       });
     });
 
@@ -728,7 +727,7 @@ describe('events.streamIds', function () {
               .get(pathEventId(eventIdAxAandB))
               .set('Authorization', manageAccessToken);
             const event = res.body.event;
-            assert.deepEqual(event.streamIds, [streamAxAId]);
+            assert.deepStrictEqual(event.streamIds, [streamAxAId]);
           });
         });
       });
@@ -748,15 +747,15 @@ describe('events.streamIds', function () {
               .set('Authorization', manageAccessToken)
               .query({ includeDeletions: true, modifiedSince: 0 });
             const deletions = res.body.eventDeletions;
-            assert.exists(deletions, 'deleted events are not found');
+            assert.ok(deletions, 'deleted events are not found');
             let foundAandAxA = false;
             let foundAxAandAxAxA = false;
             deletions.forEach(d => {
               if (d.id === eventIdAandAxA) foundAandAxA = true;
               if (d.id === eventIdAxAandAxAxA) foundAxAandAxAxA = true;
             });
-            assert.isTrue(foundAandAxA);
-            assert.isTrue(foundAxAandAxAxA);
+            assert.strictEqual(foundAandAxA, true);
+            assert.strictEqual(foundAxAandAxAxA, true);
           });
         });
 
@@ -772,7 +771,7 @@ describe('events.streamIds', function () {
             const res = await server.request()
               .get(basePathEvent)
               .set('Authorization', manageAccessToken);
-            assert.equal(res.body.events.length, 3);
+            assert.strictEqual(res.body.events.length, 3);
 
             let foundAandAxA = false;
             let foundAxAandAxAxA = false;
@@ -780,21 +779,21 @@ describe('events.streamIds', function () {
             res.body.events.forEach(e => {
               if (e.id === eventIdAandAxA) {
                 foundAandAxA = true;
-                assert.deepEqual(e.streamIds, [streamAId]);
+                assert.deepStrictEqual(e.streamIds, [streamAId]);
               }
               if (e.id === eventIdAxAandAxAxA) {
                 foundAxAandAxAxA = true;
-                assert.deepEqual(e.streamIds, [streamAId]);
+                assert.deepStrictEqual(e.streamIds, [streamAId]);
               }
               if (e.id === eventIdAxAandB) {
                 foundAxAandB = true;
-                assert.isTrue(_.includes(e.streamIds, streamAId));
-                assert.isTrue(_.includes(e.streamIds, streamBId));
+                assert.strictEqual(_.includes(e.streamIds, streamAId), true);
+                assert.strictEqual(_.includes(e.streamIds, streamBId), true);
               }
             });
-            assert.isTrue(foundAandAxA);
-            assert.isTrue(foundAxAandAxAxA);
-            assert.isTrue(foundAxAandB);
+            assert.strictEqual(foundAandAxA, true);
+            assert.strictEqual(foundAxAandAxAxA, true);
+            assert.strictEqual(foundAxAandB, true);
           });
         });
       });

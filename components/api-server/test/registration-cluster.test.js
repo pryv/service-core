@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-const { assert } = require('chai');
+const assert = require('node:assert');
 const _ = require('lodash');
 const nock = require('nock');
 const charlatan = require('charlatan');
@@ -181,17 +181,17 @@ describe('[REGC] registration: cluster', function () {
       });
 
       it('[QV8Z] should respond with status 201', () => {
-        assert.equal(res.status, 201);
+        assert.strictEqual(res.status, 201);
       });
 
       it('[TCOM] should respond with the username and apiEndpoint', async () => {
         const body = res.body;
-        assert.equal(body.username, userData.username);
+        assert.strictEqual(body.username, userData.username);
         const usersRepository = await getUsersRepository();
         const user = await usersRepository.getUserByUsername(userData.username);
         const personalAccess = await bluebird.fromCallback((cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
         const initUser = new User(userData);
-        assert.equal(body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
+        assert.strictEqual(body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
       });
 
       it('[7QB6] should send the right data to register', () => {
@@ -208,7 +208,7 @@ describe('[REGC] registration: cluster', function () {
         const secondRegistrationRequest = buildRegistrationRequest(userData);
         assert.deepEqual(secondRegistrationSent, secondRegistrationRequest, ' second registration request is invalid');
         const users = [firstUser, secondUser];
-        assert.equal(serviceRegisterRequestsPUT.length, users.length, 'should have recieved 2 PUT requests');
+        assert.strictEqual(serviceRegisterRequestsPUT.length, users.length, 'should have recieved 2 PUT requests');
         for (let i = 0; i < serviceRegisterRequestsPUT.length; i++) {
           const putRequest = serviceRegisterRequestsPUT[i];
           assert.deepEqual(putRequest, {
@@ -271,8 +271,8 @@ describe('[REGC] registration: cluster', function () {
       it('[A2EM] should replace first user events in the storage', () => {
         const firstEmail = firstUser.events.filter((e) => e.type === 'email/string')[0].content;
         const secondEmail = secondUser.events.filter((e) => e.type === 'email/string')[0].content;
-        assert.equal(firstEmail, oldEmail);
-        assert.equal(secondEmail, userData.email);
+        assert.strictEqual(firstEmail, oldEmail);
+        assert.strictEqual(secondEmail, userData.email);
       });
     });
 
@@ -320,12 +320,12 @@ describe('[REGC] registration: cluster', function () {
       });
 
       it('[GRAW] should respond with status 201', () => {
-        assert.equal(res.status, 201);
+        assert.strictEqual(res.status, 201);
       });
 
       it('[AY44] should respond with the username and apiEndpoint (TODO)', () => {
         const body = res.body;
-        assert.equal(body.username, userData.username);
+        assert.strictEqual(body.username, userData.username);
       });
 
       it('[ZHYX] should send the right data to register', () => {
@@ -365,13 +365,13 @@ describe('[REGC] registration: cluster', function () {
       });
 
       it('[NUC9] should respond with status 409', () => {
-        assert.equal(res.status, 409);
+        assert.strictEqual(res.status, 409);
       });
 
       it('[X1IA] should respond with the correct error', () => {
         const error = res.body.error;
-        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
-        assert.equal(error.data.username, userData.username);
+        assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
+        assert.strictEqual(error.data.username, userData.username);
       });
 
       it('[JJJY] should send the right data to register', () => {
@@ -399,13 +399,13 @@ describe('[REGC] registration: cluster', function () {
       });
 
       it('[SJXN] should respond with status 409', () => {
-        assert.equal(res.status, 409);
+        assert.strictEqual(res.status, 409);
       });
 
       it('[U0ZN] should respond with the correct error', () => {
         const error = res.body.error;
-        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
-        assert.equal(error.data.email, userData.email);
+        assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
+        assert.strictEqual(error.data.email, userData.email);
       });
 
       it('[2UNK] should send the right data to register', () => {
@@ -439,15 +439,15 @@ describe('[REGC] registration: cluster', function () {
       });
 
       it('[LUC6] should respond with status 409', () => {
-        assert.equal(res.status, 409);
+        assert.strictEqual(res.status, 409);
       });
 
       it('[XIN8] should respond with the correct error', () => {
         const error = res.body.error;
-        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
-        assert.equal(error.data.email, userData.email);
-        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
-        assert.equal(error.data.username, userData.username);
+        assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
+        assert.strictEqual(error.data.email, userData.email);
+        assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
+        assert.strictEqual(error.data.username, userData.username);
       });
 
       it('[OIRY] should send the right data to register', () => {
@@ -477,12 +477,12 @@ describe('[REGC] registration: cluster', function () {
       });
 
       it('[I0HG] should respond with status 409', () => {
-        assert.equal(res.status, 409);
+        assert.strictEqual(res.status, 409);
       });
 
       it('[QFVZ] should respond with the correct error', () => {
         const error = res.body.error;
-        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+        assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
         // we don't receive conflicting keys yet
       });
 
@@ -523,7 +523,7 @@ describe('[REGC] registration: cluster', function () {
         });
 
         it('[CMOV] should respond with status 201', () => {
-          assert.equal(res.status, 201);
+          assert.strictEqual(res.status, 201);
         });
 
         it('[F0MO] should send the right data to register', () => {
@@ -566,7 +566,7 @@ describe('[REGC] registration: cluster', function () {
         });
 
         it('[LOIB] should respond with status 201', () => {
-          assert.equal(res.status, 201);
+          assert.strictEqual(res.status, 201);
         });
 
         it('[5O4Q] should send the right data to register', () => {
@@ -609,7 +609,7 @@ describe('[REGC] registration: cluster', function () {
         });
 
         it('[Z2ZY] should respond with status 201', () => {
-          assert.equal(res.status, 201);
+          assert.strictEqual(res.status, 201);
         });
 
         it('[DIFS] should send the right data to register', () => {
@@ -622,7 +622,7 @@ describe('[REGC] registration: cluster', function () {
 
         it('[1BF3] should find password in password history', async () => {
           const user = await usersRepository.getUserByUsername(userData.username);
-          assert.isTrue(await userAccountStorage.passwordExistsInHistory(user.id, userData.password, 1), 'missing password in history');
+          assert.strictEqual(await userAccountStorage.passwordExistsInHistory(user.id, userData.password, 1), true, 'missing password in history');
         });
       });
 
@@ -644,7 +644,7 @@ describe('[REGC] registration: cluster', function () {
         });
 
         it('[4GON] should respond with status 400', () => {
-          assert.equal(res.status, 400);
+          assert.strictEqual(res.status, 400);
         });
 
         it('[ZBYW] should send the right data to register', () => {
@@ -673,7 +673,7 @@ describe('[REGC] registration: cluster', function () {
         });
 
         it('[CX9N] should respond with status 400', () => {
-          assert.equal(res.status, 400);
+          assert.strictEqual(res.status, 400);
         });
 
         it('[IH6K] should send the right data to register', () => {
@@ -693,12 +693,12 @@ describe('[REGC] registration: cluster', function () {
         });
 
         it('[UMWB] should respond with status 400', () => {
-          assert.equal(res.status, 400);
+          assert.strictEqual(res.status, 400);
         });
 
         it('[8RDA] should respond with the correct error', () => {
           const error = res.body.error;
-          assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+          assert.strictEqual(error.id, ErrorIds.InvalidParametersFormat);
           assert.deepEqual(error.data, [
             {
               code: ErrorIds.EmailRequired,
@@ -718,12 +718,12 @@ describe('[REGC] registration: cluster', function () {
         });
 
         it('[8W22] should respond with status 400', () => {
-          assert.equal(res.status, 400);
+          assert.strictEqual(res.status, 400);
         });
 
         it('[GBKD] should respond with the correct error', () => {
           const error = res.body.error;
-          assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+          assert.strictEqual(error.id, ErrorIds.InvalidParametersFormat);
           assert.deepEqual(error.data, [
             {
               code: 'cool-error',

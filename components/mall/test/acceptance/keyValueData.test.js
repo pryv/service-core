@@ -48,16 +48,16 @@ describe('Per-store key-value DB', () => {
       .set('Authorization', personalToken)
       .query({ parentId: ':dummy:myself' });
     const streams = resStream.body?.streams;
-    assert.exists(streams);
-    assert.equal(streams.length, 2);
+    assert.ok(streams);
+    assert.strictEqual(streams.length, 2);
 
     const resEvent = await coreRequest
       .get(eventsPath)
       .set('Authorization', personalToken)
       .query({ streams: [':dummy:antonia'] });
     const events = resEvent.body?.events;
-    assert.exists(events);
-    assert.equal(events.length, 1);
-    assert.equal(events[0].content?.id, 'antonia');
+    assert.ok(events);
+    assert.strictEqual(events.length, 1);
+    assert.strictEqual(events[0].content?.id, 'antonia');
   });
 });

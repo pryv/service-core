@@ -10,7 +10,7 @@ const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('api-server/test/test-helpers');
 const charlatan = require('charlatan');
 const cuid = require('cuid');
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { TAG_PREFIX, TAG_ROOT_STREAMID } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { findById } = require('utils/src/treeUtils');
@@ -91,9 +91,9 @@ describe('backward-compatibility', () => {
             streamIds: [streamId],
             tags: [tag]
           });
-          assert.equal(res.status, 201);
+          assert.strictEqual(res.status, 201);
           const event = res.body.event;
-          assert.deepEqual({
+          assert.deepStrictEqual({
             tags: event.tags,
             streamIds: event.streamIds
           }, {
@@ -115,13 +115,13 @@ describe('backward-compatibility', () => {
             streamIds: [streamId],
             tags: [tag]
           });
-          assert.equal(res.status, 201);
+          assert.strictEqual(res.status, 201);
           const res2 = await get('streams');
-          assert.equal(res2.status, 200);
+          assert.strictEqual(res2.status, 200);
           const streams = res2.body.streams;
           const stream = findById(streams, TAG_PREFIX + tag);
-          assert.exists(stream);
-          assert.equal(stream.parentId, TAG_ROOT_STREAMID);
+          assert.ok(stream);
+          assert.strictEqual(stream.parentId, TAG_ROOT_STREAMID);
         });
       });
       describe('when updating an event', () => {
@@ -137,13 +137,13 @@ describe('backward-compatibility', () => {
         });
         it('[NWQ6] must create the streams with the streamId translated from tags and adapt the event as accordingly', async () => {
           const res = await put(`events/${eventId}`, { tags: [tag] });
-          assert.equal(res.status, 200);
+          assert.strictEqual(res.status, 200);
           const res2 = await get('streams');
-          assert.equal(res2.status, 200);
+          assert.strictEqual(res2.status, 200);
           const streams = res2.body.streams;
           const stream = findById(streams, TAG_PREFIX + tag);
-          assert.exists(stream);
-          assert.equal(stream.parentId, TAG_ROOT_STREAMID);
+          assert.ok(stream);
+          assert.strictEqual(stream.parentId, TAG_ROOT_STREAMID);
         });
       });
     });
@@ -157,10 +157,10 @@ describe('backward-compatibility', () => {
       });
       it('[R3NU] should return the event with its tags', async () => {
         const res = await get('events');
-        assert.equal(res.status, 200);
+        assert.strictEqual(res.status, 200);
         const events = res.body.events;
         const eventWithTags = events.filter(e => e.tags.includes('hello'));
-        assert.exists(eventWithTags);
+        assert.ok(eventWithTags);
       });
     });
   });
@@ -254,11 +254,11 @@ describe('backward-compatibility', () => {
         let customStreamIdVariant, privateStreamIdVariant;
         try { customStreamIdVariant = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamIdWithoutPrefix); } catch (e) {}
         try { privateStreamIdVariant = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamIdWithoutPrefix); } catch (e) {}
-        assert.isTrue(customStreamIdVariant != null || privateStreamIdVariant != null, 'streamId starting with dot but neither custom nor private: ' + streamId);
+        assert.strictEqual(customStreamIdVariant != null || privateStreamIdVariant != null, true, 'streamId starting with dot but neither custom nor private: ' + streamId);
       } else {
         if (!SystemStreamsSerializer.isSystemStreamId(streamId)) return;
-        assert.isFalse(streamId.startsWith(PRYV_PREFIX), `streamId "${streamId}" starts with "${PRYV_PREFIX}"`);
-        assert.isFalse(streamId.startsWith(CUSTOMER_PREFIX), `streamId "${streamId}" starts with "${CUSTOMER_PREFIX}"`);
+        assert.strictEqual(streamId.startsWith(PRYV_PREFIX), false, `streamId "${streamId}" starts with "${PRYV_PREFIX}"`);
+        assert.strictEqual(streamId.startsWith(CUSTOMER_PREFIX), false, `streamId "${streamId}" starts with "${CUSTOMER_PREFIX}"`);
       }
       function removeDot (streamId) {
         return streamId.substring(1);
@@ -318,27 +318,27 @@ describe('backward-compatibility', () => {
         ];
         const res = await post(`/${username}/`, batchOps);
         const results = res.body.results;
-        assert.equal(results?.length, 3);
-        assert.equal(results[0]?.stream?.id, 'account', 'stream should have been created');
-        assert.equal(results[1]?.event?.streamId, 'account', 'event should have been created in account stream');
-        assert.isArray(results[2]?.events, 'events should have been returned');
-        assert.equal(results[2]?.events?.length, 1, 'events should have been returned');
-        assert.equal(results[2]?.events?.[0]?.streamId, 'account', 'event should have been returned in account stream');
+        assert.strictEqual(results?.length, 3);
+        assert.strictEqual(results[0]?.stream?.id, 'account', 'stream should have been created');
+        assert.strictEqual(results[1]?.event?.streamId, 'account', 'event should have been created in account stream');
+        assert.ok(Array.isArray(results[2]?.events), 'events should have been returned');
+        assert.strictEqual(results[2]?.events?.length, 1, 'events should have been returned');
+        assert.strictEqual(results[2]?.events?.[0]?.streamId, 'account', 'event should have been returned in account stream');
       });
     });
 
     describe('events', () => {
       it('[Q40I] must return old prefixes in events.get', async () => {
         const res = await get(`/${username}/events`);
-        assert.isNotEmpty(res.body.events);
+        assert.ok(res.body.events);
         for (const event of res.body.events) {
           checkOldPrefixes(event.streamIds);
         }
       });
       it('[4YCD] must accept old prefixes in events.get', async () => {
         const res = await get(`/${username}/events`, { streams: ['.email'] });
-        assert.equal(res.status, 200);
-        assert.isNotEmpty(res.body.events);
+        assert.strictEqual(res.status, 200);
+        assert.ok(res.body.events);
         for (const event of res.body.events) {
           checkOldPrefixes(event.streamIds);
         }
@@ -346,7 +346,7 @@ describe('backward-compatibility', () => {
       it('[CF3N] must return old prefixes in events.getOne (including history)', async () => {
         const res = await get(`/${username}/events/${systemEventId}`, { includeHistory: true });
         checkOldPrefixes(res.body.event.streamIds);
-        assert.isNotEmpty(res.body.history);
+        assert.ok(res.body.history);
         for (const event of res.body.history) {
           checkOldPrefixes(event.streamIds);
         }
@@ -357,7 +357,7 @@ describe('backward-compatibility', () => {
           type: 'language/iso-639-1',
           content: charlatan.Lorem.characters(2)
         });
-        assert.equal(res.status, 201);
+        assert.strictEqual(res.status, 201);
         checkOldPrefixes(res.body.event.streamIds);
       });
       it('[YIWX] must return old prefixes in events.update', async () => {
@@ -375,7 +375,7 @@ describe('backward-compatibility', () => {
     describe('streams', () => {
       it('[WY07] must return old prefixes in streams.get', async () => {
         const res = await get(`/${username}/streams/`);
-        assert.isNotEmpty(res.body.streams);
+        assert.ok(res.body.streams);
 
         for (const stream of res.body.streams) {
           checkStream(stream);
@@ -391,7 +391,7 @@ describe('backward-compatibility', () => {
       });
       it('[YJS6] must accept old prefixes in streams.get', async () => {
         const res = await get(`/${username}/streams/`, { parentId: '.account' });
-        assert.isNotEmpty(res.body.streams);
+        assert.ok(res.body.streams);
         for (const stream of res.body.streams) {
           checkOldPrefix(stream.id);
           if (stream.parentId != null) checkOldPrefix(stream.parentId);
@@ -403,20 +403,20 @@ describe('backward-compatibility', () => {
           name: charlatan.Lorem.word(),
           parentId: '.language'
         });
-        assert.equal(res.status, 400);
-        assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
       });
       it('[4DP2] must accept old prefixes in streams.update', async () => {
         const res = await put(`/${username}/streams/.language`, {
           content: charlatan.Lorem.characters(2)
         });
-        assert.equal(res.status, 400);
-        assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
       });
       it('[LQ5X] must return old prefixes in streams.delete', async () => {
         const res = await del(`/${username}/streams/.language`);
-        assert.equal(res.status, 400);
-        assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
       });
     });
 
@@ -427,7 +427,7 @@ describe('backward-compatibility', () => {
           includeDeletions: true
         });
         const accesses = res.body.accesses;
-        assert.isNotEmpty(accesses);
+        assert.ok(accesses);
         for (const access of accesses) {
           if (access.permissions == null) continue;
           for (const permission of access.permissions) {
@@ -435,7 +435,7 @@ describe('backward-compatibility', () => {
           }
         }
         const deletions = res.body.accessDeletions;
-        assert.isNotEmpty(deletions);
+        assert.ok(deletions);
         for (const access of deletions) {
           if (access.permissions == null) continue;
           for (const permission of access.permissions) {
@@ -457,8 +457,8 @@ describe('backward-compatibility', () => {
             something: 'hi'
           }
         });
-        assert.equal(res.status, 400);
-        assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
       });
     });
 
@@ -514,24 +514,24 @@ describe('backward-compatibility', () => {
         }
       }
       function checkNewPrefix (streamId) {
-        assert.isFalse(streamId.startsWith(DOT), `streamId "${streamId}" starts with "${DOT}"`);
+        assert.strictEqual(streamId.startsWith(DOT), false, `streamId "${streamId}" starts with "${DOT}"`);
         if (!SystemStreamsSerializer.isSystemStreamId(streamId)) return;
-        if (SystemStreamsSerializer.isPrivateSystemStreamId(streamId)) { assert.isTrue(streamId.startsWith(PRYV_PREFIX), `streamId "${streamId}" does not start with "${PRYV_PREFIX}"`); }
-        if (SystemStreamsSerializer.isCustomerSystemStreamId(streamId)) { assert.isTrue(streamId.startsWith(CUSTOMER_PREFIX), `streamId "${streamId}" does not start with "${CUSTOMER_PREFIX}"`); }
+        if (SystemStreamsSerializer.isPrivateSystemStreamId(streamId)) { assert.strictEqual(streamId.startsWith(PRYV_PREFIX), true, `streamId "${streamId}" does not start with "${PRYV_PREFIX}"`); }
+        if (SystemStreamsSerializer.isCustomerSystemStreamId(streamId)) { assert.strictEqual(streamId.startsWith(CUSTOMER_PREFIX), true, `streamId "${streamId}" does not start with "${CUSTOMER_PREFIX}"`); }
       }
 
       describe('events', () => {
         it('[CZN1] must return new prefixes in events.get', async () => {
           const res = await get(`/${username}/events`);
-          assert.isNotEmpty(res.body.events);
+          assert.ok(res.body.events);
           for (const event of res.body.events) {
             checkNewPrefixes(event.streamIds);
           }
         });
         it('[SHW1] must accept new prefixes in events.get', async () => {
           const res = await get(`/${username}/events`, { streams: [SystemStreamsSerializer.addCustomerPrefixToStreamId('email')] });
-          assert.equal(res.status, 200);
-          assert.isNotEmpty(res.body.events);
+          assert.strictEqual(res.status, 200);
+          assert.ok(res.body.events);
           for (const event of res.body.events) {
             checkNewPrefixes(event.streamIds);
           }
@@ -539,7 +539,7 @@ describe('backward-compatibility', () => {
         it('[6N5B] must return new prefixes in events.getOne (including history)', async () => {
           const res = await get(`/${username}/events/${systemEventId}`, { includeHistory: true });
           checkNewPrefixes(res.body.event.streamIds);
-          assert.isNotEmpty(res.body.history);
+          assert.ok(res.body.history);
           for (const event of res.body.history) {
             checkNewPrefixes(event.streamIds);
           }
@@ -550,7 +550,7 @@ describe('backward-compatibility', () => {
             type: 'language/iso-639-1',
             content: charlatan.Lorem.characters(2)
           });
-          assert.equal(res.status, 201);
+          assert.strictEqual(res.status, 201);
           checkNewPrefixes(res.body.event.streamIds);
         });
         it('[CSKF] must return new prefixes in events.update', async () => {
@@ -567,7 +567,7 @@ describe('backward-compatibility', () => {
       describe('streams', () => {
         it('[O7RD] must return new prefixes in streams.get', async () => {
           const res = await get(`/${username}/streams/`);
-          assert.isNotEmpty(res.body.streams);
+          assert.ok(res.body.streams);
           for (const stream of res.body.streams) {
             checkNewPrefix(stream.id);
             if (stream.parentId != null) checkNewPrefix(stream.parentId);
@@ -575,7 +575,7 @@ describe('backward-compatibility', () => {
         });
         it('[VMH7] must accept new prefixes in streams.get', async () => {
           const res = await get(`/${username}/streams/`, { parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account') });
-          assert.isNotEmpty(res.body.streams);
+          assert.ok(res.body.streams);
           for (const stream of res.body.streams) {
             checkNewPrefix(stream.id);
             if (stream.parentId != null) checkNewPrefix(stream.parentId);
@@ -587,20 +587,20 @@ describe('backward-compatibility', () => {
             name: charlatan.Lorem.word(),
             parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('language')
           });
-          assert.equal(res.status, 400);
-          assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+          assert.strictEqual(res.status, 400);
+          assert.strictEqual(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
         });
         it('[LVOF] must accept new prefixes in streams.update', async () => {
           const res = await put(`/${username}/streams/${SystemStreamsSerializer.addPrivatePrefixToStreamId('language')}`, {
             content: charlatan.Lorem.characters(2)
           });
-          assert.equal(res.status, 400);
-          assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+          assert.strictEqual(res.status, 400);
+          assert.strictEqual(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
         });
         it('[C73R] must return new prefixes in streams.delete', async () => {
           const res = await del(`/${username}/streams/${SystemStreamsSerializer.addPrivatePrefixToStreamId('language')}`);
-          assert.equal(res.status, 400);
-          assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+          assert.strictEqual(res.status, 400);
+          assert.strictEqual(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
         });
       });
       describe('accesses', () => {
@@ -610,7 +610,7 @@ describe('backward-compatibility', () => {
             includeDeletions: true
           });
           const accesses = res.body.accesses;
-          assert.isNotEmpty(accesses);
+          assert.ok(accesses);
           for (const access of accesses) {
             if (access.permissions == null) continue;
             for (const permission of access.permissions) {
@@ -618,7 +618,7 @@ describe('backward-compatibility', () => {
             }
           }
           const deletions = res.body.accessDeletions;
-          assert.isNotEmpty(deletions);
+          assert.ok(deletions);
           for (const access of deletions) {
             if (access.permissions == null) continue;
             for (const permission of access.permissions) {
@@ -637,8 +637,8 @@ describe('backward-compatibility', () => {
               something: 'hi'
             }
           });
-          assert.equal(res.status, 400);
-          assert.equal(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
+          assert.strictEqual(res.status, 400);
+          assert.strictEqual(res.body.error.id, 'invalid-operation'); // not unknown referenced streamId
         });
       });
     });

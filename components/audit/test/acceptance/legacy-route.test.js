@@ -42,7 +42,7 @@ describe('Audit legacy route', function () {
       .set('Authorization', personalToken)
       .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId, level: 'manage' }] });
     appAccess = res.body.access;
-    assert.exists(appAccess);
+    assert.ok(appAccess);
   });
 
   after(async function () {
@@ -69,12 +69,12 @@ describe('Audit legacy route', function () {
       .get(auditPath)
       .set('Authorization', appAccess.token)
       .query({ fromTime: start, toTime: stop });
-    assert.equal(res.status, 200);
+    assert.strictEqual(res.status, 200);
     const logs = res.body.auditLogs;
-    assert.isAtLeast(logs.length, 2);
+    assert.ok(logs.length >= 2);
     for (const event of logs) {
-      assert.isAtLeast(event.time, start);
-      assert.isAtMost(event.time, stop);
+      assert.ok(event.time >= start);
+      assert.ok(event.time <= stop);
     }
     validateResults(logs, appAccess.id);
   });
@@ -84,12 +84,12 @@ describe('Audit legacy route', function () {
       .get(auditPath)
       .set('Authorization', appAccess.token)
       .query({ streams: [':_audit:action-events.get'] });
-    assert.equal(res.status, 200);
+    assert.strictEqual(res.status, 200);
     const logs = res.body.auditLogs;
-    assert.isAtLeast(logs.length, 1);
+    assert.ok(logs.length >= 1);
     for (const event of logs) {
-      assert.exists(event.content);
-      assert.equal(event.content.action, 'events.get');
+      assert.ok(event.content);
+      assert.strictEqual(event.content.action, 'events.get');
     }
     validateResults(logs, appAccess.id);
   });
@@ -100,7 +100,7 @@ describe('Audit legacy route', function () {
       .set('Authorization', personalToken);
     assert.strictEqual(res.status, 200);
     const logs = res.body.auditLogs;
-    assert.isAtLeast(logs.length, 5);
+    assert.ok(logs.length >= 5);
     validateResults(res.body.auditLogs);
   });
 
@@ -110,7 +110,7 @@ describe('Audit legacy route', function () {
       .set('Authorization', appAccess.token);
     assert.strictEqual(res.status, 200);
     const logs = res.body.auditLogs;
-    assert.isAtLeast(logs.length, 1);
+    assert.ok(logs.length >= 1);
     validateResults(logs, appAccess.id);
   });
 
@@ -119,8 +119,8 @@ describe('Audit legacy route', function () {
       .get(auditPath)
       .set('Authorization', 'invalid');
     assert.strictEqual(res.status, 403);
-    assert.exists(res.body.error);
-    assert.equal(res.body.error.id, 'invalid-access-token');
+    assert.ok(res.body.error);
+    assert.strictEqual(res.body.error.id, 'invalid-access-token');
   });
 
   it('[RQUA] StreamId not starting with ":audit:"  should return an error', async () => {
@@ -129,36 +129,36 @@ describe('Audit legacy route', function () {
       .set('Authorization', appAccess.token)
       .query({ streams: ['toto'] });
     assert.strictEqual(res.status, 400);
-    assert.exists(res.body.error);
-    assert.equal(res.body.error.id, 'invalid-request-structure');
-    assert.equal(res.body.error.message, 'Invalid "streams" parameter. It should be an array of streamIds starting with Audit store prefix: ":_audit:"');
+    assert.ok(res.body.error);
+    assert.strictEqual(res.body.error.id, 'invalid-request-structure');
+    assert.strictEqual(res.body.error.message, 'Invalid "streams" parameter. It should be an array of streamIds starting with Audit store prefix: ":_audit:"');
   });
 });
 
 function validateResults (auditLogs, expectedAccessId, expectedErrorId) {
-  assert.isArray(auditLogs);
+  assert.ok(Array.isArray(auditLogs));
 
   auditLogs.forEach(event => {
-    assert.isTrue([CONSTANTS.EVENT_TYPE_VALID, CONSTANTS.EVENT_TYPE_ERROR].includes(event.type));
-    assert.isString(event.id);
-    assert.isNumber(event.time);
+    assert.strictEqual([CONSTANTS.EVENT_TYPE_VALID, CONSTANTS.EVENT_TYPE_ERROR].includes(event.type), true);
+    assert.strictEqual(typeof event.id, 'string');
+    assert.strictEqual(typeof event.time, 'number');
 
-    assert.isDefined(event.content.query);
-    assert.isString(event.content.action);
-    assert.include(event.streamIds, addActionStreamIdPrefix(event.content.action), 'missing Action StreamId');
+    assert.ok(event.content.query !== undefined);
+    assert.strictEqual(typeof event.content.action, 'string');
+    assert.ok(event.streamIds.includes(addActionStreamIdPrefix(event.content.action)), 'missing Action StreamId');
 
-    assert.isDefined(event.content.source);
-    assert.isString(event.content.source.name);
-    assert.isString(event.content.source.ip);
+    assert.ok(event.content.source !== undefined);
+    assert.strictEqual(typeof event.content.source.name, 'string');
+    assert.strictEqual(typeof event.content.source.ip, 'string');
 
     if (expectedAccessId) {
-      assert.include(event.streamIds, addAccessStreamIdPrefix(expectedAccessId), 'missing Access StreamId');
+      assert.ok(event.streamIds.includes(addAccessStreamIdPrefix(expectedAccessId)), 'missing Access StreamId');
     }
 
     if (expectedErrorId) {
-      assert.isDefined(event.content.error);
+      assert.ok(event.content.error !== undefined);
       assert.strictEqual(event.content.error.id, expectedErrorId);
-      assert.isString(event.content.error.message);
+      assert.strictEqual(typeof event.content.error.message, 'string');
     }
   });
 }

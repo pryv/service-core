@@ -58,11 +58,11 @@ describe('Audit events integrity', function () {
   });
 
   it('[XLEL] created access has integrity', async () => {
-    assert.exists(appAccess.integrity);
+    assert.ok(appAccess.integrity);
   });
 
   it('[ZKVC] created event has integrity', async () => {
-    assert.exists(auditedEvent.integrity);
+    assert.ok(auditedEvent.integrity);
   });
 
   it('[WNWM] must find event integrity key and record value in the audit log ', async () => {
@@ -71,16 +71,16 @@ describe('Audit events integrity', function () {
       .set('Authorization', appAccess.token)
       .query({ fromTime: now, streams: ':_audit:' });
 
-    assert.exists(res.body?.events);
-    assert.equal(1, res.body.events.length);
+    assert.ok(res.body?.events);
+    assert.strictEqual(1, res.body.events.length);
 
     const auditEvent = res.body.events[0];
-    assert.exists(auditEvent.content.record);
-    assert.equal(auditedEvent.integrity, auditEvent.content.record.integrity);
+    assert.ok(auditEvent.content.record);
+    assert.strictEqual(auditedEvent.integrity, auditEvent.content.record.integrity);
 
     const computedIntegrity = integrity.events.compute(auditedEvent);
-    assert.equal(computedIntegrity.integrity, auditEvent.content.record.integrity);
-    assert.equal(computedIntegrity.key, auditEvent.content.record.key);
+    assert.strictEqual(computedIntegrity.integrity, auditEvent.content.record.integrity);
+    assert.strictEqual(computedIntegrity.key, auditEvent.content.record.key);
   });
 
   it('[U09J] must find access integrity key and record value in the audit log ', async () => {
@@ -89,14 +89,14 @@ describe('Audit events integrity', function () {
       .set('Authorization', personalToken)
       .query({ fromTime: now, streams: ':_audit:action-accesses.create' });
 
-    assert.equal(1, res?.body?.events?.length);
+    assert.strictEqual(1, res?.body?.events?.length);
 
     const auditEvent = res.body.events[0];
-    assert.exists(auditEvent.content.record);
-    assert.equal(appAccess.integrity, auditEvent.content.record.integrity);
+    assert.ok(auditEvent.content.record);
+    assert.strictEqual(appAccess.integrity, auditEvent.content.record.integrity);
 
     const computedIntegrity = integrity.accesses.compute(appAccess);
-    assert.equal(computedIntegrity.integrity, auditEvent.content.record.integrity);
-    assert.equal(computedIntegrity.key, auditEvent.content.record.key);
+    assert.strictEqual(computedIntegrity.integrity, auditEvent.content.record.integrity);
+    assert.strictEqual(computedIntegrity.key, auditEvent.content.record.key);
   });
 });

@@ -59,7 +59,7 @@ describe('Cache', function () {
       .set('Authorization', personalToken)
       .send({ type: 'app', name: 'app access', token: 'app-token', permissions: [{ streamId: 'A', level: 'manage' }] });
     appAccess = res.body.access;
-    assert.exists(appAccess);
+    assert.ok(appAccess);
   });
 
   after(async function () {
@@ -86,17 +86,17 @@ describe('Cache', function () {
 
   it('[FELT] Second get stream must be faster that first one', async () => {
     function isEmpty () {
-      assert.notExists(cache.getStreams(username, 'local'));
-      assert.notExists(cache.getAccessLogicForToken(username, appAccess.token));
-      assert.notExists(cache.getAccessLogicForId(username, appAccess.id));
-      assert.notExists(cache.getUserId(username));
+      assert.ok(cache.getStreams(username, 'local') == null);
+      assert.ok(cache.getAccessLogicForToken(username, appAccess.token) == null);
+      assert.ok(cache.getAccessLogicForId(username, appAccess.id) == null);
+      assert.ok(cache.getUserId(username) == null);
     }
 
     function isFull () {
-      assert.exists(cache.getStreams(username, 'local'));
-      assert.exists(cache.getAccessLogicForToken(username, appAccess.token));
-      assert.exists(cache.getAccessLogicForId(username, appAccess.id));
-      assert.exists(cache.getUserId(username));
+      assert.ok(cache.getStreams(username, 'local'));
+      assert.ok(cache.getAccessLogicForToken(username, appAccess.token));
+      assert.ok(cache.getAccessLogicForId(username, appAccess.id));
+      assert.ok(cache.getUserId(username));
     }
 
     // loop 3 times and calculate average time
@@ -109,13 +109,13 @@ describe('Cache', function () {
       const st1 = hrtime();
       const res1 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
       tFirstCallWithCache += hrtime(st1) / loop;
-      assert.equal(res1.status, 200);
+      assert.strictEqual(res1.status, 200);
 
       isFull();
       const st2 = hrtime();
       const res2 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
       tSecondCallWithCache += hrtime(st2) / loop;
-      assert.equal(res2.status, 200);
+      assert.strictEqual(res2.status, 200);
     }
     config.injectTestConfig({ caching: { isActive: false } }); // deactivate cache
     cache.clear(); // reset cache fully
@@ -125,35 +125,35 @@ describe('Cache', function () {
       const st3 = hrtime();
       const res3 = await coreRequest.get(streamsPath).set('Authorization', appAccess.token).query({});
       tNoCache += hrtime(st3) / loop;
-      assert.equal(res3.status, 200);
+      assert.strictEqual(res3.status, 200);
       isEmpty();
     }
 
     const data = `first-with-cache: ${tFirstCallWithCache}, second-with-cache: ${tSecondCallWithCache}, no-cache: ${tNoCache}  => `;
-    assert.isBelow(tSecondCallWithCache, tFirstCallWithCache, 'second-with-cache streams.get should be faster than first-with-cache' + data);
+    assert.ok(tSecondCallWithCache < tFirstCallWithCache, 'second-with-cache streams.get should be faster than first-with-cache' + data);
     if (process.env.IS_CI === 'true') return; // for some reason cache does not bring significant benefits during CI.
     const expectedGainPercent = 15;
     const percentGained = Math.round((tNoCache - tSecondCallWithCache) * 100 / tNoCache);
-    assert.isAbove(percentGained, expectedGainPercent, `cache streams.get should be at least ${expectedGainPercent}% longer than second-with-cache ${data}`);
+    assert.ok(percentGained > expectedGainPercent, `cache streams.get should be at least ${expectedGainPercent}% longer than second-with-cache ${data}`);
   });
 
   it('[XDP6] Cache should reset permissions on stream structure change when moving a stream in and out ', async () => {
     const res1 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({ streams: ['T'] });
-    assert.equal(res1.status, 403, 'should fail accessing forbiddden stream');
+    assert.strictEqual(res1.status, 403, 'should fail accessing forbiddden stream');
 
     // move stream T as child of A
     const res2 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).send({ parentId: 'A' });
-    assert.equal(res2.status, 200);
+    assert.strictEqual(res2.status, 200);
 
     const res3 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({ streams: ['T'] });
-    assert.equal(res3.status, 200, 'should have access to stream once moved into authorized scope');
+    assert.strictEqual(res3.status, 200, 'should have access to stream once moved into authorized scope');
 
     // move stream T out of A
     const res4 = await coreRequest.put(streamsPath + 'T').set('Authorization', personalToken).send({ parentId: null });
-    assert.equal(res4.status, 200);
+    assert.strictEqual(res4.status, 200);
 
     const res5 = await coreRequest.get(eventsPath).set('Authorization', appAccess.token).query({ streams: ['T'] });
-    assert.equal(res5.status, 403, 'should not have acces once move out of authorized scope');
+    assert.strictEqual(res5.status, 403, 'should not have acces once move out of authorized scope');
   });
 });
 

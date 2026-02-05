@@ -6,7 +6,7 @@
  */
 
 const _ = require('lodash');
-const should = require('should');
+const assert = require('node:assert');
 const async = require('async');
 const timestamp = require('unix-timestamp');
 
@@ -218,7 +218,7 @@ describe('[ACCP] accesses (app)', function () {
           expected.deviceName = null;
           integrity.accesses.set(expected);
           validation.checkObjectEquality(res.body.access, expected);
-          should(accessesNotifCount).be.eql(1, 'accesses notifications');
+          assert.strictEqual(accessesNotifCount, 1, 'accesses notifications');
           done();
         });
     });
@@ -293,9 +293,9 @@ describe('[ACCP] accesses (app)', function () {
         .post(basePath, access.token)
         .send(data)
         .end(function (res) {
-          should.exist(res.body);
-          should.not.exist(res.body.error);
-          should(res.statusCode).be.eql(201);
+          assert.ok(res.body);
+          assert.ok(res.body.error == null);
+          assert.strictEqual(res.statusCode, 201);
           done();
         });
     });
@@ -332,14 +332,14 @@ describe('[ACCP] accesses (app)', function () {
                 schema: methodsSchema.del.result,
                 body: { accessDeletion: { id: deletedAccess.id } }
               });
-              should(accessesNotifCount).be.eql(1, 'accesses notifications');
+              assert.strictEqual(accessesNotifCount, 1, 'accesses notifications');
               stepDone();
             });
         },
         function verifyData (stepDone) {
           storage.findAll(user, null, function (err, accesses) {
-            should.not.exist(err);
-            accesses.length.should.eql(testData.accesses.length + additionalTestAccesses.length, 'accesses');
+            assert.ok(err == null);
+            assert.strictEqual(accesses.length, testData.accesses.length + additionalTestAccesses.length, 'accesses');
             const expected = _.assign({
               deleted: deletionTime
             }, deletedAccess);

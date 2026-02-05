@@ -6,7 +6,7 @@
  */
 
 Object.assign(global, {
-  assert: require('chai').assert,
+  assert: require('node:assert'),
   bluebird: require('bluebird'),
   _: require('lodash')
 });

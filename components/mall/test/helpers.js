@@ -71,7 +71,7 @@ async function initCore () {
 Object.assign(global, {
   initCore,
   initTests,
-  assert: require('chai').assert,
+  assert: require('node:assert'),
   cuid: require('cuid'),
   charlatan: require('charlatan')
 });
