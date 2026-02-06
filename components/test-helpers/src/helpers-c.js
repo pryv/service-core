@@ -7,7 +7,6 @@
 
 /**
  * Pattern C test helpers for api-server
- * Provides global test initialization without spawning separate processes
  * Loaded by .mocharc.js for node tests
  *
  * Environment variables for test modes:
@@ -16,219 +15,59 @@
  * - PATTERN_C_BACKWARD_COMPAT=1: Enable backward compatibility prefix
  */
 
-require('./api-server-tests-config');
-const { getConfig } = require('@pryv/boiler');
-
-const storage = require('storage');
-const supertest = require('supertest');
-const { getApplication } = require('api-server/src/application');
-const { databaseFixture } = require('test-helpers');
-const { pubsub } = require('messages');
-const userLocalDirectory = require('storage').userLocalDirectory;
+const base = require('./helpers-base');
 
 // Test mode flags from environment
 const isParallelMode = process.env.PATTERN_C_PARALLEL === '1';
 const isAuditMode = process.env.PATTERN_C_AUDIT === '1';
 const isBackwardCompatMode = process.env.PATTERN_C_BACKWARD_COMPAT === '1';
 
-let initTestsDone = false;
-/**
- * Initialize basic test infrastructure
- * To be called in before()
- */
-async function initTests () {
-  if (initTestsDone) return;
-  initTestsDone = true;
-  global.config = await getConfig();
-  await userLocalDirectory.init();
-}
+// Build test config based on environment
+const testConfig = {};
 
-let initCoreDone = false;
-let database = null;
-/**
- * Initialize core API server
- * Requires initTests() to be called first
- */
-async function initCore () {
-  if (initCoreDone) return;
-  initCoreDone = true;
-
-  // Build config based on test mode
-  const testConfig = {
-    dnsLess: { isActive: true }
-  };
-
-  if (isAuditMode) {
-    testConfig.audit = {
-      active: true,
-      storage: {
-        filter: {
-          methods: {
-            include: ['all'],
-            exclude: []
-          }
-        }
-      }
-    };
-    testConfig.syslog = {
+if (isAuditMode) {
+  testConfig.audit = {
+    active: true,
+    storage: {
       filter: {
         methods: {
-          exclude: ['all'],
-          include: []
+          include: ['all'],
+          exclude: []
         }
       }
-    };
-  }
-
-  if (isBackwardCompatMode) {
-    testConfig.backwardCompatibility = {
-      systemStreams: {
-        prefix: { isActive: true }
+    }
+  };
+  testConfig.syslog = {
+    filter: {
+      methods: {
+        exclude: ['all'],
+        include: []
       }
-    };
-    testConfig.versioning = {
-      deletionMode: 'keep-everything',
-      forceKeepHistory: true
-    };
-  }
-
-  global.config.injectTestConfig(testConfig);
-
-  database = await storage.getDatabase();
-
-  global.getNewFixture = function () {
-    const fixture = databaseFixture(database);
-    // Add profile helper to context (upsert - delete then insert)
-    fixture.context.profile = async (username, profileData) => {
-      const profileStorage = new storage.user.Profile(database);
-      const user = { id: username };
-      // First try to remove existing profile
-      await new Promise((resolve) => {
-        profileStorage.removeOne(user, { id: profileData.id }, () => resolve());
-      });
-      // Then insert the new profile
-      await new Promise((resolve, reject) => {
-        profileStorage.insertOne(user, { id: profileData.id, data: profileData.data }, (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        });
-      });
-    };
-    return fixture;
+    }
   };
-
-  global.app = getApplication();
-  await global.app.initiate();
-
-  // Initialize notifications dependency with tracking
-  global.axonMsgs = [];
-  const axonSocket = {
-    emit: (...args) => global.axonMsgs.push(args)
-  };
-  pubsub.setTestNotifier(axonSocket);
-  pubsub.status.emit(pubsub.SERVER_READY);
-
-  // Notification tracking helpers
-  global.notifications = {
-    // Reset all notification counters
-    reset: () => { global.axonMsgs = []; },
-    // Get count of specific notification type for a user
-    count: (type, username) => {
-      return global.axonMsgs.filter(msg =>
-        msg[0] === type && (username == null || msg[1] === username)
-      ).length;
-    },
-    // Get events-changed count
-    eventsChanged: (username) => global.notifications.count('axon-events-changed', username),
-    // Get streams-changed count
-    streamsChanged: (username) => global.notifications.count('axon-streams-changed', username),
-    // Get account-changed count
-    accountChanged: (username) => global.notifications.count('axon-account-changed', username),
-    // Get accesses-changed count
-    accessesChanged: (username) => global.notifications.count('axon-accesses-changed', username),
-    // Get all messages (for debugging)
-    all: () => global.axonMsgs
-  };
-
-  // Load all API methods
-  await require('api-server/src/methods/events')(global.app.api);
-  await require('api-server/src/methods/streams')(global.app.api);
-  require('api-server/src/methods/service')(global.app.api);
-  await require('api-server/src/methods/auth/login')(global.app.api);
-  await require('api-server/src/methods/auth/register')(global.app.api);
-  await require('api-server/src/methods/accesses')(global.app.api);
-  await require('api-server/src/methods/account')(global.app.api);
-  await require('api-server/src/methods/profile')(global.app.api);
-  await require('api-server/src/methods/followedSlices')(global.app.api);
-  await require('api-server/src/methods/webhooks')(global.app.api);
-  await require('api-server/src/methods/utility')(global.app.api);
-
-  // Load audit methods if audit is active (config or env var)
-  if (global.config.get('audit:active')) {
-    await require('audit/src/methods/audit-logs')(global.app.api);
-  }
-
-  global.coreRequest = supertest(global.app.expressApp);
 }
 
-// Export globals for test files using `/* global ... */` directive
-Object.assign(global, {
-  initCore,
-  initTests,
-  assert: require('node:assert'),
-  cuid: require('cuid'),
-  charlatan: require('charlatan'),
-  sinon: require('sinon'),
-  path: require('path'),
-  _: require('lodash')
+if (isBackwardCompatMode) {
+  testConfig.backwardCompatibility = {
+    systemStreams: {
+      prefix: { isActive: true }
+    }
+  };
+  testConfig.versioning = {
+    deletionMode: 'keep-everything',
+    forceKeepHistory: true
+  };
+}
+
+// Initialize base helpers
+base.init({
+  testConfig,
+  // All API methods for api-server tests
+  methods: [
+    'events', 'streams', 'service', 'auth/login', 'auth/register',
+    'accesses', 'account', 'profile', 'followedSlices', 'webhooks', 'utility'
+  ]
 });
 
-// Mocha hooks
-const fs = require('fs');
-const util = require('util');
-
-let usersIndex, platform;
-
-async function initIndexPlatform () {
-  if (usersIndex != null) return;
-  const { getUsersLocalIndex } = require('storage');
-  usersIndex = await getUsersLocalIndex();
-  platform = require('platform').platform;
-  await platform.init();
-}
-
-async function checkIndexAndPlatformIntegrity (title) {
-  await initIndexPlatform();
-  const checks = [
-    await platform.checkIntegrity(),
-    await usersIndex.checkIntegrity()
-  ];
-  for (const check of checks) {
-    if (check.errors.length > 0) {
-      const checkStr = util.inspect(checks, false, null, true);
-      throw new Error(`${title} => Check should be empty \n${checkStr}`);
-    }
-  }
-}
-
-exports.mochaHooks = {
-  async beforeAll () {
-    const config = await getConfig();
-    // create preview directories that would normally be created in normal setup
-    const previewsDirPath = config.get('eventFiles:previewsDirPath');
-    if (!fs.existsSync(previewsDirPath)) {
-      fs.mkdirSync(previewsDirPath, { recursive: true });
-    }
-  },
-  // Integrity checks only in non-parallel mode
-  ...(isParallelMode
-    ? {}
-    : {
-        async beforeEach () {
-          await checkIndexAndPlatformIntegrity('BEFORE ' + this.currentTest.title);
-        },
-        async afterEach () {
-          await checkIndexAndPlatformIntegrity('AFTER ' + this.currentTest.title);
-        }
-      })
-};
+// Export mocha hooks
+exports.mochaHooks = base.getMochaHooks(isParallelMode);

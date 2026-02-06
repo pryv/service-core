@@ -1,0 +1,220 @@
+/**
+ * @license
+ * Copyright (C) Pryv https://pryv.com
+ * This file is part of Pryv.io and released under BSD-Clause-3 License
+ * Refer to LICENSE file
+ */
+
+/**
+ * Base test helpers for all components
+ * Provides common Pattern C test initialization
+ *
+ * Usage in component helpers:
+ *   const base = require('test-helpers/src/helpers-base');
+ *   base.init({
+ *     methods: ['events', 'streams', 'accesses'],  // API methods to load
+ *     globals: { myModule: require('my-module') }, // Additional globals
+ *     beforeInitCore: async () => { ... },         // Hook before initCore
+ *     afterInitCore: async () => { ... }           // Hook after initCore
+ *   });
+ */
+
+require('./api-server-tests-config');
+const { getConfig } = require('@pryv/boiler');
+
+const storage = require('storage');
+const supertest = require('supertest');
+const { getApplication } = require('api-server/src/application');
+const { databaseFixture } = require('test-helpers');
+const { pubsub } = require('messages');
+const userLocalDirectory = require('storage').userLocalDirectory;
+
+let initTestsDone = false;
+let initCoreDone = false;
+let database = null;
+let options = {};
+
+/**
+ * Initialize basic test infrastructure
+ */
+async function initTests () {
+  if (initTestsDone) return;
+  initTestsDone = true;
+  global.config = await getConfig();
+  await userLocalDirectory.init();
+
+  if (options.beforeInitTests) {
+    await options.beforeInitTests();
+  }
+}
+
+/**
+ * Initialize core API server with specified methods
+ */
+async function initCore () {
+  if (initCoreDone) return;
+  initCoreDone = true;
+
+  // Build config
+  const testConfig = {
+    dnsLess: { isActive: true },
+    ...options.testConfig
+  };
+  global.config.injectTestConfig(testConfig);
+
+  database = await storage.getDatabase();
+
+  global.getNewFixture = function () {
+    const fixture = databaseFixture(database);
+    // Add profile helper
+    fixture.context.profile = async (username, profileData) => {
+      const profileStorage = new storage.user.Profile(database);
+      const user = { id: username };
+      await new Promise((resolve) => {
+        profileStorage.removeOne(user, { id: profileData.id }, () => resolve());
+      });
+      await new Promise((resolve, reject) => {
+        profileStorage.insertOne(user, { id: profileData.id, data: profileData.data }, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+    };
+    return fixture;
+  };
+
+  // Hook before app initialization
+  if (options.beforeInitCore) {
+    await options.beforeInitCore();
+  }
+
+  global.app = getApplication();
+  await global.app.initiate();
+
+  // Initialize notifications
+  global.axonMsgs = [];
+  const axonSocket = {
+    emit: (...args) => global.axonMsgs.push(args)
+  };
+  pubsub.setTestNotifier(axonSocket);
+  pubsub.status.emit(pubsub.SERVER_READY);
+
+  // Notification tracking helpers
+  global.notifications = {
+    reset: () => { global.axonMsgs = []; },
+    count: (type, username) => {
+      return global.axonMsgs.filter(msg =>
+        msg[0] === type && (username == null || msg[1] === username)
+      ).length;
+    },
+    eventsChanged: (username) => global.notifications.count('axon-events-changed', username),
+    streamsChanged: (username) => global.notifications.count('axon-streams-changed', username),
+    accountChanged: (username) => global.notifications.count('axon-account-changed', username),
+    accessesChanged: (username) => global.notifications.count('axon-accesses-changed', username),
+    all: () => global.axonMsgs
+  };
+
+  // Load API methods based on options
+  const methods = options.methods || ['events', 'streams', 'service', 'auth/login', 'auth/register', 'accesses', 'account', 'profile', 'followedSlices', 'webhooks', 'utility'];
+
+  for (const method of methods) {
+    const loaded = require(`api-server/src/methods/${method}`);
+    if (typeof loaded === 'function') {
+      await loaded(global.app.api);
+    }
+  }
+
+  // Load audit if config says so
+  if (global.config.get('audit:active')) {
+    await require('audit/src/methods/audit-logs')(global.app.api);
+  }
+
+  global.coreRequest = supertest(global.app.expressApp);
+
+  // Hook after initialization
+  if (options.afterInitCore) {
+    await options.afterInitCore();
+  }
+}
+
+/**
+ * Initialize the base helpers with options
+ */
+function init (opts = {}) {
+  options = opts;
+
+  // Base globals
+  const baseGlobals = {
+    initCore,
+    initTests,
+    assert: require('node:assert'),
+    cuid: require('cuid'),
+    charlatan: require('charlatan'),
+    sinon: require('sinon'),
+    bluebird: require('bluebird'),
+    path: require('path'),
+    _: require('lodash')
+  };
+
+  // Merge with component-specific globals
+  Object.assign(global, baseGlobals, opts.globals || {});
+}
+
+/**
+ * Get mocha hooks for integrity checks
+ */
+function getMochaHooks (isParallelMode = false) {
+  const fs = require('fs');
+  const util = require('util');
+
+  let usersIndex, platform;
+
+  async function initIndexPlatform () {
+    if (usersIndex != null) return;
+    const { getUsersLocalIndex } = require('storage');
+    usersIndex = await getUsersLocalIndex();
+    platform = require('platform').platform;
+    await platform.init();
+  }
+
+  async function checkIndexAndPlatformIntegrity (title) {
+    await initIndexPlatform();
+    const checks = [
+      await platform.checkIntegrity(),
+      await usersIndex.checkIntegrity()
+    ];
+    for (const check of checks) {
+      if (check.errors.length > 0) {
+        const checkStr = util.inspect(checks, false, null, true);
+        throw new Error(`${title} => Check should be empty \n${checkStr}`);
+      }
+    }
+  }
+
+  return {
+    async beforeAll () {
+      const config = await getConfig();
+      const previewsDirPath = config.get('eventFiles:previewsDirPath');
+      if (!fs.existsSync(previewsDirPath)) {
+        fs.mkdirSync(previewsDirPath, { recursive: true });
+      }
+    },
+    ...(isParallelMode
+      ? {}
+      : {
+          async beforeEach () {
+            await checkIndexAndPlatformIntegrity('BEFORE ' + this.currentTest.title);
+          },
+          async afterEach () {
+            await checkIndexAndPlatformIntegrity('AFTER ' + this.currentTest.title);
+          }
+        })
+  };
+}
+
+module.exports = {
+  init,
+  initTests,
+  initCore,
+  getMochaHooks
+};

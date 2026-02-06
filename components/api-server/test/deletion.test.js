@@ -412,7 +412,7 @@ describe('[PGTD] DELETE /users/:username', () => {
  */
 async function initiateUserWithData (userId) {
   const user = await mongoFixtures.user(userId);
-  const stream = await user.stream({ id: charlatan.Lorem.word() });
+  const stream = await user.stream({ id: cuid() });
   const eventId = cuid();
   await stream.event({
     id: eventId,
@@ -421,13 +421,13 @@ async function initiateUserWithData (userId) {
   });
   const token = cuid();
   await user.access({
-    id: charlatan.Lorem.word(),
+    id: cuid(),
     token,
     type: 'app',
     permissions: [{ streamId: stream.attrs.id, level: 'read' }]
   });
-  await user.session(charlatan.Lorem.word());
-  if (!isOpenSource) { user.webhook({ id: charlatan.Lorem.word() }, charlatan.Lorem.word()); }
+  await user.session(cuid());
+  if (!isOpenSource) { user.webhook({ id: cuid() }, cuid()); }
   const filePath = `test-file-${userId}`;
   fs.writeFileSync(filePath, 'Just some text');
   const attachmentItem = {
