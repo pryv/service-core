@@ -16,7 +16,7 @@ module.exports = {
   ui: 'bdd',
   diff: true,
   reporter: 'dot',
-  require: 'test/helpers-c-parallel.js',
+  require: 'test-helpers/src/helpers-c.js',
   parallel: true,
   jobs: 4,
   // ONLY Pattern C tests - do NOT use glob patterns that include Pattern A tests

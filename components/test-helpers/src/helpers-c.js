@@ -16,12 +16,12 @@
  * - PATTERN_C_BACKWARD_COMPAT=1: Enable backward compatibility prefix
  */
 
-require('test-helpers/src/api-server-tests-config');
+require('./api-server-tests-config');
 const { getConfig } = require('@pryv/boiler');
 
 const storage = require('storage');
 const supertest = require('supertest');
-const { getApplication } = require('../src/application');
+const { getApplication } = require('api-server/src/application');
 const { databaseFixture } = require('test-helpers');
 const { pubsub } = require('messages');
 const userLocalDirectory = require('storage').userLocalDirectory;
@@ -120,26 +120,48 @@ async function initCore () {
   global.app = getApplication();
   await global.app.initiate();
 
-  // Initialize notifications dependency
-  const axonMsgs = [];
+  // Initialize notifications dependency with tracking
+  global.axonMsgs = [];
   const axonSocket = {
-    emit: (...args) => axonMsgs.push(args)
+    emit: (...args) => global.axonMsgs.push(args)
   };
   pubsub.setTestNotifier(axonSocket);
   pubsub.status.emit(pubsub.SERVER_READY);
 
+  // Notification tracking helpers
+  global.notifications = {
+    // Reset all notification counters
+    reset: () => { global.axonMsgs = []; },
+    // Get count of specific notification type for a user
+    count: (type, username) => {
+      return global.axonMsgs.filter(msg =>
+        msg[0] === type && (username == null || msg[1] === username)
+      ).length;
+    },
+    // Get events-changed count
+    eventsChanged: (username) => global.notifications.count('axon-events-changed', username),
+    // Get streams-changed count
+    streamsChanged: (username) => global.notifications.count('axon-streams-changed', username),
+    // Get account-changed count
+    accountChanged: (username) => global.notifications.count('axon-account-changed', username),
+    // Get accesses-changed count
+    accessesChanged: (username) => global.notifications.count('axon-accesses-changed', username),
+    // Get all messages (for debugging)
+    all: () => global.axonMsgs
+  };
+
   // Load all API methods
-  await require('../src/methods/events')(global.app.api);
-  await require('../src/methods/streams')(global.app.api);
-  require('../src/methods/service')(global.app.api);
-  await require('../src/methods/auth/login')(global.app.api);
-  await require('../src/methods/auth/register')(global.app.api);
-  await require('../src/methods/accesses')(global.app.api);
-  await require('../src/methods/account')(global.app.api);
-  await require('../src/methods/profile')(global.app.api);
-  await require('../src/methods/followedSlices')(global.app.api);
-  await require('../src/methods/webhooks')(global.app.api);
-  await require('../src/methods/utility')(global.app.api);
+  await require('api-server/src/methods/events')(global.app.api);
+  await require('api-server/src/methods/streams')(global.app.api);
+  require('api-server/src/methods/service')(global.app.api);
+  await require('api-server/src/methods/auth/login')(global.app.api);
+  await require('api-server/src/methods/auth/register')(global.app.api);
+  await require('api-server/src/methods/accesses')(global.app.api);
+  await require('api-server/src/methods/account')(global.app.api);
+  await require('api-server/src/methods/profile')(global.app.api);
+  await require('api-server/src/methods/followedSlices')(global.app.api);
+  await require('api-server/src/methods/webhooks')(global.app.api);
+  await require('api-server/src/methods/utility')(global.app.api);
 
   // Load audit methods if audit is active (config or env var)
   if (global.config.get('audit:active')) {

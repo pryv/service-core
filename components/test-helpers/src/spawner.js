@@ -8,7 +8,6 @@
 
 const url = require('url');
 const childProcessNodeInternal = require('child_process');
-const net = require('net');
 const EventEmitter = require('events');
 const axon = require('axon');
 const path = require('path');
@@ -17,12 +16,12 @@ const msgpack = require('msgpack5')();
 const supertest = require('supertest');
 const _ = require('lodash');
 const { ConditionVariable, Fuse } = require('./condition_variable');
+const portAllocator = require('./portAllocator');
 // Set DEBUG=spawner to see these messages.
 const logger = require('@pryv/boiler').getLogger('spawner');
 
 const PRESPAWN_LIMIT = 2;
 
-let basePort = 3001;
 let debugPortCount = 1;
 let spawnCounter = 0;
 
@@ -33,7 +32,6 @@ let spawnCounter = 0;
 class SpawnContext {
   childPath;
 
-  basePort; // used for HTTP server and Axon server
   shuttingDown;
 
   pool;
@@ -48,8 +46,6 @@ class SpawnContext {
 
   constructor (childPath) {
     this.childPath = childPath || path.resolve(__dirname, '../../api-server/test/helpers/child_process');
-    this.basePort = basePort;
-    basePort += 10;
 
     this.shuttingDown = false;
     this.pool = [];
@@ -138,52 +134,13 @@ class SpawnContext {
   }
 
   // Returns the next free port to use for testing.
+  // Uses the shared portAllocator for consistent port management.
   //
   /**
    * @returns {Promise<number>}
    */
   async allocatePort () {
-    // Infinite loop, see below for exits.
-    while (true) {
-      // Simple strategy: Keep increasing port numbers.
-      const nextPort = this.basePort;
-      this.basePort += 1;
-      // Exit 1: If this fires, we might reconsider the simple implementation
-      // here.
-      if (this.basePort > 9000) { throw new Error('AF: port numbers are <= 9000'); }
-      // Exit 2: If we can bind to the port, return it for our next child
-      // process.
-      if (await tryBindPort(nextPort)) { return nextPort; }
-    }
-    throw new Error('AF: NOT REACHED'); // eslint-disable-line no-unreachable
-    // Returns true if this process can bind a listener to the `port` given.
-    // Closes the port immediately after calling `listen()` so that a child
-    // can reuse the port number.
-    //
-    async function tryBindPort (port) {
-      const server = net.createServer();
-
-      logger.debug('Trying future child port', port);
-      return new Promise((resolve, reject) => {
-        try {
-          server.on('error', (err) => {
-            logger.debug('Future child port unavailable: ', err);
-            server.close();
-            resolve(false);
-          });
-
-          const host = '0.0.0.0';
-          const backlog = 511; // default
-          server.listen(port, host, backlog, () => {
-            server.close();
-            resolve(true);
-          });
-        } catch (err) {
-          logger.debug('Synchronous exception while looking for a future child port: ', err);
-          reject(err);
-        }
-      });
-    }
+    return portAllocator.allocatePort();
   }
 
   // Spawns and returns a process to use for testing. This will probably spawn

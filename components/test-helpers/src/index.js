@@ -7,12 +7,16 @@
 exports = module.exports = {
   request: require('./request'),
   InstanceManager: require('./InstanceManager'),
+  DynamicInstanceManager: require('./DynamicInstanceManager'),
   instanceTestSetup: require('./instanceTestSetup'),
   spawner: require('./spawner'),
   child_process: require('./child_process'),
   syncPrimitives: require('./condition_variable'),
-  databaseFixture: require('./databaseFixture')
+  databaseFixture: require('./databaseFixture'),
+  portAllocator: require('./portAllocator')
 };
+// NOTE: Pattern C helpers (helpers-c.js) is NOT exported here due to circular dependency.
+// Load it directly via: require('test-helpers/src/helpers-c')
 // ---------------------------------------------------------- deprecated helpers
 // NOTE Below we define a few helpers as being lazily loaded attributes on the
 //  exports object. This is because we don't want to load them each time we load

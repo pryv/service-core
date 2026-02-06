@@ -14,6 +14,6 @@ module.exports = {
   ui: 'bdd',
   diff: true,
   reporter: 'dot',
-  require: 'test/helpers-c.js',
+  require: 'test-helpers/src/helpers-c.js',
   spec: 'test/**/*.test.js'
 };

@@ -26,6 +26,6 @@ JOBS=${1:-4}
 echo "Running ${#PATTERN_C_TESTS[@]} Pattern C test files in parallel with $JOBS jobs..."
 
 PATTERN_C_PARALLEL=1 npx mocha --no-config --parallel --jobs "$JOBS" \
-  --require test/helpers-c.js \
+  --require test-helpers/src/helpers-c.js \
   --exit --timeout 15000 \
   "${PATTERN_C_TESTS[@]}"

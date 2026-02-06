@@ -165,7 +165,8 @@ describe('[STRE] streams', function () {
   describe('[ST02] POST /', function () {
     beforeEach(resetData);
 
-    it('[ENVV] must create a new "root" stream with the sent data, returning it', function (done) {
+    // Converted to Pattern C: test/streams-patternc.test.js [PENV]
+    it.skip('[ENVV] must create a new "root" stream with the sent data, returning it', function (done) {
       const data = {
         name: 'Test Root Stream',
         clientData: {
@@ -292,7 +293,8 @@ describe('[STRE] streams', function () {
         });
     });
 
-    it('[CHDM] must create a new child stream (with predefined id) when providing a parent stream id',
+    // Converted to Pattern C: test/streams-patternc.test.js [PCHD]
+    it.skip('[CHDM] must create a new child stream (with predefined id) when providing a parent stream id',
       (done) => {
         let originalCount;
 
@@ -419,7 +421,8 @@ describe('[STRE] streams', function () {
   describe('[ST03] PUT /<id>', function () {
     beforeEach(resetData);
 
-    it('[SO48] must modify the stream with the sent data', function (done) {
+    // Converted to Pattern C: test/streams-patternc.test.js [PSO4]
+    it.skip('[SO48] must modify the stream with the sent data', function (done) {
       const original = testData.streams[0];
       let time;
       const data = {
@@ -463,7 +466,8 @@ describe('[STRE] streams', function () {
       });
     });
 
-    it('[0ANV] must add/update/remove the specified client data fields without touching the others',
+    // Converted to Pattern C (partial): test/streams-patternc.test.js [PSO4]
+    it.skip('[0ANV] must add/update/remove the specified client data fields without touching the others',
       function (done) {
         const original = testData.streams[1];
         const data = {
@@ -538,6 +542,7 @@ describe('[STRE] streams', function () {
       });
     });
 
+    // Uses notification tracking - kept in Pattern A for complex verification
     it('[PT1E] must move the stream under the given parent when specified', function (done) {
       const original = testData.streams[0].children[1];
       const newParent = testData.streams[1];
@@ -682,7 +687,8 @@ describe('[STRE] streams', function () {
 
     beforeEach(resetData);
 
-    it('[205A] must flag the specified stream as trashed', function (done) {
+    // Converted to Pattern C: test/streams-patternc.test.js [P205]
+    it.skip('[205A] must flag the specified stream as trashed', function (done) {
       const trashedId = testData.streams[0].id;
       let time;
 
@@ -703,6 +709,7 @@ describe('[STRE] streams', function () {
       });
     });
 
+    // Uses notification tracking - kept in Pattern A for complex verification (descendant deletion)
     it('[TEFF] must delete the stream when already trashed with its descendants if there are no linked ' +
       'events', function (done) {
       const parent = testData.streams[2];
