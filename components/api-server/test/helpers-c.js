@@ -9,6 +9,11 @@
  * Pattern C test helpers for api-server
  * Provides global test initialization without spawning separate processes
  * Loaded by .mocharc.js for node tests
+ *
+ * Environment variables for test modes:
+ * - PATTERN_C_PARALLEL=1       : Disable integrity checks (for parallel execution)
+ * - PATTERN_C_AUDIT=1          : Enable audit functionality
+ * - PATTERN_C_BACKWARD_COMPAT=1: Enable backward compatibility prefix
  */
 
 require('test-helpers/src/api-server-tests-config');
@@ -20,6 +25,11 @@ const { getApplication } = require('../src/application');
 const { databaseFixture } = require('test-helpers');
 const { pubsub } = require('messages');
 const userLocalDirectory = require('storage').userLocalDirectory;
+
+// Test mode flags from environment
+const isParallelMode = process.env.PATTERN_C_PARALLEL === '1';
+const isAuditMode = process.env.PATTERN_C_AUDIT === '1';
+const isBackwardCompatMode = process.env.PATTERN_C_BACKWARD_COMPAT === '1';
 
 let initTestsDone = false;
 /**
@@ -43,11 +53,46 @@ async function initCore () {
   if (initCoreDone) return;
   initCoreDone = true;
 
-  global.config.injectTestConfig({
-    dnsLess: {
-      isActive: true
-    }
-  });
+  // Build config based on test mode
+  const testConfig = {
+    dnsLess: { isActive: true }
+  };
+
+  if (isAuditMode) {
+    testConfig.audit = {
+      active: true,
+      storage: {
+        filter: {
+          methods: {
+            include: ['all'],
+            exclude: []
+          }
+        }
+      }
+    };
+    testConfig.syslog = {
+      filter: {
+        methods: {
+          exclude: ['all'],
+          include: []
+        }
+      }
+    };
+  }
+
+  if (isBackwardCompatMode) {
+    testConfig.backwardCompatibility = {
+      systemStreams: {
+        prefix: { isActive: true }
+      }
+    };
+    testConfig.versioning = {
+      deletionMode: 'keep-everything',
+      forceKeepHistory: true
+    };
+  }
+
+  global.config.injectTestConfig(testConfig);
 
   database = await storage.getDatabase();
 
@@ -96,6 +141,11 @@ async function initCore () {
   await require('../src/methods/webhooks')(global.app.api);
   await require('../src/methods/utility')(global.app.api);
 
+  // Load audit methods if audit is active (config or env var)
+  if (global.config.get('audit:active')) {
+    await require('audit/src/methods/audit-logs')(global.app.api);
+  }
+
   global.coreRequest = supertest(global.app.expressApp);
 }
 
@@ -111,7 +161,7 @@ Object.assign(global, {
   _: require('lodash')
 });
 
-// Mocha hooks for integrity checks (from hooks.js)
+// Mocha hooks
 const fs = require('fs');
 const util = require('util');
 
@@ -148,10 +198,15 @@ exports.mochaHooks = {
       fs.mkdirSync(previewsDirPath, { recursive: true });
     }
   },
-  async beforeEach () {
-    await checkIndexAndPlatformIntegrity('BEFORE ' + this.currentTest.title);
-  },
-  async afterEach () {
-    await checkIndexAndPlatformIntegrity('AFTER ' + this.currentTest.title);
-  }
+  // Integrity checks only in non-parallel mode
+  ...(isParallelMode
+    ? {}
+    : {
+        async beforeEach () {
+          await checkIndexAndPlatformIntegrity('BEFORE ' + this.currentTest.title);
+        },
+        async afterEach () {
+          await checkIndexAndPlatformIntegrity('AFTER ' + this.currentTest.title);
+        }
+      })
 };
