@@ -22,7 +22,18 @@ module.exports = [
     files: ['**/test/**/*.js'],
     languageOptions: {
       globals: {
-        ...globals.mocha
+        ...globals.mocha,
+        // Pattern C test helpers (from helpers-c.js)
+        initTests: 'readonly',
+        initCore: 'readonly',
+        coreRequest: 'readonly',
+        getNewFixture: 'readonly',
+        assert: 'readonly',
+        cuid: 'readonly',
+        charlatan: 'readonly',
+        sinon: 'readonly',
+        path: 'readonly',
+        _: 'readonly'
       }
     }
   }

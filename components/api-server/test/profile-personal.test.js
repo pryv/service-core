@@ -5,117 +5,211 @@
  * Refer to LICENSE file
  */
 
-require('./test-helpers');
-const assert = require('node:assert');
-const helpers = require('./helpers');
-const server = helpers.dependencies.instanceManager;
-const async = require('async');
-const validation = helpers.validation;
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, _ */
+
+const validation = require('./helpers/validation');
 const methodsSchema = require('../src/schema/profileMethods');
-const storage = helpers.dependencies.storage.user.profile;
-const testData = helpers.data;
-const _ = require('lodash');
 
 describe('[PRFP] profile (personal)', function () {
-  const user = structuredClone(testData.users[0]);
-  const basePath = '/' + user.username + '/profile';
-  let request = null; // must be set after server instance started
-  const publicProfile = testData.profile[0];
-  const privateProfile = testData.profile[1];
+  let username;
+  let basePath;
+  let personalToken;
+  let appToken;
+  let publicProfile;
+  let privateProfile;
+  let fixtures;
 
-  before(function (done) {
-    async.series([
-      testData.resetUsers,
-      testData.resetAccesses,
-      server.ensureStarted.bind(server, helpers.dependencies.settings),
-      function (stepDone) {
-        request = helpers.request(server.url);
-        request.login(user, stepDone);
+  before(async function () {
+    await initTests();
+    await initCore();
+
+    fixtures = getNewFixture();
+    username = cuid();
+    personalToken = cuid();
+    appToken = cuid();
+    basePath = '/' + username + '/profile';
+
+    publicProfile = {
+      id: 'public',
+      data: {
+        keyOne: 'value One',
+        keyTwo: 2,
+        keyThree: true,
+        keyFour: [1, 2, 3, 4],
+        keyFive: { giveMe: 5 }
       }
-    ], done);
+    };
+
+    privateProfile = {
+      id: 'private',
+      data: {
+        keyOne: 'value One',
+        keyTwo: 2,
+        keyThree: true,
+        keyFour: [1, 2, 3, 4],
+        keyFive: { giveMe: 5 }
+      }
+    };
+
+    const user = await fixtures.user(username);
+
+    // Create personal access and session for personal requests
+    await user.access({
+      type: 'personal',
+      token: personalToken
+    });
+    await user.session(personalToken);
+
+    // Create app access for forbidden tests
+    await user.access({
+      type: 'app',
+      name: 'test-app',
+      token: appToken,
+      permissions: [{ streamId: '*', level: 'contribute' }]
+    });
+
+    // Create initial profiles
+    await fixtures.context.profile(username, publicProfile);
+    await fixtures.context.profile(username, privateProfile);
   });
 
   describe('[PP01] GET', function () {
-    before(testData.resetProfile);
+    it('[J61R] /public must return publicly shared key-value profile info', async function () {
+      const res = await coreRequest
+        .get(basePath + '/public')
+        .set('Authorization', personalToken);
 
-    it('[J61R] /public must return publicly shared key-value profile info',
-      testGet.bind(null, publicProfile));
-
-    it('[HIMS] /private must return private key-value profile info',
-      testGet.bind(null, privateProfile));
-
-    function testGet (profile, done) {
-      request.get(basePath + '/' + profile.id).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          body: { profile: profile.data }
-        }, done);
-      });
-    }
-
-    it('[36B1] must return an appropriate error for other paths', function (done) {
-      request.get(basePath + '/unknown-profile').end(function (res) {
-        assert.strictEqual(res.statusCode, 404);
-        done();
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.get.result,
+        body: { profile: publicProfile.data }
       });
     });
 
-    it('[FUJA] "private" must be forbidden to non-personal accesses', function (done) {
-      request.get(basePath + '/private', testData.accesses[4].token).end(function (res) {
-        validation.checkErrorForbidden(res, done);
+    it('[HIMS] /private must return private key-value profile info', async function () {
+      const res = await coreRequest
+        .get(basePath + '/private')
+        .set('Authorization', personalToken);
+
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.get.result,
+        body: { profile: privateProfile.data }
       });
+    });
+
+    it('[36B1] must return an appropriate error for other paths', async function () {
+      const res = await coreRequest
+        .get(basePath + '/unknown-profile')
+        .set('Authorization', personalToken);
+
+      assert.strictEqual(res.statusCode, 404);
+    });
+
+    it('[FUJA] "private" must be forbidden to non-personal accesses', async function () {
+      const res = await coreRequest
+        .get(basePath + '/private')
+        .set('Authorization', appToken);
+
+      validation.checkErrorForbidden(res);
     });
   });
 
   describe('[PP02] PUT', function () {
-    beforeEach(testData.resetProfile);
-
-    it('[M28R] /public must add/update/remove the specified keys without touching the others',
-      testPut.bind(null, publicProfile));
-
-    it('[WU9C] /private must add/update/remove the specified keys without touching the others',
-      testPut.bind(null, privateProfile));
-
-    it('[2AS6] must create the profile if not existing', function (done) {
-      async.series([
-        storage.removeAll.bind(storage, user),
-        testPut.bind(null, { id: 'public', data: {} })
-      ], done);
+    beforeEach(async function () {
+      // Reset profiles
+      await fixtures.context.profile(username, publicProfile);
+      await fixtures.context.profile(username, privateProfile);
     });
 
-    function testPut (original, done) {
+    it('[M28R] /public must add/update/remove the specified keys without touching the others', async function () {
       const data = {
         newKey: 'New Value', // add
         keyOne: 'No One', // update
         keyTwo: null // delete
       };
-      request.put(basePath + '/' + original.id).send(data).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
 
-        const expectedData = _.extend(structuredClone(original.data), data);
-        delete expectedData.keyTwo;
-        assert.deepStrictEqual(res.body.profile, expectedData);
+      const res = await coreRequest
+        .put(basePath + '/public')
+        .set('Authorization', personalToken)
+        .send(data);
 
-        done();
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.update.result
       });
-    }
 
-    it('[Q99E] must return an appropriate error for other paths', function (done) {
-      request.put(basePath + '/unknown-profile').send({ an: 'update' }).end(function (res) {
-        assert.strictEqual(res.statusCode, 404);
-        done();
-      });
+      const expectedData = _.extend(structuredClone(publicProfile.data), data);
+      delete expectedData.keyTwo;
+      assert.deepStrictEqual(res.body.profile, expectedData);
     });
 
-    it('[T565] must be forbidden to non-personal accesses', function (done) {
-      request.put(basePath + '/public', testData.accesses[4].token).send({ an: 'update' })
-        .end(function (res) {
-          validation.checkErrorForbidden(res, done);
-        });
+    it('[WU9C] /private must add/update/remove the specified keys without touching the others', async function () {
+      const data = {
+        newKey: 'New Value', // add
+        keyOne: 'No One', // update
+        keyTwo: null // delete
+      };
+
+      const res = await coreRequest
+        .put(basePath + '/private')
+        .set('Authorization', personalToken)
+        .send(data);
+
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.update.result
+      });
+
+      const expectedData = _.extend(structuredClone(privateProfile.data), data);
+      delete expectedData.keyTwo;
+      assert.deepStrictEqual(res.body.profile, expectedData);
+    });
+
+    it('[2AS6] must create the profile if not existing', async function () {
+      // Remove all profiles for the user
+      const storage = require('storage');
+      const database = await storage.getDatabase();
+      const profileStorage = new storage.user.Profile(database);
+      const user = { id: username };
+      await new Promise((resolve) => {
+        profileStorage.removeAll(user, () => resolve());
+      });
+
+      // Now test PUT creates the profile
+      const data = {
+        newKey: 'New Value'
+      };
+
+      const res = await coreRequest
+        .put(basePath + '/public')
+        .set('Authorization', personalToken)
+        .send(data);
+
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.update.result
+      });
+
+      assert.deepStrictEqual(res.body.profile, data);
+    });
+
+    it('[Q99E] must return an appropriate error for other paths', async function () {
+      const res = await coreRequest
+        .put(basePath + '/unknown-profile')
+        .set('Authorization', personalToken)
+        .send({ an: 'update' });
+
+      assert.strictEqual(res.statusCode, 404);
+    });
+
+    it('[T565] must be forbidden to non-personal accesses', async function () {
+      const res = await coreRequest
+        .put(basePath + '/public')
+        .set('Authorization', appToken)
+        .send({ an: 'update' });
+
+      validation.checkErrorForbidden(res);
     });
   });
 });

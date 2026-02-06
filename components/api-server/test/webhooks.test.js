@@ -5,15 +5,12 @@
  * Refer to LICENSE file
  */
 
-const cuid = require('cuid');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, charlatan */
+
 const { promisify } = require('util');
 const timestamp = require('unix-timestamp');
-const assert = require('node:assert');
-const charlatan = require('charlatan');
 
 const helpers = require('./helpers');
-const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/webhooksMethods');
 const HttpServer = require('business/test/acceptance/webhooks/support/httpServer');
@@ -25,7 +22,9 @@ const { Webhook } = require('business').webhooks;
 describe('[WH01] webhooks', () => {
   let mongoFixtures;
   before(async function () {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    await initTests();
+    await initCore();
+    mongoFixtures = getNewFixture();
   });
   after(async () => {
     await mongoFixtures.clean();
@@ -45,14 +44,6 @@ describe('[WH01] webhooks', () => {
     appAccessId1 = cuid();
     appAccessId2 = cuid();
     sharedAccessToken = cuid();
-  });
-
-  let server;
-  before(async () => {
-    server = await context.spawn();
-  });
-  after(() => {
-    server.stop();
   });
 
   describe('[WH02] GET /', () => {
@@ -89,7 +80,7 @@ describe('[WH01] webhooks', () => {
     describe('[WH08] when using an app token', () => {
       let webhooks, response;
       before(async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(`/${username}/webhooks`)
           .set('Authorization', appAccessToken1);
         response = res;
@@ -117,7 +108,7 @@ describe('[WH01] webhooks', () => {
     describe('[WH09] when using a personal token', () => {
       let webhooks, response;
       before(async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(`/${username}/webhooks`)
           .set('Authorization', personalAccessToken);
         response = res;
@@ -150,7 +141,7 @@ describe('[WH01] webhooks', () => {
     describe('[WH10] when using a shared token', () => {
       let response;
       before(async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(`/${username}/webhooks`)
           .set('Authorization', sharedAccessToken);
         response = res;
@@ -221,7 +212,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH12] when fetching an existing webhook inside its scope', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .get(`/${username}/webhooks/${webhookId1}`)
             .set('Authorization', appAccessToken1);
           response = res;
@@ -238,7 +229,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH13] when fetching an existing webhook outside of its scope', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .get(`/${username}/webhooks/${webhookId2}`)
             .set('Authorization', appAccessToken1);
           response = res;
@@ -252,7 +243,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH14] when fetching an unexistant webhook', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .get(`/${username}/webhooks/doesnotexist`)
             .set('Authorization', appAccessToken1);
           response = res;
@@ -267,7 +258,7 @@ describe('[WH01] webhooks', () => {
     describe('[WH15] when using a personal token', () => {
       let response;
       before(async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(`/${username}/webhooks/${webhookId2}`)
           .set('Authorization', personalAccessToken);
         response = res;
@@ -284,7 +275,7 @@ describe('[WH01] webhooks', () => {
     describe('[WH16] when using a shared token', () => {
       let response;
       before(async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(`/${username}/webhooks/${webhookId3}`)
           .set('Authorization', sharedAccessToken);
         response = res;
@@ -340,7 +331,7 @@ describe('[WH01] webhooks', () => {
         const url = 'https://somecompany.com/notifications';
         let webhook, response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .post(`/${username}/webhooks`)
             .set('Authorization', appAccessToken1)
             .send({ url });
@@ -372,7 +363,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH19] when providing an existing url', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .post(`/${username}/webhooks`)
             .set('Authorization', appAccessToken1)
             .send({ url: usedUrl });
@@ -393,7 +384,7 @@ describe('[WH01] webhooks', () => {
 
           let response;
           before(async () => {
-            const res = await server.request()
+            const res = await coreRequest
               .post(`/${username}/webhooks`)
               .set('Authorization', appAccessToken1)
               .send({ url });
@@ -412,7 +403,7 @@ describe('[WH01] webhooks', () => {
         const url = `https://${charlatan.Internet.domainName()}/something`;
         let webhook, response;
         before(async () => {
-          response = await server.request()
+          response = await coreRequest
             .post(`/${username}/webhooks`)
             .set('Authorization', sharedAccessToken)
             .send({ url });
@@ -445,7 +436,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH25] when providing a valid webhook', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .post(`/${username}/webhooks`)
             .set('Authorization', personalAccessToken)
             .send({ url: 'doesntmatter' });
@@ -525,7 +516,7 @@ describe('[WH01] webhooks', () => {
         describe('[WH28] when changing a valid parameter', () => {
           let response, webhook;
           before(async () => {
-            const res = await server.request()
+            const res = await coreRequest
               .put(`/${username}/webhooks/${webhookId1}`)
               .set('Authorization', appAccessToken1)
               .send({
@@ -563,7 +554,7 @@ describe('[WH01] webhooks', () => {
         describe('[WH29] when changing a readonly parameter', () => {
           let response;
           before(async () => {
-            const res = await server.request()
+            const res = await coreRequest
               .put(`/${username}/webhooks/${webhookId1}`)
               .set('Authorization', appAccessToken1)
               .send({
@@ -584,7 +575,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH30] when updating a webhook outside its scope', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .put(`/${username}/webhooks/${webhookId2}`)
             .set('Authorization', appAccessToken1)
             .send({
@@ -601,7 +592,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH31] when updating an unexistant webhook', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .put(`/${username}/webhooks/doesnotexist`)
             .set('Authorization', appAccessToken1)
             .send({
@@ -620,7 +611,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH33] when providing valid parameters', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .put(`/${username}/webhooks/${webhookId1}`)
             .set('Authorization', personalAccessToken)
             .send({
@@ -642,7 +633,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH35] when providing valid parameters', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .put(`/${username}/webhooks/${webhookId3}`)
             .set('Authorization', sharedAccessToken)
             .send({
@@ -721,7 +712,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH37] when deleting an existing webhook', () => {
         let response, deletion;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .delete(`/${username}/webhooks/${webhookId1}`)
             .set('Authorization', appAccessToken1);
           response = res;
@@ -749,7 +740,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH38] when deleting an unexistant webhook', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .delete(`/${username}/webhooks/doesnotexist`)
             .set('Authorization', appAccessToken1);
           response = res;
@@ -763,7 +754,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH39] when deleting an already deleted webhook', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .delete(`/${username}/webhooks/${webhookId1}`)
             .set('Authorization', appAccessToken1);
           response = res;
@@ -777,7 +768,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH40] when deleting a webhook outside of its scope', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .delete(`/${username}/webhooks/${webhookId2}`)
             .set('Authorization', appAccessToken1);
           response = res;
@@ -793,7 +784,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH42] when deleting an existing webhook', () => {
         let response, deletion;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .delete(`/${username}/webhooks/${webhookId3}`)
             .set('Authorization', personalAccessToken);
           response = res;
@@ -817,7 +808,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH44] when deleting an existing webhook', () => {
         let response, deletion;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .delete(`/${username}/webhooks/${webhookId4}`)
             .set('Authorization', sharedAccessToken);
           response = res;
@@ -907,7 +898,7 @@ describe('[WH01] webhooks', () => {
         describe('[WH47] when the URL is valid', () => {
           let response;
           before(async () => {
-            response = await server.request()
+            response = await coreRequest
               .post(`/${username}/webhooks/${webhookId1}/test`)
               .set('Authorization', appAccessToken1);
           });
@@ -928,8 +919,7 @@ describe('[WH01] webhooks', () => {
           let response;
           before(async () => {
             notificationsServer.setResponseStatus(404);
-            response = await server
-              .request()
+            response = await coreRequest
               .post(`/${username}/webhooks/${webhookId1}/test`)
               .set('Authorization', appAccessToken1);
           });
@@ -946,7 +936,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH49] when the webhook does not exist', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .post(`/${username}/webhooks/doesnotexist/test`)
             .set('Authorization', appAccessToken1);
           response = res;
@@ -960,7 +950,7 @@ describe('[WH01] webhooks', () => {
       describe('[WH50] when the webhook is outside of its scope', () => {
         let response;
         before(async () => {
-          const res = await server.request()
+          const res = await coreRequest
             .post(`/${username}/webhooks/${webhookId2}/test`)
             .set('Authorization', appAccessToken1);
           response = res;
@@ -978,7 +968,7 @@ describe('[WH01] webhooks', () => {
         before(async () => {
           notificationsServer.resetMessageReceived();
           notificationsServer.setResponseStatus(200);
-          const res = await server.request()
+          const res = await coreRequest
             .post(`/${username}/webhooks/${webhookId1}/test`)
             .set('Authorization', personalAccessToken);
           response = res;
@@ -1003,7 +993,7 @@ describe('[WH01] webhooks', () => {
         before(async () => {
           notificationsServer.resetMessageReceived();
           notificationsServer.setResponseStatus(200);
-          const res = await server.request()
+          const res = await coreRequest
             .post(`/${username}/webhooks/${webhookId3}/test`)
             .set('Authorization', sharedAccessToken);
           response = res;

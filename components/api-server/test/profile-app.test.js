@@ -5,137 +5,184 @@
  * Refer to LICENSE file
  */
 
-require('./test-helpers');
-const assert = require('node:assert');
-const helpers = require('./helpers');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, _ */
+
 const ErrorIds = require('errors').ErrorIds;
-const server = helpers.dependencies.instanceManager;
-const async = require('async');
-const validation = helpers.validation;
+const validation = require('./helpers/validation');
 const methodsSchema = require('../src/schema/profileMethods');
-const testData = helpers.data;
-const _ = require('lodash');
 
 describe('[PRFA] profile (app)', function () {
-  const user = structuredClone(testData.users[0]);
-  const basePath = '/' + user.username + '/profile';
-  let request = null; // must be set after server instance started
-  const appAccess = testData.accesses[4];
-  const appProfile = testData.profile[2];
-  const sharedAccess = testData.accesses[1];
+  let username;
+  let basePath;
+  let appToken;
+  let appName;
+  let sharedToken;
+  let personalToken;
+  let profileData;
 
-  before(function (done) {
-    async.series([
-      testData.resetUsers,
-      testData.resetAccesses,
-      server.ensureStarted.bind(server, helpers.dependencies.settings),
-      function (stepDone) { request = helpers.request(server.url); stepDone(); }
-    ], done);
+  before(async function () {
+    await initTests();
+    await initCore();
+
+    // Create fixture data
+    const fixtures = getNewFixture();
+    username = cuid();
+    appName = 'test-3rd-party-app-id';
+    appToken = cuid();
+    sharedToken = cuid();
+    personalToken = cuid();
+    basePath = '/' + username;
+
+    profileData = {
+      keyOne: 'value One',
+      keyTwo: 2,
+      keyThree: true,
+      keyFour: [1, 2, 3, 4],
+      keyFive: { giveMe: 5 }
+    };
+
+    const user = await fixtures.user(username);
+
+    // Create app access
+    await user.access({
+      type: 'app',
+      name: appName,
+      token: appToken,
+      permissions: [{ streamId: '*', level: 'contribute' }]
+    });
+
+    // Create shared access
+    await user.access({
+      type: 'shared',
+      name: 'shared-access',
+      token: sharedToken,
+      permissions: [{ streamId: '*', level: 'read' }]
+    });
+
+    // Create personal access
+    await user.access({
+      type: 'personal',
+      token: personalToken
+    });
+    await user.session(personalToken);
+
+    // Create public profile
+    await fixtures.context.profile(username, {
+      id: 'public',
+      data: profileData
+    });
+
+    // Create app profile
+    await fixtures.context.profile(username, {
+      id: appName,
+      data: profileData
+    });
   });
 
   describe('[PA01] GET /public', function () {
-    before(testData.resetProfile);
+    it('[FWG1] must return publicly shared key-value profile info', async function () {
+      const res = await coreRequest
+        .get(basePath + '/profile/public')
+        .set('Authorization', appToken);
 
-    const path = basePath + '/public';
-
-    it('[FWG1] must return publicly shared key-value profile info', function (done) {
-      request.get(path, appAccess.token).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          body: { profile: testData.profile[0].data }
-        }, done);
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.get.result,
+        body: { profile: profileData }
       });
     });
   });
 
   describe('[PA02] GET /app', function () {
-    before(testData.resetProfile);
+    it('[13DL] must return key-value settings for the current app', async function () {
+      const res = await coreRequest
+        .get(basePath + '/profile/app')
+        .set('Authorization', appToken);
 
-    const path = basePath + '/app';
-
-    it('[13DL] must return key-value settings for the current app', function (done) {
-      request.get(path, appAccess.token).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          body: { profile: appProfile.data }
-        }, done);
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.get.result,
+        body: { profile: profileData }
       });
     });
 
-    it('[J37U] must refuse requests with a shared access token', function (done) {
-      request.get(path, sharedAccess.token).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation
-        }, done);
+    it('[J37U] must refuse requests with a shared access token', async function () {
+      const res = await coreRequest
+        .get(basePath + '/profile/app')
+        .set('Authorization', sharedToken);
+
+      validation.checkError(res, {
+        status: 400,
+        id: ErrorIds.InvalidOperation
       });
     });
 
-    it('[GYBN] must refuse requests with a personal access token', function (done) {
-      const personalRequest = helpers.request(server.url);
-      async.series([
-        personalRequest.login.bind(personalRequest, user),
-        function (stepDone) {
-          personalRequest.get(path).end(function (res) {
-            validation.checkError(res, {
-              status: 400,
-              id: ErrorIds.InvalidOperation
-            }, stepDone);
-          });
-        }
-      ], done);
+    it('[GYBN] must refuse requests with a personal access token', async function () {
+      const res = await coreRequest
+        .get(basePath + '/profile/app')
+        .set('Authorization', personalToken);
+
+      validation.checkError(res, {
+        status: 400,
+        id: ErrorIds.InvalidOperation
+      });
     });
   });
 
   describe('[PA03] PUT /app', function () {
-    beforeEach(testData.resetProfile);
+    beforeEach(async function () {
+      // Reset app profile
+      const fixtures = getNewFixture();
+      await fixtures.context.profile(username, {
+        id: appName,
+        data: structuredClone(profileData)
+      });
+    });
 
-    const path = basePath + '/app';
-
-    it('[1QFB] must add/update/remove the specified keys without touching the others', function (done) {
+    it('[1QFB] must add/update/remove the specified keys without touching the others', async function () {
       const data = {
         newKey: 'New Value', // add
         keyOne: 'No One', // update
         keyTwo: null // delete
       };
-      request.put(path, appAccess.token).send(data).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
 
-        const expectedData = _.extend(structuredClone(appProfile.data), data);
-        delete expectedData.keyTwo;
-        assert.deepStrictEqual(res.body.profile, expectedData);
+      const res = await coreRequest
+        .put(basePath + '/profile/app')
+        .set('Authorization', appToken)
+        .send(data);
 
-        done();
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.update.result
+      });
+
+      const expectedData = _.extend(structuredClone(profileData), data);
+      delete expectedData.keyTwo;
+      assert.deepStrictEqual(res.body.profile, expectedData);
+    });
+
+    it('[0H9A] must refuse requests with a shared access token', async function () {
+      const res = await coreRequest
+        .put(basePath + '/profile/app')
+        .set('Authorization', sharedToken)
+        .send({ any: 'thing' });
+
+      validation.checkError(res, {
+        status: 400,
+        id: ErrorIds.InvalidOperation
       });
     });
 
-    it('[0H9A] must refuse requests with a shared access token', function (done) {
-      request.put(path, sharedAccess.token).send({ any: 'thing' }).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation
-        }, done);
-      });
-    });
+    it('[JC5F] must refuse requests with a personal access token', async function () {
+      const res = await coreRequest
+        .put(basePath + '/profile/app')
+        .set('Authorization', personalToken)
+        .send({ any: 'thing' });
 
-    it('[JC5F] must refuse requests with a personal access token', function (done) {
-      const personalRequest = helpers.request(server.url);
-      async.series([
-        personalRequest.login.bind(personalRequest, user),
-        function (stepDone) {
-          personalRequest.put(path).send({ any: 'thing' }).end(function (res) {
-            validation.checkError(res, {
-              status: 400,
-              id: ErrorIds.InvalidOperation
-            }, stepDone);
-          });
-        }
-      ], done);
+      validation.checkError(res, {
+        status: 400,
+        id: ErrorIds.InvalidOperation
+      });
     });
   });
 });

@@ -5,36 +5,26 @@
  * Refer to LICENSE file
  */
 
-require('./test-helpers');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, charlatan, _ */
 
 const ErrorIds = require('errors').ErrorIds;
-const _ = require('lodash');
-const cuid = require('cuid');
-const assert = require('node:assert');
-const charlatan = require('charlatan');
 const { integrity } = require('business');
 const timestamp = require('unix-timestamp');
 
 const { fixturePath } = require('./unit/test-helper');
 
-const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
-
 require('date-utils');
 
 describe('[MSTR] events.streamIds', function () {
   describe('[MS01] events', function () {
-    let server;
-    before(async () => {
-      server = await context.spawn();
-    });
-    after(() => {
-      server.stop();
-    });
-
     let mongoFixtures;
     before(async function () {
-      mongoFixtures = databaseFixture(await produceMongoConnection());
+      await initTests();
+      await initCore();
+      mongoFixtures = getNewFixture();
+    });
+    after(async () => {
+      await mongoFixtures.clean();
     });
 
     let user,
@@ -166,7 +156,7 @@ describe('[MSTR] events.streamIds', function () {
 
     describe('[MS02] GET /events', function () {
       it('[WJ0S] must return streamIds & streamId containing the first one (if many)', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .get(basePathEvent)
           .set('Authorization', tokenContributeA);
         const events = res.body.events;
@@ -179,7 +169,7 @@ describe('[MSTR] events.streamIds', function () {
 
     describe('[MS03] GET /events/:id', function () {
       it('[IJQZ] must return streamIds & streamId containing the first one (if many)', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .get(eventPath(eventIdAB))
           .set('Authorization', tokenContributeAReadB);
         const event = res.body.event;
@@ -190,7 +180,7 @@ describe('[MSTR] events.streamIds', function () {
 
     describe('[MS04] POST /events', function () {
       it('[X4PX] must forbid to provide both streamId and streamIds', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .post(basePathEvent)
           .set('Authorization', tokenContributeA)
           .send({
@@ -206,7 +196,7 @@ describe('[MSTR] events.streamIds', function () {
 
       describe('[MS05] when using "streamId"', function () {
         it('[1YUV] must return streamIds & streamId', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .post(basePathEvent)
             .set('Authorization', tokenContributeA)
             .send({
@@ -223,7 +213,7 @@ describe('[MSTR] events.streamIds', function () {
 
       describe('[MS06] when using "streamIds"', function () {
         it('[VXMG] must return streamIds & streamId containing the first one', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .post(basePathEvent)
             .set('Authorization', tokenContributeAB)
             .send({
@@ -238,7 +228,7 @@ describe('[MSTR] events.streamIds', function () {
         });
 
         it('[2QZF] must clean duplicate streamIds', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .post(basePathEvent)
             .set('Authorization', tokenContributeAB)
             .send({
@@ -253,7 +243,7 @@ describe('[MSTR] events.streamIds', function () {
 
         it('[NY0E] must forbid providing an unknown streamId', async function () {
           const unknownStreamId = 'does-not-exist';
-          const res = await server.request()
+          const res = await coreRequest
             .post(basePathEvent)
             .set('Authorization', tokenContributeA)
             .send({
@@ -268,7 +258,7 @@ describe('[MSTR] events.streamIds', function () {
         });
 
         it('[6Z2D] must forbid creating an event in multiple streams, if a contribute permission is missing on at least one stream', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .post(basePathEvent)
             .set('Authorization', tokenContributeA)
             .send({
@@ -285,7 +275,7 @@ describe('[MSTR] events.streamIds', function () {
 
     describe('[MS07] PUT /events/:id', function () {
       it('[BBBX] must return streamIds & streamId containing the first one (if many)', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .put(eventPath(eventIdA))
           .set('Authorization', tokenContributeA)
           .send({
@@ -298,7 +288,7 @@ describe('[MSTR] events.streamIds', function () {
       });
 
       it('[42KZ] must allow modification, if you have a contribute permission on at least 1 streamId', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .put(eventPath(eventIdAB))
           .set('Authorization', tokenContributeA)
           .send({
@@ -308,7 +298,7 @@ describe('[MSTR] events.streamIds', function () {
       });
 
       it('[Q5P7] must forbid to provide both streamId and streamIds', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .put(eventPath(eventIdA))
           .set('Authorization', tokenContributeA)
           .send({
@@ -323,7 +313,7 @@ describe('[MSTR] events.streamIds', function () {
       describe('[MS08] when modifying streamIds', function () {
         it('[TQHG] must forbid providing an unknown streamId', async function () {
           const unknownStreamId = 'does-not-exist';
-          const res = await server.request()
+          const res = await coreRequest
             .put(eventPath(eventIdA))
             .set('Authorization', tokenContributeA)
             .send({
@@ -336,7 +326,7 @@ describe('[MSTR] events.streamIds', function () {
         });
 
         it('[6Q8B] must allow streamId addition, if you have a contribute permission for it', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .put(eventPath(eventIdA))
             .set('Authorization', tokenContributeAB)
             .send({
@@ -349,7 +339,7 @@ describe('[MSTR] events.streamIds', function () {
         });
 
         it('[MFF7] must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .put(eventPath(eventIdA))
             .set('Authorization', tokenContributeA)
             .send({
@@ -361,7 +351,7 @@ describe('[MSTR] events.streamIds', function () {
         });
 
         it('[83N6] must allow streamId deletion, if you have a contribute permission for it', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .put(eventPath(eventIdAB))
             .set('Authorization', tokenContributeAB)
             .send({
@@ -373,7 +363,7 @@ describe('[MSTR] events.streamIds', function () {
         });
 
         it('[JLS5] must forbid streamId deletion, if you have read but no contribute permission for it', async function () {
-          const res = await server.request()
+          const res = await coreRequest
             .put(eventPath(eventIdAB))
             .set('Authorization', tokenContributeAReadB)
             .send({
@@ -392,7 +382,7 @@ describe('[MSTR] events.streamIds', function () {
       }
 
       it('[FOM3] must return a 410 (Gone)', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .post(path())
           .set('Authorization', tokenContributeA)
           .send({
@@ -411,7 +401,7 @@ describe('[MSTR] events.streamIds', function () {
       }
 
       it('[BR33] must return a 410 (Gone)', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .post(path())
           .set('Authorization', tokenContributeA)
           .send({
@@ -430,7 +420,7 @@ describe('[MSTR] events.streamIds', function () {
       }
 
       it('[BPL0] must return streamIds & streamId containing the first one (if many)', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .delete(eventPath(eventIdAB))
           .set('Authorization', tokenContributeAB);
         assert.strictEqual(res.status, 200);
@@ -440,7 +430,7 @@ describe('[MSTR] events.streamIds', function () {
       });
 
       it('[T5ZY] must allow trashing, if you have a contribute permission on at least 1 streamId', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .delete(eventPath(eventIdAB))
           .set('Authorization', tokenContributeA);
         assert.strictEqual(res.status, 200);
@@ -449,7 +439,7 @@ describe('[MSTR] events.streamIds', function () {
       });
 
       it('[2G32] must allow deletion, if you have a contribute permission on at least 1 streamId', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .delete(eventPath(trashedEventIdAB))
           .set('Authorization', tokenContributeA);
         assert.strictEqual(res.status, 200);
@@ -458,7 +448,7 @@ describe('[MSTR] events.streamIds', function () {
       });
 
       it('[6W5Y] must forbid trashing, if you don\'t have a contribute permission on at least 1 streamId', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .delete(eventPath(eventIdA))
           .set('Authorization', tokenContributeB);
         assert.strictEqual(res.status, 403);
@@ -506,7 +496,7 @@ describe('[MSTR] events.streamIds', function () {
       });
 
       beforeEach(async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .post(path('events'))
           .set('Authorization', appToken)
           .field('event', JSON.stringify({
@@ -516,7 +506,7 @@ describe('[MSTR] events.streamIds', function () {
           .attach('file', fixturePath('somefile'));
         event = res.body.event;
         appReadToken = event.attachments[0].readToken;
-        const res2 = await server.request()
+        const res2 = await coreRequest
           .get(path(`events/${event.id}`))
           .set('Authorization', sharedToken);
         event = res2.body.event;
@@ -528,7 +518,7 @@ describe('[MSTR] events.streamIds', function () {
       }
 
       it('[JNS8] should retrieve the attachment with the app token', async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(path(`events/${event.id}/${event.attachments[0].id}`))
           .set('Authorization', appToken);
         const status = res.status;
@@ -538,7 +528,7 @@ describe('[MSTR] events.streamIds', function () {
       });
 
       it('[6YFZ] should retrieve the attachment with the app token correct headers', async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(path(`events/${event.id}/${event.attachments[0].id}`))
           .set('Authorization', appToken);
         if (integrity.attachments.isActive) {
@@ -550,7 +540,7 @@ describe('[MSTR] events.streamIds', function () {
       });
 
       it('[NH1O] should retrieve the attachment with the shared access readToken', async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${appReadToken}`));
         const status = res.status;
         assert.strictEqual(status, 200);
@@ -558,7 +548,7 @@ describe('[MSTR] events.streamIds', function () {
         assert.ok(retrievedAttachment);
       });
       it('[9KAF] should retrieve the attachment with the shared access token', async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(path(`events/${event.id}/${event.attachments[0].id}`))
           .set('Authorization', sharedToken);
         const status = res.status;
@@ -567,7 +557,7 @@ describe('[MSTR] events.streamIds', function () {
         assert.ok(retrievedAttachment);
       });
       it('[9MEL] should retrieve the attachment with the shared access readToken', async () => {
-        const res = await server.request()
+        const res = await coreRequest
           .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${sharedReadToken}`));
         const status = res.status;
         assert.strictEqual(status, 200);
@@ -578,17 +568,14 @@ describe('[MSTR] events.streamIds', function () {
   });
 
   describe('[MS13] streams', function () {
-    let server;
-    before(async () => {
-      server = await context.spawn();
-    });
-    after(() => {
-      server.stop();
-    });
-
     let mongoFixtures;
     before(async function () {
-      mongoFixtures = databaseFixture(await produceMongoConnection());
+      await initTests();
+      await initCore();
+      mongoFixtures = getNewFixture();
+    });
+    after(async () => {
+      await mongoFixtures.clean();
     });
 
     let user,
@@ -690,7 +677,7 @@ describe('[MSTR] events.streamIds', function () {
 
     describe('[MS14] POST /streams', function () {
       it('[EGW2] must forbid setting the "singleActivity" field', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .post(basePathStream)
           .set('Authorization', manageAccessToken)
           .send({
@@ -703,7 +690,7 @@ describe('[MSTR] events.streamIds', function () {
 
     describe('[MS15] PUT /streams/:id', function () {
       it('[EY79] must forbid setting the "singleActivity" field', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .put(pathStreamId(streamAId))
           .set('Authorization', manageAccessToken)
           .send({
@@ -718,12 +705,12 @@ describe('[MSTR] events.streamIds', function () {
         describe('[MS18] when mergeEventsWithParent=false', function () {
           it('[TWDG] must not delete events, but remove the deleted streamId from their streamIds', async function () {
             for (let i = 0; i < 2; i++) {
-              await server.request()
+              await coreRequest
                 .delete(pathStreamId(streamBId))
                 .set('Authorization', manageAccessToken)
                 .query({ mergeEventsWithParent: false });
             }
-            const res = await server.request()
+            const res = await coreRequest
               .get(pathEventId(eventIdAxAandB))
               .set('Authorization', manageAccessToken);
             const event = res.body.event;
@@ -736,13 +723,13 @@ describe('[MSTR] events.streamIds', function () {
         describe('[MS20] when mergeEventsWithParent=false', function () {
           it('[6SBU] must delete the events', async function () {
             for (let i = 0; i < 2; i++) {
-              await server.request()
+              await coreRequest
                 .delete(pathStreamId(streamAId))
                 .set('Authorization', manageAccessToken)
                 .query({ mergeEventsWithParent: false });
             }
 
-            const res = await server.request()
+            const res = await coreRequest
               .get(basePathEvent)
               .set('Authorization', manageAccessToken)
               .query({ includeDeletions: true, modifiedSince: 0 });
@@ -762,13 +749,13 @@ describe('[MSTR] events.streamIds', function () {
         describe('[MS21] when mergeEventsWithParent=true', function () {
           it('[2FRR] must not delete events, but remove all streamIds and add its parentId', async function () {
             for (let i = 0; i < 2; i++) {
-              await server.request()
+              await coreRequest
                 .delete(basePathStream + streamAxAId)
                 .set('Authorization', manageAccessToken)
                 .query({ mergeEventsWithParent: true });
             }
 
-            const res = await server.request()
+            const res = await coreRequest
               .get(basePathEvent)
               .set('Authorization', manageAccessToken);
             assert.strictEqual(res.body.events.length, 3);

@@ -5,10 +5,7 @@
  * Refer to LICENSE file
  */
 
-const cuid = require('cuid');
-const assert = require('node:assert');
-const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid */
 
 const eventsQueryUtils = require('mall/src/helpers/eventsQueryUtils');
 const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
@@ -322,17 +319,14 @@ describe('[EGSQ] events.get streams query', function () {
   });
 
   describe('[EQ06] GET /events with streams queries', function () {
-    let server;
-    before(async () => {
-      server = await context.spawn();
-    });
-    after(() => {
-      server.stop();
-    });
-
     let mongoFixtures;
     before(async function () {
-      mongoFixtures = databaseFixture(await produceMongoConnection());
+      await initTests();
+      await initCore();
+      mongoFixtures = getNewFixture();
+    });
+    after(async () => {
+      await mongoFixtures.clean();
     });
 
     let user,
@@ -377,12 +371,9 @@ describe('[EGSQ] events.get streams query', function () {
         await user.event(event);
       }
     });
-    after(async () => {
-      await mongoFixtures.clean();
-    });
 
     it('[NKH8] must accept a simple string', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: ['A'] });
@@ -400,7 +391,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[BW6Z] must accept array of strings', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: ['A', 'D'] });
@@ -418,7 +409,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[HFA2] must accept * (star) with a not without including items in trashed streams', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ any: ['*'], not: ['D'] }) });
@@ -441,7 +432,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[MMB0] must accept * (star) with !B && !E without including items in trashed streams', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ any: ['*'], not: ['B', 'E'] }) });
@@ -465,7 +456,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[VUER] must return events in A && E', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ any: ['A'], all: ['E'] }) });
@@ -484,7 +475,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[CBP2] must return events in A && !B', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ any: ['A'], not: ['B'] }) });
@@ -504,7 +495,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[I19H] must return events in A && !D', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ any: ['A'], not: ['D'] }) });
@@ -520,7 +511,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[55HB] must return events in A && NOT-EQUAL D', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ any: ['A'], not: ['D!'] }) });
@@ -535,7 +526,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[O4DJ] must return all events in B || (D && !E)', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({
@@ -560,7 +551,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[UJSB] must accept an object in a batch call (instead of a stringified one)', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .post(basePath)
         .set('Authorization', tokenRead)
         .send([
@@ -578,7 +569,7 @@ describe('[EGSQ] events.get streams query', function () {
     });
 
     it('[ENFE] must accept a stringified object in a batch call', async function () {
-      const res = await server.request()
+      const res = await coreRequest
         .post(basePath)
         .set('Authorization', tokenRead)
         .send([
@@ -597,7 +588,7 @@ describe('[EGSQ] events.get streams query', function () {
 
     describe('[EQ07] edge cases', () => {
       it('[X8B1] must return an error on non-existing stream', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: JSON.stringify({ any: ['A', 'Z', 'B'] }) });
@@ -606,7 +597,7 @@ describe('[EGSQ] events.get streams query', function () {
       });
 
       it('[WRVU] must return error when there is no "any"', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: JSON.stringify({ all: ['A', 'Z'] }) });
@@ -615,7 +606,7 @@ describe('[EGSQ] events.get streams query', function () {
       });
 
       it('[30NV] must return error when provided a boolean instead of a string', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: JSON.stringify({ any: ['A', 'Z', true] }) });
@@ -624,7 +615,7 @@ describe('[EGSQ] events.get streams query', function () {
       });
 
       it('[YOJ9] must return error when provided a null instead of a stream query', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: JSON.stringify([null, { any: ['A', 'Z'] }]) });
@@ -633,7 +624,7 @@ describe('[EGSQ] events.get streams query', function () {
       });
 
       it('[8NNP] must return an error when providing a non-stringified stream query', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: [{ any: ['A', 'Z'] }] });
@@ -643,7 +634,7 @@ describe('[EGSQ] events.get streams query', function () {
       });
 
       it('[3X9I] must return an empty list when provided a trashed streamId', async function () {
-        const res = await server.request()
+        const res = await coreRequest
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: ['T'] });

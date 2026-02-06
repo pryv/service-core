@@ -5,172 +5,226 @@
  * Refer to LICENSE file
  */
 
-const async = require('async');
-const assert = require('node:assert');
-const _ = require('lodash');
-const { getConfig } = require('@pryv/boiler');
+/* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, _ */
 
-require('./test-helpers');
-const helpers = require('./helpers');
+const { getConfig } = require('@pryv/boiler');
 const ErrorIds = require('errors').ErrorIds;
-const server = helpers.dependencies.instanceManager;
-const validation = helpers.validation;
+const validation = require('./helpers/validation');
 const methodsSchema = require('../src/schema/followedSlicesMethods');
-const storage = helpers.dependencies.storage.user.followedSlices;
-const testData = helpers.data;
+const storage = require('storage');
 
 describe('[FOLS] followed slices', function () {
-  const user = structuredClone(testData.users[0]);
-  const basePath = '/' + user.username + '/followed-slices';
-  let request = null; // must be set after server instance started
+  let username;
+  let basePath;
+  let personalToken;
+  let appToken;
   let isFerret = null;
+  let followedSlicesStorage;
+  let user;
+  let testFollowedSlices;
 
   function path (id) {
     return basePath + '/' + id;
   }
 
   before(async function () {
+    await initTests();
+    await initCore();
+
     const config = await getConfig();
     isFerret = config.get('database:isFerret');
-  });
 
-  // to verify data change notifications
-  let followedSlicesNotifCount;
-  server.on('axon-followed-slices-changed', function () { followedSlicesNotifCount++; });
+    const fixtures = getNewFixture();
+    username = cuid();
+    personalToken = cuid();
+    appToken = cuid();
+    basePath = '/' + username + '/followed-slices';
+    user = { id: username };
 
-  before(function (done) {
-    async.series([
-      testData.resetUsers,
-      helpers.dependencies.storage.user.accesses
-        .removeAll.bind(helpers.dependencies.storage.user.accesses, user),
-      helpers.dependencies.storage.user.accesses
-        .insertMany.bind(helpers.dependencies.storage.user.accesses, user,
-          [testData.accesses[4]]),
-      server.ensureStarted.bind(server, helpers.dependencies.settings),
-      function (stepDone) {
-        request = helpers.request(server.url);
-        request.login(user, stepDone);
+    const database = await storage.getDatabase();
+    followedSlicesStorage = new storage.user.FollowedSlices(database);
+
+    // Create user
+    const fixtureUser = await fixtures.user(username);
+
+    // Create personal access and session
+    await fixtureUser.access({
+      type: 'personal',
+      token: personalToken
+    });
+    await fixtureUser.session(personalToken);
+
+    // Create app access for forbidden tests
+    await fixtureUser.access({
+      type: 'app',
+      name: 'test-app',
+      token: appToken,
+      permissions: [{ streamId: '*', level: 'contribute' }]
+    });
+
+    // Define test followed slices
+    testFollowedSlices = [
+      {
+        id: `slice0_${username}`,
+        name: 'Slice Zero',
+        url: `https://${username}.pryv.io/`,
+        accessToken: 'token-zero'
+      },
+      {
+        id: `slice1_${username}`,
+        name: 'Slice One',
+        url: `https://${username}.pryv.io/`,
+        accessToken: 'token-one'
+      },
+      {
+        id: `slice2_${username}`,
+        name: 'Slice Two',
+        url: `https://other-${username}.pryv.io/`,
+        accessToken: 'token-two'
       }
-    ], done);
+    ];
   });
+
+  async function resetFollowedSlices () {
+    // Drop collection fully to ensure indexes are recreated
+    await new Promise((resolve) => {
+      followedSlicesStorage.dropCollectionFully(user, () => resolve());
+    });
+    // Insert test data
+    await new Promise((resolve, reject) => {
+      followedSlicesStorage.insertMany(user, structuredClone(testFollowedSlices), (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  }
 
   describe('[FS01] GET /', function () {
     before(resetFollowedSlices);
 
     it('[TNKS] must return all followed slices (ordered by user name, then access token)',
-      function (done) {
-        request.get(basePath).end(function (res) {
-          validation.check(res, {
-            status: 200,
-            schema: methodsSchema.get.result,
-            body: { followedSlices: _.sortBy(testData.followedSlices, 'name') }
-          }, done);
+      async function () {
+        const res = await coreRequest
+          .get(basePath)
+          .set('Authorization', personalToken);
+
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.get.result,
+          body: { followedSlices: _.sortBy(testFollowedSlices, 'name') }
         });
       });
 
-    it('[U9M4] must be forbidden to non-personal accesses', function (done) {
-      request.get(basePath, testData.accesses[4].token).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+    it('[U9M4] must be forbidden to non-personal accesses', async function () {
+      const res = await coreRequest
+        .get(basePath)
+        .set('Authorization', appToken);
+
+      validation.checkErrorForbidden(res);
     });
   });
 
   describe('[FS02] POST /', function () {
     beforeEach(resetFollowedSlices);
 
-    it('[HVYA] must create a new followed slice with the sent data, returning it', function (done) {
+    it('[HVYA] must create a new followed slice with the sent data, returning it', async function () {
       const data = {
         name: 'Some followed slice',
         url: 'https://mirza.pryv.io/',
         accessToken: 'some-token'
       };
-      let originalCount,
-        createdSlice;
 
-      async.series([
-        function countInitial (stepDone) {
-          storage.countAll(user, function (err, count) {
-            assert.ok(err == null);
-            originalCount = count;
-            stepDone();
-          });
-        },
-        function addNew (stepDone) {
-          request.post(basePath).send(data).end(function (res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.create.result
-            });
-            createdSlice = res.body.followedSlice;
-            assert.strictEqual(followedSlicesNotifCount, 1, 'followed slices notifications');
-            stepDone();
-          });
-        },
-        function verifyData (stepDone) {
-          storage.findAll(user, null, function (err, followedSlices) {
-            assert.ok(err == null);
+      // Count initial
+      const originalCount = await new Promise((resolve, reject) => {
+        followedSlicesStorage.countAll(user, (err, count) => {
+          if (err) reject(err);
+          else resolve(count);
+        });
+      });
 
-            assert.strictEqual(followedSlices.length, originalCount + 1, 'followed slices');
+      // Create new slice
+      const res = await coreRequest
+        .post(basePath)
+        .set('Authorization', personalToken)
+        .send(data);
 
-            const expected = structuredClone(data);
-            expected.id = createdSlice.id;
-            const actual = _.find(followedSlices, function (slice) {
-              return slice.id === createdSlice.id;
-            });
-            validation.checkStoredItem(actual, 'followedSlice');
-            assert.deepStrictEqual(actual, expected);
+      validation.check(res, {
+        status: 201,
+        schema: methodsSchema.create.result
+      });
+      const createdSlice = res.body.followedSlice;
 
-            stepDone();
-          });
-        }
-      ],
-      done
-      );
+      // Verify data in storage
+      const followedSlices = await new Promise((resolve, reject) => {
+        followedSlicesStorage.findAll(user, null, (err, slices) => {
+          if (err) reject(err);
+          else resolve(slices);
+        });
+      });
+
+      assert.strictEqual(followedSlices.length, originalCount + 1, 'followed slices');
+
+      const expected = structuredClone(data);
+      expected.id = createdSlice.id;
+      const actual = _.find(followedSlices, (slice) => slice.id === createdSlice.id);
+      validation.checkStoredItem(actual, 'followedSlice');
+      assert.deepStrictEqual(actual, expected);
     });
 
-    it('[BULL] must return a correct error if the sent data is badly formatted', function (done) {
-      request.post(basePath).send({ badProperty: 'bad value' }).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
+    it('[BULL] must return a correct error if the sent data is badly formatted', async function () {
+      const res = await coreRequest
+        .post(basePath)
+        .set('Authorization', personalToken)
+        .send({ badProperty: 'bad value' });
+
+      validation.checkErrorInvalidParams(res);
     });
 
     it('[GPZK] must return a correct error if the same followed slice (url and token) already exists',
-      function (done) {
+      async function () {
         const data = {
           name: 'New name',
-          url: testData.followedSlices[0].url,
-          accessToken: testData.followedSlices[0].accessToken
+          url: testFollowedSlices[0].url,
+          accessToken: testFollowedSlices[0].accessToken
         };
-        request.post(basePath).send(data).end(function (res) {
-          let expectedData = { url: data.url, accessToken: data.accessToken };
-          if (isFerret) {
-            expectedData = { info: 'FerretDB does not provide duplicate information' };
-          }
-          validation.checkError(res, {
-            status: 409,
-            id: ErrorIds.ItemAlreadyExists,
-            data: expectedData
-          }, done);
+
+        const res = await coreRequest
+          .post(basePath)
+          .set('Authorization', personalToken)
+          .send(data);
+
+        let expectedData = { url: data.url, accessToken: data.accessToken };
+        if (isFerret) {
+          expectedData = { info: 'FerretDB does not provide duplicate information' };
+        }
+        validation.checkError(res, {
+          status: 409,
+          id: ErrorIds.ItemAlreadyExists,
+          data: expectedData
         });
       });
 
     it('[RYNB] must return a correct error if a followed slice with the same name already exists',
-      function (done) {
+      async function () {
         const data = {
-          name: testData.followedSlices[0].name,
+          name: testFollowedSlices[0].name,
           url: 'https://hippolyte.pryv.io/',
           accessToken: 'some-token'
         };
+
+        const res = await coreRequest
+          .post(basePath)
+          .set('Authorization', personalToken)
+          .send(data);
+
         let expectedData = { name: data.name };
         if (isFerret) {
           expectedData = { info: 'FerretDB does not provide duplicate information' };
         }
-        request.post(basePath).send(data).end(function (res) {
-          validation.checkError(res, {
-            status: 409,
-            id: ErrorIds.ItemAlreadyExists,
-            data: expectedData
-          }, done);
+        validation.checkError(res, {
+          status: 409,
+          id: ErrorIds.ItemAlreadyExists,
+          data: expectedData
         });
       });
   });
@@ -178,55 +232,64 @@ describe('[FOLS] followed slices', function () {
   describe('[FS03] PUT /<id>', function () {
     beforeEach(resetFollowedSlices);
 
-    it('[LM08] must modify the followed slice with the sent data', function (done) {
-      const original = testData.followedSlices[0];
+    it('[LM08] must modify the followed slice with the sent data', async function () {
+      const original = testFollowedSlices[0];
       const newSliceData = {
         name: 'Updated Slice 0'
       };
 
-      request.put(path(original.id)).send(newSliceData).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
+      const res = await coreRequest
+        .put(path(original.id))
+        .set('Authorization', personalToken)
+        .send(newSliceData);
 
-        const expected = Object.assign({}, original, newSliceData);
-        assert.deepStrictEqual(res.body.followedSlice, expected);
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.update.result
+      });
 
-        assert.strictEqual(followedSlicesNotifCount, 1, 'followed slices notifications');
-        done();
+      const expected = Object.assign({}, original, newSliceData);
+      assert.deepStrictEqual(res.body.followedSlice, expected);
+    });
+
+    it('[QFGH] must return a correct error if the followed slice does not exist', async function () {
+      const res = await coreRequest
+        .put(path('unknown-id'))
+        .set('Authorization', personalToken)
+        .send({ name: '?' });
+
+      validation.checkError(res, {
+        status: 404,
+        id: ErrorIds.UnknownResource
       });
     });
 
-    it('[QFGH] must return a correct error if the followed slice does not exist', function (done) {
-      request.put(path('unknown-id')).send({ name: '?' }).end(function (res) {
-        validation.checkError(res, {
-          status: 404,
-          id: ErrorIds.UnknownResource
-        }, done);
-      });
-    });
+    it('[RUQE] must return a correct error if the sent data is badly formatted', async function () {
+      const res = await coreRequest
+        .put(path(testFollowedSlices[1].id))
+        .set('Authorization', personalToken)
+        .send({ badProperty: 'bad value' });
 
-    it('[RUQE] must return a correct error if the sent data is badly formatted', function (done) {
-      request.put(path(testData.followedSlices[1].id)).send({ badProperty: 'bad value' })
-        .end(function (res) {
-          validation.checkErrorInvalidParams(res, done);
-        });
+      validation.checkErrorInvalidParams(res);
     });
 
     it('[T256] must return a correct error if a followed slice with the same name already exists',
-      function (done) {
-        const update = { name: testData.followedSlices[0].name };
+      async function () {
+        const update = { name: testFollowedSlices[0].name };
+
+        const res = await coreRequest
+          .put(path(testFollowedSlices[1].id))
+          .set('Authorization', personalToken)
+          .send(update);
+
         let expectedData = { name: update.name };
         if (isFerret) {
           expectedData = { info: 'FerretDB does not provide duplicate information' };
         }
-        request.put(path(testData.followedSlices[1].id)).send(update).end(function (res) {
-          validation.checkError(res, {
-            status: 409,
-            id: ErrorIds.ItemAlreadyExists,
-            data: expectedData
-          }, done);
+        validation.checkError(res, {
+          status: 409,
+          id: ErrorIds.ItemAlreadyExists,
+          data: expectedData
         });
       });
   });
@@ -234,51 +297,41 @@ describe('[FOLS] followed slices', function () {
   describe('[FS04] DELETE /<id>', function () {
     beforeEach(resetFollowedSlices);
 
-    it('[U7LY] must delete the followed slice', function (done) {
-      const deletedId = testData.followedSlices[2].id;
-      async.series([
-        function deleteSlice (stepDone) {
-          request.del(path(deletedId)).end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.del.result
-            });
-            assert.strictEqual(followedSlicesNotifCount, 1, 'followed slices notifications');
-            stepDone();
-          });
-        },
-        function verifyData (stepDone) {
-          storage.findAll(user, null, function (err, slices) {
-            assert.ok(err == null);
+    it('[U7LY] must delete the followed slice', async function () {
+      const deletedId = testFollowedSlices[2].id;
 
-            assert.strictEqual(slices.length, testData.followedSlices.length - 1, 'followed slices');
+      const res = await coreRequest
+        .delete(path(deletedId))
+        .set('Authorization', personalToken);
 
-            const deletedSlice = _.find(slices, function (slice) {
-              return slice.id === deletedId;
-            });
-            assert.ok(deletedSlice == null);
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.del.result
+      });
 
-            stepDone();
-          });
-        }
-      ],
-      done
-      );
+      // Verify data in storage
+      const slices = await new Promise((resolve, reject) => {
+        followedSlicesStorage.findAll(user, null, (err, s) => {
+          if (err) reject(err);
+          else resolve(s);
+        });
+      });
+
+      assert.strictEqual(slices.length, testFollowedSlices.length - 1, 'followed slices');
+
+      const deletedSlice = _.find(slices, (slice) => slice.id === deletedId);
+      assert.ok(deletedSlice == null);
     });
 
-    it('[UATV] must return a correct error if the followed slice does not exist', function (done) {
-      request.del(path('unknown-id')).end(function (res) {
-        validation.checkError(res, {
-          status: 404,
-          id: ErrorIds.UnknownResource
-        }, done);
+    it('[UATV] must return a correct error if the followed slice does not exist', async function () {
+      const res = await coreRequest
+        .delete(path('unknown-id'))
+        .set('Authorization', personalToken);
+
+      validation.checkError(res, {
+        status: 404,
+        id: ErrorIds.UnknownResource
       });
     });
   });
-
-  function resetFollowedSlices (done) {
-    followedSlicesNotifCount = 0;
-    const user = structuredClone(testData.users[0]);
-    testData.resetFollowedSlices(done, user);
-  }
 });

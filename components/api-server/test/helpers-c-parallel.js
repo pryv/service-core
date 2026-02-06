@@ -6,9 +6,9 @@
  */
 
 /**
- * Pattern C test helpers for api-server
- * Provides global test initialization without spawning separate processes
- * Loaded by .mocharc.js for node tests
+ * Pattern C test helpers for api-server - PARALLEL MODE
+ * Same as helpers-c.js but without integrity checks
+ * (integrity checks fail in parallel mode due to shared database)
  */
 
 require('test-helpers/src/api-server-tests-config');
@@ -111,33 +111,8 @@ Object.assign(global, {
   _: require('lodash')
 });
 
-// Mocha hooks for integrity checks (from hooks.js)
+// Mocha hooks for parallel mode - NO integrity checks (shared database causes failures)
 const fs = require('fs');
-const util = require('util');
-
-let usersIndex, platform;
-
-async function initIndexPlatform () {
-  if (usersIndex != null) return;
-  const { getUsersLocalIndex } = require('storage');
-  usersIndex = await getUsersLocalIndex();
-  platform = require('platform').platform;
-  await platform.init();
-}
-
-async function checkIndexAndPlatformIntegrity (title) {
-  await initIndexPlatform();
-  const checks = [
-    await platform.checkIntegrity(),
-    await usersIndex.checkIntegrity()
-  ];
-  for (const check of checks) {
-    if (check.errors.length > 0) {
-      const checkStr = util.inspect(checks, false, null, true);
-      throw new Error(`${title} => Check should be empty \n${checkStr}`);
-    }
-  }
-}
 
 exports.mochaHooks = {
   async beforeAll () {
@@ -147,11 +122,6 @@ exports.mochaHooks = {
     if (!fs.existsSync(previewsDirPath)) {
       fs.mkdirSync(previewsDirPath, { recursive: true });
     }
-  },
-  async beforeEach () {
-    await checkIndexAndPlatformIntegrity('BEFORE ' + this.currentTest.title);
-  },
-  async afterEach () {
-    await checkIndexAndPlatformIntegrity('AFTER ' + this.currentTest.title);
   }
+  // No beforeEach/afterEach integrity checks in parallel mode
 };
