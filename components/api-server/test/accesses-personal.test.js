@@ -118,7 +118,7 @@ describe('[ACSF] accesses (personal)', function () {
   });
 
   async function resetAccesses () {
-    // Drop collection and recreate with original data
+    // dropCollection with useUserId filters by user - parallel safe
     await new Promise((resolve) => {
       accessStorage.dropCollection(user, () => resolve());
     });

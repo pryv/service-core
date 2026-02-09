@@ -8,15 +8,15 @@
 const path = require('path');
 
 const testHelpers = require('test-helpers');
-const InstanceManager = testHelpers.InstanceManager;
+const DynamicInstanceManager = testHelpers.DynamicInstanceManager;
 const { getConfigUnsafe } = require('@pryv/boiler');
 
 /**
  * Overrides common test dependencies with server-specific config settings.
+ * Uses DynamicInstanceManager for parallel test execution support.
  */
 const deps = module.exports = testHelpers.dependencies;
 deps.settings = getConfigUnsafe(true).get();
-deps.instanceManager = new InstanceManager({
-  serverFilePath: path.join(__dirname, '/../../bin/server'),
-  axonMessaging: deps.settings.axonMessaging
+deps.instanceManager = new DynamicInstanceManager({
+  serverFilePath: path.join(__dirname, '/../../bin/server')
 });

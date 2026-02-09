@@ -27,8 +27,12 @@ function getLog () {
   return logger;
 }
 
-// Base port for dynamic allocation (starting high to avoid conflicts)
-let nextPort = 9100;
+// Base port for dynamic allocation
+// Use random starting point to avoid conflicts between parallel test processes
+// Range: 10000-50000 (avoiding well-known ports and ephemeral port range)
+const BASE_PORT_MIN = 10000;
+const BASE_PORT_MAX = 50000;
+let nextPort = BASE_PORT_MIN + Math.floor(Math.random() * (BASE_PORT_MAX - BASE_PORT_MIN));
 
 /**
  * Allocates a free port for testing
@@ -89,10 +93,10 @@ async function allocatePorts (count) {
 
 /**
  * Resets the port allocator (useful for test setup)
- * @param {number} basePort - Starting port number
+ * @param {number} basePort - Starting port number (defaults to random in range)
  */
-function reset (basePort = 4000) {
-  nextPort = basePort;
+function reset (basePort) {
+  nextPort = basePort || (BASE_PORT_MIN + Math.floor(Math.random() * (BASE_PORT_MAX - BASE_PORT_MIN)));
 }
 
 module.exports = {

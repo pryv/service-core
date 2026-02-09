@@ -132,20 +132,26 @@ function DynamicInstanceManager (config, options = {}) {
       settingsCopy.logs.console.active = false;
     }
 
-    // Stop existing server if running
-    if (isRunning()) {
-      try {
-        self.stop();
-      } catch (err) {
-        return callback(err);
-      }
-    }
-
     // Allocate ports asynchronously
     (async () => {
       try {
-        const [httpPort, axonPort] = await portAllocator.allocatePorts(2);
-        allocatedHttpPort = httpPort;
+        // Stop existing server if running and wait for it
+        if (isRunning()) {
+          await self.stopAsync();
+        }
+
+        // Reuse existing ports if already allocated, otherwise allocate new ones
+        let httpPort, axonPort;
+        if (allocatedHttpPort && allocatedAxonPort) {
+          httpPort = allocatedHttpPort;
+          axonPort = allocatedAxonPort;
+          logger.debug(`Reusing ports: HTTP ${httpPort}, axon ${axonPort}`);
+        } else {
+          [httpPort, axonPort] = await portAllocator.allocatePorts(2);
+          allocatedHttpPort = httpPort;
+          allocatedAxonPort = axonPort;
+          logger.debug(`Allocated new ports: HTTP ${httpPort}, axon ${axonPort}`);
+        }
 
         // Configure HTTP
         settingsCopy.http = settingsCopy.http || {};
@@ -179,14 +185,13 @@ function DynamicInstanceManager (config, options = {}) {
    * Restart the server with the same settings
    */
   this.restart = function (callback) {
-    if (isRunning()) {
-      try {
-        this.stop();
-      } catch (err) {
-        return callback(err);
-      }
+    const self = this;
+    if (!serverSettings) {
+      return callback(new Error('Cannot restart: server was never started with ensureStarted'));
     }
-    this.start(callback);
+
+    // Use ensureStarted which properly handles stop and axon socket setup
+    self.ensureStarted(serverSettings, callback);
   };
 
   this.restartAsync = util.promisify(this.restart).bind(this);
@@ -262,27 +267,65 @@ function DynamicInstanceManager (config, options = {}) {
   };
 
   /**
-   * Stop the server
+   * Stop the server (async version that waits for process to exit)
+   * @param {Function} callback - Called when server has stopped
    */
-  this.stop = function () {
-    if (!isRunning()) { return; }
+  this.stop = function (callback) {
+    if (!isRunning()) {
+      if (callback) callback();
+      return;
+    }
     logger.debug('Stopping server instance...');
+
+    const proc = serverProcess;
+    serverProcess = null;
+    serverReady = false;
+
+    // Close axon socket
+    if (messagingSocket) {
+      try {
+        messagingSocket.close();
+      } catch (e) {
+        // Ignore
+      }
+      messagingSocket = null;
+    }
+
+    // Set up exit handler before killing
+    const onExit = () => {
+      logger.debug('Server instance stopped');
+      if (callback) callback();
+    };
+
+    proc.once('exit', onExit);
 
     // Try graceful shutdown first
     try {
-      serverProcess.kill('SIGTERM');
+      proc.kill('SIGTERM');
     } catch (e) {
       // If SIGTERM fails, try SIGKILL
       try {
-        serverProcess.kill('SIGKILL');
+        proc.kill('SIGKILL');
       } catch (e2) {
         logger.warn('Failed to kill the server instance');
+        proc.removeListener('exit', onExit);
+        if (callback) callback();
       }
     }
 
-    serverProcess = null;
-    serverReady = false;
+    // Timeout fallback - force kill after 5 seconds
+    setTimeout(() => {
+      if (proc && !proc.killed) {
+        try {
+          proc.kill('SIGKILL');
+        } catch (e) {
+          // Ignore
+        }
+      }
+    }, 5000);
   };
+
+  this.stopAsync = util.promisify(this.stop).bind(this);
 
   /**
    * Force kill (for cleanup after errors)

@@ -96,6 +96,12 @@ test-debug component *params:
     NODE_ENV=test COMPONENT={{component}} scripts/components-run \
         npx mocha -- --timeout 3600000 --reporter=spec --inspect-brk=40000 {{params}}
 
+# Run tests with parallel file execution (requires tests with isolated data)
+# Note: Tests sharing testData will fail - use only for parallel-ready tests
+test-parallel component *params:
+    NODE_ENV=test PATTERN_C_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
+        npx mocha --parallel --jobs 4 -- {{params}}
+
 # ⚠️  OBSOLETE?: Run tests for profiling
 test-profile component *params:
     NODE_ENV=test COMPONENT={{component}} scripts/components-run \

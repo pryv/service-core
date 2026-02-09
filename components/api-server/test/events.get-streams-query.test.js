@@ -56,7 +56,7 @@ const EVENTS = {
   f: { streamIds: ['F'] },
   t: { streamIds: ['T'] }
 };
-const EVENT4ID = {};
+// Note: EVENT4ID is created per-test in describe block to avoid parallel conflicts
 
 const ALL_ACCESSIBLE_STREAMS_LOCAL = [];
 const ALL_ACCESSIBLE_ROOT_STREAMS_LOCAL = [];
@@ -320,6 +320,9 @@ describe('[EGSQ] events.get streams query', function () {
 
   describe('[EQ06] GET /events with streams queries', function () {
     let mongoFixtures;
+    // EVENT4ID maps event IDs to their keys - must be per-test-run for parallel safety
+    const EVENT4ID = {};
+
     before(async function () {
       await initTests();
       await initCore();
@@ -363,10 +366,14 @@ describe('[EGSQ] events.get streams query', function () {
           }
         ]
       });
-      for (const [key, event] of Object.entries(EVENTS)) {
-        event.type = 'note/txt';
-        event.content = key;
-        event.id = cuid();
+      for (const [key, eventTemplate] of Object.entries(EVENTS)) {
+        // Create a copy to avoid modifying shared EVENTS object
+        const event = {
+          ...eventTemplate,
+          type: 'note/txt',
+          content: key,
+          id: cuid()
+        };
         EVENT4ID[event.id] = key;
         await user.event(event);
       }

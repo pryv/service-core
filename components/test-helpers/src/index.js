@@ -13,7 +13,8 @@ exports = module.exports = {
   child_process: require('./child_process'),
   syncPrimitives: require('./condition_variable'),
   databaseFixture: require('./databaseFixture'),
-  portAllocator: require('./portAllocator')
+  portAllocator: require('./portAllocator'),
+  parallelTestHelper: require('./parallelTestHelper')
 };
 // NOTE: Pattern C helpers (helpers-c.js) is NOT exported here due to circular dependency.
 // Load it directly via: require('test-helpers/src/helpers-c')

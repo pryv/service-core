@@ -47,7 +47,8 @@ describe('[FG5R] Events of system streams', () => {
   }
 
   async function createUser () {
-    user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
+    // Use cuid for unique username to avoid parallel test conflicts
+    user = await mongoFixtures.user('evtdef_' + cuid.slug(), {
       insurancenumber: charlatan.Number.number(4),
       phoneNumber: charlatan.Lorem.characters(3)
     });

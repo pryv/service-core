@@ -86,9 +86,9 @@ describe('[FOLS] followed slices', function () {
   });
 
   async function resetFollowedSlices () {
-    // Drop collection fully to ensure indexes are recreated
+    // removeAll filters by userId - parallel safe (unlike dropCollectionFully which drops entire collection)
     await new Promise((resolve) => {
-      followedSlicesStorage.dropCollectionFully(user, () => resolve());
+      followedSlicesStorage.removeAll(user, () => resolve());
     });
     // Insert test data
     await new Promise((resolve, reject) => {

@@ -67,8 +67,9 @@ describe('[PGTD] DELETE /users/:username', () => {
     influx = produceInfluxConnection(app.config);
     influxRepository = new InfluxRepository(influx);
     usersRepository = await getUsersRepository();
-    username1 = charlatan.Internet.userName();
-    username2 = charlatan.Internet.userName();
+    // Use cuid() for unique usernames to avoid parallel test conflicts
+    username1 = 'testdel1_' + cuid.slug();
+    username2 = 'testdel2_' + cuid.slug();
     authKey = config.get('auth:adminAccessKey');
     mall = await getMall();
   });
