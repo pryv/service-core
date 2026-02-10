@@ -25,6 +25,10 @@ const { promisify } = require('util');
 const { getMall } = require('mall');
 const cache = require('cache');
 const { MESSAGES } = require('cache/src/synchro');
+const { mkdtemp } = require('node:fs/promises');
+const { join } = require('node:path');
+const { tmpdir } = require('node:os');
+
 let app;
 let authKey;
 let username1; // fixtures reuse the username for userId
@@ -430,7 +434,9 @@ async function initiateUserWithData (userId) {
   });
   await user.session(cuid());
   if (!isOpenSource) { user.webhook({ id: cuid() }, cuid()); }
-  const filePath = `test-file-${userId}`;
+  const tempDir = join(tmpdir(), 'service-core-tests');
+  await mkdtemp(tempDir);
+  const filePath = join(tempDir, `test-file-${userId}`);
   fs.writeFileSync(filePath, 'Just some text');
   const attachmentItem = {
     fileName: 'sample-file.txt',

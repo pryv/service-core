@@ -96,11 +96,17 @@ test-debug component *params:
     NODE_ENV=test COMPONENT={{component}} scripts/components-run \
         npx mocha -- --timeout 3600000 --reporter=spec --inspect-brk=40000 {{params}}
 
-# Run tests with parallel file execution (excludes Pattern A tests that can't parallelize)
-# Uses .mocharc-parallel.js which excludes tests using shared testData
+# Run tests with parallel file execution (excludes tests that can't parallelize)
+# Uses MOCHA_PARALLEL=1 to enable parallel mode in .mocharc.js
 test-parallel component *params:
-    NODE_ENV=test PATTERN_C_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
-        npx mocha -- --config .mocharc-parallel.js {{params}}
+    NODE_ENV=test PATTERN_C_PARALLEL=1 MOCHA_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
+        npx mocha -- {{params}}
+
+# Run only non-parallel tests (tests excluded from parallel mode)
+# Use after test-parallel to run the remaining tests sequentially
+test-non-parallel component *params:
+    NODE_ENV=test MOCHA_NON_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
+        npx mocha -- {{params}}
 
 # ⚠️  OBSOLETE?: Run tests for profiling
 test-profile component *params:
