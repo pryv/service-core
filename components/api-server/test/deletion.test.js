@@ -333,7 +333,8 @@ describe('[PGTD] DELETE /users/:username', () => {
     });
   });
   describe('[DL03] User - Create - Delete - Create - Login', function () {
-    const usernamex = charlatan.Internet.userName().replace('_', '-') + 'x';
+    // Use cuid for unique username to avoid parallel test conflicts
+    const usernamex = 'testdelx' + cuid.slug().toLowerCase();
     it('[JBZM] should be able to recreate this user, and login', async function () {
       nock(regUrl)
         .post('/users/validate', () => {

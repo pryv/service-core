@@ -6,34 +6,40 @@
  */
 
 /**
- * Mocha configuration for parallel Pattern C tests
- * These tests use supertest without binding to real ports
+ * Mocha configuration for api-server PARALLEL tests
+ *
+ * This configuration excludes test files that cannot run in parallel:
+ * - Pattern A tests that use shared testData (server.ensureStarted pattern)
+ * - Tests that require server restarts
+ * - Tests that use WebSocket connections
+ *
+ * Run with: PATTERN_C_PARALLEL=1 npx mocha --config .mocharc-parallel.js
  */
 module.exports = {
   exit: true,
   slow: 20,
-  timeout: 10000,
+  timeout: 30000,
   ui: 'bdd',
   diff: true,
   reporter: 'dot',
   require: 'test-helpers/src/helpers-c.js',
+  spec: 'test/**/*.test.js',
   parallel: true,
-  jobs: 4,
-  // Only include Pattern C test files that are safe for parallel execution
-  spec: [
-    'test/accesses-app.test.js',
-    'test/accesses-personal.test.js',
-    'test/events-mutiple-streamIds.test.js',
-    'test/events.get-streams-query.test.js',
-    'test/followed-slices.test.js',
-    'test/permissions-create-only.test.js',
-    'test/permissions-forcedStreams.test.js',
-    'test/permissions-none.test.js',
-    'test/permissions-selfRevoke.test.js',
-    'test/permissions-tags.test.js',
-    'test/profile-app.test.js',
-    'test/profile-personal.test.js',
-    'test/service-info.test.js',
-    'test/webhooks.test.js'
+  // Exclude Pattern A tests (use testData with real HTTP server)
+  ignore: [
+    // Pattern A tests using testData with shared users
+    'test/account.test.js',
+    'test/events.test.js',
+    'test/login.test.js',
+    'test/permissions.test.js',
+    'test/streams.test.js',
+    // Tests requiring server restarts or special config
+    'test/system.test.js',
+    // Tests using WebSocket/raw HTTP
+    'test/sockets.test.js',
+    'test/root.test.js',
+    'test/result-chunk-streaming.test.js',
+    // Pattern A test designed for parallel but conflicts with mocha workers
+    'test/login-parallel.test.js'
   ]
 };

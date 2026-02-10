@@ -30,7 +30,8 @@ describe('[SYSS] System streams', function () {
   let user;
 
   async function createUser () {
-    user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
+    // Use cuid for unique username to avoid parallel test conflicts
+    user = await mongoFixtures.user('strds' + cuid.slug().toLowerCase(), {
       insurancenumber: charlatan.Number.number(4),
       phoneNumber: charlatan.Lorem.characters(3)
     });

@@ -41,7 +41,8 @@ describe('[AD01] Accesses with account streams', function () {
   let validation;
 
   async function createUser () {
-    user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
+    // Use cuid for unique username to avoid parallel test conflicts
+    user = await mongoFixtures.user('acsds' + cuid.slug().toLowerCase(), {
       insurancenumber: charlatan.Number.number(4),
       phoneNumber: charlatan.Lorem.characters(3)
     });

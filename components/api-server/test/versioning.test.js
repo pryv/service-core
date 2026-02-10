@@ -8,6 +8,7 @@
 const async = require('async');
 const _ = require('lodash');
 const charlatan = require('charlatan');
+const cuid = require('cuid');
 const assert = require('node:assert');
 
 const helpers = require('./helpers');
@@ -591,7 +592,8 @@ describe('[VERS] Versioning', function () {
     }
     function generateRegisterBody () {
       return {
-        username: charlatan.Lorem.characters(7),
+        // Use cuid for unique username to avoid parallel test conflicts
+        username: 'vers' + cuid.slug().toLowerCase(),
         password: charlatan.Lorem.characters(7),
         email: charlatan.Internet.email(),
         appId: charlatan.Lorem.characters(7),

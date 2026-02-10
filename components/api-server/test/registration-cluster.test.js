@@ -10,6 +10,7 @@ const { promisify } = require('util');
 const _ = require('lodash');
 const nock = require('nock');
 const charlatan = require('charlatan');
+const cuid = require('cuid');
 const supertest = require('supertest');
 
 const helpers = require('./helpers');
@@ -29,7 +30,8 @@ const { ApiEndpoint } = require('utils');
 function defaults () {
   return {
     appId: 'pryv-test',
-    username: charlatan.Lorem.characters(7),
+    // Use cuid for unique username to avoid parallel test conflicts
+    username: 'regc' + cuid.slug().toLowerCase(),
     email: charlatan.Internet.email(),
     password: 'abcdefgh',
     invitationToken: 'enjoy',

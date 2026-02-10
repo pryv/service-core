@@ -389,4 +389,35 @@ describe('[STRP] streams (Pattern C)', function () {
       assert.strictEqual(res.body.error.id, ErrorIds.UnknownResource);
     });
   });
+
+  describe('[STP05] Sibling name conflicts', function () {
+    let parentStreamId, childName;
+
+    before(async function () {
+      // Create a parent stream
+      parentStreamId = 'parent-' + cuid();
+      childName = 'Unique Child Name ' + cuid();
+
+      await coreRequest
+        .post(basePath)
+        .set('Authorization', token)
+        .send({ id: parentStreamId, name: 'Parent Stream' });
+
+      // Create first child
+      await coreRequest
+        .post(basePath)
+        .set('Authorization', token)
+        .send({ id: 'first-child-' + cuid(), name: childName, parentId: parentStreamId });
+    });
+
+    it('[PNRS] must fail if a sibling stream with the same name already exists', async function () {
+      const res = await coreRequest
+        .post(basePath)
+        .set('Authorization', token)
+        .send({ name: childName, parentId: parentStreamId });
+
+      assert.strictEqual(res.status, 409);
+      assert.strictEqual(res.body.error.id, ErrorIds.ItemAlreadyExists);
+    });
+  });
 });

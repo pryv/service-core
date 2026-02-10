@@ -63,7 +63,8 @@ describe('[BMM2] registration: DNS-less', () => {
   describe('[RD01] POST /users', () => {
     function generateRegisterBody () {
       return {
-        username: charlatan.Lorem.characters(7),
+        // Use cuid for unique username to avoid parallel test conflicts
+        username: 'regd' + cuid.slug().toLowerCase(),
         password: charlatan.Lorem.characters(7),
         email: charlatan.Internet.email(),
         appId: charlatan.Lorem.characters(7),
@@ -230,7 +231,8 @@ describe('[BMM2] registration: DNS-less', () => {
     describe('[RD11] When providing an indexed value that is neither a number nor a string', () => {
       function generateInvalidBodyWith (incorrectValue) {
         return {
-          username: charlatan.Lorem.characters(7),
+          // Use cuid for unique username to avoid parallel test conflicts
+          username: 'regdi' + cuid.slug().toLowerCase(),
           password: charlatan.Lorem.characters(7),
           appId: charlatan.Lorem.characters(7),
           email: charlatan.Internet.email(),
