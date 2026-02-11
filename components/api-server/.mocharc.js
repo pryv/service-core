@@ -6,41 +6,19 @@
  */
 
 const { createConfig } = require('../../.mocharc.js');
+const glob = require('glob');
 
-// Tests that cannot run in parallel due to shared state or special requirements
+/**
+ * Naming conventions for test files:
+ * - *-2convert.test.js : Extracted Pattern A tests, ready for Pattern C conversion (non-parallel)
+ * - *-seq.test.js      : Tests that must run sequentially (non-parallel)
+ * - *.test.js (other)  : Parallel-safe tests
+ */
+
+// Auto-detect non-parallel tests by naming convention
 const nonParallelTests = [
-  // Pattern A tests using testData with shared users
-  'test/account.test.js',
-  'test/events.test.js',
-  'test/login.test.js',
-  'test/permissions.test.js',
-  'test/streams.test.js',
-  // Tests requiring server restarts or special config
-  'test/system.test.js',
-  // Tests using WebSocket/raw HTTP
-  'test/sockets.test.js',
-  'test/root.test.js',
-  'test/result-chunk-streaming.test.js',
-  // Tests with parallel conflicts
-  'test/login-parallel.test.js',
-  'test/streams-patternc.test.js',
-  'test/events-patternc.test.js',
-  'test/events-mutiple-streamIds.test.js',
-  'test/events.get-streams-query.test.js',
-  'test/deletion.test.js',
-  'test/webhooks.test.js',
-  'test/accesses-personal.test.js',
-  'test/permissions-selfRevoke.test.js',
-  'test/profile-personal.test.js',
-  'test/service-info.test.js',
-  'test/acceptance/accesses.default-streams.test.js',
-  'test/acceptance/events.default-streams.test.js',
-  'test/acceptance/account.default-streams.test.js',
-  'test/acceptance/events-audit.test.js',
-  'test/acceptance/prefix-backward-compatibility.test.js',
-  'test/acceptance/streams.default-streams.test.js',
-  'test/acceptance/accesses.test.js',
-  'test/profile-app.test.js'
+  ...glob.sync('test/**/*-2convert.test.js'),
+  ...glob.sync('test/**/*-seq.test.js')
 ];
 
 module.exports = createConfig({

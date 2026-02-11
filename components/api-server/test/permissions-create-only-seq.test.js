@@ -7,9 +7,13 @@
 
 /* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, charlatan */
 
+const path = require('path');
 const helpers = require('./helpers');
-const testData = helpers.data;
 const settings = structuredClone(helpers.dependencies.settings);
+
+// Test attachment for upload tests
+const attachmentPath = path.resolve(__dirname, '../../test-helpers/src/data/attachments/document.pdf');
+const attachmentFilename = 'document.pdf';
 
 const { getConfig } = require('@pryv/boiler');
 let isAuditActive = true;
@@ -489,8 +493,7 @@ describe('[PCRO] permissions create-only level', () => {
             streamId: streamCreateOnlyId,
             type: 'picture/attached'
           }))
-          .attach('document', testData.attachments.document.path,
-            testData.attachments.document.filename);
+          .attach('document', attachmentPath, attachmentFilename);
         assert.strictEqual(res.status, 201);
         eventId = res.body.event.id;
         fileId = res.body.event.fileId;
@@ -521,8 +524,7 @@ describe('[PCRO] permissions create-only level', () => {
           const res = await coreRequest
             .post(reqPath(eventId))
             .set('Authorization', createOnlyToken)
-            .attach('document', testData.attachments.document.path,
-              testData.attachments.document.filename + '-2');
+            .attach('document', attachmentPath, attachmentFilename + '-2');
           assert.strictEqual(res.status, 403);
         });
       });

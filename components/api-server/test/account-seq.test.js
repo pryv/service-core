@@ -66,31 +66,9 @@ describe('[ACCO] account', function () {
     ], done);
   });
 
-  describe('[AC01] GET /', function () {
-    beforeEach(async () => { await resetUsers(); });
-
-    it('[PHSB] must return the user\'s account details', function (done) {
-      request.get(basePath).end(function (res) {
-        const expected = structuredClone(user);
-        delete expected.id;
-        delete expected.password;
-        delete expected.storageUsed;
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          body: { account: expected },
-          sanitizeFn: cleanUpDetails,
-          sanitizeTarget: 'account'
-        }, done);
-      });
-    });
-
-    it('[K5EI] must be forbidden to non-personal accesses', function (done) {
-      request.get(basePath, testData.accesses[4].token).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
-    });
-  });
+  // [AC01] GET / - Tests moved to account-2convert.test.js:
+  // - [PHSB] must return the user's account details
+  // - [K5EI] must be forbidden to non-personal accesses
 
   describe('[AC02] PUT /', function () {
     beforeEach(async () => { await resetUsers(); });
@@ -174,19 +152,7 @@ describe('[ACCO] account', function () {
         ], done);
       });
 
-    it('[AT0V] must return a correct error if the sent data is badly formatted', function (done) {
-      request.put(basePath).send({ badProperty: 'bad value' }).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
-    });
-
-    it('[NZE2] must be forbidden to non-personal accesses', function (done) {
-      request
-        .put(basePath, testData.accesses[4].token)
-        .send({ language: 'zh' }).end(function (res) {
-          validation.checkErrorForbidden(res, done);
-        });
-    });
+    // [AT0V], [NZE2] - Tests moved to account-2convert.test.js
   });
 
   let filesystemBlockSize = 1024;
@@ -395,30 +361,7 @@ describe('[ACCO] account', function () {
       ], done);
     });
 
-    it('[STWH] must return an error if the given old password does not match', function (done) {
-      const data = {
-        oldPassword: 'bad-password',
-        newPassword: 'Dr0ws$4p'
-      };
-      request.post(path).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation
-        }, done);
-      });
-    });
-
-    it('[8I1N] must return a correct error if the sent data is badly formatted', function (done) {
-      request.post(path).send({ badProperty: 'bad value' }).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
-    });
-
-    it('[J5VH] must be forbidden to non-personal accesses', function (done) {
-      request.post(path, testData.accesses[4].token).send({ some: 'data' }).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
-    });
+    // [STWH], [8I1N], [J5VH] - Tests moved to account-2convert.test.js
 
     describe('[APWD] When password rules are enabled', function () {
       const settings = _.merge(structuredClone(helpers.dependencies.settings), helpers.passwordRules.settingsOverride);
@@ -720,61 +663,7 @@ describe('[ACCO] account', function () {
       ], done);
     });
 
-    it('[J6GB] "request" must return an error if the requesting app is not trusted', function (done) {
-      request.post(requestPath).send({ appId: 'bad-app-id' })
-        .unset('authorization')
-        .set('Origin', 'http://test.pryv.local')
-        .end(function (res) {
-          validation.checkError(res, {
-            status: 401,
-            id: ErrorIds.InvalidCredentials
-          }, done);
-        });
-    });
-
-    it('[5K14] "request" must return an error if sent data is badly formatted', function (done) {
-      request.post(requestPath).send({ badParam: '?' })
-        .unset('authorization')
-        .end(function (res) {
-          validation.checkErrorInvalidParams(res, done);
-        });
-    });
-
-    it('[PKBP] "reset" must return an error if the reset token is invalid/expired', function (done) {
-      const data = Object.assign({}, authData, {
-        resetToken: 'bad-token',
-        newPassword: '>-=(♥️)=-<'
-      });
-      request.post(resetPath).send(data)
-        .unset('authorization')
-        .set('Origin', 'http://test.pryv.local')
-        .end(function (res) {
-          validation.checkError(res, {
-            status: 401,
-            id: ErrorIds.InvalidAccessToken
-          }, done);
-        });
-    });
-
-    it('[ON9V] "reset" must return an error if the requesting app is not trusted', function (done) {
-      request.post(resetPath).send({ resetToken: '?', newPassword: '123456', appId: 'bad-app-id' })
-        .unset('authorization')
-        .set('Origin', 'http://test.pryv.local')
-        .end(function (res) {
-          validation.checkError(res, {
-            status: 401,
-            id: ErrorIds.InvalidCredentials
-          }, done);
-        });
-    });
-
-    it('[T5L9] "reset" must return an error if sent data is badly formatted', function (done) {
-      request.post(resetPath).send({ badParam: '?' })
-        .unset('authorization')
-        .end(function (res) {
-          validation.checkErrorInvalidParams(res, done);
-        });
-    });
+    // [J6GB], [5K14], [PKBP], [ON9V], [T5L9] - Tests moved to account-2convert.test.js
 
     it('[VGRT] "reset" must return an error if the reset token was already used', function (done) {
       let resetToken = null;

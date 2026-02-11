@@ -221,58 +221,7 @@ describe('[AUTH] auth', function () {
         });
     });
 
-    it('[L7JQ] must return a correct error when the local credentials are missing or invalid', function (done) {
-      const data = Object.assign({}, authData, {
-        username: authData.username,
-        password: 'bad-password'
-      });
-      request
-        .post(path(data.username))
-        .set('Origin', trustedOrigin)
-        .send(data)
-        .end(function (err, res) {
-          assert.ok(err != null);
-          validation.checkError(res, {
-            status: 401,
-            id: ErrorIds.InvalidCredentials
-          });
-          assert.ok(res.body.token == null);
-          done();
-        });
-    });
-
-    it('[4AQR] must return a correct error if the app id is missing or untrusted', function (done) {
-      const data = Object.assign({}, authData, { appId: 'untrusted-app-id' });
-      request
-        .post(path(data.username))
-        .set('Origin', trustedOrigin)
-        .send(data)
-        .end(function (err, res) {
-          assert.ok(err != null);
-          validation.checkError(res, {
-            status: 401,
-            id: ErrorIds.InvalidCredentials
-          });
-          assert.ok(res.body.token == null);
-          done();
-        });
-    });
-
-    it('[NDB0] must return a correct error if the origin is missing or does not match the app id', function (done) {
-      request
-        .post(path(authData.username))
-        .set('Origin', 'http://mismatching.origin')
-        .send(authData)
-        .end(function (err, res) {
-          assert.ok(err != null);
-          validation.checkError(res, {
-            status: 401,
-            id: ErrorIds.InvalidCredentials
-          });
-          assert.ok(res.body.token == null);
-          done();
-        });
-    });
+    // [L7JQ], [4AQR], [NDB0] - Tests moved to login-2convert.test.js
 
     // concurrent requests
     it('[FMJH] must support concurrent login request, saving only the last token that is written in the storage', function (done) {
