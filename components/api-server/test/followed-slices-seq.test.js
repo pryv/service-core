@@ -21,7 +21,8 @@ describe('[FOLS] followed slices', function () {
   let isFerret = null;
   let followedSlicesStorage;
   let user;
-  let testFollowedSlices;
+  let fixtureUser;
+  let testFollowedSlicesData;
 
   function path (id) {
     return basePath + '/' + id;
@@ -45,7 +46,7 @@ describe('[FOLS] followed slices', function () {
     followedSlicesStorage = new storage.user.FollowedSlices(database);
 
     // Create user
-    const fixtureUser = await fixtures.user(username);
+    fixtureUser = await fixtures.user(username);
 
     // Create personal access and session
     await fixtureUser.access({
@@ -62,8 +63,8 @@ describe('[FOLS] followed slices', function () {
       permissions: [{ streamId: '*', level: 'contribute' }]
     });
 
-    // Define test followed slices
-    testFollowedSlices = [
+    // Define test followed slices data
+    testFollowedSlicesData = [
       {
         id: `slice0_${username}`,
         name: 'Slice Zero',
@@ -85,18 +86,21 @@ describe('[FOLS] followed slices', function () {
     ];
   });
 
+  // Create test followed slices using fixtures
+  async function createTestFollowedSlices () {
+    for (const sliceData of testFollowedSlicesData) {
+      await fixtureUser.followedSlice(sliceData);
+    }
+  }
+
+  // Clean and recreate followed slices for tests that modify data
   async function resetFollowedSlices () {
-    // removeAll filters by userId - parallel safe (unlike dropCollectionFully which drops entire collection)
+    // removeAll filters by userId - safe
     await new Promise((resolve) => {
       followedSlicesStorage.removeAll(user, () => resolve());
     });
-    // Insert test data
-    await new Promise((resolve, reject) => {
-      followedSlicesStorage.insertMany(user, structuredClone(testFollowedSlices), (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    // Recreate test followed slices using fixtures
+    await createTestFollowedSlices();
   }
 
   describe('[FS01] GET /', function () {
@@ -111,7 +115,7 @@ describe('[FOLS] followed slices', function () {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
-          body: { followedSlices: _.sortBy(testFollowedSlices, 'name') }
+          body: { followedSlices: _.sortBy(testFollowedSlicesData, 'name') }
         });
       });
 
@@ -184,8 +188,8 @@ describe('[FOLS] followed slices', function () {
       async function () {
         const data = {
           name: 'New name',
-          url: testFollowedSlices[0].url,
-          accessToken: testFollowedSlices[0].accessToken
+          url: testFollowedSlicesData[0].url,
+          accessToken: testFollowedSlicesData[0].accessToken
         };
 
         const res = await coreRequest
@@ -207,7 +211,7 @@ describe('[FOLS] followed slices', function () {
     it('[RYNB] must return a correct error if a followed slice with the same name already exists',
       async function () {
         const data = {
-          name: testFollowedSlices[0].name,
+          name: testFollowedSlicesData[0].name,
           url: 'https://hippolyte.pryv.io/',
           accessToken: 'some-token'
         };
@@ -233,7 +237,7 @@ describe('[FOLS] followed slices', function () {
     beforeEach(resetFollowedSlices);
 
     it('[LM08] must modify the followed slice with the sent data', async function () {
-      const original = testFollowedSlices[0];
+      const original = testFollowedSlicesData[0];
       const newSliceData = {
         name: 'Updated Slice 0'
       };
@@ -266,7 +270,7 @@ describe('[FOLS] followed slices', function () {
 
     it('[RUQE] must return a correct error if the sent data is badly formatted', async function () {
       const res = await coreRequest
-        .put(path(testFollowedSlices[1].id))
+        .put(path(testFollowedSlicesData[1].id))
         .set('Authorization', personalToken)
         .send({ badProperty: 'bad value' });
 
@@ -275,10 +279,10 @@ describe('[FOLS] followed slices', function () {
 
     it('[T256] must return a correct error if a followed slice with the same name already exists',
       async function () {
-        const update = { name: testFollowedSlices[0].name };
+        const update = { name: testFollowedSlicesData[0].name };
 
         const res = await coreRequest
-          .put(path(testFollowedSlices[1].id))
+          .put(path(testFollowedSlicesData[1].id))
           .set('Authorization', personalToken)
           .send(update);
 
@@ -298,7 +302,7 @@ describe('[FOLS] followed slices', function () {
     beforeEach(resetFollowedSlices);
 
     it('[U7LY] must delete the followed slice', async function () {
-      const deletedId = testFollowedSlices[2].id;
+      const deletedId = testFollowedSlicesData[2].id;
 
       const res = await coreRequest
         .delete(path(deletedId))
@@ -317,7 +321,7 @@ describe('[FOLS] followed slices', function () {
         });
       });
 
-      assert.strictEqual(slices.length, testFollowedSlices.length - 1, 'followed slices');
+      assert.strictEqual(slices.length, testFollowedSlicesData.length - 1, 'followed slices');
 
       const deletedSlice = _.find(slices, (slice) => slice.id === deletedId);
       assert.ok(deletedSlice == null);

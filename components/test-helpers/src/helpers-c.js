@@ -10,7 +10,7 @@
  * Loaded by .mocharc.js for node tests
  *
  * Environment variables for test modes:
- * - PATTERN_C_PARALLEL=1       : Disable integrity checks (for parallel execution)
+ * - DISABLE_INTEGRITY_CHECK=1  : Disable integrity checks (for parallel execution)
  * - PATTERN_C_AUDIT=1          : Enable audit functionality
  * - PATTERN_C_BACKWARD_COMPAT=1: Enable backward compatibility prefix
  */
@@ -18,7 +18,7 @@
 const base = require('./helpers-base');
 
 // Test mode flags from environment
-const isParallelMode = process.env.PATTERN_C_PARALLEL === '1';
+const isParallelMode = process.env.DISABLE_INTEGRITY_CHECK === '1';
 const isAuditMode = process.env.PATTERN_C_AUDIT === '1';
 const isBackwardCompatMode = process.env.PATTERN_C_BACKWARD_COMPAT === '1';
 

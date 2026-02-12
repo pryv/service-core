@@ -63,7 +63,12 @@ describe('[AUTH] auth', function () {
       return basePath(username) + '/login';
     }
 
-    before(testData.resetAccesses);
+    // Clean up accesses created by login tests after each test
+    afterEach(function (done) {
+      const accessStorage = helpers.dependencies.storage.user.accesses;
+      // Remove personal accesses created during login (by appId/name)
+      accessStorage.removeOne(user, { type: 'personal', name: authData.appId }, done);
+    });
 
     it('[2CV5] must authenticate the given credentials, open a session and return the access token', function (done) {
       async.series([

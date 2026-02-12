@@ -99,7 +99,7 @@ test-debug component *params:
 # Run tests with parallel file execution (excludes tests that can't parallelize)
 # Uses MOCHA_PARALLEL=1 to enable parallel mode in .mocharc.js
 test-parallel component *params:
-    NODE_ENV=test PATTERN_C_PARALLEL=1 MOCHA_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
+    NODE_ENV=test DISABLE_INTEGRITY_CHECK=1 MOCHA_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
         npx mocha -- {{params}}
 
 # Run only non-parallel tests (tests excluded from parallel mode)

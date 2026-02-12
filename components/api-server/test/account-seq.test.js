@@ -52,7 +52,6 @@ describe('[ACCO] account', function () {
   before(function (done) {
     async.series([
       testData.resetUsers,
-      testData.resetAccesses,
       testData.resetEvents,
       testData.resetProfile,
       testData.resetFollowedSlices,
@@ -64,6 +63,12 @@ describe('[ACCO] account', function () {
         request.login(user, stepDone);
       }
     ], done);
+  });
+
+  // Clean up the personal access created by login
+  after(function (done) {
+    const accessStorage = helpers.dependencies.storage.user.accesses;
+    accessStorage.removeOne(user, { token: request.token }, done);
   });
 
   // [AC01] GET / - Tests moved to account-2convert.test.js:
@@ -180,7 +185,6 @@ describe('[ACCO] account', function () {
     before(function (done) {
       async.series([
         testData.resetUsers,
-        testData.resetAccesses,
         testData.resetEvents,
         testData.resetProfile,
         testData.resetFollowedSlices,
@@ -194,6 +198,12 @@ describe('[ACCO] account', function () {
       ], done);
     });
     before(getFilesystemBlockSize);
+
+    // Clean up the personal access created by login in this describe block
+    after(function (done) {
+      const accessStorage = helpers.dependencies.storage.user.accesses;
+      accessStorage.removeOne(user, { token: request.token }, done);
+    });
 
     // when checking files storage size we allow a small 1k error margin to account for folder sizes
 

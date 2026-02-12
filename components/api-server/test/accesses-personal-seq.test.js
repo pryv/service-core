@@ -7,13 +7,10 @@
 
 /* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, charlatan */
 
-const timestamp = require('unix-timestamp');
 const { ErrorIds } = require('errors');
 const validation = require('./helpers/validation');
 const methodsSchema = require('../src/schema/accessesMethods');
-const { ApiEndpoint } = require('utils');
 const { getConfig } = require('@pryv/boiler');
-const { integrity } = require('business');
 const { getMall } = require('mall');
 const storage = require('storage');
 
@@ -27,18 +24,16 @@ describe('[ACSF] accesses (personal)', function () {
   let isFerret = false;
   let mall = null;
   let accessStorage;
+  let sessionStorage;
   let user;
   let fixtures;
+  let fixtureUser;
   // eslint-disable-next-line no-unused-vars
   let stream0, stream1, stream2, stream3;
-  let testAccesses;
+  let personalAccess, appAccess, sharedAccess;
 
   function path (id) {
     return basePath + '/' + id;
-  }
-
-  function buildApiEndpoint (uname, token) {
-    return ApiEndpoint.build(uname, token);
   }
 
   before(async function () {
@@ -59,9 +54,10 @@ describe('[ACSF] accesses (personal)', function () {
 
     const database = await storage.getDatabase();
     accessStorage = new storage.user.Accesses(database);
+    sessionStorage = new storage.Sessions(database);
 
     // Create user with streams
-    const fixtureUser = await fixtures.user(username);
+    fixtureUser = await fixtures.user(username);
 
     // Create streams
     stream0 = await fixtureUser.stream({ id: `stream0_${username}`, name: 'Stream 0' });
@@ -69,9 +65,12 @@ describe('[ACSF] accesses (personal)', function () {
     stream1 = await fixtureUser.stream({ id: `stream1_${username}`, name: 'Stream 1' });
     stream2 = await fixtureUser.stream({ id: `stream2_${username}`, name: 'Stream 2' });
     stream3 = await fixtureUser.stream({ id: `stream3_${username}`, name: 'Stream 3' });
+  });
 
+  // Create all test accesses using fixtures
+  async function createTestAccesses () {
     // Create personal access
-    const personalAccess = await fixtureUser.access({
+    personalAccess = await fixtureUser.access({
       type: 'personal',
       token: personalToken
     });
@@ -79,7 +78,7 @@ describe('[ACSF] accesses (personal)', function () {
     sessionAccessId = personalAccess.attrs.id;
 
     // Create app access
-    await fixtureUser.access({
+    appAccess = await fixtureUser.access({
       id: `app_${username}`,
       type: 'app',
       name: 'test-3rd-party-app-id',
@@ -89,96 +88,30 @@ describe('[ACSF] accesses (personal)', function () {
     });
 
     // Create shared access
-    await fixtureUser.access({
+    sharedAccess = await fixtureUser.access({
       id: `shared_${username}`,
       type: 'shared',
       name: 'read all',
       token: sharedToken,
       permissions: [{ streamId: '*', level: 'read' }]
     });
+  }
 
-    // Store test accesses for reference
-    testAccesses = {
-      app: {
-        id: `app_${username}`,
-        token: appToken,
-        name: 'test-3rd-party-app-id',
-        type: 'app',
-        deviceName: "Calvin's Amazing Transmogrifier",
-        permissions: [{ streamId: stream0.attrs.id, level: 'contribute' }]
-      },
-      shared: {
-        id: `shared_${username}`,
-        token: sharedToken,
-        name: 'read all',
-        type: 'shared',
-        permissions: [{ streamId: '*', level: 'read' }]
-      }
-    };
-  });
-
+  // Clean and recreate accesses for tests that modify data
   async function resetAccesses () {
     // dropCollection with useUserId filters by user - parallel safe
-    await new Promise((resolve) => {
-      accessStorage.dropCollection(user, () => resolve());
-    });
-
-    // Insert test accesses
-    const accesses = [
-      {
-        id: sessionAccessId,
-        token: personalToken,
-        name: 'pryv-test',
-        type: 'personal',
-        created: timestamp.now(),
-        createdBy: 'test',
-        modified: timestamp.now(),
-        modifiedBy: 'test',
-        lastUsed: 0,
-        calls: {}
-      },
-      {
-        id: `shared_${username}`,
-        token: sharedToken,
-        apiEndpoint: buildApiEndpoint(username, sharedToken),
-        name: 'read all',
-        type: 'shared',
-        permissions: [{ streamId: '*', level: 'read' }],
-        created: timestamp.now(),
-        createdBy: 'test',
-        modified: timestamp.now(),
-        modifiedBy: 'test',
-        lastUsed: 0,
-        deviceName: null,
-        calls: {}
-      },
-      {
-        id: `app_${username}`,
-        token: appToken,
-        apiEndpoint: buildApiEndpoint(username, appToken),
-        name: 'test-3rd-party-app-id',
-        type: 'app',
-        deviceName: "Calvin's Amazing Transmogrifier",
-        permissions: [{ streamId: stream0.attrs.id, level: 'contribute' }],
-        created: timestamp.now(),
-        createdBy: 'test',
-        modified: timestamp.now(),
-        modifiedBy: 'test',
-        lastUsed: 0,
-        calls: {}
-      }
-    ];
-
-    for (const access of accesses) {
-      integrity.accesses.set(access);
-    }
-
     await new Promise((resolve, reject) => {
-      accessStorage.insertMany(user, accesses, (err) => {
-        if (err) reject(err);
+      accessStorage.dropCollection(user, (err) => {
+        if (err && !/ns not found/.test(err.message)) reject(err);
         else resolve();
       });
     });
+    // Also remove session for this user (session _id is the personalToken)
+    await new Promise((resolve) => {
+      sessionStorage.destroy(personalToken, () => resolve());
+    });
+    // Recreate test accesses using fixtures
+    await createTestAccesses();
   }
 
   describe('[AS01] GET /', function () {
@@ -264,7 +197,7 @@ describe('[ACSF] accesses (personal)', function () {
 
     it('[865I] must accept two app accesses with the same name (app ids) but different device names', async function () {
       const data = {
-        name: testAccesses.app.name,
+        name: appAccess.attrs.name,
         type: 'app',
         deviceName: "Calvin's Fantastic Cerebral Enhance-o-tron",
         permissions: [{ streamId: stream0.attrs.id, level: 'read' }]
@@ -421,7 +354,7 @@ describe('[ACSF] accesses (personal)', function () {
 
     it('[GZTH] must return an error if an shared access with the same name already exists', async function () {
       const data = {
-        name: testAccesses.shared.name,
+        name: sharedAccess.attrs.name,
         permissions: []
       };
 
@@ -430,7 +363,7 @@ describe('[ACSF] accesses (personal)', function () {
         .set('Authorization', personalToken)
         .send(data);
 
-      let expectedData = { type: 'shared', name: testAccesses.shared.name, deviceName: null };
+      let expectedData = { type: 'shared', name: sharedAccess.attrs.name, deviceName: null };
       if (isFerret) {
         expectedData = { info: 'FerretDB does not provide duplicate information' };
       }
@@ -444,16 +377,16 @@ describe('[ACSF] accesses (personal)', function () {
 
     it('[4HO6] must return an error if an "app" access with the same name (app id) and device name already exists', async function () {
       const data = {
-        type: testAccesses.app.type,
-        name: testAccesses.app.name,
-        deviceName: testAccesses.app.deviceName,
+        type: appAccess.attrs.type,
+        name: appAccess.attrs.name,
+        deviceName: appAccess.attrs.deviceName,
         permissions: []
       };
 
       let expectedData = {
-        type: testAccesses.app.type,
-        name: testAccesses.app.name,
-        deviceName: testAccesses.app.deviceName
+        type: appAccess.attrs.type,
+        name: appAccess.attrs.name,
+        deviceName: appAccess.attrs.deviceName
       };
       if (isFerret) {
         expectedData = { info: 'FerretDB does not provide duplicate information' };
@@ -579,7 +512,7 @@ describe('[ACSF] accesses (personal)', function () {
   });
 
   describe('[AS05] POST /check-app', function () {
-    before(resetAccesses);
+    beforeEach(resetAccesses);
 
     function getCheckAppPath () {
       return basePath + '/check-app';
@@ -644,8 +577,8 @@ describe('[ACSF] accesses (personal)', function () {
 
     it('[9QNK] must return the existing app access if matching', async function () {
       const data = {
-        requestingAppId: testAccesses.app.name,
-        deviceName: testAccesses.app.deviceName,
+        requestingAppId: appAccess.attrs.name,
+        deviceName: appAccess.attrs.deviceName,
         requestedPermissions: [
           { streamId: stream0.attrs.id, level: 'contribute', defaultName: "This permission is the same as the existing access's" }
         ]
@@ -663,8 +596,8 @@ describe('[ACSF] accesses (personal)', function () {
 
     it('[IF33] must also return the token of the existing mismatching access if any', async function () {
       const data = {
-        requestingAppId: testAccesses.app.name,
-        deviceName: testAccesses.app.deviceName,
+        requestingAppId: appAccess.attrs.name,
+        deviceName: appAccess.attrs.deviceName,
         requestedPermissions: [
           { name: 'foobar', streamId: stream0.attrs.id, level: 'manage', defaultName: "This permission differs from the existing access' permissions" }
         ]
@@ -702,7 +635,7 @@ describe('[ACSF] accesses (personal)', function () {
 
     it('[MTY1] must return an error if the sent data is badly formatted', async function () {
       const data = {
-        requestingAppId: testAccesses.app.name,
+        requestingAppId: appAccess.attrs.name,
         requestedPermissions: [
           { streamId: stream0.attrs.id, level: 'manage', RATATA: 'But-but-but this property has nothing to do here!!!' }
         ]
@@ -718,7 +651,7 @@ describe('[ACSF] accesses (personal)', function () {
 
     it('[U5KD] must be forbidden to non-personal accesses', async function () {
       const data = {
-        requestingAppId: testAccesses.app.name,
+        requestingAppId: appAccess.attrs.name,
         requestedPermissions: []
       };
 

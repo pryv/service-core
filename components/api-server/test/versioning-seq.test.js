@@ -53,7 +53,6 @@ describe('[VERS] Versioning', function () {
     settings.versioning.forceKeepHistory = true;
     async.series([
       testData.resetUsers,
-      testData.resetAccesses,
       testData.resetStreams,
       testData.resetEvents,
       server.ensureStarted.bind(server, settings),
@@ -65,12 +64,17 @@ describe('[VERS] Versioning', function () {
   });
 
   after(function (done) {
-    const settings = structuredClone(helpers.dependencies.settings);
-    settings.versioning = {
-      forceKeepHistory: false,
-      deletionMode: 'keep-nothing'
-    };
-    server.ensureStarted(settings, done);
+    // Clean up the personal access created by login
+    const accessStorage = helpers.dependencies.storage.user.accesses;
+    accessStorage.removeOne(user, { token: request.token }, (err) => {
+      if (err) return done(err);
+      const settings = structuredClone(helpers.dependencies.settings);
+      settings.versioning = {
+        forceKeepHistory: false,
+        deletionMode: 'keep-nothing'
+      };
+      server.ensureStarted(settings, done);
+    });
   });
 
   const eventWithHistory = testData.events[16];

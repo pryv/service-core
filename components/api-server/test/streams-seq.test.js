@@ -48,7 +48,6 @@ describe('[STRE] streams', function () {
   before(function (done) {
     async.series([
       testData.resetUsers,
-      testData.resetAccesses,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
         request = helpers.request(server.url);
@@ -63,6 +62,12 @@ describe('[STRE] streams', function () {
           });
       }
     ], done);
+  });
+
+  // Clean up the personal access created by login
+  after(function (done) {
+    const accessStorage = helpers.dependencies.storage.user.accesses;
+    accessStorage.removeOne(user, { token: request.token }, done);
   });
 
   describe('[ST01] GET /', function () {

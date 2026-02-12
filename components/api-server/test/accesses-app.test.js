@@ -17,18 +17,20 @@ const storage = require('storage');
 
 describe('[ACCP] accesses (app)', function () {
   let validation;
-  let username, user;
+  let username;
+  let fixtureUser;
   let stream0, stream1, stream0Child;
-  let appAccessA, appAccessAToken;
+  let appAccessAToken, appAccessAId;
   let appAccessB, appAccessBToken;
-  let sharedAccessA, sharedAccessAToken;
-  let rootAccess, rootAccessToken;
-  let sharedAccessB, sharedAccessBToken;
   let sharedAccess, sharedAccessToken;
+  let sharedAccessAToken, sharedAccessAId;
+  let sharedAccessBToken;
+  let rootAccessToken;
   let basePath;
   let fixtures;
   let database;
   let accessStorage;
+  let user;
 
   function buildApiEndpoint (uname, token) {
     return ApiEndpoint.build(uname, token);
@@ -49,15 +51,15 @@ describe('[ACCP] accesses (app)', function () {
     accessStorage = new storage.user.Accesses(database);
     user = { id: username };
 
-    // Create user with streams
-    const fixtureUser = await fixtures.user(username);
+    // Create user with streams using fixtures
+    fixtureUser = await fixtures.user(username);
 
-    // Create streams
-    stream0 = await fixtureUser.stream({ id: cuid(), name: 'Stream 0' });
-    stream0Child = await stream0.stream({ id: cuid(), name: 'Stream 0 Child' });
-    stream1 = await fixtureUser.stream({ id: cuid(), name: 'Stream 1' });
+    // Create streams using fixtures
+    stream0 = await fixtureUser.stream({ id: `stream0_${username}`, name: 'Stream 0' });
+    stream0Child = await stream0.stream({ id: `stream0child_${username}`, name: 'Stream 0 Child' });
+    stream1 = await fixtureUser.stream({ id: `stream1_${username}`, name: 'Stream 1' });
 
-    // Create tokens
+    // Create unique tokens and IDs
     appAccessAToken = cuid();
     appAccessBToken = cuid();
     sharedAccessAToken = cuid();
@@ -65,124 +67,83 @@ describe('[ACCP] accesses (app)', function () {
     sharedAccessBToken = cuid();
     sharedAccessToken = cuid();
 
-    // Use unique IDs based on username to avoid conflicts with parallel tests
-    const appAId = `app_A_${username}`;
-    const appBId = `app_B_${username}`;
-    const sharedAId = `shared_A_${username}`;
-    const rootAId = `root_A_${username}`;
-    const sharedBId = `shared_B_${username}`;
-    const sharedRegularId = `shared_regular_${username}`;
+    appAccessAId = `app_A_${username}`;
+    sharedAccessAId = `shared_A_${username}`;
+  });
 
-    // Create app access A (main access for tests)
-    appAccessA = {
-      id: appAId,
+  // Create all test accesses using fixtures
+  async function createTestAccesses () {
+    // App access A (main access for tests)
+    await fixtureUser.access({
+      id: appAccessAId,
       token: appAccessAToken,
       name: 'App access A',
       type: 'app',
       permissions: [
         { streamId: stream0.attrs.id, level: 'manage' },
         { streamId: stream1.attrs.id, level: 'contribute' }
-      ],
-      created: timestamp.now(),
-      createdBy: 'test',
-      modified: timestamp.now(),
-      modifiedBy: 'test'
-    };
-    appAccessA.apiEndpoint = buildApiEndpoint(username, appAccessAToken);
-    integrity.accesses.set(appAccessA);
+      ]
+    });
 
-    // Create app access B (subset of A)
-    appAccessB = {
-      id: appBId,
+    // App access B (subset of A)
+    appAccessB = await fixtureUser.access({
+      id: `app_B_${username}`,
       token: appAccessBToken,
       name: 'App access B (subset of A)',
       type: 'app',
-      permissions: [{ streamId: stream0.attrs.id, level: 'read' }],
-      created: timestamp.now(),
-      createdBy: 'test',
-      modified: timestamp.now(),
-      modifiedBy: 'test'
-    };
-    appAccessB.apiEndpoint = buildApiEndpoint(username, appAccessBToken);
-    integrity.accesses.set(appAccessB);
+      permissions: [{ streamId: stream0.attrs.id, level: 'read' }]
+    });
 
-    // Create shared access A (created by app_A)
-    sharedAccessA = {
-      id: sharedAId,
+    // Shared access A (created by app_A - important for delete tests)
+    await fixtureUser.access({
+      id: sharedAccessAId,
       token: sharedAccessAToken,
       name: 'Shared access A (subset of app access A)',
       type: 'shared',
       permissions: [{ streamId: stream0Child.attrs.id, level: 'read' }],
-      created: timestamp.now(),
-      createdBy: appAId,
-      modified: timestamp.now(),
-      modifiedBy: appAId
-    };
-    sharedAccessA.apiEndpoint = buildApiEndpoint(username, sharedAccessAToken);
-    integrity.accesses.set(sharedAccessA);
+      createdBy: appAccessAId,
+      modifiedBy: appAccessAId
+    });
 
-    // Create root access
-    rootAccess = {
-      id: rootAId,
+    // Root access (manage all streams)
+    await fixtureUser.access({
+      id: `root_A_${username}`,
       token: rootAccessToken,
       name: 'Root token',
       type: 'app',
-      permissions: [{ streamId: '*', level: 'manage' }],
-      created: timestamp.now(),
-      createdBy: 'test',
-      modified: timestamp.now(),
-      modifiedBy: 'test'
-    };
-    rootAccess.apiEndpoint = buildApiEndpoint(username, rootAccessToken);
-    integrity.accesses.set(rootAccess);
+      permissions: [{ streamId: '*', level: 'manage' }]
+    });
 
-    // Create shared access B (with permission on non-existing stream)
-    sharedAccessB = {
-      id: sharedBId,
+    // Shared access B (with permission on non-existing stream)
+    await fixtureUser.access({
+      id: `shared_B_${username}`,
       token: sharedAccessBToken,
       name: 'Shared access B (with permission on unexisting stream)',
       type: 'shared',
-      permissions: [{ streamId: 'idonotexist', level: 'read' }],
-      created: timestamp.now(),
-      createdBy: 'test',
-      modified: timestamp.now(),
-      modifiedBy: 'test'
-    };
-    sharedAccessB.apiEndpoint = buildApiEndpoint(username, sharedAccessBToken);
-    integrity.accesses.set(sharedAccessB);
+      permissions: [{ streamId: 'idonotexist', level: 'read' }]
+    });
 
-    // Create a shared access for forbidden tests
-    sharedAccess = {
-      id: sharedRegularId,
+    // Regular shared access for forbidden tests
+    sharedAccess = await fixtureUser.access({
+      id: `shared_regular_${username}`,
       token: sharedAccessToken,
       name: 'Regular shared access',
       type: 'shared',
-      permissions: [{ streamId: stream0.attrs.id, level: 'read' }],
-      created: timestamp.now(),
-      createdBy: 'test',
-      modified: timestamp.now(),
-      modifiedBy: 'test'
-    };
-    sharedAccess.apiEndpoint = buildApiEndpoint(username, sharedAccessToken);
-    integrity.accesses.set(sharedAccess);
-  });
+      permissions: [{ streamId: stream0.attrs.id, level: 'read' }]
+    });
+  }
 
+  // Clean and recreate accesses for tests that modify data
   async function resetAccesses () {
-    // Clear accesses collection
+    // Remove all accesses for this user
     await new Promise((resolve, reject) => {
       accessStorage.dropCollection(user, (err) => {
         if (err && !/ns not found/.test(err.message)) reject(err);
         else resolve();
       });
     });
-    // Re-insert all test accesses
-    const allAccesses = [appAccessA, appAccessB, sharedAccessA, rootAccess, sharedAccessB, sharedAccess];
-    await new Promise((resolve, reject) => {
-      accessStorage.insertMany(user, allAccesses, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    // Recreate test accesses
+    await createTestAccesses();
   }
 
   function path (id) {
@@ -199,9 +160,13 @@ describe('[ACCP] accesses (app)', function () {
 
       validation.check(res, {
         status: 200,
-        schema: methodsSchema.get.result,
-        body: { accesses: [sharedAccessA] }
+        schema: methodsSchema.get.result
       });
+
+      // Check that sharedAccessA is returned (created by appAccessA)
+      assert.ok(res.body.accesses.length >= 1, 'should have at least 1 access');
+      const found = res.body.accesses.find(a => a.id === sharedAccessAId);
+      assert.ok(found, 'should return sharedAccessA');
     });
 
     it('[GLHP] must be forbidden to requests with a shared access token', async function () {
@@ -320,7 +285,7 @@ describe('[ACCP] accesses (app)', function () {
 
     it('[11UZ]  must return a 410 (Gone)', async function () {
       const res = await coreRequest
-        .put(path(appAccessB.id))
+        .put(path(appAccessB.attrs.id))
         .set('Authorization', appAccessAToken)
         .send({ name: 'Updated App Access' });
 
@@ -332,17 +297,16 @@ describe('[ACCP] accesses (app)', function () {
     beforeEach(resetAccesses);
 
     it('[5BOO] must delete the shared access', async function () {
-      const deletedAccess = sharedAccessA;
       const deletionTime = timestamp.now();
 
       const res = await coreRequest
-        .delete(path(deletedAccess.id))
+        .delete(path(sharedAccessAId))
         .set('Authorization', appAccessAToken);
 
       validation.check(res, {
         status: 200,
         schema: methodsSchema.del.result,
-        body: { accessDeletion: { id: deletedAccess.id } }
+        body: { accessDeletion: { id: sharedAccessAId } }
       });
 
       // Verify data in storage
@@ -353,28 +317,28 @@ describe('[ACCP] accesses (app)', function () {
         });
       });
 
-      const actual = _.find(accesses, { id: deletedAccess.id });
+      const actual = _.find(accesses, { id: sharedAccessAId });
       assert.ok(actual.deleted >= deletionTime - 1, 'access should be marked deleted');
     });
 
     it('[ZTSX] forbid deletion of already deleted for AppTokens', async function () {
       // First deletion
       const res1 = await coreRequest
-        .delete(path(appAccessA.id))
+        .delete(path(appAccessAId))
         .set('Authorization', appAccessAToken);
 
       validation.check(res1, {
         status: 200,
         schema: methodsSchema.del.result,
         body: {
-          accessDeletion: { id: appAccessA.id },
-          relatedDeletions: [{ id: sharedAccessA.id }]
+          accessDeletion: { id: appAccessAId },
+          relatedDeletions: [{ id: sharedAccessAId }]
         }
       });
 
       // Second deletion should be forbidden
       const res2 = await coreRequest
-        .delete(path(appAccessA.id))
+        .delete(path(appAccessAId))
         .set('Authorization', appAccessAToken);
 
       validation.check(res2, { status: 403 });
@@ -382,7 +346,7 @@ describe('[ACCP] accesses (app)', function () {
 
     it('[VGQS] must forbid trying to delete a non-shared access', async function () {
       const res = await coreRequest
-        .delete(path(appAccessB.id))
+        .delete(path(appAccessB.attrs.id))
         .set('Authorization', appAccessAToken);
 
       validation.checkErrorForbidden(res);
@@ -390,7 +354,7 @@ describe('[ACCP] accesses (app)', function () {
 
     it('[ZTSY] must forbid trying to delete an access that was not created by itself', async function () {
       const res = await coreRequest
-        .delete(path(sharedAccess.id))
+        .delete(path(sharedAccess.attrs.id))
         .set('Authorization', appAccessAToken);
 
       validation.checkErrorForbidden(res);

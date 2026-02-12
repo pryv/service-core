@@ -43,6 +43,7 @@ describe('[PSLF] permissions selfRevoke', function () {
       await user.access({
         type: 'app',
         token: appToken,
+        name: `test-app-${username}`, // Unique name per user
         permissions: [
           {
             streamId,
@@ -156,6 +157,7 @@ describe('[PSLF] permissions selfRevoke', function () {
         const data = {
           type: access.type || 'app',
           token: access.token,
+          name: `test-access-${i}-${username}`, // Unique name per user
           permissions: [{
             streamId: '*',
             level: 'contribute'

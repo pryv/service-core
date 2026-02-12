@@ -71,14 +71,15 @@ class UserContext {
   }
 
   /**
-   * @returns {{ sessions: Sessions; accesses: any; webhooks: any; }}
+   * @returns {{ sessions: Sessions; accesses: any; webhooks: any; followedSlices: any; }}
    */
   initStorage () {
     const db = this.context.db;
     return {
       sessions: new Sessions(db),
       accesses: new storage.user.Accesses(db),
-      webhooks: new storage.user.Webhooks(db)
+      webhooks: new storage.user.Webhooks(db),
+      followedSlices: new storage.user.FollowedSlices(db)
     };
   }
 }
@@ -300,6 +301,15 @@ class FixtureUser extends FixtureItem {
   }
 
   /**
+   * @param {{}} attrs
+   * @returns {Promise<FixtureFollowedSlice>}
+   */
+  followedSlice (attrs = {}) {
+    const fs = new FixtureFollowedSlice(this.context, attrs);
+    return this.dependents.addAndCreate(fs);
+  }
+
+  /**
    * Removes all resources belonging to the user, then creates them again,
    * according to the spec stored here.
    * @returns {Promise<any>}
@@ -488,6 +498,40 @@ class FixtureWebhook extends FixtureItem {
     return {
       id: generateId(),
       url: `https://${Charlatan.Internet.domainName()}/notifications`
+    };
+  }
+}
+
+class FixtureFollowedSlice extends FixtureItem {
+  /**
+   * Override to avoid adding created/modified fields
+   * @param {{}} attrs
+   * @returns {any}
+   */
+  attributes (attrs) {
+    return _.merge({
+      id: generateId()
+    }, this.fakeAttributes(), attrs);
+  }
+
+  /**
+   * @returns {Promise<any>}
+   */
+  async create () {
+    const storageItems = this.storage;
+    const user = this.context.user;
+    const attributes = this.attrs;
+    return await bluebird.fromCallback((cb) => storageItems.followedSlices.insertOne(user, attributes, cb));
+  }
+
+  /**
+   * @returns {{ name: string; url: string; accessToken: string; }}
+   */
+  fakeAttributes () {
+    return {
+      name: Charlatan.Name.name(),
+      url: `https://${Charlatan.Internet.domainName()}/`,
+      accessToken: Charlatan.Internet.deviceToken()
     };
   }
 }
