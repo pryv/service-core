@@ -40,6 +40,7 @@ describe('[DBSE] Database', () => {
       });
     });
     afterEach((done) => {
+      // Drop Collection is OK here as it's self created in this test.
       database.dropCollection(collectionInfo, (err) => {
         done(err);
       });

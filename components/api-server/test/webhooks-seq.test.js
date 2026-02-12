@@ -16,7 +16,7 @@ const methodsSchema = require('../src/schema/webhooksMethods');
 const HttpServer = require('business/test/acceptance/webhooks/support/httpServer');
 
 const { ErrorIds } = require('errors/src');
-const storage = require('test-helpers').dependencies.storage.user.webhooks;
+const webhooksStorage = require('test-helpers').dependencies.storage.user.webhooks;
 const { Webhook } = require('business').webhooks;
 
 describe('[WH01] webhooks', () => {
@@ -295,6 +295,11 @@ describe('[WH01] webhooks', () => {
 
     before(async () => {
       await mongoFixtures.clean();
+      // Drop collection fully to ensure unique indexes are recreated (required for duplicate detection)
+      // This is safe in -seq.test.js files which run sequentially
+      await new Promise((resolve) => {
+        webhooksStorage.dropCollectionFully({ id: 'dummy' }, () => resolve());
+      });
       username = cuid();
       personalAccessToken = cuid();
       appAccessId1 = cuid();
@@ -353,7 +358,7 @@ describe('[WH01] webhooks', () => {
           });
         });
         it('[XKLU] should save it to the storage', async () => {
-          const findOneAsync = promisify((u, q, o, cb) => storage.findOne(u, q, o, cb));
+          const findOneAsync = promisify((u, q, o, cb) => webhooksStorage.findOne(u, q, o, cb));
           const storedWebhook = await findOneAsync({ id: username }, { id: { $eq: webhook.id } }, {});
           assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
             validation.removeTrackingPropertiesForOne(webhook));
@@ -424,7 +429,7 @@ describe('[WH01] webhooks', () => {
           });
         });
         it('[UC6J] should save it to the storage', async () => {
-          const findOneAsync = promisify((u, q, o, cb) => storage.findOne(u, q, o, cb));
+          const findOneAsync = promisify((u, q, o, cb) => webhooksStorage.findOne(u, q, o, cb));
           const storedWebhook = await findOneAsync({ id: username }, { id: { $eq: webhook.id } }, {});
           assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
             validation.removeTrackingPropertiesForOne(webhook));
@@ -544,7 +549,7 @@ describe('[WH01] webhooks', () => {
             });
           });
           it('[JSOH] should apply the changes to the storage', async () => {
-            const findOneAsync = promisify((u, q, o, cb) => storage.findOne(u, q, o, cb));
+            const findOneAsync = promisify((u, q, o, cb) => webhooksStorage.findOne(u, q, o, cb));
             const storedWebhook = await findOneAsync({ id: username }, { id: { $eq: webhookId1 } }, {});
             assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
               validation.removeTrackingPropertiesForOne(webhook));
@@ -731,7 +736,7 @@ describe('[WH01] webhooks', () => {
         });
 
         it('[KA98] should delete it in the storage', async () => {
-          const findOneAsync = promisify((u, q, o, cb) => storage.findOne(u, q, o, cb));
+          const findOneAsync = promisify((u, q, o, cb) => webhooksStorage.findOne(u, q, o, cb));
           const deletedWebhook = await findOneAsync({ id: username }, { id: { $eq: webhookId1 } }, {});
           assert.ok(deletedWebhook == null);
         });

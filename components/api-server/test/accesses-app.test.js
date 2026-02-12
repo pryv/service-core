@@ -135,12 +135,9 @@ describe('[ACCP] accesses (app)', function () {
 
   // Clean and recreate accesses for tests that modify data
   async function resetAccesses () {
-    // Remove all accesses for this user
-    await new Promise((resolve, reject) => {
-      accessStorage.dropCollection(user, (err) => {
-        if (err && !/ns not found/.test(err.message)) reject(err);
-        else resolve();
-      });
+    // Remove all accesses for this user (uses deleteMany with userId filter - parallel safe)
+    await new Promise((resolve) => {
+      accessStorage.removeAll(user, () => resolve());
     });
     // Recreate test accesses
     await createTestAccesses();

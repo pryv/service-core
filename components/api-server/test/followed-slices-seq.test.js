@@ -95,9 +95,10 @@ describe('[FOLS] followed slices', function () {
 
   // Clean and recreate followed slices for tests that modify data
   async function resetFollowedSlices () {
-    // removeAll filters by userId - safe
+    // Use dropCollectionFully to ensure unique indexes are recreated (required for duplicate detection)
+    // This is safe in -seq.test.js files which run sequentially
     await new Promise((resolve) => {
-      followedSlicesStorage.removeAll(user, () => resolve());
+      followedSlicesStorage.dropCollectionFully(user, () => resolve());
     });
     // Recreate test followed slices using fixtures
     await createTestFollowedSlices();

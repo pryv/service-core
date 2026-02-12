@@ -326,27 +326,13 @@ class FixtureUser extends FixtureItem {
    * @returns {Promise<FixtureUser>}
    */
   async remove () {
-    const storageItems = this.storage;
     const username = this.context.userName;
-    const collections = [storageItems.accesses, storageItems.webhooks];
     const usersRepository = await getUsersRepository();
+    // Remove all dependents (streams, events, accesses, webhooks, followedSlices, sessions)
+    // Each fixture's remove() method handles its own cleanup
+    await this.dependents.all((fixtureItem) => fixtureItem.remove());
+    // Finally delete the user
     await usersRepository.deleteOne(this.context.user.id, username, true);
-    const removeSessions = await bluebird.fromCallback((cb) => storageItems.sessions.removeForUser(username, cb));
-    return await bluebird
-      .all([removeSessions])
-      .then(() => bluebird.map(collections, (coll) => this.safeRemoveColl(coll)));
-  }
-
-  /**
-   * @returns {Promise<void>}
-   */
-  async safeRemoveColl (collection) {
-    const user = this.context.user;
-    try {
-      await bluebird.fromCallback((cb) => collection.dropCollection(user, cb));
-    } catch (err) {
-      if (!/ns not found/.test(err.message)) { throw err; }
-    }
   }
 
   /**
@@ -402,6 +388,23 @@ class FixtureStream extends FixtureItem {
   }
 
   /**
+   * @returns {Promise<void>}
+   */
+  async remove () {
+    // First remove all dependents (child streams and events)
+    await this.dependents.all((fixtureItem) => fixtureItem.remove());
+    // Then remove this stream
+    const user = this.context.user;
+    if (mall == null) { mall = await getMall(); }
+    try {
+      await mall.streams.delete(user.id, this.attrs.id);
+    } catch (err) {
+      // Ignore "stream not found" errors
+      if (!err.message?.includes('unknown-resource')) throw err;
+    }
+  }
+
+  /**
    * @returns {{ id: string; name: any; parentId: string; }}
    */
   fakeAttributes () {
@@ -435,6 +438,21 @@ class FixtureEvent extends FixtureItem {
   }
 
   /**
+   * @returns {Promise<void>}
+   */
+  async remove () {
+    const user = this.context.user;
+    if (mall == null) { mall = await getMall(); }
+    try {
+      // mall.events.delete expects the event object
+      await mall.events.delete(user.id, this.attrs);
+    } catch (err) {
+      // Ignore "event not found" errors
+      if (!err.message?.includes('unknown-resource')) throw err;
+    }
+  }
+
+  /**
    * @returns {{ id: string; time: number; duration: number; type: any; tags: any[]; content: number; }}
    */
   fakeAttributes () {
@@ -460,6 +478,15 @@ class FixtureAccess extends FixtureItem {
     const user = this.context.user;
     const attributes = _.merge(this.fakeAttributes(), this.attrs);
     return await bluebird.fromCallback((cb) => storageItems.accesses.insertOne(user, attributes, cb));
+  }
+
+  /**
+   * @returns {Promise<void>}
+   */
+  async remove () {
+    const storageItems = this.storage;
+    const user = this.context.user;
+    await bluebird.fromCallback((cb) => storageItems.accesses.removeOne(user, { id: this.attrs.id }, cb));
   }
 
   /**
@@ -489,6 +516,15 @@ class FixtureWebhook extends FixtureItem {
     const attributes = this.attrs;
     const webhook = new Webhook(attributes).forStorage();
     return await bluebird.fromCallback((cb) => storageItems.webhooks.insertOne(user, webhook, cb));
+  }
+
+  /**
+   * @returns {Promise<void>}
+   */
+  async remove () {
+    const storageItems = this.storage;
+    const user = this.context.user;
+    await bluebird.fromCallback((cb) => storageItems.webhooks.delete(user, { id: this.attrs.id }, cb));
   }
 
   /**
@@ -525,6 +561,15 @@ class FixtureFollowedSlice extends FixtureItem {
   }
 
   /**
+   * @returns {Promise<void>}
+   */
+  async remove () {
+    const storageItems = this.storage;
+    const user = this.context.user;
+    await bluebird.fromCallback((cb) => storageItems.followedSlices.removeOne(user, { id: this.attrs.id }, cb));
+  }
+
+  /**
    * @returns {{ name: string; url: string; accessToken: string; }}
    */
   fakeAttributes () {
@@ -553,6 +598,16 @@ class FixtureSession extends FixtureItem {
     const user = this.context.user;
     const attributes = this.attrs;
     return await bluebird.fromCallback((cb) => storageItems.sessions.insertOne(user, attributes, cb));
+  }
+
+  /**
+   * @returns {Promise<void>}
+   */
+  async remove () {
+    const storageItems = this.storage;
+    // Session id is stored in attrs.id or attrs._id
+    const sessionId = this.attrs.id || this.attrs._id;
+    await bluebird.fromCallback((cb) => storageItems.sessions.destroy(sessionId, cb));
   }
 
   /**
@@ -620,6 +675,15 @@ class Sessions {
    */
   removeForUser (userName, cb) {
     this.db.deleteMany(this.collectionInfo, { 'data.username': userName }, cb);
+  }
+
+  /**
+   * @param {string} id
+   * @param {() => void} cb
+   * @returns {void}
+   */
+  destroy (id, cb) {
+    this.db.deleteOne(this.collectionInfo, { _id: id }, cb);
   }
 }
 

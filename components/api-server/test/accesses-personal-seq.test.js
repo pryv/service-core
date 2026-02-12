@@ -99,12 +99,9 @@ describe('[ACSF] accesses (personal)', function () {
 
   // Clean and recreate accesses for tests that modify data
   async function resetAccesses () {
-    // dropCollection with useUserId filters by user - parallel safe
-    await new Promise((resolve, reject) => {
-      accessStorage.dropCollection(user, (err) => {
-        if (err && !/ns not found/.test(err.message)) reject(err);
-        else resolve();
-      });
+    // Remove all accesses for this user (uses deleteMany with userId filter - parallel safe)
+    await new Promise((resolve) => {
+      accessStorage.removeAll(user, () => resolve());
     });
     // Also remove session for this user (session _id is the personalToken)
     await new Promise((resolve) => {
