@@ -25,7 +25,7 @@ const server = helpers.dependencies.instanceManager;
 const streamsMethodsSchema = require('../src/schema/streamsMethods');
 const eventsMethodsSchema = require('../src/schema/eventsMethods');
 const validation = helpers.validation;
-const testData = helpers.data;
+const testData = helpers.dynData({ prefix: 'sock' });
 const { integrity } = require('business');
 const { ConditionVariable } = require('test-helpers').syncPrimitives;
 
@@ -244,7 +244,7 @@ describe('[SK01] Socket.IO', function () {
 
     it('[TO6Z] must accept streamQuery as Javascript Object', function (done) {
       ioCons.con = connect(namespace, { auth: token });
-      ioCons.con.emit('events.get', { streams: { any: ['s_0_1'], all: ['s_8'] } }, function (err, res) {
+      ioCons.con.emit('events.get', { streams: { any: [testData.streams[0].children[1].id], all: [testData.streams[8].id] } }, function (err, res) {
         assert.ok(err == null);
         assert.ok(res.events != null);
         done();
@@ -482,6 +482,10 @@ describe('[SK01] Socket.IO', function () {
       };
       return new Promise((resolve) => conn.emit('events.create', attributes, resolve));
     }
+  });
+
+  after(async function () {
+    await testData.cleanup();
   });
 });
 

@@ -22,7 +22,7 @@ const server = helpers.dependencies.instanceManager;
 const methodsSchema = require('../src/schema/systemMethods');
 const validation = helpers.validation;
 const encryption = require('utils').encryption;
-const testData = helpers.data;
+const testData = helpers.dynData({ prefix: 'syst' });
 const { getUsersRepository } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -46,6 +46,7 @@ describe('[SYRO] system route', function () {
   });
   after(async () => {
     await mongoFixtures.clean();
+    await testData.cleanup();
     server.stop();
   });
 

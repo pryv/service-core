@@ -19,7 +19,7 @@ const ErrorIds = require('errors').ErrorIds;
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/accountMethods');
 const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
-const testData = helpers.data;
+const testData = helpers.dynData({ prefix: 'acct' });
 const { getUsersRepository } = require('business/src/users');
 const { getUserAccountStorage } = require('storage');
 const { getConfig } = require('@pryv/boiler');
@@ -69,6 +69,10 @@ describe('[ACCO] account', function () {
   after(function (done) {
     const accessStorage = helpers.dependencies.storage.user.accesses;
     accessStorage.removeOne(user, { token: request.token }, done);
+  });
+
+  after(async function () {
+    await testData.cleanup();
   });
 
   // [AC01] GET / - Tests moved to account-2convert.test.js:

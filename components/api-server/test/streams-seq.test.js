@@ -18,7 +18,7 @@ const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
 const methodsSchema = require('../src/schema/streamsMethods');
 
-const testData = helpers.data;
+const testData = helpers.dynData({ prefix: 'strm' });
 const treeUtils = require('utils').treeUtils;
 
 const { getMall } = require('mall');
@@ -68,6 +68,10 @@ describe('[STRE] streams', function () {
   after(function (done) {
     const accessStorage = helpers.dependencies.storage.user.accesses;
     accessStorage.removeOne(user, { token: request.token }, done);
+  });
+
+  after(async function () {
+    await testData.cleanup();
   });
 
   describe('[ST01] GET /', function () {
@@ -530,7 +534,7 @@ describe('[STRE] streams', function () {
     });
 
     it('[JT6G] must modify the stream with the sent data event if name and parentId sent are the same', function (done) {
-      request.get(basePath).query({ parentId: 's_2_1' }).end(function (resQ) {
+      request.get(basePath).query({ parentId: testData.streams[2].children[1].id }).end(function (resQ) {
         const stream = resQ.body.streams[0];
         const data = {
           name: stream.name,

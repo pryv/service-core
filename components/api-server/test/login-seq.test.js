@@ -18,7 +18,7 @@ const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
-const testData = helpers.data;
+const testData = helpers.dynData({ prefix: 'login' });
 const { UserRepositoryOptions } = require('business/src/users');
 const { getUserAccountStorage } = require('storage');
 const encryption = require('utils').encryption;
@@ -47,7 +47,12 @@ describe('[AUTH] auth', function () {
   });
 
   afterEach(function (done) {
+    // CLAUDE: check if this sessins.clearAll can have an impact on parallel tests.
     helpers.dependencies.storage.sessions.clearAll(done);
+  });
+
+  after(async function () {
+    await testData.cleanup();
   });
 
   const user = structuredClone(testData.users[0]);

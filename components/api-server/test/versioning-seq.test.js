@@ -16,7 +16,7 @@ const server = helpers.dependencies.instanceManager;
 const validation = helpers.validation;
 const eventsMethodsSchema = require('../src/schema/eventsMethods');
 const streamsMethodsSchema = require('../src/schema/streamsMethods');
-const testData = helpers.data;
+const testData = helpers.dynData({ prefix: 'vers' });
 const SystemStreamSerializer = require('business/src/system-streams/serializer');
 const { integrity } = require('business');
 const { getMall } = require('mall');
@@ -75,6 +75,10 @@ describe('[VERS] Versioning', function () {
       };
       server.ensureStarted(settings, done);
     });
+  });
+
+  after(async function () {
+    await testData.cleanup();
   });
 
   const eventWithHistory = testData.events[16];

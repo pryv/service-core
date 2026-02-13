@@ -21,7 +21,7 @@ const commonTests = helpers.commonTests;
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
 const methodsSchema = require('../src/schema/eventsMethods');
-const testData = helpers.data;
+const testData = helpers.dynData({ prefix: 'evnt' });
 const addCorrectAttachmentIds = testData.addCorrectAttachmentIds;
 
 const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
@@ -72,6 +72,10 @@ describe('[EVNT] events', function () {
           });
       }
     ], done);
+  });
+
+  after(async function () {
+    await testData.cleanup();
   });
 
   describe('[EV01] GET /', function () {
@@ -1341,7 +1345,7 @@ describe('[EVNT] events', function () {
 
     it('[8GSS] allows access at level=read', async () => {
       const request = supertest(server.url);
-      const access = _.find(testData.accesses, (v) => v.id === 'a_2');
+      const access = testData.accesses[2];
       const event = testData.events[0];
 
       const response = await request.get(path(event.id))

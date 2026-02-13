@@ -36,6 +36,12 @@ Object.defineProperty(exports, 'data', {
   }
 });
 
+Object.defineProperty(exports, 'dynData', {
+  get: function () {
+    return require('./dynData');
+  }
+});
+
 Object.defineProperty(exports, 'dependencies', {
   get: function () {
     return require('./dependencies');

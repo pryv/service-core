@@ -20,7 +20,7 @@ const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const validation = helpers.validation;
 const ErrorIds = require('errors').ErrorIds;
-const testData = helpers.data;
+const testData = helpers.dynData({ prefix: 'lgn2' });
 
 describe('[AUTH-2C] auth (to convert)', function () {
   this.timeout(5000);
@@ -38,6 +38,10 @@ describe('[AUTH-2C] auth (to convert)', function () {
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       testData.resetUsers
     ], done);
+  });
+
+  after(async function () {
+    await testData.cleanup();
   });
 
   const user = structuredClone(testData.users[0]);

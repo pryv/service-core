@@ -16,7 +16,7 @@ const helpers = require('./helpers');
 const treeUtils = require('utils').treeUtils;
 const server = helpers.dependencies.instanceManager;
 const validation = helpers.validation;
-const testData = helpers.data;
+const testData = helpers.dynData({ prefix: 'perm' });
 const { integrity } = require('business');
 const { getConfig } = require('@pryv/boiler');
 
@@ -51,6 +51,10 @@ describe('[ACCP] Access permissions', function () {
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) { request = helpers.request(server.url); stepDone(); }
     ], done);
+  });
+
+  after(async function () {
+    await testData.cleanup();
   });
 
   describe('[AP01] Events', function () {
@@ -188,7 +192,8 @@ describe('[ACCP] Access permissions', function () {
       request.get(basePath, token(1)).query({ state: 'all' }).end(async function (res) {
         const expectedStreamids = [testData.streams[0].id, testData.streams[1].id, testData.streams[2].children[0].id];
         if (isAuditActive) {
-          expectedStreamids.push(':_audit:access-a_1');
+          // Audit stream ID is based on access ID
+          expectedStreamids.push(':_audit:access-' + testData.accesses[1].id);
         }
         assert.ok(res.body.streams != null);
         assert.strictEqual(res.body.streams.length, expectedStreamids.length);
