@@ -25,7 +25,6 @@ const { promisify } = require('util');
 const { getMall } = require('mall');
 const cache = require('cache');
 const { MESSAGES } = require('cache/src/synchro');
-const { mkdtemp } = require('node:fs/promises');
 const { join } = require('node:path');
 const { tmpdir } = require('node:os');
 
@@ -435,7 +434,7 @@ async function initiateUserWithData (userId) {
   await user.session(cuid());
   if (!isOpenSource) { user.webhook({ id: cuid() }, cuid()); }
   const tempDir = join(tmpdir(), 'service-core-tests');
-  await mkdtemp(tempDir);
+  fs.mkdirSync(tempDir, { recursive: true });
   const filePath = join(tempDir, `test-file-${userId}`);
   fs.writeFileSync(filePath, 'Just some text');
   const attachmentItem = {

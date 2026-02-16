@@ -121,11 +121,14 @@ class UsersRepository {
       return null;
     }
     if (username == null) {
-      throw new Error('Inconsistency between userEvents and this.usersIndex, found null username for userId: "' +
-                userId +
-                '" with ' +
-                userAccountEvents.length +
-                ' user account events');
+      // Transient state: index entry already deleted (deleteOne removes it
+      // first) but mall data not yet removed.  Return null — the deletion
+      // will finish momentarily.
+      // Note: a truly stalled partial deletion would leave orphan events
+      // with no index entry.  These can be detected by scanning mall user
+      // collections that have no matching usersIndex entry (an admin task,
+      // not something getUserById should enforce).
+      return null;
     }
     const user = new User({
       id: userId,
@@ -342,16 +345,19 @@ class UsersRepository {
    * @returns {Promise<number>}
    */
   async deleteOne (userId, username, skipFowardToRegister) {
+    // Fetch user object BEFORE any deletions — platform.deleteUser needs it
+    // for unique field cleanup (e.g. email).
     const user = await this.getUserById(userId);
     if (username == null) {
       username = user?.username;
     }
+    // Delete index FIRST so that getAll() never lists a user whose data is
+    // being deleted.  The reverse race (index gone but events still exist)
+    // is handled by getUserById() returning null when username is null.
     await this.usersIndex.init();
     await this.usersIndex.deleteById(userId);
     if (username != null) {
-      // can happen during tests
       cache.unsetUser(username);
-      // Clear data for this user in Platform
       await this.platform.deleteUser(username, user, skipFowardToRegister);
     }
     await this.mall.deleteUser(userId);

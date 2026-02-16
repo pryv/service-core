@@ -56,8 +56,14 @@ async function initCore () {
   initCoreDone = true;
 
   // Build config
+  const isParallelMode = process.env.DISABLE_INTEGRITY_CHECK === '1';
   const testConfig = {
     dnsLess: { isActive: true },
+    // Disable caching in parallel mode: each worker has its own in-memory
+    // cache that cannot be invalidated by other workers' direct MongoDB
+    // modifications (fixture inserts/deletes).  Without NATS, cache
+    // entries become stale and cause spurious 403/404 errors.
+    ...(isParallelMode ? { caching: { isActive: false } } : {}),
     ...options.testConfig
   };
   global.config.injectTestConfig(testConfig);

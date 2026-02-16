@@ -223,11 +223,15 @@ class DatabaseFixture {
    */
   async clean () {
     let integrityError;
-    try {
-      // check integrity before reset--- This could trigger error related to previous test
-      await integrityFinalCheck.all();
-    } catch (err) {
-      integrityError = err; // keep it for later
+    // In parallel mode the integrity check scans ALL data in the shared
+    // database, including other workers' data, leading to false failures.
+    if (process.env.DISABLE_INTEGRITY_CHECK !== '1') {
+      try {
+        // check integrity before reset--- This could trigger error related to previous test
+        await integrityFinalCheck.all();
+      } catch (err) {
+        integrityError = err; // keep it for later
+      }
     }
     // clean data anyway
     const done = await this.dependents.all((fixtureItem) => {

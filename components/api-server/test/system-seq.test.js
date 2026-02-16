@@ -228,6 +228,15 @@ describe('[SYER] system (ex-register)', function () {
       });
     });
 
+    // Clean up 'mr-dupotager' between tests since each one re-creates the same user
+    beforeEach(async function () {
+      const usersRepository = await getUsersRepository();
+      const userId = await usersRepository.getUserIdForUsername(newUserData.username);
+      if (userId) {
+        await usersRepository.deleteOne(userId, newUserData.username, true);
+      }
+    });
+
     it('[0G7C] must not send a welcome email if mailing is deactivated', function (done) {
       const settings = structuredClone(helpers.dependencies.settings);
       settings.services.email.enabled = false;

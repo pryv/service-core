@@ -165,7 +165,7 @@ function createTestContext (options = {}) {
      */
     async cleanup () {
       if (ctx.fixtures) {
-        await ctx.fixtures.context.cleanEverything();
+        await ctx.fixtures.clean();
       }
       if (ctx.server) {
         ctx.server.stop();
