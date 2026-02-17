@@ -331,19 +331,6 @@ describe('[SYER] system (ex-register)', function () {
           assert.ok(_.find(users, { id: createdUserId }) == null);
         });
 
-      it('[ZG1L] must support the old "/register" path for backwards-compatibility', function (done) {
-        const newUserDataExpected = structuredClone(newUserData);
-        request.post(new URL('/register/create-user', server.url).toString())
-          .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-          .send(newUserDataExpected)
-          .end(function (err, res) {
-            assert.ok(err == null);
-            validation.check(res, {
-              status: 201
-            }, done);
-          });
-      });
-
       it('[VGF5] must return a correct 400 error if the sent data is badly formatted', function (done) {
         // eslint-disable-next-line n/handle-callback-err
         post({ badProperty: 'bad value' }, function (err, res) {

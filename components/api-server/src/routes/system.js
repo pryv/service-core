@@ -22,8 +22,6 @@ module.exports = function system (expressApp, app) {
    */
   expressApp.all(Paths.System + '/*', setMinimalMethodContext, checkAuth);
   expressApp.post(Paths.System + '/create-user', contentType.json, setMethodId('system.createUser'), createUser);
-  // DEPRECATED: remove after all reg servers updated
-  expressApp.post('/register/create-user', contentType.json, setMinimalMethodContext, setMethodId('system.createUser'), createUser);
   function createUser (req, res, next) {
     const params = _.extend({}, req.body);
     systemAPI.call(req.context, params, methodCallback(res, next, 201));

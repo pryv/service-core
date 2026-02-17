@@ -15,3 +15,8 @@
 - Removed `PATTERN_C_BACKWARD_COMPAT` env var handling from test helpers
 - Removed backward compatibility collision check in system streams config
 - Removed prefix-related tests (BW08-BW16, SD02)
+
+### Phase 2: Remove Deprecated `/register/create-user` Endpoint
+- Removed deprecated `POST /register/create-user` route from `system.js`
+- Removed backward-compatibility test `[ZG1L]`
+- `passwordHash` parameter kept (still used by standard `POST /system/create-user`)
