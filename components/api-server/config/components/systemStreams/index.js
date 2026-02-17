@@ -177,12 +177,11 @@ function load (config) {
 
   let seen = new Map();
   let seenWithPrefix = new Map();
-  const isBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
 
   treeUtils.cloneAndApply(systemStreams, (s) => {
     // ugly reuse of treeUtils.cloneAndApply() because we don't modify the array
     validateSystemStreamWithSchema(s);
-    [seen, seenWithPrefix] = throwIfNotUnique(seen, seenWithPrefix, s.id, isBackwardCompatibilityActive);
+    [seen, seenWithPrefix] = throwIfNotUnique(seen, seenWithPrefix, s.id);
     return s;
   });
 
@@ -312,16 +311,13 @@ function validateOtherStreams (systemStream) {
  * @param {Map<string, boolean>} seen
  * @param {Map<string, boolean>} seenWithPrefix
  * @param {string} streamId
- * @param {boolean} isBackwardCompatible
  * @returns {Map<string, boolean>[]}
  */
-function throwIfNotUnique (seen, seenWithPrefix, streamId, isBackwardCompatible = false) {
+function throwIfNotUnique (seen, seenWithPrefix, streamId) {
   const streamIdWithoutPrefix = _removePrefixFromStreamId(streamId);
 
   if (seenWithPrefix[streamId]) {
     throw new Error(`Config error: Custom system stream id duplicate. Remove duplicate custom system stream with streamId: "${streamIdWithoutPrefix}".`);
-  } else if (seen[streamIdWithoutPrefix] && isBackwardCompatible) {
-    throw new Error(`Config error: Custom system stream id unicity collision with default one. Deactivate retro-compatibility prefix or change streamId: "${streamIdWithoutPrefix}".`);
   } else {
     seenWithPrefix[streamId] = true;
     seen[streamIdWithoutPrefix] = true;

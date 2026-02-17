@@ -121,20 +121,6 @@ factory.missingHeader = function (headerName, status) {
   });
 };
 
-/**
- * Strange, but seems to be used only in tests
- * @param {*} message
- * @param {*} data
- * @param {*} innerError
- */
-factory.periodsOverlap = function (message, data, innerError) {
-  return new APIError(ErrorIds.PeriodsOverlap, message, {
-    httpStatus: 400,
-    data,
-    innerError
-  });
-};
-
 factory.tooManyResults = function (limit) {
   return new APIError(ErrorIds.TooManyResults, 'Your request gave too many results (the limit is ' +
         limit +

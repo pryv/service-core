@@ -14,7 +14,6 @@ const { getMall, storeDataUtils } = require('mall');
 const { treeUtils } = require('utils');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
 const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
-const ChangeStreamIdPrefixStream = require('../streams/ChangeStreamIdPrefixStream');
 const AddTagsStream = require('../streams/AddTagsStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 let mall;
@@ -389,7 +388,6 @@ async function streamQueryAddHiddenStreams (context, params, result, next) {
  * - Create a copy of the params per query
  * - Add specific stream queries to each of them
  * @param {string} filesReadTokenSecret
- * @param {boolean} isStreamIdPrefixBackwardCompatibilityActive
  * @param {boolean} isTagsBackwardCompatibilityActive
  * @param {MethodContext} context
  * @param {GetEventsParams} params
@@ -397,7 +395,7 @@ async function streamQueryAddHiddenStreams (context, params, result, next) {
  * @param {ApiCallback} next
  * @returns {Promise<any>}
  */
-async function findEventsFromStore (filesReadTokenSecret, isStreamIdPrefixBackwardCompatibilityActive, isTagsBackwardCompatibilityActive, context, params, result, next) {
+async function findEventsFromStore (filesReadTokenSecret, isTagsBackwardCompatibilityActive, context, params, result, next) {
   if (params.arrayOfStreamQueriesWithStoreId?.length === 0) {
     result.events = [];
     return next();
@@ -425,10 +423,6 @@ async function findEventsFromStore (filesReadTokenSecret, isStreamIdPrefixBackwa
    */
   function addEventsStreamFromStore (storeSettings, eventsStream) {
     let stream = eventsStream;
-    if (isStreamIdPrefixBackwardCompatibilityActive &&
-            !context.disableBackwardCompatibility) {
-      stream = eventsStream.pipe(new ChangeStreamIdPrefixStream());
-    }
     if (isTagsBackwardCompatibilityActive) {
       stream = stream.pipe(new AddTagsStream());
     }

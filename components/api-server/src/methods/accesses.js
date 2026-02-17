@@ -29,7 +29,6 @@ const { getMall, storeDataUtils } = require('mall');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
 
-const { changeStreamIdsInPermissions } = require('./helpers/backwardCompatibility');
 const { integrity } = require('business');
 
 /**
@@ -60,7 +59,6 @@ module.exports = async function produceAccessesApiMethods (api) {
   const mall = await getMall();
   const storageLayer = await getStorageLayer();
 
-  const isStreamIdPrefixBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
   const isFerret = config.get('database:isFerret');
 
   // RETRIEVAL
@@ -87,15 +85,8 @@ module.exports = async function produceAccessesApiMethods (api) {
       if (excludeExpired(params)) {
         accesses = accesses.filter((a) => !isAccessExpired(a));
       }
-      // Add apiEndpoind
+      // Add apiEndpoint
       for (let i = 0; i < accesses.length; i++) {
-        if (accesses[i].permissions != null) {
-          // assert is personal access
-          if (isStreamIdPrefixBackwardCompatibilityActive &&
-                        !context.disableBackwardCompatibility) {
-            accesses[i].permissions = changeStreamIdsInPermissions(accesses[i].permissions);
-          }
-        }
         accesses[i].apiEndpoint = ApiEndpoint.build(context.user.username, accesses[i].token);
       }
       result.accesses = accesses;
@@ -121,13 +112,6 @@ module.exports = async function produceAccessesApiMethods (api) {
     }
     try {
       const deletions = await bluebird.fromCallback((cb) => accessesRepository.findDeletions(context.user, query, { projection: { calls: 0 } }, cb));
-      if (isStreamIdPrefixBackwardCompatibilityActive &&
-                !context.disableBackwardCompatibility) {
-        for (const access of deletions) {
-          if (access.permissions == null) { continue; }
-          access.permissions = changeStreamIdsInPermissions(access.permissions);
-        }
-      }
       result.accessDeletions = deletions;
       next();
     } catch (err) {
@@ -160,10 +144,6 @@ module.exports = async function produceAccessesApiMethods (api) {
   async function applyPrerequisitesForCreation (context, params, result, next) {
     if (params.type === 'personal') {
       return next(errors.forbidden('Personal accesses are created automatically on login.'));
-    }
-    if (isStreamIdPrefixBackwardCompatibilityActive &&
-            !context.disableBackwardCompatibility) {
-      params.permissions = changeStreamIdsInPermissions(params.permissions, false);
     }
     const permissions = params.permissions;
     for (const permission of permissions) {

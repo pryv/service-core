@@ -71,9 +71,6 @@ user-account:
     #- 'personalToken' # enable self deletion request with a personal token
 
 backwardCompatibility:
-  systemStreams:
-    prefix:
-      isActive: false
   tags:
     isActive: true
     rootStreamId: 'tags-migrated'

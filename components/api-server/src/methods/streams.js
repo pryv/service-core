@@ -20,7 +20,6 @@ const APIError = require('errors/src/APIError');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
 const { getMall, storeDataUtils } = require('mall');
-const { changePrefixIdForStreams, replaceWithNewPrefix } = require('./helpers/backwardCompatibility');
 const { pubsub } = require('messages');
 const Readable = require('stream').Readable;
 /**
@@ -36,7 +35,6 @@ module.exports = async function (api) {
   const config = await getConfig();
   const updatesSettings = config.get('updates');
   const mall = await getMall();
-  const isStreamIdPrefixBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
   // RETRIEVAL
   api.register('streams.get', commonFns.getParamsValidation(methodsSchema.get.params), checkAuthorization, applyDefaultsForRetrieval, findAccessibleStreams, includeDeletionsIfRequested);
   function applyDefaultsForRetrieval (context, params, result, next) {
@@ -48,12 +46,6 @@ module.exports = async function (api) {
     if (params.parentId && params.id) {
       throw errors.invalidRequestStructure('Do not mix "parentId" and "id" parameter in request');
     }
-    if (params.parentId) {
-      if (isStreamIdPrefixBackwardCompatibilityActive &&
-                !context.disableBackwardCompatibility) {
-        params.parentId = replaceWithNewPrefix(params.parentId);
-      }
-    }
     const streamId = params.id || params.parentId || null;
     if (!streamId) { return next(); } // "*" is authorized for everyone
     if (!(await context.access.canListStream(streamId))) {
@@ -62,12 +54,6 @@ module.exports = async function (api) {
     return next();
   }
   async function findAccessibleStreams (context, params, result, next) {
-    if (params.parentId) {
-      if (isStreamIdPrefixBackwardCompatibilityActive &&
-                !context.disableBackwardCompatibility) {
-        params.parentId = replaceWithNewPrefix(params.parentId);
-      }
-    }
     let streamId = params.id || params.parentId || '*';
     let storeId = params.storeId; // might me null
     if (storeId == null) {
@@ -131,10 +117,6 @@ module.exports = async function (api) {
     // if request was made on parentId .. return only the children
     if (params.parentId && streams.length === 1) {
       streams = streams[0].children;
-    }
-    if (isStreamIdPrefixBackwardCompatibilityActive &&
-            !context.disableBackwardCompatibility) {
-      streams = changePrefixIdForStreams(streams);
     }
     result.streams = streams;
     next();
@@ -231,19 +213,11 @@ module.exports = async function (api) {
    */
   function forbidSystemStreamsActions (context, params, result, next) {
     if (params.id != null) {
-      if (isStreamIdPrefixBackwardCompatibilityActive &&
-                !context.disableBackwardCompatibility) {
-        params.id = replaceWithNewPrefix(params.id);
-      }
       if (SystemStreamsSerializer.isSystemStreamId(params.id)) {
         return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification]));
       }
     }
     if (params.parentId != null) {
-      if (isStreamIdPrefixBackwardCompatibilityActive &&
-                !context.disableBackwardCompatibility) {
-        params.parentId = replaceWithNewPrefix(params.parentId);
-      }
       if (SystemStreamsSerializer.isSystemStreamId(params.parentId)) {
         return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification]));
       }

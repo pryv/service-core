@@ -77,9 +77,5 @@ custom:
       name: Faulty Store
       path: ../../mall/test-helpers/faultyDataStore # should be fully qualified path
       settings: null
-backwardCompatibility:
-  systemStreams:
-    prefix:
-      isActive: false
 trace:
   enable: true

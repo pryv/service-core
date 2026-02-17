@@ -42,10 +42,6 @@ class MethodContext {
    * Used in events.get
    */
   acceptStreamsQueryNonStringified;
-  /**
-   * Whether to disable or not some backward compatibility setting, originally for system stream id prefixes
-   */
-  disableBackwardCompatibility;
 
   constructor (source, username, auth, customAuthStepFn, headers, query, tracing) {
     this.source = source;
@@ -60,10 +56,6 @@ class MethodContext {
     if (auth != null) { this.parseAuth(auth); }
     this.originalQuery = structuredClone(query);
     if (this.originalQuery?.auth) { delete this.originalQuery.auth; }
-    if (headers != null) {
-      this.disableBackwardCompatibility =
-                headers['disable-backward-compatibility-prefix'] || false;
-    }
     this._tracing = tracing;
   }
 

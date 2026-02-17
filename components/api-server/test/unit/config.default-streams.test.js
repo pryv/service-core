@@ -140,30 +140,6 @@ describe('[SSDC] SystemStreams config', () => {
       });
     });
   });
-  describe('[SD02] When retro-compatibility is activated and a streamId unicity conflict exists between a custom system streamId and a default one', () => {
-    it('[3Z9N] must throw a config error', () => {
-      const streamId = 'language';
-      const customStreams = {
-        account: [
-          {
-            id: streamId,
-            type: 'string/pryv'
-          }
-        ],
-        other: []
-      };
-      store = new nconf.Provider();
-      store.use('memory');
-      store.set('custom:systemStreams', customStreams);
-      store.set('backwardCompatibility:systemStreams:prefix:isActive', true);
-      try {
-        systemStreamsConfig.load(store);
-        assert.fail('supposed to throw');
-      } catch (err) {
-        assert.ok(err.message.includes(`Config error: Custom system stream id unicity collision with default one. Deactivate retro-compatibility prefix or change streamId: "${streamId}".`));
-      }
-    });
-  });
   describe('[SD03] When custom system streams contain duplicate streamIds', () => {
     it('[CHEF] must throw a config error', () => {
       const streamId = 'field1';

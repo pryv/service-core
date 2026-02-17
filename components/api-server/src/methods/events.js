@@ -39,9 +39,6 @@ const CleanDeletedEventsStream = require('./streams/CleanDeletedEventsStream');
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
 const {
-  convertStreamIdsToOldPrefixOnResult,
-  changeMultipleStreamIdsPrefix,
-  changeStreamIdsPrefixInStreamQuery,
   TAG_PREFIX,
   TAG_ROOT_STREAMID,
   replaceTagsWithStreamIds,
@@ -80,8 +77,6 @@ module.exports = async function (api) {
 
   const STREAM_ID_ACTIVE = SystemStreamsSerializer.options.STREAM_ID_ACTIVE;
 
-  const isStreamIdPrefixBackwardCompatibilityActive = config.get('backwardCompatibility:systemStreams:prefix:isActive');
-
   const isTagsBackwardCompatibilityActive = config.get('backwardCompatibility:tags:isActive');
 
   // RETRIEVAL
@@ -94,10 +89,6 @@ module.exports = async function (api) {
     applyTagsDefaultsForRetrieval,
     eventsGetUtils.transformArrayOfStringsToStreamsQuery,
     eventsGetUtils.validateStreamsQueriesAndSetStore,
-    changeStreamIdsPrefixInStreamQuery.bind(
-      null,
-      isStreamIdPrefixBackwardCompatibilityActive
-    ), // using currying to pass "isStreamIdPrefixBackwardCompatibilityActive" argument
     eventsGetUtils.streamQueryCheckPermissionsAndReplaceStars,
     eventsGetUtils.streamQueryAddForcedAndForbiddenStreams,
     eventsGetUtils.streamQueryExpandStreams,
@@ -106,7 +97,6 @@ module.exports = async function (api) {
     eventsGetUtils.findEventsFromStore.bind(
       null,
       authSettings.filesReadTokenSecret,
-      isStreamIdPrefixBackwardCompatibilityActive,
       isTagsBackwardCompatibilityActive
     ),
     includeLocalStorageDeletionsIfRequested
@@ -431,9 +421,6 @@ module.exports = async function (api) {
     next();
   }
   function _applyBackwardCompatibilityOnEvent (event, context) {
-    if (isStreamIdPrefixBackwardCompatibilityActive && !context.disableBackwardCompatibility) {
-      convertStreamIdsToOldPrefixOnResult(event);
-    }
     if (isTagsBackwardCompatibilityActive) { event = putOldTags(event); }
     event.streamId = event.streamIds[0];
   }
@@ -717,10 +704,6 @@ module.exports = async function (api) {
     context.newEvent = event;
     // used only in the events creation and update
     if (event.streamIds != null && event.streamIds.length > 0) {
-      if (isStreamIdPrefixBackwardCompatibilityActive &&
-                !context.disableBackwardCompatibility) {
-        event.streamIds = changeMultipleStreamIdsPrefix(event.streamIds, false);
-      }
       const streamIdsNotFoundList = [];
       const streamIdsTrashed = [];
       for (const fullStreamId of event.streamIds) {

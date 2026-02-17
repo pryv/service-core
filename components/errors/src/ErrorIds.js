@@ -28,7 +28,6 @@ const ErrorIds = {
   InvalidRequestStructure: 'invalid-request-structure',
   ItemAlreadyExists: 'item-already-exists',
   MissingHeader: 'missing-header',
-  PeriodsOverlap: 'periods-overlap',
   UnexpectedError: 'unexpected-error',
   UnknownReferencedResource: 'unknown-referenced-resource',
   UnknownResource: 'unknown-resource',

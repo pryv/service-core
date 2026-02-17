@@ -33,9 +33,6 @@ integrity:
   algorithm: sha256
 
 backwardCompatibility:
-  systemStreams:
-    prefix:
-      isActive: false
   tags:
     isActive: true
     rootStreamId: 'tags-migrated'

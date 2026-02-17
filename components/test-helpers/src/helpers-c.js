@@ -12,7 +12,6 @@
  * Environment variables for test modes:
  * - DISABLE_INTEGRITY_CHECK=1  : Disable integrity checks (for parallel execution)
  * - PATTERN_C_AUDIT=1          : Enable audit functionality
- * - PATTERN_C_BACKWARD_COMPAT=1: Enable backward compatibility prefix
  */
 
 const base = require('./helpers-base');
@@ -20,7 +19,6 @@ const base = require('./helpers-base');
 // Test mode flags from environment
 const isParallelMode = process.env.DISABLE_INTEGRITY_CHECK === '1';
 const isAuditMode = process.env.PATTERN_C_AUDIT === '1';
-const isBackwardCompatMode = process.env.PATTERN_C_BACKWARD_COMPAT === '1';
 
 // Build test config based on environment
 const testConfig = {};
@@ -44,18 +42,6 @@ if (isAuditMode) {
         include: []
       }
     }
-  };
-}
-
-if (isBackwardCompatMode) {
-  testConfig.backwardCompatibility = {
-    systemStreams: {
-      prefix: { isActive: true }
-    }
-  };
-  testConfig.versioning = {
-    deletionMode: 'keep-everything',
-    forceKeepHistory: true
   };
 }
 
