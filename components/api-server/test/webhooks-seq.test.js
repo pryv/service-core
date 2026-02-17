@@ -295,11 +295,6 @@ describe('[WH01] webhooks', () => {
 
     before(async () => {
       await mongoFixtures.clean();
-      // Drop collection fully to ensure unique indexes are recreated (required for duplicate detection)
-      // This is safe in -seq.test.js files which run sequentially
-      await new Promise((resolve) => {
-        webhooksStorage.dropCollectionFully({ id: 'dummy' }, () => resolve());
-      });
       username = cuid();
       personalAccessToken = cuid();
       appAccessId1 = cuid();

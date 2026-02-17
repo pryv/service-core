@@ -86,10 +86,7 @@ const followedSlices = (exports.followedSlices =
     require('./data/followedSlices')(followedSlicesURL));
 
 exports.resetFollowedSlices = function (done, user) {
-  // NOTE: Uses dropCollectionFully to ensure indexes are recreated for duplicate detection.
-  // This is only used by -seq.test.js files (sequential), so it doesn't affect parallel tests.
-  // TODO: Find a way to ensure indexes without dropping collection.
-  resetMongoDBCollectionWithDrop(storage.user.followedSlices, user || defaultUser, followedSlices, done);
+  resetMongoDBCollectionFor(storage.user.followedSlices, user || defaultUser, followedSlices, done);
 };
 
 // events
@@ -184,19 +181,6 @@ exports.resetStreams = function (done, user) {
 function resetMongoDBCollectionFor (storage, user, items, done) {
   async.series([
     storage.removeAll.bind(storage, user),
-    storage.insertMany.bind(storage, user, items)
-  ], done);
-}
-
-/**
- * Drops collection first to ensure indexes are recreated correctly.
- * Use when collection schema/indexes have changed.
- * NOTE: Only use in sequential tests (-seq.test.js) as it affects all users.
- * @returns {void}
- */
-function resetMongoDBCollectionWithDrop (storage, user, items, done) {
-  async.series([
-    storage.dropCollectionFully.bind(storage, user),
     storage.insertMany.bind(storage, user, items)
   ], done);
 }

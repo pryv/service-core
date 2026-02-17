@@ -35,7 +35,7 @@ describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
 
   let user, username, streamId, appAccessToken;
   before(async function () {
-    username = 'test-stream';
+    username = 'test-stream-' + cuid.slug();
     streamId = 'test';
     appAccessToken = cuid();
     user = await mongoFixtures.user(username, {});
@@ -61,6 +61,7 @@ describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
   });
 
   after(async function () {
+    if (mongoFixtures) await mongoFixtures.clean();
     await apiServer.stop();
   });
 

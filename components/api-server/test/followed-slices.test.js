@@ -20,6 +20,7 @@ describe('[FOLS] followed slices', function () {
   let appToken;
   let isFerret = null;
   let followedSlicesStorage;
+  let database;
   let user;
   let fixtureUser;
   let testFollowedSlicesData;
@@ -42,8 +43,18 @@ describe('[FOLS] followed slices', function () {
     basePath = '/' + username + '/followed-slices';
     user = { id: username };
 
-    const database = await storage.getDatabase();
+    database = await storage.getDatabase();
     followedSlicesStorage = new storage.user.FollowedSlices(database);
+
+    // Drop the collection to clear stale indexes from previous schema versions
+    // (e.g. 'username' -> 'url' field rename) and leftover data that would
+    // prevent correct unique index creation. Clear the DB cache so ensureIndexes
+    // recreates correct indexes on next access.
+    try {
+      await database.db.collection('followedSlices').drop();
+    } catch (e) { /* collection may not exist yet */ }
+    delete database.initializedCollections.followedSlices;
+    delete database.collectionConnectionsCache.followedSlices;
 
     // Create user
     fixtureUser = await fixtures.user(username);
@@ -95,10 +106,14 @@ describe('[FOLS] followed slices', function () {
 
   // Clean and recreate followed slices for tests that modify data
   async function resetFollowedSlices () {
-    // Use dropCollectionFully to ensure unique indexes are recreated (required for duplicate detection)
-    // This is safe in -seq.test.js files which run sequentially
+    // Clear connection cache so the next DB access triggers ensureIndexes with
+    // proper index definitions. Without this, the integrity-check beforeEach hook
+    // (helpers-base.js) may cache the collection without index info, preventing
+    // unique indexes from being created.
+    delete database.collectionConnectionsCache.followedSlices;
+    delete database.initializedCollections.followedSlices;
     await new Promise((resolve) => {
-      followedSlicesStorage.dropCollectionFully(user, () => resolve());
+      followedSlicesStorage.removeAll(user, () => resolve());
     });
     // Recreate test followed slices using fixtures
     await createTestFollowedSlices();

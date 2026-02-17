@@ -500,7 +500,7 @@ class FixtureAccess extends FixtureItem {
     return {
       id: `c${Charlatan.Number.number(15)}`,
       token: Charlatan.Internet.deviceToken(),
-      name: Charlatan.Internet.userName(),
+      name: Charlatan.Internet.userName() + '-' + generateId(),
       type: Charlatan.Helpers.sample(['personal', 'shared'])
     };
   }
