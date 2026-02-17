@@ -67,7 +67,7 @@ class UserContext {
     this.userName = userName;
     // NOTE For simplicity of debugging, we'll assume that user.id ===
     // user.username.
-    this.user = { id: userName };
+    this.user = { id: userName, username: userName };
   }
 
   /**
@@ -675,15 +675,6 @@ class Sessions {
     delete attributes.id;
     attributes._id = id;
     this.db.insertOne(this.collectionInfo, attributes, cb);
-  }
-
-  /**
-   * @param {string} userName
-   * @param {() => void} cb
-   * @returns {void}
-   */
-  removeForUser (userName, cb) {
-    this.db.deleteMany(this.collectionInfo, { 'data.username': userName }, cb);
   }
 
   /**

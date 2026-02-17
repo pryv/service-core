@@ -24,7 +24,6 @@ module.exports = {
     user: {
       accesses: new storage.user.Accesses(database),
       followedSlices: new storage.user.FollowedSlices(database),
-      streams: new storage.user.Streams(database), // TODO: reomove when mall is fully implemented for streams
       profile: new storage.user.Profile(database),
       webhooks: new storage.user.Webhooks(database)
     }
