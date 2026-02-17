@@ -332,11 +332,16 @@ class FixtureUser extends FixtureItem {
   async remove () {
     const username = this.context.userName;
     const usersRepository = await getUsersRepository();
-    // Remove all dependents (streams, events, accesses, webhooks, followedSlices, sessions)
-    // Each fixture's remove() method handles its own cleanup
-    await this.dependents.all((fixtureItem) => fixtureItem.remove());
-    // Finally delete the user
+    // Delete user FIRST while events still exist — deleteOne calls getUserById
+    // which reads system-stream events (including email) so that
+    // platform.deleteUser can properly clean up unique fields.
+    // If dependents are removed first, getUserById returns null and unique
+    // platform entries (e.g. email) are orphaned, causing integrity check failures.
     await usersRepository.deleteOne(this.context.user.id, username, true);
+    // Then remove remaining dependents (accesses, webhooks, followedSlices,
+    // sessions). Events and streams are already gone via mall.deleteUser inside
+    // deleteOne; their individual remove() methods handle "not found" gracefully.
+    await this.dependents.all((fixtureItem) => fixtureItem.remove());
   }
 
   /**
