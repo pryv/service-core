@@ -36,12 +36,6 @@ const { pubsub } = require('messages');
 
 const CleanDeletedEventsStream = require('./streams/CleanDeletedEventsStream');
 
-const {
-  TAG_PREFIX,
-  TAG_ROOT_STREAMID,
-  replaceTagsWithStreamIds,
-  putOldTags
-} = require('./helpers/backwardCompatibility');
 const { integrity } = require('business');
 
 // Type repository that will contain information about what is allowed/known
@@ -75,8 +69,6 @@ module.exports = async function (api) {
 
   const STREAM_ID_ACTIVE = SystemStreamsSerializer.options.STREAM_ID_ACTIVE;
 
-  const isTagsBackwardCompatibilityActive = config.get('backwardCompatibility:tags:isActive');
-
   // RETRIEVAL
 
   api.register(
@@ -84,45 +76,19 @@ module.exports = async function (api) {
     eventsGetUtils.coerceStreamsParam,
     commonFns.getParamsValidation(methodsSchema.get.params),
     eventsGetUtils.applyDefaultsForRetrieval,
-    applyTagsDefaultsForRetrieval,
     eventsGetUtils.transformArrayOfStringsToStreamsQuery,
     eventsGetUtils.validateStreamsQueriesAndSetStore,
     eventsGetUtils.streamQueryCheckPermissionsAndReplaceStars,
     eventsGetUtils.streamQueryAddForcedAndForbiddenStreams,
     eventsGetUtils.streamQueryExpandStreams,
     eventsGetUtils.streamQueryAddHiddenStreams,
-    migrateTagsToStreamQueries,
     eventsGetUtils.findEventsFromStore.bind(
       null,
-      authSettings.filesReadTokenSecret,
-      isTagsBackwardCompatibilityActive
+      authSettings.filesReadTokenSecret
     ),
     includeLocalStorageDeletionsIfRequested
   );
 
-  function applyTagsDefaultsForRetrieval (context, params, result, next) {
-    if (!context.access.canGetEventsWithAnyTag()) {
-      const accessibleTags = Object.keys(context.access.tagPermissionsMap);
-      params.tags = params.tags
-        ? _.intersection(params.tags, accessibleTags)
-        : accessibleTags;
-    }
-    next();
-  }
-  /**
-   * Backward compatibility for tags
-   */
-  function migrateTagsToStreamQueries (context, params, result, next) {
-    if (!isTagsBackwardCompatibilityActive) { return next(); }
-    if (params.tags == null) { return next(); }
-    for (const query of params.arrayOfStreamQueriesWithStoreId) {
-      if (query.storeId === 'local') {
-        if (query.and == null) { query.and = []; }
-        query.and.push({ any: params.tags.map((t) => TAG_PREFIX + t) });
-      }
-    }
-    next();
-  }
   async function includeLocalStorageDeletionsIfRequested (context, params, result, next) {
     if (params.modifiedSince == null || !params.includeDeletions) {
       return next();
@@ -139,7 +105,6 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.getOne.params),
     findEvent,
     checkIfAuthorized,
-    backwardCompatibilityOnResult,
     includeHistoryIfRequested
   );
 
@@ -171,7 +136,7 @@ module.exports = async function (api) {
         canReadEvent = false;
         break;
       }
-      if (await context.access.canGetEventsOnStreamAndWithTags(streamId, event.tags)) {
+      if (await context.access.canGetEventsOnStream(streamId, 'local')) {
         canReadEvent = true;
       }
     }
@@ -191,8 +156,6 @@ module.exports = async function (api) {
       const events = await mall.events.getHistory(context.user.id, params.id);
       result.history = [];
       events.forEach((e) => {
-        // To remove when streamId not necessary
-        _applyBackwardCompatibilityOnEvent(e, context);
         if (result.event.streamIds == null) { // event might be deleted - limit result to modified property
           result.event = { id: e.id, modified: e.modified };
         } else {
@@ -212,9 +175,8 @@ module.exports = async function (api) {
     commonFns.getParamsValidation(methodsSchema.create.params),
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForCreation,
-    createStreamsForTagsIfNeeded,
     validateEventContentAndCoerce,
-    verifycanCreateEventsOnStreamAndWIthTags,
+    verifyCanCreateEventsOnStream,
     doesEventBelongToAccountStream,
     validateSystemStreamsContent,
     validateAccountStreamsForCreation,
@@ -223,7 +185,6 @@ module.exports = async function (api) {
     handleSeries,
     createEvent,
     removeActiveFromSibling,
-    backwardCompatibilityOnResult,
     addIntegrityToContext,
     notify
   );
@@ -232,10 +193,6 @@ module.exports = async function (api) {
     const event = context.newEvent;
     // default time is now
     event.time ??= timestamp.now();
-    if (event.tags == null) {
-      event.tags = [];
-    }
-    event.tags = cleanupEventTags(event.tags);
     context.initTrackingProperties(event);
     context.newEvent = event;
     next();
@@ -279,10 +236,10 @@ module.exports = async function (api) {
     throwIfStreamIdIsNotEditable(context.accountStreamId);
     next();
   }
-  async function verifycanCreateEventsOnStreamAndWIthTags (context, params, result, next) {
+  async function verifyCanCreateEventsOnStream (context, params, result, next) {
     for (const streamId of context.newEvent.streamIds) {
       // refuse if any context is not accessible
-      if (!(await context.access.canCreateEventsOnStreamAndWIthTags(streamId, context.newEvent.tags))) {
+      if (!(await context.access.canCreateEventsOnStream(streamId))) {
         return next(errors.forbidden());
       }
     }
@@ -410,13 +367,6 @@ module.exports = async function (api) {
     result.event = newEvent;
     return next();
   }
-  function backwardCompatibilityOnResult (context, params, result, next) {
-    if (result.event != null) { _applyBackwardCompatibilityOnEvent(result.event, context); }
-    next();
-  }
-  function _applyBackwardCompatibilityOnEvent (event, context) {
-    if (isTagsBackwardCompatibilityActive) { event = putOldTags(event); }
-  }
   function addUniqueStreamIdIfNeeded (streamIds, isUnique) {
     if (!isUnique) {
       return streamIds;
@@ -467,7 +417,6 @@ module.exports = async function (api) {
       updatesSettings.ignoreProtectedFields, logger),
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
-    createStreamsForTagsIfNeeded,
     validateEventContentAndCoerce,
     doesEventBelongToAccountStream,
     validateSystemStreamsContent,
@@ -475,7 +424,6 @@ module.exports = async function (api) {
     appendAccountStreamsDataForUpdate,
     updateOnPlatform,
     updateEvent,
-    backwardCompatibilityOnResult,
     removeActiveFromSibling,
     addIntegrityToContext,
     notify
@@ -483,11 +431,6 @@ module.exports = async function (api) {
 
   async function applyPrerequisitesForUpdate (context, params, result, next) {
     const eventUpdate = context.newEvent;
-    try {
-      eventUpdate.tags = cleanupEventTags(eventUpdate.tags);
-    } catch (err) {
-      return next(err);
-    }
     context.updateTrackingProperties(eventUpdate);
     let event;
     try {
@@ -501,7 +444,7 @@ module.exports = async function (api) {
     // 1. check that have contributeContext on at least 1 existing streamId
     let canUpdateEvent = false;
     for (let i = 0; i < event.streamIds.length; i++) {
-      if (await context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
+      if (await context.access.canUpdateEventsOnStream(event.streamIds[i])) {
         canUpdateEvent = true;
         break;
       }
@@ -511,7 +454,7 @@ module.exports = async function (api) {
       // 2. check that streams we add have contribute access
       const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
       for (const streamIdToAdd of streamIdsToAdd) {
-        if (!(await context.access.canUpdateEventsOnStreamAndWIthTags(streamIdToAdd, event.tags))) {
+        if (!(await context.access.canUpdateEventsOnStream(streamIdToAdd))) {
           return next(errors.forbidden());
         }
       }
@@ -519,7 +462,7 @@ module.exports = async function (api) {
       // streamsToRemove = event.streamIds - eventUpdate.streamIds
       const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
       for (const streamIdToRemove of streamIdsToRemove) {
-        if (!(await context.access.canUpdateEventsOnStreamAndWIthTags(streamIdToRemove, event.tags))) {
+        if (!(await context.access.canUpdateEventsOnStream(streamIdToRemove))) {
           return next(errors.forbidden());
         }
       }
@@ -718,7 +661,6 @@ module.exports = async function (api) {
    */
   async function validateEventContentAndCoerce (context, params, result, next) {
     const type = context.newEvent.type;
-    if (isTagsBackwardCompatibilityActive) { context.newEvent = replaceTagsWithStreamIds(context.newEvent); }
     // Unknown types can just be created as normal events.
     if (!typeRepo.isKnown(type)) {
       // We forbid the 'series' prefix for these free types.
@@ -759,34 +701,6 @@ module.exports = async function (api) {
     const contentType = typeof context.newEvent.content;
     if (!acceptedIndexedTypes.includes(contentType)) { return next(errors.invalidParametersFormat(ErrorMessages.IndexedParameterInvalidFormat, params)); }
     return next();
-  }
-  /**
-   * If they don't exist, create the streams for the present tags
-   */
-  async function createStreamsForTagsIfNeeded (context, params, result, next) {
-    if (!isTagsBackwardCompatibilityActive) { return next(); }
-    const tags = context.newEvent.tags;
-    if (tags == null || tags.length === 0) { return next(); }
-    const streamsToTest = [
-      { id: TAG_ROOT_STREAMID, name: 'Migrated tags', parentId: null }
-    ];
-    for (const tag of tags) {
-      streamsToTest.push({
-        id: TAG_PREFIX + tag,
-        name: tag,
-        parentId: TAG_ROOT_STREAMID
-      });
-    }
-    const streamIdsCreated = [];
-    for (const streamData of streamsToTest) {
-      const stream = await context.streamForStreamId(streamData.id, 'local');
-      if (stream == null) {
-        await mall.streams.create(context.user.id, streamData);
-        streamIdsCreated.push(streamData.id);
-      }
-    }
-    if (streamIdsCreated.length > 0) { logger.info('backward compatibility: created streams for tags: ' + streamIdsCreated); }
-    next();
   }
   function throwIfStreamIdIsNotEditable (accountStreamId) {
     const editableAccountMap = SystemStreamsSerializer.getEditableAccountMap();
@@ -833,24 +747,6 @@ module.exports = async function (api) {
       }
     }
   }
-  function cleanupEventTags (tags) {
-    if (tags == null) { return []; }
-    const limit = 500;
-    tags = tags
-      .map(function (tag) {
-        if (tag.length > limit) {
-          throw errors.invalidParametersFormat('The event contains a tag that exceeds the size limit of ' +
-                    limit +
-                    ' characters.', tag);
-        }
-        return tag.trim();
-      })
-      .filter(function (tag) {
-        return tag.length > 0;
-      });
-    return tags;
-  }
-
   // DELETION
 
   api.register(
@@ -903,8 +799,6 @@ module.exports = async function (api) {
       await updateDeletionOnPlatform(context.user.username, context.oldEvent.content, context.accountStreamId);
     }
     const updatedEvent = await mall.events.update(context.user.id, newEvent);
-
-    _applyBackwardCompatibilityOnEvent(updatedEvent, context);
     result.event = updatedEvent;
     result.event.attachments = setFileReadToken(context.access, result.event.attachments);
     next();
@@ -939,8 +833,7 @@ module.exports = async function (api) {
     'events.deleteAttachment',
     commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
     checkEventForDelete,
-    deleteAttachment,
-    backwardCompatibilityOnResult
+    deleteAttachment
   );
 
   async function deleteAttachment (context, params, result, next) {
@@ -977,7 +870,7 @@ module.exports = async function (api) {
     }
     let canDeleteEvent = false;
     for (const streamId of event.streamIds) {
-      if (await context.access.canUpdateEventsOnStreamAndWIthTags(streamId, event.tags)) {
+      if (await context.access.canUpdateEventsOnStream(streamId)) {
         canDeleteEvent = true;
         break;
       }

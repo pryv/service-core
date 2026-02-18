@@ -24,7 +24,6 @@ const methodsSchema = require('../src/schema/eventsMethods');
 const testData = helpers.dynData({ prefix: 'evnt' });
 const addCorrectAttachmentIds = testData.addCorrectAttachmentIds;
 
-const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { integrity } = require('business');
 const { getMall } = require('mall');
 
@@ -169,43 +168,6 @@ describe('[EVNT] events', function () {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
           data: params
-        }, done);
-      });
-    });
-
-    it('[R667] must only return events with the given tag when set', function (done) {
-      const params = {
-        tags: ['super'],
-        fromTime: timestamp.now('-48h')
-      };
-      request.get(basePath).query(params).end(function (res) {
-        const correctedEvents = addCorrectAttachmentIds(_.at(testData.events, 3, 2, 0));
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          sanitizeFn: validation.sanitizeEvents,
-          sanitizeTarget: 'events',
-          body: {
-            events: correctedEvents
-          }
-        }, done);
-      });
-    });
-
-    it('[KNJY] must only return events with any of the given tags when set', function (done) {
-      const params = {
-        tags: ['super', 'fragilistic'],
-        fromTime: timestamp.now('-48h')
-      };
-      request.get(basePath).query(params).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          sanitizeFn: validation.sanitizeEvents,
-          sanitizeTarget: 'events',
-          body: {
-            events: addCorrectAttachmentIds(_.at(testData.events, 11, 3, 2, 0))
-          }
         }, done);
       });
     });
@@ -707,7 +669,6 @@ describe('[EVNT] events', function () {
         type: 'temperature/celsius',
         content: 36.7,
         streamIds: [testData.streams[0].id],
-        tags: [' patapoumpoum ', '   ', ''], // must trim and ignore empty tags
         description: 'Test description',
         clientData: {
           testClientDataField: 'testValue'
@@ -718,11 +679,7 @@ describe('[EVNT] events', function () {
         modified: timestamp.now('-1h'),
         modifiedBy: 'should-be-ignored'
       };
-      const processedTags = ['patapoumpoum'];
-      const processedStreamIds = data.streamIds.concat(processedTags.map(t => TAG_PREFIX + t));
       const expected = structuredClone(data);
-      expected.tags = processedTags;
-      expected.streamIds = processedStreamIds;
 
       let originalCount;
       let createdEventId;
@@ -766,8 +723,6 @@ describe('[EVNT] events', function () {
           const expected = structuredClone(data);
 
           expected.id = createdEventId;
-          expected.streamIds = expected.streamIds.concat(['patapoumpoum'].map(t => TAG_PREFIX + t));
-          delete expected.tags; // tags are not stored anymore
           expected.created = expected.modified = created;
           expected.createdBy = expected.modifiedBy = access.id;
           const actual = _.find(events, function (event) {
@@ -808,7 +763,6 @@ describe('[EVNT] events', function () {
         content: null,
         description: null,
         clientData: null,
-        tags: null,
         trashed: null
       };
       request.post(basePath).send(data).end(function (res) {
@@ -866,43 +820,11 @@ describe('[EVNT] events', function () {
       });
     });
 
-    it('[O7Y2] must reject tags that are too long', function (done) {
-      const bigTag = new Array(600).join('a');
-      const data = {
-        streamIds: [testData.streams[2].id],
-        type: 'generic/count',
-        content: 1,
-        tags: [bigTag]
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 400,
-          id: ErrorIds.invalidParametersFormat,
-          data: bigTag
-        }, done);
-      });
-    });
-
-    it('[2885] must fix the tags to an empty array if not set', function (done) {
-      const data = { streamIds: [testData.streams[1].id], type: testType };
-
-      request.post(basePath).send(data).end(function (res) {
-        assert.strictEqual(res.statusCode, 201);
-
-        const createdEvent = res.body.event;
-        assert.ok(createdEvent.tags);
-        assert.deepStrictEqual(createdEvent.tags, []);
-
-        done();
-      });
-    });
-
     it('[UL6Y] must not stop the running period event if the stream allows overlapping', function (done) {
       const data = {
         streamIds: [testData.streams[1].id],
         duration: timestamp.duration('1h'),
-        type: testType,
-        tags: []
+        type: testType
       };
       async.series([
         function addNew (stepDone) {
@@ -916,10 +838,7 @@ describe('[EVNT] events', function () {
         },
         async function verifyData () {
           const event = await mall.events.getOne(user.id, testData.events[11].id);
-          // HERE
-          // as event comes from storage we will not find "tags"
           const expected = structuredClone(testData.events[11]);
-          delete expected.tags;
           assert.deepStrictEqual(event, expected);
         }
       ], done);
@@ -1038,8 +957,7 @@ describe('[EVNT] events', function () {
         content: {
           chapterOne: '道 可 道 非 常 道...'
         },
-        streamIds: [testData.streams[0].id],
-        tags: ['houba']
+        streamIds: [testData.streams[0].id]
       };
       async.series([
         postEventsWithAttachments,
@@ -1085,7 +1003,7 @@ describe('[EVNT] events', function () {
                     integrity: testData.attachments.image.integrity
                   }
                 ],
-                streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t))
+                streamIds: data.streamIds
               });
 
               expected.created = createdEvent.created;
@@ -1134,8 +1052,7 @@ describe('[EVNT] events', function () {
         content: {
           principles: '三頂三圓三虛。。。'
         },
-        streamIds: [testData.streams[0].id],
-        tags: ['bagua']
+        streamIds: [testData.streams[0].id]
       };
 
       request.post(basePath)
@@ -1162,7 +1079,7 @@ describe('[EVNT] events', function () {
                   integrity: testData.attachments.document.integrity
                 }
               ],
-              streamIds: data.streamIds.concat(data.tags.map(t => TAG_PREFIX + t)),
+              streamIds: data.streamIds,
               integrity: createdEvent.integrity
             });
 
@@ -1374,7 +1291,6 @@ describe('[EVNT] events', function () {
         type: testType,
         content: 'test',
         streamIds: [testData.streams[0].children[0].id],
-        tags: [' yippiya ', ' ', ''], // must trim and ignore empty tags
         description: 'New description',
         clientData: {
           clientField: 'client value'
@@ -1394,11 +1310,9 @@ describe('[EVNT] events', function () {
 
             const expected = structuredClone(data);
             expected.id = original.id;
-            expected.tags = ['yippiya'];
             expected.modified = time;
             expected.modifiedBy = access.id;
             expected.attachments = testData.dynCreateAttachmentIdMap[expected.id];
-            expected.streamIds = data.streamIds.concat(expected.tags.map(t => TAG_PREFIX + t));
             validation.checkObjectEquality(res.body.event, expected);
 
             assert.strictEqual(eventsNotifCount, 1, 'events notifications');
@@ -1458,7 +1372,6 @@ describe('[EVNT] events', function () {
         content: null,
         description: null,
         clientData: null,
-        tags: null,
         trashed: null
       };
       request.put(path(testData.events[10].id)).send(data)
@@ -1616,19 +1529,6 @@ describe('[EVNT] events', function () {
         settings.updates.ignoreProtectedFields = activated;
         server.ensureStarted(settings, stepDone);
       }
-    });
-
-    it('[CUM3] must reject tags that are too long', function (done) {
-      const bigTag = new Array(600).join('a');
-
-      request.put(path(testData.events[1].id)).send({ tags: [bigTag] })
-        .end(function (res) {
-          validation.check(res, {
-            status: 400,
-            id: ErrorIds.InvalidParametersFormat,
-            data: bigTag
-          }, done);
-        });
     });
   });
 

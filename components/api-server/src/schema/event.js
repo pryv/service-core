@@ -30,7 +30,6 @@ exports = module.exports = function (action) {
     time: number(),
     duration: number({ nullable: true }),
     streamIds: array(string(), { nullable: false, minItems: 1 }),
-    tags: array(string(), { nullable: true }),
     type: string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
     content: {},
     description: string({ nullable: true }),
@@ -63,7 +62,7 @@ exports = module.exports = function (action) {
     schema.properties.attachments = { type: 'array' };
     // whitelist for properties that can be updated
     schema.alterableProperties = ['streamIds', 'time', 'duration', 'type',
-      'content', 'tags', 'references', 'description', 'clientData', 'trashed'];
+      'content', 'references', 'description', 'clientData', 'trashed'];
   }
 
   switch (action) {

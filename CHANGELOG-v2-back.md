@@ -29,3 +29,15 @@
 - Removed `SetSingleStreamIdStream` pipe from `eventsGetUtils.js`
 - Removed `event.streamId` assignment from `SetFileReadTokenStream.js`
 - Updated tests across api-server and webhooks components
+
+### Phase 4: Remove Tags Backward Compatibility
+- Deleted `backwardCompatibility.js`, `AddTagsStream.js`
+- Removed `backwardCompatibility.tags` from all config files
+- Removed all tag conversion logic from `events.js` (replaceTagsWithStreamIds, putOldTags, createStreamsForTagsIfNeeded, cleanupEventTags, migrateTagsToStreamQueries)
+- Removed tag permission methods from `AccessLogic.js`
+- Simplified permission checks: removed WithTags variants, callers use stream-only methods
+- Removed `tags` from event schema and events.get query params
+- Removed tag migration code from `1.7.0.js`
+- Fixed `previews-server/event-previews.js` to use `canGetEventsOnStream` instead of removed `canGetEventsOnStreamAndWithTags`
+- Deleted tag backward compatibility tests, updated all test files
+- Removed `permissions-tags.test.js` from test lists

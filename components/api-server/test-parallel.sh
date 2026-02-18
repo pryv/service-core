@@ -5,7 +5,6 @@
 # Pattern C test files (safe for parallel execution)
 PATTERN_C_TESTS=(
   "test/permissions-none.test.js"
-  "test/permissions-tags.test.js"
   "test/permissions-selfRevoke.test.js"
   "test/permissions-create-only.test.js"
   "test/permissions-forcedStreams.test.js"

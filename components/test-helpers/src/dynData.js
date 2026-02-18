@@ -15,7 +15,6 @@ const cuid = require('cuid');
 const path = require('path');
 const fs = require('fs');
 const _ = require('lodash');
-const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { integrity } = require('business');
 
 // Static data templates
@@ -43,12 +42,6 @@ function createDynData (options = {}) {
   function dynId (staticId) {
     if (!staticId) return staticId;
     if (idMap.has(staticId)) return idMap.get(staticId);
-
-    // Don't modify system stream IDs (TAG_ROOT_STREAMID, TAG_PREFIX*)
-    if (staticId === TAG_ROOT_STREAMID || staticId.startsWith(TAG_PREFIX)) {
-      idMap.set(staticId, staticId);
-      return staticId;
-    }
 
     const newId = `${staticId}_${prefix}`;
     idMap.set(staticId, newId);
@@ -152,11 +145,7 @@ function createDynData (options = {}) {
 
     // Map streamIds
     if (dynEvent.streamIds) {
-      dynEvent.streamIds = dynEvent.streamIds.map(sid => {
-        // Don't modify tag streams
-        if (sid.startsWith(TAG_PREFIX)) return sid;
-        return dynId(sid);
-      });
+      dynEvent.streamIds = dynEvent.streamIds.map(sid => dynId(sid));
     }
 
     // Map headId for history events
@@ -455,11 +444,7 @@ function createDynData (options = {}) {
   function resetEvents (done, user) {
     const u = user || defaultUser;
 
-    const eventsToWrite = events.map((e) => {
-      const eventToWrite = structuredClone(e);
-      delete eventToWrite.tags;
-      return eventToWrite;
-    });
+    const eventsToWrite = events.map((e) => structuredClone(e));
 
     const promise = (async () => {
       await ensureDependencies();

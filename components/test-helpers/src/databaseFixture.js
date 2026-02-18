@@ -462,7 +462,7 @@ class FixtureEvent extends FixtureItem {
   }
 
   /**
-   * @returns {{ id: string; time: number; duration: number; type: any; tags: any[]; content: number; }}
+   * @returns {{ id: string; time: number; duration: number; type: any; content: number; }}
    */
   fakeAttributes () {
     // NOTE no need to worry about streamId, this is enforced by the
@@ -472,7 +472,6 @@ class FixtureEvent extends FixtureItem {
       time: Charlatan.Date.backward().getTime() / 1000,
       duration: 0,
       type: Charlatan.Helpers.sample(['mass/kg']),
-      tags: [],
       content: 90
     };
   }

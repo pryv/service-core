@@ -21,7 +21,6 @@ const validation = helpers.validation;
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
-const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const { getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
 
@@ -443,8 +442,7 @@ describe('[ROOT] root', function () {
             time: timestamp.now('1h'),
             duration: timestamp.duration('1h'),
             type: testType,
-            description: 'valid event B',
-            tags: ['hop']
+            description: 'valid event B'
           }
         },
         {
@@ -474,7 +472,6 @@ describe('[ROOT] root', function () {
         results[0].event,
         Object.assign({}, calls[0].params, {
           id: results[0].event.id,
-          tags: [],
           integrity: results[0].event.integrity
         }),
         integrity.events.isActive ? [] : ['integrity']
@@ -484,7 +481,6 @@ describe('[ROOT] root', function () {
       validation.checkObjectEquality(
         results[1].event,
         Object.assign({}, calls[1].params, {
-          streamIds: calls[1].params.streamIds.concat(calls[1].params.tags.map(t => TAG_PREFIX + t)),
           id: results[1].event.id,
           integrity: results[1].event.integrity
         }),
@@ -544,7 +540,6 @@ describe('[ROOT] root', function () {
       validation.checkObjectEquality(
         results[1].event,
         Object.assign({}, calls[1].params, {
-          tags: [],
           id: results[1].event.id,
           integrity: results[1].event.integrity
         }),

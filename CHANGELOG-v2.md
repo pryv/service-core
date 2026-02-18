@@ -12,3 +12,8 @@
 ### Phase 3: Remove `streamId` (singular) Backward Compatibility
 - **REMOVED**: Events no longer return `streamId` (singular). Only `streamIds` (array) is returned.
 - **REMOVED**: Event creation/update no longer accepts `streamId`. Use `streamIds: [...]` instead.
+
+### Phase 4: Remove Tags Backward Compatibility
+- **REMOVED**: `tags` property on events (input and output). Tags were previously converted to prefixed streamIds.
+- **REMOVED**: `tags` query parameter for events.get.
+- **REMOVED**: Tag-based access permissions (`{ tag: ..., level: ... }`).

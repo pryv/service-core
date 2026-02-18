@@ -92,15 +92,12 @@ class AccessLogic {
 
   /**
    * Loads permissions from `this.permissions`.
-   * - Loads tag permissions into `tagPermissions`/`tagPermissionsMap`.
    */
   async loadPermissions () {
     if (!this.permissions) {
       return;
     }
 
-    this.tagPermissions = [];
-    this.tagPermissionsMap = {};
     this.featurePermissionsMap = {};
     this._streamByStorePermissionsMap = {};
     this._streamByStoreForced = {};
@@ -108,16 +105,9 @@ class AccessLogic {
     for (const perm of this.permissions) {
       if (perm.streamId != null) {
         await this._loadStreamPermission(perm);
-      } else if (perm.tag != null) {
-        this._loadTagPermission(perm);
       } else if (perm.feature != null) {
         this._loadFeaturePermission(perm);
       }
-    }
-
-    // allow to read all tags if only stream permissions defined
-    if (!this.hasTagPermissions() && this.hasStreamPermissions()) {
-      this._registerTagPermission({ tag: '*', level: 'read' });
     }
   }
 
@@ -253,19 +243,6 @@ class AccessLogic {
     }
   }
 
-  _loadTagPermission (perm) {
-    const existingPerm = this.tagPermissionsMap[perm.tag];
-    if ((existingPerm != null) && isHigherOrEqualLevel(existingPerm.level, perm.level)) {
-      return;
-    }
-    this._registerTagPermission(perm);
-  }
-
-  _registerTagPermission (perm) {
-    this.tagPermissions.push(perm);
-    this.tagPermissionsMap[perm.tag] = perm;
-  }
-
   /** ---------- GENERIC --------------- */
 
   can (methodId) {
@@ -349,10 +326,6 @@ class AccessLogic {
         if (!myLevel || isLowerLevel(myLevel, perm.level) || myLevel === 'create-only') {
           return false;
         }
-      } else if (perm.tag != null) {
-        const myTagPermission = this.tagPermissionsMap[perm.tag];
-        const myLevel = myTagPermission?.level;
-        if (!myLevel || isLowerLevel(myLevel, perm.level)) return false;
       } else if (perm.feature != null) {
         const allow = this._canCreateAccessWithFeaturePermission(perm);
         if (!allow) return false;
@@ -418,75 +391,6 @@ class AccessLogic {
     return await this.canCreateEventsOnStream(streamId);
   }
 
-  canGetEventsWithAnyTag () {
-    return this.isPersonal() || !!this._getTagPermissionLevel('*');
-  }
-
-  /** kept private as not used elsewhere */
-  _canGetEventsWithTag (tag) {
-    if (this.isPersonal()) return true;
-    const level = this._getTagPermissionLevel(tag);
-    if (level === 'create-only') return false;
-    return (level != null) && isHigherOrEqualLevel(level, 'read');
-  }
-
-  /** kept private as not used elsewhere */
-  _canCreateEventsWithTag (tag) {
-    if (this.isPersonal()) return true;
-    const level = this._getTagPermissionLevel(tag);
-    return (level != null) && isHigherOrEqualLevel(level, 'contribute');
-  }
-
-  /** kept private as not used elsewhere */
-  _canUpdateEventWithTag (tag) {
-    if (this.isPersonal()) return true;
-    const level = this._getTagPermissionLevel(tag);
-    if (level === 'create-only') return false;
-    return this._canCreateEventsWithTag(tag);
-  }
-
-  /*
-  * Whether events in the given stream and tags context can be read.
-  *
-  * @param streamId
-  * @param tags
-  * @returns {Boolean}
-  */
-  async canGetEventsOnStreamAndWithTags (streamId, tags) {
-    if (this.isPersonal()) return true;
-    return (await this.canGetEventsOnStream(streamId, 'local')) &&
-      (this.canGetEventsWithAnyTag() ||
-        _.some(tags || [], this._canGetEventsWithTag.bind(this)));
-  }
-
-  /**
-   * Whether events in the given stream and tags context can be updated/deleted.
-   *
-   * @param streamId
-   * @param tags
-   * @returns {Boolean}
-   */
-  async canUpdateEventsOnStreamAndWIthTags (streamId, tags) {
-    if (this.isPersonal()) return true;
-    return (await this.canUpdateEventsOnStream(streamId)) ||
-      (this._canUpdateEventWithTag('*') ||
-        _.some(tags || [], this._canUpdateEventWithTag.bind(this)));
-  }
-
-  /**
-   * Whether events in the given stream and tags context can be created/updated/deleted.
-   *
-   * @param streamId
-   * @param tags
-   * @returns {Boolean}
-   */
-  async canCreateEventsOnStreamAndWIthTags (streamId, tags) {
-    if (this.isPersonal()) return true;
-    return (await this.canCreateEventsOnStream(streamId)) ||
-      (this._canCreateEventsWithTag('*') ||
-        _.some(tags || [], this._canCreateEventsWithTag.bind(this)));
-  }
-
   /**
    * new fashion to retrieve stream permissions
    * @param {identifier} fullStreamId :{storeId}:{streamId}
@@ -533,18 +437,6 @@ class AccessLogic {
   }
 
   /**
-   * @returns {String} `null` if no matching permission exists.
-   */
-  _getTagPermissionLevel (tag) {
-    if (this.isPersonal()) {
-      return 'manage';
-    } else {
-      const permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
-      return (permission != null) ? permission.level : null;
-    }
-  }
-
-  /**
    * return true is this access can create an access with this feature
    */
   _canCreateAccessWithFeaturePermission (featurePermission) {
@@ -568,10 +460,6 @@ class AccessLogic {
 
   hasStreamPermissions () {
     return Object.keys(this._streamByStorePermissionsMap).length > 0;
-  }
-
-  hasTagPermissions () {
-    return ((this.tagPermissions != null) && this.tagPermissions.length > 0);
   }
 }
 

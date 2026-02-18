@@ -5,7 +5,6 @@
  * Refer to LICENSE file
  */
 const timestamp = require('unix-timestamp');
-const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 
 module.exports = [
   {
@@ -185,67 +184,5 @@ module.exports = [
     modified: timestamp.now('-10h'),
     modifiedBy: 'test',
     children: []
-  },
-  // migrated tags
-  {
-    id: TAG_ROOT_STREAMID,
-    name: 'Tags Migrated',
-    parentId: null,
-    created: timestamp.now(),
-    createdBy: 'test',
-    modified: timestamp.now(),
-    modifiedBy: 'test',
-    children: [
-      {
-        id: TAG_PREFIX + 'cali',
-        name: 'cali',
-        parentId: TAG_ROOT_STREAMID,
-        created: 1632320812.196,
-        createdBy: 'test',
-        modified: 1632320812.196,
-        modifiedBy: 'test',
-        children: []
-      },
-      {
-        id: TAG_PREFIX + 'docious',
-        name: 'docious',
-        parentId: TAG_ROOT_STREAMID,
-        created: 1632320812.196,
-        createdBy: 'test',
-        modified: 1632320812.196,
-        modifiedBy: 'test',
-        children: []
-      },
-      {
-        id: TAG_PREFIX + 'expiali',
-        name: 'expiali',
-        parentId: TAG_ROOT_STREAMID,
-        created: 1632320812.196,
-        createdBy: 'test',
-        modified: 1632320812.196,
-        modifiedBy: 'test',
-        children: []
-      },
-      {
-        id: TAG_PREFIX + 'fragilistic',
-        name: 'fragilistic',
-        parentId: TAG_ROOT_STREAMID,
-        created: 1632320812.196,
-        createdBy: 'test',
-        modified: 1632320812.196,
-        modifiedBy: 'test',
-        children: []
-      },
-      {
-        id: TAG_PREFIX + 'super',
-        name: 'super',
-        parentId: TAG_ROOT_STREAMID,
-        created: 1632320812.196,
-        createdBy: 'test',
-        modified: 1632320812.196,
-        modifiedBy: 'test',
-        children: []
-      }
-    ]
   }
 ];

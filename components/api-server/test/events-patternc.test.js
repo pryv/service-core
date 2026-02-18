@@ -15,8 +15,6 @@
 
 const ErrorIds = require('errors').ErrorIds;
 const timestamp = require('unix-timestamp');
-const { TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
-
 describe('[EVPC] events (Pattern C)', function () {
   let username, token, basePath;
   let user, fixtures;
@@ -284,7 +282,6 @@ describe('[EVPC] events (Pattern C)', function () {
         type: 'temperature/celsius',
         content: 36.7,
         streamIds: [stream1Id],
-        tags: [' patapoumpoum ', '   ', ''],
         description: 'Test description',
         clientData: { testField: 'testValue' }
       };
@@ -298,7 +295,6 @@ describe('[EVPC] events (Pattern C)', function () {
       assert.ok(res.body.event);
       assert.strictEqual(res.body.event.type, data.type);
       assert.strictEqual(res.body.event.content, data.content);
-      assert.deepStrictEqual(res.body.event.tags, ['patapoumpoum']); // trimmed
       assert.strictEqual(res.body.event.description, data.description);
 
       // Check notification
@@ -333,7 +329,6 @@ describe('[EVPC] events (Pattern C)', function () {
         content: null,
         description: null,
         clientData: null,
-        tags: null,
         trashed: null
       };
       const res = await coreRequest
@@ -384,35 +379,6 @@ describe('[EVPC] events (Pattern C)', function () {
         .send(data);
 
       assert.strictEqual(res.status, 400);
-    });
-
-    it('[PC26] must reject tags that are too long', async function () {
-      const bigTag = new Array(600).join('a');
-      const data = {
-        streamIds: [stream2Id],
-        type: 'generic/count',
-        content: 1,
-        tags: [bigTag]
-      };
-      const res = await coreRequest
-        .post(basePath)
-        .set('Authorization', token)
-        .send(data);
-
-      assert.strictEqual(res.status, 400);
-    });
-
-    it('[PC27] must fix the tags to an empty array if not set', async function () {
-      const data = { streamIds: [stream1Id], type: 'test/test' };
-
-      const res = await coreRequest
-        .post(basePath)
-        .set('Authorization', token)
-        .send(data);
-
-      assert.strictEqual(res.statusCode, 201);
-      assert.ok(res.body.event.tags);
-      assert.deepStrictEqual(res.body.event.tags, []);
     });
 
     it('[PC28] must validate the event content if its type is known', async function () {
@@ -552,7 +518,6 @@ describe('[EVPC] events (Pattern C)', function () {
           streamIds: [stream1Id],
           type: 'note/txt',
           content: 'Original content',
-          tags: ['original'],
           clientData: { stringProp: 'original', numberProp: 42 }
         });
       eventId = res.body.event.id;
@@ -566,7 +531,6 @@ describe('[EVPC] events (Pattern C)', function () {
         type: 'test/test',
         content: 'updated',
         streamIds: [stream1ChildId],
-        tags: [' yippiya ', ' ', ''],
         description: 'New description',
         clientData: { clientField: 'client value' }
       };
@@ -578,7 +542,6 @@ describe('[EVPC] events (Pattern C)', function () {
 
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.body.event.content, 'updated');
-      assert.deepStrictEqual(res.body.event.tags, ['yippiya']);
       assert.strictEqual(res.body.event.description, 'New description');
 
       if (global.axonMsgs && global.axonMsgs.length > 0) {
@@ -613,7 +576,6 @@ describe('[EVPC] events (Pattern C)', function () {
         content: null,
         description: null,
         clientData: null,
-        tags: null,
         trashed: null
       };
       const res = await coreRequest
@@ -667,16 +629,6 @@ describe('[EVPC] events (Pattern C)', function () {
 
       assert.strictEqual(res.status, 400);
       assert.strictEqual(res.body.error.id, ErrorIds.UnknownReferencedResource);
-    });
-
-    it('[PC57] must reject tags that are too long', async function () {
-      const bigTag = new Array(600).join('a');
-      const res = await coreRequest
-        .put(path(eventId))
-        .set('Authorization', token)
-        .send({ tags: [bigTag] });
-
-      assert.strictEqual(res.status, 400);
     });
   });
 
@@ -734,56 +686,6 @@ describe('[EVPC] events (Pattern C)', function () {
 
       assert.strictEqual(res.status, 404);
       assert.strictEqual(res.body.error.id, ErrorIds.UnknownResource);
-    });
-  });
-
-  describe('[EPC06] Tags handling', function () {
-    it('[PC70] must only return events with the given tag when set', async function () {
-      // Create events with specific tags
-      await coreRequest
-        .post(basePath)
-        .set('Authorization', token)
-        .send({ streamIds: [stream1Id], type: 'note/txt', content: 'Tagged 1', tags: ['super'] });
-
-      await coreRequest
-        .post(basePath)
-        .set('Authorization', token)
-        .send({ streamIds: [stream1Id], type: 'note/txt', content: 'Tagged 2', tags: ['other'] });
-
-      const res = await coreRequest
-        .get(basePath)
-        .set('Authorization', token)
-        .query({ tags: ['super'], fromTime: timestamp.now('-1h') });
-
-      assert.strictEqual(res.status, 200);
-      res.body.events.forEach(event => {
-        // Event should have the tag in streamIds (TAG_PREFIX + tag)
-        const hasTag = event.streamIds.some(sid => sid === TAG_PREFIX + 'super') ||
-                       (event.tags && event.tags.includes('super'));
-        assert.ok(hasTag, 'Event should have super tag');
-      });
-    });
-
-    it('[PC71] must only return events with any of the given tags when set', async function () {
-      // Create events with different tags
-      await coreRequest
-        .post(basePath)
-        .set('Authorization', token)
-        .send({ streamIds: [stream1Id], type: 'note/txt', content: 'Multi tag 1', tags: ['tagA'] });
-
-      await coreRequest
-        .post(basePath)
-        .set('Authorization', token)
-        .send({ streamIds: [stream1Id], type: 'note/txt', content: 'Multi tag 2', tags: ['tagB'] });
-
-      const res = await coreRequest
-        .get(basePath)
-        .set('Authorization', token)
-        .query({ tags: ['tagA', 'tagB'], fromTime: timestamp.now('-1h') });
-
-      assert.strictEqual(res.status, 200);
-      // Should have at least 2 events
-      assert.ok(res.body.events.length >= 2);
     });
   });
 

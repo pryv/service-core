@@ -13,7 +13,6 @@ const errors = require('errors').factory;
 const { getMall, storeDataUtils } = require('mall');
 const { treeUtils } = require('utils');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
-const AddTagsStream = require('../streams/AddTagsStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 let mall;
 
@@ -145,7 +144,6 @@ function coerceStreamsParam (context, params, result, next) {
  */
 async function applyDefaultsForRetrieval (context, params, result, next) {
   params.streams ??= [{ any: ['*'] }];
-  params.tags ??= null;
   params.types ??= null;
   params.fromTime ??= null;
   params.toTime ??= null;
@@ -387,14 +385,13 @@ async function streamQueryAddHiddenStreams (context, params, result, next) {
  * - Create a copy of the params per query
  * - Add specific stream queries to each of them
  * @param {string} filesReadTokenSecret
- * @param {boolean} isTagsBackwardCompatibilityActive
  * @param {MethodContext} context
  * @param {GetEventsParams} params
  * @param {Result} result
  * @param {ApiCallback} next
  * @returns {Promise<any>}
  */
-async function findEventsFromStore (filesReadTokenSecret, isTagsBackwardCompatibilityActive, context, params, result, next) {
+async function findEventsFromStore (filesReadTokenSecret, context, params, result, next) {
   if (params.arrayOfStreamQueriesWithStoreId?.length === 0) {
     result.events = [];
     return next();
@@ -422,9 +419,6 @@ async function findEventsFromStore (filesReadTokenSecret, isTagsBackwardCompatib
    */
   function addEventsStreamFromStore (storeSettings, eventsStream) {
     let stream = eventsStream;
-    if (isTagsBackwardCompatibilityActive) {
-      stream = stream.pipe(new AddTagsStream());
-    }
     if (storeSettings?.attachments?.setFileReadToken) {
       stream = stream.pipe(new SetFileReadTokenStream({
         access: context.access,
@@ -449,7 +443,6 @@ async function init () {
  *   streams?: Array<string> | string | StreamQuery | Array<StreamQuery>;
  *   arrayOfStreamQueries?: Array<StreamQuery>;
  *   arrayOfStreamQueriesWithStoreId?: Array<StreamQueryWithStoreId>;
- *   tags?: Array<string>;
  *   types?: Array<string>;
  *   fromTime?: number;
  *   toTime?: number;

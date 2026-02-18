@@ -17,7 +17,6 @@ const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { TAG_ROOT_STREAMID, TAG_PREFIX } = require('api-server/src/methods/helpers/backwardCompatibility');
 const DOT = '.';
 const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 const userLocalDirectory = require('storage').userLocalDirectory;
@@ -60,10 +59,6 @@ describe('[MG70] Migration - 1.7.x', function () {
     const usersCursor = usersCollection.find({});
     const users = await usersCursor.toArray();
 
-    // for tags keeps info on existings tags & events
-    const previousEventsWithTags = await eventsCollection.find({ tags: { $exists: true, $ne: [] } }).toArray();
-    const previousAccessesWithTags = await accessesCollection.find({ 'permissions.tag': { $exists: true } }).toArray();
-
     // deleted
     const collectionsWithDelete = [eventsCollection, accessesCollection, streamsCollection, webhooksCollection];
     const previousItemsWithDelete = {};
@@ -101,36 +96,6 @@ describe('[MG70] Migration - 1.7.x', function () {
 
     const migratedIndexes = await eventsCollection.listIndexes({}).toArray();
     compareIndexes(newIndexes.events, migratedIndexes);
-
-    // ----------------- tag migrations
-    const eventsWithTags = await eventsCollection.find({ tags: { $exists: true, $ne: [] } }).toArray();
-    assert.strictEqual(eventsWithTags.length, 0);
-    for (const event of previousEventsWithTags) {
-      const newEvent = await eventsCollection.findOne({ _id: event._id });
-      // check if tags have been added to streamIds
-      for (const tag of event.tags) {
-        assert.ok(newEvent.streamIds.includes(TAG_PREFIX + tag));
-        // check if stream exists for this user
-        const stream = await streamsCollection.findOne({ userId: event.userId, streamId: TAG_PREFIX + tag });
-        assert.ok(stream != null);
-        assert.strictEqual(stream.parentId, TAG_ROOT_STREAMID);
-      }
-    }
-
-    // -- permissions
-    const permissionsWithTags = await accessesCollection.find({ 'permissions.tag': { $exists: true } }).toArray();
-    assert.strictEqual(permissionsWithTags.length, 0);
-
-    for (const previousAccess of previousAccessesWithTags) {
-      const newAccess = await accessesCollection.findOne({ _id: previousAccess._id });
-      const forcedStreamsPerms = newAccess.permissions.filter(p => (p.feature && p.feature === 'forcedStreams'));
-      assert.strictEqual(forcedStreamsPerms.length, 1);
-      const forcedStreams = forcedStreamsPerms[0].streams;
-      assert.ok(forcedStreams.length > 0);
-      for (const permission of previousAccess.permissions) {
-        if (permission.tag) { assert.ok(forcedStreams.includes(TAG_PREFIX + permission.tag)); }
-      }
-    }
 
     // -----------------  deleted  migrations
 

@@ -95,11 +95,6 @@ audit:
     formats: # define your own template for each type of "log/<format>" event
       default: {"template":"{userid} {type} createdBy:{createdBy} {streamIds} {content}","level":"notice"}
     filter: {"methods":{"include":["accesses.create"],"exclude":[]}}
-backwardCompatibility:
-  systemStreams:
-    prefix:
-      isActive: false
-  tags: {"isActive":false,"rootStreamId":"tags-migrated","streamIdPrefix":"tag-migrated-"}
 uploads:
   maxSizeMb: 20
 integrity: {"isActive":{"attachments":false,"events":false,"accesses":false},"algorithm":"sha256"}

@@ -70,12 +70,6 @@ user-account:
     - 'adminToken' # enable deletion from admin Panel
     #- 'personalToken' # enable self deletion request with a personal token
 
-backwardCompatibility:
-  tags:
-    isActive: true
-    rootStreamId: 'tags-migrated'
-    streamIdPrefix: 'tag-migrated-'
-
 custom:
   systemStreams:
     account:

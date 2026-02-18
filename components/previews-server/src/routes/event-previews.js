@@ -55,7 +55,7 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
       let canReadEvent = false;
       for (let i = 0; i < event.streamIds.length; i++) {
         // ok if at least one
-        if (await context.access.canGetEventsOnStreamAndWithTags(event.streamIds[i], event.tags)) {
+        if (await context.access.canGetEventsOnStream(event.streamIds[i], 'local')) {
           canReadEvent = true;
           break;
         }

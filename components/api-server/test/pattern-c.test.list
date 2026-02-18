@@ -10,7 +10,6 @@ test/permissions-create-only.test.js
 test/permissions-forcedStreams.test.js
 test/permissions-none.test.js
 test/permissions-selfRevoke.test.js
-test/permissions-tags.test.js
 test/profile-app.test.js
 test/profile-personal.test.js
 test/service-info.test.js

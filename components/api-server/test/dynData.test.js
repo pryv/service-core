@@ -90,11 +90,10 @@ describe('[DYND] dynData', function () {
       assert.ok(event.streamIds, 'event should have streamIds');
       assert.ok(event.streamIds.length > 0, 'event should have at least one streamId');
 
-      // Non-tag streamIds should contain the prefix
-      // Tag streams have IDs like 'tag-migrated-xxx' or start with '.'
+      // Non-system streamIds should contain the prefix
       for (const sid of event.streamIds) {
-        const isTagStream = sid.startsWith('.') || sid.startsWith('tag-');
-        if (!isTagStream) {
+        const isSystemStream = sid.startsWith('.');
+        if (!isSystemStream) {
           assert.ok(sid.includes(data.prefix),
             `streamId ${sid} should contain prefix ${data.prefix}`);
         }

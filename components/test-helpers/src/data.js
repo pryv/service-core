@@ -111,11 +111,7 @@ exports.addCorrectAttachmentIds = addCorrectAttachmentIds;
 exports.resetEvents = function resetEvents (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
-  const eventsToWrite = events.map((e) => {
-    const eventToWrite = structuredClone(e);
-    delete eventToWrite.tags;
-    return eventToWrite;
-  });
+  const eventsToWrite = events.map((e) => structuredClone(e));
   let mall;
   async.series([
     async function removeNonAccountEvents () {

@@ -200,8 +200,7 @@ describe('[VERS] Versioning', function () {
             const event = await mall.events.getOne(user.id, trashedEventWithHistory.id);
             assert.ok(event);
             const expected = structuredClone(trashedEventWithHistory);
-            // this comes from the storage .. no need to test tags
-            delete expected.tags;
+
             expected.deleted = event.deleted;
             integrity.events.set(expected);
             assert.deepStrictEqual(event, expected);
@@ -217,14 +216,12 @@ describe('[VERS] Versioning', function () {
                 const expected = structuredClone(testData.events[20]);
                 expected.id = expected.headId;
                 delete expected.headId;
-                delete expected.tags;// this comes from the storage .. no need to test tags
                 assert.deepStrictEqual(event, expected);
                 checked.first = true;
               } else if (event.modified === testData.events[21].modified) {
                 const expected = structuredClone(testData.events[21]);
                 expected.id = expected.headId;
                 delete expected.headId;
-                delete expected.tags;// this comes from the storage .. no need to test tags
                 assert.deepStrictEqual(event, expected);
                 checked.second = true;
               }
@@ -360,8 +357,8 @@ describe('[VERS] Versioning', function () {
                       assert.ok(previousVersion.modified > time);
                     }
                     time = previousVersion.modified;
-                    assert.deepStrictEqual(_.omit(previousVersion, ['modified', 'modifiedBy', 'content', 'tags', 'integrity']),
-                      _.omit(eventWithNoHistory, ['modified', 'modifiedBy', 'content', 'tags', 'integrity']));
+                    assert.deepStrictEqual(_.omit(previousVersion, ['modified', 'modifiedBy', 'content', 'integrity']),
+                      _.omit(eventWithNoHistory, ['modified', 'modifiedBy', 'content', 'integrity']));
                   });
                   stepDone();
                 });
@@ -393,8 +390,8 @@ describe('[VERS] Versioning', function () {
                   assert.strictEqual(res.body.history.length, 1);
                   const previousVersion = res.body.history[0];
                   assert.strictEqual(previousVersion.id, eventWithNoHistory.id);
-                  assert.deepStrictEqual(_.omit(previousVersion, ['modified', 'modifiedBy', 'trashed', 'integrity', 'tags']),
-                    _.omit(eventWithNoHistory, ['modified', 'modifiedBy', 'integrity', 'tags']));
+                  assert.deepStrictEqual(_.omit(previousVersion, ['modified', 'modifiedBy', 'trashed', 'integrity']),
+                    _.omit(eventWithNoHistory, ['modified', 'modifiedBy', 'integrity']));
                   stepDone();
                 });
           }
@@ -557,8 +554,6 @@ describe('[VERS] Versioning', function () {
           assert.ok(event);
           const expected = structuredClone(eventOnChildStream);
           expected.deleted = event.deleted;
-          // we can remove tags as it comes from the db
-          delete expected.tags;
           integrity.events.set(expected);
           assert.deepStrictEqual(event, expected);
         },
@@ -569,9 +564,7 @@ describe('[VERS] Versioning', function () {
           events.forEach(function (event) {
             assert.strictEqual(event.id, eventOnChildStream.id);
             if (event.id === testData.events[26].id) {
-              // we can remove tags as it comes from the db
               const expected = structuredClone(testData.events[26]);
-              delete expected.tags;
               assert.deepStrictEqual(event, expected);
             }
           });
