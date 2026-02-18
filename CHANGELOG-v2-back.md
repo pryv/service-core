@@ -1,5 +1,31 @@
 # Changelog - Internal (no API impact)
 
+## Formalize Storage Interfaces (Phase 3a)
+
+### UserAccountStorage Interface (Group D)
+- New interface prototype + `createUserAccountStorage()` factory in `storage/src/interfaces/`
+- Wrapped Mongo and SQLite implementations with factory
+- Added standardized migration methods: `_exportAll`, `_importAll`, `_clearAll`
+- Conformance test suite; existing unit test now delegates to it
+
+### UsersLocalIndexDB Interface (Group E)
+- New interface prototype + `validateUsersLocalIndexDB()` validation in `storage/src/interfaces/`
+- Added migration methods (`exportAll`, `importAll`, `clearAll`) to Mongo and SQLite classes
+- Validation called after construction in `usersLocalIndex.js`
+
+### PlatformDB Interface (Group F)
+- New interface prototype + `validatePlatformDB()` validation in `platform/src/interfaces/`
+- Added migration methods (`exportAll`, `importAll`, `clearAll`) to Mongo and SQLite classes
+- Validation called after construction in `getPlatformDB.js`
+
+### EventFiles Interface (Group G)
+- New interface prototype + `createEventFiles()` factory + `validateEventFiles()` in `storage/src/interfaces/`
+- Validation called after construction in `getEventFiles.js`
+
+### Exports & Migration Scripts
+- `storage/src/index.js` exports all interfaces under `interfaces` key
+- Migration scripts (`switchSqliteMongo/`) simplified using standardized `exportAll`/`importAll`/`clearAll`
+
 ## Remove Deprecated Features (Phase 2)
 
 ### Phase 0: Trivial Cleanup

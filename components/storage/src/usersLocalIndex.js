@@ -10,6 +10,7 @@
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const cache = require('cache');
+const { validateUsersLocalIndexDB } = require('./interfaces/UsersLocalIndexDB');
 
 const logger = getLogger('users:local-index');
 
@@ -37,6 +38,7 @@ class UsersLocalIndex {
     }
 
     await this.db.init();
+    validateUsersLocalIndexDB(this.db);
 
     logger.debug('init');
   }

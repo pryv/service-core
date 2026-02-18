@@ -5,87 +5,17 @@
  * Refer to LICENSE file
  */
 
-const assert = require('node:assert');
-const cuid = require('cuid');
-const timestamp = require('unix-timestamp');
-const encryption = require('utils').encryption;
-
 const { userLocalDirectory, getUserAccountStorage } = require('storage');
+const conformanceTests = require('../conformance/UserAccountStorage.test');
 
 describe('[UAST] Users Account Storage', () => {
-  const passwords = []; // password will be stored in reverse order (oldest first)
-  const userId = cuid();
-  let userAccountStorage;
-
-  before(async () => {
-    await userLocalDirectory.init();
-    userAccountStorage = await getUserAccountStorage();
-    // create five passwords with one day delay between each other
-    const now = timestamp.now();
-    for (let i = 4; i >= 0; i--) { // in descending order
-      const password = `pass_${i}`;
-      const passwordHash = await encryption.hash(password);
-      const createdPassword = await userAccountStorage.addPasswordHash(userId, passwordHash, 'test', timestamp.add(now, `-${i}d`));
-      assert.ok(createdPassword.time != null);
-      createdPassword.password = password;
-      passwords.push(createdPassword);
+  conformanceTests(
+    async () => {
+      await userLocalDirectory.init();
+      return await getUserAccountStorage();
+    },
+    async (userId) => {
+      await userLocalDirectory.deleteUserDirectory(userId);
     }
-  });
-
-  after(async () => {
-    await userLocalDirectory.deleteUserDirectory(userId);
-  });
-
-  describe('[UA01] addPasswordHash()', () => {
-    it('[B2I7] must throw an error if two passwords are added with the same time', async () => {
-      const userId2 = cuid();
-      const now = timestamp.now();
-      await userAccountStorage.addPasswordHash(userId2, 'hash_1', 'test', now);
-      try {
-        await userAccountStorage.addPasswordHash(userId2, 'hash_2', 'test', now);
-      } catch (e) {
-        assert.equal(e.message, 'UNIQUE constraint failed: passwords.time');
-        return;
-      }
-      assert.fail('should throw an error');
-    });
-  });
-
-  describe('[UA02] getCurrentPasswordTime()', () => {
-    it('[85PW] must return the time of the current password', async () => {
-      const uId = cuid();
-      const time = timestamp.now('-1w');
-      await userAccountStorage.addPasswordHash(uId, 'hash', 'test', time);
-      const actualTime = await userAccountStorage.getCurrentPasswordTime(uId);
-      assert.strictEqual(actualTime, time, 'times should match');
-    });
-
-    it('[V54S] must throw an error if there is no password for the user id', async () => {
-      try {
-        await userAccountStorage.getCurrentPasswordTime(cuid());
-      } catch (e) {
-        assert.match(e.message, /No password found/);
-      }
-    });
-  });
-
-  describe('[UA03] passwordExistsInHistory()', () => {
-    it('[1OQP] must return true when looking for existing passwords', async () => {
-      for (const password of passwords) {
-        const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, password.password, passwords.length);
-        assert.strictEqual(passwordExists, true, 'should find password ' + JSON.stringify(password));
-      }
-    });
-
-    it('[DO33] must return false when looking for a non-existing password', async () => {
-      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, 'unknown-password', passwords.length);
-      assert.strictEqual(passwordExists, false, 'should not find password with non-existing hash');
-    });
-
-    it('[FEYP] must return false when looking for an existing password that is beyond the given range', async () => {
-      const oldestPassword = passwords[0];
-      const passwordExists = await userAccountStorage.passwordExistsInHistory(userId, oldestPassword.password, passwords.length - 1);
-      assert.strictEqual(passwordExists, false, 'should not find password beyond the given range: ' + JSON.stringify(oldestPassword));
-    });
-  });
+  );
 });

@@ -8,12 +8,8 @@
 /**
  * SQLite storage for per-user data such as:
  * - Password and password history
- * - Profile
+ * - Per-store key-value data
  * The DB file is located in the root of each user account folder.
- *
- * TODO: This should be refactored and merged with Audit Storage and SQLite Event storage from branch
- * https://github.com/pryv/service-core/tree/test/sqlite-4-events
- * into a single "user-centric" storage
  */
 
 const path = require('path');
@@ -23,6 +19,7 @@ const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
 
 const userLocalDirectory = require('./userLocalDirectory');
+const { createUserAccountStorage } = require('./interfaces/UserAccountStorage');
 
 const CACHE_SIZE = 100;
 const VERSION = '1.0.0';
@@ -37,7 +34,7 @@ const InitStates = {
 };
 let initState = InitStates.NOT_INITIALIZED;
 
-module.exports = {
+module.exports = createUserAccountStorage({
   init,
   addPasswordHash,
   getPasswordHash,
@@ -47,8 +44,11 @@ module.exports = {
   getKeyValueDataForStore,
   _getPasswordHistory,
   _getAllStoreData,
-  _clearStoreData
-};
+  _clearStoreData,
+  _exportAll,
+  _importAll,
+  _clearAll
+});
 
 async function init () {
   while (initState === InitStates.INITIALIZING) {
@@ -105,7 +105,7 @@ async function passwordExistsInHistory (userId, password, historyLength) {
 }
 
 /**
- * Retreive all password history, used for Migration
+ * Retrieve all password history, used for migration
  */
 async function _getPasswordHistory (userId) {
   const db = await getUserDB(userId);
@@ -118,7 +118,7 @@ async function _getPasswordHistory (userId) {
 }
 
 /**
- * Retreive all strore data, used for Migration
+ * Retrieve all store data, used for migration
  */
 async function _getAllStoreData (userId) {
   const db = await getUserDB(userId);
@@ -131,7 +131,7 @@ async function _getAllStoreData (userId) {
 }
 
 /**
- * Clear data for user, used for migration
+ * Clear store data for user, used for migration
  */
 async function _clearStoreData (userId) {
   const db = await getUserDB(userId);
@@ -199,6 +199,40 @@ async function clearHistory (userId) {
   db.prepare('DELETE FROM passwords').run();
 }
 
+// MIGRATION METHODS
+
+async function _exportAll (userId) {
+  const passwords = await _getPasswordHistory(userId);
+  const storeKeyValues = await _getAllStoreData(userId);
+  return { passwords, storeKeyValues };
+}
+
+async function _importAll (userId, data) {
+  if (data.passwords) {
+    for (const p of data.passwords) {
+      await addPasswordHash(userId, p.hash, p.createdBy, p.time);
+    }
+  }
+  if (data.storeKeyValues) {
+    const db = await getUserDB(userId);
+    for (const kv of data.storeKeyValues) {
+      const valueStr = typeof kv.value === 'string' ? kv.value : JSON.stringify(kv.value);
+      db.prepare('REPLACE INTO storeKeyValueData (storeId, key, value) VALUES (@storeId, @key, @value)').run({
+        storeId: kv.storeId,
+        key: kv.key,
+        value: valueStr
+      });
+    }
+  }
+}
+
+async function _clearAll (userId) {
+  await clearHistory(userId);
+  await _clearStoreData(userId);
+}
+
+// DB HELPERS
+
 async function getUserDB (userId) {
   return dbCache.get(userId) || (await openUserDB(userId));
 }
@@ -208,7 +242,6 @@ async function openUserDB (userId) {
   const dbPath = path.join(userPath, `account-${VERSION}.sqlite`);
   const db = new SQLite3(dbPath, DB_OPTIONS);
   db.pragma('journal_mode = WAL');
-  // db.pragma('busy_timeout = 0'); // We take care of busy timeout ourselves as long as current driver does not go below the second
   db.unsafeMode(true);
   db.prepare('CREATE TABLE IF NOT EXISTS passwords (time REAL PRIMARY KEY, hash TEXT NOT NULL, createdBy TEXT NOT NULL);').run();
   db.prepare('CREATE INDEX IF NOT EXISTS passwords_hash ON passwords(hash);').run();

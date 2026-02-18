@@ -31,7 +31,12 @@ module.exports = {
   getDatabaseSync,
   userLocalDirectory: require('./userLocalDirectory'),
   getUsersLocalIndex,
-  getUserAccountStorage
+  getUserAccountStorage,
+  interfaces: {
+    UserAccountStorage: require('./interfaces/UserAccountStorage'),
+    UsersLocalIndexDB: require('./interfaces/UsersLocalIndexDB'),
+    EventFiles: require('./interfaces/EventFiles')
+  }
 };
 
 let usersIndex;

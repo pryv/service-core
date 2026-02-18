@@ -7,6 +7,7 @@
 
 const { getConfig } = require('@pryv/boiler');
 const EventLocalFiles = require('./EventLocalFiles');
+const { validateEventFiles } = require('../interfaces/EventFiles');
 
 module.exports = {
   getEventFiles
@@ -25,5 +26,6 @@ async function getEventFiles () {
     eventFiles = new EventLocalFiles();
   }
   await eventFiles.init();
+  validateEventFiles(eventFiles);
   return eventFiles;
 }

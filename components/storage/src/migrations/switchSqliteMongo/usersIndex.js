@@ -18,14 +18,11 @@ async function switchDB () {
   await sqlite.init();
   await mongo.init();
 
-  const allUsers = await sqlite.getAllByUsername();
+  const data = await sqlite.exportAll();
+  await mongo.importAll(data);
 
-  let migratedCount = 0;
-  for (const [username, userId] of Object.entries(allUsers)) {
-    await mongo.addUser(username, userId);
-    await sqlite.deleteById(userId);
-    migratedCount++;
-  }
+  const migratedCount = Object.keys(data).length;
+  await sqlite.clearAll();
   console.log('Migrated ' + migratedCount + ' users');
   process.exit(0);
 }

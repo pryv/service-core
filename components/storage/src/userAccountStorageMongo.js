@@ -6,18 +6,14 @@
  */
 
 /**
- * SQLite storage for per-user data such as:
+ * MongoDB storage for per-user account data such as:
  * - Password and password history
- * - Profile
- * The DB file is located in the root of each user account folder.
- *
- * TODO: This should be refactored and merged with Audit Storage and SQLite Event storage from branch
- * https://github.com/pryv/service-core/tree/test/sqlite-4-events
- * into a single "user-centric" storage
+ * - Per-store key-value data
  */
 
 const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
+const { createUserAccountStorage } = require('./interfaces/UserAccountStorage');
 
 let passwordsCollection = null;
 let storesKeyValueCollection = null;
@@ -29,7 +25,7 @@ const InitStates = {
 };
 let initState = InitStates.NOT_INITIALIZED;
 
-module.exports = {
+module.exports = createUserAccountStorage({
   init,
   addPasswordHash,
   getPasswordHash,
@@ -37,8 +33,11 @@ module.exports = {
   passwordExistsInHistory,
   clearHistory,
   getKeyValueDataForStore,
-  _addKeyValueData
-};
+  _addKeyValueData,
+  _exportAll,
+  _importAll,
+  _clearAll
+});
 
 async function init () {
   while (initState === InitStates.INITIALIZING) {
@@ -165,4 +164,40 @@ StoreKeyValueData.prototype.set = async function (userId, key, value) {
  */
 async function clearHistory (userId) {
   await passwordsCollection.deleteMany({ userId });
+}
+
+// MIGRATION METHODS
+
+async function _exportAll (userId) {
+  const passwordsCursor = await passwordsCollection.find({ userId }, { sort: { time: 1 } });
+  const passwords = [];
+  for await (const entry of passwordsCursor) {
+    passwords.push({ time: entry.time, hash: entry.hash, createdBy: entry.createdBy });
+  }
+
+  const storeKeyValuesCursor = await storesKeyValueCollection.find({ userId });
+  const storeKeyValues = [];
+  for await (const entry of storeKeyValuesCursor) {
+    storeKeyValues.push({ storeId: entry.storeId, key: entry.key, value: entry.value });
+  }
+
+  return { passwords, storeKeyValues };
+}
+
+async function _importAll (userId, data) {
+  if (data.passwords) {
+    for (const p of data.passwords) {
+      await addPasswordHash(userId, p.hash, p.createdBy, p.time);
+    }
+  }
+  if (data.storeKeyValues) {
+    for (const kv of data.storeKeyValues) {
+      await _addKeyValueData(kv.storeId, userId, kv.key, kv.value);
+    }
+  }
+}
+
+async function _clearAll (userId) {
+  await passwordsCollection.deleteMany({ userId });
+  await storesKeyValueCollection.deleteMany({ userId });
 }

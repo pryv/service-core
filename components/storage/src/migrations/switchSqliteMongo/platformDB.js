@@ -20,17 +20,11 @@ async function switchDB () {
   const mongo = new Mongo();
   await mongo.init();
 
-  const users = await sqlite.getAllWithPrefix('user');
-  for (const user of users) {
-    if (user.isUnique) {
-      await mongo.setUserUniqueField(user.username, user.field, user.value);
-      await sqlite.deleteUserUniqueField(user.field, user.value);
-    } else {
-      await mongo.setUserIndexedField(user.username, user.field, user.value);
-      await sqlite.deleteUserIndexedField(user.username, user.field);
-    }
-  }
-  console.log('Transfered to mongo ' + users.length + ' users');
+  const data = await sqlite.exportAll();
+  await mongo.importAll(data);
+  await sqlite.clearAll();
+
+  console.log('Transferred to mongo ' + data.length + ' entries');
   process.exit(0);
 }
 

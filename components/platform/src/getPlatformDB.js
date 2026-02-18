@@ -5,6 +5,7 @@
  * Refer to LICENSE file
  */
 const { getConfig } = require('@pryv/boiler');
+const { validatePlatformDB } = require('./interfaces/PlatformDB');
 let db;
 
 async function getPlatformDB () {
@@ -17,6 +18,7 @@ async function getPlatformDB () {
     db = new DB();
   }
   await db.init();
+  validatePlatformDB(db);
   return db;
 }
 

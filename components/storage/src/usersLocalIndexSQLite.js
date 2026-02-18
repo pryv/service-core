@@ -81,6 +81,22 @@ class DBIndex {
       return this.queryDeleteAll.run();
     });
   }
+
+  // --- Migration methods --- //
+
+  async exportAll () {
+    return await this.getAllByUsername();
+  }
+
+  async importAll (data) {
+    for (const [username, userId] of Object.entries(data)) {
+      await this.addUser(username, userId);
+    }
+  }
+
+  async clearAll () {
+    return await this.deleteAll();
+  }
 }
 
 module.exports = DBIndex;

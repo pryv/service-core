@@ -108,6 +108,26 @@ class DB {
   isClosed () {
     return this.db == null;
   }
+
+  // --- Migration methods --- //
+
+  async exportAll () {
+    return await this.getAllWithPrefix('user');
+  }
+
+  async importAll (data) {
+    for (const entry of data) {
+      if (entry.isUnique) {
+        await this.setUserUniqueField(entry.username, entry.field, entry.value);
+      } else {
+        await this.setUserIndexedField(entry.username, entry.field, entry.value);
+      }
+    }
+  }
+
+  async clearAll () {
+    return await this.deleteAll();
+  }
 }
 
 module.exports = DB;
