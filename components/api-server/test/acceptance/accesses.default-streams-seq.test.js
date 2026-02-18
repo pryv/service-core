@@ -120,7 +120,7 @@ describe('[AD01] Accesses with account streams', function () {
           it('[S3IQ] should enable user to read visible stream event with this access', async () => {
             res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
             assert.strictEqual(res.body.events.length, 1);
-            assert.strictEqual(res.body.events[0].streamId, systemEmailStreamId);
+            assert.strictEqual(res.body.events[0].streamIds[0], systemEmailStreamId);
           });
 
           describe('[AD09] for the "account" stream', () => {
@@ -161,11 +161,11 @@ describe('[AD01] Accesses with account streams', function () {
               assert.strictEqual([
                 SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles'),
                 SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')
-              ].includes(res.body.events[0].streamId), true);
+              ].includes(res.body.events[0].streamIds[0]), true);
               assert.strictEqual([
                 SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles'),
                 SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')
-              ].includes(res.body.events[1].streamId), true);
+              ].includes(res.body.events[1].streamIds[0]), true);
             });
           });
         });
@@ -213,7 +213,7 @@ describe('[AD01] Accesses with account streams', function () {
 
             assert.strictEqual(response.status, 201);
             assert.ok(response.body.event);
-            assert.strictEqual(response.body.event.streamId, streamId);
+            assert.strictEqual(response.body.event.streamIds[0], streamId);
           });
         });
 

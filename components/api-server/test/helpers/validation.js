@@ -364,8 +364,6 @@ exports.checkFilesReadToken = function (eventOrEvents, access, secret) {
 exports.sanitizeEvent = function (event) {
   if (!event) { return; }
 
-  delete event.streamId;
-
   if (event.attachments) {
     event.attachments.forEach(function (att) {
       delete att.readToken;

@@ -200,7 +200,6 @@ describe('[VERS] Versioning', function () {
             const event = await mall.events.getOne(user.id, trashedEventWithHistory.id);
             assert.ok(event);
             const expected = structuredClone(trashedEventWithHistory);
-            delete expected.streamId;
             // this comes from the storage .. no need to test tags
             delete expected.tags;
             expected.deleted = event.deleted;
@@ -355,7 +354,6 @@ describe('[VERS] Versioning', function () {
                   const history = res.body.history;
                   let time = 0;
                   history.forEach(function (previousVersion) {
-                    delete previousVersion.streamId;
                     assert.strictEqual(previousVersion.id, eventWithNoHistory.id);
                     // check sorted by modified field
                     if (time !== 0) {
@@ -394,7 +392,6 @@ describe('[VERS] Versioning', function () {
                   assert.ok(res.body.history);
                   assert.strictEqual(res.body.history.length, 1);
                   const previousVersion = res.body.history[0];
-                  delete previousVersion.streamId;
                   assert.strictEqual(previousVersion.id, eventWithNoHistory.id);
                   assert.deepStrictEqual(_.omit(previousVersion, ['modified', 'modifiedBy', 'trashed', 'integrity', 'tags']),
                     _.omit(eventWithNoHistory, ['modified', 'modifiedBy', 'integrity', 'tags']));
@@ -444,13 +441,13 @@ describe('[VERS] Versioning', function () {
                 schema: eventsMethodsSchema.getOne.result
               });
               const event = res.body.event;
-              assert.strictEqual(event.streamId, normalStream.id);
+              assert.strictEqual(event.streamIds[0], normalStream.id);
               const history = res.body.history;
               assert.ok(history);
               assert.strictEqual(history.length, 2);
               history.forEach(function (previousVersion) {
                 assert.strictEqual(previousVersion.id, eventOnChildStream.id);
-                assert.strictEqual(previousVersion.streamId, childStream.id);
+                assert.strictEqual(previousVersion.streamIds[0], childStream.id);
               });
               stepDone();
             });
@@ -559,7 +556,6 @@ describe('[VERS] Versioning', function () {
 
           assert.ok(event);
           const expected = structuredClone(eventOnChildStream);
-          delete expected.streamId;
           expected.deleted = event.deleted;
           // we can remove tags as it comes from the db
           delete expected.tags;

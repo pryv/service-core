@@ -65,7 +65,7 @@ describe('[EVTP] Events (parallel)', function () {
       assert.strictEqual(res.status, 200);
       assert.ok(res.body.events.length >= 3);
       res.body.events.forEach(event => {
-        assert.strictEqual(event.streamId, streamId);
+        assert.ok(event.streamIds.includes(streamId));
       });
     });
 
@@ -92,7 +92,7 @@ describe('[EVTP] Events (parallel)', function () {
 
     it('[PTC1] must create an event', async function () {
       const eventData = {
-        streamId,
+        streamIds: [streamId],
         type: 'note/txt',
         content: 'Created via test'
       };
@@ -104,14 +104,14 @@ describe('[EVTP] Events (parallel)', function () {
 
       assert.strictEqual(res.status, 201);
       assert.ok(res.body.event);
-      assert.strictEqual(res.body.event.streamId, streamId);
+      assert.strictEqual(res.body.event.streamIds[0], streamId);
       assert.strictEqual(res.body.event.type, 'note/txt');
       assert.strictEqual(res.body.event.content, 'Created via test');
     });
 
     it('[PTC2] must reject event with invalid stream', async function () {
       const eventData = {
-        streamId: 'non-existent-stream',
+        streamIds: ['non-existent-stream'],
         type: 'note/txt',
         content: 'Should fail'
       };

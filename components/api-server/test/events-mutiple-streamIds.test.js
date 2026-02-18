@@ -155,64 +155,31 @@ describe('[MSTR] events.streamIds', function () {
     }
 
     describe('[MS02] GET /events', function () {
-      it('[WJ0S] must return streamIds & streamId containing the first one (if many)', async function () {
+      it('[WJ0S] must return streamIds (if many)', async function () {
         const res = await coreRequest
           .get(basePathEvent)
           .set('Authorization', tokenContributeA);
         const events = res.body.events;
         events.forEach(e => {
-          assert.ok(e.streamId);
           assert.ok(e.streamIds);
         });
       });
     });
 
     describe('[MS03] GET /events/:id', function () {
-      it('[IJQZ] must return streamIds & streamId containing the first one (if many)', async function () {
+      it('[IJQZ] must return streamIds containing all stream IDs', async function () {
         const res = await coreRequest
           .get(eventPath(eventIdAB))
           .set('Authorization', tokenContributeAReadB);
         const event = res.body.event;
-        assert.strictEqual(event.streamId, streamAId);
+        assert.strictEqual(event.streamIds[0], streamAId);
         assert.deepStrictEqual(event.streamIds, [streamAId, streamBId]);
       });
     });
 
     describe('[MS04] POST /events', function () {
-      it('[X4PX] must forbid to provide both streamId and streamIds', async function () {
-        const res = await coreRequest
-          .post(basePathEvent)
-          .set('Authorization', tokenContributeA)
-          .send({
-            streamId: streamAId,
-            streamIds: [streamAId, streamBId],
-            type: 'count/generic',
-            content: 12
-          });
-        assert.strictEqual(res.status, 400);
-        const err = res.body.error;
-        assert.strictEqual(err.id, ErrorIds.InvalidOperation);
-      });
-
-      describe('[MS05] when using "streamId"', function () {
-        it('[1YUV] must return streamIds & streamId', async function () {
-          const res = await coreRequest
-            .post(basePathEvent)
-            .set('Authorization', tokenContributeA)
-            .send({
-              streamId: streamAId,
-              type: 'count/generic',
-              content: 12
-            });
-          assert.strictEqual(res.status, 201);
-          const event = res.body.event;
-          assert.strictEqual(event.streamId, streamAId);
-          assert.deepStrictEqual(event.streamIds, [streamAId]);
-        });
-      });
-
       describe('[MS06] when using "streamIds"', function () {
-        it('[VXMG] must return streamIds & streamId containing the first one', async function () {
+        it('[VXMG] must return streamIds containing all stream IDs', async function () {
           const res = await coreRequest
             .post(basePathEvent)
             .set('Authorization', tokenContributeAB)
@@ -223,7 +190,7 @@ describe('[MSTR] events.streamIds', function () {
             });
           assert.strictEqual(res.status, 201);
           const event = res.body.event;
-          assert.strictEqual(event.streamId, streamAId);
+          assert.strictEqual(event.streamIds[0], streamAId);
           assert.deepStrictEqual(event.streamIds, [streamAId, streamBId]);
         });
 
@@ -274,7 +241,7 @@ describe('[MSTR] events.streamIds', function () {
     });
 
     describe('[MS07] PUT /events/:id', function () {
-      it('[BBBX] must return streamIds & streamId containing the first one (if many)', async function () {
+      it('[BBBX] must return streamIds containing all stream IDs', async function () {
         const res = await coreRequest
           .put(eventPath(eventIdA))
           .set('Authorization', tokenContributeA)
@@ -283,7 +250,7 @@ describe('[MSTR] events.streamIds', function () {
           });
         assert.strictEqual(res.status, 200);
         const event = res.body.event;
-        assert.strictEqual(event.streamId, eventA.streamIds[0]);
+        assert.strictEqual(event.streamIds[0], eventA.streamIds[0]);
         assert.deepStrictEqual(event.streamIds, eventA.streamIds);
       });
 
@@ -295,19 +262,6 @@ describe('[MSTR] events.streamIds', function () {
             content: 'Now I am updated, still in AB though.'
           });
         assert.strictEqual(res.status, 200);
-      });
-
-      it('[Q5P7] must forbid to provide both streamId and streamIds', async function () {
-        const res = await coreRequest
-          .put(eventPath(eventIdA))
-          .set('Authorization', tokenContributeA)
-          .send({
-            streamId: streamBId,
-            streamIds: [streamBId]
-          });
-        assert.strictEqual(res.status, 400);
-        const err = res.body.error;
-        assert.strictEqual(err.id, ErrorIds.InvalidOperation);
       });
 
       describe('[MS08] when modifying streamIds', function () {
@@ -334,7 +288,7 @@ describe('[MSTR] events.streamIds', function () {
             });
           assert.strictEqual(res.status, 200);
           const event = res.body.event;
-          assert.strictEqual(event.streamId, streamAId);
+          assert.strictEqual(event.streamIds[0], streamAId);
           assert.deepStrictEqual(event.streamIds, [streamAId, streamBId]);
         });
 
@@ -405,7 +359,7 @@ describe('[MSTR] events.streamIds', function () {
           .post(path())
           .set('Authorization', tokenContributeA)
           .send({
-            streamId: streamAId,
+            streamIds: [streamAId],
             type: 'activity/plain'
           });
         assert.strictEqual(res.status, 410);
@@ -419,13 +373,13 @@ describe('[MSTR] events.streamIds', function () {
         return basePathEvent + eventId;
       }
 
-      it('[BPL0] must return streamIds & streamId containing the first one (if many)', async function () {
+      it('[BPL0] must return streamIds containing all stream IDs', async function () {
         const res = await coreRequest
           .delete(eventPath(eventIdAB))
           .set('Authorization', tokenContributeAB);
         assert.strictEqual(res.status, 200);
         const event = res.body.event;
-        assert.strictEqual(event.streamId, streamAId);
+        assert.strictEqual(event.streamIds[0], streamAId);
         assert.deepStrictEqual(event.streamIds, [streamAId, streamBId]);
       });
 
@@ -500,7 +454,7 @@ describe('[MSTR] events.streamIds', function () {
           .post(path('events'))
           .set('Authorization', appToken)
           .field('event', JSON.stringify({
-            streamId,
+            streamIds: [streamId],
             type: 'picture/attached'
           }))
           .attach('file', fixturePath('somefile'));

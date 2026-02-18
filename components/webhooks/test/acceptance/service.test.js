@@ -188,7 +188,7 @@ describe('[WH01] webhooks', function () {
             .post(`/${username}/events`)
             .set('Authorization', appAccessToken)
             .send({
-              streamId,
+              streamIds: [streamId],
               type: 'note/txt',
               content: 'salut'
             });

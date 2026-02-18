@@ -36,8 +36,6 @@ const { pubsub } = require('messages');
 
 const CleanDeletedEventsStream = require('./streams/CleanDeletedEventsStream');
 
-const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
-
 const {
   TAG_PREFIX,
   TAG_ROOT_STREAMID,
@@ -180,8 +178,6 @@ module.exports = async function (api) {
     // might return 404 to avoid discovery of existing forbidden events
     if (!canReadEvent) { return next(errors.forbidden()); }
     event.attachments = setFileReadToken(context.access, event.attachments);
-    // To remove when streamId not necessary
-    event.streamId = event.streamIds[0];
     result.event = event;
     return next();
   }
@@ -411,8 +407,6 @@ module.exports = async function (api) {
         return next(errors.unexpectedError(err));
       }
     }
-    // To remove when streamId not necessary
-    newEvent.streamId = newEvent.streamIds[0];
     result.event = newEvent;
     return next();
   }
@@ -422,7 +416,6 @@ module.exports = async function (api) {
   }
   function _applyBackwardCompatibilityOnEvent (event, context) {
     if (isTagsBackwardCompatibilityActive) { event = putOldTags(event); }
-    event.streamId = event.streamIds[0];
   }
   function addUniqueStreamIdIfNeeded (streamIds, isUnique) {
     if (!isUnique) {
@@ -606,7 +599,6 @@ module.exports = async function (api) {
       const updatedEvent = await mall.events.update(context.user.id, context.newEvent);
 
       updatedEvent.attachments = setFileReadToken(context.access, updatedEvent.attachments);
-      updatedEvent.streamId = updatedEvent.streamIds[0];
       result.event = updatedEvent;
       next();
     } catch (e) {
@@ -684,22 +676,10 @@ module.exports = async function (api) {
   }
   async function normalizeStreamIdAndStreamIds (context, params, result, next) {
     const event = isEventsUpdateMethod() ? params.update : params;
-    // forbid providing both streamId and streamIds
-    if (event.streamId != null && event.streamIds != null) {
-      return next(errors.invalidOperation(BOTH_STREAMID_STREAMIDS_ERROR, {
-        streamId: event.streamId,
-        event: params.streamIds
-      }));
-    }
-    // convert streamId to streamIds #streamIds
-    if (event.streamId != null) {
-      event.streamIds = [event.streamId];
-    }
     // remove double entries from streamIds
     if (event.streamIds != null && event.streamIds.length > 1) {
       event.streamIds = [...new Set(event.streamIds)];
     }
-    delete event.streamId;
     // using context.newEvent now - not params
     context.newEvent = event;
     // used only in the events creation and update
@@ -975,8 +955,6 @@ module.exports = async function (api) {
     context.updateTrackingProperties(eventDataWithDeletedAttach);
     const newEvent = await mall.events.update(context.user.id, eventDataWithDeletedAttach);
 
-    // To remove when streamId not necessary
-    newEvent.streamId = newEvent.streamIds[0];
     result.event = newEvent;
     result.event.attachments = setFileReadToken(context.access, result.event.attachments);
     const storagedUsed = await usersRepository.getStorageUsedByUserId(context.user.id);

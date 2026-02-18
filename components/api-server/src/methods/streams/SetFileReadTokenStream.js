@@ -29,9 +29,6 @@ function SetFileReadTokenStream (params) {
 inherits(SetFileReadTokenStream, Transform);
 
 SetFileReadTokenStream.prototype._transform = function (event, encoding, callback) {
-  // To remove when streamId not necessary
-  event.streamId = event.streamIds[0];
-
   if (!event.attachments) {
     this.push(event);
   } else {

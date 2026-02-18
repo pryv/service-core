@@ -11,8 +11,7 @@ const { putOldTags } = require('../helpers/backwardCompatibility');
 module.exports = AddTagsStream;
 
 /**
- * For backwardCompatibility, change system stream id prefix
- * This needs to be run before "SetSingleStreamIdStream.js"
+ * For backward compatibility, add tags extracted from streamIds
  * @constructor
  */
 function AddTagsStream () {

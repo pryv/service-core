@@ -434,7 +434,7 @@ describe('[PCRO] permissions create-only level', () => {
       it('[0G8I] should forbid creating events for out of scope streams', async function () {
         const params = {
           type: 'test/test',
-          streamId: streamOutId
+          streamIds: [streamOutId]
         };
 
         const res = await coreRequest
@@ -447,7 +447,7 @@ describe('[PCRO] permissions create-only level', () => {
       it('[F406] should allow creating events for "create-only" streams', async function () {
         const params = {
           type: 'test/test',
-          streamId: streamCreateOnlyId
+          streamIds: [streamCreateOnlyId]
         };
         const res = await coreRequest
           .post(basePath)
@@ -490,7 +490,7 @@ describe('[PCRO] permissions create-only level', () => {
           .post(basePath)
           .set('Authorization', createOnlyToken)
           .field('event', JSON.stringify({
-            streamId: streamCreateOnlyId,
+            streamIds: [streamCreateOnlyId],
             type: 'picture/attached'
           }))
           .attach('document', attachmentPath, attachmentFilename);

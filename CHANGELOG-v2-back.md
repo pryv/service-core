@@ -20,3 +20,12 @@
 - Removed deprecated `POST /register/create-user` route from `system.js`
 - Removed backward-compatibility test `[ZG1L]`
 - `passwordHash` parameter kept (still used by standard `POST /system/create-user`)
+
+### Phase 3: Remove `streamId` (singular) Backward Compatibility
+- Removed `streamId` property from event JSON schema (`event.js`)
+- Changed schema validation from `anyOf` (streamId or streamIds) to `required: ['type', 'streamIds']`
+- Simplified `normalizeStreamIdAndStreamIds` in `events.js` — removed `BOTH_STREAMID_STREAMIDS_ERROR` and all `event.streamId = event.streamIds[0]` assignments
+- Deleted `SetSingleStreamIdStream.js` (no longer needed to add `streamId` to output)
+- Removed `SetSingleStreamIdStream` pipe from `eventsGetUtils.js`
+- Removed `event.streamId` assignment from `SetFileReadTokenStream.js`
+- Updated tests across api-server and webhooks components

@@ -124,7 +124,6 @@ describe('[ACCP] Access permissions', function () {
         };
         request.get(basePath, token(1)).unset('Authorization').query(query).end(function (res) {
           const expectedEvent = structuredClone(testData.events[8]);
-          expectedEvent.streamId = expectedEvent.streamIds[0];
           assert.deepStrictEqual(res.body.events, [expectedEvent]);
           done();
         });
@@ -141,7 +140,7 @@ describe('[ACCP] Access permissions', function () {
     it('[2773] must forbid creating events for \'read-only\' streams', function (done) {
       const params = {
         type: 'test/test',
-        streamId: testData.streams[0].id
+        streamIds: [testData.streams[0].id]
       };
       request.post(basePath, token(1)).send(params).end(function (res) {
         validation.checkErrorForbidden(res, done);
@@ -166,7 +165,7 @@ describe('[ACCP] Access permissions', function () {
         time: timestamp.now('-5h'),
         duration: timestamp.duration('1h'),
         type: 'test/test',
-        streamId: testData.streams[1].id
+        streamIds: [testData.streams[1].id]
       };
       request.post(basePath, token(1)).send(data).end(function (res) {
         assert.strictEqual(res.statusCode, 201);
@@ -315,7 +314,7 @@ describe('[ACCP] Access permissions', function () {
     const auth = token(sharedAccessIndex) + ' ' + callerId;
     const newEventData = {
       type: 'test/test',
-      streamId: testData.streams[1].id
+      streamIds: [testData.streams[1].id]
     };
 
     it('[YE49] must handle optional caller id in auth (in addition to token)', function (done) {

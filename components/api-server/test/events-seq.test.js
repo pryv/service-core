@@ -635,7 +635,7 @@ describe('[EVNT] events', function () {
           function retrieveAttachmentInfo (stepDone) {
             request
               .get(`/${user.username}/events/${event.id}`)
-              .query({ sortAscending: true, streams: [event.streamId] })
+              .query({ sortAscending: true, streams: [event.streamIds[0]] })
               .end(function (res) {
                 stepDone(null, res.body.event.attachments[attIndex]);
               });
@@ -723,7 +723,6 @@ describe('[EVNT] events', function () {
       const expected = structuredClone(data);
       expected.tags = processedTags;
       expected.streamIds = processedStreamIds;
-      expected.streamId = data.streamIds[0];
 
       let originalCount;
       let createdEventId;
@@ -766,7 +765,6 @@ describe('[EVNT] events', function () {
 
           const expected = structuredClone(data);
 
-          expected.streamId = expected.streamIds[0];
           expected.id = createdEventId;
           expected.streamIds = expected.streamIds.concat(['patapoumpoum'].map(t => TAG_PREFIX + t));
           delete expected.tags; // tags are not stored anymore
@@ -775,7 +773,6 @@ describe('[EVNT] events', function () {
           const actual = _.find(events, function (event) {
             return event.id === createdEventId;
           });
-          actual.streamId = actual.streamIds[0];
           validation.checkStoredItem(actual, 'event');
           validation.checkObjectEquality(actual, expected);
         }
@@ -887,7 +884,7 @@ describe('[EVNT] events', function () {
     });
 
     it('[2885] must fix the tags to an empty array if not set', function (done) {
-      const data = { streamId: testData.streams[1].id, type: testType };
+      const data = { streamIds: [testData.streams[1].id], type: testType };
 
       request.post(basePath).send(data).end(function (res) {
         assert.strictEqual(res.statusCode, 201);
@@ -1441,7 +1438,6 @@ describe('[EVNT] events', function () {
           const expected = structuredClone(original);
           delete expected.modified;
           expected.modifiedBy = access.id;
-          expected.streamId = expected.streamIds[0];
           expected.modified = res.body.event.modified;
           expected.created = res.body.event.created;
           expected.clientData = _.extend(expected.clientData, data.clientData);
@@ -1518,7 +1514,7 @@ describe('[EVNT] events', function () {
       const event = {
         type: 'note/txt',
         content: 'forbidden event update test',
-        streamId: testData.streams[0].id
+        streamIds: [testData.streams[0].id]
       };
       let eventId;
 

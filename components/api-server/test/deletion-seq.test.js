@@ -393,7 +393,7 @@ describe('[PGTD] DELETE /users/:username', () => {
             },
             {
               method: 'events.create',
-              params: { streamId: 'diary', type: 'mass/kg', content: 70 }
+              params: { streamIds: ['diary'], type: 'mass/kg', content: 70 }
             }
           ]);
         assert.strictEqual(res.status, 200, 'should create a stream and an event');

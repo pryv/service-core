@@ -403,7 +403,7 @@ describe('[EVPC] events (Pattern C)', function () {
     });
 
     it('[PC27] must fix the tags to an empty array if not set', async function () {
-      const data = { streamId: stream1Id, type: 'test/test' };
+      const data = { streamIds: [stream1Id], type: 'test/test' };
 
       const res = await coreRequest
         .post(basePath)

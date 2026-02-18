@@ -139,7 +139,7 @@ describe('[FG5R] Events of system streams', () => {
         accountStreams.forEach(accountStreamId => {
           let found = false;
           separatedEvents.accountStreamsEvents.forEach(event => {
-            if (event.streamId === accountStreamId) found = true;
+            if (event.streamIds.includes(accountStreamId)) found = true;
           });
           assert.strictEqual(found, true);
         });
@@ -168,7 +168,7 @@ describe('[FG5R] Events of system streams', () => {
         accountStreams.forEach(accountStreamId => {
           let found = false;
           separatedEvents.accountStreamsEvents.forEach(event => {
-            if (event.streamId === accountStreamId) found = true;
+            if (event.streamIds.includes(accountStreamId)) found = true;
           });
           assert.strictEqual(found, true);
         });
@@ -243,7 +243,7 @@ describe('[FG5R] Events of system streams', () => {
         });
         it('[IYE6] should return the event', () => {
           assert.strictEqual(res.body.event.id, defaultEvent.id);
-          assert.strictEqual(res.body.event.streamId, systemStreamId);
+          assert.strictEqual(res.body.event.streamIds[0], systemStreamId);
         });
       });
       describe('[ED12] to retrieve a non visible system event', () => {

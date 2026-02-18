@@ -264,7 +264,7 @@ describe('[ACCO] account', function () {
 
     function addEventWithAttachment (attachment, callback) {
       request.post('/' + user.username + '/events')
-        .field('event', JSON.stringify({ type: 'test/i', streamId: testData.streams[0].id }))
+        .field('event', JSON.stringify({ type: 'test/i', streamIds: [testData.streams[0].id] }))
         .attach('image', attachment.path, attachment.filename)
         .end(function (res) {
           validation.check(res, { status: 201 });

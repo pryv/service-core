@@ -8,3 +8,7 @@
 
 ### Phase 2: Remove Deprecated Endpoint
 - **REMOVED**: `POST /register/create-user` endpoint. Use `POST /system/create-user` instead.
+
+### Phase 3: Remove `streamId` (singular) Backward Compatibility
+- **REMOVED**: Events no longer return `streamId` (singular). Only `streamIds` (array) is returned.
+- **REMOVED**: Event creation/update no longer accepts `streamId`. Use `streamIds: [...]` instead.

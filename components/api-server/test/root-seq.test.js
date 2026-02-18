@@ -473,7 +473,6 @@ describe('[ROOT] root', function () {
       validation.checkObjectEquality(
         results[0].event,
         Object.assign({}, calls[0].params, {
-          streamId: calls[0].params.streamIds[0],
           id: results[0].event.id,
           tags: [],
           integrity: results[0].event.integrity
@@ -485,7 +484,6 @@ describe('[ROOT] root', function () {
       validation.checkObjectEquality(
         results[1].event,
         Object.assign({}, calls[1].params, {
-          streamId: calls[1].params.streamIds[0],
           streamIds: calls[1].params.streamIds.concat(calls[1].params.tags.map(t => TAG_PREFIX + t)),
           id: results[1].event.id,
           integrity: results[1].event.integrity
@@ -546,7 +544,6 @@ describe('[ROOT] root', function () {
       validation.checkObjectEquality(
         results[1].event,
         Object.assign({}, calls[1].params, {
-          streamId: calls[1].params.streamIds[0],
           tags: [],
           id: results[1].event.id,
           integrity: results[1].event.integrity

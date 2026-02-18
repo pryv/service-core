@@ -299,7 +299,7 @@ describe('[SK01] Socket.IO', function () {
             time: timestamp.fromDate('2012-03-22T10:00'),
             duration: timestamp.duration('3h33m'),
             type: 'test/test',
-            streamId: testData.streams[0].id
+            streamIds: [testData.streams[0].id]
           };
           ioCons.con1.emit('events.create', params, function (err /*, result */) {
             if (err) { reject(err); }
@@ -478,7 +478,7 @@ describe('[SK01] Socket.IO', function () {
       const attributes = {
         type: 'mass/kg',
         content: '1',
-        streamId: stream.id
+        streamIds: [stream.id]
       };
       return new Promise((resolve) => conn.emit('events.create', attributes, resolve));
     }

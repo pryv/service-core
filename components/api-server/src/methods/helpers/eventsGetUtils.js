@@ -13,7 +13,6 @@ const errors = require('errors').factory;
 const { getMall, storeDataUtils } = require('mall');
 const { treeUtils } = require('utils');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
-const SetSingleStreamIdStream = require('../streams/SetSingleStreamIdStream');
 const AddTagsStream = require('../streams/AddTagsStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 let mall;
@@ -426,7 +425,6 @@ async function findEventsFromStore (filesReadTokenSecret, isTagsBackwardCompatib
     if (isTagsBackwardCompatibilityActive) {
       stream = stream.pipe(new AddTagsStream());
     }
-    stream = stream.pipe(new SetSingleStreamIdStream());
     if (storeSettings?.attachments?.setFileReadToken) {
       stream = stream.pipe(new SetFileReadTokenStream({
         access: context.access,
