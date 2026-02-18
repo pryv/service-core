@@ -53,7 +53,7 @@ class Registration {
    */
   async prepareUserData (context, params, result, next) {
     context.newUser = new User(params);
-    // accept passwordHash at creation only; TODO: remove this once deprecated method `system.createUser` is removed
+    // accept passwordHash at creation only (used by system.createUser)
     context.newUser.passwordHash = params.passwordHash;
     context.user = {
       id: context.newUser.id,

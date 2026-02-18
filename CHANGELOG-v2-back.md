@@ -41,3 +41,10 @@
 - Fixed `previews-server/event-previews.js` to use `canGetEventsOnStream` instead of removed `canGetEventsOnStreamAndWithTags`
 - Deleted tag backward compatibility tests, updated all test files
 - Removed `permissions-tags.test.js` from test lists
+
+### Phase 5: Final Cleanup
+- Removed deprecated `/service/infos` route duplicate
+- Cleaned stale deprecated JSDoc from Event typedef (removed streamId, tags)
+- Fixed typo: `newSreamIds` → `newStreamIds` in events.js
+- Fixed double `await` in repository.js
+- Updated stale TODO comments about system.createUser

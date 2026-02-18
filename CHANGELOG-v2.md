@@ -17,3 +17,6 @@
 - **REMOVED**: `tags` property on events (input and output). Tags were previously converted to prefixed streamIds.
 - **REMOVED**: `tags` query parameter for events.get.
 - **REMOVED**: Tag-based access permissions (`{ tag: ..., level: ... }`).
+
+### Phase 5: Final Cleanup
+- **REMOVED**: `/service/infos` endpoint (use `/service/info` instead).

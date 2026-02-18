@@ -286,11 +286,11 @@ class UsersRepository {
       for (const event of events) await this.mall.events.create(user.id, event, mallTransaction);
       // set user password
       if (user.passwordHash) {
-        // if coming from deprecated `system.createUser`; TODO: remove when that method is removed
+        // if passwordHash was provided directly (via system.createUser)
         await this.userAccountStorage.addPasswordHash(user.id, user.passwordHash, user.accessId);
       } else {
         // regular user creation
-        await await this.setUserPassword(user.id, user.password, user.accessId);
+        await this.setUserPassword(user.id, user.password, user.accessId);
       }
     });
     return user;

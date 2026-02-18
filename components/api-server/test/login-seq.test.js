@@ -47,7 +47,7 @@ describe('[AUTH] auth', function () {
   });
 
   afterEach(function (done) {
-    // CLAUDE: check if this sessins.clearAll can have an impact on parallel tests.
+    // CLAUDE: check if this sessions.clearAll can have an impact on parallel tests.
     helpers.dependencies.storage.sessions.clearAll(done);
   });
 

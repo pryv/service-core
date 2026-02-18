@@ -34,12 +34,10 @@
  * @typedef {{
  *   id: string;
  *   streamIds: Array<string>;
- *   streamId: string | undefined | null; // deprecated
  *   type: string;
  *   time: number;
  *   duration: number | undefined | null;
  *   content: any;
- *   tags: Array<string> | undefined | null; // deprecated
  *   description: string | undefined | null;
  *   attachments: Array<Attachment>;
  *   clientData: {};

@@ -922,8 +922,8 @@ module.exports = async function (api) {
     });
     return attachments;
   }
-  function hasBecomeActive (oldStreamIds, newSreamIds) {
+  function hasBecomeActive (oldStreamIds, newStreamIds) {
     return (!oldStreamIds.includes(STREAM_ID_ACTIVE) &&
-            newSreamIds.includes(STREAM_ID_ACTIVE));
+            newStreamIds.includes(STREAM_ID_ACTIVE));
   }
 };
