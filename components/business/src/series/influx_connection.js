@@ -85,5 +85,54 @@ class InfluxConnection {
   getDatabases () {
     return this.conn.getDatabaseNames();
   }
+
+  /**
+   * Export all measurements and their points from the given database.
+   * @param {string} name - Database name
+   * @returns {Promise<{measurements: Array<{measurement: string, points: Object[]}>}>}
+   */
+  async exportDatabase (name) {
+    const measurementRows = await this.conn.query('SHOW MEASUREMENTS', { database: name });
+    const measurements = [];
+    for (const row of measurementRows) {
+      const measurementName = row.name;
+      const points = await this.conn.query(`SELECT * FROM "${measurementName}"`, { database: name });
+      measurements.push({ measurement: measurementName, points });
+    }
+    return { measurements };
+  }
+
+  /**
+   * Import measurements and their points into the given database.
+   * Creates the database if it does not exist.
+   * @param {string} name - Database name
+   * @param {{measurements: Array<{measurement: string, points: Object[]}>}} data
+   * @returns {Promise<void>}
+   */
+  async importDatabase (name, data) {
+    await this.createDatabase(name);
+    for (const { measurement, points } of data.measurements) {
+      if (points.length === 0) continue;
+      const writePoints = points.map((p) => {
+        const fields = {};
+        const tags = {};
+        for (const [key, value] of Object.entries(p)) {
+          if (key === 'time') continue;
+          if (typeof value === 'string') {
+            tags[key] = value;
+          } else {
+            fields[key] = value;
+          }
+        }
+        return {
+          measurement,
+          tags,
+          fields,
+          timestamp: p.time
+        };
+      });
+      await this.conn.writePoints(writePoints, { database: name });
+    }
+  }
 }
 module.exports = InfluxConnection;

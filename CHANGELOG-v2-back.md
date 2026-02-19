@@ -38,6 +38,19 @@
 - New interface prototype + `createEventFiles()` factory + `validateEventFiles()` in `storage/src/interfaces/`
 - Validation called after construction in `getEventFiles.js`
 
+### Series / InfluxDB Interface (Group I) — Phase 3d
+- New `InfluxConnection` interface with `validateInfluxConnection()` in `business/src/interfaces/`
+- Added migration methods (`exportDatabase`, `importDatabase`) to `InfluxConnection`
+- Conformance test suite [IC01]-[IC09] covering full lifecycle
+- Exported via `business.series.interfaces.InfluxConnection`
+
+### Audit / UserSQLite Interfaces (Group J) — Phase 3d
+- New `UserSQLiteStorage` interface with `validateUserSQLiteStorage()` in `storage/src/interfaces/`
+- New `UserSQLiteDatabase` interface with `validateUserSQLiteDatabase()` in `storage/src/interfaces/`
+- Added migration methods (`exportAllEvents`, `importAllEvents`) to `UserDatabase`
+- Conformance test suite [SQ01]-[SQ16] covering Storage manager + Database contract
+- Exported via `storage.interfaces.UserSQLiteStorage` and `storage.interfaces.UserSQLiteDatabase`
+
 ### Exports & Migration Scripts
 - `storage/src/index.js` exports all interfaces under `interfaces` key
 - Migration scripts (`switchSqliteMongo/`) simplified using standardized `exportAll`/`importAll`/`clearAll`

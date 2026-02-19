@@ -39,7 +39,9 @@ module.exports = {
     UserStorage: require('./interfaces/UserStorage'),
     Sessions: require('./interfaces/Sessions'),
     PasswordResetRequests: require('./interfaces/PasswordResetRequests'),
-    Versions: require('./interfaces/Versions')
+    Versions: require('./interfaces/Versions'),
+    UserSQLiteStorage: require('./interfaces/UserSQLiteStorage'),
+    UserSQLiteDatabase: require('./interfaces/UserSQLiteDatabase')
   }
 };
 

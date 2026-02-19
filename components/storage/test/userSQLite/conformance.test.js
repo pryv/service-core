@@ -1,0 +1,26 @@
+/**
+ * @license
+ * Copyright (C) Pryv https://pryv.com
+ * This file is part of Pryv.io and released under BSD-Clause-3 License
+ * Refer to LICENSE file
+ */
+
+const cuid = require('cuid');
+const userLocalDirectory = require('../../src/userLocalDirectory');
+const Storage = require('../../src/userSQLite/Storage');
+const conformanceTests = require('../conformance/UserSQLiteStorage.test');
+
+describe('[SQCF] UserSQLite conformance', () => {
+  conformanceTests(
+    async () => {
+      await userLocalDirectory.init();
+      const storage = new Storage('audit-test-' + cuid().slice(0, 8));
+      await storage.init();
+      return storage;
+    },
+    () => cuid(),
+    async (userId) => {
+      await userLocalDirectory.deleteUserDirectory(userId);
+    }
+  );
+});

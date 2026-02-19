@@ -239,6 +239,29 @@ UserDatabase.prototype.deleteEvents = async function (params) {
   return res;
 };
 
+// -- Migration methods --
+
+/**
+ * Export all raw event rows from the database.
+ * @returns {Object[]} Array of raw SQLite rows
+ */
+UserDatabase.prototype.exportAllEvents = function () {
+  return this.eventQueries.getAll.all();
+};
+
+/**
+ * Import raw event rows into the database.
+ * @param {Object[]} events - Array of raw SQLite rows (as returned by exportAllEvents)
+ * @returns {Promise<void>}
+ */
+UserDatabase.prototype.importAllEvents = async function (events) {
+  for (const event of events) {
+    await concurrentSafeWrite.execute(() => {
+      this.eventQueries.create.run(event);
+    });
+  }
+};
+
 function prepareEventsDeleteQuery (params) {
   if (params.streams) { throw new Error(`Events DELETE with stream query not supported yet: ${JSON.stringify(params)}`); }
   return 'DELETE FROM events ' + prepareQuery(params, true);
