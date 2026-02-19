@@ -35,7 +35,11 @@ module.exports = {
   interfaces: {
     UserAccountStorage: require('./interfaces/UserAccountStorage'),
     UsersLocalIndexDB: require('./interfaces/UsersLocalIndexDB'),
-    EventFiles: require('./interfaces/EventFiles')
+    EventFiles: require('./interfaces/EventFiles'),
+    UserStorage: require('./interfaces/UserStorage'),
+    Sessions: require('./interfaces/Sessions'),
+    PasswordResetRequests: require('./interfaces/PasswordResetRequests'),
+    Versions: require('./interfaces/Versions')
   }
 };
 

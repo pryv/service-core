@@ -168,3 +168,23 @@ Sessions.prototype.remove = function (query, callback) {
     callback
   );
 };
+
+// --- Migration methods --- //
+
+/**
+ * Export all session documents (raw).
+ * @param {Function} callback
+ */
+Sessions.prototype.exportAll = function (callback) {
+  this.database.find(collectionInfo, {}, {}, callback);
+};
+
+/**
+ * Import raw session documents.
+ * @param {Array} data
+ * @param {Function} callback
+ */
+Sessions.prototype.importAll = function (data, callback) {
+  if (!data || data.length === 0) return callback(null);
+  this.database.insertMany(collectionInfo, data, callback);
+};

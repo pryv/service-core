@@ -96,3 +96,26 @@ Versions.prototype.removeAll = async function () {
     this.database.deleteMany(collectionInfo, {}, cb);
   });
 };
+
+// --- Migration methods --- //
+
+/**
+ * Export all version records (raw).
+ * @returns {Promise<Array>}
+ */
+Versions.prototype.exportAll = async function () {
+  return await bluebird.fromCallback((cb) => {
+    this.database.find(collectionInfo, {}, {}, cb);
+  });
+};
+
+/**
+ * Import raw version records.
+ * @param {Array} data
+ */
+Versions.prototype.importAll = async function (data) {
+  if (!data || data.length === 0) return;
+  await bluebird.fromCallback((cb) => {
+    this.database.insertMany(collectionInfo, data, cb);
+  });
+};

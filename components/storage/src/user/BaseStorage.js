@@ -423,6 +423,53 @@ BaseStorage.prototype.listIndexes = function (userOrUserId, options, callback) {
   this.database.listIndexes(this.getCollectionInfo(userOrUserId), options, callback);
 };
 
+// --- Migration methods --- //
+// These operate directly on the database, bypassing the converter pipeline,
+// to ensure raw data fidelity during migration.
+
+/**
+ * Export all documents for a user (raw, bypasses converters).
+ * @param {Object|String} userOrUserId
+ * @param {Function} callback
+ */
+BaseStorage.prototype.exportAll = function (userOrUserId, callback) {
+  this.database.find(
+    this.getCollectionInfo(userOrUserId),
+    {},
+    {},
+    callback
+  );
+};
+
+/**
+ * Import raw documents for a user (bypasses converters).
+ * @param {Object|String} userOrUserId
+ * @param {Array} items
+ * @param {Function} callback
+ */
+BaseStorage.prototype.importAll = function (userOrUserId, items, callback) {
+  if (!items || items.length === 0) return callback(null);
+  this.database.insertMany(
+    this.getCollectionInfo(userOrUserId),
+    items,
+    callback
+  );
+};
+
+/**
+ * Remove all documents for a user (actual delete, not soft delete).
+ * Same as removeAll but with explicit naming for migration use.
+ * @param {Object|String} userOrUserId
+ * @param {Function} callback
+ */
+BaseStorage.prototype.clearAll = function (userOrUserId, callback) {
+  this.database.deleteMany(
+    this.getCollectionInfo(userOrUserId),
+    {},
+    callback
+  );
+};
+
 // converters application functions
 
 /**

@@ -14,6 +14,10 @@ const Profile = require('./user/Profile');
 const Streams = require('./user/Streams');
 const Webhooks = require('./user/Webhooks');
 const { getConfig, getLogger } = require('@pryv/boiler');
+const { validateUserStorage } = require('./interfaces/UserStorage');
+const { validateSessions } = require('./interfaces/Sessions');
+const { validatePasswordResetRequests } = require('./interfaces/PasswordResetRequests');
+const { validateVersions } = require('./interfaces/Versions');
 
 /**
  * 'StorageLayer' is a component that contains all the vertical registries
@@ -48,11 +52,21 @@ class StorageLayer {
     });
     this.sessions = new Sessions(connection, { maxAge: sessionMaxAge });
     this.accesses = new Accesses(connection);
-    // require() here to avoid depencency cycles
+    // require() here to avoid dependency cycles
     this.followedSlices = new FollowedSlices(connection);
     this.profile = new Profile(connection);
     this.streams = new Streams(connection);
     this.webhooks = new Webhooks(connection);
+
+    // Validate all storage instances against their interface contracts
+    validateUserStorage(this.accesses);
+    validateUserStorage(this.profile);
+    validateUserStorage(this.followedSlices);
+    validateUserStorage(this.streams);
+    validateUserStorage(this.webhooks);
+    validateSessions(this.sessions);
+    validatePasswordResetRequests(this.passwordResetRequests);
+    validateVersions(this.versions);
   }
 
   /**

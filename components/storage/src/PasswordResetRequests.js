@@ -112,3 +112,23 @@ PasswordResetRequests.prototype.clearAll = function (callback) {
 PasswordResetRequests.prototype.getNewExpirationDate = function () {
   return new Date((new Date()).getTime() + this.options.maxAge);
 };
+
+// --- Migration methods --- //
+
+/**
+ * Export all password reset request documents (raw).
+ * @param {Function} callback
+ */
+PasswordResetRequests.prototype.exportAll = function (callback) {
+  this.database.find(collectionInfo, {}, {}, callback);
+};
+
+/**
+ * Import raw password reset request documents.
+ * @param {Array} data
+ * @param {Function} callback
+ */
+PasswordResetRequests.prototype.importAll = function (data, callback) {
+  if (!data || data.length === 0) return callback(null);
+  this.database.insertMany(collectionInfo, data, callback);
+};
