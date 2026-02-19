@@ -1,6 +1,22 @@
 # Changelog - Internal (no API impact)
 
-## Formalize Storage Interfaces (Phase 3a)
+## Formalize Storage Interfaces (Phase 3)
+
+### User-Scoped Storage Interface (Group B) — Phase 3b
+- New `UserStorage` interface with `validateUserStorage()` in `storage/src/interfaces/`
+- Validates all BaseStorage subclasses: Accesses, Profile, FollowedSlices, Streams, Webhooks
+- Added migration methods (`exportAll`, `importAll`, `clearAll`) to `BaseStorage`
+- Conformance test suite covering full CRUD + migration lifecycle
+- StorageLayer validates all user-scoped storages at construction time
+
+### Global Storage Interfaces (Group C) — Phase 3c
+- **Sessions**: `validateSessions()` interface, migration methods (`exportAll`, `importAll`)
+- **PasswordResetRequests**: `validatePasswordResetRequests()` interface, migration methods (`exportAll`, `importAll`)
+- **Versions**: `validateVersions()` interface, migration methods (`exportAll`, `importAll`)
+- Conformance test suites for all three
+- StorageLayer validates all global storages at construction time
+
+### Dual-Engine Storage Interfaces — Phase 3a
 
 ### UserAccountStorage Interface (Group D)
 - New interface prototype + `createUserAccountStorage()` factory in `storage/src/interfaces/`
