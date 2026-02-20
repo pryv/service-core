@@ -102,6 +102,13 @@ test-parallel component *params:
     NODE_ENV=test DISABLE_INTEGRITY_CHECK=1 MOCHA_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
         npx mocha -- {{params}}
 
+# Run parallel tests first, then sequential tests
+test-fast component *params:
+    NODE_ENV=test DISABLE_INTEGRITY_CHECK=1 MOCHA_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
+        npx mocha -- {{params}} && \
+    NODE_ENV=test MOCHA_NON_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
+        npx mocha -- {{params}}
+
 # Run only non-parallel tests (tests excluded from parallel mode)
 # Use after test-parallel to run the remaining tests sequentially
 test-non-parallel component *params:

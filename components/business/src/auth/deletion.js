@@ -163,12 +163,11 @@ class Deletion {
         this.storageLayer.profile,
         this.storageLayer.webhooks
       ];
-      const drops = dbCollections
-        .map((coll) => bluebird.fromCallback((cb) => coll.dropCollection(context.user, cb)))
-        .map((promise) => promise.catch((e) => /ns not found/.test(e.message), () => { }));
+      const removals = dbCollections
+        .map((coll) => bluebird.fromCallback((cb) => coll.removeAll(context.user, cb)));
       const usersRepository = await getUsersRepository();
       await usersRepository.deleteOne(context.user.id, context.user.username);
-      await Promise.all(drops);
+      await Promise.all(removals);
       await bluebird.fromCallback((cb) => this.storageLayer.sessions.remove({ 'data.username': { $eq: context.user.username } }, cb));
     } catch (error) {
       this.logger.error(error, error);

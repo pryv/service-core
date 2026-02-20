@@ -2,6 +2,7 @@
 
 ## Rules
 - Do not commit on your own. Ask me to review your code and commit.
+- Make sure to remember authorizations I gave you to reuuse them in further sessions.
 
 ## Project Overview
 Pryv service-core: Node.js API server with MongoDB storage.
