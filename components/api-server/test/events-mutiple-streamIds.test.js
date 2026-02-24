@@ -458,11 +458,15 @@ describe('[MSTR] events.streamIds', function () {
             type: 'picture/attached'
           }))
           .attach('file', fixturePath('somefile'));
+        assert.strictEqual(res.status, 201,
+          'Event creation with attachment failed: ' + JSON.stringify(res.body));
         event = res.body.event;
         appReadToken = event.attachments[0].readToken;
         const res2 = await coreRequest
           .get(path(`events/${event.id}`))
           .set('Authorization', sharedToken);
+        assert.strictEqual(res2.status, 200,
+          'Event retrieval with shared token failed: ' + JSON.stringify(res2.body));
         event = res2.body.event;
         sharedReadToken = event.attachments[0].readToken;
       });

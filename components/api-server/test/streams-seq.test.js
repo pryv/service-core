@@ -22,7 +22,6 @@ const testData = helpers.dynData({ prefix: 'strm' });
 const treeUtils = require('utils').treeUtils;
 
 const { getMall } = require('mall');
-const cache = require('cache');
 
 describe('[STRE] streams', function () {
   const user = structuredClone(testData.users[0]);
@@ -30,7 +29,6 @@ describe('[STRE] streams', function () {
   const basePath = '/' + user.username + '/streams';
   // these must be set after server instance started
   let request = null;
-  let accessId = null;
 
   let mall;
 
@@ -52,14 +50,6 @@ describe('[STRE] streams', function () {
       function (stepDone) {
         request = helpers.request(server.url);
         request.login(user, stepDone);
-      },
-      function (stepDone) {
-        helpers.dependencies.storage.user.accesses.findOne(user, { token: request.token },
-          null, function (err, access) {
-            assert.ok(err == null);
-            accessId = access.id;
-            stepDone();
-          });
       }
     ], done);
   });
@@ -150,101 +140,17 @@ describe('[STRE] streams', function () {
       });
     });
 
-    it('[AJZL] must return a correct error if the parent stream is unknown', function (done) {
-      request.get(basePath).query({ parentId: 'unknownStreamId' }).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.UnknownReferencedResource,
-          data: { parentId: 'unknownStreamId' }
-        }, done);
-      });
-    });
-
-    it('[G5F2] must return a correct error if the stream is unknown', function (done) {
-      request.get(basePath).query({ id: 'unknownStreamId' }).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.UnknownReferencedResource,
-          data: { id: 'unknownStreamId' }
-        }, done);
-      });
-    });
+    // [AJZL] Duplicate of streams-patternc.test.js - removed
+    // [G5F2] Duplicate of streams-patternc.test.js - removed
   });
 
   describe('[ST02] POST /', function () {
     beforeEach(resetData);
 
-    // Converted to Pattern C: test/streams-patternc.test.js [PENV]
-    it.skip('[ENVV] must create a new "root" stream with the sent data, returning it', function (done) {
-      const data = {
-        name: 'Test Root Stream',
-        clientData: {
-          testClientDataField: 'testValue'
-        },
-        // included to make sure it's properly ignored and stripped before storage
-        children: [{ name: 'should be ignored' }]
-      };
-      let originalCount,
-        createdStream,
-        time;
+    // [ENVV] Converted to Pattern C: streams-patternc.test.js [PENV] - removed
 
-      async.series([
-        async function countInitialRootStreams () {
-          const streams = await mall.streams.get(user.id, { storeId: 'local', hideRootStreams: true });
-          originalCount = streams.length;
-        },
-        function addNewStream (stepDone) {
-          request.post(basePath).send(data).end(function (res) {
-            time = timestamp.now();
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.create.result
-            });
-            createdStream = res.body.stream;
-            assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
-            stepDone();
-          });
-        },
-        async function verifyStreamData () {
-          // server and current "mall" instance are not running on the same instance and cache must me invalidated manually
-          cache.unsetStreams(user.id, 'local');
-          const streams = await mall.streams.get(user.id, { storeId: 'local', hideRootStreams: true });
-          assert.strictEqual(streams.length, originalCount + 1, 'should count one more root stream');
-
-          const expected = structuredClone(data);
-          expected.id = createdStream.id;
-          expected.parentId = null;
-          expected.created = expected.modified = time;
-          expected.createdBy = expected.modifiedBy = accessId;
-          expected.children = [];
-          const actual = _.find(streams, function (stream) {
-            return stream.id === createdStream.id;
-          });
-          validation.checkObjectEquality(actual, expected);
-        },
-        async function verifyStoredItem () {
-          const stream = await mall.streams.getOneWithNoChildren(user.id, createdStream.id);
-          validation.checkStoredItem(stream, 'stream');
-        }
-      ], done);
-    });
-
-    it('[A2HP] must return a correct error if the sent data is badly formatted', function (done) {
-      request.post(basePath).send({ badProperty: 'bad value' }).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
-    });
-
-    it('[GGS3] must return a correct error if a stream with the same id already exists', function (done) {
-      const data = { id: testData.streams[0].id, name: 'Duplicate' };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 409,
-          id: ErrorIds.ItemAlreadyExists,
-          data: { id: data.id }
-        }, done);
-      });
-    });
+    // [A2HP] Duplicate of streams-patternc.test.js - removed
+    // [GGS3] Duplicate of streams-patternc.test.js - removed
 
     it('[UHKI] must allow reuse of deleted ids', function (done) {
       const data = {
@@ -262,33 +168,8 @@ describe('[STRE] streams', function () {
       });
     });
 
-    it('[8WGG] must accept explicit null for optional fields', function (done) {
-      const data = {
-        id: 'nullable',
-        name: 'New stream with null fields',
-        parentId: null,
-        clientData: null,
-        children: null,
-        trashed: null
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        }, done);
-      });
-    });
-
-    it('[NR4D] must fail if a sibling stream with the same name already exists', function (done) {
-      const data = { name: testData.streams[0].name };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 409,
-          id: ErrorIds.ItemAlreadyExists,
-          data: { name: data.name }
-        }, done);
-      });
-    });
+    // [8WGG] Duplicate of streams-patternc.test.js - removed
+    // [NR4D] Duplicate of streams-patternc.test.js - removed
 
     // this test doesn't apply to streams in particular, but the bug was found here and there's
     // no better location at the moment
@@ -302,225 +183,25 @@ describe('[STRE] streams', function () {
         });
     });
 
-    // Converted to Pattern C: test/streams-patternc.test.js [PCHD]
-    it.skip('[CHDM] must create a new child stream (with predefined id) when providing a parent stream id',
-      (done) => {
-        let originalCount;
+    // [CHDM] Converted to Pattern C: streams-patternc.test.js [PCHD] - removed
 
-        async.series([
-          async function _countInitialChildStreams () {
-            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', childrenDepth: -1 });
-            originalCount = streams[0].children.length;
-          },
-          function _addNewStream (stepDone) {
-            const data = {
-              id: 'predefined-stream-id',
-              name: 'New Child Stream',
-              parentId: initialRootStreamId
-            };
-            request.post(basePath).send(data).end(function (res) {
-              validation.check(res, {
-                status: 201,
-                schema: methodsSchema.create.result
-              });
-              assert.strictEqual(res.body.stream.id, data.id);
-              assert.strictEqual(streamsNotifCount, 1);
-
-              stepDone();
-            });
-          },
-          async function _recountChildStreams () {
-            // server and current "mall" instance are not running on the same instance and cache must me invalidated manually
-            cache.unsetStreams(user.id, 'local');
-            const streams = await mall.streams.get(user.id, { id: initialRootStreamId, storeId: 'local', childrenDepth: -1 });
-            const count = streams[0].children.length;
-            assert.strictEqual(count, originalCount + 1, 'Created a child stream.');
-          }
-        ],
-        done);
-      });
-
-    // Test added to verify fix of issue#29
-    it('[88VQ] must return an error if the new stream\'s parentId ' +
-      'is the empty string', function (done) {
-      const data = {
-        name: 'zero-length parentId string Stream',
-        parentId: ''
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidParametersFormat
-        }, done);
-      });
-    });
-
-    it('[84RK] must slugify the new stream\'s predefined id', function (done) {
-      const data = {
-        id: 'pas encodé de bleu!',
-        name: 'Genevois, cette fois'
-      };
-
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        });
-        assert.strictEqual(res.body.stream.id, 'pas-encode-de-bleu');
-        done();
-      });
-    });
-
-    it('[2B3H] must return a correct error if the parent stream is unknown', function (done) {
-      const data = {
-        name: 'New Child Stream',
-        parentId: 'unknown-stream-id'
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.UnknownReferencedResource,
-          data: { parentId: data.parentId }
-        }, done);
-      });
-    });
-
-    it('[8JB5] must return a correct error if the given predefined stream\'s id is "null"',
-      function (done) {
-        const data = {
-          id: 'null',
-          name: 'Badly Named Stream'
-        };
-        request.post(basePath).send(data).end(function (res) {
-          validation.checkError(res, {
-            status: 400,
-            id: ErrorIds.InvalidItemId
-          }, done);
-        });
-      });
-
-    it('[6TPQ] must return a correct error if the given predefined stream\'s id is "*"',
-      function (done) {
-        const data = {
-          id: '*',
-          name: 'Badly Named Stream'
-        };
-        request.post(basePath).send(data).end(function (res) {
-          validation.checkError(res, {
-            status: 400,
-            id: ErrorIds.InvalidItemId
-          }, done);
-        });
-      });
-
-    it('[Z3RC] must accept streamId "size"', function (done) {
-      const data = {
-        id: 'size',
-        name: 'Size'
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        }, done);
-      });
-    });
+    // [88VQ] Duplicate of streams-patternc.test.js - removed
+    // [84RK] Duplicate of streams-patternc.test.js - removed
+    // [2B3H] Duplicate of streams-patternc.test.js - removed
+    // [8JB5] Duplicate of streams-patternc.test.js - removed
+    // [6TPQ] Duplicate of streams-patternc.test.js - removed
+    // [Z3RC] Duplicate of streams-patternc.test.js - removed
   });
 
   describe('[ST03] PUT /<id>', function () {
     beforeEach(resetData);
 
-    // Converted to Pattern C: test/streams-patternc.test.js [PSO4]
-    it.skip('[SO48] must modify the stream with the sent data', function (done) {
-      const original = testData.streams[0];
-      let time;
-      const data = {
-        name: 'Updated Root Stream 0',
-        clientData: {
-          clientField: 'client value'
-        }
-      };
+    // [SO48] Converted to Pattern C: streams-patternc.test.js [PSO4] - removed
 
-      request.put(path(original.id)).send(data).end(function (res) {
-        time = timestamp.now();
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
-
-        const expected = structuredClone(data);
-        expected.id = original.id;
-        expected.parentId = original.parentId;
-        expected.modified = time;
-        expected.modifiedBy = accessId;
-        delete expected.children;
-        validation.checkObjectEquality(res.body.stream, expected);
-
-        assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
-        done();
-      });
-    });
-
-    it('[5KNJ] must accept explicit null for optional fields', function (done) {
-      const data = {
-        parentId: null,
-        clientData: null,
-        trashed: null
-      };
-      request.put(path(testData.streams[0].id)).send(data).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        }, done);
-      });
-    });
-
-    // Converted to Pattern C (partial): test/streams-patternc.test.js [PSO4]
-    it.skip('[0ANV] must add/update/remove the specified client data fields without touching the others',
-      function (done) {
-        const original = testData.streams[1];
-        const data = {
-          clientData: {
-            booleanProp: true, // add
-            stringProp: 'Where Art Thou?', // update
-            numberProp: null // delete
-          }
-        };
-
-        request.put(path(original.id)).send(data).end(function (res) {
-          validation.check(res, {
-            status: 200,
-            schema: methodsSchema.update.result
-          });
-
-          const expected = structuredClone(original);
-          _.extend(expected.clientData, data.clientData);
-          delete expected.clientData.numberProp;
-          delete expected.modified;
-          delete expected.modifiedBy;
-          delete expected.children;
-          validation.checkObjectEquality(res.body.stream, expected);
-
-          assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
-          done();
-        });
-      });
-
-    it('[PL2G] must return a correct error if the stream does not exist', function (done) {
-      request.put(path('unknown-id')).send({ name: '?' }).end(function (res) {
-        validation.checkError(res, {
-          status: 404,
-          id: ErrorIds.UnknownResource
-        }, done);
-      });
-    });
-
-    it('[JWT4] must return a correct error if the sent data is badly formatted', function (done) {
-      request.put(path(testData.streams[1].id)).send({ badProperty: 'bad value' })
-        .end(function (res) {
-          validation.checkErrorInvalidParams(res, done);
-        });
-    });
+    // [5KNJ] Duplicate of streams-patternc.test.js - removed
+    // [0ANV] Converted to Pattern C: streams-patternc.test.js [PSO4] - removed
+    // [PL2G] Duplicate of streams-patternc.test.js - removed
+    // [JWT4] Duplicate of streams-patternc.test.js - removed
 
     it('[344I] must fail if a sibling stream with the same name already exists', function (done) {
       const update = { name: testData.streams[0].name };
@@ -586,29 +267,8 @@ describe('[STRE] streams', function () {
       ], done);
     });
 
-    it('[HJBH] must return a correct error if the new parent stream is unknown', function (done) {
-      request.put(path(testData.streams[1].id)).send({ parentId: 'unknown-id' })
-        .end(function (res) {
-          validation.checkError(res, {
-            status: 400,
-            id: ErrorIds.UnknownReferencedResource,
-            data: { parentId: 'unknown-id' }
-          }, done);
-        });
-    });
-
-    // ticket #1209
-    it('[29S6] must return an error if the "parentId" is the same as the "id"', function (done) {
-      const id = testData.streams[1].id;
-      request.put(path(id)).send({ parentId: id })
-        .end(function (res) {
-          validation.checkError(res, {
-            status: 400,
-            id: ErrorIds.InvalidOperation,
-            data: { parentId: id }
-          }, done);
-        });
-    });
+    // [HJBH] Duplicate of streams-patternc.test.js - removed
+    // [29S6] Duplicate of streams-patternc.test.js - removed
 
     describe('[ST04] forbidden updates of protected fields', function () {
       const streamId = 'forbidden_stream_update_test';
@@ -696,27 +356,7 @@ describe('[STRE] streams', function () {
 
     beforeEach(resetData);
 
-    // Converted to Pattern C: test/streams-patternc.test.js [P205]
-    it.skip('[205A] must flag the specified stream as trashed', function (done) {
-      const trashedId = testData.streams[0].id;
-      let time;
-
-      request.del(path(trashedId)).end(function (res) {
-        time = timestamp.now();
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.del.result
-        });
-
-        const trashedStream = res.body.stream;
-        assert.strictEqual(trashedStream.trashed, true);
-        assert.ok(trashedStream.modified >= time - 1 && trashedStream.modified <= time);
-        assert.strictEqual(trashedStream.modifiedBy, accessId);
-
-        assert.strictEqual(streamsNotifCount, 1, 'streams notifications');
-        done();
-      });
-    });
+    // [205A] Converted to Pattern C: streams-patternc.test.js [P205] - removed
 
     // Uses notification tracking - kept in Pattern A for complex verification (descendant deletion)
     it('[TEFF] must delete the stream when already trashed with its descendants if there are no linked ' +
@@ -941,14 +581,7 @@ describe('[STRE] streams', function () {
       ], done);
     });
 
-    it('[1U1M] must return a correct error if the item is unknown', function (done) {
-      request.del(path('unknown_id')).end(function (res) {
-        validation.checkError(res, {
-          status: 404,
-          id: ErrorIds.UnknownResource
-        }, done);
-      });
-    });
+    // [1U1M] Duplicate of streams-patternc.test.js - removed
   });
 
   function resetData (done) {

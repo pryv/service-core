@@ -1,5 +1,25 @@
 # Changelog - Internal (no API impact)
 
+## Parallel Test Migration (Phase 4)
+
+### Step 0: Enforce Interface Usage
+- Replaced `dropCollection()` with `removeAll()` in `business/src/auth/deletion.js` (interface compliance)
+
+### Step 1: Move Verified Pattern C Tests to Parallel
+- Renamed 3 sequential files to parallel: `webhooks`, `acceptance/accesses`, `login-parallel`
+- Evaluated 5 additional candidates; confirmed they must stay sequential (`getApplication()` shared state)
+
+### Step 2: Deduplicate Sequential Tests
+- Extracted `permissions-seq.test.js` sections AP01, AP02, YE49 → new `permissions.test.js` (Pattern C, parallel-safe)
+- Removed 19 duplicate tests from `events-seq.test.js` (covered by `events-patternc.test.js`)
+- Removed 18+5 duplicate tests from `streams-seq.test.js` (covered by `streams-patternc.test.js`)
+- Added defensive assertions to `events-mutiple-streamIds.test.js` for parallel-mode debugging
+
+### Result
+- Parallel pool: 13 → 17 files (+4)
+- Sequential: 21 → 13 files
+- 58 duplicate tests removed, 0 coverage lost
+
 ## Formalize Storage Interfaces (Phase 3)
 
 ### User-Scoped Storage Interface (Group B) — Phase 3b

@@ -161,16 +161,7 @@ describe('[EVNT] events', function () {
         });
       });
 
-    it('[S0M6] must return an error if some of the given streams do not exist', function (done) {
-      const params = { streams: ['bad-id-A', 'bad-id-B'] };
-      request.get(basePath).query(params).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.UnknownReferencedResource,
-          data: params
-        }, done);
-      });
-    });
+    // [S0M6] Duplicate of events-patternc.test.js [PC03] - removed
 
     it('[QR4I] must only return events of any of the given types when set', function (done) {
       const params = {
@@ -208,18 +199,7 @@ describe('[EVNT] events', function () {
       });
     });
 
-    it('[4TWI] must refuse unsupported event types', function (done) {
-      const params = {
-        types: ['activity/asd asd'],
-        state: 'all'
-      };
-      request.get(basePath).query(params).end(function (res) {
-        validation.check(res, {
-          status: 400,
-          id: ErrorIds.invalidParametersFormat
-        }, done);
-      });
-    });
+    // [4TWI] Duplicate of events-patternc.test.js [PC05] - removed
 
     it('[7MOU] must only return events in the given time period sorted ascending when set',
       function (done) {
@@ -400,20 +380,7 @@ describe('[EVNT] events', function () {
       });
     });
 
-    it('[C3HU] must return an error if withDeletions is given as parameter', function (done) {
-      const params = {
-        state: 'all',
-        modifiedSince: timestamp.now('-45m'),
-        includeDeletions: true,
-        withDeletions: true
-      };
-
-      request.get(basePath).query(params).end(async function (res) {
-        assert.ok(res.body.error);
-        assert.strictEqual(res.body.error.id, 'invalid-parameters-format');
-        done();
-      });
-    });
+    // [C3HU] Duplicate of events-patternc.test.js [PC11] - removed
 
     it('[B766] must include event deletions (since that time) when requested', async function () {
       const params = {
@@ -734,50 +701,9 @@ describe('[EVNT] events', function () {
       ], done);
     });
 
-    it('[QSBV] must set the event\'s time to "now" if missing', function (done) {
-      const data = {
-        streamIds: [testData.streams[2].id],
-        type: 'mass/kg',
-        content: 10.7
-      };
-      request.post(basePath).send(data).end(function (res) {
-        const expectedTimestamp = timestamp.now();
-
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        });
-
-        // allow 1 second of lag
-        assert.ok(res.body.event.time >= expectedTimestamp - 1 && res.body.event.time <= expectedTimestamp);
-
-        done();
-      });
-    });
-
-    it('[6BVW] must accept explicit null for optional fields', function (done) {
-      const data = {
-        type: 'test/null',
-        streamIds: [testData.streams[2].id],
-        duration: null,
-        content: null,
-        description: null,
-        clientData: null,
-        trashed: null
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        }, done);
-      });
-    });
-
-    it('[D2TH] must refuse events with no stream id', function (done) {
-      request.post(basePath).send({ type: testType }).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
-    });
+    // [QSBV] Duplicate of events-patternc.test.js [PC21] - removed
+    // [6BVW] Duplicate of events-patternc.test.js [PC22] - removed
+    // [D2TH] Duplicate of events-patternc.test.js [PC23] - removed
 
     it('[WN86] must return a correct error if an event with the same id already exists', function (done) {
       const data = {
@@ -809,16 +735,7 @@ describe('[EVNT] events', function () {
       });
     });
 
-    it('[DRFA] must only allow ids that are formatted like cuids', function (done) {
-      const data = {
-        id: 'man, this is a baaad id',
-        streamIds: [testData.streams[2].id],
-        type: 'test/test'
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
-    });
+    // [DRFA] Duplicate of events-patternc.test.js [PC25] - removed
 
     it('[UL6Y] must not stop the running period event if the stream allows overlapping', function (done) {
       const data = {
@@ -844,55 +761,10 @@ describe('[EVNT] events', function () {
       ], done);
     });
 
-    it('[FZ4T] must validate the event\'s content if its type is known', function (done) {
-      const data = {
-        streamIds: [testData.streams[1].id],
-        type: 'note/webclip',
-        content: {
-          url: 'bad-url',
-          content: '<p>昔者莊周夢為蝴蝶，栩栩然蝴蝶也，自喻適志與，不知周也。' +
-              '俄然覺，則蘧蘧然周也。不知周之夢為蝴蝶與，蝴蝶之夢為周與？周與蝴蝶則必有分矣。' +
-              '此之謂物化。</p>'
-        }
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
-    });
-
-    // cf. GH issue #42
-    it('[EL88] must not fail when validating the content if passing a string instead of an object',
-      function (done) {
-        const data = {
-          streamIds: [testData.streams[1].id],
-          type: 'note/webclip',
-          content: 'This should be an object'
-        };
-        request.post(basePath).send(data).end(function (res) {
-          validation.checkErrorInvalidParams(res, done);
-        });
-      });
-
-    it('[JUM6] must return an error if the sent data is badly formatted', function (done) {
-      request.post(basePath).send({ badProperty: 'bad value' }).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
-    });
-
-    it('[5NEL] must return an error if the associated stream is unknown', function (done) {
-      const data = {
-        time: timestamp.fromDate('2012-03-22T10:00'),
-        type: testType,
-        streamIds: ['unknown-stream-id']
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.UnknownReferencedResource,
-          data: { streamIds: data.streamIds }
-        }, done);
-      });
-    });
+    // [FZ4T] Duplicate of events-patternc.test.js [PC28] - removed
+    // [EL88] Duplicate of events-patternc.test.js [PC34] - removed
+    // [JUM6] Duplicate of events-patternc.test.js [PC29] - removed
+    // [5NEL] Duplicate of events-patternc.test.js [PC30] - removed
 
     it('[3S2T] must allow the event\'s period overlapping existing periods when the stream allows it',
       function (done) {
@@ -910,41 +782,9 @@ describe('[EVNT] events', function () {
         });
       });
 
-    it('[Q0L6] must return an error if the assigned stream is trashed', function (done) {
-      const data = {
-        type: testType,
-        streamIds: [testData.streams[3].id]
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidOperation,
-          data: { trashedReference: 'streamIds' }
-        }, done);
-      });
-    });
-
-    it('[WUSC] must not fail (500) when sending an array instead of an object', function (done) {
-      request.post(basePath).send([{}]).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidParametersFormat
-        }, done);
-      });
-    });
-
-    it('[Z87W] must not accept an empty streamIds array', (done) => {
-      request.post(basePath).send({
-        streamIds: [],
-        type: 'note/txt',
-        content: 'i should return an error!'
-      }).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidParametersFormat
-        }, done);
-      });
-    });
+    // [Q0L6] Duplicate of events-patternc.test.js [PC31] - removed
+    // [WUSC] Duplicate of events-patternc.test.js [PC32] - removed
+    // [Z87W] Duplicate of events-patternc.test.js [PC33] - removed
   });
 
   describe('[EV04] POST / (multipart content)', function () {
@@ -1365,63 +1205,11 @@ describe('[EVNT] events', function () {
         });
       });
 
-    it('[FM3G] must accept explicit null for optional fields', function (done) {
-      const data = {
-        type: 'test/null',
-        duration: null,
-        content: null,
-        description: null,
-        clientData: null,
-        trashed: null
-      };
-      request.put(path(testData.events[10].id)).send(data)
-        .end(function (res) {
-          validation.check(res, {
-            status: 200,
-            schema: methodsSchema.update.result
-          }, done);
-        });
-    });
-
-    it('[BS75] must validate the event\'s content if its type is known', function (done) {
-      const data = {
-        type: 'position/wgs84',
-        content: {
-          latitude: 'bad-value',
-          longitude: false
-        }
-      };
-      request.put(path(testData.events[2].id)).send(data).end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
-    });
-
-    it('[FU83] must return an error if the event does not exist', function (done) {
-      request.put(path('unknown-id')).send({ time: timestamp.now() }).end(function (res) {
-        validation.checkError(res, {
-          status: 404,
-          id: ErrorIds.UnknownResource
-        }, done);
-      });
-    });
-
-    it('[W2QL] must return an error if the sent data is badly formatted', function (done) {
-      request.put(path(testData.events[3].id)).send({ badProperty: 'bad value' })
-        .end(function (res) {
-          validation.checkErrorInvalidParams(res, done);
-        });
-    });
-
-    it('[01B2] must return an error if the associated stream is unknown', function (done) {
-      request.put(path(testData.events[3].id)).send({ streamIds: ['unknown-stream-id'] })
-        .end(function (res) {
-          validation.checkError(res, {
-            status: 400,
-            id: ErrorIds.UnknownReferencedResource,
-            data: { streamIds: ['unknown-stream-id'] }
-          }, done);
-        });
-    });
+    // [FM3G] Duplicate of events-patternc.test.js [PC52] - removed
+    // [BS75] Duplicate of events-patternc.test.js [PC53] - removed
+    // [FU83] Duplicate of events-patternc.test.js [PC54] - removed
+    // [W2QL] Duplicate of events-patternc.test.js [PC55] - removed
+    // [01B2] Duplicate of events-patternc.test.js [PC56] - removed
 
     describe('[EV08] forbidden updates of protected fields', function () {
       const event = {
