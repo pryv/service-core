@@ -113,7 +113,6 @@ class Server {
     }
     await require('./methods/trackingFunctions')(app.api);
     await require('./methods/account')(app.api);
-    await require('./methods/followedSlices')(app.api);
     await require('./methods/profile')(app.api);
     await require('./methods/streams')(app.api);
     await require('./methods/events')(app.api);

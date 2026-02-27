@@ -5,7 +5,6 @@ test/accesses-app.test.js
 test/accesses-personal.test.js
 test/events-mutiple-streamIds.test.js
 test/events.get-streams-query.test.js
-test/followed-slices.test.js
 test/permissions-create-only.test.js
 test/permissions-forcedStreams.test.js
 test/permissions-none.test.js

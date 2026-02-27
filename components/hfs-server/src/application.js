@@ -30,7 +30,6 @@ const { getConfig, getLogger } = require('@pryv/boiler').init({
 });
 // Load configuration file, set up execution context and start the server.
 const business = require('business');
-const storage = require('storage');
 const Context = require('./context');
 const Server = require('./server');
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
@@ -42,16 +41,33 @@ const initTracer = require('jaeger-client').initTracer;
  */
 async function createContext (config) {
   const logger = getLogger('setup');
-  const host = config.get('influxdb:host');
-  const port = config.get('influxdb:port');
-  const influx = new business.series.InfluxConnection({
-    host,
-    port
-  });
-  const mongo = await storage.getDatabase();
+  const getStorageEngine = require('storage/src/getStorageEngine');
+  const engine = getStorageEngine(config, 'database');
+
+  let influx;
+  switch (engine) {
+    case 'postgresql': {
+      const { getDatabasePG } = require('storage');
+      const PGSeriesConnection = require('business/src/series/pg_connection');
+      const pgDb = await getDatabasePG();
+      influx = new PGSeriesConnection(pgDb);
+      break;
+    }
+    case 'sqlite':
+      // TODO: Phase 3 — implement SQLite series connection
+      throw new Error('SQLite series connection not yet implemented.');
+    default: {
+      // mongodb — use InfluxDB as before
+      const host = config.get('influxdb:host');
+      const port = config.get('influxdb:port');
+      influx = new business.series.InfluxConnection({ host, port });
+      break;
+    }
+  }
+
   const tracer = produceTracer(config, getLogger('jaeger'));
   const typeRepoUpdateUrl = config.get('service:eventTypes');
-  const context = new Context(influx, mongo, tracer, typeRepoUpdateUrl, config);
+  const context = new Context(influx, tracer, typeRepoUpdateUrl, config);
   await context.init();
   if (config.has('metadataUpdater:host')) {
     const mdHost = config.get('metadataUpdater:host');

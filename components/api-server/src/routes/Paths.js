@@ -23,7 +23,6 @@ const Paths = (module.exports = {
   Accesses: makePath(username, 'accesses'),
   Account: makePath(username, 'account'),
   Auth: makePath(username, 'auth'),
-  FollowedSlices: makePath(username, 'followed-slices'),
   Streams: makePath(username, 'streams'),
   Events: makePath(username, 'events'),
   Profile: makePath(username, 'profile'),

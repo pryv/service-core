@@ -6,16 +6,31 @@
  */
 const { getConfig } = require('@pryv/boiler');
 const { validatePlatformDB } = require('./interfaces/PlatformDB');
+const getStorageEngine = require('storage/src/getStorageEngine');
+
 let db;
 
 async function getPlatformDB () {
   if (db != null) return db;
-  if ((await getConfig()).get('storagePlatform:engine') === 'mongodb') {
-    const DB = require('./DBmongodb');
-    db = new DB();
-  } else {
-    const DB = require('./DBsqlite');
-    db = new DB();
+  const config = await getConfig();
+  const engine = getStorageEngine(config, 'storagePlatform');
+  switch (engine) {
+    case 'mongodb': {
+      const DB = require('./DBmongodb');
+      db = new DB();
+      break;
+    }
+    case 'postgresql': {
+      const DB = require('./DBpostgresql');
+      db = new DB();
+      break;
+    }
+    default: {
+      // sqlite (default)
+      const DB = require('./DBsqlite');
+      db = new DB();
+      break;
+    }
   }
   await db.init();
   validatePlatformDB(db);

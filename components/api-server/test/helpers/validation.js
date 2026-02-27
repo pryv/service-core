@@ -25,7 +25,6 @@ const { integrity } = require('business');
 const schemas = exports.schemas = {
   access: require('../../src/schema/access'),
   event: require('../../src/schema/event'),
-  followedSlice: require('../../src/schema/followedSlice'),
   stream: require('../../src/schema/stream'),
   user: require('../../src/schema/user'),
   errorResult: {

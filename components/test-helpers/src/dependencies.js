@@ -23,14 +23,21 @@ module.exports = {
     sessions: new storage.Sessions(database),
     user: {
       accesses: new storage.user.Accesses(database),
-      followedSlices: new storage.user.FollowedSlices(database),
       profile: new storage.user.Profile(database),
       webhooks: new storage.user.Webhooks(database)
     }
   },
   /**
-   * Called by global.test.js to initialize async components
+   * Called by global.test.js to initialize async components.
+   * Always reconfigures storage via StorageLayer (engine-agnostic).
    */
   init: async function () {
+    const storageLayer = await storage.getStorageLayer();
+    this.storage.user.accesses = storageLayer.accesses;
+    this.storage.user.profile = storageLayer.profile;
+    this.storage.user.webhooks = storageLayer.webhooks;
+    this.storage.sessions = storageLayer.sessions;
+    this.storage.versions = storageLayer.versions;
+    this.storage.passwordResetRequests = storageLayer.passwordResetRequests;
   }
 };

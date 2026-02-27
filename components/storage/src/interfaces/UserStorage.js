@@ -7,7 +7,7 @@
 
 /**
  * UserStorage — common contract for all user-scoped BaseStorage subclasses
- * (Accesses, Profile, FollowedSlices, Streams, Webhooks).
+ * (Accesses, Profile, Streams, Webhooks).
  *
  * These are constructor/prototype-based classes, so we use the **validate**
  * pattern: check that all required methods exist on the instance's prototype chain.
@@ -28,6 +28,8 @@ const REQUIRED_METHODS = [
   'count',
   'countAll',
   'findDeletions',
+  // Cross-user iteration
+  'iterateAll',
   // Migration methods
   'exportAll',
   'importAll',

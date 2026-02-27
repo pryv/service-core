@@ -132,14 +132,11 @@ class MetadataCache {
 /** Loads metadata related to a series from the main database.
  */
 class MetadataLoader {
-  databaseConn;
-
   storage;
 
   mall;
 
-  async init (databaseConn, mall, logger) {
-    this.databaseConn = databaseConn;
+  async init (mall, logger) {
     this.mall = mall;
     this.storage = await storage.getStorageLayer();
   }

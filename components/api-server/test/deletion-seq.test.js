@@ -13,12 +13,12 @@ const assert = require('node:assert');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const { getApplication } = require('api-server/src/application');
-const InfluxRepository = require('business/src/series/repository');
+const SeriesRepository = require('business/src/series/repository');
 const DataMatrix = require('business/src/series/data_matrix');
 const { getConfig } = require('@pryv/boiler');
 const { getUsersRepository } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, produceInfluxConnection } = require('api-server/test/test-helpers');
+const { produceStorageConnection, produceSeriesConnection } = require('api-server/test/test-helpers');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { pubsub } = require('messages');
 const { promisify } = require('util');
@@ -37,8 +37,8 @@ let request;
 let res;
 let mongoFixtures;
 let usersRepository;
-let influx;
-let influxRepository;
+let seriesConn;
+let seriesRepository;
 let config;
 let isOpenSource = false;
 let isAuditActive = false;
@@ -65,10 +65,10 @@ describe('[PGTD] DELETE /users/:username', () => {
     await require('api-server/src/methods/utility')(app.api);
     await require('api-server/src/methods/auth/register')(app.api);
     request = supertest(app.expressApp);
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
     await mongoFixtures.context.cleanEverything();
-    influx = produceInfluxConnection(app.config);
-    influxRepository = new InfluxRepository(influx);
+    seriesConn = await produceSeriesConnection(app.config);
+    seriesRepository = new SeriesRepository(seriesConn);
     usersRepository = await getUsersRepository();
     // Use cuid() for unique usernames to avoid parallel test conflicts
     username1 = 'testdel1_' + cuid.slug();
@@ -230,7 +230,6 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert.ok(user == null);
           const dbCollections = [
             app.storageLayer.accesses,
-            app.storageLayer.followedSlices,
             app.storageLayer.profile,
             app.storageLayer.webhooks
           ];
@@ -251,7 +250,7 @@ describe('[PGTD] DELETE /users/:username', () => {
           streams = streams.filter((s) => !SystemStreamsSerializer.isSystemStreamId(s.id));
           assert.ok(streams.length === 0);
           const sessions = await promisify((q, cb) => app.storageLayer.sessions.getMatching(q, cb))({ username: username1 });
-          assert(sessions === null || sessions === []);
+          assert(sessions == null || sessions.length === 0);
         });
         it(`[${testIDs[i][2]}] should delete user event files`, async function () {
           const infos = await mall.getUserStorageInfos(userToDelete.attrs.id);
@@ -259,7 +258,7 @@ describe('[PGTD] DELETE /users/:username', () => {
         });
         it(`[${testIDs[i][8]}] should delete HF data`, async function () {
           if (isOpenSource) { this.skip(); }
-          const databases = await influx.getDatabases();
+          const databases = await seriesConn.getDatabases();
           const isFound = databases.indexOf(`user.${userToDelete.attrs.username}`) >= 0;
           assert.strictEqual(isFound, false);
         });
@@ -446,12 +445,12 @@ async function initiateUserWithData (userId) {
   await mall.events.addAttachment(userId, eventId, attachmentItem);
   await fs.promises.unlink(filePath);
   if (!isOpenSource) {
-    const usersSeries = await influxRepository.get(`user.${userId}`, `event.${cuid()}`);
+    const usersSeries = await seriesRepository.get(`user.${userId}`, `event.${cuid()}`);
     const data = new DataMatrix(['deltaTime', 'value'], [
       [0, 10],
       [1, 20]
     ]);
-    usersSeries.append(data);
+    await usersSeries.append(data);
     // generate audit trace
     await request.get(`/${userId}/events`).set('Authorization', token);
   }

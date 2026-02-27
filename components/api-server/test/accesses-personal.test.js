@@ -52,9 +52,9 @@ describe('[ACSF] accesses (personal)', function () {
     basePath = '/' + username + '/accesses';
     user = { id: username };
 
-    const database = await storage.getDatabase();
-    accessStorage = new storage.user.Accesses(database);
-    sessionStorage = new storage.Sessions(database);
+    const storageLayer = await storage.getStorageLayer();
+    accessStorage = storageLayer.accesses;
+    sessionStorage = storageLayer.sessions;
 
     // Create user with streams
     fixtureUser = await fixtures.user(username);

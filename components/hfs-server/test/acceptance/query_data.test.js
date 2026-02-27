@@ -11,14 +11,14 @@ const { ErrorIds } = require('errors');
 const cuid = require('cuid');
 const assert = require('node:assert');
 const superagent = require('superagent');
-const { spawnContext, produceMongoConnection } = require('./test-helpers');
+const { spawnContext, produceStorageConnection } = require('./test-helpers');
 const testHelpers = require('test-helpers');
 const databaseFixture = testHelpers.databaseFixture;
 
 describe('[HFSQ] Querying data from a HF series', function () {
   let database, pryv;
   before(async function () {
-    database = await produceMongoConnection();
+    database = await produceStorageConnection();
     pryv = databaseFixture(database);
   });
   after(function () {

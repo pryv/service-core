@@ -6,8 +6,10 @@
  */
 const { initTracer: initJaegerTracer } = require('jaeger-client');
 const { Tags } = require('opentracing');
+const { getLogger } = require('@pryv/boiler');
 const ah = require('./hooks');
 const TRACING_NAME = 'api-server';
+const logger = getLogger('tracing');
 /**
  * Starts jaeger tracer
  * @param {string} serviceName
@@ -195,14 +197,14 @@ class Tracing {
    */
   checkIfFinished () {
     if (this.spansStack.length === 0) return;
-    if (this.spansStack.length > 100) { // check envent infinite loops loops
+    if (this.spansStack.length > 100) { // check for infinite loops
       const remaining = this.spansStack.map((x) => x._operationName);
-      console.log(' Tracing stack over 100 items ', this.history, remaining);
+      logger.warn('Tracing stack over 100 items', { history: this.history, remaining });
       return;
     }
     if (Date.now() - this.lastUsedAt > 500) { // check for non-closed trace
       const remaining = this.spansStack.map((x) => x._operationName);
-      console.log(' Tracing last call was 500ms ago ', this.history, remaining);
+      logger.debug('Tracing: last call was 500ms ago', { history: this.history, remaining });
       return;
     }
     setTimeout(() => {

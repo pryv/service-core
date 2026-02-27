@@ -9,15 +9,16 @@ const assert = require('node:assert');
 const cuid = require('cuid');
 const rpc = require('tprpc');
 const metadata = require('metadata');
-const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
+const { spawnContext, produceStorageConnection, produceSeriesConnection, getTimeDelta } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
 
 describe('[HFBT] Storing BATCH data in a HF series', function () {
   let database;
+  let seriesConn;
   before(async function () {
-    database = await produceMongoConnection();
+    database = await produceStorageConnection();
+    seriesConn = await produceSeriesConnection();
   });
-  const influx = produceInfluxConnection();
   describe('[HB01] Use Case: Store data in InfluxDB, Verification on either half', function () {
     let server;
     before(async () => {
@@ -97,17 +98,17 @@ describe('[HFBT] Storing BATCH data in a HF series', function () {
       const query = `
         SELECT * FROM "event.${eventId}"
       `;
-      const result = await influx.query(query, options);
+      const result = await seriesConn.query(query, options);
       assert.strictEqual(result.length, 3);
       const expectedValues = [
-        ['1970-01-01T00:00:00.000000000Z', 10.2],
-        ['1970-01-01T00:00:01.000000000Z', 12.2],
-        ['1970-01-01T00:00:02.000000000Z', 14.2]
+        [0, 10.2],
+        [1, 12.2],
+        [2, 14.2]
       ];
       for (const row of result) {
         if (row.time == null || row.value == null) { throw new Error('Should have time and value.'); }
-        const [expTime, expValue] = expectedValues.shift();
-        assert.strictEqual(row.time && row.time.toNanoISOString(), expTime);
+        const [expTimeDelta, expValue] = expectedValues.shift();
+        assert.strictEqual(getTimeDelta(row.time), expTimeDelta);
         assert.strictEqual(row.value, expValue);
       }
     });

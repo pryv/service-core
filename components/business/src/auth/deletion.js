@@ -126,12 +126,21 @@ class Deletion {
    */
   async deleteHFData (context, params, result, next) {
     if (this.config.get('openSource:isActive')) { return next(); }
-    // dynamic loading , because series functionality does not exist in opensource
-    const InfluxConnection = require('business/src/series/influx_connection');
-    const host = this.config.get('influxdb:host');
-    const port = this.config.get('influxdb:port');
-    const influx = new InfluxConnection({ host, port });
-    await influx.dropDatabase(`user.${params.username}`);
+    // dynamic loading, because series functionality does not exist in opensource
+    const storage = require('storage');
+    const engine = storage.getStorageEngine(this.config, 'database');
+    let conn;
+    if (engine === 'postgresql') {
+      const PGSeriesConnection = require('business/src/series/pg_connection');
+      const pgDb = await storage.getDatabasePG();
+      conn = new PGSeriesConnection(pgDb);
+    } else {
+      const InfluxConnection = require('business/src/series/influx_connection');
+      const host = this.config.get('influxdb:host');
+      const port = this.config.get('influxdb:port');
+      conn = new InfluxConnection({ host, port });
+    }
+    await conn.dropDatabase(`user.${params.username}`);
     next();
   }
 
@@ -159,7 +168,6 @@ class Deletion {
     try {
       const dbCollections = [
         this.storageLayer.accesses,
-        this.storageLayer.followedSlices,
         this.storageLayer.profile,
         this.storageLayer.webhooks
       ];
@@ -168,7 +176,7 @@ class Deletion {
       const usersRepository = await getUsersRepository();
       await usersRepository.deleteOne(context.user.id, context.user.username);
       await Promise.all(removals);
-      await bluebird.fromCallback((cb) => this.storageLayer.sessions.remove({ 'data.username': { $eq: context.user.username } }, cb));
+      await bluebird.fromCallback((cb) => this.storageLayer.sessions.remove({ username: context.user.username }, cb));
     } catch (error) {
       this.logger.error(error, error);
       return next(errors.unexpectedError(error));

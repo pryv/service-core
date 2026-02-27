@@ -7,28 +7,32 @@
 const Access = require('./user/Accesses');
 const Stream = require('./user/Streams');
 const Database = require('./Database');
+const DatabasePG = require('./DatabasePG');
 const StorageLayer = require('./StorageLayer');
 const { getConfigUnsafe, getConfig } = require('@pryv/boiler');
 const { dataBaseTracer } = require('tracing');
 const usersLocalIndex = require('./usersLocalIndex');
+const getStorageEngine = require('./getStorageEngine');
 
 module.exports = {
   Database: require('./Database'),
+  DatabasePG: require('./DatabasePG'),
   PasswordResetRequests: require('./PasswordResetRequests'),
   Sessions: require('./Sessions'),
   Size: require('./Size'),
   Versions: require('./Versions'),
   user: {
     Accesses: Access,
-    FollowedSlices: require('./user/FollowedSlices'),
     Profile: require('./user/Profile'),
     Streams: Stream,
     Webhooks: require('./user/Webhooks')
   },
   StorageLayer,
   getDatabase,
+  getDatabasePG,
   getStorageLayer,
   getDatabaseSync,
+  getStorageEngine,
   userLocalDirectory: require('./userLocalDirectory'),
   getUsersLocalIndex,
   getUserAccountStorage,
@@ -57,10 +61,19 @@ async function getUsersLocalIndex () {
 let userAccount;
 async function getUserAccountStorage () {
   if (!userAccount) {
-    if ((await getConfig()).get('storageUserAccount:engine') === 'mongodb') {
-      userAccount = require('./userAccountStorageMongo');
-    } else {
-      userAccount = require('./userAccountStorageSqlite');
+    const config = await getConfig();
+    const engine = getStorageEngine(config, 'storageUserAccount');
+    switch (engine) {
+      case 'mongodb':
+        userAccount = require('./userAccountStorageMongo');
+        break;
+      case 'postgresql':
+        userAccount = require('./userAccountStoragePG');
+        break;
+      default:
+        // sqlite (default)
+        userAccount = require('./userAccountStorageSqlite');
+        break;
     }
     await userAccount.init();
   }
@@ -74,8 +87,22 @@ let storageLayer;
 async function getStorageLayer () {
   if (storageLayer) { return storageLayer; }
   const config = await getConfig();
+  const engine = getStorageEngine(config, 'database');
   storageLayer = new StorageLayer();
-  await storageLayer.init(_getDatabase(config));
+
+  let connection;
+  switch (engine) {
+    case 'mongodb':
+      connection = _getDatabase(config);
+      break;
+    case 'postgresql':
+      connection = _getDatabasePG(config);
+      break;
+    case 'sqlite':
+      connection = null; // SQLite StorageLayer manages its own connections
+      break;
+  }
+  await storageLayer.init(connection);
   return storageLayer;
 }
 
@@ -87,10 +114,21 @@ function getDatabaseSync (warnOnly) {
 }
 
 /**
+ * Get the MongoDB database connection.
  * @returns {Promise<any>}
  */
 async function getDatabase () {
   const db = _getDatabase(await getConfig());
+  await db.ensureConnect();
+  return db;
+}
+
+/**
+ * Get the PostgreSQL database connection.
+ * @returns {Promise<DatabasePG>}
+ */
+async function getDatabasePG () {
+  const db = _getDatabasePG(await getConfig());
   await db.ensureConnect();
   return db;
 }
@@ -105,4 +143,15 @@ function _getDatabase (config) {
     dataBaseTracer(database);
   }
   return database;
+}
+
+let databasePG;
+/**
+ * @returns {DatabasePG}
+ */
+function _getDatabasePG (config) {
+  if (!databasePG) {
+    databasePG = new DatabasePG(config.get('postgresql'));
+  }
+  return databasePG;
 }

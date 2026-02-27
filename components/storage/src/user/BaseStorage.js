@@ -5,6 +5,7 @@
  * Refer to LICENSE file
  */
 const _ = require('lodash');
+const bluebird = require('bluebird');
 const converters = require('./../converters');
 const logger = require('@pryv/boiler').getLogger('storage:base-storage');
 
@@ -377,6 +378,21 @@ BaseStorage.prototype.dropCollection = function (userOrUserId, callback) {
  */
 BaseStorage.prototype.dropCollectionFully = function (userOrUserId, callback) {
   this.database.dropCollectionFully(this.getCollectionInfo(userOrUserId), callback);
+};
+
+/**
+ * Async generator that yields ALL items in the collection (no user filter,
+ * no deleted/headId filtering). Used for cross-user scans like integrity checking.
+ */
+BaseStorage.prototype.iterateAll = async function * () {
+  // Use collection name only (no useUserId) to scan ALL rows across users
+  const collectionInfo = { name: this.getCollectionInfo('_').name };
+  const cursor = await bluebird.fromCallback(cb =>
+    this.database.findCursor(collectionInfo, {}, {}, cb)
+  );
+  while (await cursor.hasNext()) {
+    yield this.applyItemFromDB(await cursor.next());
+  }
 };
 
 // for tests only (at the moment)

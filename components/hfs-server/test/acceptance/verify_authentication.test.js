@@ -16,18 +16,20 @@ const { getConfig, getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
 
 describe('[METL] Metadata Loader', function () {
-  let database, pryv, mall;
+  let storageLayer, pryv, mall;
   before(async function () {
     await require('business/src/system-streams/serializer').init();
-    database = await storage.getDatabase();
-    pryv = databaseFixture(database);
+    storageLayer = await storage.getStorageLayer();
+    pryv = databaseFixture(storageLayer);
     mall = await getMall();
+    // Clean stale data from previous runs
+    await pryv.context.cleanEverything();
   });
 
   let loader;
   beforeEach(async () => {
     loader = new MetadataLoader();
-    await loader.init(database, mall, getLogger('metadata-test'));
+    await loader.init(mall, getLogger('metadata-test'));
   });
   const USER_NAME = 'foo';
   const EVENT_ID = 'c1';

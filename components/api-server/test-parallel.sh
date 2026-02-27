@@ -13,7 +13,6 @@ PATTERN_C_TESTS=(
   "test/profile-personal.test.js"
   "test/accesses-app.test.js"
   "test/accesses-personal.test.js"
-  "test/followed-slices.test.js"
   "test/events-mutiple-streamIds.test.js"
   "test/events.get-streams-query.test.js"
   "test/webhooks.test.js"

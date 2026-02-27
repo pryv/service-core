@@ -27,24 +27,36 @@ after(async () => {
 });
 const storage = require('storage');
 const InfluxConnection = require('business/src/series/influx_connection');
-// Produces and returns a connection to MongoDB.
 /**
+ * Returns the StorageLayer instance (engine-agnostic).
  * @returns {Promise<any>}
  */
-async function produceMongoConnection () {
-  return await storage.getDatabase();
+async function produceConnection () {
+  return await storage.getStorageLayer();
 }
 /**
+ * Produces an engine-agnostic series connection (InfluxDB or PG).
  * @param {any} settings
- * @returns {any}
+ * @returns {Promise<any>}
  */
-function produceInfluxConnection (settings) {
-  const host = settings.get('influxdb:host');
-  const port = settings.get('influxdb:port');
-  return new InfluxConnection({ host, port });
+async function produceSeriesConnection (settings) {
+  const engine = storage.getStorageEngine(settings, 'database');
+  switch (engine) {
+    case 'postgresql': {
+      const PGSeriesConnection = require('business/src/series/pg_connection');
+      const pgDb = await storage.getDatabasePG();
+      return new PGSeriesConnection(pgDb);
+    }
+    default: {
+      const host = settings.get('influxdb:host');
+      const port = settings.get('influxdb:port');
+      return new InfluxConnection({ host, port });
+    }
+  }
 }
 module.exports = {
   context,
-  produceMongoConnection,
-  produceInfluxConnection
+  produceStorageConnection: produceConnection,
+  produceConnection,
+  produceSeriesConnection
 };

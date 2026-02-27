@@ -472,8 +472,8 @@ module.exports = async function produceAccessesApiMethods (api) {
         return false;
       }
     }
-    // Compare clientData
-    if (!_.isEqual(access.clientData, clientData)) {
+    // Compare clientData (treat null and undefined as equivalent)
+    if (!_.isEqual(access.clientData ?? null, clientData ?? null)) {
       return false;
     }
     return true;

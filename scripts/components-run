@@ -29,15 +29,21 @@ if (process.env.COMPONENT && process.env.COMPONENT != 'all') {
   singleComponent = process.env.COMPONENT;
 }
 
+let interrupted = false;
+process.on('SIGINT', () => { interrupted = true; });
+
 let status = 0;
-fs.readdirSync(componentsPath).forEach(function (name) {
+const components = fs.readdirSync(componentsPath);
+for (const name of components) {
+  if (interrupted) break;
+
   const subPath = path.join(componentsPath, name);
   if (!fs.existsSync(path.join(subPath, 'package.json'))) {
-    return;
+    continue;
   }
 
   if (singleComponent && singleComponent != name) {
-    return;
+    continue;
   }
 
   console.log(chalk.green(formatHeading(name)));
@@ -45,9 +51,9 @@ fs.readdirSync(componentsPath).forEach(function (name) {
   // HACK: if running mocha on all components, ignore those that have no "test" folder;
   //       mocha's "failZero" option would be cleaner, but as of 2022-03-29 it doesn't work
   //       (cf. https://github.com/mochajs/mocha/issues/4858)
-  if(args.slice(1)[0] == 'mocha' && !singleComponent && !fs.existsSync(path.join(subPath, 'test'))){
+  if (args.slice(1)[0] == 'mocha' && !singleComponent && !fs.existsSync(path.join(subPath, 'test'))) {
     console.log('No "test" folder, skipping');
-    return;
+    continue;
   }
 
   const res = childProcess.spawnSync(args[0], args.slice(1), {
@@ -63,10 +69,16 @@ fs.readdirSync(componentsPath).forEach(function (name) {
       logError(res.error);
     }
   }
-  status += (res.status === null ? 1 : res.status);
-});
 
-process.exit(status);
+  // Child killed by signal (e.g. SIGINT) — exit immediately
+  if (res.signal === 'SIGINT' || res.signal === 'SIGTERM') {
+    process.exit(130); // 128 + 2 (SIGINT)
+  }
+
+  status += (res.status === null ? 1 : res.status);
+}
+
+process.exit(interrupted ? 130 : status);
 
 function logError(message) {
   console.error(chalk.bold(`${chalk.red('Error')}: ${message}`));

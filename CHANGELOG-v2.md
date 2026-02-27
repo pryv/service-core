@@ -20,3 +20,7 @@
 
 ### Phase 5: Final Cleanup
 - **REMOVED**: `/service/infos` endpoint (use `/service/info` instead).
+
+## Phase 5b: Remove FollowedSlices
+
+- **REMOVED**: FollowedSlices feature — API methods (`followedSlices.create`, `followedSlices.get`, `followedSlices.delete`), routes, and storage backends have been fully removed.

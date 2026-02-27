@@ -9,6 +9,7 @@ const _ = require('lodash');
 const { pubsub } = require('messages');
 const Webhook = require('business/src/webhooks/Webhook');
 const WebhooksRepository = require('business/src/webhooks/repository');
+const { getUsersRepository } = require('business/src/users');
 const { getAPIVersion } = require('middleware/src/project_version');
 const BOOT_MESSAGE = require('./messages').BOOT_MESSAGE;
 
@@ -103,14 +104,15 @@ class WebhooksService {
 
   /**
    * @param {UsernameWebhook} usernameWebhook
-   * @returns {void}
+   * @returns {Promise<void>}
    */
-  onCreate (usernameWebhook) {
-    this.addWebhook(usernameWebhook.username, new Webhook(_.extend({}, usernameWebhook.webhook, {
+  async onCreate (usernameWebhook) {
+    const username = usernameWebhook.username;
+    const usersRepository = await getUsersRepository();
+    const userId = await usersRepository.getUserIdForUsername(username);
+    this.addWebhook(username, new Webhook(_.extend({}, usernameWebhook.webhook, {
       webhooksRepository: this.repository,
-      user: {
-        username: usernameWebhook.username
-      }
+      user: { id: userId, username }
     })));
   }
 

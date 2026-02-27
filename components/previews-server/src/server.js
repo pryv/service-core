@@ -59,7 +59,6 @@ async function start () {
   await SystemStreamsSerializer.init();
   const customAuthStepExt = loadCustomAuthStepFn(config.get('customExtensions'));
   const logger = getLogger('server');
-  const database = await storage.getDatabase();
   const storageLayer = await storage.getStorageLayer();
   const initContextMiddleware = middleware.initContext(storageLayer, customAuthStepExt && customAuthStepExt.fn);
   const loadAccessMiddleware = middleware.loadAccess(storageLayer);
@@ -74,7 +73,7 @@ async function start () {
   module.exports = server;
   // Go
   const testNotifier = await axonMessaging.getTestNotifier();
-  await database.waitForConnection();
+  await storageLayer.waitForConnection();
   const backlog = 512;
   server.listen(config.get('http:port'), config.get('http:ip'), backlog, function () {
     const address = server.address();

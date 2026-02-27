@@ -15,7 +15,7 @@ const { getApplication } = require('api-server/src/application');
 const { getConfig } = require('@pryv/boiler');
 const { getUsersRepository, User } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection } = require('api-server/test/test-helpers');
+const { produceStorageConnection } = require('api-server/test/test-helpers');
 const { pubsub } = require('messages');
 const { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } = require('api-server/src/schema/helpers');
 const ErrorIds = require('errors/src/ErrorIds');
@@ -42,7 +42,7 @@ describe('[BMM2] registration: DNS-less', () => {
   });
 
   before(async function () {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
     app = getApplication(true);
     await app.initiate();
 

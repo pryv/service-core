@@ -11,6 +11,7 @@
 const { getConfig, getLogger } = require('@pryv/boiler');
 const cache = require('cache');
 const { validateUsersLocalIndexDB } = require('./interfaces/UsersLocalIndexDB');
+const getStorageEngine = require('./getStorageEngine');
 
 const logger = getLogger('users:local-index');
 
@@ -29,12 +30,25 @@ class UsersLocalIndex {
     if (this.initialized) { return; }
     this.initialized = true;
 
-    if ((await getConfig()).get('storageUserIndex:engine') === 'mongodb') {
-      const DBIndex = require('./usersLocalIndexMongoDB');
-      this.db = new DBIndex();
-    } else {
-      const DBIndex = require('./usersLocalIndexSQLite');
-      this.db = new DBIndex();
+    const config = await getConfig();
+    const engine = getStorageEngine(config, 'storageUserIndex');
+    switch (engine) {
+      case 'mongodb': {
+        const DBIndex = require('./usersLocalIndexMongoDB');
+        this.db = new DBIndex();
+        break;
+      }
+      case 'postgresql': {
+        const DBIndex = require('./usersLocalIndexPG');
+        this.db = new DBIndex();
+        break;
+      }
+      default: {
+        // sqlite (default)
+        const DBIndex = require('./usersLocalIndexSQLite');
+        this.db = new DBIndex();
+        break;
+      }
     }
 
     await this.db.init();
@@ -52,7 +66,7 @@ class UsersLocalIndex {
     const infos = {};
     const checkedMap = {};
 
-    for (const collectionName of ['events', 'streams', 'accesses', 'profile', 'webhooks', 'followedSlices']) {
+    for (const collectionName of ['events', 'streams', 'accesses', 'profile', 'webhooks']) {
       const userIds = await getAllKnownUserIdsFromDB(collectionName);
       infos['userIdsCount-' + collectionName] = userIds.length;
 
@@ -61,13 +75,13 @@ class UsersLocalIndex {
         const username = this.getUsername(userId);
         checkedMap[userId] = true;
         if (username == null) {
-          errors.push(`User id "${userId}" in mongo collection "${collectionName}" is unknown in the user index DB`);
+          errors.push(`User id "${userId}" in "${collectionName}" is unknown in the user index DB`);
           continue;
         }
       }
     }
     return {
-      title: 'Users local index vs MongoDB',
+      title: 'Users local index vs database',
       infos,
       errors
     };
@@ -126,8 +140,17 @@ class UsersLocalIndex {
 }
 
 async function getAllKnownUserIdsFromDB (collectionName) {
-  const { getDatabase } = require('storage'); // placed here to avoid some circular dependency
-  const database = await getDatabase();
+  const storage = require('storage'); // placed here to avoid some circular dependency
+  const config = await getConfig();
+  const engine = getStorageEngine(config, 'database');
+
+  if (engine === 'postgresql') {
+    const db = await storage.getDatabasePG();
+    const res = await db.query(`SELECT DISTINCT user_id FROM ${collectionName}`);
+    return res.rows.map(r => r.user_id);
+  }
+  // MongoDB
+  const database = await storage.getDatabase();
   const collection = await database.getCollection({ name: collectionName });
   const userIds = await collection.distinct('userId', {});
   return userIds;

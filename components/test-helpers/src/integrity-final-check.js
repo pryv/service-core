@@ -5,27 +5,28 @@
  * Refer to LICENSE file
  */
 /**
- * Load all events and check if the "integrity" is OK
+ * Load all events and check if the "integrity" is OK.
+ * Engine-agnostic: works with both MongoDB and PostgreSQL via async iterators.
  */
-const { getDatabase } = require('storage');
+const { getStorageLayer } = require('storage');
 const { integrity } = require('business');
-const bluebird = require('bluebird');
 const { getConfig } = require('@pryv/boiler');
+
+let storageLayer;
+async function getStorage () {
+  if (!storageLayer) storageLayer = await getStorageLayer();
+  return storageLayer;
+}
 
 async function events () {
   if (!integrity.events.isActive) return;
-  const database = await getDatabase();
-  const cursor = await bluebird.fromCallback(cb => database.findCursor({ name: 'events' }, {}, {}, cb));
+  const sl = await getStorage();
   const erroneousEvents = [];
   let andNMore = 0;
-  while (await cursor.hasNext()) {
-    const event = await cursor.next();
-    event.id = event._id;
-    delete event._id;
-    delete event.userId;
+  for await (const event of sl.iterateAllEvents()) {
     let originalId = null;
     if (event.headId != null) {
-      if (!event.integrity) return; // ignore missing integrity on history
+      if (!event.integrity) continue; // ignore missing integrity on history
       originalId = event.id;
       event.id = event.headId;
       delete event.headId;
@@ -61,21 +62,14 @@ async function events () {
     }
     throw new Error('Integrity not respected for ' + JSON.stringify(erroneousEvents, null, 2));
   }
-  // await bluebird.fromCallback(cb => database.deleteMany({name: 'events'}, {},cb));
 }
 
 async function accesses () {
   if (!integrity.accesses.isActive) return;
-  const database = await getDatabase();
-  const cursor = await bluebird.fromCallback(cb => database.findCursor({ name: 'accesses' }, {}, {}, cb));
+  const sl = await getStorage();
   const erroneousAccess = [];
   let andNMore = 0;
-  while (await cursor.hasNext()) {
-    const access = await cursor.next();
-    access.id = access._id;
-    delete access._id;
-    delete access.userId;
-
+  for await (const access of sl.accesses.iterateAll()) {
     const errors = [];
 
     if (access.integrity === undefined) {
@@ -101,7 +95,6 @@ async function accesses () {
     }
     throw new Error('Integrity not respected for ' + JSON.stringify(erroneousAccess, null, 2));
   }
-  // await bluebird.fromCallback(cb => database.deleteMany({name: 'events'}, {},cb));
 }
 
 let isOpenSource = null;

@@ -68,9 +68,9 @@ function createTestContext (options = {}) {
      * For Pattern A tests, also starts a server
      */
     async init (serverOptions) {
-      // Get database connection
-      const database = await storage.getDatabase();
-      ctx.fixtures = databaseFixture(database);
+      // Get StorageLayer (engine-agnostic)
+      const storageLayer = await storage.getStorageLayer();
+      ctx.fixtures = databaseFixture(storageLayer);
 
       // Create test user
       ctx.user = await ctx.fixtures.user(ctx.username, { password: ctx.password });

@@ -170,30 +170,6 @@ function createDynData (options = {}) {
     events.push(dynEvent);
   }
 
-  // Generate dynamic followed slices
-  function generateFollowedSlices (url) {
-    return [
-      {
-        id: dynId('b_0'),
-        name: 'Zero\'s First Access',
-        url,
-        accessToken: accesses[1].token
-      },
-      {
-        id: dynId('b_1'),
-        name: 'Zero\'s Second Access',
-        url,
-        accessToken: accesses[2].token
-      },
-      {
-        id: dynId('b_2'),
-        name: 'Zero\'s Last Access',
-        url,
-        accessToken: accesses[3].token
-      }
-    ];
-  }
-
   // Generate dynamic profile
   const profile = staticProfile.map(p => {
     const dynProfile = structuredClone(p);
@@ -360,51 +336,6 @@ function createDynData (options = {}) {
   }
 
   /**
-   * Reset followed slices - delete by ID and recreate
-   * Uses direct MongoDB access to delete by _id regardless of user
-   * Supports both callback and Promise patterns
-   */
-  function resetFollowedSlices (done, user, url) {
-    const u = user || defaultUser;
-
-    const promise = (async () => {
-      await ensureDependencies();
-      const storage = dependencies.storage.user.followedSlices;
-
-      const slicesUrl = url || `http://${dependencies.settings.http.ip}:${dependencies.settings.http.port}/${u.username}`;
-      const slices = generateFollowedSlices(slicesUrl);
-
-      // Get direct access to MongoDB collection to delete by _id regardless of user
-      const { getDatabase } = require('storage');
-      const database = await getDatabase();
-      const collection = await database.getCollection({
-        name: 'followedSlices',
-        indexes: []
-      });
-
-      // Delete followed slices by _id directly
-      const sliceIds = slices.map(s => s.id);
-      await collection.deleteMany({ _id: { $in: sliceIds } });
-
-      // Insert new slices
-      await new Promise((resolve, reject) => {
-        storage.insertMany(u, slices, (err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
-    })();
-
-    if (typeof done === 'function') {
-      // Callback mode - don't return Promise
-      promise.then(() => done()).catch(done);
-    } else {
-      // Promise mode - return the Promise
-      return promise;
-    }
-  }
-
-  /**
    * Reset streams - delete all and recreate using mall
    * Supports both callback and Promise patterns
    */
@@ -520,14 +451,10 @@ function createDynData (options = {}) {
     dynCreateAttachmentIdMap,
     flattenStreams: () => flattenStreams(streams),
 
-    // Generate followed slices with custom URL
-    getFollowedSlices: generateFollowedSlices,
-
     // Reset functions
     resetUsers,
     resetAccesses,
     resetProfile,
-    resetFollowedSlices,
     resetStreams,
     resetEvents,
 

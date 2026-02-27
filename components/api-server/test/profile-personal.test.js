@@ -169,8 +169,8 @@ describe('[PRFP] profile (personal)', function () {
     it('[2AS6] must create the profile if not existing', async function () {
       // Remove all profiles for the user
       const storage = require('storage');
-      const database = await storage.getDatabase();
-      const profileStorage = new storage.user.Profile(database);
+      const storageLayer = await storage.getStorageLayer();
+      const profileStorage = storageLayer.profile;
       const user = { id: username };
       await new Promise((resolve) => {
         profileStorage.removeAll(user, () => resolve());

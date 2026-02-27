@@ -76,20 +76,6 @@ describe('[NOTF] Notifications', () => {
       assertDeepInclude(axonMsgs, ['axon-accesses-changed', 'USERNAME']);
     });
   });
-  describe('[NF04] #followedSlicesChanged', () => {
-    beforeEach(() => {
-      pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
-    });
-    it('[VU4A] notifies internal listeners', () => {
-      assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_FOLLOWEDSLICES_CHANGED);
-    });
-    it('[UD2B] notifies axon listeners', () => {
-      assertDeepInclude(axonMsgs, [
-        'axon-followed-slices-changed',
-        'USERNAME'
-      ]);
-    });
-  });
   describe('[NF05] #streamsChanged', () => {
     beforeEach(() => {
       pubsub.notifications.emit('USERNAME', pubsub.USERNAME_BASED_STREAMS_CHANGED);

@@ -13,7 +13,7 @@ const lodash = require('lodash');
 const awaiting = require('awaiting');
 const timestamp = require('unix-timestamp');
 
-const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
+const { spawnContext, produceStorageConnection, produceSeriesConnection, getTimeDelta } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
 const apiServerContext = require('api-server/test/test-helpers').context;
 const rpc = require('tprpc');
@@ -25,13 +25,14 @@ const { getUsersRepository } = require('business/src/users');
 describe('[SDHF] Storing data in a HF series', function () {
   let database, pryv;
   let mall;
+  let seriesConn;
   before(async function () {
-    database = await produceMongoConnection();
+    database = await produceStorageConnection();
     mall = await getMall();
     await require('business/src/system-streams/serializer').init();
     pryv = databaseFixture(database);
+    seriesConn = await produceSeriesConnection();
   });
-  const influx = produceInfluxConnection();
   describe('[SD01] Use Case: Store data in InfluxDB, Verification on either half', function () {
     let server;
     before(async () => {
@@ -102,10 +103,10 @@ describe('[SDHF] Storing data in a HF series', function () {
       const query = `
         SELECT * FROM "event.${eventId}"
       `;
-      const result = await influx.query(query, options);
+      const result = await seriesConn.query(query, options);
       const row = result[0];
       if (row.time == null || row.value == null) { throw new Error('Should have time and value.'); }
-      assert.strictEqual(row.time.toNanoISOString(), '1970-01-01T00:00:01.000000000Z');
+      assert.strictEqual(getTimeDelta(row.time), 1);
       assert.strictEqual(row.value, 80.3);
     });
     it('[GZIZ] should store data correctly', async () => {
@@ -119,34 +120,23 @@ describe('[SDHF] Storing data in a HF series', function () {
       const query = `
         SELECT * FROM "event.${eventId}"
       `;
-      const result = await influx.query(query, options);
+      const result = await seriesConn.query(query, options);
       const row = result[0];
       if (row.time == null || row.value == null) { throw new Error('Should have time and value.'); }
-      assert.strictEqual(row.time.toNanoISOString(), '1970-01-01T00:00:01.000000000Z');
+      assert.strictEqual(getTimeDelta(row.time), 1);
       assert.strictEqual(row.value, 80.3);
     });
     it('[KC15] should return data once stored', async () => {
-      // identical with id here, but will be user name in general.
       const userName = userId;
       const dbName = `user.${userName}`;
-      const measurementName = `event.${eventId}`;
       await cycleDatabase(dbName);
-      await storeSampleMeasurement(dbName, measurementName);
+      // Store data via HFS API (engine-agnostic)
+      await storeData({ deltaTime: 2, value: 1234 }, accessToken);
       await queryData();
       function cycleDatabase (dbName) {
-        return influx
+        return seriesConn
           .dropDatabase(dbName)
-          .then(() => influx.createDatabase(dbName));
-      }
-      function storeSampleMeasurement (dbName, measurementName) {
-        const options = { database: dbName };
-        const points = [
-          {
-            fields: { value: 1234 },
-            timestamp: 2 * 1000000000
-          }
-        ];
-        return influx.writeMeasurement(measurementName, points, options);
+          .then(() => seriesConn.createDatabase(dbName));
       }
       function queryData () {
         const request = server.request();
@@ -157,7 +147,6 @@ describe('[SDHF] Storing data in a HF series', function () {
             fromDeltaTime: '1',
             toDeltaTime: '3'
           })
-        // .then((res) => console.log(require('util').inspect(res.body, { depth: null })))
           .expect(200)
           .then((res) => {
             const points = res.body.points || [];
@@ -335,7 +324,7 @@ describe('[SDHF] Storing data in a HF series', function () {
       const opts = {
         database: `user.${result.user.id}`
       };
-      const rows = await influx.query(query, opts);
+      const rows = await seriesConn.query(query, opts);
       assert.strictEqual(rows.length, 3);
       const delete2 = await apiServer
         .request()
@@ -343,7 +332,7 @@ describe('[SDHF] Storing data in a HF series', function () {
         .set('authorization', accessToken);
       assert.strictEqual(delete2.status, 200);
       await awaiting.delay(100);
-      const rows2 = await influx.query(query, opts);
+      const rows2 = await seriesConn.query(query, opts);
       assert.strictEqual(rows2.length, 0);
     });
   });
@@ -680,15 +669,15 @@ describe('[SDHF] Storing data in a HF series', function () {
         const opts = {
           database: `user.${result.user.id}`
         };
-        const rows = await influx.query(query, opts);
+        const rows = await seriesConn.query(query, opts);
         assert.strictEqual(rows.length, aHundredRandomFloats.length);
         for (const [exp, act] of lodash.zip(aHundredRandomFloats, rows)) {
           if (act.time == null) { throw new Error('AF: time cannot be null'); }
-          const influxTimestamp = Number(act.time.getNanoTime()) / 1e9;
+          const timestamp = getTimeDelta(act.time);
           if (typeof exp[1] !== 'number') { throw new Error('AF: ridiculous flow inference removal'); }
           const expectedTs = Number(exp[0]);
           const expectedValue = Number(exp[1]);
-          assert.ok(Math.abs(expectedTs - influxTimestamp) <= 0.1);
+          assert.ok(Math.abs(expectedTs - timestamp) <= 0.1);
           assert.ok(Math.abs(expectedValue - act.value) <= 0.001);
         }
       });

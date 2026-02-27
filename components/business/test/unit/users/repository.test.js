@@ -9,14 +9,14 @@ const assert = require('node:assert');
 const charlatan = require('charlatan');
 require('test-helpers/src/api-server-tests-config');
 const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection } = require('api-server/test/test-helpers');
+const { produceStorageConnection } = require('api-server/test/test-helpers');
 const { getUsersRepository, User } = require('business/src/users');
 const { ErrorIds } = require('errors');
 
 describe('[USRP] Users repository', () => {
   let mongoFixtures;
   before(async function () {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
     await mongoFixtures.clean();
   });
   after(async () => {

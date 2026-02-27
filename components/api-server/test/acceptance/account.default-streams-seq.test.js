@@ -21,7 +21,7 @@ const { getUserAccountStorage } = require('storage');
 const { getConfig } = require('@pryv/boiler');
 
 const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection } = require('api-server/test/test-helpers');
+const { produceStorageConnection } = require('api-server/test/test-helpers');
 
 const { getMall } = require('mall');
 
@@ -97,7 +97,7 @@ describe('[ACCO] Account with system streams', function () {
     config.injectTestConfig({ testsSkipForwardToRegister: false });
     isDnsLess = config.get('dnsLess:isActive');
     helpers = require('api-server/test/helpers');
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
     app = getApplication(true);
     await app.initiate();
     // Initialize notifications dependency

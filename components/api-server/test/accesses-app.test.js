@@ -28,7 +28,6 @@ describe('[ACCP] accesses (app)', function () {
   let rootAccessToken;
   let basePath;
   let fixtures;
-  let database;
   let accessStorage;
   let user;
 
@@ -47,8 +46,8 @@ describe('[ACCP] accesses (app)', function () {
     username = cuid();
     basePath = '/' + username + '/accesses';
 
-    database = await storage.getDatabase();
-    accessStorage = new storage.user.Accesses(database);
+    const storageLayer = await storage.getStorageLayer();
+    accessStorage = storageLayer.accesses;
     user = { id: username };
 
     // Create user with streams using fixtures

@@ -28,6 +28,7 @@ describe('[WHBK] Webhook', () => {
     let postPath = '/notifications';
     let url = 'http://127.0.0.1:' + PORT + postPath;
     const user = {
+      id: 'doesnotmatter',
       username: 'doesnotmatter'
     };
 

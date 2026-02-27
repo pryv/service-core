@@ -19,7 +19,7 @@ const { getMall } = require('mall');
 let mall;
 
 describe('[FLSH] Flush', () => {
-  const connection = produceMongoConnection();
+  const connection = produceStorageConnection();
   const now = timestamp.now();
   const initialDuration = 100;
   const fromDeltaTime = initialDuration - 10;
@@ -151,7 +151,7 @@ function makeUpdate (now, attrs = {}) {
 /**
  * @returns {any}
  */
-function produceMongoConnection () {
+function produceStorageConnection () {
   return storage.getDatabaseSync();
 }
 

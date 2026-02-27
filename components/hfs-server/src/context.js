@@ -23,7 +23,6 @@ class Context {
 
   metadataUpdater;
 
-  mongoConn;
   // Application level performance and error tracing:
 
   tracer;
@@ -31,12 +30,11 @@ class Context {
   typeRepository;
 
   config;
-  constructor (influxConn, mongoConn, tracer, typeRepoUpdateUrl, config) {
+  constructor (influxConn, tracer, typeRepoUpdateUrl, config) {
     this.series = new business.series.Repository(influxConn);
     this.metadataUpdater = new metadataUpdater.MetadataForgetter(getLogger('metadata.update'));
     this.tracer = tracer;
     this.config = config;
-    this.mongoConn = mongoConn;
     this.configureTypeRepository(typeRepoUpdateUrl);
   }
 
@@ -63,7 +61,7 @@ class Context {
   async configureMetadataCache () {
     const mall = await getMall();
     const metadataLoader = new MetadataLoader();
-    await metadataLoader.init(this.mongoConn, mall, getLogger('metadata-cache'));
+    await metadataLoader.init(mall, getLogger('metadata-cache'));
     this.metadata = new MetadataCache(this.series, metadataLoader, this.config);
   }
 
@@ -98,5 +96,3 @@ class Context {
 module.exports = Context;
 
 /** @typedef {business.series.Repository} Repository */
-
-/** @typedef {business.series.InfluxConnection} InfluxConnection */

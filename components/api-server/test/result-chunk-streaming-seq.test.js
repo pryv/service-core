@@ -8,7 +8,7 @@
 const cuid = require('cuid');
 const assert = require('node:assert');
 
-const { produceMongoConnection, context } = require('./test-helpers');
+const { produceStorageConnection, context } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
 const { getConfig } = require('@pryv/boiler');
 
@@ -17,13 +17,14 @@ const superagent = require('superagent');
 const { promisify } = require('util');
 
 const N_ITEMS = 2000;
+const STORAGE_ENGINE = process.env.STORAGE_ENGINE;
 describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
   this.timeout(60 * 2 * 1000);
 
   let mongoFixtures;
   let isFerret;
   before(async function () {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
     const config = await getConfig();
     isFerret = config.get('database:isFerret');
   });
@@ -80,7 +81,7 @@ describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
       res.setEncoding('utf8');
       let jsonString = '';
       let chunkCount = 0;
-      const timeout = isFerret ? 10000 : 500; // Ferret is Slower
+      const timeout = isFerret ? 10000 : (STORAGE_ENGINE === 'postgresql' ? 5000 : 500);
       res.on('data', function (chunk) {
         if (Date.now() - lastChunkRecievedAt > timeout) throw new Error(`It took more that ${timeout}ms between chunks`);
         lastChunkRecievedAt = Date.now();
@@ -118,7 +119,7 @@ describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
         res.setEncoding('utf8');
         let jsonString = '';
         let chunkCount = 0;
-        const timeout = isFerret ? 10000 : 500; // Ferret is Slower
+        const timeout = isFerret ? 10000 : (STORAGE_ENGINE === 'postgresql' ? 5000 : 500);
         res.on('data', function (chunk) {
           if (Date.now() - lastChunkRecievedAt > timeout) throw new Error(`It took more that ${timeout}ms between chunks`);
           lastChunkRecievedAt = Date.now();

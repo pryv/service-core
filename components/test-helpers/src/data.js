@@ -73,22 +73,6 @@ exports.resetProfile = function (done, user) {
   resetMongoDBCollectionFor(storage.user.profile, user || defaultUser, profile, done);
 };
 
-// followed slices
-
-const followedSlicesURL = 'http://' +
-    settings.http.ip +
-    ':' +
-    settings.http.port +
-    '/' +
-    users[0].username;
-
-const followedSlices = (exports.followedSlices =
-    require('./data/followedSlices')(followedSlicesURL));
-
-exports.resetFollowedSlices = function (done, user) {
-  resetMongoDBCollectionFor(storage.user.followedSlices, user || defaultUser, followedSlices, done);
-};
-
 // events
 
 const events = (exports.events = require('./data/events'));
@@ -247,7 +231,6 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
     exports.resetUsers,
     exports.resetAccesses,
     exports.resetProfile,
-    exports.resetFollowedSlices,
     exports.resetStreams,
     exports.resetEvents,
     fs.rm.bind(null, outputFolder, { recursive: true, force: true }),

@@ -159,12 +159,19 @@ Sessions.prototype.getNewExpirationDate = function () {
 };
 
 /**
- * Override.
+ * Delete sessions whose data matches the given fields.
+ * @param {{ [field: string]: string }} query — plain key/value to match inside session data
+ * @param {Function} callback
  */
 Sessions.prototype.remove = function (query, callback) {
+  // Convert plain {field: value} to MongoDB dot-notation on the data subdocument
+  const mongoQuery = {};
+  for (const [key, value] of Object.entries(query)) {
+    mongoQuery[`data.${key}`] = value;
+  }
   this.database.deleteMany(
     collectionInfo,
-    query,
+    mongoQuery,
     callback
   );
 };

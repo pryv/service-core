@@ -31,10 +31,6 @@ const ALL_METHODS = [
   'account.changePassword',
   'account.requestPasswordReset',
   'account.resetPassword',
-  'followedSlices.get',
-  'followedSlices.create',
-  'followedSlices.update',
-  'followedSlices.delete',
   'profile.getPublic',
   'profile.getApp',
   'profile.get',
@@ -80,7 +76,7 @@ const WITH_USER_METHODS = AUDITED_METHODS.filter(m => !WITHOUT_USER_METHODS.incl
 const allMethodsMap = buildMap(ALL_METHODS);
 
 function throwIfMethodIsNotDeclared (methodId) {
-  if (methodId.includes('*')) return; // including to register for wildcards such as "followedSlices.*", or "*"
+  if (methodId.includes('*')) return; // including to register for wildcards such as "*"
   if (allMethodsMap[methodId]) return;
   throw new Error('Attempting to add a method not declared in audit, methodId: "' + methodId + '". Please add it to components/audit/src/ApiMethods.js#ALL_METHODS');
 }

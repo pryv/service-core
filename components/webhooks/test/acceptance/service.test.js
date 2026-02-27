@@ -11,19 +11,17 @@ const awaiting = require('awaiting');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
-const { webhooksStorage } = require('../test-helpers');
+const { getWebhooksStorage } = require('../test-helpers');
 
 const { databaseFixture } = require('test-helpers');
 
-const userStorage = require('test-helpers').dependencies.storage.user.events;
-
 require('api-server/test/test-helpers');
-const { produceMongoConnection, context } = require('api-server/test/test-helpers');
+const { produceStorageConnection, context } = require('api-server/test/test-helpers');
 
 const WebhooksApp = require('../../src/application');
 
 const { Webhook, Repository } = require('business').webhooks;
-const repository = new Repository(webhooksStorage, userStorage);
+let repository;
 const HttpServer = require('business/test/acceptance/webhooks/support/httpServer');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
@@ -36,10 +34,12 @@ describe('[WH01] webhooks', function () {
     url, url2,
     notificationsServer;
 
-  let mongoFixtures;
+  let fixtures;
   before(async function () {
     await SystemStreamsSerializer.init();
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    fixtures = databaseFixture(await produceStorageConnection());
+    const webhooksStorage = await getWebhooksStorage();
+    repository = new Repository(webhooksStorage);
   });
 
   const port = 5123;
@@ -65,7 +65,7 @@ describe('[WH01] webhooks', function () {
     });
   });
   after(async function () {
-    await mongoFixtures.clean();
+    await fixtures.clean();
     await apiServer.stop();
     webhooksApp.stop();
   });
@@ -80,7 +80,7 @@ describe('[WH01] webhooks', function () {
       });
 
       before(async function () {
-        user = await mongoFixtures.user(username, {});
+        user = await fixtures.user(username, {});
         await user.stream({
           id: streamId
         });
@@ -122,7 +122,7 @@ describe('[WH01] webhooks', function () {
 
       it('[YD6N] should send a boot message to all active webhooks', async function () {
         assert.strictEqual(notificationsServer.getMessageCount(), 1);
-        const activeWebhook = await repository.getById(user, webhook.id);
+        const activeWebhook = await repository.getById(user.context.user, webhook.id);
         assert.strictEqual(activeWebhook.runCount, 1);
         const messages = notificationsServer.getMessages();
         assert.strictEqual(messages[0], BOOT_MESSAGE);
@@ -132,7 +132,7 @@ describe('[WH01] webhooks', function () {
         assert.ok(Math.abs(metas[0].serverTime - timestamp.now()) <= 100);
       });
       it('[UM4T] should send nothing to inactive webhooks', async function () {
-        const inactiveWebhook = await repository.getById(user, webhook2.id);
+        const inactiveWebhook = await repository.getById(user.context.user, webhook2.id);
         assert.strictEqual(inactiveWebhook.runCount, 0);
       });
     });
@@ -162,7 +162,7 @@ describe('[WH01] webhooks', function () {
         });
 
         before(async function () {
-          user = await mongoFixtures.user(username);
+          user = await fixtures.user(username);
           await user.access({
             id: appAccessId,
             token: appAccessToken,
@@ -177,7 +177,7 @@ describe('[WH01] webhooks', function () {
             accessId: appAccessId,
             url
           });
-          webhook = new Webhook(_.merge(webhook.attrs, { webhooksRepository: repository, user }));
+          webhook = new Webhook(_.merge(webhook.attrs, { webhooksRepository: repository, user: user.context.user }));
           await webhooksService.addWebhook(username, webhook);
         });
 
@@ -201,7 +201,7 @@ describe('[WH01] webhooks', function () {
 
         it('[7N4L] should update the Webhook\'s data to the storage', async function () {
           await new Promise(resolve => { setTimeout(resolve, 1000); });
-          const updatedWebhook = await repository.getById(user, webhook.id);
+          const updatedWebhook = await repository.getById(user.context.user, webhook.id);
           assert.strictEqual(updatedWebhook.runCount, 1, 'wrong runCount');
           const runs = updatedWebhook.runs;
           assert.strictEqual(runs.length, 1, 'wrong amount of runs');
@@ -240,7 +240,7 @@ describe('[WH01] webhooks', function () {
       });
 
       before(async function () {
-        user = await mongoFixtures.user(username, {});
+        user = await fixtures.user(username, {});
         await user.stream({
           id: streamId
         });
@@ -355,7 +355,7 @@ describe('[WH01] webhooks', function () {
     });
 
     before(async function () {
-      const user = await mongoFixtures.user(username, {});
+      const user = await fixtures.user(username, {});
       await user.stream({
         id: streamId,
         name: 'doesntmatter'

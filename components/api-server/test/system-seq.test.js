@@ -25,7 +25,7 @@ const encryption = require('utils').encryption;
 const testData = helpers.dynData({ prefix: 'syst' });
 const { getUsersRepository } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
+const { produceStorageConnection, context } = require('./test-helpers');
 const charlatan = require('charlatan');
 const cuid = require('cuid');
 const { getConfig } = require('@pryv/boiler');
@@ -40,7 +40,7 @@ describe('[SYRO] system route', function () {
 
   before(async function () {
     config = await getConfig();
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
     username = 'system-test';
     server = await context.spawn();
   });
@@ -126,7 +126,7 @@ describe('[SYER] system (ex-register)', function () {
   }
 
   before(async function () {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
     await mongoFixtures.context.cleanEverything();
   });
 

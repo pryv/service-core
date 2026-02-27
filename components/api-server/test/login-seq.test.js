@@ -47,7 +47,7 @@ describe('[AUTH] auth', function () {
   });
 
   afterEach(function (done) {
-    // CLAUDE: check if this sessions.clearAll can have an impact on parallel tests.
+    // Verified: safe — this is a -seq file, runs sequentially.
     helpers.dependencies.storage.sessions.clearAll(done);
   });
 

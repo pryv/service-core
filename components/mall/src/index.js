@@ -54,18 +54,32 @@ async function getMall () {
     }
   }
 
-  // Load built-in stores
+  // Load built-in stores based on storage engine
+  const getStorageEngine = require('storage/src/getStorageEngine');
+  const engine = getStorageEngine(config, 'database');
   const localSettings = {
     attachments: { setFileReadToken: true },
     versioning: config.get('versioning')
   };
-  if (config.get('database:engine') === 'sqlite') {
-    logger.info('Using PoC SQLite data store');
-    const sqlite = require('storage/src/localDataStoreSQLite');
-    mall.addStore(sqlite, { id: 'local', name: 'Local', settings: localSettings });
-  } else {
-    const mongo = require('storage/src/localDataStore');
-    mall.addStore(mongo, { id: 'local', name: 'Local', settings: localSettings });
+  switch (engine) {
+    case 'sqlite': {
+      logger.info('Using SQLite data store');
+      const sqlite = require('storage/src/localDataStoreSQLite');
+      mall.addStore(sqlite, { id: 'local', name: 'Local', settings: localSettings });
+      break;
+    }
+    case 'postgresql': {
+      logger.info('Using PostgreSQL data store');
+      const pg = require('storage/src/localDataStorePG');
+      mall.addStore(pg, { id: 'local', name: 'Local', settings: localSettings });
+      break;
+    }
+    default: {
+      // mongodb
+      const mongo = require('storage/src/localDataStore');
+      mall.addStore(mongo, { id: 'local', name: 'Local', settings: localSettings });
+      break;
+    }
   }
   // audit
   if (config.get('audit:active')) {

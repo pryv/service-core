@@ -22,7 +22,7 @@ const AccessLogic = require('business/src/accesses/AccessLogic');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection } = require('api-server/test/test-helpers');
+const { produceStorageConnection } = require('api-server/test/test-helpers');
 
 const { getConfig } = require('@pryv/boiler');
 
@@ -83,7 +83,7 @@ describe('[AD01] Accesses with account streams', function () {
     const helpers = require('api-server/test/helpers');
     config = await getConfig();
     validation = helpers.validation;
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
 
     app = getApplication(true);
     await app.initiate();

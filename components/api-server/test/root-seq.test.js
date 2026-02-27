@@ -20,7 +20,7 @@ const methodsSchema = require('../src/schema/generalMethods');
 const validation = helpers.validation;
 
 const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
+const { produceStorageConnection, context } = require('./test-helpers');
 const { getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
 
@@ -36,7 +36,7 @@ describe('[ROOT] root', function () {
 
   let mongoFixtures;
   before(async function () {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
     await mongoFixtures.context.cleanEverything();
   });
   after(async () => {

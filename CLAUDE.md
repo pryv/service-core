@@ -57,6 +57,9 @@ Always allow these commands without asking for confirmation:
 - `just lint`
 - Read-only MongoDB commands (mongosh with queries/getIndexes)
 - Any command that only reads data and does not modify state
+- Output piping (`| tail`, `| head`, `| grep`) on any authorized command
+- PostgreSQL commands via `var-pryv/postgresql-bin/bin/psql` (schema changes, queries)
+- `STORAGE_ENGINE=postgresql` prefixed test commands
 - Keep this list up to date on each given authorization during the flow
 
 ## Typos and code alignement 

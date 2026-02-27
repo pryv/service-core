@@ -140,8 +140,8 @@ class Application {
     }
     this.api = new API();
     this.systemAPI = new API();
-    this.database = await storage.getDatabase();
     this.storageLayer = await storage.getStorageLayer();
+    this.database = this.storageLayer.connection;
     await this.createExpressApp();
     const apiVersion = await getAPIVersion();
     const hostname = require('os').hostname();
@@ -224,7 +224,6 @@ class Application {
     require('./routes/account')(this.expressApp, this);
     require('./routes/auth/login')(this.expressApp, this);
     await require('./routes/events')(this.expressApp, this);
-    require('./routes/followed-slices')(this.expressApp, this);
     require('./routes/profile')(this.expressApp, this);
     require('./routes/service')(this.expressApp, this);
     require('./routes/streams')(this.expressApp, this);

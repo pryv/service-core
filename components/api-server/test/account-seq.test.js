@@ -18,7 +18,7 @@ const server = helpers.dependencies.instanceManager;
 const ErrorIds = require('errors').ErrorIds;
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/accountMethods');
-const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
+let pwdResetReqsStorage;
 const testData = helpers.dynData({ prefix: 'acct' });
 const { getUsersRepository } = require('business/src/users');
 const { getUserAccountStorage } = require('storage');
@@ -40,6 +40,7 @@ describe('[ACCO] account', function () {
     usersRepository = await getUsersRepository();
     userAccountStorage = await getUserAccountStorage();
     mall = await getMall();
+    pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
   });
 
   const basePath = '/' + user.username + '/account';
@@ -54,8 +55,6 @@ describe('[ACCO] account', function () {
       testData.resetUsers,
       testData.resetEvents,
       testData.resetProfile,
-      testData.resetFollowedSlices,
-
       testData.resetStreams,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
@@ -191,8 +190,6 @@ describe('[ACCO] account', function () {
         testData.resetUsers,
         testData.resetEvents,
         testData.resetProfile,
-        testData.resetFollowedSlices,
-
         testData.resetStreams,
         server.ensureStarted.bind(server, helpers.dependencies.settings),
         function (stepDone) {

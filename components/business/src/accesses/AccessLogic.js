@@ -253,13 +253,6 @@ class AccessLogic {
       case 'account.changePassword':
         return this.isPersonal();
 
-      // -- Followed Slice
-      case 'followedSlices.get':
-      case 'followedSlices.create':
-      case 'followedSlices.update':
-      case 'followedSlices.delete':
-        return this.isPersonal();
-
       // -- Accesses
       case 'accesses.checkApp':
         return this.isPersonal();

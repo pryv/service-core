@@ -20,7 +20,7 @@ const { getApplication } = require('api-server/src/application');
 const { pubsub } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { databaseFixture } = require('test-helpers');
-const { produceMongoConnection } = require('api-server/test/test-helpers');
+const { produceStorageConnection } = require('api-server/test/test-helpers');
 
 const { getMall } = require('mall');
 
@@ -101,7 +101,7 @@ describe('[FG5R] Events of system streams', () => {
     isDnsLess = config.get('dnsLess:isActive');
     const helpers = require('api-server/test/helpers');
     validation = helpers.validation;
-    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceStorageConnection());
 
     app = getApplication(true);
     await app.initiate();

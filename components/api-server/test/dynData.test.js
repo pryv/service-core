@@ -127,7 +127,6 @@ describe('[DYND] dynData', function () {
 
       assert.ok(typeof dynData.addCorrectAttachmentIds === 'function');
       assert.ok(typeof dynData.flattenStreams === 'function');
-      assert.ok(typeof dynData.getFollowedSlices === 'function');
       assert.ok(typeof dynData.cleanup === 'function');
     });
   });

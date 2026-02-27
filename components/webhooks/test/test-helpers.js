@@ -40,16 +40,18 @@ function unhandledRejection (reason, promise) {
 
     'Unhandled promise rejection:', promise, 'reason:', reason.stack || reason);
 }
+
 const storage = require('storage');
-// __dirname can be undefined when node is run outside of file.
-// Produces and returns a connection to MongoDB.
-//
+
 /**
- * @returns {any}
+ * Returns the webhooks storage instance (engine-agnostic).
+ * @returns {Promise<any>}
  */
-function produceMongoConnection () {
-  return storage.getDatabaseSync(true);
+async function getWebhooksStorage () {
+  const storageLayer = await storage.getStorageLayer();
+  return storageLayer.webhooks;
 }
+
 module.exports = {
-  webhooksStorage: new storage.user.Webhooks(produceMongoConnection())
+  getWebhooksStorage
 };

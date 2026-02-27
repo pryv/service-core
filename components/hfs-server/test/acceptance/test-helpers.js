@@ -30,36 +30,45 @@ const logger = require('@pryv/boiler').getLogger('test-helpers');
 const testHelpers = require('test-helpers');
 const storage = require('storage');
 const business = require('business');
-// Produces and returns a connection to InfluxDB.
-//
+// Produces an engine-agnostic series connection (InfluxDB or PG).
 /**
- * @returns {any}
+ * @returns {Promise<any>}
  */
-function produceInfluxConnection () {
-  return new business.series.InfluxConnection({ host: '127.0.0.1' });
+async function produceSeriesConnection () {
+  const { getConfig } = require('@pryv/boiler');
+  const config = await getConfig();
+  const engine = storage.getStorageEngine(config, 'database');
+  switch (engine) {
+    case 'postgresql': {
+      const PGSeriesConnection = require('business/src/series/pg_connection');
+      const pgDb = await storage.getDatabasePG();
+      return new PGSeriesConnection(pgDb);
+    }
+    default:
+      return new business.series.InfluxConnection({ host: '127.0.0.1' });
+  }
 }
-exports.produceInfluxConnection = produceInfluxConnection;
-// Produces and returns a connection to MongoDB.
-//
+exports.produceSeriesConnection = produceSeriesConnection;
 /**
- * @returns {any}
+ * Extract deltaTime in seconds from a connection.query() time field.
+ * InfluxDB returns INanoDate; PG returns delta_time * 1000.
+ * @param {any} time
+ * @returns {number}
  */
-async function produceMongoConnection () {
-  return await storage.getDatabase();
+function getTimeDelta (time) {
+  if (typeof time === 'number') return time / 1000;
+  return Number(time.getNanoTime()) / 1e9;
 }
-exports.produceMongoConnection = produceMongoConnection;
-// Produces a StorageLayer instance
-//
+exports.getTimeDelta = getTimeDelta;
+// Returns the StorageLayer instance (engine-agnostic).
 /**
- * @param {storage.Database} connection
- * @returns {any}
+ * @returns {Promise<any>}
  */
-function produceStorageLayer (connection) {
-  const passwordResetRequestMaxAge = 60 * 1000;
-  const sessionMaxAge = 60 * 1000;
-  return new storage.StorageLayer(connection, getLogger('null'), 'attachmetsDirPath', 'previewsDirPath', passwordResetRequestMaxAge, sessionMaxAge);
+async function produceConnection () {
+  return await storage.getStorageLayer();
 }
-exports.produceStorageLayer = produceStorageLayer;
+exports.produceStorageConnection = produceConnection;
+exports.produceConnection = produceConnection;
 // --------------------------------------------------------- prespawning servers
 logger.debug('creating new spawn context');
 const spawner = testHelpers.spawner;

@@ -24,9 +24,22 @@ class Context {
    * @type {import('storage').Database}
    */
   db;
+  /**
+   * @type {import('storage').StorageLayer}
+   */
+  storageLayer;
 
-  constructor (db) {
-    this.db = db;
+  /**
+   * @param {import('storage').Database|import('storage').StorageLayer} dbOrStorageLayer
+   */
+  constructor (dbOrStorageLayer) {
+    const StorageLayer = require('storage/src/StorageLayer');
+    if (dbOrStorageLayer instanceof StorageLayer) {
+      this.storageLayer = dbOrStorageLayer;
+      this.db = dbOrStorageLayer.connection;
+    } else {
+      this.db = dbOrStorageLayer;
+    }
   }
 
   /**
@@ -41,15 +54,32 @@ class Context {
    * @returns {Promise<void>}
    */
   async cleanEverything () {
-    const collectionNames = [
-      'accesses',
-      'sessions',
-      'followedSlices',
-      'webhooks',
-      'versions'
-    ];
-    for (const collectionName of collectionNames) {
-      await bluebird.fromCallback((cb) => this.db.deleteMany({ name: collectionName }, {}, cb));
+    if (this.storageLayer) {
+      // Engine-agnostic path: clear global tables via StorageLayer.
+      // mall.deleteUser only cascades events/streams; accesses, webhooks
+      // and sessions live on the StorageLayer and must be cleared explicitly.
+      const sl = this.storageLayer;
+      const conn = sl.connection;
+      if (sl.engine === 'postgresql') {
+        for (const table of ['accesses', 'sessions', 'webhooks']) {
+          await conn.query(`DELETE FROM ${table}`);
+        }
+      } else {
+        for (const name of ['accesses', 'sessions', 'webhooks']) {
+          await bluebird.fromCallback((cb) => conn.deleteMany({ name }, {}, cb));
+        }
+      }
+    } else {
+      // Legacy raw DB path (MongoDB)
+      const collectionNames = [
+        'accesses',
+        'sessions',
+        'webhooks',
+        'versions'
+      ];
+      for (const collectionName of collectionNames) {
+        await bluebird.fromCallback((cb) => this.db.deleteMany({ name: collectionName }, {}, cb));
+      }
     }
     const usersRepository = await getUsersRepository();
     await usersRepository.deleteAll();
@@ -71,15 +101,24 @@ class UserContext {
   }
 
   /**
-   * @returns {{ sessions: Sessions; accesses: any; webhooks: any; followedSlices: any; }}
+   * @returns {{ sessions: SessionsFixture|Sessions; accesses: any; webhooks: any; }}
    */
   initStorage () {
+    if (this.context.storageLayer) {
+      // Engine-agnostic path via StorageLayer
+      const sl = this.context.storageLayer;
+      return {
+        sessions: new SessionsFixture(sl.sessions),
+        accesses: sl.accesses,
+        webhooks: sl.webhooks
+      };
+    }
+    // Legacy raw DB path (MongoDB)
     const db = this.context.db;
     return {
       sessions: new Sessions(db),
       accesses: new storage.user.Accesses(db),
-      webhooks: new storage.user.Webhooks(db),
-      followedSlices: new storage.user.FollowedSlices(db)
+      webhooks: new storage.user.Webhooks(db)
     };
   }
 }
@@ -227,7 +266,7 @@ class DatabaseFixture {
     // database, including other workers' data, leading to false failures.
     if (process.env.DISABLE_INTEGRITY_CHECK !== '1') {
       try {
-        // check integrity before reset--- This could trigger error related to previous test
+        // check integrity before reset — this could trigger error related to previous test
         await integrityFinalCheck.all();
       } catch (err) {
         integrityError = err; // keep it for later
@@ -305,15 +344,6 @@ class FixtureUser extends FixtureItem {
   }
 
   /**
-   * @param {{}} attrs
-   * @returns {Promise<FixtureFollowedSlice>}
-   */
-  followedSlice (attrs = {}) {
-    const fs = new FixtureFollowedSlice(this.context, attrs);
-    return this.dependents.addAndCreate(fs);
-  }
-
-  /**
    * Removes all resources belonging to the user, then creates them again,
    * according to the spec stored here.
    * @returns {Promise<any>}
@@ -338,7 +368,7 @@ class FixtureUser extends FixtureItem {
     // If dependents are removed first, getUserById returns null and unique
     // platform entries (e.g. email) are orphaned, causing integrity check failures.
     await usersRepository.deleteOne(this.context.user.id, username, true);
-    // Then remove remaining dependents (accesses, webhooks, followedSlices,
+    // Then remove remaining dependents (accesses, webhooks,
     // sessions). Events and streams are already gone via mall.deleteUser inside
     // deleteOne; their individual remove() methods handle "not found" gracefully.
     await this.dependents.all((fixtureItem) => fixtureItem.remove());
@@ -546,49 +576,6 @@ class FixtureWebhook extends FixtureItem {
   }
 }
 
-class FixtureFollowedSlice extends FixtureItem {
-  /**
-   * Override to avoid adding created/modified fields
-   * @param {{}} attrs
-   * @returns {any}
-   */
-  attributes (attrs) {
-    return _.merge({
-      id: generateId()
-    }, this.fakeAttributes(), attrs);
-  }
-
-  /**
-   * @returns {Promise<any>}
-   */
-  async create () {
-    const storageItems = this.storage;
-    const user = this.context.user;
-    const attributes = this.attrs;
-    return await bluebird.fromCallback((cb) => storageItems.followedSlices.insertOne(user, attributes, cb));
-  }
-
-  /**
-   * @returns {Promise<void>}
-   */
-  async remove () {
-    const storageItems = this.storage;
-    const user = this.context.user;
-    await bluebird.fromCallback((cb) => storageItems.followedSlices.removeOne(user, { id: this.attrs.id }, cb));
-  }
-
-  /**
-   * @returns {{ name: string; url: string; accessToken: string; }}
-   */
-  fakeAttributes () {
-    return {
-      name: Charlatan.Name.name(),
-      url: `https://${Charlatan.Internet.domainName()}/`,
-      accessToken: Charlatan.Internet.deviceToken()
-    };
-  }
-}
-
 class FixtureSession extends FixtureItem {
   session;
 
@@ -635,6 +622,32 @@ class FixtureSession extends FixtureItem {
         appId: Charlatan.App.name()
       }
     };
+  }
+}
+
+/**
+ * Engine-agnostic fixture adapter for sessions.
+ * Uses the Sessions interface (importAll + destroy) to insert/remove
+ * sessions with specific ids, which the normal generate() method does not support.
+ */
+class SessionsFixture {
+  sessions;
+
+  constructor (sessions) {
+    this.sessions = sessions;
+  }
+
+  insertOne (user, attributes, cb) {
+    const doc = {
+      _id: attributes.id || attributes._id,
+      data: attributes.data,
+      expires: attributes.expires
+    };
+    this.sessions.importAll([doc], cb);
+  }
+
+  destroy (id, cb) {
+    this.sessions.destroy(id, cb);
   }
 }
 
@@ -687,11 +700,11 @@ class Sessions {
 }
 
 /**
- * @param {import('storage').Database} database
+ * @param {import('storage').Database|import('storage').StorageLayer} dbOrStorageLayer
  * @returns {DatabaseFixture}
  */
-function databaseFixture (database) {
-  const context = new Context(database);
+function databaseFixture (dbOrStorageLayer) {
+  const context = new Context(dbOrStorageLayer);
   return new DatabaseFixture(context);
 }
 
